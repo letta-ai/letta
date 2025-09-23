@@ -6,7 +6,6 @@ from typing import List
 
 import pytest
 
-from letta.agent import Agent
 from letta.config import LettaConfig
 from letta.llm_api.helpers import calculate_summarizer_cutoff
 from letta.schemas.agent import CreateAgent

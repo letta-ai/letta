@@ -28,21 +28,6 @@ class BlockManager:
 
     @enforce_types
     @trace_method
-    def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
-        """Create a new block based on the Block schema."""
-        db_block = self.get_block_by_id(block.id, actor)
-        if db_block:
-            update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
-            self.update_block(block.id, update_data, actor)
-        else:
-            with db_registry.session() as session:
-                data = block.model_dump(to_orm=True, exclude_none=True)
-                block = BlockModel(**data, organization_id=actor.organization_id)
-                block.create(session, actor=actor)
-            return block.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def create_or_update_block_async(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
         db_block = await self.get_block_by_id_async(block.id, actor)
@@ -57,30 +42,6 @@ class BlockManager:
                 pydantic_block = block.to_pydantic()
                 await session.commit()
                 return pydantic_block
-
-    @enforce_types
-    @trace_method
-    def batch_create_blocks(self, blocks: List[PydanticBlock], actor: PydanticUser) -> List[PydanticBlock]:
-        """
-        Batch-create multiple Blocks in one transaction for better performance.
-        Args:
-            blocks: List of PydanticBlock schemas to create
-            actor:    The user performing the operation
-        Returns:
-            List of created PydanticBlock instances (with IDs, timestamps, etc.)
-        """
-        if not blocks:
-            return []
-
-        with db_registry.session() as session:
-            block_models = [
-                BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
-            ]
-
-            created_models = BlockModel.batch_create(items=block_models, db_session=session, actor=actor)
-
-            # Convert back to Pydantic
-            return [m.to_pydantic() for m in created_models]
 
     @enforce_types
     @trace_method
@@ -109,22 +70,6 @@ class BlockManager:
 
     @enforce_types
     @trace_method
-    def update_block(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
-        """Update a block by its ID with the given BlockUpdate object."""
-        # Safety check for block
-
-        with db_registry.session() as session:
-            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
-
-            for key, value in update_data.items():
-                setattr(block, key, value)
-
-            block.update(db_session=session, actor=actor)
-            return block.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         # Safety check for block
@@ -140,19 +85,6 @@ class BlockManager:
             pydantic_block = block.to_pydantic()
             await session.commit()
             return pydantic_block
-
-    @enforce_types
-    @trace_method
-    def delete_block(self, block_id: str, actor: PydanticUser) -> None:
-        """Delete a block by its ID."""
-        with db_registry.session() as session:
-            # First, delete all references in blocks_agents table
-            session.execute(delete(BlocksAgents).where(BlocksAgents.block_id == block_id))
-            session.flush()
-
-            # Then delete the block itself
-            block = BlockModel.read(db_session=session, identifier=block_id)
-            block.hard_delete(db_session=session, actor=actor)
 
     @enforce_types
     @trace_method
@@ -354,17 +286,6 @@ class BlockManager:
 
     @enforce_types
     @trace_method
-    def get_block_by_id(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
-        """Retrieve a block by its name."""
-        with db_registry.session() as session:
-            try:
-                block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-                return block.to_pydantic()
-            except NoResultFound:
-                return None
-
-    @enforce_types
-    @trace_method
     async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
         async with db_registry.async_session() as session:
@@ -525,72 +446,6 @@ class BlockManager:
     # Block History Functions
 
     @enforce_types
-    @trace_method
-    def checkpoint_block(
-        self,
-        block_id: str,
-        actor: PydanticUser,
-        agent_id: Optional[str] = None,
-        use_preloaded_block: Optional[BlockModel] = None,  # For concurrency tests
-    ) -> PydanticBlock:
-        """
-        Create a new checkpoint for the given Block by copying its
-        current state into BlockHistory, using SQLAlchemy's built-in
-        version_id_col for concurrency checks.
-
-        - If the block was undone to an earlier checkpoint, we remove
-          any "future" checkpoints beyond the current state to keep a
-          strictly linear history.
-        - A single commit at the end ensures atomicity.
-        """
-        with db_registry.session() as session:
-            # 1) Load the Block
-            if use_preloaded_block is not None:
-                block = session.merge(use_preloaded_block)
-            else:
-                block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-
-            # 2) Identify the block's current checkpoint (if any)
-            current_entry = None
-            if block.current_history_entry_id:
-                current_entry = session.get(BlockHistory, block.current_history_entry_id)
-
-            # The current sequence, or 0 if no checkpoints exist
-            current_seq = current_entry.sequence_number if current_entry else 0
-
-            # 3) Truncate any future checkpoints
-            #    If we are at seq=2, but there's a seq=3 or higher from a prior "redo chain",
-            #    remove those, so we maintain a strictly linear undo/redo stack.
-            session.query(BlockHistory).filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number > current_seq).delete()
-
-            # 4) Determine the next sequence number
-            next_seq = current_seq + 1
-
-            # 5) Create a new BlockHistory row reflecting the block's current state
-            history_entry = BlockHistory(
-                organization_id=actor.organization_id,
-                block_id=block.id,
-                sequence_number=next_seq,
-                description=block.description,
-                label=block.label,
-                value=block.value,
-                limit=block.limit,
-                metadata_=block.metadata_,
-                actor_type=ActorType.LETTA_AGENT if agent_id else ActorType.LETTA_USER,
-                actor_id=agent_id if agent_id else actor.id,
-            )
-            history_entry.create(session, actor=actor, no_commit=True)
-
-            # 6) Update the block’s pointer to the new checkpoint
-            block.current_history_entry_id = history_entry.id
-
-            # 7) Flush changes, then commit once
-            block = block.update(db_session=session, actor=actor, no_commit=True)
-            session.commit()
-
-            return block.to_pydantic()
-
-    @enforce_types
     def _move_block_to_sequence(self, session: Session, block: BlockModel, target_seq: int, actor: PydanticUser) -> BlockModel:
         """
         Internal helper that moves the 'block' to the specified 'target_seq' within BlockHistory.
@@ -627,88 +482,6 @@ class BlockManager:
         # We'll do a flush now; the caller does final commit.
         updated_block = block.update(db_session=session, actor=actor, no_commit=True)
         return updated_block
-
-    @enforce_types
-    @trace_method
-    def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
-        """
-        Move the block to the immediately previous checkpoint in BlockHistory.
-        If older sequences have been pruned, we jump to the largest sequence
-        number that is still < current_seq.
-        """
-        with db_registry.session() as session:
-            # 1) Load the current block
-            block = (
-                session.merge(use_preloaded_block)
-                if use_preloaded_block
-                else BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-            )
-
-            if not block.current_history_entry_id:
-                raise ValueError(f"Block {block_id} has no history entry - cannot undo.")
-
-            current_entry = session.get(BlockHistory, block.current_history_entry_id)
-            if not current_entry:
-                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
-
-            current_seq = current_entry.sequence_number
-
-            # 2) Find the largest sequence < current_seq
-            previous_entry = (
-                session.query(BlockHistory)
-                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number < current_seq)
-                .order_by(BlockHistory.sequence_number.desc())
-                .first()
-            )
-            if not previous_entry:
-                # No earlier checkpoint available
-                raise ValueError(f"Block {block_id} is already at the earliest checkpoint (seq={current_seq}). Cannot undo further.")
-
-            # 3) Move to that sequence
-            block = self._move_block_to_sequence(session, block, previous_entry.sequence_number, actor)
-
-            # 4) Commit
-            session.commit()
-            return block.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    def redo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
-        """
-        Move the block to the next checkpoint if it exists.
-        If some middle checkpoints have been pruned, we jump to the smallest
-        sequence > current_seq that remains.
-        """
-        with db_registry.session() as session:
-            block = (
-                session.merge(use_preloaded_block)
-                if use_preloaded_block
-                else BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-            )
-
-            if not block.current_history_entry_id:
-                raise ValueError(f"Block {block_id} has no history entry - cannot redo.")
-
-            current_entry = session.get(BlockHistory, block.current_history_entry_id)
-            if not current_entry:
-                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
-
-            current_seq = current_entry.sequence_number
-
-            # Find the smallest sequence that is > current_seq
-            next_entry = (
-                session.query(BlockHistory)
-                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number > current_seq)
-                .order_by(BlockHistory.sequence_number.asc())
-                .first()
-            )
-            if not next_entry:
-                raise ValueError(f"Block {block_id} is at the highest checkpoint (seq={current_seq}). Cannot redo further.")
-
-            block = self._move_block_to_sequence(session, block, next_entry.sequence_number, actor)
-
-            session.commit()
-            return block.to_pydantic()
 
     @enforce_types
     @trace_method
