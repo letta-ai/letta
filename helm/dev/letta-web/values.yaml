@@ -114,6 +114,7 @@ affinity: {}
 env:
   LETTA_AGENTS_ENDPOINT: "http://memgpt-server:8083"
   REDIS_HOST: "10.219.146.68"
+  CLOUD_API_ENDPOINT: "https://api-dev.letta.com"
 
 secretsProvider:
   secrets:
