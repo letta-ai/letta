@@ -39,6 +39,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
+from letta.errors import LettaAgentNotFoundError
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -762,7 +763,7 @@ async def test_validate_agent_exists_async(server: SyncServer, comprehensive_tes
 
     # test with non-existent agent
     async with db_registry.async_session() as session:
-        with pytest.raises(NoResultFound):
+        with pytest.raises(LettaAgentNotFoundError):
             await validate_agent_exists_async(session, "non-existent-id", default_user)
 
 
@@ -1620,13 +1621,13 @@ async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_too
     nonexistent_agent_id = "nonexistent-agent-id"
     tool_ids = [print_tool.id, other_tool.id]
 
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.bulk_detach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
 
 
 async def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test attaching a tool to a nonexistent agent."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.attach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
@@ -1638,7 +1639,7 @@ async def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, def
 
 async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test detaching a tool from a nonexistent agent."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.detach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
@@ -1730,7 +1731,7 @@ async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_too
     nonexistent_agent_id = "nonexistent-agent-id"
     tool_ids = [print_tool.id, other_tool.id]
 
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.bulk_attach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
 
 
@@ -2054,14 +2055,14 @@ async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent,
 @pytest.mark.asyncio
 async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
     """Test detaching a source from a nonexistent agent."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.detach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
 async def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, default_user):
     """Test listing sources for a nonexistent agent."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaAgentNotFoundError):
         await server.agent_manager.list_attached_sources_async(agent_id="nonexistent-agent-id", actor=default_user)
 
 
