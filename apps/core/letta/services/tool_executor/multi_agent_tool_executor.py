@@ -76,13 +76,10 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             f"{message}"
         )
 
-        tasks = [
-            safe_create_task(
-                self._process_agent(agent_state=agent_state, message=augmented_message), label=f"process_agent_{agent_state.id}"
-            )
-            for agent_state in matching_agents
-        ]
-        results = await asyncio.gather(*tasks)
+        # Run concurrent requests and collect their return values.
+        # Note: Do not wrap with safe_create_task here — it swallows return values (returns None).
+        coros = [self._process_agent(agent_state=a_state, message=augmented_message) for a_state in matching_agents]
+        results = await asyncio.gather(*coros)
         return str(results)
 
     async def _process_agent(self, agent_state: AgentState, message: str) -> Dict[str, Any]:
