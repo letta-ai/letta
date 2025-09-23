@@ -84,7 +84,8 @@ class JobManager:
             agent_id = getattr(pydantic_job, "agent_id", None)
 
             # Verify agent exists before creating the job
-            await validate_agent_exists_async(session, agent_id, actor)
+            if agent_id:
+                await validate_agent_exists_async(session, agent_id, actor)
 
             job_data = pydantic_job.model_dump(to_orm=True)
             # Remove agent_id from job_data as it's not a field in the Job ORM model
