@@ -5,6 +5,7 @@ title: Letta
 
 experimental:
   openapi-parser-v3: true
+  dynamic-snippets: true
 
 tabs:
   docs:
