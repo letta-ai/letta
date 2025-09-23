@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import ConfigDict, Field, model_validator
-from typing_extensions import Self
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.letta_base import LettaBase
@@ -48,14 +47,28 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
-    @model_validator(mode="after")
-    def verify_char_limit(self) -> Self:
-        # self.limit can be None from
-        if self.limit is not None and self.value and len(self.value) > self.limit:
-            error_msg = f"Edit failed: Exceeds {self.limit} character limit (requested {len(self.value)}) - {str(self)}."
-            raise ValueError(error_msg)
+    @model_validator(mode="before")
+    @classmethod
+    def verify_char_limit(cls, data: Any) -> Any:
+        """Validate the character limit before model instantiation.
 
-        return self
+        Notes:
+        - Runs on raw input; do not mutate input.
+        - For update schemas (e.g., BlockUpdate), `value` and `limit` may be absent.
+          In that case, only validate when both are provided.
+        """
+        if isinstance(data, dict):
+            limit = data.get("limit")
+            value = data.get("value")
+
+            # Only enforce the char limit when both are present.
+            # Pydantic will separately enforce required fields where applicable.
+            if limit is not None and value is not None and isinstance(value, str):
+                if len(value) > limit:
+                    error_msg = f"Edit failed: Exceeds {limit} character limit (requested {len(value)})"
+                    raise ValueError(error_msg)
+
+        return data
 
     def __setattr__(self, name, value):
         """Run validation if self.value is updated"""
