@@ -190,7 +190,7 @@ async def export_agent(
     - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
     - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     if use_legacy_format:
         # Use the legacy serialization method
@@ -347,7 +347,7 @@ async def import_agent(
     Import a serialized agent file and recreate the agent(s) in the system.
     Returns the IDs of all imported agents.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         serialized_data = file.file.read()
@@ -1109,7 +1109,7 @@ async def list_messages(
 
 
 @router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
-def modify_message(
+async def modify_message(
     agent_id: str,
     message_id: str,
     request: LettaMessageUpdateUnion = Body(...),
@@ -1120,8 +1120,12 @@ def modify_message(
     Update the details of a message associated with an agent.
     """
     # TODO: support modifying tool calls/returns
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
-    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # TODO: implement
+    return await server.message_manager.update_message_by_letta_message_async(
+        message_id=message_id, letta_message_update=request, actor=actor
+    )
 
 
 # noinspection PyInconsistentReturns

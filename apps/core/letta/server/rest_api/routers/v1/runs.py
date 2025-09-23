@@ -178,7 +178,7 @@ async def list_run_messages(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
-        messages = server.job_manager.get_run_messages(
+        messages = await server.job_manager.get_run_messages(
             run_id=run_id,
             actor=actor,
             limit=limit,
@@ -244,7 +244,7 @@ async def list_run_steps(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
-        steps = server.job_manager.get_job_steps(
+        steps = await server.job_manager.get_job_steps(
             job_id=run_id,
             actor=actor,
             limit=limit,
@@ -315,7 +315,7 @@ async def retrieve_stream(
 ):
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
-        job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
+        job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")
 

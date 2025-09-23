@@ -39,22 +39,6 @@ class TelemetryManager:
             await session.commit()
             return pydantic_provider_trace
 
-    @enforce_types
-    @trace_method
-    def create_provider_trace(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
-        with db_registry.session() as session:
-            provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
-            provider_trace.organization_id = actor.organization_id
-            if provider_trace_create.request_json:
-                request_json_str = json_dumps(provider_trace_create.request_json)
-                provider_trace.request_json = json_loads(request_json_str)
-
-            if provider_trace_create.response_json:
-                response_json_str = json_dumps(provider_trace_create.response_json)
-                provider_trace.response_json = json_loads(response_json_str)
-            provider_trace.create(session, actor=actor)
-            return provider_trace.to_pydantic()
-
 
 @singleton
 class NoopTelemetryManager(TelemetryManager):
