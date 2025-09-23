@@ -77,60 +77,6 @@ class StepManager:
 
     @enforce_types
     @trace_method
-    def log_step(
-        self,
-        actor: PydanticUser,
-        agent_id: str,
-        provider_name: str,
-        provider_category: str,
-        model: str,
-        model_endpoint: Optional[str],
-        context_window_limit: int,
-        usage: UsageStatistics,
-        provider_id: Optional[str] = None,
-        job_id: Optional[str] = None,
-        step_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        stop_reason: Optional[LettaStopReason] = None,
-        status: Optional[StepStatus] = None,
-        error_type: Optional[str] = None,
-        error_data: Optional[Dict] = None,
-    ) -> PydanticStep:
-        step_data = {
-            "origin": None,
-            "organization_id": actor.organization_id,
-            "agent_id": agent_id,
-            "provider_id": provider_id,
-            "provider_name": provider_name,
-            "provider_category": provider_category,
-            "model": model,
-            "model_endpoint": model_endpoint,
-            "context_window_limit": context_window_limit,
-            "completion_tokens": usage.completion_tokens,
-            "prompt_tokens": usage.prompt_tokens,
-            "total_tokens": usage.total_tokens,
-            "job_id": job_id,
-            "tags": [],
-            "tid": None,
-            "trace_id": get_trace_id(),  # Get the current trace ID
-            "project_id": project_id,
-            "status": status if status else StepStatus.PENDING,
-            "error_type": error_type,
-            "error_data": error_data,
-        }
-        if step_id:
-            step_data["id"] = step_id
-        if stop_reason:
-            step_data["stop_reason"] = stop_reason.stop_reason
-        with db_registry.session() as session:
-            if job_id:
-                self._verify_job_access(session, job_id, actor, access=["write"])
-            new_step = StepModel(**step_data)
-            new_step.create(session)
-            return new_step.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def log_step_async(
         self,
         actor: PydanticUser,

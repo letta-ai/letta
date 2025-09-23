@@ -44,7 +44,6 @@ from letta.server.db import db_registry
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.middleware import CheckPasswordMiddleware, ProfilerContextMiddleware
-from letta.server.rest_api.routers.openai.chat_completions.chat_completions import router as openai_chat_completions_router
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -124,7 +123,6 @@ async def lifespan(app_: FastAPI):
 
     logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
     logger.info(f"[Worker {worker_id}] Initializing database connections")
-    db_registry.initialize_sync()
     db_registry.initialize_async()
     logger.info(f"[Worker {worker_id}] Database connections initialized")
 
@@ -140,6 +138,7 @@ async def lifespan(app_: FastAPI):
 
     logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
     global server
+    await server.init_async()
     try:
         await start_scheduler_with_leader_election(server)
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
@@ -399,9 +398,6 @@ def create_application() -> "FastAPI":
     # admin/users
     app.include_router(users_router, prefix=ADMIN_PREFIX)
     app.include_router(organizations_router, prefix=ADMIN_PREFIX)
-
-    # openai
-    app.include_router(openai_chat_completions_router, prefix=OPENAI_API_PREFIX)
 
     # /api/auth endpoints
     app.include_router(setup_auth_router(server, interface, random_password), prefix=API_PREFIX)
