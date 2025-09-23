@@ -7,7 +7,7 @@ PREPARE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
 PREPARE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=2)
 
 # refresh_context_and_system_message (rebuilds memory/system prompt, scrubs)
-REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=60)
+REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=180)
 REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=5)
 
 # llm_request (provider call; can be retried with summarization)
