@@ -29,7 +29,7 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 
 
 @router.get("/", response_model=List[Run], operation_id="list_runs")
-def list_runs(
+async def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     agent_ids: Optional[List[str]] = Query(None, description="(DEPRECATED) The unique identifiers of the agents associated with the run."),
@@ -48,7 +48,7 @@ def list_runs(
     """
     List all runs.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     statuses = None
     if active:
         statuses = [JobStatus.created, JobStatus.running]
@@ -56,27 +56,25 @@ def list_runs(
         # NOTE: we are deprecating agent_ids so this will the primary path soon
         agent_ids = [agent_id]
 
-    runs = [
-        Run.from_job(job)
-        for job in server.job_manager.list_jobs(
-            actor=actor,
-            statuses=statuses,
-            job_type=JobType.RUN,
-            limit=limit,
-            before=before,
-            after=after,
-            ascending=False,
-            stop_reason=stop_reason,
-            # agent_id=agent_id,
-            agent_ids=agent_ids,
-            background=background,
-        )
-    ]
+    jobs = await server.job_manager.list_jobs_async(
+        actor=actor,
+        statuses=statuses,
+        job_type=JobType.RUN,
+        limit=limit,
+        before=before,
+        after=after,
+        ascending=False,
+        stop_reason=stop_reason,
+        # agent_id=agent_id,
+        agent_ids=agent_ids,
+        background=background,
+    )
+    runs = [Run.from_job(job) for job in jobs]
     return runs
 
 
 @router.get("/active", response_model=List[Run], operation_id="list_active_runs", deprecated=True)
-def list_active_runs(
+async def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
@@ -85,14 +83,14 @@ def list_active_runs(
     """
     List all active runs.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     if agent_id:
         agent_ids = [agent_id]
     else:
         agent_ids = None
 
-    active_runs = server.job_manager.list_jobs(
+    active_runs = await server.job_manager.list_jobs_async(
         actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=agent_ids, background=background
     )
     active_runs = [Run.from_job(job) for job in active_runs]
