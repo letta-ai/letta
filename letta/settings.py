@@ -111,6 +111,13 @@ class ModelSettings(BaseSettings):
         validation_alias=AliasChoices("OPENAI_BASE_URL", "OPENAI_API_BASE"),  # pydantic-settings v1
     )
 
+    # openrouter
+    openrouter_api_key: Optional[str] = None
+    # Optional additional headers recommended by OpenRouter
+    # See https://openrouter.ai/docs/quick-start for details
+    openrouter_referer: Optional[str] = None  # e.g., your site URL
+    openrouter_title: Optional[str] = None  # e.g., your app name
+
     # deepseek
     deepseek_api_key: Optional[str] = None
 

@@ -14,6 +14,7 @@ from .lmstudio import LMStudioOpenAIProvider
 from .mistral import MistralProvider
 from .ollama import OllamaProvider
 from .openai import OpenAIProvider
+from .openrouter import OpenRouterProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
 from .xai import XAIProvider
@@ -42,4 +43,5 @@ __all__ = [
     "TogetherProvider",
     "VLLMProvider",  # Replaces ChatCompletions and Completions
     "XAIProvider",
+    "OpenRouterProvider",
 ]
