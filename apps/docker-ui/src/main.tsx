@@ -8,7 +8,6 @@ import { OpenAPI } from '@letta-cloud/sdk-core';
 import { NextIntlClientProvider } from 'next-intl';
 import { en as adeEn } from '@letta-cloud/ui-ade-components';
 import en from './translations/en.json';
-import { ServerStatusProvider } from './app/hooks/useServerStatus/useServerStatus';
 import {
   en as componentTranslations,
   Toaster,
@@ -48,9 +47,8 @@ root.render(
           <HashRouter>
             <Toaster />
             <LettaCoreInterceptor />
-            <ServerStatusProvider>
-              <App />
-            </ServerStatusProvider>
+            <App />
+
           </HashRouter>
         </NextIntlClientProvider>
       </PHProvider>
