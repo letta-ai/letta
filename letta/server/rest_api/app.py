@@ -121,10 +121,10 @@ async def lifespan(app_: FastAPI):
         except Exception as exc:
             logger.info("Profiler not enabled: %", exc)
 
-    logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
-    logger.info(f"[Worker {worker_id}] Initializing database connections")
-    db_registry.initialize_async()
-    logger.info(f"[Worker {worker_id}] Database connections initialized")
+    # logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
+    # logger.info(f"[Worker {worker_id}] Initializing database connections")
+    # db_registry.initialize_async()
+    # logger.info(f"[Worker {worker_id}] Database connections initialized")
 
     if should_use_pinecone():
         if settings.upsert_pinecone_indices:
