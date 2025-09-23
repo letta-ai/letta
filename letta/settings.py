@@ -232,7 +232,7 @@ class Settings(BaseSettings):
     pg_echo: bool = False  # Logging
     pool_pre_ping: bool = True  # Pre ping to check for dead connections
     pool_use_lifo: bool = True
-    disable_sqlalchemy_pooling: bool = False
+    disable_sqlalchemy_pooling: bool = True
     db_max_concurrent_sessions: Optional[int] = 48
 
     redis_host: Optional[str] = Field(default=None, description="Host for Redis instance")

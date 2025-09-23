@@ -1,6 +1,5 @@
 from typing import List, Literal, Optional
 
-from letta.agent import Agent
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
 
 

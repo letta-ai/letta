@@ -20,32 +20,11 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    def get_organization_by_id(self, org_id: str) -> Optional[PydanticOrganization]:
-        """Fetch an organization by ID."""
-        with db_registry.session() as session:
-            organization = OrganizationModel.read(db_session=session, identifier=org_id)
-            return organization.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def get_organization_by_id_async(self, org_id: str) -> Optional[PydanticOrganization]:
         """Fetch an organization by ID."""
         async with db_registry.async_session() as session:
             organization = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             return organization.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    def create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
-        """Create the default organization."""
-        with db_registry.session() as session:
-            try:
-                organization = OrganizationModel.read(db_session=session, identifier=pydantic_org.id)
-                return organization.to_pydantic()
-            except:
-                organization = OrganizationModel(**pydantic_org.model_dump(to_orm=True))
-                organization = organization.create(session)
-                return organization.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -101,14 +80,6 @@ class OrganizationManager:
                 org.privileged_tools = org_update.privileged_tools
             await org.update_async(session)
             return org.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    def delete_organization_by_id(self, org_id: str):
-        """Delete an organization by marking it as deleted."""
-        with db_registry.session() as session:
-            organization = OrganizationModel.read(db_session=session, identifier=org_id)
-            organization.hard_delete(session)
 
     @enforce_types
     @trace_method
