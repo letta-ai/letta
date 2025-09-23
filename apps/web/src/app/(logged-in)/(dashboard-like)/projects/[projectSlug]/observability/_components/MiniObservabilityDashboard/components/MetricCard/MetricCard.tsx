@@ -18,6 +18,7 @@ import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import type { EChartsOption } from 'echarts';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
+import { useCurrentStyles } from '$web/client/hooks/useCurrentStyles/useCurrentStyles';
 
 interface MetricCardProps {
   title: string;
@@ -45,7 +46,6 @@ export function MetricCard(props: MetricCardProps) {
     className,
     infoTooltip,
     previousPeriodValue,
-    isInverted,
     showRightBorder = true,
     showBottomBorder = true,
   } = props;
@@ -53,6 +53,7 @@ export function MetricCard(props: MetricCardProps) {
   const t = useTranslations('projects/(projectSlug)/page.MiniObservabilityDashboard.MetricCard');
   const { formatDate } = useFormatters();
   const { granularity } = useObservabilityContext();
+  const styles = useCurrentStyles();
 
   const { width = 0 } = useViewportSize();
   const [debouncedWidth] = useDebouncedValue(width, 100);
@@ -65,11 +66,9 @@ export function MetricCard(props: MetricCardProps) {
   const renderTrendIcon = () => {
     if (!trend || trend === 'neutral') return null;
     const rotation = trend === 'down' ? 'rotate-180' : '';
-    const isGoodTrend = isInverted ? trend === 'down' : trend === 'up';
-    const color = isGoodTrend ? 'hsl(var(--positive))' : 'hsl(var(--destructive))';
     return (
-      <HStack align="center" justify="center" className={cn(rotation)} style={{ color }}>
-        <ArrowUpIcon/>
+      <HStack align="center" justify="center" className={cn(rotation)}>
+        <ArrowUpIcon color="default"/>
       </HStack>
     );
   };
@@ -78,10 +77,7 @@ export function MetricCard(props: MetricCardProps) {
     const safeChartData = chartData && chartData.length > 0 ? chartData : [{ x: '0', y: 0 }];
     const hasRealData = chartData && chartData.some(point => point.y > 0);
 
-    const isGoodTrend = isInverted ? trend === 'down' : trend === 'up';
-    const chartColor = hasRealData
-      ? (isGoodTrend ? '#28A428' : trend === 'neutral' ? '#6B7280' : '#BA024C')
-      : '#E5E7EB';
+    const chartColor = `hsl(${styles?.getPropertyValue('--brand')})`;
 
     return {
       // apache echarts styling
@@ -159,16 +155,16 @@ export function MetricCard(props: MetricCardProps) {
           smooth: false,
           symbol: 'none',
           lineStyle: {
-            width: 2.2,
+            width: 1.5,
             color: chartColor,
           },
           areaStyle: {
-            opacity: hasRealData ? 0.2 : 0.05,
+            opacity: hasRealData ? 0.1 : 0.05,
             color: chartColor,
           },
           emphasis: {
             lineStyle: {
-              width: 2.2,
+              width: 2,
               color: chartColor,
             },
             areaStyle: {
@@ -179,12 +175,12 @@ export function MetricCard(props: MetricCardProps) {
         },
       ],
     };
-  }, [chartData, trend, isInverted, title, t, granularity, formatDate]);
+  }, [chartData, title, t, granularity, formatDate, styles]);
 
   return (
     <Card
       className={cn(
-        'bg-background hover:bg-background-hover transition-colors border-0',
+        'bg-project-card-background hover:bg-background-grey2 transition-colors border-0',
         showRightBorder && 'border-r border-background-grey3-border',
         showBottomBorder && 'border-b border-background-grey3-border',
         className,
@@ -192,50 +188,39 @@ export function MetricCard(props: MetricCardProps) {
     >
       <HStack justify="spaceBetween" align="center" fullWidth fullHeight>
         <VStack gap={null} align="start">
-          <HStack gap="small" align="center">
-            {isLoading ? (
-              <Skeleton className="w-[60px] h-6" />
-            ) : previousPeriodValue !== undefined ? (
-              <Tooltip
-                content={t('previousPeriod', { value: previousPeriodValue })}
-                placement="top"
-                asChild
-              >
+          {isLoading ? (
+            <Skeleton className="w-[60px] h-6" />
+          ) : previousPeriodValue !== undefined ? (
+            <Tooltip
+              content={t('previousPeriod', { value: previousPeriodValue })}
+              placement="top"
+              asChild
+            >
+              <HStack gap="small" align="center">
                 <Typography
                   variant="heading4"
                   bold
                   align="left"
-                  style={{
-                    color:
-                      trend === 'neutral'
-                        ? undefined
-                        : (isInverted ? trend === 'down' : trend === 'up')
-                          ? 'hsl(var(--positive))'
-                          : 'hsl(var(--destructive))',
-                  }}
+                  color="default"
                 >
                   {value ?? '--'}
                 </Typography>
-              </Tooltip>
-            ) : (
+                {renderTrendIcon()}
+              </HStack>
+            </Tooltip>
+          ) : (
+            <HStack gap="small" align="center">
               <Typography
                 variant="heading4"
                 bold
                 align="left"
-                style={{
-                  color:
-                    trend === 'neutral'
-                      ? undefined
-                      : (isInverted ? trend === 'down' : trend === 'up')
-                        ? 'hsl(var(--positive))'
-                        : 'hsl(var(--destructive))',
-                }}
+                color="default"
               >
                 {value ?? '--'}
               </Typography>
-            )}
-            {renderTrendIcon()}
-          </HStack>
+              {renderTrendIcon()}
+            </HStack>
+          )}
 
           <HStack gap="small" align="center">
             <Typography variant="body2" color="muted" align="left">

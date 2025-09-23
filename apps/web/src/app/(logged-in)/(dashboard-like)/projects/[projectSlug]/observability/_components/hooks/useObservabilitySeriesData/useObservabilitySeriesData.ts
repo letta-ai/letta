@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { useCurrentUser } from '$web/client/hooks';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { addDays, addMinutes, addHours } from 'date-fns';
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
+import {
+  useCurrentStyles
+} from '$web/client/hooks/useCurrentStyles/useCurrentStyles';
 
 interface BaseType {
   date: string; // Assuming the date is in YYYY-MM-DD format
@@ -222,22 +224,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
   }, [getSeriesData, seriesData]);
   const { formatShorthandNumber } = useFormatters();
 
-  const [styles, setStyles] = useState(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    return getComputedStyle(document.documentElement);
-  });
-  const user = useCurrentUser();
-
-  useEffect(() => {
-    if (user?.theme) {
-      const rootStyles = getComputedStyle(document.documentElement);
-      setStyles(rootStyles);
-    }
-  }, [user?.theme]);
-
+  const styles = useCurrentStyles();
   return useMemo(
     () => ({
       xAxis: {
