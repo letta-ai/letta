@@ -923,3 +923,7 @@ docker-ui:
 enterprise-dockerfile:
   @echo "🚧 Building enterprise Dockerfile..."
   ./scripts/generate-enterprise-docker-build.sh
+
+stress:
+  @echo "🚧 Running stress tests..."
+  npm run stress
