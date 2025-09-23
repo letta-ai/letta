@@ -108,9 +108,9 @@ class DatabaseRegistry:
     """
 
     def __init__(self):
-        self._engines: dict[str, Engine] = {}
+        # self._engines: dict[str, Engine] = {}
         self._async_engines: dict[str, AsyncEngine] = {}
-        self._session_factories: dict[str, sessionmaker] = {}
+        # self._session_factories: dict[str, sessionmaker] = {}
         self._async_session_factories: dict[str, async_sessionmaker] = {}
         self._initialized: dict[str, bool] = {"sync": False, "async": False}
         self._lock = threading.Lock()
@@ -124,51 +124,51 @@ class DatabaseRegistry:
             self.logger.info("Database throttling is disabled")
             self._db_semaphore = None
 
-    def initialize_sync(self, force: bool = False) -> None:
-        """Initialize the synchronous database engine if not already initialized."""
-        with self._lock:
-            if self._initialized.get("sync") and not force:
-                return
+    # def initialize_sync(self, force: bool = False) -> None:
+    #    """Initialize the synchronous database engine if not already initialized."""
+    #    with self._lock:
+    #        if self._initialized.get("sync") and not force:
+    #            return
 
-            # Postgres engine
-            if settings.database_engine is DatabaseChoice.POSTGRES:
-                self.logger.info("Creating postgres engine")
-                self.config.recall_storage_type = "postgres"
-                self.config.recall_storage_uri = settings.letta_pg_uri_no_default
-                self.config.archival_storage_type = "postgres"
-                self.config.archival_storage_uri = settings.letta_pg_uri_no_default
+    #        # Postgres engine
+    #        if settings.database_engine is DatabaseChoice.POSTGRES:
+    #            self.logger.info("Creating postgres engine")
+    #            self.config.recall_storage_type = "postgres"
+    #            self.config.recall_storage_uri = settings.letta_pg_uri_no_default
+    #            self.config.archival_storage_type = "postgres"
+    #            self.config.archival_storage_uri = settings.letta_pg_uri_no_default
 
-                engine = create_engine(settings.letta_pg_uri, **self._build_sqlalchemy_engine_args(is_async=False))
+    #            engine = create_engine(settings.letta_pg_uri, **self._build_sqlalchemy_engine_args(is_async=False))
 
-                self._engines["default"] = engine
-            # SQLite engine
-            else:
-                from letta.orm import Base
+    #            self._engines["default"] = engine
+    #        # SQLite engine
+    #        else:
+    #            from letta.orm import Base
 
-                # TODO: don't rely on config storage
-                engine_path = "sqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
-                self.logger.info("Creating sqlite engine " + engine_path)
+    #            # TODO: don't rely on config storage
+    #            engine_path = "sqlite:///" + os.path.join(self.config.recall_storage_path, "sqlite.db")
+    #            self.logger.info("Creating sqlite engine " + engine_path)
 
-                engine = create_engine(engine_path)
+    #            engine = create_engine(engine_path)
 
-                # Wrap the engine with error handling
-                self._wrap_sqlite_engine(engine)
+    #            # Wrap the engine with error handling
+    #            self._wrap_sqlite_engine(engine)
 
-                Base.metadata.create_all(bind=engine)
-                self._engines["default"] = engine
+    #            Base.metadata.create_all(bind=engine)
+    #            self._engines["default"] = engine
 
-            # Set up connection monitoring
-            if settings.sqlalchemy_tracing and settings.database_engine is DatabaseChoice.POSTGRES:
-                event.listen(engine, "connect", on_connect)
-                event.listen(engine, "close", on_close)
-                event.listen(engine, "checkout", on_checkout)
-                event.listen(engine, "checkin", on_checkin)
+    #        # Set up connection monitoring
+    #        if settings.sqlalchemy_tracing and settings.database_engine is DatabaseChoice.POSTGRES:
+    #            event.listen(engine, "connect", on_connect)
+    #            event.listen(engine, "close", on_close)
+    #            event.listen(engine, "checkout", on_checkout)
+    #            event.listen(engine, "checkin", on_checkin)
 
-            self._setup_pool_monitoring(engine, "default")
+    #        self._setup_pool_monitoring(engine, "default")
 
-            # Create session factory
-            self._session_factories["default"] = sessionmaker(autocommit=False, autoflush=False, bind=self._engines["default"])
-            self._initialized["sync"] = True
+    #        # Create session factory
+    #        self._session_factories["default"] = sessionmaker(autocommit=False, autoflush=False, bind=self._engines["default"])
+    #        self._initialized["sync"] = True
 
     def initialize_async(self, force: bool = False) -> None:
         """Initialize the asynchronous database engine if not already initialized."""
@@ -315,65 +315,65 @@ class DatabaseRegistry:
         except Exception as e:
             self.logger.warning(f"Failed to setup pool monitoring for {engine_name}: {e}")
 
-    def get_engine(self, name: str = "default") -> Engine:
-        """Get a database engine by name."""
-        self.initialize_sync()
-        return self._engines.get(name)
+    # def get_engine(self, name: str = "default") -> Engine:
+    #    """Get a database engine by name."""
+    #    self.initialize_sync()
+    #    return self._engines.get(name)
 
     def get_async_engine(self, name: str = "default") -> Engine:
         """Get a database engine by name."""
         self.initialize_async()
         return self._async_engines.get(name)
 
-    def get_session_factory(self, name: str = "default") -> sessionmaker:
-        """Get a session factory by name."""
-        self.initialize_sync()
-        return self._session_factories.get(name)
+    # def get_session_factory(self, name: str = "default") -> sessionmaker:
+    #    """Get a session factory by name."""
+    #    self.initialize_sync()
+    #    return self._session_factories.get(name)
 
     def get_async_session_factory(self, name: str = "default") -> async_sessionmaker:
         """Get an async session factory by name."""
         self.initialize_async()
         return self._async_session_factories.get(name)
 
-    @trace_method
-    @contextmanager
-    def session(self, name: str = "default") -> Generator[Any, None, None]:
-        """Context manager for database sessions."""
-        caller_info = "unknown caller"
-        try:
-            import inspect
+    # @trace_method
+    # @contextmanager
+    # def session(self, name: str = "default") -> Generator[Any, None, None]:
+    #    """Context manager for database sessions."""
+    #    caller_info = "unknown caller"
+    #    try:
+    #        import inspect
 
-            frame = inspect.currentframe()
-            stack = inspect.getouterframes(frame)
+    #        frame = inspect.currentframe()
+    #        stack = inspect.getouterframes(frame)
 
-            for i, frame_info in enumerate(stack):
-                module = inspect.getmodule(frame_info.frame)
-                module_name = module.__name__ if module else "unknown"
+    #        for i, frame_info in enumerate(stack):
+    #            module = inspect.getmodule(frame_info.frame)
+    #            module_name = module.__name__ if module else "unknown"
 
-                if module_name != "contextlib" and "db.py" not in frame_info.filename:
-                    caller_module = module_name
-                    caller_function = frame_info.function
-                    caller_lineno = frame_info.lineno
-                    caller_file = frame_info.filename.split("/")[-1]
+    #            if module_name != "contextlib" and "db.py" not in frame_info.filename:
+    #                caller_module = module_name
+    #                caller_function = frame_info.function
+    #                caller_lineno = frame_info.lineno
+    #                caller_file = frame_info.filename.split("/")[-1]
 
-                    caller_info = f"{caller_module}.{caller_function}:{caller_lineno} ({caller_file})"
-                    break
-        except:
-            pass
-        finally:
-            del frame
+    #                caller_info = f"{caller_module}.{caller_function}:{caller_lineno} ({caller_file})"
+    #                break
+    #    except:
+    #        pass
+    #    finally:
+    #        del frame
 
-        self.session_caller_trace(caller_info)
+    #    self.session_caller_trace(caller_info)
 
-        session_factory = self.get_session_factory(name)
-        if not session_factory:
-            raise ValueError(f"No session factory found for '{name}'")
+    #    session_factory = self.get_session_factory(name)
+    #    if not session_factory:
+    #        raise ValueError(f"No session factory found for '{name}'")
 
-        session = session_factory()
-        try:
-            yield session
-        finally:
-            session.close()
+    #    session = session_factory()
+    #    try:
+    #        yield session
+    #    finally:
+    #        session.close()
 
     @trace_method
     @asynccontextmanager
@@ -416,10 +416,10 @@ def get_db_registry() -> DatabaseRegistry:
     return db_registry
 
 
-def get_db():
-    """Get a database session."""
-    with db_registry.session() as session:
-        yield session
+# def get_db():
+#    """Get a database session."""
+#    with db_registry.session() as session:
+#        yield session
 
 
 async def get_db_async():
@@ -430,4 +430,4 @@ async def get_db_async():
 
 # Prefer calling db_registry.session() or db_registry.async_session() directly
 # This is for backwards compatibility
-db_context = contextmanager(get_db)
+# db_context = contextmanager(get_db)
