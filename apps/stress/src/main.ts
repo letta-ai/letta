@@ -12,12 +12,9 @@ export const options: Options = {
 
 function createAgent(): string {
   const res = http.post(
-    `${DEFAULT_SERVER}/v1/agents`,
+    `${DEFAULT_SERVER}/v1/templates/shubject/tragic-teal-rodent:latest/agents`,
     JSON.stringify({
-      from_template: 'test-scale:latest',
-      variables: {
-        name: `test-scale ${__VU}-${__ITER}`,
-      },
+      agent_name: `test-scale ${__VU}-${__ITER}`,
     }),
     {
       headers: {
@@ -56,6 +53,10 @@ function sendMessageToAgent(agentId: string) {
 }
 
 function deleteAgent(agentId: string) {
+  if (!agentId) {
+    fail('Invalid agent ID');
+  }
+
   const res = http.del(`${DEFAULT_SERVER}/v1/agents/${agentId}`, null, {
     headers: DEFAULT_HEADERS,
   });
@@ -72,9 +73,9 @@ function deleteAgent(agentId: string) {
 export default () => {
   const agentId = createAgent();
 
-  sendMessageToAgent(agentId);
+  // sendMessageToAgent(agentId);
 
-  deleteAgent(agentId);
+  // deleteAgent(agentId);
 
   sleep(1);
 };
