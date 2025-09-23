@@ -150,22 +150,6 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
-        """Create a new tool based on the ToolCreate schema."""
-        with db_registry.session() as session:
-            # Auto-generate description if not provided
-            if pydantic_tool.description is None:
-                pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
-            tool_data = pydantic_tool.model_dump(to_orm=True)
-            # Set the organization id at the ORM layer
-            tool_data["organization_id"] = actor.organization_id
-
-            tool = ToolModel(**tool_data)
-            tool.create(session, actor=actor)  # Re-raise other database-related errors
-        return tool.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def create_tool_async(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         async with db_registry.async_session() as session:
@@ -234,16 +218,6 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def get_tool_by_id(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
-        """Fetch a tool by its ID."""
-        with db_registry.session() as session:
-            # Retrieve tool by id using the Tool model's read method
-            tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
-            # Convert the SQLAlchemy Tool object to PydanticTool
-            return tool.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def get_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
         async with db_registry.async_session() as session:
@@ -254,34 +228,12 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def get_tool_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
-        """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
-        try:
-            with db_registry.session() as session:
-                tool = ToolModel.read(db_session=session, name=tool_name, actor=actor)
-                return tool.to_pydantic()
-        except NoResultFound:
-            return None
-
-    @enforce_types
-    @trace_method
     async def get_tool_by_name_async(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
             async with db_registry.async_session() as session:
                 tool = await ToolModel.read_async(db_session=session, name=tool_name, actor=actor)
                 return tool.to_pydantic()
-        except NoResultFound:
-            return None
-
-    @enforce_types
-    @trace_method
-    def get_tool_id_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[str]:
-        """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
-        try:
-            with db_registry.session() as session:
-                tool = ToolModel.read(db_session=session, name=tool_name, actor=actor)
-                return tool.id
         except NoResultFound:
             return None
 
@@ -570,114 +522,6 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def update_tool_by_id(
-        self,
-        tool_id: str,
-        tool_update: ToolUpdate,
-        actor: PydanticUser,
-        updated_tool_type: Optional[ToolType] = None,
-        bypass_name_check: bool = False,
-    ) -> PydanticTool:
-        # TODO: remove this (legacy non-async)
-        """
-        Update a tool with complex validation and schema derivation logic.
-
-        This method handles updates differently based on tool type:
-        - MCP tools: JSON schema is trusted, no Python source derivation
-        - Python/TypeScript tools: Schema derived from source code if provided
-        - Name conflicts are checked unless bypassed
-
-        Args:
-            tool_id: The UUID of the tool to update
-            tool_update: Partial update data (only changed fields)
-            actor: User performing the update (for permissions)
-            updated_tool_type: Optional new tool type (e.g., converting custom to builtin)
-            bypass_name_check: Skip name conflict validation (use with caution)
-
-        Returns:
-            Updated tool as Pydantic model
-
-        Raises:
-            LettaToolNameConflictError: If new name conflicts with existing tool
-            NoResultFound: If tool doesn't exist or user lacks access
-
-        Side Effects:
-            - Updates tool in database
-            - May change tool name if source code is modified
-            - Recomputes JSON schema from source for non-MCP tools
-
-        Important:
-            When source_code is provided for Python/TypeScript tools, the name
-            MUST match the function name in the code, overriding any name in json_schema
-        """
-        # First, check if source code update would cause a name conflict
-        update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
-        new_name = None
-        new_schema = None
-
-        # Fetch current tool to allow conditional logic based on tool type
-        current_tool = self.get_tool_by_id(tool_id=tool_id, actor=actor)
-
-        # For MCP tools, do NOT derive schema from Python source. Trust provided JSON schema.
-        if current_tool.tool_type == ToolType.EXTERNAL_MCP:
-            if "json_schema" in update_data:
-                new_schema = update_data["json_schema"].copy()
-                new_name = new_schema.get("name", current_tool.name)
-            else:
-                new_schema = current_tool.json_schema
-                new_name = current_tool.name
-            update_data.pop("source_code", None)
-            if new_name != current_tool.name:
-                existing_tool = self.get_tool_by_name(tool_name=new_name, actor=actor)
-                if existing_tool:
-                    raise LettaToolNameConflictError(tool_name=new_name)
-        else:
-            # For non-MCP tools, preserve existing behavior
-            if "source_code" in update_data.keys() and not bypass_name_check:
-                # Check source type to use appropriate parser
-                source_type = update_data.get("source_type", current_tool.source_type)
-                if source_type == "typescript":
-                    from letta.functions.typescript_parser import derive_typescript_json_schema
-
-                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
-                else:
-                    # Default to Python for backwards compatibility
-                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
-
-                new_name = derived_schema["name"]
-                if "json_schema" not in update_data.keys():
-                    new_schema = derived_schema
-                else:
-                    new_schema = update_data["json_schema"].copy()
-                    new_schema["name"] = new_name
-                    update_data["json_schema"] = new_schema
-                if new_name != current_tool.name:
-                    existing_tool = self.get_tool_by_name(tool_name=new_name, actor=actor)
-                    if existing_tool:
-                        raise LettaToolNameConflictError(tool_name=new_name)
-
-        # Now perform the update within the session
-        with db_registry.session() as session:
-            # Fetch the tool by ID
-            tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
-
-            # Update tool attributes with only the fields that were explicitly set
-            for key, value in update_data.items():
-                setattr(tool, key, value)
-
-            # If we already computed the new schema, apply it
-            if new_schema is not None:
-                tool.json_schema = new_schema
-                tool.name = new_name
-
-            if updated_tool_type:
-                tool.tool_type = updated_tool_type
-
-            # Save the updated tool to the database
-            return tool.update(db_session=session, actor=actor).to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def update_tool_by_id_async(
         self,
         tool_id: str,
@@ -746,17 +590,6 @@ class ToolManager:
             # Save the updated tool to the database
             tool = await tool.update_async(db_session=session, actor=actor)
             return tool.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    def delete_tool_by_id(self, tool_id: str, actor: PydanticUser) -> None:
-        """Delete a tool by its ID."""
-        with db_registry.session() as session:
-            try:
-                tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
-                tool.hard_delete(db_session=session, actor=actor)
-            except NoResultFound:
-                raise ValueError(f"Tool with id {tool_id} not found.")
 
     @enforce_types
     @trace_method
