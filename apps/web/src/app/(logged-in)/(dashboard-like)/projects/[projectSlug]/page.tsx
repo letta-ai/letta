@@ -53,8 +53,8 @@ import { MiniObservabilityDashboard } from './observability/_components/MiniObse
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 function LoadingState() {
-  return Array.from({ length: 4 }).map((_, index) => (
-    <Skeleton key={index} className="min-h-[125px] w-full max-w-[320px]" />
+  return Array.from({ length: 3 }).map((_, index) => (
+    <Skeleton key={index} className="min-h-[125px] w-full" />
   ));
 }
 
