@@ -18,7 +18,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
-import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
 import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -27,7 +26,6 @@ import type { InfiniteData } from '@tanstack/query-core';
 export function Agents() {
   const t = useTranslations('Agents');
   const { formatDateAndTime } = useFormatters();
-  const status = useServerStatus();
 
   const [search, setSearch] = useState<string>('');
 
@@ -56,7 +54,7 @@ export function Agents() {
         after: pageParam?.after,
       });
     },
-    enabled: status && limit > 0,
+    enabled: limit > 0,
     initialPageParam: { after: null },
     getNextPageParam: (lastPage) => {
       if (lastPage.length > limit) {
