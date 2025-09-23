@@ -37,6 +37,10 @@ export function useManageMessageScroller(
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight + 1000;
 
         setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight + 1000;
+          }
+
           fetchNextPageLock.current = true;
           scrollLock.current = false;
         }, 250);

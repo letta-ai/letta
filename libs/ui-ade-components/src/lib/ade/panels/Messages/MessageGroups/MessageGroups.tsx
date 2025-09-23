@@ -6,19 +6,20 @@ import {
   SmallInvaderOutlineIcon,
   SystemIcon,
   Typography,
-  VStack,
+  VStack
 } from '@letta-cloud/ui-component-library';
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useGroupedMessages } from '../hooks/useGroupedMessages/useGroupedMessages';
 import type {
   ListMessagesResponse,
-  ToolReturnMessage,
+  ToolReturnMessage
 } from '@letta-cloud/sdk-core';
 import type { AgentSimulatorMessageGroupType } from '../../AgentSimulator/types';
 import { Message } from './Message/Message';
 import { useTranslations } from '@letta-cloud/translations';
 import type { MessagesDisplayMode } from '../types';
 import { MessageGroupContextProvider } from '../hooks/useMessageGroupContext/useMessageGroupContext';
+import { deepEqual } from 'fast-equals';
 
 interface MessageGroupType {
   group: AgentSimulatorMessageGroupType;
@@ -31,12 +32,12 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
 
   const sortedMessages = useMemo(() => {
     let nextMessages = messages.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     if (mode !== 'debug') {
       return nextMessages.filter(
-        (m) => m.message_type !== 'tool_return_message',
+        (m) => m.message_type !== 'tool_return_message'
       );
     }
 
@@ -55,9 +56,9 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
 
             return acc;
           },
-          {} as Record<string, ToolReturnMessage>,
+          {} as Record<string, ToolReturnMessage>
         ),
-    [messages],
+    [messages]
   );
 
   const textColor = useMemo(() => {
@@ -105,9 +106,9 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
       backgroundColor:
         name === 'User'
           ? 'hsl(var(--user-content-background))'
-          : 'hsl(var(--agent-content-background))',
+          : 'hsl(var(--agent-content-background))'
     }),
-    [name],
+    [name]
   );
 
 
@@ -177,15 +178,14 @@ interface MessageGroupsProps {
   mode: MessagesDisplayMode;
 }
 
-export function MessageGroups(props: MessageGroupsProps) {
+export const MessageGroups = memo(function MessageGroups(props: MessageGroupsProps) {
   const { messages, mode, hasNextPage = false } = props;
 
   const t = useTranslations('components/Messages');
 
   const messageGroups = useGroupedMessages({
-    messages,
+    messages
   });
-
 
 
   return (
@@ -203,4 +203,6 @@ export function MessageGroups(props: MessageGroupsProps) {
       )}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  return deepEqual(prevProps, nextProps);
+});
