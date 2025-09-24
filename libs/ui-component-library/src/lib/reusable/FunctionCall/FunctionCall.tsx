@@ -184,14 +184,16 @@ export function FunctionCall(props: FunctionCallProps) {
                 : '',
             )}
           >
-            <HStack gap="small">
-              {!open ? (
-                <ChevronRightIcon size="xsmall" />
-              ) : (
-                <ChevronDownIcon size="xsmall" />
-              )}
+            <HStack className="max-w-[200px]" align="center" gap="small">
+              <div className="h-1 min-w-1 flex items-center justify-center">
+                {!open ? (
+                  <ChevronRightIcon size="xsmall" />
+                ) : (
+                  <ChevronDownIcon size="xsmall" />
+                )}
+              </div>
               <TerminalIcon size="small" />
-              <Typography bold variant="body3">
+              <Typography fullWidth overflow="ellipsis" noWrap bold variant="body3">
                 {name}
               </Typography>
             </HStack>
