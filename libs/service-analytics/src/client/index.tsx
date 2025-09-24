@@ -125,7 +125,6 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
       platform_type: getPlatformType(),
       ...properties,
     });
-    console.log(properties);
   } catch (error) {
     console.error('Error tracking PostHog event', error);
   }

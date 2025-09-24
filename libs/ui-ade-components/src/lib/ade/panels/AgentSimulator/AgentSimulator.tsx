@@ -5,22 +5,28 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
-import { OnboardingAsideFocus } from '../../../OnboardingAsideFocus/OnboardingAsideFocus';
 import React from 'react';
-import {
-  useCurrentAgent,
-} from '../../../hooks';
+import { OnboardingAsideFocus } from '../../../OnboardingAsideFocus/OnboardingAsideFocus';
+
+import { useCurrentAgent } from '../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Messages } from '../Messages/Messages';
-import { chatroomRenderModeAtom, isSendingMessageAtom, showRunDebuggerAtom } from './atoms';
+import {
+  chatroomRenderModeAtom,
+  isSendingMessageAtom,
+  showRunDebuggerAtom,
+} from './atoms';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 import { useAtom } from 'jotai';
 import { AgentChatInput } from './AgentChatInput/AgentChatInput';
 import { RunDebugViewer } from './RunDebugViewer/RunDebugViewer';
+import { useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { AgentSimulatorEmptyState } from './AgentSimulatorEmptyState';
 
 interface QuickAgentSimulatorOnboardingProps {
   children: React.ReactNode;
@@ -115,20 +121,29 @@ function InvalidMessages() {
 }
 
 export function AgentSimulator() {
-  const [renderMode] = useAtom(chatroomRenderModeAtom)
+  const [renderMode] = useAtom(chatroomRenderModeAtom);
 
   const { id: agentId } = useCurrentAgent();
 
   const [isPending] = useAtom(isSendingMessageAtom);
-  const [showRunDebugger] = useAtom(showRunDebuggerAtom)
+  const [showRunDebugger] = useAtom(showRunDebuggerAtom);
 
+  const { data: isNewEmptyStateMessageADE } = useFeatureFlag(
+    'NEW_EMPTY_STATE_MESSAGE_ADE',
+  );
 
+  const { data } = useAgentMessages({
+    agentId,
+  });
 
   return (
     <AgentSimulatorOnboarding>
+      <VStack position="relative" gap={false} fullHeight fullWidth>
+        <AgentSimulatorHeader />
 
-        <VStack position="relative" gap={false} fullHeight fullWidth>
-          <AgentSimulatorHeader />
+        {data && data?.pages[0].length === 1 && isNewEmptyStateMessageADE ? (
+          <AgentSimulatorEmptyState />
+        ) : (
           <VStack collapseHeight gap={false} fullWidth>
             <VStack gap={false} collapseHeight>
               <VStack collapseHeight position="relative">
@@ -143,15 +158,14 @@ export function AgentSimulator() {
                   />
                 </ErrorBoundary>
               </VStack>
-              {showRunDebugger && (
-                <RunDebugViewer />
-              )}
+              {showRunDebugger && <RunDebugViewer />}
               <QuickAgentSimulatorOnboarding>
-                <AgentChatInput />
+                {data && <AgentChatInput />}
               </QuickAgentSimulatorOnboarding>
             </VStack>
           </VStack>
-        </VStack>
+        )}
+      </VStack>
     </AgentSimulatorOnboarding>
   );
 }

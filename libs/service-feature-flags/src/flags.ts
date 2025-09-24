@@ -187,6 +187,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  NEW_EMPTY_STATE_MESSAGE_ADE: {
+    description: 'Empty state for no messages in the ADE',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
