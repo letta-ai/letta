@@ -15,7 +15,6 @@ import { useEffect, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { SpecificToolIcon } from '../SpecificToolIcon/SpecificToolIcon';
 import { cn } from '@letta-cloud/ui-styles';
-import { ComposioToolViewer } from '../ComposioToolViewer/ComposioToolViewer';
 import { LocalToolViewer } from '../LocalToolViewer/LocalToolViewer';
 import { ToolSearchInput } from '../ToolSearchInput/ToolSearchInput';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
@@ -159,19 +158,6 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
   }
 
   switch (selectedTool.tool_type) {
-    case 'external_composio':
-      if (!selectedTool.name) {
-        return 'Invalid tool';
-      }
-
-      return (
-        <ComposioToolViewer
-          composioToolKey={selectedTool.name}
-          name={selectedTool.name}
-          description={selectedTool.description || ''}
-          tool={selectedTool}
-        />
-      );
     case 'external_mcp':
       return (
         <MCPToolViewer

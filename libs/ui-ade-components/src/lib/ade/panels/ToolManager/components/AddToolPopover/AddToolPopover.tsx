@@ -5,7 +5,6 @@ import { useCurrentAgent } from '../../../../../hooks';
 import {
   useToolsServiceListTools,
   useAgentsServiceAttachTool,
-  useToolsServiceAddComposioTool,
 } from '@letta-cloud/sdk-core';
 import {
   Button,
@@ -37,8 +36,7 @@ export function AddToolPopover(props: AddToolPopoverProps) {
     limit: 20,
     search: search || undefined,
   });
-  const { mutate: attachTool, mutateAsync: attachToolAsync } = useAgentsServiceAttachTool();
-  const { mutateAsync: addComposioTool } = useToolsServiceAddComposioTool();
+  const { mutate: attachTool } = useAgentsServiceAttachTool();
   const { addOptimisticTool, removeOptimisticTool, updateAgentTools } = useOptimisticAgentTools(agentId || '');
 
   const attachedIds = useMemo(() => {
@@ -55,18 +53,6 @@ export function AddToolPopover(props: AddToolPopoverProps) {
     if (!tool.id || !agentId) return;
 
     try {
-      if (tool.tool_type === 'external_composio') {
-        const created = await addComposioTool({ composioActionName: tool.id });
-        const newToolId = created.id || '';
-        if (!newToolId) return;
-
-        const nextState = await attachToolAsync({ agentId, toolId: newToolId });
-        updateAgentTools(nextState);
-        toast.success(t('AddToolToAgentButton.success'));
-        return;
-      }
-
-
        if (tool.tool_type) {
          addOptimisticTool({
            id: tool.id,
@@ -93,8 +79,6 @@ export function AddToolPopover(props: AddToolPopoverProps) {
     }
   }, [
     agentId,
-    addComposioTool,
-    attachToolAsync,
     addOptimisticTool,
     removeOptimisticTool,
     updateAgentTools,

@@ -644,7 +644,6 @@
     "ManagedEnvironmentIndicator": {
       "label": "Managed",
       "integrations": {
-        "composio": "This environment variable is tied to the Composio integration, for more information click this badge"
       }
     },
     "errorMessage": "There was an error loading environment variables, please try again or contact support.",
@@ -695,38 +694,6 @@
       }
     }
   },
-  "organization/integrations/composio": {
-    "DisconnectIntegrationDialog": {
-      "title": "Remove Composio integration",
-      "description": "Are you sure you want to remove the Composio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
-      "trigger": "Remove integration",
-      "confirm": "Remove integration",
-      "error": "There was an error removing the Composio integration, please try again or contact support."
-    },
-    "SetApiKeyDialog": {
-      "alert": "This will overwrite your current API key, which could break some agent's ability to use Composio tools. Are you sure you want to continue?",
-      "label": "API key",
-      "title": "Set API key",
-      "trigger": "Set API key",
-      "confirm": "Set API key",
-      "error": "There was an error setting the API key, please try again or contact support."
-    },
-    "usage": {
-      "description": "To use composio in your agents, visit any agent template, press the + icon in the tools section, and you will see all available Composio tools in the tool explorer"
-    },
-    "configuration": {
-      "description": "Composio requires an API key to add tools to your agents. You can configure your API key below",
-      "create": "To create an API key, <link>visit this page</link>.",
-      "noApiKey": "No API key set",
-      "hidden": "You cannot see the api key once set",
-      "apiKey": {
-        "label": "API key",
-        "update": "Set API key"
-      }
-    },
-    "title": "composio",
-    "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
-  },
   "organization/integrations/IntegrationPageLayout": {
     "return": "All integrations",
     "visitWebsite": "Visit website",
@@ -741,12 +708,6 @@
   "organization/integrations": {
     "title": "Integrations",
     "description": "Connect and manage integrations for your organization",
-    "integrations": {
-      "composio": {
-        "title": "Composio",
-        "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
-      }
-    },
     "IntegrationItem": {
       "setup": "Setup",
       "configure": "Configure"

@@ -5,7 +5,6 @@ import type { GenericSearch } from '../shared';
 
 const c = initContract();
 
-export const COMPOSIO_KEY_NAME = 'COMPOSIO_API_KEY';
 
 export const PublicEnvironmentVariableSchema = z.object({
   id: z.string(),

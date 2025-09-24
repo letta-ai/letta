@@ -37,22 +37,6 @@ function handleToolsPath(normalizedPath: string): string {
     );
   }
 
-  // Handle Composio app paths: tools/composio/apps/{anything}/...
-  if (result.includes('tools/composio/apps/')) {
-    result = result.replace(
-      /^(tools\/composio\/apps\/)([^/]+)(\/?.*)$/,
-      '$1composio_app_name$3',
-    );
-  }
-
-  // Handle Composio action paths: tools/composio/{anything}
-  const composioActionPattern = /^tools\/composio\/[^/]+$/;
-  if (composioActionPattern.exec(result)) {
-    result = result.replace(
-      /^(tools\/composio\/)([^/]+)$/,
-      '$1composio_action_name',
-    );
-  }
 
   return result;
 }

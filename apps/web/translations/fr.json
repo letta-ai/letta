@@ -167,38 +167,6 @@
       }
     }
   },
-  "organization/integrations/composio": {
-    "DisconnectIntegrationDialog": {
-      "title": "Supprimer l'intégration Composio",
-      "description": "Êtes-vous sûr de vouloir supprimer l'intégration Composio ? ",
-      "trigger": "Supprimer l'intégration",
-      "confirm": "Supprimer l'intégration",
-      "error": "Une erreur s'est produite lors de la suppression de l'intégration Composio, veuillez réessayer ou contacter l'assistance."
-    },
-    "SetApiKeyDialog": {
-      "alert": "Cela écrasera votre clé API actuelle, ce qui pourrait empêcher certains agents d'utiliser les outils Composio. ",
-      "label": "Clé API",
-      "title": "Définir la clé API",
-      "trigger": "Définir la clé API",
-      "confirm": "Définir la clé API",
-      "error": "Une erreur s'est produite lors de la définition de la clé API. Veuillez réessayer ou contacter l'assistance."
-    },
-    "usage": {
-      "description": "Pour utiliser Composio dans vos agents, visitez n'importe quel modèle d'agent, appuyez sur l'icône + dans la section outils et vous verrez tous les outils Composio disponibles dans l'explorateur d'outils."
-    },
-    "configuration": {
-      "description": "Composio nécessite une clé API pour ajouter des outils à vos agents. ",
-      "create": "Pour créer une clé API, <link>visitez cette page</link>.",
-      "noApiKey": "Aucune clé API définie",
-      "hidden": "Vous ne pouvez pas voir la clé API une fois définie",
-      "apiKey": {
-        "label": "Clé API",
-        "update": "Définir la clé API"
-      }
-    },
-    "title": "composio",
-    "description": "Composio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
-  },
   "organization/integrations/IntegrationPageLayout": {
     "return": "Toutes les intégrations",
     "visitWebsite": "Visitez le site Web",
