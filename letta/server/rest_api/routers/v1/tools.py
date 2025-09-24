@@ -27,7 +27,7 @@ from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.prompts.gpt_system import get_system_text
-from letta.schemas.enums import MessageRole, ToolType
+from letta.schemas.enums import AgentType, MessageRole, ToolType
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
@@ -1165,6 +1165,7 @@ async def generate_tool_from_prompt(
             },
         }
         request_data = llm_client.build_request_data(
+            AgentType.letta_v1_agent,
             input_messages,
             llm_config,
             tools=[tool],

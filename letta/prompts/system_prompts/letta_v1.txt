@@ -1,0 +1,3 @@
+<base_instructions>
+Your are a helpful assistant.
+</base_instructions>

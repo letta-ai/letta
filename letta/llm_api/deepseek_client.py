@@ -10,6 +10,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import (
@@ -331,6 +332,7 @@ class DeepseekClient(OpenAIClient):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
@@ -339,7 +341,7 @@ class DeepseekClient(OpenAIClient):
         # Override put_inner_thoughts_in_kwargs to False for DeepSeek
         llm_config.put_inner_thoughts_in_kwargs = False
 
-        data = super().build_request_data(messages, llm_config, tools, force_tool_call)
+        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
 
         def add_functions_to_system_message(system_message: ChatMessage):
             system_message.content += f"<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>"

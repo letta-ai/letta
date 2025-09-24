@@ -6,7 +6,7 @@ from aioboto3.session import Session
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import AgentType, ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.services.provider_manager import ProviderManager
@@ -65,12 +65,13 @@ class BedrockClient(AnthropicClient):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(messages, llm_config, tools, force_tool_call)
+        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
         # remove disallowed fields
         if "tool_choice" in data:
             del data["tool_choice"]["disable_parallel_tool_use"]
