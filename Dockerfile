@@ -1,6 +1,6 @@
 # Start with pgvector base for builder
 FROM ankane/pgvector:v0.5.1 AS builder
-
+# comment to trigger ci
 # Install Python and required packages
 RUN apt-get update && apt-get install -y \
     python3 \
