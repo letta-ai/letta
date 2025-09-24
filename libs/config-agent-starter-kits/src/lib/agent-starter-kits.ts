@@ -178,9 +178,8 @@ export const STARTER_KITS: {
     ],
     agentState: {
       model: 'anthropic/claude-sonnet-4-20250514',
-      tools: ['web_search', 'fetch_webpage', 'memory_rethink'],
-      description:
-        'A deep research agent designed to conduct comprehensive research using web search capabilities.',
+      tools: ['web_search'],
+      description: 'A deep research agent designed to conduct comprehensive research using web search capabilities.',
       memory_blocks: [
         {
           label: 'persona',
@@ -199,7 +198,6 @@ export const STARTER_KITS: {
         },
         {
           label: 'research_report',
-          limit: 100000,
           value: '',
         },
         {
