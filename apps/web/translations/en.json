@@ -3289,7 +3289,7 @@
     },
     "loading": "Loading...",
     "title": "You've been invited to join {organizationName}!",
-    "description": "Use the buttons below to complete sign up."
+    "description": "Use the buttons below to complete your sign-up with the email address:"
   },
   "data-sources/layout": {
     "navigation": {

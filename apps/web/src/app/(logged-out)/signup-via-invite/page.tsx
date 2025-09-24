@@ -239,6 +239,9 @@ export default function SignupViaInvite() {
                 })}
               </Typography>
               <Typography variant="body">{t('description')}</Typography>
+              <Typography variant="body" bold>
+                {data.body.email}
+              </Typography>
             </VStack>
             {signupErrorMessage && (
               <Alert title={signupErrorMessage} variant="destructive" />
