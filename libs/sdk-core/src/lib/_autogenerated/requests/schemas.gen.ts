@@ -947,6 +947,7 @@ export const $AgentType = {
   enum: [
     'memgpt_agent',
     'memgpt_v2_agent',
+    'letta_v1_agent',
     'react_agent',
     'workflow_agent',
     'split_thread_agent',
@@ -9083,6 +9084,9 @@ export const $Message = {
               {
                 $ref: '#/components/schemas/OmittedReasoningContent',
               },
+              {
+                $ref: '#/components/schemas/SummarizedReasoningContent',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -9093,6 +9097,8 @@ export const $Message = {
                 reasoning: '#/components/schemas/ReasoningContent',
                 redacted_reasoning:
                   '#/components/schemas/RedactedReasoningContent',
+                summarized_reasoning:
+                  '#/components/schemas/SummarizedReasoningContent',
                 text: '#/components/schemas/TextContent',
                 tool_call: '#/components/schemas/ToolCallContent',
                 tool_return: '#/components/schemas/ToolReturnContent',
@@ -9698,6 +9704,8 @@ export const $OmittedReasoningContent = {
   },
   type: 'object',
   title: 'OmittedReasoningContent',
+  description:
+    "A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)",
 } as const;
 
 export const $Organization = {
@@ -10679,6 +10687,7 @@ export const $ReasoningContent = {
   type: 'object',
   required: ['is_native', 'reasoning'],
   title: 'ReasoningContent',
+  description: 'Sent via the Anthropic Messages API',
 } as const;
 
 export const $ReasoningMessage = {
@@ -10831,6 +10840,7 @@ export const $RedactedReasoningContent = {
   type: 'object',
   required: ['data'],
   title: 'RedactedReasoningContent',
+  description: 'Sent via the Anthropic Messages API',
 } as const;
 
 export const $RequiredBeforeExitToolRule = {
@@ -12746,6 +12756,59 @@ Authentication can be provided in multiple ways:
 
 2. Using the custom_headers dict: For more complex authentication scenarios
    Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}`,
+} as const;
+
+export const $SummarizedReasoningContent = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'summarized_reasoning',
+      title: 'Type',
+      description: 'Indicates this is a summarized reasoning step.',
+      default: 'summarized_reasoning',
+    },
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The unique identifier for this reasoning step.',
+    },
+    summary: {
+      items: {
+        $ref: '#/components/schemas/SummarizedReasoningContentPart',
+      },
+      type: 'array',
+      title: 'Summary',
+      description: 'Summaries of the reasoning content.',
+    },
+    encrypted_content: {
+      type: 'string',
+      title: 'Encrypted Content',
+      description: 'The encrypted reasoning content.',
+    },
+  },
+  type: 'object',
+  required: ['id', 'summary'],
+  title: 'SummarizedReasoningContent',
+  description:
+    'The style of reasoning content returned by the OpenAI Responses API',
+} as const;
+
+export const $SummarizedReasoningContentPart = {
+  properties: {
+    index: {
+      type: 'integer',
+      title: 'Index',
+      description: 'The index of the summary part.',
+    },
+    text: {
+      type: 'string',
+      title: 'Text',
+      description: 'The text of the summary part.',
+    },
+  },
+  type: 'object',
+  required: ['index', 'text'],
+  title: 'SummarizedReasoningContentPart',
 } as const;
 
 export const $SupervisorManager = {

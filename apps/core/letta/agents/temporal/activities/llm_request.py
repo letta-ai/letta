@@ -38,6 +38,7 @@ async def llm_request(params: LLMRequestParams) -> LLMCallResult:
     llm_adapter = LettaLLMRequestAdapter(llm_client=llm_client, llm_config=llm_config)
 
     request_data = llm_client.build_request_data(
+        agent_type=agent_state.agent_type,
         messages=params.messages,
         llm_config=llm_config,
         tools=params.allowed_tools,

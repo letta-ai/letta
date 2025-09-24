@@ -30,7 +30,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import JobType
@@ -438,6 +438,8 @@ async def create_agent(
     """
     Create an agent.
     """
+    # TODO remove
+    # agent.agent_type = AgentType.letta_v1_agent
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.create_agent_async(agent, actor=actor)
@@ -1653,6 +1655,7 @@ async def send_message_async(
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
     # Create a new job
     use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint is not None
     run = Run(

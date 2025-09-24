@@ -753,6 +753,10 @@ class SyncServer(Server):
         )
 
         if not return_message_object:
+            # Get agent state to determine if it's a react agent
+            agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+            text_is_assistant_message = agent_state.agent_type == AgentType.letta_v1_agent
+
             records = Message.to_letta_messages_from_list(
                 messages=records,
                 use_assistant_message=use_assistant_message,
@@ -760,6 +764,7 @@ class SyncServer(Server):
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
                 reverse=reverse,
                 include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
             )
 
         if reverse:
