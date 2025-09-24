@@ -86,14 +86,14 @@ const AgentCard = ({ agent, slug }: { agent: AgentState; slug: string }) => {
 
   return (
     <div className="bg-list-item-background relative border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer">
-      <VStack
-        paddingX="large"
-        paddingY="small"
-        fullHeight
-        justify="spaceBetween"
-        fullWidth
-      >
-        <Link href={`/projects/${slug}/agents/${agent.id}`}>
+      <Link href={`/projects/${slug}/agents/${agent.id}`}>
+        <VStack
+          paddingX="large"
+          paddingY="small"
+          fullHeight
+          justify="spaceBetween"
+          fullWidth
+        >
           <VStack gap="small">
             <VStack gap="small">
               <HStack gap="small" align="center" className="min-w-0">
@@ -123,18 +123,14 @@ const AgentCard = ({ agent, slug }: { agent: AgentState; slug: string }) => {
               </Typography>
             </VStack>
           </VStack>
-        </Link>
-      </VStack>
+        </VStack>
+      </Link>
       {agent.template_id && (
         <Link
           href={`/projects/${slug}/templates/${templateName}`}
           className="min-w-0 flex-1 hover:bg-background-grey2 absolute bottom-[20px] left-[20px]"
         >
-          <HStack
-            gap="small"
-            align="center"
-            className="min-w-0 "
-          >
+          <HStack gap="small" align="center" className="min-w-0 ">
             <ArrowCurveIcon size="xsmall" />
             <TemplateIcon size="xsmall" />
 
