@@ -10,6 +10,8 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { ToolManagerPaths } from '../../toolManagerRoutes';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { useAtom } from 'jotai';
+import { dirtyToolAtom } from '../useStagedCode/useStagedCode';
 
 interface ToolManagerState {
   requireConfirmation: boolean;
@@ -70,7 +72,11 @@ export function useToolManagerState() {
   const pathname = usePathname();
   const { developmentServerId } = useParams<{ developmentServerId?: string }>();
 
+  const [dirtyToolMap] = useAtom(dirtyToolAtom)
 
+  const hasDirtyTools = useMemo(() => {
+    return Object.values(dirtyToolMap).some((isDirty) => isDirty);
+  }, [dirtyToolMap]);
 
   const isInStandaloneToolManager = useMemo(() => {
     return !(pathname.includes('agents') || pathname.includes('templates'))
@@ -82,7 +88,13 @@ export function useToolManagerState() {
 
   const closeToolManager = useCallback(
     (confirmed?: boolean) => {
-      if (toolManagerState.requireConfirmation && !confirmed) {
+
+
+
+      if ((toolManagerState.requireConfirmation || hasDirtyTools) && !confirmed) {
+
+
+
         setToolManagerState((prev) => ({
           ...prev,
           isConfirmationDialogOpen: true,
@@ -94,7 +106,7 @@ export function useToolManagerState() {
       setToolManagerState(initialState);
       return;
     },
-    [toolManagerState, setToolManagerState],
+    [toolManagerState, hasDirtyTools, setToolManagerState],
   );
 
   const openToolManager = useCallback(
