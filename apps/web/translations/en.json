@@ -1475,6 +1475,7 @@
         "nameMinLength": "Server name must be at least 3 characters",
         "nameMaxLength": "Server name must be at most 50 characters",
         "urlInvalid": "Please enter a valid URL",
+        "urlMustBeHttps": "Server must be secure (https) or localhost",
         "passwordRequired": "Password is required"
       },
       "errors": {

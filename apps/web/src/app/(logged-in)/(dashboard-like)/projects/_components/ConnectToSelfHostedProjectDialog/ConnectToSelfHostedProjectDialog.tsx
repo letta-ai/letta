@@ -35,8 +35,22 @@ export function ConnectToSelfHostedProjectDialog(
       .max(50, {
         message: t('createDevelopmentServerDialog.validation.nameMaxLength'),
       }),
+    // url must be a valid url, https unless it's localhost
     url: z.string().url({
       message: t('createDevelopmentServerDialog.validation.urlInvalid'),
+    }).refine((val) => {
+      if (val === '') return false;
+      if (val.startsWith('http://localhost') || val.startsWith('https://localhost')) {
+        return true;
+      }
+
+      if (val.startsWith('https://')) {
+        return true;
+      }
+
+      return false;
+    }, {
+      message: t('createDevelopmentServerDialog.validation.urlMustBeHttps'),
     }),
     password: z.string().optional(),
   });
