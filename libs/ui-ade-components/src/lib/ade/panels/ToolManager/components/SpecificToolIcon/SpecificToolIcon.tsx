@@ -1,7 +1,6 @@
 import type { Tool } from '@letta-cloud/sdk-core';
 import type { IconWrapperProps } from '@letta-cloud/ui-component-library';
 import {
-  ComposioLogoMarkDynamic,
   LettaToolIcon,
   McpIcon,
   PythonIcon,
@@ -23,8 +22,6 @@ export function SpecificToolIcon(props: SpecificToolIconProps) {
   }
 
   switch (toolType) {
-    case 'external_composio':
-      return <ComposioLogoMarkDynamic size={size} />;
     case 'external_mcp':
       return <McpIcon size={size} />;
     case 'custom':

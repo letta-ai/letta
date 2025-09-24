@@ -1,10 +1,8 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
-import { useIsComposioConnected } from '../../hooks/useIsComposioConnected/useIsComposioConnected';
 import {
   type ToolType,
   useAgentsServiceAttachTool,
-  useToolsServiceAddComposioTool,
   useToolsServiceAddMcpTool,
 } from '@letta-cloud/sdk-core';
 
@@ -16,113 +14,12 @@ import {
   toast,
 } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../../hooks';
-import { useCallback, useState } from 'react';
-import { get } from 'lodash-es';
+import { useCallback } from 'react';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { DetachToolDialog } from '../DetachToolDialog/DetachToolDialog';
 
-interface AttachComposioToolProps {
-  idToAttach: string;
-}
-
-// TODO: DEPRECATING...
-function AttachComposioTool(props: AttachComposioToolProps) {
-  const { idToAttach } = props;
-  const t = useTranslations('ToolActionsHeader');
-  const { isConnected: isComposioConnected } = useIsComposioConnected();
-  const { mutateAsync: addComposioTool } = useToolsServiceAddComposioTool();
-  const { id: agentId } = useCurrentAgent();
-  const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
-    useOptimisticAgentTools(agentId);
-  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool();
-
-  const [isPending, setIsPending] = useState(false);
-
-  const handleAddTool = useCallback(async () => {
-    let toolToRollback: {
-      id: string;
-      name: string;
-      tool_type: ToolType;
-    } | null = null;
-
-    try {
-      setIsPending(true);
-
-      const composioTool = await addComposioTool({
-        composioActionName: idToAttach,
-      });
-
-      const toolIdToAdd = composioTool.id || '';
-
-      if (toolIdToAdd && composioTool.name && composioTool.tool_type) {
-        toolToRollback = {
-          id: toolIdToAdd,
-          name: composioTool.name,
-          tool_type: composioTool.tool_type,
-        };
-        addOptimisticTool(toolToRollback);
-      }
-
-      const response = await attachToolToAgent({
-        agentId,
-        toolId: toolIdToAdd,
-      });
-      updateAgentTools(response);
-    } catch (e) {
-      if (toolToRollback) {
-        removeOptimisticTool(toolToRollback.id);
-      }
-
-      let errorMessage = t('AttachComposioTool.GenericSDKError');
-      const errorCode = get(e, 'body.detail.code') || '';
-
-      if (errorCode) {
-        switch (errorCode) {
-          case 'ComposioSDKError': {
-            errorMessage = t('AttachComposioTool.ComposioSDKError');
-            break;
-          }
-
-          case 'ApiKeyNotProvidedError': {
-            errorMessage = t('AttachComposioTool.ApiKeyNotProvidedError');
-            break;
-          }
-
-          default: {
-            errorMessage = t('AttachComposioTool.GenericSDKError');
-            break;
-          }
-        }
-      }
-
-      toast.error(errorMessage);
-    } finally {
-      setIsPending(false);
-    }
-  }, [
-    addComposioTool,
-    agentId,
-    attachToolToAgent,
-    updateAgentTools,
-    addOptimisticTool,
-    removeOptimisticTool,
-    t,
-    idToAttach,
-  ]);
-
-  return (
-    <Button
-      color="secondary"
-      preIcon={<AddLinkIcon />}
-      label={t('AttachComposioTool.label')}
-      busy={isPending}
-      onClick={handleAddTool}
-      disabled={!isComposioConnected}
-    />
-  );
-}
 
 interface AttachMCPToolProps {
   idToAttach: string;
@@ -288,8 +185,6 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
   const { idToAttach, toolType, toolName, size, disabled, hideLabel } = props;
 
   switch (toolType) {
-    case 'external_composio':
-      return <AttachComposioTool idToAttach={idToAttach} />;
     case 'custom':
     case 'letta_multi_agent_core':
     case 'letta_core':

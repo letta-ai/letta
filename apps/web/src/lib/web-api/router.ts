@@ -21,7 +21,6 @@ import { sharedAgentChatsRoutes } from '$web/web-api/shared-agent-chats/sharedAg
 import { ssoRoutes } from '$web/web-api/sso/ssoRoutes';
 import { launchLinkRoutes } from '$web/web-api/launch-links/launchLinksRoutes';
 import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAccessCodeRouter';
-import { composioRouter } from '$web/web-api/composio/composioRouter';
 import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes';
 import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
 import { adminContentViolationsRouter } from '$web/web-api/admin/contentViolations/adminContentViolationsRouter';
@@ -52,7 +51,6 @@ export const router = {
   sso: ssoRoutes,
   launchLinks: launchLinkRoutes,
   cloudAccessCode: cloudAccessCodeRouter,
-  composio: composioRouter,
   transactions: transactionsRoutes,
   traces: tracesRoutes,
   observability: observabilityRouter,

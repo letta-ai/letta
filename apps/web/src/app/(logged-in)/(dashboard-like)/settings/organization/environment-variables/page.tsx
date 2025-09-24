@@ -1,7 +1,6 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Badge,
   Button,
   DashboardPageLayout,
   DashboardPageSection,
@@ -13,12 +12,9 @@ import {
   FormField,
   FormProvider,
   HStack,
-  InfoIcon,
   Input,
-  MaybeLink,
   PlusIcon,
   RawInput,
-  Tooltip,
   TrashIcon,
   Typography,
   useForm,
@@ -30,7 +26,6 @@ import type {
   GetEnvironmentVariables200Response,
   PublicEnvironmentVariable,
 } from '$web/web-api/contracts';
-import { COMPOSIO_KEY_NAME } from '$web/web-api/contracts';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -398,47 +393,6 @@ function CreateEnvironmentVariableDialog() {
   );
 }
 
-interface ManagedEnvironmentIndicatorProps {
-  keyName: string;
-}
-
-function ManagedEnvironmentIndicator(props: ManagedEnvironmentIndicatorProps) {
-  const { keyName } = props;
-  const t = useTranslations('organization/environment-variables');
-
-  const message = useMemo(
-    () =>
-      ({
-        [COMPOSIO_KEY_NAME]: t(
-          'ManagedEnvironmentIndicator.integrations.composio',
-        ),
-      })[keyName],
-    [keyName, t],
-  );
-
-  const link = useMemo(
-    () =>
-      ({
-        [COMPOSIO_KEY_NAME]: '/settings/organization/integrations/composio',
-      })[keyName],
-    [keyName],
-  );
-
-  if (!message) {
-    return null;
-  }
-
-  return (
-    <Tooltip content={message}>
-      <MaybeLink href={link}>
-        <Badge
-          preIcon={<InfoIcon />}
-          content={t('ManagedEnvironmentIndicator.label')}
-        />
-      </MaybeLink>
-    </Tooltip>
-  );
-}
 
 function EnvironmentVariablesPage() {
   const t = useTranslations('organization/environment-variables');
@@ -465,7 +419,6 @@ function EnvironmentVariablesPage() {
         cell: ({ cell }) => (
           <HStack align="center" gap="medium" as="span">
             <Typography>{cell.row.original.key}</Typography>
-            <ManagedEnvironmentIndicator keyName={cell.row.original.key} />
           </HStack>
         ),
       },

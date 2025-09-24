@@ -15,7 +15,6 @@ import { TsRestHttpError } from '@ts-rest/serverless/next';
 import * as Sentry from '@sentry/node';
 
 const publicApis = [
-  new RegExp('/api/composio(.+)?'),
   new RegExp('/api/invites/(.+)?'),
   new RegExp('/api/user/new(.+)?'),
   new RegExp('/api/user/forgot-password(.+)?'),
