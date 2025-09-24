@@ -42,7 +42,6 @@ jobs:
               {"test_suite": "test_memory.py"},
               {"test_suite": "test_utils.py"},
               {"test_suite": "test_stream_buffer_readers.py"},
-              {"test_suite": "test_agent_serialization.py"},
               {"test_suite": "test_agent_serialization_v2.py"},
               {"test_suite": "test_optimistic_json_parser.py"},
               {"test_suite": "test_llm_clients.py"},
