@@ -42,6 +42,8 @@ export const MODELS_WITH_IMAGE_SUPPORT = [
   'gemini-2.5-pro-preview-06-05',
   'gemini-2.0-flash-thinking-exp-01-21',
   'qwen/qwen2.5-vl-7b',
+  'gpt-5',
+  'gpt-5-mini',
   'gemini-2.5-flash-lite-preview-06-17',
   'arcee-ai/coder-large',
   'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
