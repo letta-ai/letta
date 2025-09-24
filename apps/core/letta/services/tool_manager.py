@@ -41,36 +41,6 @@ logger = get_logger(__name__)
 class ToolManager:
     """Manager class to handle business logic related to Tools."""
 
-    # TODO: Refactor this across the codebase to use CreateTool instead of passing in a Tool object
-    @enforce_types
-    @trace_method
-    def create_or_update_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser, bypass_name_check: bool = False) -> PydanticTool:
-        """Create a new tool based on the ToolCreate schema."""
-        tool_id = self.get_tool_id_by_name(tool_name=pydantic_tool.name, actor=actor)
-        if tool_id:
-            # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
-
-            # If there's anything to update
-            if update_data:
-                # In case we want to update the tool type
-                # Useful if we are shuffling around base tools
-                updated_tool_type = None
-                if "tool_type" in update_data:
-                    updated_tool_type = update_data.get("tool_type")
-                tool = self.update_tool_by_id(
-                    tool_id, ToolUpdate(**update_data), actor, updated_tool_type=updated_tool_type, bypass_name_check=bypass_name_check
-                )
-            else:
-                printd(
-                    f"`create_or_update_tool` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_tool.name}, but found existing tool with nothing to update."
-                )
-                tool = self.get_tool_by_id(tool_id, actor=actor)
-        else:
-            tool = self.create_tool(pydantic_tool, actor=actor)
-
-        return tool
-
     @enforce_types
     @trace_method
     async def create_or_update_tool_async(
@@ -110,19 +80,6 @@ class ToolManager:
         pass
 
     @enforce_types
-    @trace_method
-    def create_or_update_mcp_tool(
-        self, tool_create: ToolCreate, mcp_server_name: str, mcp_server_id: str, actor: PydanticUser
-    ) -> PydanticTool:
-        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name, "server_id": mcp_server_id}}
-        return self.create_or_update_tool(
-            PydanticTool(
-                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
-            ),
-            actor,
-        )
-
-    @enforce_types
     async def create_mcp_tool_async(
         self, tool_create: ToolCreate, mcp_server_name: str, mcp_server_id: str, actor: PydanticUser
     ) -> PydanticTool:
@@ -136,9 +93,15 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
-        return self.create_or_update_tool(
-            PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+    async def create_or_update_mcp_tool_async(
+        self, tool_create: ToolCreate, mcp_server_name: str, mcp_server_id: str, actor: PydanticUser
+    ) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name, "server_id": mcp_server_id}}
+        return await self.create_or_update_tool_async(
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
         )
 
     @enforce_types
@@ -551,6 +514,8 @@ class ToolManager:
         # original tool may no have a JSON schema at all for legacy reasons
         # in this case, fallback to dangerous schema generation
         if new_schema is None:
+            # Get source_type from update_data if present, otherwise use current tool's source_type
+            source_type = update_data.get("source_type", current_tool.source_type)
             if source_type == "typescript":
                 from letta.functions.typescript_parser import derive_typescript_json_schema
 
@@ -601,103 +566,6 @@ class ToolManager:
                 await tool.hard_delete_async(db_session=session, actor=actor)
             except NoResultFound:
                 raise ValueError(f"Tool with id {tool_id} not found.")
-
-    @enforce_types
-    @trace_method
-    def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
-        """
-        Initialize or update all built-in Letta tools for a user.
-
-        This method scans predefined modules to discover and register all base tools
-        that ship with Letta. Tools are categorized by type (core, memory, multi-agent, etc.)
-        and tagged appropriately for filtering.
-
-        Args:
-            actor: The user to create/update tools for
-
-        Returns:
-            List of all base tools that were created or updated
-
-        Tool Categories Created:
-            - LETTA_CORE: Basic conversation tools (send_message)
-            - LETTA_MEMORY_CORE: Memory management (core_memory_append/replace)
-            - LETTA_MULTI_AGENT_CORE: Multi-agent communication tools
-            - LETTA_SLEEPTIME_CORE: Sleeptime agent tools
-            - LETTA_VOICE_SLEEPTIME_CORE: Voice agent specific tools
-            - LETTA_BUILTIN: Additional built-in utilities
-            - LETTA_FILES_CORE: File handling tools
-
-        Side Effects:
-            - Creates or updates tools in database
-            - Tools are marked with appropriate type and tags
-            - Existing custom tools with same names are NOT overwritten
-
-        Note:
-            This is typically called during user initialization or system upgrade
-            to ensure all base tools are available. Custom tools take precedence
-            over base tools with the same name.
-        """
-        functions_to_schema = {}
-
-        for module_name in LETTA_TOOL_MODULE_NAMES:
-            try:
-                module = importlib.import_module(module_name)
-            except Exception as e:
-                # Handle other general exceptions
-                raise e
-
-            try:
-                # Load the function set
-                functions_to_schema.update(load_function_set(module))
-            except ValueError as e:
-                err = f"Error loading function set '{module_name}': {e}"
-                warnings.warn(err)
-
-        # create tool in db
-        tools = []
-        for name, schema in functions_to_schema.items():
-            if name in LETTA_TOOL_SET:
-                if name in BASE_TOOLS:
-                    tool_type = ToolType.LETTA_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_MEMORY_TOOLS:
-                    tool_type = ToolType.LETTA_MEMORY_CORE
-                    tags = [tool_type.value]
-                elif name in calculate_multi_agent_tools():
-                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_SLEEPTIME_TOOLS:
-                    tool_type = ToolType.LETTA_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
-                    tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
-                    tags = [tool_type.value]
-                elif name in BUILTIN_TOOLS:
-                    tool_type = ToolType.LETTA_BUILTIN
-                    tags = [tool_type.value]
-                elif name in FILES_TOOLS:
-                    tool_type = ToolType.LETTA_FILES_CORE
-                    tags = [tool_type.value]
-                else:
-                    logger.warning(f"Tool name {name} is not in any known base tool set, skipping")
-                    continue
-
-                # create to tool
-                tools.append(
-                    self.create_or_update_tool(
-                        PydanticTool(
-                            name=name,
-                            tags=tags,
-                            source_type="python",
-                            tool_type=tool_type,
-                            return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
-                        ),
-                        actor=actor,
-                    )
-                )
-
-        # TODO: Delete any base tools that are stale
-        return tools
 
     @enforce_types
     @trace_method

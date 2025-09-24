@@ -46,7 +46,7 @@ jobs:
               {"test_suite": "test_letta_agent_batch.py"},
               {"test_suite": "test_providers.py"},
               {"test_suite": "test_sources.py"},
-              {"test_suite": "test_managers.py"},
+              {"test_suite": "managers/"},
               {"test_suite": "sdk/"},
               {"test_suite": "mcp_tests/"},
               {"test_suite": "test_timezone_formatting.py"},
