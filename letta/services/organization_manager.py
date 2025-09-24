@@ -46,13 +46,6 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    def create_default_organization(self) -> PydanticOrganization:
-        """Create the default organization."""
-        pydantic_org = PydanticOrganization(name=DEFAULT_ORG_NAME, id=DEFAULT_ORG_ID)
-        return self.create_organization(pydantic_org)
-
-    @enforce_types
-    @trace_method
     async def create_default_organization_async(self) -> PydanticOrganization:
         """Create the default organization."""
         return await self.create_organization_async(PydanticOrganization(name=DEFAULT_ORG_NAME, id=DEFAULT_ORG_ID))
