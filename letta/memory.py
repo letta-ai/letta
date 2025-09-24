@@ -91,6 +91,7 @@ def summarize_messages(
     # TODO: we can just directly call the LLM here?
     if llm_client:
         response = llm_client.send_llm_request(
+            agent_type=agent_state.agent_type,
             messages=message_sequence,
             llm_config=llm_config_no_inner_thoughts,
         )
