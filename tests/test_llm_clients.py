@@ -5,7 +5,7 @@ import pytest
 
 # Import your AnthropicClient and related types
 from letta.llm_api.anthropic_client import AnthropicClient
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import AgentType, MessageRole
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 
@@ -81,7 +81,9 @@ async def test_send_llm_batch_request_async_success(
         mock_get_client.return_value = mock_client
 
         # Call the method under test.
-        response = await anthropic_client.send_llm_batch_request_async(mock_agent_messages, mock_agent_tools, mock_agent_llm_config)
+        response = await anthropic_client.send_llm_batch_request_async(
+            AgentType.memgpt_agent, mock_agent_messages, mock_agent_tools, mock_agent_llm_config
+        )
 
         # Assert that the response is our dummy response.
         assert response.id == dummy_beta_message_batch.id
@@ -100,4 +102,6 @@ async def test_send_llm_batch_request_async_mismatched_keys(anthropic_client, mo
     """
     mismatched_tools = {"agent-2": []}  # Different agent ID than in the messages mapping.
     with pytest.raises(ValueError, match="Agent mappings for messages and tools must use the same agent_ids."):
-        await anthropic_client.send_llm_batch_request_async(mock_agent_messages, mismatched_tools, mock_agent_llm_config)
+        await anthropic_client.send_llm_batch_request_async(
+            AgentType.memgpt_agent, mock_agent_messages, mismatched_tools, mock_agent_llm_config
+        )
