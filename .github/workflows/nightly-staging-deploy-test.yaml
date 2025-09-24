@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.set-tag.outputs.tag }}
-          submodules: recursive
+          submodules: true
 
       - name: Set up python 3.12
         id: setup-python
@@ -146,6 +146,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.stage-core-deploy.outputs.deployment_commit }}
+          submodules: true
 
       - name: Set up python 3.12
         uses: actions/setup-python@v5
