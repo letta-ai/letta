@@ -1,3 +1,4 @@
+import asyncio
 import difflib
 import json
 import os
@@ -72,12 +73,15 @@ def server_url() -> str:
 
 
 def _clear_tables():
-    from letta.server.db import db_context
+    from letta.server.db import db_registry
 
-    with db_context() as session:
-        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
-            session.execute(table.delete())  # Truncate table
-        session.commit()
+    async def _clear():
+        async with db_registry.async_session() as session:
+            for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+                await session.execute(table.delete())  # Truncate table
+            await session.commit()
+
+    asyncio.run(_clear())
 
 
 @pytest.fixture(autouse=True)
@@ -112,14 +116,22 @@ def default_user(server: SyncServer, default_organization):
 @pytest.fixture
 def other_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
-    org = server.organization_manager.create_organization(pydantic_org=Organization(name="letta"))
+
+    async def create_org():
+        return await server.organization_manager.create_organization_async(pydantic_org=Organization(name="letta"))
+
+    org = asyncio.run(create_org())
     yield org
 
 
 @pytest.fixture
 def other_user(server: SyncServer, other_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = server.user_manager.create_user(pydantic_user=User(organization_id=other_organization.id, name="sarah"))
+
+    async def create_user():
+        return await server.user_manager.create_actor_async(pydantic_user=User(organization_id=other_organization.id, name="sarah"))
+
+    user = asyncio.run(create_user())
     yield user
 
 
