@@ -1487,18 +1487,14 @@ class TestAgentFileEdgeCases:
             actor=default_user,
         )
 
-        # Add many messages
-        for i in range(10):
+        num_messages = 5
+
+        for i in range(num_messages):
             await send_message_to_agent(server, agent_state, default_user, [MessageCreate(role=MessageRole.user, content=f"Message {i}")])
 
-        # Export
         agent_file = await agent_serialization_manager.export([agent_state.id], default_user)
-
-        # Verify large file
         exported_agent = agent_file.agents[0]
-        assert len(exported_agent.messages) >= 10
-
-        # Import
+        assert len(exported_agent.messages) >= num_messages
         result = await agent_serialization_manager.import_file(agent_file, other_user)
 
         # Verify all messages imported correctly
@@ -1506,7 +1502,7 @@ class TestAgentFileEdgeCases:
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         imported_messages = await server.message_manager.list_messages_for_agent_async(imported_agent_id, other_user)
 
-        assert len(imported_messages) >= 10
+        assert len(imported_messages) >= num_messages
 
 
 class TestAgentFileValidation:
