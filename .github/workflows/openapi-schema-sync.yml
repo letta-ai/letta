@@ -49,9 +49,9 @@ jobs:
         node-version: '18'
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
-      with:
-        enable-cache: true
+      run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Install just
       uses: extractions/setup-just@v3

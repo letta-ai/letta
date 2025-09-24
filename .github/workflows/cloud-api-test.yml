@@ -107,11 +107,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
+
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          activate-environment: true
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Install just
         uses: extractions/setup-just@v3
         with:
