@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from sqlalchemy import and_, delete, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
@@ -446,7 +446,7 @@ class BlockManager:
     # Block History Functions
 
     @enforce_types
-    def _move_block_to_sequence(self, session: Session, block: BlockModel, target_seq: int, actor: PydanticUser) -> BlockModel:
+    async def _move_block_to_sequence(self, session: AsyncSession, block: BlockModel, target_seq: int, actor: PydanticUser) -> BlockModel:
         """
         Internal helper that moves the 'block' to the specified 'target_seq' within BlockHistory.
         1) Find the BlockHistory row at sequence_number=target_seq
@@ -459,14 +459,12 @@ class BlockManager:
         if not block.id:
             raise ValueError("Block is missing an ID. Cannot move sequence.")
 
-        target_entry = (
-            session.query(BlockHistory)
-            .filter(
-                BlockHistory.block_id == block.id,
-                BlockHistory.sequence_number == target_seq,
-            )
-            .one_or_none()
+        stmt = select(BlockHistory).filter(
+            BlockHistory.block_id == block.id,
+            BlockHistory.sequence_number == target_seq,
         )
+        result = await session.execute(stmt)
+        target_entry = result.scalar_one_or_none()
         if not target_entry:
             raise NoResultFound(f"No BlockHistory row found for block_id={block.id} at sequence={target_seq}")
 
@@ -480,7 +478,7 @@ class BlockManager:
 
         # Update in DB (optimistic locking).
         # We'll do a flush now; the caller does final commit.
-        updated_block = block.update(db_session=session, actor=actor, no_commit=True)
+        updated_block = await block.update_async(db_session=session, actor=actor, no_commit=True)
         return updated_block
 
     @enforce_types
@@ -527,3 +525,201 @@ class BlockManager:
                 pass
 
             return None
+
+    @enforce_types
+    @trace_method
+    async def checkpoint_block_async(
+        self,
+        block_id: str,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        use_preloaded_block: Optional[BlockModel] = None,  # For concurrency tests
+    ) -> PydanticBlock:
+        """
+        Create a new checkpoint for the given Block by copying its
+        current state into BlockHistory, using SQLAlchemy's built-in
+        version_id_col for concurrency checks.
+
+        - If the block was undone to an earlier checkpoint, we remove
+          any "future" checkpoints beyond the current state to keep a
+          strictly linear history.
+        - A single commit at the end ensures atomicity.
+        """
+        async with db_registry.async_session() as session:
+            # 1) Load the Block
+            if use_preloaded_block is not None:
+                block = await session.merge(use_preloaded_block)
+            else:
+                block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            # 2) Identify the block's current checkpoint (if any)
+            current_entry = None
+            if block.current_history_entry_id:
+                current_entry = await session.get(BlockHistory, block.current_history_entry_id)
+
+            # The current sequence, or 0 if no checkpoints exist
+            current_seq = current_entry.sequence_number if current_entry else 0
+
+            # 3) Truncate any future checkpoints
+            #    If we are at seq=2, but there's a seq=3 or higher from a prior "redo chain",
+            #    remove those, so we maintain a strictly linear undo/redo stack.
+            stmt = select(BlockHistory).filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number > current_seq)
+            result = await session.execute(stmt)
+            for entry in result.scalars():
+                session.delete(entry)
+
+            # Flush the deletes to ensure they're executed before we create a new entry
+            await session.flush()
+
+            # 4) Determine the next sequence number
+            next_seq = current_seq + 1
+
+            # 5) Create a new BlockHistory row reflecting the block's current state
+            history_entry = BlockHistory(
+                organization_id=actor.organization_id,
+                block_id=block.id,
+                sequence_number=next_seq,
+                description=block.description,
+                label=block.label,
+                value=block.value,
+                limit=block.limit,
+                metadata_=block.metadata_,
+                actor_type=ActorType.LETTA_AGENT if agent_id else ActorType.LETTA_USER,
+                actor_id=agent_id if agent_id else actor.id,
+            )
+            await history_entry.create_async(session, actor=actor, no_commit=True)
+
+            # 6) Update the block’s pointer to the new checkpoint
+            block.current_history_entry_id = history_entry.id
+
+            # 7) Flush changes, then commit once
+            block = await block.update_async(db_session=session, actor=actor, no_commit=True)
+            await session.commit()
+
+            return block.to_pydantic()
+
+    @enforce_types
+    async def _move_block_to_sequence(self, session: AsyncSession, block: BlockModel, target_seq: int, actor: PydanticUser) -> BlockModel:
+        """
+        Internal helper that moves the 'block' to the specified 'target_seq' within BlockHistory.
+        1) Find the BlockHistory row at sequence_number=target_seq
+        2) Copy fields into the block
+        3) Update and flush (no_commit=True) - the caller is responsible for final commit
+
+        Raises:
+            NoResultFound: if no BlockHistory row for (block_id, target_seq)
+        """
+        if not block.id:
+            raise ValueError("Block is missing an ID. Cannot move sequence.")
+
+        stmt = select(BlockHistory).filter(
+            BlockHistory.block_id == block.id,
+            BlockHistory.sequence_number == target_seq,
+        )
+        result = await session.execute(stmt)
+        target_entry = result.scalar_one_or_none()
+        if not target_entry:
+            raise NoResultFound(f"No BlockHistory row found for block_id={block.id} at sequence={target_seq}")
+
+        # Copy fields from target_entry to block
+        block.description = target_entry.description  # type: ignore
+        block.label = target_entry.label  # type: ignore
+        block.value = target_entry.value  # type: ignore
+        block.limit = target_entry.limit  # type: ignore
+        block.metadata_ = target_entry.metadata_  # type: ignore
+        block.current_history_entry_id = target_entry.id  # type: ignore
+
+        # Update in DB (optimistic locking).
+        # We'll do a flush now; the caller does final commit.
+        updated_block = await block.update_async(db_session=session, actor=actor, no_commit=True)
+        return updated_block
+
+    @enforce_types
+    @trace_method
+    async def undo_checkpoint_block(
+        self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
+    ) -> PydanticBlock:
+        """
+        Move the block to the immediately previous checkpoint in BlockHistory.
+        If older sequences have been pruned, we jump to the largest sequence
+        number that is still < current_seq.
+        """
+        async with db_registry.async_session() as session:
+            # 1) Load the current block
+            block = (
+                await session.merge(use_preloaded_block)
+                if use_preloaded_block
+                else await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            )
+
+            if not block.current_history_entry_id:
+                raise ValueError(f"Block {block_id} has no history entry - cannot undo.")
+
+            current_entry = await session.get(BlockHistory, block.current_history_entry_id)
+            if not current_entry:
+                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
+
+            current_seq = current_entry.sequence_number
+
+            # 2) Find the largest sequence < current_seq
+            stmt = (
+                select(BlockHistory)
+                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number < current_seq)
+                .order_by(BlockHistory.sequence_number.desc())
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            previous_entry = result.scalar_one_or_none()
+            if not previous_entry:
+                # No earlier checkpoint available
+                raise ValueError(f"Block {block_id} is already at the earliest checkpoint (seq={current_seq}). Cannot undo further.")
+
+            # 3) Move to that sequence
+            block = await self._move_block_to_sequence(session, block, previous_entry.sequence_number, actor)
+
+            # 4) Commit
+            await session.commit()
+            return block.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def redo_checkpoint_block(
+        self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
+    ) -> PydanticBlock:
+        """
+        Move the block to the next checkpoint if it exists.
+        If some middle checkpoints have been pruned, we jump to the smallest
+        sequence > current_seq that remains.
+        """
+        async with db_registry.async_session() as session:
+            block = (
+                await session.merge(use_preloaded_block)
+                if use_preloaded_block
+                else await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+            )
+
+            if not block.current_history_entry_id:
+                raise ValueError(f"Block {block_id} has no history entry - cannot redo.")
+
+            current_entry = await session.get(BlockHistory, block.current_history_entry_id)
+            if not current_entry:
+                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
+
+            current_seq = current_entry.sequence_number
+
+            # Find the smallest sequence that is > current_seq
+            stmt = (
+                select(BlockHistory)
+                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number > current_seq)
+                .order_by(BlockHistory.sequence_number.asc())
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            next_entry = result.scalar_one_or_none()
+            if not next_entry:
+                raise ValueError(f"Block {block_id} is at the highest checkpoint (seq={current_seq}). Cannot redo further.")
+
+            block = await self._move_block_to_sequence(session, block, next_entry.sequence_number, actor)
+
+            await session.commit()
+            return block.to_pydantic()
