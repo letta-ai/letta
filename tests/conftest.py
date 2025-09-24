@@ -170,18 +170,18 @@ def check_e2b_key_is_set():
 
 
 @pytest.fixture
-def default_organization():
+async def default_organization():
     """Fixture to create and return the default organization."""
     manager = OrganizationManager()
-    org = manager.create_default_organization()
+    org = await manager.create_default_organization_async()
     yield org
 
 
 @pytest.fixture
-def default_user(default_organization):
+async def default_user(default_organization):
     """Fixture to create and return the default user within the default organization."""
     manager = UserManager()
-    user = manager.create_default_user(org_id=default_organization.id)
+    user = await manager.create_default_actor_async(org_id=default_organization.id)
     yield user
 
 
