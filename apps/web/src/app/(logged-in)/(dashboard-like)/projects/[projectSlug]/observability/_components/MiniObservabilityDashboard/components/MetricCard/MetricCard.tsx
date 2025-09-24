@@ -32,8 +32,6 @@ interface MetricCardProps {
   };
   previousPeriodValue?: string | number;
   isInverted?: boolean;
-  showRightBorder?: boolean;
-  showBottomBorder?: boolean;
 }
 
 export function MetricCard(props: MetricCardProps) {
@@ -46,8 +44,6 @@ export function MetricCard(props: MetricCardProps) {
     className,
     infoTooltip,
     previousPeriodValue,
-    showRightBorder = true,
-    showBottomBorder = true,
   } = props;
 
   const t = useTranslations('projects/(projectSlug)/page.MiniObservabilityDashboard.MetricCard');
@@ -180,14 +176,12 @@ export function MetricCard(props: MetricCardProps) {
   return (
     <Card
       className={cn(
-        'bg-project-card-background hover:bg-background-grey2 transition-colors border-0',
-        showRightBorder && 'border-r border-background-grey3-border',
-        showBottomBorder && 'border-b border-background-grey3-border',
+        'bg-project-card-background min-h-[90px] hover:bg-background-grey2 transition-colors border-0',
         className,
       )}
     >
-      <HStack justify="spaceBetween" align="center" fullWidth fullHeight>
-        <VStack gap={null} align="start">
+      <HStack wrap justify="spaceBetween" align="center" fullWidth fullHeight>
+        <VStack className="w-[110px]"  gap={null} align="start">
           {isLoading ? (
             <Skeleton className="w-[60px] h-6" />
           ) : previousPeriodValue !== undefined ? (
@@ -221,7 +215,6 @@ export function MetricCard(props: MetricCardProps) {
               {renderTrendIcon()}
             </HStack>
           )}
-
           <HStack gap="small" align="center">
             <Typography variant="body2" color="muted" align="left">
               {title}
@@ -229,10 +222,9 @@ export function MetricCard(props: MetricCardProps) {
             {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
           </HStack>
         </VStack>
-
-        <div className="w-30 h-[45px] flex items-center justify-center">
+        <div className="min-w-[30px] flex-1 h-[45px] flex items-center justify-center">
           {isLoading ? (
-            <Skeleton className="w-[110px] h-[45px]" />
+            <Skeleton className="w-full h-[45px]" />
           ) : (
             <Chart key={chartWidth} options={chartOptions} width={chartWidth} height={45} />
           )}

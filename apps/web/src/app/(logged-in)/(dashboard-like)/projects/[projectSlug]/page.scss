@@ -1,0 +1,15 @@
+.recents-page {
+ max-height: 407px;
+}
+
+@media screen and (max-width: 1190px) {
+  .recents-page {
+    max-height: none;
+
+    & > * {
+      flex: none;
+      height: auto;
+    }
+  }
+
+}

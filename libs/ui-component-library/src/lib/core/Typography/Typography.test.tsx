@@ -316,7 +316,7 @@ describe('Typography', () => {
     it('shows placeholder when text is null', () => {
       render(<LoadedTypography fillerText="Loading..." text={null} />);
       const element = screen.getByText('Loading...');
-      expect(element).toHaveClass('bg-gray-200');
+      expect(element).toHaveClass('bg-background-grey2');
       expect(element).toHaveClass('text-transparent');
       expect(element).toHaveClass('animate-pulse');
       expect(element).toHaveAttribute('role', 'presentation');
@@ -326,7 +326,7 @@ describe('Typography', () => {
     it('shows placeholder when text is undefined', () => {
       render(<LoadedTypography fillerText="Loading..." text={undefined} />);
       const element = screen.getByText('Loading...');
-      expect(element).toHaveClass('bg-gray-200');
+      expect(element).toHaveClass('bg-background-grey2');
     });
 
     it('shows actual text when provided', () => {

@@ -6,8 +6,6 @@ import {
   VStack,
   ChevronRightIcon,
   TabGroup,
-  HiddenOnMobile,
-  VisibleOnMobile,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -396,12 +394,28 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     return currentValue > previousValue ? 'up' : 'down';
   }, []);
 
-  const renderMetricCards = useCallback((isMobile: boolean = false) => {
-    const rightBorderForDesktop = (isLast: boolean) => !isMobile && !isLast;
-    const rightBorderForMobile = false;
 
-    return (
-      <>
+  return (
+    <VStack
+      fullWidth
+      fullHeight
+      border
+      gap="large"
+      padding
+      className="w-full"
+    >
+      <HStack justify="spaceBetween" align="center" fullWidth className="h-biHeight-sm">
+        <HStack align="center">
+          <Link href={`/projects/${projectSlug}/observability`}
+                className="text-lg text-text-default font-semibold flex items-center gap-1">
+            {t('title')}
+            <ChevronRightIcon className="h-5 w-5" />
+          </Link>
+        </HStack>
+        <TimeRangeSelector />
+      </HStack>
+
+      <div className="grid grid-cols-2 [clip-path:inset(1px_0_0_1px)] *:border-t *:border-l gap-0 w-full border border-background-grey3-border">
         <MetricCard
           title={t('metrics.totalMessages')}
           value={overview?.body.totalMessageCount !== undefined ? formatNumber(overview.body.totalMessageCount) : undefined}
@@ -411,8 +425,6 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
             'neutral'}
           isLoading={overviewLoading}
           chartData={messagesChartData}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
-          showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.totalMessagesTooltip'),
           }}
@@ -427,8 +439,6 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
             'neutral'}
           isLoading={stepsLoading || messagesLoading}
           chartData={stepsPerHourChartData}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
-          showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.totalStepsTooltip'),
           }}
@@ -444,8 +454,6 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           isLoading={toolErrorsLoading || stepsLoading || messagesLoading}
           chartData={toolErrorsChartData}
           isInverted={true}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
-          showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.toolErrorRateTooltip'),
           }}
@@ -461,8 +469,6 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           isLoading={apiErrorsLoading || messagesLoading}
           chartData={apiErrorsChartData}
           isInverted={true}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
-          showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.apiErrorsTooltip'),
           }}
@@ -482,8 +488,6 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           isLoading={toolLatencyLoading || messagesLoading}
           chartData={toolLatencyP50ChartData}
           isInverted={true}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
-          showBottomBorder={isMobile}
           infoTooltip={{
             text: t('metrics.toolDurationP50Tooltip'),
           }}
@@ -503,74 +507,23 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           isLoading={toolLatencyLoading || messagesLoading}
           chartData={toolLatencyP99ChartData}
           isInverted={true}
-          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
-          showBottomBorder={false}
           infoTooltip={{
             text: t('metrics.toolDurationP99Tooltip'),
           }}
         />
-      </>
-    );
-  }, [
-    t, overview, previousOverview, calculatePeriodTrend, currentPeriodTotals,
-    overviewLoading, messagesChartData, stepsData, previousStepsData,
-    stepsLoading, messagesLoading, stepsPerHourChartData, previousToolErrorsData,
-    toolErrorsLoading, toolErrorsChartData, apiErrorsData, previousApiErrorsData,
-    apiErrorsLoading, apiErrorsChartData, medianToolLatencyP50, previousPeriodTotals,
-    previousToolLatencyData, toolLatencyLoading, toolLatencyP50ChartData,
-    medianToolLatencyP99, toolLatencyP99ChartData, formatNumber, formatSmallDuration
-  ]);
-
-  return (
-    <VStack
-      fullWidth
-      fullHeight
-      border
-      gap="large"
-      padding
-      className="w-full"
-    >
-      <HStack justify="spaceBetween" align="center" fullWidth className="h-biHeight-sm">
-        <HStack align="center">
-          <Link href={`/projects/${projectSlug}/observability`} className="text-lg text-text-default font-semibold flex items-center gap-1">
-            {t('title')}
-            <ChevronRightIcon className="h-5 w-5" />
-          </Link>
-        </HStack>
-        <TimeRangeSelector />
-      </HStack>
-
-      <>
-        <HiddenOnMobile>
-          <div className="grid grid-cols-2 gap-0 w-full border border-background-grey3-border">
-            {renderMetricCards(false)}
-          </div>
-        </HiddenOnMobile>
-        <VisibleOnMobile>
-          <div className="grid grid-cols-1 gap-0 w-full border border-background-grey3-border">
-            {renderMetricCards(true)}
-          </div>
-        </VisibleOnMobile>
-      </>
+      </div>
     </VStack>
   );
 });
 
-interface MiniObservabilityDashboardProps {
-  projectId?: string;
-}
 
-export function MiniObservabilityDashboard({ projectId }: MiniObservabilityDashboardProps) {
+export function MiniObservabilityDashboard() {
   const { id: currentProjectId } = useCurrentProject();
-  const effectiveProjectId = projectId || currentProjectId;
 
-  if (!effectiveProjectId) {
-    return null;
-  }
 
   return (
     <ObservabilityProvider noTemplateFilter defaultTimeRange="1d">
-      <MiniObservabilityDashboardInner projectId={effectiveProjectId} />
+      <MiniObservabilityDashboardInner projectId={currentProjectId || ''} />
     </ObservabilityProvider>
   );
 }
