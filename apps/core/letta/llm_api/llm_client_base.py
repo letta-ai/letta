@@ -109,6 +109,7 @@ class LLMClientBase:
 
     async def send_llm_batch_request_async(
         self,
+        agent_type: AgentType,
         agent_messages_mapping: Dict[str, List[Message]],
         agent_tools_mapping: Dict[str, List[dict]],
         agent_llm_config_mapping: Dict[str, LLMConfig],
