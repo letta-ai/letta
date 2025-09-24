@@ -1578,6 +1578,7 @@
       "apiKey": "API key",
       "projectId": "Project ID",
       "clickToCopy": "Click to copy",
+      "loadingProjectName": "Loading project name...",
       "noApiKeysFound": "No API keys found",
       "accessRestricted": "Access restricted",
       "addToFavorites": "Add to favorites",

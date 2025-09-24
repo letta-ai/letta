@@ -3,24 +3,25 @@
 import {
   ArrowCurveIcon,
   Badge,
-  BoxList,
   Button,
   ChevronRightIcon,
   DashboardPageLayout,
   DashboardPageSection,
-  HiddenOnMobile,
+  DynamicStack,
   HStack,
   LettaInvaderIcon,
+  LoadedTypography,
   PlusIcon,
+  RawInputContainer,
   ResponsesIcon,
   Skeleton,
   TemplateIcon,
   Typography,
-  VisibleOnMobile,
   VStack,
 } from '@letta-cloud/ui-component-library';
+import './page.scss';
 import { Slot } from '@radix-ui/react-slot';
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
@@ -29,188 +30,41 @@ import { Tutorials, CopyableValueRow } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 import { DeployAgentDialog } from './agents/DeployAgentDialog/DeployAgentDialog';
-import { useUserHasPermission, useCurrentOrganization } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useAgentsServiceListAgents, useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
-import { useFormatters } from '@letta-cloud/utils-client';
-import { cloudAPI, cloudQueryKeys, type cloudContracts, type PublicTemplateDetailsType } from '@letta-cloud/sdk-cloud-api';
-import type { ServerInferResponses } from '@ts-rest/core';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
-import type { AgentState } from '@letta-cloud/sdk-core';
-import { Messages, DeleteAgentDialog } from '@letta-cloud/ui-ade-components';
 import {
-  CloseIcon,
-  DotsVerticalIcon,
-  DropdownMenu,
-  DropdownMenuItem,
-  TrashIcon,
-  Card,
-  RawInput,
-  LettaLoader,
-  Frame,
-} from '@letta-cloud/ui-component-library';
+  useUserHasPermission,
+  useCurrentOrganization,
+} from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import {
+  useAgentsServiceListAgents,
+} from '@letta-cloud/sdk-core';
+import { useFormatters } from '@letta-cloud/utils-client';
+import {
+  cloudAPI,
+  cloudQueryKeys,
+  type PublicTemplateDetailsType,
+} from '@letta-cloud/sdk-cloud-api';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import { MiniObservabilityDashboard } from './observability/_components/MiniObservabilityDashboard/MiniObservabilityDashboard';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { cn } from '@letta-cloud/ui-styles';
 
-function LoadingState() {
-  return Array.from({ length: 3 }).map((_, index) => (
-    <Skeleton key={index} className="min-h-[125px] w-full" />
+interface LoadingCardsState {
+  count: number;
+  className?: string;
+}
+
+function LoadingState(props: LoadingCardsState) {
+  const { count, className } = props;
+  return Array.from({ length: count }).map((_, index) => (
+    <Skeleton
+      key={index}
+      className={cn('min-h-[100px]  flex-1 max-h-[100px]', className)}
+    />
   ));
 }
 
-// preview implementation here is same as AgentsList
-interface AgentMessagesListProps {
-  agentId: string;
-}
-
-function AgentMessagesList(props: AgentMessagesListProps) {
-  const { agentId } = props;
-  const t = useTranslations('projects/(projectSlug)/agents/page');
-
-  return (
-    <VStack border collapseHeight>
-      <HStack borderBottom paddingX="small" paddingY="small">
-        <Typography>{t('latestMessages')}</Typography>
-      </HStack>
-      <VStack fullHeight position="relative" overflow="hidden">
-        <Messages
-          mode="interactive"
-          disableInteractivity
-          isSendingMessage={false}
-          agentId={agentId}
-        />
-      </VStack>
-    </VStack>
-  );
-}
-
-interface DeployedAgentViewProps {
-  agent: AgentState;
-  onClose: () => void;
-  onAgentUpdate: () => void;
-}
-
-function DeployedAgentView(props: DeployedAgentViewProps) {
-  const { agent, onClose, onAgentUpdate } = props;
-  const { name } = agent;
-  const { slug: currentProjectSlug } = useCurrentProject();
-  const t = useTranslations('projects/(projectSlug)/agents/page');
-
-  const { data } = useAgentsServiceRetrieveAgent({
-    agentId: agent.id || '',
-  });
-
-  return (
-    <div className="contents">
-      <Frame
-        onClick={onClose}
-        color="background-black"
-        fullHeight
-        fullWidth
-        /*eslint-disable-next-line react/forbid-component-props */
-        className="fixed inset-0 z-[100] fade-in-5 opacity-10"
-      />
-      <VStack
-        /*eslint-disable-next-line react/forbid-component-props */
-        className="fixed z-[101] sm:animate-in slide-in-from-right-10 right-0 top-0 h-full w-[90%] max-w-[800px] min-w-[600px]"
-        color="background"
-        border
-        fullHeight
-      >
-        <HStack
-          padding
-          paddingY="small"
-          borderBottom
-          align="center"
-          fullWidth
-          justify="spaceBetween"
-        >
-          <HStack align="center" gap="small">
-            <Typography align="left" bold variant="heading4">
-              {name}
-            </Typography>
-            <DropdownMenu
-              trigger={
-                <Button
-              data-testid={`agent-actions-button:${agent.id}`}
-              color="tertiary"
-              label={t('actions')}
-              preIcon={<DotsVerticalIcon />}
-              size="default"
-              hideLabel
-                />
-              }
-              triggerAsChild
-            >
-              <DeleteAgentDialog
-                agentId={agent.id || ''}
-                agentName={agent.name || ''}
-                trigger={
-                  <DropdownMenuItem
-                    doNotCloseOnSelect
-                    preIcon={<TrashIcon />}
-                    label={t('deleteAgent')}
-                  />
-                }
-                onSuccess={() => {
-                  onClose();
-                  onAgentUpdate();
-                }}
-              />
-            </DropdownMenu>
-          </HStack>
-
-          <HStack>
-            <Button
-              href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
-              label={t('openInADE')}
-              color="secondary"
-            />
-
-            <Button
-              onClick={onClose}
-              color="tertiary"
-              label={t('close')}
-              hideLabel
-              preIcon={<CloseIcon />}
-            />
-          </HStack>
-        </HStack>
-        <VStack padding paddingY="small" overflowY="hidden" fullHeight>
-          {!data ? (
-            <VStack align="center" justify="center" fullHeight fullWidth>
-              <LettaLoader size="large" />
-            </VStack>
-          ) : (
-            <VStack fullHeight overflow="hidden" gap>
-              <Card>
-                <VStack>
-                  <RawInput
-                    inline
-                    label={t('agentId')}
-                    defaultValue={agent.id}
-                    readOnly
-                    allowCopy
-                    fullWidth
-                  />
-                </VStack>
-              </Card>
-              <AgentMessagesList agentId={agent.id || ''} />
-            </VStack>
-          )}
-        </VStack>
-      </VStack>
-    </div>
-  );
-}
-
-const AgentCard = ({
-  agent,
-  slug,
-}: {
-  agent: AgentState;
-  slug: string;
-}) => {
+const AgentCard = ({ agent, slug }: { agent: AgentState; slug: string }) => {
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
   const { formatRelativeDate } = useFormatters();
   const { id: currentProjectId } = useCurrentProject();
@@ -234,7 +88,7 @@ const AgentCard = ({
 
   return (
     <VStack
-      className="bg-list-item-background border border-background-grey3-border min-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
+      className="bg-list-item-background border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
       paddingX="large"
       paddingY="small"
       justify="spaceBetween"
@@ -242,33 +96,33 @@ const AgentCard = ({
     >
       <Link href={`/projects/${slug}/agents/${agent.id}`}>
         <VStack gap="small">
-            <VStack gap="small">
-              <HStack gap="small" align="center" className="min-w-0">
-                <LettaInvaderIcon />
-                <Typography
-                  className="font-bold text-body"
-                  overflow="ellipsis"
-                  noWrap
-                  fullWidth
-                >
-                  {agent.name}
-                </Typography>
-                {agent.tags && agent.tags.length > 0 && (
-                  <Badge
-                    size="small"
-                    content={agent.tags[0]}
-                    variant="info"
-                    border
-                    className="ml-2"
-                  />
-                )}
-              </HStack>
-              <Typography className="text-sm" color="lighter" variant="body3">
-                {t('createdAt', {
-                  date: formatRelativeDate(agent.updated_at || ''),
-                })}
+          <VStack gap="small">
+            <HStack gap="small" align="center" className="min-w-0">
+              <LettaInvaderIcon />
+              <Typography
+                className="font-bold text-body"
+                overflow="ellipsis"
+                noWrap
+                fullWidth
+              >
+                {agent.name}
               </Typography>
-            </VStack>
+              {agent.tags && agent.tags.length > 0 && (
+                <Badge
+                  size="small"
+                  content={agent.tags[0]}
+                  variant="info"
+                  border
+                  className="ml-2"
+                />
+              )}
+            </HStack>
+            <Typography className="text-sm" color="lighter" variant="body3">
+              {t('createdAt', {
+                date: formatRelativeDate(agent.updated_at || ''),
+              })}
+            </Typography>
+          </VStack>
           {agent.template_id && (
             <HStack gap="small" align="center" className="min-w-0">
               <ArrowCurveIcon size="xsmall" />
@@ -293,79 +147,24 @@ const AgentCard = ({
           )}
         </VStack>
       </Link>
-      <HStack align="center" fullWidth gap="small">
-          {/* <Button
-            color="secondary"
-            label={t('preview')}
-            size="small"
-            preIcon={<EyeOpenIcon />}
-            onClick={handlePreviewClick}
-          /> */}
-          {/* <HStack
-            align="center"
-            color="background-grey2"
-            border
-            paddingLeft="xsmall"
-            paddingY="xxsmall"
-            className="border-background-grey2-border dark:border-background-grey3-border flex-1 min-w-0 cursor-pointer hover:bg-background-grey3 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              copyToClipboard();
-            }}
-          >
-            <Typography
-              className="font-mono text-xs truncate"
-              color="lighter"
-              variant="body3"
-              overrideEl="span"
-              fullWidth
-            >
-              {agent.id || ''}
-            </Typography>
-          </HStack> */}
-        {/* <div onClick={(e) => e.stopPropagation()}>
-          <CopyButton
-            textToCopy={agent.id || ''}
-            size="small"
-            hideLabel
-            color="tertiary"
-            iconColor="muted"
-          />
-        </div> */}
-      </HStack>
     </VStack>
   );
 };
 
-interface AgentGridProps {
-  data?: AgentState[];
-  canCreateAgents: boolean;
-  slug: string;
-  useGridView?: boolean;
-}
+function EmptyAgentList() {
+  const [canCreateAgents] = useUserHasPermission(
+    ApplicationServices.CREATE_AGENT,
+  );
 
-function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps) {
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
-  const [selectedAgent, setSelectedAgent] = useState<AgentState>();
 
-  const agentsList = useMemo(() => data || [], [data]);
-
-  const isLoading = !data;
-  const hasNoItems = agentsList.length === 0;
-
-  const clearSelectedAgent = useCallback(() => {
-    setSelectedAgent(undefined);
-  }, []);
-
-  // Preview flow currently disabled on dashboard cards
-
-  const EmptyState = () => (
+  return (
     <VStack
       color="background-grey"
       align="center"
       justify="center"
       padding="xlarge"
-      className="min-h-[250px]"
+      className="min-h-[321px]"
     >
       <VStack className="max-w-[300px]" align="center" justify="center">
         <VStack
@@ -388,21 +187,50 @@ function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps)
         </VStack>
         {canCreateAgents && (
           <DeployAgentDialog
-            trigger={
-              <Button label={t('createAgent')} bold />
-            }
+            trigger={<Button label={t('createAgent')} bold />}
           />
         )}
       </VStack>
     </VStack>
   );
+}
+
+const LOAD_AGENTS_COUNT = 6;
+
+function RecentAgentsSection() {
+  const { id: currentProjectId, slug } = useCurrentProject();
+
+  const { data } = useAgentsServiceListAgents(
+    {
+      limit: LOAD_AGENTS_COUNT,
+      projectId: currentProjectId,
+    },
+    undefined,
+    {
+      retry: false,
+    },
+  );
+
+  const [canCreateAgents] = useUserHasPermission(
+    ApplicationServices.CREATE_AGENT,
+  );
+
+  const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
+
+  const agentsList = useMemo(() => data || [], [data]);
+
+  const isLoading = !data;
+  const hasNoItems = agentsList.length === 0;
 
   return (
     <HStack fullHeight position="relative" fullWidth>
       <VStack fullWidth fullHeight border gap="large" padding>
         <HStack className="h-biHeight-sm" align="center" justify="spaceBetween">
           <HStack align="center">
-            <Link href={`/projects/${slug}/agents`} className="text-lg text-text-default font-semibold flex items-center gap-1">
+            <Link
+              href={`/projects/${slug}/agents`}
+              className="text-lg text-text-default font-semibold flex items-center gap-1"
+            >
               {t('title')}
               <ChevronRightIcon className="h-5 w-5" />
             </Link>
@@ -420,226 +248,25 @@ function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps)
             />
           )}
         </HStack>
-
-        {isLoading ? (
-          useGridView ? (
-            <div className="grid grid-cols-1 gap-4 w-full">
-              <LoadingState />
-            </div>
+        <VStack collapseHeight flex overflowY="auto">
+          {isLoading ? (
+            <LoadingState count={LOAD_AGENTS_COUNT} />
+          ) : hasNoItems ? (
+            <EmptyAgentList />
           ) : (
-            <div className="grid grid-cols-1 gap-4 w-full">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-8 w-full" />
+            <VStack>
+              {agentsList.map((agent: AgentState) => (
+                <AgentCard key={agent.id} agent={agent} slug={slug} />
               ))}
-            </div>
-          )
-        ) : hasNoItems ? (
-          <EmptyState />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 w-full">
-            {agentsList.map((agent: AgentState) => (
-              <AgentCard key={agent.id} agent={agent} slug={slug} />
-            ))}
-          </div>
-        )}
+            </VStack>
+          )}
+        </VStack>
       </VStack>
-      {selectedAgent && (
-        <DeployedAgentView
-          onClose={() => {
-            setSelectedAgent(undefined);
-          }}
-          agent={selectedAgent}
-          onAgentUpdate={clearSelectedAgent}
-        />
-      )}
     </HStack>
   );
 }
 
-interface RecentAgentsBoxListProps {
-  data?: AgentState[];
-  canCreateAgents: boolean;
-  slug: string;
-  useGridView?: boolean;
-}
-
-function RecentAgentsBoxList({ data, canCreateAgents, slug }: RecentAgentsBoxListProps) {
-  const { formatRelativeDate } = useFormatters();
-  const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
-
-  return (
-    <BoxList
-      icon={<LettaInvaderIcon />}
-      title={t('title')}
-      topRightAction={
-        canCreateAgents && (
-          <DeployAgentDialog
-            trigger={
-              <Button
-                label={t('createAgent')}
-                size="small"
-                hideLabel
-                preIcon={<PlusIcon />}
-              />
-            }
-          />
-        )
-      }
-      items={(data || []).map((agent) => ({
-        title: agent.name,
-        description: t('createdAt', {
-          date: formatRelativeDate(agent.updated_at || ''),
-        }),
-        action: (
-          <Button
-            color="secondary"
-            label={t('viewAgent')}
-            size="small"
-            href={`/projects/${slug}/agents/${agent.id}`}
-          />
-        ),
-      }))}
-      loadingConfig={{
-        isLoading: !data,
-        rowsToDisplay: 3,
-      }}
-      emptyConfig={{
-        icon: <LettaInvaderIcon />,
-        title: t('emptyState.title'),
-        description: t('emptyState.description'),
-        action: (
-          <Button
-            bold
-            disabled
-            label={t('noAgents')}
-            color="secondary"
-          />
-        ),
-      }}
-      bottomAction={
-        <Button
-          label={t('viewAllAgents')}
-          size="small"
-          color="tertiary"
-          href={`/projects/${slug}/agents`}
-          postIcon={<ChevronRightIcon />}
-        />
-      }
-    />
-  );
-}
-
-function RecentAgentsSection() {
-  const { data: useGridView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
-  const { id: currentProjectId, slug } = useCurrentProject();
-
-  const { data: agents } = useAgentsServiceListAgents(
-    {
-      limit: 3,
-      projectId: currentProjectId,
-    },
-    undefined,
-    {
-      retry: false,
-    },
-  );
-
-  const [canCreateAgents] = useUserHasPermission(
-    ApplicationServices.CREATE_AGENT,
-  );
-
-  const sharedProps = {
-    data: agents,
-    canCreateAgents,
-    slug,
-    useGridView,
-  };
-
-  if (useGridView) {
-    return <AgentGrid {...sharedProps} />;
-  }
-
-  return <RecentAgentsBoxList {...sharedProps} />;
-}
-
-interface RecentTemplatesBoxListProps {
-  data?: ServerInferResponses<typeof cloudContracts.templates.listTemplates, 200>;
-  canCRDTemplates: boolean;
-  slug: string;
-}
-
-function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplatesBoxListProps) {
-  const t = useTranslations('projects/(projectSlug)/page');
-
-  const templatesList = useMemo(() => data?.body.templates || [], [data]);
-
-  return (
-    <BoxList
-      icon={<TemplateIcon />}
-      title={t('RecentTemplatesSection.title')}
-      items={templatesList.map((template) => ({
-        title: template.name,
-        description:
-          typeof template.description === 'string' && template.description.length > 0
-            ? template.description
-            : t('RecentTemplatesSection.noDescription'),
-        action: (
-          <Button
-            preload
-            color="secondary"
-            label={t('RecentTemplatesSection.viewTemplate')}
-            size="small"
-            href={`/projects/${template.project_slug}/templates/${template.name}`}
-          />
-        ),
-      }))}
-      loadingConfig={{
-        isLoading: !data?.body,
-        rowsToDisplay: 3,
-      }}
-      emptyConfig={{
-        icon: <TemplateIcon />,
-        title: t('RecentTemplatesSection.emptyState.title'),
-        description: canCRDTemplates
-          ? t('RecentTemplatesSection.emptyState.description')
-          : t('RecentTemplatesSection.emptyState.noCrdDescription'),
-        action: canCRDTemplates && (
-          <CreateNewTemplateDialog
-            trigger={
-              <Button label={t('RecentTemplatesSection.createTemplate')} bold />
-            }
-          />
-        ),
-      }}
-      topRightAction={
-        canCRDTemplates && (
-          <CreateNewTemplateDialog
-            trigger={
-              <Button
-                label={t('RecentTemplatesSection.createTemplate')}
-                size="small"
-                hideLabel
-                preIcon={<PlusIcon />}
-              />
-            }
-          />
-        )
-      }
-      bottomAction={
-        <Button
-          label={t('RecentTemplatesSection.viewAllTemplates')}
-          size="small"
-          color="tertiary"
-          href={`/projects/${slug}/templates`}
-          postIcon={<ChevronRightIcon />}
-        />
-      }
-    />
-  );
-}
-
-
-  const TemplateCard = ({
+const TemplateCard = ({
   template,
   slug,
 }: {
@@ -699,27 +326,36 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
     return `/projects/${slug}/agents?query=${encodeURIComponent(JSON.stringify(query))}`;
   }, [template.name, slug]);
 
-  const handleResponsesClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    router.push(responsesUrl);
-  }, [router, responsesUrl]);
+  const handleResponsesClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      router.push(responsesUrl);
+    },
+    [router, responsesUrl],
+  );
 
-  const handleAgentsClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    router.push(agentsUrl);
-  }, [router, agentsUrl]);
+  const handleAgentsClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      router.push(agentsUrl);
+    },
+    [router, agentsUrl],
+  );
 
   return (
-    <VStack
-      className="bg-list-item-background border border-background-grey3-border min-h-[110px] hover:bg-background-grey3 transition-colors cursor-pointer"
-      paddingX="large"
-      paddingY="small"
-      justify="spaceBetween"
-      fullWidth
+    <div
+      className="bg-list-item-background relative min-w-[350px] flex-1 border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
     >
-        <Link href={`/projects/${slug}/templates/${template.name}`}>
+      <Link href={`/projects/${slug}/templates/${template.name}`}>
+        <VStack
+          position="relative"
+          paddingX="large"
+          paddingY="small"
+          justify="spaceBetween"
+          fullWidth
+        >
           <VStack gap="small">
             <HStack justify="spaceBetween" align="center" fullWidth>
               <HStack gap="small" align="center" className="min-w-0">
@@ -734,7 +370,9 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
                 </Typography>
               </HStack>
               <Badge
-                content={t('RecentTemplatesSection.version', { version: template.latest_version })}
+                content={t('RecentTemplatesSection.version', {
+                  version: template.latest_version,
+                })}
                 variant="info"
                 size="small"
                 border
@@ -748,8 +386,15 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
             </Typography>
             {/* Description intentionally removed */}
           </VStack>
-        </Link>
-      <HStack align="center" fullWidth gap="small">
+        </VStack>
+      </Link>
+      <HStack
+        position="absolute"
+        className="bottom-[12px] left-[12px]"
+        align="center"
+        fullWidth
+        gap="small"
+      >
         <Button
           color="secondary"
           label={t('RecentTemplatesSection.responses')}
@@ -765,31 +410,23 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
           onClick={handleAgentsClick}
         />
       </HStack>
-    </VStack>
+    </div>
   );
 };
 
-interface TemplateGridProps {
-  data?: ServerInferResponses<typeof cloudContracts.templates.listTemplates, 200>;
-  canCRDTemplates: boolean;
-  slug: string;
-}
-
-function TemplateGrid({ data, canCRDTemplates, slug }: TemplateGridProps) {
+function EmptyTemplateState () {
   const t = useTranslations('projects/(projectSlug)/page');
+  const [canCRDTemplates] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
 
-  const templatesList = useMemo(() => data?.body.templates || [], [data]);
-
-  const isLoading = !data?.body;
-  const hasNoItems = templatesList.length === 0;
-
-  const EmptyState = () => (
+  return (
     <VStack
       color="background-grey"
       align="center"
       justify="center"
       padding="xlarge"
-      className="min-h-[250px]"
+      className="min-h-[316px]"
     >
       <VStack className="max-w-[300px]" align="center" justify="center">
         <VStack
@@ -822,13 +459,50 @@ function TemplateGrid({ data, canCRDTemplates, slug }: TemplateGridProps) {
       </VStack>
     </VStack>
   );
+}
+
+function RecentTemplatesSection() {
+  const { id: currentProjectId, slug } = useCurrentProject();
+
+  const { data } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(
+      currentProjectId,
+      {
+        search: '',
+        limit: 6,
+      },
+    ),
+    queryData: {
+      query: {
+        project_id: currentProjectId,
+        limit: '6',
+      },
+    },
+  });
+
+  const [canCRDTemplates] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
+
+  const t = useTranslations('projects/(projectSlug)/page');
+
+  const templatesList = useMemo(() => data?.body.templates || [], [data]);
+
+  const isLoading = !data?.body;
+  const hasNoItems = templatesList.length === 0;
+
 
 
   return (
-    <VStack fullWidth fullHeight border gap="large" padding>
+    <VStack
+
+      fullWidth fullHeight border gap="large" padding>
       <HStack className="h-biHeight-sm" align="center" justify="spaceBetween">
         <HStack align="center">
-            <Link href={`/projects/${slug}/templates`} className="text-lg text-text-default font-semibold flex items-center gap-1">
+          <Link
+            href={`/projects/${slug}/templates`}
+            className="text-lg text-text-default font-semibold flex items-center gap-1"
+          >
             {t('RecentTemplatesSection.title')}
             <ChevronRightIcon className="h-5 w-5" />
           </Link>
@@ -847,66 +521,48 @@ function TemplateGrid({ data, canCRDTemplates, slug }: TemplateGridProps) {
         )}
       </HStack>
 
-      {isLoading ? (
-        <>
-          <HiddenOnMobile>
-            <div className="grid grid-cols-2 gap-4 w-full">
-              <LoadingState />
-            </div>
-          </HiddenOnMobile>
-          <VisibleOnMobile>
-            <div className="grid grid-cols-1 gap-4 w-full">
-              <LoadingState />
-            </div>
-          </VisibleOnMobile>
-        </>
-      ) : hasNoItems ? (
-        <EmptyState />
-      ) : (
-        <>
-          <HiddenOnMobile>
-            <div className="grid grid-cols-2 gap-4 w-full">
-              {templatesList.map((template) => (
-                <TemplateCard key={template.id} template={template} slug={slug} />
-              ))}
-            </div>
-          </HiddenOnMobile>
-          <VisibleOnMobile>
-            <div className="grid grid-cols-1 gap-4 w-full">
-              {templatesList.map((template) => (
-                <TemplateCard key={template.id} template={template} slug={slug} />
-              ))}
-            </div>
-          </VisibleOnMobile>
-        </>
-      )}
+      <VStack
+        collapseHeight
+        flex
+        overflowX="hidden"
+        overflowY="auto"
+      >
+        {isLoading ? (
+          <HStack gap wrap>
+            <LoadingState className="min-w-[350px]" count={6} />
+          </HStack>
+        ) : hasNoItems ? (
+          <EmptyTemplateState />
+        ) : (
+          <HStack gap wrap>
+            {templatesList.map((template) => (
+              <TemplateCard key={template.id} template={template} slug={slug} />
+            ))}
+          </HStack>
+        )}
+      </VStack>
     </VStack>
   );
 }
 
-function ProjectWelcomeCard() {
-  const { id: projectId, name: projectName, updatedAt } = useCurrentProject();
-  const currentOrganization = useCurrentOrganization();
+function APIKeyViewer() {
   const t = useTranslations('projects/(projectSlug)/page');
-  const { formatDateAndTime } = useFormatters();
 
   const [canReadKeys] = useUserHasPermission(ApplicationServices.READ_API_KEYS);
   // API key visibility handled within CopyableValueRow
 
-  const { data: apiKeyData } = webApi.apiKeys.getAPIKey.useQuery({
-    queryKey: webApiQueryKeys.apiKeys.getApiKey('first'),
-    queryData: {
-      params: {
-        apiKeyId: 'first',
+  const { data: apiKeyData, isLoading: isLoadingApiKey } =
+    webApi.apiKeys.getAPIKey.useQuery({
+      queryKey: webApiQueryKeys.apiKeys.getApiKey('first'),
+      queryData: {
+        params: {
+          apiKeyId: 'first',
+        },
       },
-    },
-    enabled: canReadKeys,
-  });
+      enabled: canReadKeys,
+    });
 
   const mostRecentApiKey = apiKeyData?.body;
-
-  // Copy handled by CopyableValueRow component
-
 
   const formatApiKeyForDisplay = (apiKey: string) => {
     if (!apiKey) return '';
@@ -918,13 +574,40 @@ function ProjectWelcomeCard() {
   };
 
   return (
-    <VStack
-      fullHeight
-      border
-      gap="large"
-      padding
-      justify="spaceBetween"
-    >
+    <RawInputContainer fullWidth label={t('ProjectWelcomeCard.apiKey')}>
+      {mostRecentApiKey && !isLoadingApiKey && (
+        <CopyableValueRow
+          value={mostRecentApiKey?.apiKey || ''}
+          tooltip={t('ProjectWelcomeCard.clickToCopy')}
+          showVisibilityToggle
+          maskedDisplay={(v) => formatApiKeyForDisplay(v)}
+          testId="api-key-copy"
+        />
+      )}
+      {!mostRecentApiKey && !isLoadingApiKey && (
+        <CopyableValueRow
+          value={
+            canReadKeys
+              ? t('ProjectWelcomeCard.noApiKeysFound')
+              : t('ProjectWelcomeCard.accessRestricted')
+          }
+          tooltip={t('ProjectWelcomeCard.clickToCopy')}
+          testId="api-key-copy"
+        />
+      )}
+      {isLoadingApiKey && <Skeleton className="h-8 w-full" />}
+    </RawInputContainer>
+  );
+}
+
+function ProjectWelcomeCard() {
+  const { id: projectId, name: projectName, updatedAt } = useCurrentProject();
+  const currentOrganization = useCurrentOrganization();
+  const t = useTranslations('projects/(projectSlug)/page');
+  const { formatDateAndTime } = useFormatters();
+
+  return (
+    <VStack fullHeight border gap="large" padding justify="spaceBetween">
       <VStack gap="small" fullWidth>
         <HStack align="center" gap="small" justify="spaceBetween" fullWidth>
           <VStack align="start" gap="small" fullWidth>
@@ -932,148 +615,83 @@ function ProjectWelcomeCard() {
               {currentOrganization?.name || '--'}
             </Typography>
             <HStack align="center" gap="small" justify="spaceBetween" fullWidth>
-              <Typography variant="heading3" bold align="left">
-                {projectName || '--'}
-              </Typography>
+              {!projectName ? (
+                <LoadedTypography
+                  variant="heading3"
+                  fillerText={t('ProjectWelcomeCard.loadingProjectName')}
+                />
+              ) : (
+                <Typography variant="heading3" bold align="left">
+                  {projectName || '--'}
+                </Typography>
+              )}
             </HStack>
             {updatedAt && (
               <Typography variant="body3" align="left">
-                {t('ProjectWelcomeCard.updatedAt', { datetime: formatDateAndTime(updatedAt) })}
+                {t('ProjectWelcomeCard.updatedAt', {
+                  datetime: formatDateAndTime(updatedAt),
+                })}
               </Typography>
             )}
           </VStack>
         </HStack>
       </VStack>
 
-      <VStack gap="medium" fullWidth>
-
-        <VStack gap="small" fullWidth>
-          <Typography variant="body2" color="muted" align="left">
-            {t('ProjectWelcomeCard.apiKey')}
-          </Typography>
-          {mostRecentApiKey ? (
-            <CopyableValueRow
-              value={mostRecentApiKey.apiKey || ''}
-              tooltip={t('ProjectWelcomeCard.clickToCopy')}
-              showVisibilityToggle
-              maskedDisplay={(v) => formatApiKeyForDisplay(v)}
-              testId="api-key-copy"
-            />
-          ) : (
-            <Typography
-              className="font-mono text-xs"
-              color="muted"
-              variant="body3"
-            >
-              {canReadKeys ? t('ProjectWelcomeCard.noApiKeysFound') : t('ProjectWelcomeCard.accessRestricted')}
-            </Typography>
-          )}
-        </VStack>
-
-        <VStack gap="small" fullWidth>
-          <Typography variant="body2" color="muted" align="left">
-            {t('ProjectWelcomeCard.projectId')}
-          </Typography>
+      <VStack gap="large" fullWidth>
+        <APIKeyViewer />
+        <RawInputContainer label={t('ProjectWelcomeCard.projectId')} fullWidth>
           <CopyableValueRow
             value={projectId || ''}
             tooltip={t('ProjectWelcomeCard.clickToCopy')}
             testId="project-id-copy"
           />
-        </VStack>
-
+        </RawInputContainer>
       </VStack>
     </VStack>
   );
 }
 
-function RecentTemplatesSection() {
-  const { data: useGridView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
-  const { id: currentProjectId, slug } = useCurrentProject();
-
-  const { data } = cloudAPI.templates.listTemplates.useQuery({
-    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(currentProjectId, {
-      search: '',
-      limit: useGridView ? 6 : 3,
-    }),
-    queryData: {
-      query: {
-        project_id: currentProjectId,
-        limit: useGridView ? '6' : '3',
-      },
-    },
-  });
-
-  const [canCRDTemplates] = useUserHasPermission(
-    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
-  );
-
-  const sharedProps = {
-    data,
-    canCRDTemplates,
-    slug,
-    currentProjectId,
-  };
-
-  if (useGridView) {
-    return <TemplateGrid {...sharedProps} />;
-  }
-
-  return <RecentTemplatesBoxList {...sharedProps} />;
-}
-
-
 function ProjectPage() {
   const t = useTranslations('projects/(projectSlug)/page');
   const { name } = useCurrentProject();
-  const { data: useNewProjectView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
   const welcomeText = useWelcomeText();
 
   return (
     <DashboardPageLayout
       headerBottomPadding="large"
       title={welcomeText || ''}
-      titleClassName="pl-4"
       subtitle={t('subtitle', { name })}
-      subtitleClassName="pl-4"
+      className="pl-6"
     >
       <DashboardPageSection>
-        <VStack gap="large" fullWidth fullHeight>
-          {useNewProjectView && (
-            <>
-              <HiddenOnMobile>
-                <HStack gap="xlarge" fullWidth fullHeight>
-                  <div style={{ width: '25%' }}>
-                    <ProjectWelcomeCard />
-                  </div>
-                  <div style={{ width: '75%' }}>
-                    <MiniObservabilityDashboard />
-                  </div>
-                </HStack>
-              </HiddenOnMobile>
-              <VisibleOnMobile>
-                <VStack gap="large" fullWidth>
-                  <ProjectWelcomeCard />
-                  <MiniObservabilityDashboard />
-                </VStack>
-              </VisibleOnMobile>
-            </>
-          )}
-          <HiddenOnMobile>
-            <HStack gap="xlarge" fullWidth align="start">
-              <div style={{ width: useNewProjectView ? '67%' : '50%' }}>
-                <RecentTemplatesSection />
-              </div>
-              <div style={{ width: useNewProjectView ? '33%' : '50%' }}>
-                <RecentAgentsSection />
-              </div>
-            </HStack>
-          </HiddenOnMobile>
-          <VisibleOnMobile>
-            <VStack gap="large" fullWidth>
+        <VStack fullWidth fullHeight>
+          <DynamicStack className="min-h-[345px]" wrap fullWidth fullHeight>
+            <div
+              className="w-full largerThanMobile:min-w-[320px]"
+              style={{ flex: 1 }}
+            >
+              <ProjectWelcomeCard />
+            </div>
+            <div
+              className="w-full largerThanMobile:min-w-[500px]"
+              style={{ flex: 4 }}
+            >
+              <MiniObservabilityDashboard />
+            </div>
+          </DynamicStack>
+          <DynamicStack  className="items-stretch recents-page" wrap fullWidth align="start">
+            <div
+              className="w-full overflow-hidden largerThanMobile:h-full largerThanMobile:flex-[3] largerThanMobile:min-w-[500px]"
+            >
               <RecentTemplatesSection />
+            </div>
+            <div
+              className="w-full  overflow-hidden  largerThanMobile:h-full largerThanMobile:min-w-[320px]"
+              style={{ flex: 1 }}
+            >
               <RecentAgentsSection />
-            </VStack>
-          </VisibleOnMobile>
+            </div>
+          </DynamicStack>
           <HStack border padding="medium">
             <Tutorials />
           </HStack>

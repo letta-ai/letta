@@ -272,6 +272,8 @@ describe('credit usage', () => {
 
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
+    cy.wait(2000);
+
     // creates an agent
     cy.findAllByTestId('create-agent-template-button', { timeout: 50000 })
       .first()

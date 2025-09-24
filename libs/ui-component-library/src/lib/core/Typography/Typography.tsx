@@ -174,7 +174,7 @@ export function LoadedTypography(props: LoadedTypographyProps) {
           overrideEl="span"
           tabIndex={-1}
           className={cn(
-            'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse',
+            'pointer-events-none bg-background-grey2 select-none  text-transparent animate-pulse',
           )}
         >
           {fillerText}
