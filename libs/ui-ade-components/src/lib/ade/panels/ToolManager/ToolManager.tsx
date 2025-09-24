@@ -46,6 +46,8 @@ import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { MY_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
+import { useAtom } from 'jotai/index';
+import { dirtyToolAtom, stagedToolAtom } from './hooks/useStagedCode/useStagedCode';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -596,14 +598,65 @@ function ToolManagerContent() {
   return matchingRoute?.component;
 }
 
+function ConfirmLeaveDialog() {
+  const t = useTranslations('ToolManager');
+  const {
+    closeToolManager,
+    isConfirmationDialogOpen,
+    setDialogOpen,
+  } = useToolManagerState();
+
+  const [dirtyToolMap] = useAtom(dirtyToolAtom);
+  const [stagedToolMap, setStagedTools ] = useAtom(stagedToolAtom)
+
+  const dirtyToolNames = useMemo(() => {
+    return Object.entries(dirtyToolMap)
+      .filter(([_, isDirty]) => isDirty)
+      .map(([toolId, _]) => stagedToolMap[toolId]?.name || 'Unnamed Tool');
+  }, [dirtyToolMap, stagedToolMap]);
+
+  return (
+    <Dialog
+      title={t('confirmLeave.title')}
+      isOpen={isConfirmationDialogOpen}
+      onOpenChange={setDialogOpen}
+      onConfirm={() => {
+        setStagedTools({});
+        closeToolManager(true);
+      }}
+    >
+      <Typography>
+        {t('confirmLeave.description')}
+      </Typography>
+      {dirtyToolNames.length > 0 && (
+        <VStack
+           as="ul"
+        >
+          {dirtyToolNames.map((name) => (
+            <Typography
+              as="li"
+              key={name}
+            >
+              • {name}
+            </Typography>
+          ))}
+        </VStack>
+      )}
+      <Typography>
+        {t('confirmLeave.confirm')}
+      </Typography>
+
+    </Dialog>
+  )
+}
+
 export function ToolManager() {
   const {
     closeToolManager,
     openToolManager,
-    isConfirmationDialogOpen,
-    setDialogOpen,
     isToolManagerOpen,
   } = useToolManagerState();
+
 
 
   const t = useTranslations('ToolManager');
@@ -623,16 +676,7 @@ export function ToolManager() {
         openToolManager('/current-agent-tools');
       }}
     >
-      <Dialog
-        title={t('confirmLeave.title')}
-        isOpen={isConfirmationDialogOpen}
-        onOpenChange={setDialogOpen}
-        onConfirm={() => {
-          closeToolManager(true);
-        }}
-      >
-        {t('confirmLeave.description')}
-      </Dialog>
+      <ConfirmLeaveDialog />
       <VStack
         className="shadow-lg"
         color="background"

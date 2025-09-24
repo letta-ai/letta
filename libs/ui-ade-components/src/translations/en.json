@@ -2283,7 +2283,8 @@
     "title": "Tool Manager",
     "confirmLeave": {
       "title": "Unsaved changes",
-      "description": "You have unsaved changes, are you sure you want to leave?"
+      "description": "You have made an edit to these tools:",
+      "confirm": "Are you sure you want to leave?"
     },
     "CreateToolDialog": {
       "title": "Create new tool",
