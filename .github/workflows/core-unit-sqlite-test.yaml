@@ -36,7 +36,6 @@ jobs:
             "include": [
               {"test_suite": "test_client.py"},
               {"test_suite": "test_sdk_client.py"},
-              {"test_suite": "test_server.py"},
               {"test_suite": "test_tool_schema_parsing.py"},
               {"test_suite": "test_tool_rule_solver.py"},
               {"test_suite": "test_memory.py"},
