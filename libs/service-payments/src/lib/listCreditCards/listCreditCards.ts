@@ -25,7 +25,8 @@ export async function listCreditCards(payload: ListCreditCardsPayload) {
     .then((paymentMethods) =>
       paymentMethods.data.map((paymentMethod) => ({
         ...paymentMethod,
-        card: paymentMethod.card,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        card: paymentMethod.card!,
       })),
     );
 }

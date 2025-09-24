@@ -35,9 +35,7 @@ import {
   useCurrentOrganization,
 } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import {
-  useAgentsServiceListAgents,
-} from '@letta-cloud/sdk-core';
+import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
 import {
   cloudAPI,
@@ -87,67 +85,73 @@ const AgentCard = ({ agent, slug }: { agent: AgentState; slug: string }) => {
   const templateName = templateData?.body.templates[0]?.name;
 
   return (
-    <VStack
-      className="bg-list-item-background border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
-      paddingX="large"
-      paddingY="small"
-      justify="spaceBetween"
-      fullWidth
-    >
-      <Link href={`/projects/${slug}/agents/${agent.id}`}>
-        <VStack gap="small">
+    <div className="bg-list-item-background relative border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer">
+      <VStack
+        paddingX="large"
+        paddingY="small"
+        fullHeight
+        justify="spaceBetween"
+        fullWidth
+      >
+        <Link href={`/projects/${slug}/agents/${agent.id}`}>
           <VStack gap="small">
-            <HStack gap="small" align="center" className="min-w-0">
-              <LettaInvaderIcon />
-              <Typography
-                className="font-bold text-body"
-                overflow="ellipsis"
-                noWrap
-                fullWidth
-              >
-                {agent.name}
-              </Typography>
-              {agent.tags && agent.tags.length > 0 && (
-                <Badge
-                  size="small"
-                  content={agent.tags[0]}
-                  variant="info"
-                  border
-                  className="ml-2"
-                />
-              )}
-            </HStack>
-            <Typography className="text-sm" color="lighter" variant="body3">
-              {t('createdAt', {
-                date: formatRelativeDate(agent.updated_at || ''),
-              })}
-            </Typography>
-          </VStack>
-          {agent.template_id && (
-            <HStack gap="small" align="center" className="min-w-0">
-              <ArrowCurveIcon size="xsmall" />
-              <TemplateIcon size="xsmall" />
-              <Link
-                href={`/projects/${slug}/templates/${templateName || agent.template_id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="min-w-0 flex-1"
-              >
+            <VStack gap="small">
+              <HStack gap="small" align="center" className="min-w-0">
+                <LettaInvaderIcon />
                 <Typography
-                  className="text-xs"
-                  color="lighter"
-                  variant="body3"
+                  className="font-bold text-body"
                   overflow="ellipsis"
                   noWrap
                   fullWidth
                 >
-                  {templateName || agent.template_id}
+                  {agent.name}
                 </Typography>
-              </Link>
-            </HStack>
-          )}
-        </VStack>
-      </Link>
-    </VStack>
+                {agent.tags && agent.tags.length > 0 && (
+                  <Badge
+                    size="small"
+                    content={agent.tags[0]}
+                    variant="info"
+                    border
+                    className="ml-2"
+                  />
+                )}
+              </HStack>
+              <Typography className="text-sm" color="lighter" variant="body3">
+                {t('createdAt', {
+                  date: formatRelativeDate(agent.updated_at || ''),
+                })}
+              </Typography>
+            </VStack>
+          </VStack>
+        </Link>
+      </VStack>
+      {agent.template_id && (
+        <Link
+          href={`/projects/${slug}/templates/${templateName}`}
+          className="min-w-0 flex-1 hover:bg-background-grey2 absolute bottom-[20px] left-[20px]"
+        >
+          <HStack
+            gap="small"
+            align="center"
+            className="min-w-0 "
+          >
+            <ArrowCurveIcon size="xsmall" />
+            <TemplateIcon size="xsmall" />
+
+            <Typography
+              className="text-xs"
+              color="lighter"
+              variant="body3"
+              overflow="ellipsis"
+              noWrap
+              fullWidth
+            >
+              {templateName || agent.template_id}
+            </Typography>
+          </HStack>
+        </Link>
+      )}
+    </div>
   );
 };
 
@@ -345,9 +349,7 @@ const TemplateCard = ({
   );
 
   return (
-    <div
-      className="bg-list-item-background relative min-w-[350px] flex-1 border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
-    >
+    <div className="bg-list-item-background relative min-w-[350px] flex-1 border border-background-grey3-border min-h-[100px] max-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer">
       <Link href={`/projects/${slug}/templates/${template.name}`}>
         <VStack
           position="relative"
@@ -414,7 +416,7 @@ const TemplateCard = ({
   );
 };
 
-function EmptyTemplateState () {
+function EmptyTemplateState() {
   const t = useTranslations('projects/(projectSlug)/page');
   const [canCRDTemplates] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
@@ -491,12 +493,8 @@ function RecentTemplatesSection() {
   const isLoading = !data?.body;
   const hasNoItems = templatesList.length === 0;
 
-
-
   return (
-    <VStack
-
-      fullWidth fullHeight border gap="large" padding>
+    <VStack fullWidth fullHeight border gap="large" padding>
       <HStack className="h-biHeight-sm" align="center" justify="spaceBetween">
         <HStack align="center">
           <Link
@@ -521,12 +519,7 @@ function RecentTemplatesSection() {
         )}
       </HStack>
 
-      <VStack
-        collapseHeight
-        flex
-        overflowX="hidden"
-        overflowY="auto"
-      >
+      <VStack collapseHeight flex overflowX="hidden" overflowY="auto">
         {isLoading ? (
           <HStack gap wrap>
             <LoadingState className="min-w-[350px]" count={6} />
@@ -679,10 +672,13 @@ function ProjectPage() {
               <MiniObservabilityDashboard />
             </div>
           </DynamicStack>
-          <DynamicStack  className="items-stretch recents-page" wrap fullWidth align="start">
-            <div
-              className="w-full overflow-hidden largerThanMobile:h-full largerThanMobile:flex-[3] largerThanMobile:min-w-[500px]"
-            >
+          <DynamicStack
+            className="items-stretch recents-page"
+            wrap
+            fullWidth
+            align="start"
+          >
+            <div className="w-full overflow-hidden largerThanMobile:h-full largerThanMobile:flex-[3] largerThanMobile:min-w-[500px]">
               <RecentTemplatesSection />
             </div>
             <div
