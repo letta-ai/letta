@@ -192,6 +192,7 @@ class LettaAgentBatch(BaseAgent):
 
         log_event(name="send_llm_batch_request")
         batch_response = await llm_client.send_llm_batch_request_async(
+            agent_type=agent_states[0].agent_type,
             agent_messages_mapping=agent_messages_mapping,
             agent_tools_mapping=agent_tools_mapping,
             agent_llm_config_mapping=agent_llm_config_mapping,
