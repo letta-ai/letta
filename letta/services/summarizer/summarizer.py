@@ -10,7 +10,7 @@ from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.prompts import gpt_summarize
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import AgentType, MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
@@ -383,7 +383,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             {"role": "user", "content": summary_transcript},
         ]
     input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
-    request_data = llm_client.build_request_data(input_messages_obj, llm_config, tools=[])
+    request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, llm_config, tools=[])
 
     # NOTE: we should disable the inner_thoughts_in_kwargs here, because we don't use it
     # I'm leaving it commented it out for now for safety but is fine assuming the var here is a copy not a reference
