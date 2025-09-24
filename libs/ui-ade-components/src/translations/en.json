@@ -1440,6 +1440,7 @@
     }
   },
   "ADE/AgentSimulator": {
+    "emptyStateQuestion": "What do you want to ask?",
     "HTILConfirmationInput": {
       "arguments": "Tool arguments",
       "badge": "Tool Confirmation",
@@ -1608,6 +1609,42 @@
         "enterprise": "You've hit your limit of premium model requests. Please contact support to see your options."
       },
       "creditLimitExceeded": "You have run out of credits, please <link>buy more credits</link> to continue using your agent."
+    },
+    "examples": {
+      "prompts": {
+        "agentValidation": {
+          "label": "Agent validation",
+          "prompts": {
+            "0": "Validate the agent's current configuration and settings",
+            "1": "Check if the agent's persona is properly defined",
+            "2": "Verify the agent's memory and context limits"
+          }
+        },
+        "testMemory": {
+          "label": "Test memory",
+          "prompts": {
+            "0": "What do you remember about our previous conversation?",
+            "1": "Can you recall the last task I asked you to perform?",
+            "2": "What information do you have stored about my preferences?"
+          }
+        },
+        "runTool": {
+          "label": "Run tool",
+          "prompts": {
+            "0": "Use the search tool to find information about the current project",
+            "1": "Execute a file listing command in the project directory",
+            "2": "Run a diagnostic check on the current codebase"
+          }
+        },
+        "checkReasoning": {
+          "label": "Check reasoning",
+          "prompts": {
+            "0": "Explain your reasoning for the last decision you made",
+            "1": "Walk through your thought process step by step",
+            "2": "How would you approach solving this complex problem?"
+          }
+        }
+      }
     }
   },
 
