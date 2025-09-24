@@ -13,6 +13,7 @@ import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 import { getClickhouseStepInterval } from '../utils/getClickhouseStepInterval';
+import { roundToNearestHours, roundToNearestMinutes } from 'date-fns';
 
 type GetTotalMessagesPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getTotalMessagesPerDay
@@ -33,7 +34,7 @@ export async function getTotalMessagesPerDay(
   // Get time granularity configuration
   const granularity = getTimeConfig(timeRange || '30d');
 
-  // Check cache first
+  // // Check cache first
   try {
     const cachedBody = await getObservabilityCache<
       ServerInferResponseBody<
@@ -94,6 +95,23 @@ export async function getTotalMessagesPerDay(
     fromValue = Math.round(new Date(startDate).getTime() / 1000);
     toValue = Math.round(new Date(endDate).getTime() / 1000);
   }
+
+  // move fromValue and toValue to nearest stepInterval granularity
+  const minutes = granularity.intervalMinutes;
+  if (minutes < 60) {
+    // nearest 5 minutes
+    fromValue = roundToNearestMinutes(new Date(fromValue * 1000), {
+      nearestTo: 5,
+    }).getTime() / 1000;
+    toValue = roundToNearestMinutes(new Date(toValue * 1000), {
+      nearestTo: 5,
+    }).getTime() / 1000;
+  } else if (minutes === 60) {
+    // nearest hour
+    fromValue = roundToNearestHours(new Date(fromValue * 1000)).getTime() / 1000;
+    toValue = roundToNearestHours(new Date(toValue * 1000)).getTime() / 1000;
+  }
+
 
   const result = await client.query({
     query: `

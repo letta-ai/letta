@@ -389,6 +389,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     };
   }, [previousOverview, previousStepsData, previousToolErrorsData, previousApiErrorsData, previousToolLatencyData]);
 
+
   const calculatePeriodTrend = useCallback((currentValue: number, previousValue: number): 'up' | 'down' | 'neutral' => {
     if (currentValue === previousValue) return 'neutral';
     return currentValue > previousValue ? 'up' : 'down';
