@@ -26,25 +26,26 @@ for config_file in config_files:
 
 
 @pytest.fixture
-def server():
+async def server():
     config = LettaConfig.load()
     config.save()
 
     server = SyncServer()
+    await server.init_async()
     return server
 
 
 @pytest.fixture
 async def default_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
-    org = server.organization_manager.create_default_organization()
+    org = await server.organization_manager.create_default_organization_async()
     yield org
 
 
 @pytest.fixture
-def default_user(server: SyncServer, default_organization):
+async def default_user(server: SyncServer, default_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = server.user_manager.create_default_user(org_id=default_organization.id)
+    user = await server.user_manager.create_default_actor_async(org_id=default_organization.id)
     yield user
 
 
