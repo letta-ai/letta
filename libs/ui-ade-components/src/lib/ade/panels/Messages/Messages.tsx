@@ -53,14 +53,9 @@ export function Messages(props: MessagesProps) {
       return false;
     }
 
-    // last sent message was less than 10 seconds ago refetch every 500ms;
-
-    if (lastMessageReceived && Date.now() - lastMessageReceived.date < 10000) {
-      return 500;
-    }
 
     return 5000;
-  }, [isSendingMessage, lastMessageReceived]);
+  }, [isSendingMessage]);
 
   const { data, hasNextPage, fetchNextPage, isFetching, isFetchingNextPage } =
     useAgentMessages({
@@ -159,8 +154,25 @@ export function Messages(props: MessagesProps) {
 
     const messages = data.pages.flat();
 
-    return removeDuplicateMessages(messages).filter(shouldRenderMessage);
-  }, [data, shouldRenderMessage]);
+    let res = removeDuplicateMessages(messages).filter(shouldRenderMessage).toSorted((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+    const lastMessage = res[res.length - 1];
+
+    if (isSendingMessage || lastMessage?.message_type === 'user_message') {
+      res = [
+        ...res,
+        {
+          id: 'sending-message-placeholder',
+          content: '',
+          message_type: 'assistant_message',
+          date: new Date().toISOString(),
+        }
+      ]
+    }
+
+    return res;
+  }, [data, isSendingMessage, shouldRenderMessage]);
 
   const { scrollRef } = useManageMessageScroller({
     isSendingMessage,
@@ -243,6 +255,7 @@ export function Messages(props: MessagesProps) {
           <MessageGroups
             mode={mode}
             messages={messages}
+            isSendingMessage={isSendingMessage}
             hasNextPage={hasNextPage}
           />
         </VStack>

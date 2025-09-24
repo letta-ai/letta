@@ -1254,6 +1254,8 @@
     "rejected": "User rejected running the tool"
   },
   "components/Messages": {
+    "agentIsRunning": "This agent is currently running new messages may appear below",
+    "agentIsThinking": "Agent is thinking...",
     "ToggleDebugMode": {
       "goToDebug": "Debug message",
       "goToInteractive": "Return to interactive"

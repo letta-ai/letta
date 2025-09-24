@@ -130,7 +130,7 @@ export function AgentSimulator() {
         <VStack position="relative" gap={false} fullHeight fullWidth>
           <AgentSimulatorHeader />
           <VStack collapseHeight gap={false} fullWidth>
-            <VStack gap="large" collapseHeight>
+            <VStack gap={false} collapseHeight>
               <VStack collapseHeight position="relative">
                 <ErrorBoundary fallback={<InvalidMessages />}>
                   <Messages

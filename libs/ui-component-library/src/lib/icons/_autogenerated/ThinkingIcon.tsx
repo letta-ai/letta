@@ -809,7 +809,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_5_G">
                 <path
                   id="_R_G_L_5_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M1.13 -1.4 C1.13,-1.4 1.14,1.78 1.14,1.78 C1.14,1.78 -0.64,1.78 -0.64,1.78 C-0.64,1.78 -0.64,-1.4 -0.64,-1.4 C-0.64,-1.4 1.13,-1.4 1.13,-1.4z "
@@ -825,7 +825,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_4_G">
                 <path
                   id="_R_G_L_4_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M0.55 -0.55 C0.55,-0.55 0.55,0.55 0.55,0.55 C0.55,0.55 -0.55,0.55 -0.55,0.55 C-0.55,0.55 -0.55,-0.55 -0.55,-0.55 C-0.55,-0.55 0.55,-0.55 0.55,-0.55z "
@@ -841,7 +841,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_3_G">
                 <path
                   id="_R_G_L_3_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M0.55 -1.1 C0.55,-1.1 0.55,1.1 0.55,1.1 C0.55,1.1 -0.55,1.1 -0.55,1.1 C-0.55,1.1 -0.55,-1.1 -0.55,-1.1 C-0.55,-1.1 0.55,-1.1 0.55,-1.1z "
@@ -857,7 +857,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_2_G">
                 <path
                   id="_R_G_L_2_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M0.93 -1.59 C0.93,-1.59 0.93,1.6 0.93,1.6 C0.93,1.6 -0.93,1.6 -0.93,1.6 C-0.93,1.6 -0.93,-1.59 -0.93,-1.59 C-0.93,-1.59 0.93,-1.59 0.93,-1.59z "
@@ -873,7 +873,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_1_G">
                 <path
                   id="_R_G_L_1_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M0.55 -0.93 C0.55,-0.93 0.55,0.93 0.55,0.93 C0.55,0.93 -0.55,0.93 -0.55,0.93 C-0.55,0.93 -0.55,-0.93 -0.55,-0.93 C-0.55,-0.93 0.55,-0.93 0.55,-0.93z "
@@ -889,7 +889,7 @@ export function ThinkingIcon(props: IconWrappedProps) {
               <g id="_R_G_L_0_G">
                 <path
                   id="_R_G_L_0_G_D_0_P_0"
-                  fill="hsl(var(--background))"
+                  fill="hsl(var(--primary))"
                   fillOpacity="1"
                   fillRule="nonzero"
                   d=" M0.55 -0.93 C0.55,-0.93 0.55,0.93 0.55,0.93 C0.55,0.93 -0.55,0.93 -0.55,0.93 C-0.55,0.93 -0.55,-0.93 -0.55,-0.93 C-0.55,-0.93 0.55,-0.93 0.55,-0.93z "

@@ -22,7 +22,6 @@ import {
   ChevronUpIcon,
   ImagesModeIcon,
   SendIcon,
-  ThinkingIcon,
   WarningIcon,
 } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
@@ -238,7 +237,6 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       roles,
       errorActionButton: errorButton,
       getSendSnippet,
-      sendingMessageText,
       isSendingMessage,
       hasFailedToSendMessageText,
       modelHandle,
@@ -481,23 +479,6 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
 
     return (
       <Frame position="relative" paddingX="medium" paddingBottom>
-        <HStack
-          gap="small"
-          align="center"
-          position="absolute"
-          className={cn(
-            'mt-[-25px] fade-out-0 fade-in-10  transition-all duration-200 slide-in-from-bottom-10',
-            isSendingMessage ? '' : 'mt-0 opacity-0',
-          )}
-        >
-          <div>
-            <ThinkingIcon color="muted" size="small" />
-          </div>
-          <Typography color="muted" bold>
-            {sendingMessageText}
-          </Typography>
-        </HStack>
-
         <VStack
           color="panel-input-background"
           onSubmit={handleSubmit}
