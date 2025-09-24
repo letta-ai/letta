@@ -7,3 +7,12 @@
   scrollbar-width: thin;
   scrollbar-color:  hsla(var(--ade-scrollbar), 0.16) transparent;
 }
+
+.ade-page *::-webkit-scrollbar {
+  width: 5px;
+  background-color: transparent; /* or add it to the track */
+}
+
+.ade-page *::-webkit-scrollbar-thumb {
+  background-color: hsla(var(--ade-scrollbar), 0.16);
+}
