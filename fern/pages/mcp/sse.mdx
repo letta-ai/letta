@@ -31,14 +31,14 @@ Letta recognizes templated variables in the custom header and auth token fields 
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
-from letta_client.types import StreamableHTTPServerConfig, MCPServerType
+from letta_client.types import StreamableHttpServerConfig, McpServerType
 
 client = Letta(token="LETTA_API_KEY")
 
 # Connect a Streamable HTTP server with Bearer token auth
-streamable_config = StreamableHTTPServerConfig(
+streamable_config = StreamableHttpServerConfig(
     server_name="my-server",
-    type=MCPServerType.STREAMABLE_HTTP,
+    type=McpServerType.StreamableHttp,
     server_url="https://mcp-server.example.com/mcp",
     auth_header="Authorization",
     auth_token="Bearer your-token",  # Include "Bearer " prefix
@@ -48,9 +48,9 @@ streamable_config = StreamableHTTPServerConfig(
 client.tools.add_mcp_server(request=streamable_config)
 
 # Example with templated variables for agent-scoped authentication
-agent_scoped_config = StreamableHTTPServerConfig(
+agent_scoped_config = StreamableHttpServerConfig(
     server_name="user-specific-server",
-    type=MCPServerType.STREAMABLE_HTTP,
+    type=McpServerType.StreamableHttp,
     server_url="https://api.example.com/mcp",
     auth_header="Authorization",
     auth_token="Bearer {{AGENT_API_KEY | api_key}}",  # Agent-specific API key
@@ -126,14 +126,14 @@ Letta recognizes templated variables in the custom header and auth token fields 
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
-from letta_client.types import SseServerConfig, MCPServerType
+from letta_client.types import SseServerConfig, McpServerType
 
 client = Letta(token="LETTA_API_KEY")
 
 # Connect a SSE server (legacy)
 sse_config = SseServerConfig(
     server_name="legacy-server",
-    type=MCPServerType.SSE,
+    type=McpServerType.Sse,
     server_url="https://legacy-mcp.example.com/sse",
     auth_header="Authorization",
     auth_token="Bearer optional-token"  # Include "Bearer " prefix
