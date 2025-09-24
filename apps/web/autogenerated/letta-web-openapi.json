@@ -1341,6 +1341,7 @@
                             "enum": [
                               "memgpt_agent",
                               "memgpt_v2_agent",
+                              "letta_v1_agent",
                               "react_agent",
                               "workflow_agent",
                               "split_thread_agent",
@@ -2217,6 +2218,7 @@
                                     "enum": [
                                       "memgpt_agent",
                                       "memgpt_v2_agent",
+                                      "letta_v1_agent",
                                       "react_agent",
                                       "workflow_agent",
                                       "split_thread_agent",
@@ -2242,6 +2244,7 @@
                                           "enum": [
                                             "memgpt_agent",
                                             "memgpt_v2_agent",
+                                            "letta_v1_agent",
                                             "react_agent",
                                             "workflow_agent",
                                             "split_thread_agent",
@@ -7413,6 +7416,7 @@
                             "enum": [
                               "memgpt_agent",
                               "memgpt_v2_agent",
+                              "letta_v1_agent",
                               "react_agent",
                               "workflow_agent",
                               "split_thread_agent",
@@ -8289,6 +8293,7 @@
                                     "enum": [
                                       "memgpt_agent",
                                       "memgpt_v2_agent",
+                                      "letta_v1_agent",
                                       "react_agent",
                                       "workflow_agent",
                                       "split_thread_agent",
@@ -8314,6 +8319,7 @@
                                           "enum": [
                                             "memgpt_agent",
                                             "memgpt_v2_agent",
+                                            "letta_v1_agent",
                                             "react_agent",
                                             "workflow_agent",
                                             "split_thread_agent",
@@ -13100,6 +13106,7 @@
                           "agentType": {
                             "type": "string",
                             "enum": [
+                              "letta_v1_agent",
                               "memgpt_agent",
                               "memgpt_v2_agent",
                               "react_agent",

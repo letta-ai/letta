@@ -281,6 +281,7 @@ export type LLMConfigPropertiesForAgentTemplateType = z.infer<
 
 
 export const SupportedAgentTypeSchema = z.enum([
+  'letta_v1_agent',
   'memgpt_agent',
   'memgpt_v2_agent',
   'react_agent',

@@ -400,6 +400,7 @@ export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
   z.literal('memgpt_v2_agent'),
+  z.literal('letta_v1_agent'),
   z.literal('react_agent'),
   z.literal('workflow_agent'),
   z.literal('split_thread_agent'),
@@ -3727,6 +3728,24 @@ export const FunctionTool = z.intersection(
   }),
 );
 
+export type SummarizedReasoningContentPart = z.infer<
+  typeof SummarizedReasoningContentPart
+>;
+export const SummarizedReasoningContentPart = z.object({
+  index: z.number(),
+  text: z.string(),
+});
+
+export type SummarizedReasoningContent = z.infer<
+  typeof SummarizedReasoningContent
+>;
+export const SummarizedReasoningContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  id: z.string(),
+  summary: z.array(SummarizedReasoningContentPart),
+  encrypted_content: z.union([z.string(), z.undefined()]).optional(),
+});
+
 export type Message = z.infer<typeof Message>;
 export const Message = z.object({
   created_by_id: z
@@ -3783,6 +3802,7 @@ export const Message = z.object({
           ReasoningContent,
           RedactedReasoningContent,
           OmittedReasoningContent,
+          SummarizedReasoningContent,
         ]),
       ),
       z.null(),
@@ -3797,6 +3817,7 @@ export const Message = z.object({
               ReasoningContent,
               RedactedReasoningContent,
               OmittedReasoningContent,
+              SummarizedReasoningContent,
             ]),
           ),
           z.null(),

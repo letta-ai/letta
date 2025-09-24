@@ -361,6 +361,7 @@ export type AgentState = {
 export type AgentType =
   | 'memgpt_agent'
   | 'memgpt_v2_agent'
+  | 'letta_v1_agent'
   | 'react_agent'
   | 'workflow_agent'
   | 'split_thread_agent'
@@ -3494,6 +3495,7 @@ export type Message = {
     | ReasoningContent
     | RedactedReasoningContent
     | OmittedReasoningContent
+    | SummarizedReasoningContent
   > | null;
   /**
    * For role user/assistant: the (optional) name of the participant. For role tool/function: the name of the function called.
@@ -3720,6 +3722,9 @@ export type NpmRequirement = {
   version?: string | null;
 };
 
+/**
+ * A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)
+ */
 export type OmittedReasoningContent = {
   /**
    * Indicates this is an omitted reasoning step.
@@ -4132,6 +4137,9 @@ export type ProviderUpdate = {
   api_version?: string | null;
 };
 
+/**
+ * Sent via the Anthropic Messages API
+ */
 export type ReasoningContent = {
   /**
    * Indicates this is a reasoning/intermediate step.
@@ -4184,6 +4192,9 @@ export type ReasoningMessage = {
 
 export type source = 'reasoner_model' | 'non_reasoner_model';
 
+/**
+ * Sent via the Anthropic Messages API
+ */
 export type RedactedReasoningContent = {
   /**
    * Indicates this is a redacted thinking step.
@@ -4954,6 +4965,39 @@ export type StreamableHTTPServerConfig = {
   custom_headers?: {
     [key: string]: string;
   } | null;
+};
+
+/**
+ * The style of reasoning content returned by the OpenAI Responses API
+ */
+export type SummarizedReasoningContent = {
+  /**
+   * Indicates this is a summarized reasoning step.
+   */
+  type?: 'summarized_reasoning';
+  /**
+   * The unique identifier for this reasoning step.
+   */
+  id: string;
+  /**
+   * Summaries of the reasoning content.
+   */
+  summary: Array<SummarizedReasoningContentPart>;
+  /**
+   * The encrypted reasoning content.
+   */
+  encrypted_content?: string;
+};
+
+export type SummarizedReasoningContentPart = {
+  /**
+   * The index of the summary part.
+   */
+  index: number;
+  /**
+   * The text of the summary part.
+   */
+  text: string;
 };
 
 export type SupervisorManager = {

@@ -406,6 +406,7 @@ class LettaAgentV2(BaseAgentV2):
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
                         request_data = self.llm_client.build_request_data(
+                            agent_type=self.agent_state.agent_type,
                             messages=messages,
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
