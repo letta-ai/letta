@@ -6,6 +6,7 @@ import { forwardRef, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { MaybeTooltip } from '../Tooltip/Tooltip';
 import type { Placement } from '@floating-ui/react';
+import './Button.scss';
 
 const buttonVariants = cva(
   'items-center cursor-pointer border inline-flex disable-app-header whitespace-nowrap transition-width duration-200 ease-in-out',
@@ -34,12 +35,12 @@ const buttonVariants = cva(
 
       color: {
         tertiary:
-          'bg-transparent border-none hover:bg-secondary-hover hover:!text-brand-hover-content text-text-lighter',
+          'bg-transparent border-none hover:bg-secondary-hover hover:!text-brand-hover-content text-text-lighter ',
         brand:
           'bg-brand-light hover:bg-brand-light-hover text-brand-light-content border-transparent',
         primary: 'bg-primary text-primary-content border-transparent',
         secondary:
-          'bg-transparent hover:bg-secondary-hover text-text-default border-button-border',
+          'bg-transparent hover:bg-secondary-hover text-text-default button-secondary-border',
         destructive:
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
         black:
