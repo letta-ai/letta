@@ -35,7 +35,10 @@
         "typescript/consistent-type-imports": "error",
         "typescript/no-explicit-any": "error",
         "no-invalid-remove-event-listener": "error",
+        "typescript/no-non-null-assertion": "error",
+
         "typescript/no-unused-vars": "error",
+        "typescript/prefer-function-type": "error",
         "typescript/prefer-as-const": "warn",
         "no-unused-vars": ["error", {
           "args": "all",

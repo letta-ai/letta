@@ -1,4 +1,5 @@
 /* jest-environment node */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { BASE_URL, lettaAxiosSDK } from './constants';
 import { destroyRedisInstance } from '@letta-cloud/service-redis';
 import waitOn from 'wait-on';

@@ -71,8 +71,8 @@ export function useObservabilityChartData(data: ObservabilityData): Observabilit
     if (!items || items.length === 0) return 0;
 
     const validItems = items
-      .filter(item => item[field] && item[field]! > 0)
-      .map(item => item[field]!)
+      .filter(item => item[field] && item[field] > 0)
+      .map(item => item[field] || 0)
       .sort((a, b) => a - b);
 
     if (validItems.length === 0) return 0;

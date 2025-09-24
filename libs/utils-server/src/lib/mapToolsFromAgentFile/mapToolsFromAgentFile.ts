@@ -77,7 +77,7 @@ export async function mapToolsFromAgentFile(
     .filter(tool => tool.name && tool.source_code)
     .map(async (tool) => {
       const toolCreateData: ToolCreate = {
-        source_code: tool.source_code!,
+        source_code: tool.source_code || '',
         source_type: tool.source_type || 'python',
         description: tool.description || undefined,
         tags: tool.tags || undefined,
@@ -88,7 +88,7 @@ export async function mapToolsFromAgentFile(
         requestBody: toolCreateData,
       }, { user_id: lettaAgentsId });
 
-      return { toolName: tool.name!, createdTool };
+      return { toolName: tool?.name || '', createdTool };
     });
 
   const createdToolResults = await Promise.all(toolCreationPromises);

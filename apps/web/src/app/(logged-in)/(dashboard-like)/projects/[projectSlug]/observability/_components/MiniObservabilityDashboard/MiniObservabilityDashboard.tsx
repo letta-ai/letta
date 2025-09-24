@@ -333,10 +333,10 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     // calculate median latencies for current period
     const currentP50Latencies = toolLatencyData?.body.items
       .filter(item => item.p50LatencyMs && item.p50LatencyMs > 0)
-      .map(item => item.p50LatencyMs!) || [];
+      .map(item => item.p50LatencyMs || 0) || [];
     const currentP99Latencies = toolLatencyData?.body.items
       .filter(item => item.p99LatencyMs && item.p99LatencyMs > 0)
-      .map(item => item.p99LatencyMs!) || [];
+      .map(item => item.p99LatencyMs || 0) || [];
 
     const medianP50 = currentP50Latencies.length > 0
       ? currentP50Latencies.sort((a, b) => a - b)[Math.floor(currentP50Latencies.length / 2)]
@@ -366,10 +366,10 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     // calculate median latencies for prev period
     const previousP50Latencies = previousToolLatencyData?.body.items
       .filter(item => item.p50LatencyMs && item.p50LatencyMs > 0)
-      .map(item => item.p50LatencyMs!) || [];
+      .map(item => item.p50LatencyMs || 0) || [];
     const previousP99Latencies = previousToolLatencyData?.body.items
       .filter(item => item.p99LatencyMs && item.p99LatencyMs > 0)
-      .map(item => item.p99LatencyMs!) || [];
+      .map(item => item.p99LatencyMs || 0) || [];
 
     const medianP50 = previousP50Latencies.length > 0
       ? previousP50Latencies.sort((a, b) => a - b)[Math.floor(previousP50Latencies.length / 2)]

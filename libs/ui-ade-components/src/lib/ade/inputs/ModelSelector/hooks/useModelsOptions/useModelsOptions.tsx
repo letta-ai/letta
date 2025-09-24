@@ -140,10 +140,12 @@ function useHostedOptions() {
       };
 
       if (model.provider_category === 'byok') {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         options[1].options!.push(option);
       }
 
       if (model.provider_category === 'base') {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         options[0].options!.push(option);
       }
     });

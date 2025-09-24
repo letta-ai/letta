@@ -14,6 +14,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { PHProvider } from '@letta-cloud/service-analytics/client';
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 const queryClient = new QueryClient();
