@@ -12,6 +12,7 @@ config({ path: resolve(__dirname, '.env') });
 let db: PostgresJsDatabase<typeof schema>;
 
 if (process.env.NODE_ENV === 'production') {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   db = drizzle(postgres(process.env.DATABASE_URL!), {
     schema,
   });
@@ -21,6 +22,7 @@ if (process.env.NODE_ENV === 'production') {
   if (!global.db) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - this is a global variable on local only DO NOT MAKE ANY FIXES
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     global.db = drizzle(postgres(process.env.DATABASE_URL!), {
       schema,
     });

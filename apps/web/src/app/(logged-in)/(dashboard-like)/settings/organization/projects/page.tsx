@@ -113,10 +113,10 @@ function ProjectsPage() {
   } = webApi.agentfile.getAgentfile.useQuery({
     queryData: {
       params: {
-        agentId: targetAgentId!,
+        agentId: targetAgentId || '',
       },
     },
-    queryKey: webApiQueryKeys.agentfile.getAgentfile(targetAgentId!),
+    queryKey: webApiQueryKeys.agentfile.getAgentfile(targetAgentId || ''),
     enabled: !!targetAgentId,
     retry: false,
   });

@@ -33,6 +33,7 @@ function createAgent(): string {
   return data.id || '';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function sendMessageToAgent(agentId: string) {
   const res = http.post(
     `${DEFAULT_SERVER}/v1/agents/${agentId}/messages`,
@@ -52,6 +53,7 @@ function sendMessageToAgent(agentId: string) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function deleteAgent(agentId: string) {
   if (!agentId) {
     fail('Invalid agent ID');
@@ -71,7 +73,7 @@ function deleteAgent(agentId: string) {
 }
 
 export default () => {
-  const agentId = createAgent();
+  createAgent();
 
   // sendMessageToAgent(agentId);
 

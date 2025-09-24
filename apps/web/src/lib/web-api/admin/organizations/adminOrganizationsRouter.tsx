@@ -432,6 +432,7 @@ async function adminListOrganizationUsers(
 
   if (search) {
     userWhereConditions.push(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))!,
     );
   }

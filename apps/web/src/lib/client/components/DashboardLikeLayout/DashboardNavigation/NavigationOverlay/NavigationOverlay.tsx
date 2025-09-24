@@ -89,6 +89,7 @@ export function NavigationOverlay() {
               )}
             />
           </>,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           document.getElementById(SIDEBAR_OVERLAY_MOUNT_POINT_ID)!,
         )}
     </>

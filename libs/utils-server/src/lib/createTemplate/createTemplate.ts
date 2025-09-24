@@ -546,10 +546,14 @@ export async function createTemplate(options: CreateTemplateOptions) {
       }
     }
 
+    if (!project) {
+      throw new Error(CREATE_TEMPLATE_ERRORS.PROJECT_NOT_FOUND);
+    }
+
     const lettaTemplate = await saveTemplate({
       organizationId,
       lettaAgentsId,
-      projectSlug: project!.slug,
+      projectSlug: project.slug,
       templateName: name,
       message: 'Init',
       tx,
@@ -557,7 +561,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
 
     return {
       lettaTemplate,
-      projectSlug: project!.slug,
+      projectSlug: project.slug,
     };
   }
 

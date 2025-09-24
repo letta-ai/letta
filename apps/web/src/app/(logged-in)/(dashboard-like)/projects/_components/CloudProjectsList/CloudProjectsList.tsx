@@ -143,8 +143,11 @@ function ProjectCard(props: ProjectCardProps) {
     const filtered = combinedItems.filter((item) => item.updatedAt != null);
 
     const sorted = filtered.sort((a, b) => {
-      const dateA = new Date(a.updatedAt!).getTime();
-      const dateB = new Date(b.updatedAt!).getTime();
+      if (!a.updatedAt) return 1;
+      if (!b.updatedAt) return -1;
+
+      const dateA = new Date(a.updatedAt).getTime();
+      const dateB = new Date(b.updatedAt).getTime();
       return dateB - dateA;
     });
 

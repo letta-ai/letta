@@ -147,12 +147,12 @@ export async function migrateDeploymentEntities(
       );
 
       const existingBlockMap = new Map(
-        existingBlocks.map((block) => [block.entity_id!, block]),
+        existingBlocks.map((block) => [block.entity_id || '', block]),
       );
 
       // Find blocks to delete, add, and update
       const blocksToDelete = existingBlocks.filter(
-        (block) => !newBlockTemplateMap.has(block.entity_id!),
+        (block) => !newBlockTemplateMap.has(block.entity_id || ''),
       );
       const blocksToAdd = newBlockTemplates.filter(
         (template) => !existingBlockMap.has(template.entityId),
@@ -271,7 +271,7 @@ export async function migrateDeploymentEntities(
               // Update the core memory block through the agent
               await AgentsService.modifyCoreMemoryBlock(
                 {
-                  agentId: agent.id!,
+                  agentId: agent.id || '',
                   blockLabel: blockDetails.label,
                   requestBody: {
                     ...!preserveCoreMemories && { value: processedValue },
@@ -297,12 +297,12 @@ export async function migrateDeploymentEntities(
       newAgentTemplates.map((agent) => [agent.entityId, agent]),
     );
     const existingAgentMap = new Map(
-      existingAgents.map((agent) => [agent.entity_id!, agent]),
+      existingAgents.map((agent) => [agent.entity_id || '', agent]),
     );
 
     // Find agents to delete, add, and update
     const agentsToDelete = existingAgents.filter(
-      (agent) => !newAgentTemplateMap.has(agent.entity_id!),
+      (agent) => !newAgentTemplateMap.has(agent.entity_id || ''),
     );
 
 
@@ -348,7 +348,7 @@ export async function migrateDeploymentEntities(
 
 
     const currentBlockMap = new Map(
-      currentBlocks.map((block) => [block.entity_id!, block.id]),
+      currentBlocks.map((block) => [block.entity_id || '', block.id]),
     );
 
     // Add new agents from the template
@@ -706,7 +706,7 @@ export async function migrateDeploymentEntities(
       // fetch group by id
       const foundGroup = await GroupsService.retrieveGroup(
         {
-          groupId: existingGroup.id!,
+          groupId: existingGroup.id || '',
         },
         {
           user_id: lettaAgentsUserId,

@@ -69,7 +69,7 @@ async function deleteTool(name: string) {
 
   if (tool) {
     await ToolsService.deleteTool({
-      toolId: tool.id!,
+      toolId: tool.id || '',
     }, {
       user_id: lettaAgentsId,
     });

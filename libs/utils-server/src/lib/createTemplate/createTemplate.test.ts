@@ -599,6 +599,7 @@ describe('createTemplate', () => {
 
       const customAgent = createMockAgent('memgpt_v2_agent', []);
       customAgent.system = 'Custom system prompt';
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       customAgent.llm_config!.temperature = 0.9;
       customAgent.tags = ['tag1', 'tag2'];
       customAgent.tool_exec_environment_variables = { ENV_VAR: 'value' };

@@ -25,7 +25,7 @@ export async function listCreditCards(payload: ListCreditCardsPayload) {
     .then((paymentMethods) =>
       paymentMethods.data.map((paymentMethod) => ({
         ...paymentMethod,
-        card: paymentMethod.card!,
+        card: paymentMethod.card,
       })),
     );
 }

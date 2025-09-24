@@ -407,11 +407,11 @@ function ModelProvidersPage() {
               triggerAsChild
             >
               <UpdateModelProviderDialog
-                modelProviderId={cell.row.original.id!}
+                modelProviderId={cell.row.original.id || ''}
                 modelProviderName={cell.row.original.name}
               />
               <DeleteModelProviderDialog
-                modelProviderId={cell.row.original.id!}
+                modelProviderId={cell.row.original.id || ''}
                 modelProviderName={cell.row.original.name}
               />
             </DropdownMenu>
