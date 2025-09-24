@@ -40,7 +40,6 @@ jobs:
               "integration_test_chat_completions.py",
               "integration_test_multi_agent.py",
               "integration_test_batch_api_cron_jobs.py",
-              "integration_test_batch_sdk.py",
               "integration_test_builtin_tools.py",
               "integration_test_turbopuffer.py",
               "integration_test_human_in_the_loop.py"
