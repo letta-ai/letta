@@ -89,6 +89,7 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     async def send_llm_batch_request_async(
         self,
+        agent_type: AgentType,
         agent_messages_mapping: Dict[str, List[PydanticMessage]],
         agent_tools_mapping: Dict[str, List[dict]],
         agent_llm_config_mapping: Dict[str, LLMConfig],
@@ -115,7 +116,7 @@ class AnthropicClient(LLMClientBase):
         try:
             requests = {
                 agent_id: self.build_request_data(
-                    agent_type=agent_llm_config_mapping[agent_id].agent_type,
+                    agent_type=agent_type,
                     messages=agent_messages_mapping[agent_id],
                     llm_config=agent_llm_config_mapping[agent_id],
                     tools=agent_tools_mapping[agent_id],
