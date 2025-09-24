@@ -22,7 +22,7 @@ import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 
 import { z } from 'zod';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useUserHasPermission } from '$web/client/hooks';
@@ -38,6 +38,7 @@ import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi } from '@letta-cloud/sdk-web';
+import { useFormContext } from 'react-hook-form';
 
 interface CreateNewTemplateVersionDialogProps {
   trigger: React.ReactNode;
@@ -54,6 +55,18 @@ function FormFields(props: FormFieldsProps) {
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
+
+  const {  watch, setValue } = useFormContext();
+
+  const isMigrateChecked = watch('migrate');
+
+  useEffect(() => {
+    // if migrate is unchecked, set overwriteToolVariables to false
+    if (!isMigrateChecked) {
+      setValue('overwriteToolVariables', false);
+    }
+  }, [isMigrateChecked, setValue]);
+
   return (
     <VStack fullHeight padding>
       <VStack fullWidth fullHeight paddingBottom gap="xlarge">
@@ -107,6 +120,7 @@ function FormFields(props: FormFieldsProps) {
               <Checkbox
                 data-testid="version-agent-dialog-overwrite-tool-variables-checkbox"
                 size="large"
+                disabled={!isMigrateChecked}
                 checked={field.value}
                 description={t(
                   'VersionAgentDialog.overwriteToolVariablesDescription',
