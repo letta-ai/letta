@@ -28,7 +28,7 @@ from letta.schemas.job import BatchJob
 from letta.schemas.llm_batch_job import AgentStepState
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.tool_rule import InitToolRule
-from letta.server.db import db_context
+from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
 
@@ -36,14 +36,14 @@ from letta.services.agent_manager import AgentManager
 
 
 @pytest.fixture(autouse=True)
-def _clear_tables():
-    with db_context() as session:
+async def _clear_tables():
+    async with db_registry.async_session() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
             # If this is the block_history table, skip it
             if table.name == "block_history":
                 continue
-            session.execute(table.delete())  # Truncate table
-        session.commit()
+            await session.execute(table.delete())  # Truncate table
+        await session.commit()
 
 
 def _run_server():
@@ -134,7 +134,7 @@ def create_failed_response(custom_id: str) -> BetaMessageBatchIndividualResponse
 # --- Test Setup Helpers --- #
 
 
-def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthropic/claude-3-5-sonnet-20241022"):
+async def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthropic/claude-3-5-sonnet-20241022"):
     """Create a test agent with standardized configuration."""
     dummy_llm_config = LLMConfig(
         model="claude-3-7-sonnet-latest",
@@ -165,7 +165,7 @@ def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthrop
         embedding_config=dummy_embedding_config,
     )
 
-    return agent_manager.create_agent(agent_create=agent_create, actor=actor, _test_only_force_id=test_id)
+    return await agent_manager.create_agent_async(agent_create=agent_create, actor=actor, _test_only_force_id=test_id)
 
 
 async def create_test_letta_batch_job_async(server, default_user):
@@ -281,9 +281,9 @@ async def test_polling_mixed_batch_jobs(default_user, server):
     batch_b_resp = create_batch_response("msgbatch_B", processing_status="ended")
 
     # Create test agents
-    agent_a = create_test_agent("agent_a", default_user)
-    agent_b = create_test_agent("agent_b", default_user)
-    agent_c = create_test_agent("agent_c", default_user)
+    agent_a = await create_test_agent("agent_a", default_user)
+    agent_b = await create_test_agent("agent_b", default_user)
+    agent_c = await create_test_agent("agent_c", default_user)
 
     # --- Step 2: Create batch jobs ---
     job_a = await create_test_llm_batch_job_async(server, batch_a_resp, default_user)
