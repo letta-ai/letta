@@ -386,15 +386,9 @@ async def import_agent(
         )
     else:
         # This is a legacy AgentSchema
-        agent_ids = import_agent_legacy(
-            agent_json=agent_json,
-            server=server,
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            project_id=project_id,
-            strip_messages=strip_messages,
-            env_vars=env_vars,
+        raise HTTPException(
+            status_code=400,
+            detail="Legacy AgentSchema format is deprecated. Please use the new AgentFileSchema format with 'agents' field.",
         )
 
     return ImportedAgentsResponse(agent_ids=agent_ids)
