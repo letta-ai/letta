@@ -316,7 +316,7 @@ class TemporalAgentWorkflow:
 
             # Validate tool call exists
             tool_call = call_result.tool_call
-            if tool_call is None and tool_call is None:
+            if tool_call is None:
                 stop_reason = StopReasonType.no_tool_call.value
                 should_continue = False
                 response_messages = []
@@ -585,7 +585,7 @@ class TemporalAgentWorkflow:
                 step_ns=step_ns,
                 llm_request_ns=llm_request_ns,
                 tool_execution_ns=tool_execution_ns,
-                stop_reason=stop_reason.value if stop_reason else None,
+                stop_reason=stop_reason.stop_reason.value if stop_reason else None,
             ),
             start_to_close_timeout=CREATE_STEP_ACTIVITY_START_TO_CLOSE_TIMEOUT,
             schedule_to_close_timeout=CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
@@ -611,8 +611,12 @@ class TemporalAgentWorkflow:
             UpdateRunParams(
                 run_id=run_id,
                 actor=actor,
-                job_status=JobStatus.completed,
-                stop_reason=stop_reason if stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn),
+                job_status=(
+                    JobStatus.running if continue_stepping else (stop_reason.stop_reason.run_status if stop_reason else JobStatus.completed)
+                ),
+                stop_reason=(
+                    None if continue_stepping else (stop_reason if stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn))
+                ),
                 persisted_messages=persisted_messages_result.messages,
             ),
             start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
