@@ -13259,6 +13259,7 @@
                           "agentType": {
                             "type": "string",
                             "enum": [
+                              "letta_v1_agent",
                               "memgpt_agent",
                               "memgpt_v2_agent",
                               "react_agent",
@@ -15606,6 +15607,7 @@
         "enum": [
           "memgpt_agent",
           "memgpt_v2_agent",
+          "letta_v1_agent",
           "react_agent",
           "workflow_agent",
           "split_thread_agent",
@@ -23361,6 +23363,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
                     }
                   ],
                   "discriminator": {
@@ -23370,6 +23375,7 @@
                       "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
                       "reasoning": "#/components/schemas/ReasoningContent",
                       "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
                       "text": "#/components/schemas/TextContent",
                       "tool_call": "#/components/schemas/ToolCallContent",
                       "tool_return": "#/components/schemas/ToolReturnContent"
@@ -23938,7 +23944,8 @@
           }
         },
         "type": "object",
-        "title": "OmittedReasoningContent"
+        "title": "OmittedReasoningContent",
+        "description": "A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)"
       },
       "Organization": {
         "properties": {
@@ -24850,7 +24857,8 @@
         },
         "type": "object",
         "required": ["is_native", "reasoning"],
-        "title": "ReasoningContent"
+        "title": "ReasoningContent",
+        "description": "Sent via the Anthropic Messages API"
       },
       "ReasoningMessage": {
         "properties": {
@@ -24991,7 +24999,8 @@
         },
         "type": "object",
         "required": ["data"],
-        "title": "RedactedReasoningContent"
+        "title": "RedactedReasoningContent",
+        "description": "Sent via the Anthropic Messages API"
       },
       "RequiredBeforeExitToolRule": {
         "properties": {
@@ -26747,6 +26756,56 @@
         "required": ["server_name", "server_url"],
         "title": "StreamableHTTPServerConfig",
         "description": "Configuration for an MCP server using Streamable HTTP\n\nAuthentication can be provided in multiple ways:\n1. Using auth_header + auth_token: Will add a specific header with the token\n   Example: auth_header=\"Authorization\", auth_token=\"Bearer abc123\"\n\n2. Using the custom_headers dict: For more complex authentication scenarios\n   Example: custom_headers={\"X-API-Key\": \"abc123\", \"X-Custom-Header\": \"value\"}"
+      },
+      "SummarizedReasoningContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "summarized_reasoning",
+            "title": "Type",
+            "description": "Indicates this is a summarized reasoning step.",
+            "default": "summarized_reasoning"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier for this reasoning step."
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/SummarizedReasoningContentPart"
+            },
+            "type": "array",
+            "title": "Summary",
+            "description": "Summaries of the reasoning content."
+          },
+          "encrypted_content": {
+            "type": "string",
+            "title": "Encrypted Content",
+            "description": "The encrypted reasoning content."
+          }
+        },
+        "type": "object",
+        "required": ["id", "summary"],
+        "title": "SummarizedReasoningContent",
+        "description": "The style of reasoning content returned by the OpenAI Responses API"
+      },
+      "SummarizedReasoningContentPart": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "The index of the summary part."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text of the summary part."
+          }
+        },
+        "type": "object",
+        "required": ["index", "text"],
+        "title": "SummarizedReasoningContentPart"
       },
       "SupervisorManager": {
         "properties": {

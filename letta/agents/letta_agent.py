@@ -1622,6 +1622,7 @@ class LettaAgent(BaseAgent):
 
         return (
             llm_client.build_request_data(
+                agent_state.agent_type,
                 in_context_messages,
                 agent_state.llm_config,
                 allowed_tools,
