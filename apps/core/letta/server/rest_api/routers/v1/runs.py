@@ -201,12 +201,7 @@ def retrieve_run_usage(
     Get usage statistics for a run.
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
-
-    try:
-        usage = server.job_manager.get_job_usage(job_id=run_id, actor=actor)
-        return usage
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+    raise Exception("Not implemented")
 
 
 @router.get(
