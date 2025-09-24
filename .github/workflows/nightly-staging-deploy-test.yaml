@@ -54,11 +54,9 @@ jobs:
           python-version: 3.12
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          activate-environment: true
-          cache-dependency-glob: "apps/core/uv.lock"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -155,11 +153,9 @@ jobs:
           python-version: 3.12
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          activate-environment: true
-          cache-dependency-glob: "apps/core/uv.lock"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         working-directory: apps/core
