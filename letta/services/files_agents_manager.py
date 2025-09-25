@@ -711,31 +711,3 @@ class FileAgentManager:
         if not assoc:
             raise NoResultFound(f"FileAgent(agent_id={agent_id}, file_name={file_name}) not found in org {actor.organization_id}")
         return assoc
-
-    @enforce_types
-    @trace_method
-    async def get_files_agents_for_agents_async(self, agent_ids: List[str], actor: PydanticUser) -> List[PydanticFileAgent]:
-        """
-        Get all file-agent relationships for multiple agents in a single query.
-
-        Args:
-            agent_ids: List of agent IDs to find file-agent relationships for
-            actor: User performing the action
-
-        Returns:
-            List[PydanticFileAgent]: List of file-agent relationships for these agents
-        """
-        if not agent_ids:
-            return []
-
-        async with db_registry.async_session() as session:
-            query = select(FileAgentModel).where(
-                FileAgentModel.agent_id.in_(agent_ids),
-                FileAgentModel.organization_id == actor.organization_id,
-                FileAgentModel.is_deleted == False,
-            )
-
-            result = await session.execute(query)
-            file_agents_orm = result.scalars().all()
-
-            return [file_agent.to_pydantic() for file_agent in file_agents_orm]
