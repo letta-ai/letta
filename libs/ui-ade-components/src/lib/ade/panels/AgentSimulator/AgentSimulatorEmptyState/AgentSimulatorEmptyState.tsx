@@ -15,6 +15,7 @@ import { useCurrentAgent } from '../../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { AgentChatInput } from '../AgentChatInput/AgentChatInput';
 import { useSendMessage } from '@letta-cloud/ui-ade-components';
+import { QuickAgentSimulatorOnboarding } from '../QuickAgentSimulatorOnboarding';
 
 type PromptKey =
   | 'agentValidation'
@@ -130,61 +131,63 @@ export function AgentSimulatorEmptyState() {
         justify="center"
         className="largerThanMobile:px-[10%]"
       >
-        {/*Prevent layout shift when suggested prompt appears*/}
-        <div
-          className="w-full"
-          style={{
-            height: 335,
-          }}
-        >
-          <VStack paddingX="medium" paddingY="xlarge">
-            <Typography variant="heading4">
-              {t('emptyStateQuestion')}
-            </Typography>
-          </VStack>
-          <AgentChatInput />
-          {selectedPromptCategory ? (
-            <VStack border ref={promptsContainerRef} className="-mt-6 mx-3">
-              <ShowPrompts promptKey={selectedPromptCategory} />
+        <QuickAgentSimulatorOnboarding>
+          {/*Prevent layout shift when suggested prompt appears*/}
+          <div
+            className="w-full"
+            style={{
+              height: 335,
+            }}
+          >
+            <VStack paddingX="medium" paddingY="xlarge">
+              <Typography variant="heading4">
+                {t('emptyStateQuestion')}
+              </Typography>
             </VStack>
-          ) : (
-            <HStack
-              paddingX="medium"
-              gap="medium"
-              fullWidth
-              className={`flex-wrap`}
-            >
-              <Button
-                label={t('examples.prompts.agentValidation.label')}
-                size="small"
-                color="secondary"
-                preIcon={<AgentValidationIcon />}
-                onClick={() => setSelectedPromptCategory('agentValidation')}
-              />
-              <Button
-                label={t('examples.prompts.testMemory.label')}
-                size="small"
-                color="secondary"
-                preIcon={<TestMemoryIcon />}
-                onClick={() => setSelectedPromptCategory('testMemory')}
-              />
-              <Button
-                label={t('examples.prompts.runTool.label')}
-                size="small"
-                color="secondary"
-                preIcon={<LettaToolIcon />}
-                onClick={() => setSelectedPromptCategory('runTool')}
-              />
-              <Button
-                label={t('examples.prompts.checkReasoning.label')}
-                size="small"
-                color="secondary"
-                preIcon={<CheckReasoningIcon />}
-                onClick={() => setSelectedPromptCategory('checkReasoning')}
-              />
-            </HStack>
-          )}
-        </div>
+            <AgentChatInput />
+            {selectedPromptCategory ? (
+              <VStack border ref={promptsContainerRef} className="-mt-6 mx-3">
+                <ShowPrompts promptKey={selectedPromptCategory} />
+              </VStack>
+            ) : (
+              <HStack
+                paddingX="medium"
+                gap="medium"
+                fullWidth
+                className={`flex-wrap`}
+              >
+                <Button
+                  label={t('examples.prompts.agentValidation.label')}
+                  size="small"
+                  color="secondary"
+                  preIcon={<AgentValidationIcon />}
+                  onClick={() => setSelectedPromptCategory('agentValidation')}
+                />
+                <Button
+                  label={t('examples.prompts.testMemory.label')}
+                  size="small"
+                  color="secondary"
+                  preIcon={<TestMemoryIcon />}
+                  onClick={() => setSelectedPromptCategory('testMemory')}
+                />
+                <Button
+                  label={t('examples.prompts.runTool.label')}
+                  size="small"
+                  color="secondary"
+                  preIcon={<LettaToolIcon />}
+                  onClick={() => setSelectedPromptCategory('runTool')}
+                />
+                <Button
+                  label={t('examples.prompts.checkReasoning.label')}
+                  size="small"
+                  color="secondary"
+                  preIcon={<CheckReasoningIcon />}
+                  onClick={() => setSelectedPromptCategory('checkReasoning')}
+                />
+              </HStack>
+            )}
+          </div>
+        </QuickAgentSimulatorOnboarding>
       </VStack>
     </HStack>
   );
