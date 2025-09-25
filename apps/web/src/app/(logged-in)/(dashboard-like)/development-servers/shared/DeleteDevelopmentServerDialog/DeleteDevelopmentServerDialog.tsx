@@ -95,7 +95,7 @@ export function DeleteDevelopmentServerDialog(
           onSuccess();
         } else {
           // If no onSuccess callback, navigate to the development servers list
-          window.location.href = '/development-servers';
+          window.location.href = '/settings/organization/projects?view-mode=selfHosted?';
         }
       },
     });

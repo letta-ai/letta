@@ -22,7 +22,7 @@ async function getDevelopmentServers(
   const { query } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
-  const { search, offset, limit } = query;
+  const { search, offset, limit = 5 } = query;
 
   const where = [eq(developmentServers.organizationId, organizationId)];
 
@@ -33,7 +33,7 @@ async function getDevelopmentServers(
   const response = await db.query.developmentServers.findMany({
     where: and(...where),
     offset,
-    limit,
+    limit: limit + 1,
     columns: {
       id: true,
       name: true,
@@ -60,7 +60,8 @@ async function getDevelopmentServers(
         password: developmentServer.developmentServerPasswords?.password || '',
         createdAt: developmentServer.createdAt.toISOString(),
         updatedAt: developmentServer.updatedAt.toISOString(),
-      })),
+      })).slice(0, limit),
+      hasMore: response.length > limit,
     },
   };
 }

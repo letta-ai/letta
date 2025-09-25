@@ -21,6 +21,7 @@ export const DevelopmentServersSchema = z.array(DevelopmentServerSchema);
 /* Get Development Servers */
 export const GetDevelopmentServersResponseSchema = z.object({
   developmentServers: DevelopmentServersSchema,
+  hasMore: z.boolean(),
 });
 
 const getDevelopmentServersContract = c.query({
