@@ -512,7 +512,7 @@ export function DynamicApp(props: DynamicAppProps) {
       return undefined;
     }
 
-    let zIndex = focusedAppId === id ? 11 : 10;
+    let zIndex = focusedAppId === id ? 9 : 8;
 
     if (__exclusive_isNetworkInspector) {
       zIndex = 12;
