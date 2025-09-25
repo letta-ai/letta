@@ -643,8 +643,7 @@
     },
     "ManagedEnvironmentIndicator": {
       "label": "Managed",
-      "integrations": {
-      }
+      "integrations": {}
     },
     "errorMessage": "There was an error loading environment variables, please try again or contact support.",
     "loadingMessage": "Loading environment variables...",
@@ -1451,7 +1450,18 @@
     }
   },
   "projects/page/SelfHostedProjectsList": {
+    "goToDashboard": "Visit server dashboard",
+    "DevelopmentServerActions": {
+      "trigger": "Actions",
+      "delete": "Delete server",
+      "settings": "Edit server settings"
+    },
+    "columns": {
+      "name": "Server Name",
+      "url": "Server URL"
+    },
     "developmentServersList": {
+      "error": "There was an error loading development servers, please try again or contact support.",
       "loading": "Loading development servers...",
       "noDevelopmentServers": "You have no development servers, create one below",
       "noSearchResults": "We couldn't find any development servers matching your search",
