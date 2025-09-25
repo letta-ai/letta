@@ -106,7 +106,7 @@ export async function updateBlockTemplate(
   req: UpdateBlockTemplateRequest,
 ): Promise<UpdateBlockTemplateResponse> {
   const { blockTemplateId } = req.params;
-  const { value, limit, description, preserveOnMigration, readOnly } = req.body;
+  const { value, limit, label, description, preserveOnMigration, readOnly } = req.body;
 
   const { activeOrganizationId: organizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -151,6 +151,9 @@ export async function updateBlockTemplate(
   }
   if (typeof readOnly === 'boolean') {
     updateData.readOnly = readOnly;
+  }
+  if (typeof label === 'string') {
+    updateData.label = label;
   }
 
   const [updatedBlockTemplate] = await db
