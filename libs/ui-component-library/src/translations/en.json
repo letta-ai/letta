@@ -292,7 +292,7 @@
       "label": {
         "label": "New Label",
         "placeholder": "my-new-label",
-        "error": "Labels must be alphanumeric and underscores or dashes only, and cannot start with a number"
+        "error": "Labels cannot have spaces"
       },
       "cancel": "Cancel",
       "rename": "Rename"

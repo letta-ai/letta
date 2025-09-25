@@ -1191,7 +1191,7 @@
       "label": {
         "label": "Label",
         "placeholder": "my-label",
-        "error": "Labels must be alphanumeric and underscores or dashes only, and cannot start with a number"
+        "error": "Labels cannot have spaces"
       },
       "maxCharacters": {
         "label": "Character Limit",
@@ -2775,7 +2775,7 @@
     },
     "errors": {
       "labelRequired": "Label is required",
-      "labelFormat": "Label must start with a letter, underscore, or hyphen and contain only letters, numbers, underscores, and hyphens",
+      "labelFormat": "Label cannot have spaces",
       "labelExists": "A memory block with this label already exists",
       "characterLimitMustBeNumber": "Character limit must be a number",
       "overage": "You have reached the maximum number of memory blocks for your plan, please <link>upgrade</link> or delete some memory blocks.",

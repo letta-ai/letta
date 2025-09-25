@@ -203,7 +203,6 @@ export function CreateNewMemoryBlockDialog(
       .min(1, {
         message: t('errors.labelRequired'),
       })
-      .regex(/^[a-zA-Z_-][a-zA-Z0-9_-]*$/, t('errors.labelFormat'))
       .refine((value) => {
         return !existingMemoryLabels.has(value);
       }, t('errors.labelExists')),

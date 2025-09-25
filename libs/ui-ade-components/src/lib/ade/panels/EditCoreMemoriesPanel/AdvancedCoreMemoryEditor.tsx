@@ -104,15 +104,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   const memoryUpdateSchema = useMemo(() => {
     return z.object({
-      label: z.string().refine((value) => {
-        // If the label is unchanged from the original, allow it (even if it has spaces)
-        // This bypasses validation for existing labels created via SDK that contain spaces
-        if (value === memory.label) {
-          return true;
-        }
-        // For new/changed labels, apply the strict validation
-        return /^[a-zA-Z_-][a-zA-Z0-9_-]*$/.test(value);
-      }, t('AdvancedMemoryEditorForm.label.error')),
+      label: z.string().min(1),
       maxCharacters: z.coerce
         .number()
         .min(100, t('AdvancedMemoryEditorForm.maxCharacters.error')),
@@ -121,7 +113,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       description: z.string(),
       preserveOnMigration: z.boolean().optional(),
     });
-  }, [t, memory.label]);
+  }, [t]);
 
   type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
 
