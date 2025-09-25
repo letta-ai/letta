@@ -227,7 +227,7 @@ export function useFormatters() {
 
   const formatTokenSize = useCallback(
     (val: number) => {
-      if (val >= 50_000) {
+      if (val >= 1_000) {
         if (val >= 1_000_000) {
           // For millions, show up to 2 decimal places
           const millions = val / 1_000_000;

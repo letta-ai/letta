@@ -4,16 +4,16 @@ import {
   Button,
   Checkbox,
   Dialog,
-  DotsHorizontalIcon,
+  DotsVerticalIcon,
   DropdownMenu,
-  DropdownMenuItem,
+  DropdownMenuItem, DropdownMenuSeparator,
   FormField,
   FormProvider,
   HotKey,
   HStack,
   toast,
   Typography,
-  useForm,
+  useForm
 } from '@letta-cloud/ui-component-library';
 import { ShareAgentDialog } from '../ShareAgentDialog/ShareAgentDialog';
 import React, { useCallback, useState } from 'react';
@@ -28,9 +28,10 @@ import {
 import { useAtom } from 'jotai/index';
 import {
   adeKeyMap,
-  chatroomRenderModeAtom, showRunDebuggerAtom
+  chatroomRenderModeAtom, showRunDebuggerAtom, SummerizerDialog
 } from '@letta-cloud/ui-ade-components';
 import { useHotkeys } from '@mantine/hooks';
+import { contextEditorDialogState } from '../../ContextEditorPanel/ContextEditorPanel';
 
 const RENDER_MODE = {
   SIMPLE: 'simple' as const,
@@ -128,8 +129,15 @@ export function AgentSimulatorOptionsMenu() {
 
   const [renderMode, setRenderMode] = useAtom(chatroomRenderModeAtom);
   const [showRunDebugger, setShowRunDebugger] = useAtom(showRunDebuggerAtom)
+  const [showContextViewer, setShowContextViewer] = useAtom(contextEditorDialogState);
 
   useHotkeys([
+    [
+      adeKeyMap.TOGGLE_RUN_DEBUGGER.command,
+      () => {
+        setShowRunDebugger((show) => !show);
+      }
+    ],
     [
       adeKeyMap.ENABLE_DEBUG_MODE.command,
       () => {
@@ -143,9 +151,9 @@ export function AgentSimulatorOptionsMenu() {
       },
     ],
     [
-      adeKeyMap.TOGGLE_RUN_DEBUGGER.command,
+      adeKeyMap.CONTEXT_VIEWER.command,
       () => {
-        setShowRunDebugger((show) => !show)
+        setShowContextViewer((show) => !show)
       }
     ],
     [
@@ -160,6 +168,7 @@ export function AgentSimulatorOptionsMenu() {
         });
       },
     ],
+
   ]);
 
   return (
@@ -169,14 +178,25 @@ export function AgentSimulatorOptionsMenu() {
       trigger={
         <Button
           size="xsmall"
-          color="tertiary"
-          preIcon={<DotsHorizontalIcon />}
+          color="secondary"
+          preIcon={<DotsVerticalIcon />}
           hideLabel
           label={t('trigger')}
         />
       }
     >
       <AgentResetMessagesDialog />
+      <SummerizerDialog
+        trigger={
+          <DropdownMenuItem
+            doNotCloseOnSelect
+            label={
+              t('options.summarize')
+            }
+          />
+        }
+      />
+      <DropdownMenuSeparator />
       <DropdownMenuItem
         label={
           renderMode === RENDER_MODE.DEBUG
@@ -203,6 +223,19 @@ export function AgentSimulatorOptionsMenu() {
           setShowRunDebugger(!showRunDebugger)
         }}
       />
+      <DropdownMenuItem
+        label={
+          showContextViewer
+            ? t('options.contextViewer.hide')
+            : t('options.contextViewer.show')
+        }
+        endBadge={<HotKey command={adeKeyMap.CONTEXT_VIEWER.command} />}
+        onClick={() => {
+          setShowContextViewer((show) => !show)
+        }}
+      />
+
+
       {renderMode !== RENDER_MODE.DEBUG && (
         <DropdownMenuItem
           label={
@@ -220,6 +253,7 @@ export function AgentSimulatorOptionsMenu() {
           }}
         />
       )}
+
 
       {!isLocal && !isTemplate && <ShareAgentDialog />}
     </DropdownMenu>
