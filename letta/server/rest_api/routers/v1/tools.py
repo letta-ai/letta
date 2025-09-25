@@ -399,14 +399,14 @@ async def run_tool_from_source(
 
 # Specific routes for Composio
 @router.get("/composio/apps", response_model=List[AppModel], operation_id="list_composio_apps")
-def list_composio_apps(
+async def list_composio_apps(
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a list of all Composio apps
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     composio_api_key = get_composio_api_key(actor=actor, logger=logger)
     if not composio_api_key:
         raise HTTPException(
@@ -417,7 +417,7 @@ def list_composio_apps(
 
 
 @router.get("/composio/apps/{composio_app_name}/actions", response_model=List[ActionModel], operation_id="list_composio_actions_by_app")
-def list_composio_actions_by_app(
+async def list_composio_actions_by_app(
     composio_app_name: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -425,7 +425,7 @@ def list_composio_actions_by_app(
     """
     Get a list of all Composio actions for a specific app
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     composio_api_key = get_composio_api_key(actor=actor, logger=logger)
     if not composio_api_key:
         raise HTTPException(
@@ -641,7 +641,7 @@ async def add_mcp_tool(
     """
     Register a new MCP tool as a Letta server by MCP server + tool name
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     if tool_settings.mcp_read_from_config:
         try:
