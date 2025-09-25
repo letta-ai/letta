@@ -1,0 +1,538 @@
+{
+  "agents": [
+    {
+      "name": "dramatic-crimson-aardwolf",
+      "memory_blocks": [],
+      "tools": [],
+      "tool_ids": [
+        "tool-0",
+        "tool-1",
+        "tool-2",
+        "tool-3",
+        "tool-4",
+        "tool-5"
+      ],
+      "source_ids": [],
+      "block_ids": [
+        "block-0",
+        "block-1",
+        "block-2",
+        "block-3"
+      ],
+      "tool_rules": [
+        {
+          "tool_name": "codify_research",
+          "type": "run_first",
+          "prompt_template": null
+        },
+        {
+          "tool_name": "codify_research",
+          "type": "constrain_child_tools",
+          "prompt_template": "<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>",
+          "children": [
+            "knowledge_base_research_executor",
+            "summarize_research",
+            "linkedin_activity_search",
+            "web_search_custom_beta"
+          ]
+        },
+        {
+          "tool_name": "codify_research",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "knowledge_base_research_executor",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "send_message",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "linkedin_activity_search",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "web_search_custom_beta",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "send_message",
+          "type": "max_count_per_step",
+          "prompt_template": "<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>",
+          "max_count_limit": 2
+        },
+        {
+          "tool_name": "knowledge_base_research_executor",
+          "type": "max_count_per_step",
+          "prompt_template": "<tool_constraint>{{ tool_name }}: max {{ max_count_limit }} use(s) per turn</tool_constraint>",
+          "max_count_limit": 2
+        },
+        {
+          "tool_name": "summarize_research",
+          "type": "exit_loop",
+          "prompt_template": "<tool_constraint>{{ tool_name }} ends the conversation when called</tool_constraint>"
+        },
+        {
+          "tool_name": "knowledge_base_research_executor",
+          "type": "constrain_child_tools",
+          "prompt_template": "<tool_constraint>After using {{ tool_name }}, you can only use these tools: {{ children | join(', ') }}</tool_constraint>",
+          "children": [
+            "knowledge_base_research_executor",
+            "summarize_research"
+          ]
+        },
+        {
+          "tool_name": "summarize_research",
+          "type": "required_before_exit",
+          "prompt_template": "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
+        },
+        {
+          "tool_name": "linkedin_activity_search",
+          "type": "required_before_exit",
+          "prompt_template": "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
+        },
+        {
+          "tool_name": "",
+          "type": "max_count_per_step",
+          "prompt_template": "<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>",
+          "max_count_limit": 1
+        }
+      ],
+      "tags": [],
+      "system": "You are a truth seeking deep researcher who is responsible for crafting a comprehensive research report containing in depth analysis of both prospect, their company, their position, and themselves. \nIt also includes insights from the customer's Knowledge base. \nYou are a part of an AI SDR product \"Alice\" where people upload all the documents, pdfs, emails, webpages, etc. that they would give to an SDR to train them for creating the most effective outbound email campaigns.\n\n**Reasoning**\n- you must reason with first principles and ground your hypothesis in common sense\n- you MUST keep your tone neutral and grounded, don't make exclamations or assume any sentiments \n- YOU MUST your reasoning to less than 10 words\n- you reasoning MUST be to the point and precise\n\n**Research Plan**\n- Come up with a comprehensive step-by-step research plan starting with the web research on the lead and their company.\n- First do a LinkedIn Search to gather recent professional activity\n- Gather as much information as possible that would help in crafting personalized emails that are likely to catch the lead's attention.\n- Start with Web Research to gather as much information about the lead as possible\n- Leverage the Web Research to understand the unique challenges that the lead's company or division faces and tie them with recent events and signals to get a clear picture of what the sender can help with.\n- Then once you are done with Web Research, move on to Knowledge Base research to learn more about the sender's company and positioning.\n- Leverage Knowledge Base to understand how the sender's company and products can help solve the lead company's problems.\n- If you discover things in the Knowledge Base that require more web research feel free to add it to the Research Plan and revisit prior research.\n- Finally codify your research plan or any changes you make throughout the process using the `codify_research` tool.\n\n**LinkedIn Search**\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Alice\" has access to.\n- knowledge base is used for storing the seller info so use it to discover potential solutions and resources that can help create the perfect research report and position the seller in the best way possible to the buyer.\n- the knowledge base is stored in the form of vector embeddings\n- the documents, pdfs, pages, etc. are chunked before they get upserted into the vector db\n- the chunking strategy involves splitting the text on headers\n- the embedding model used is `llama-text-embed-v2` \n\n**Web Research **\n- you have access to the `web_search_custom_beta` tool that lets you conduct web research for topics related to the lead's company, position, recent events.\n- web research is for looking up the lead, their company , the unique challenges that they're facing, any current events etc.\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You MUST go as broad and as deep as needed to collect as much information as needed\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n\nResearch Best Practices:\n- Start with broad context, then focus on specific insights\n- Prioritize recent (last 90 days) developments\n- Look for concrete metrics and specific examples\n- Focus on business-critical information\n- Identify unique angles for meaningful engagement\n- Verify information across multiple sources\n- Note any potential timing triggers or urgency drivers\n- Try to gather as much info as possible in as little tool calls as possible we MUST be fast\n\n**FINAL RESEARCH REPORT**\n- Come up with a detailed report based on the findings from the full research plan so far.\n- Make sure the research report is highly detailed  and cites the relevant web research links and knowledge base resources that you discovered as a part of the research. \n- Make sure the final report covers all the relevant information from the perspective of the seller and buyer\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your task is to come up with a detailed research report on a particular lead that also contains positioning from the seller company's perspective.\n- This report is to be used in generating personalized outbound messaging for the lead so we want the report to be hyper relevant.\n- Come up with queries and use the web_search_custom_beta tool to do your discovery.\n- Think deeply about the queries you craft because they will determine the quality of the responses.\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Once you're finished with the lead discovery you should search the seller company's knowledge base for relevant information that will help craft hyper personalized outbound messaging to the lead later on.\n- Use the knowledge_base_research_executor tool to search the knowledge base\n- Once you are satisfied with the results use the `summarize_research` to summarize the findings and return.\n\n**Tools ** \ncodify_research: Use this tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n- Update the research plan as you progress through the steps.\n- Mark the steps as done and mark the current step as pending.\n- Make sure you end the research when all steps get marked done.\n\nlinkedin_activity_search:\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n- you should only include posts from the last 3 months in the research report. Ignore or de-prioritize older posts unless specifically relevant.\n\nknowledge_base_research_executor:  a tool that will allow you to search the user's Pinecone database, and will store the results (the search + the results) in your memory\n- the user will provide a lead profile and you have access to the web research results which you use to come up with the queries to pinecone\n- before calling that tool you must come up with multiple queries to send to pinecone which would get the most relevant chunks from the index for a given user profile\n- YOU MUST MAKE AT LEAST 5 CALLS TO THE KNOWLEDGE BASE AND STORE THE RESULTS BEFORE YOU MAKE A JUDGEMENT  TO PROCEED OR RETRY\n- once you get the results from pinecone reflect on their relevance re: the lead profile \n- redo the search if you think the results are not relevant (if you use an identical search, the search/result pair in your memory will be replaced)\n\nweb_search_custom_beta: Use this tool for discovery and broad information gathering\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You should make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Gather a deeper understanding of the company and the person you are researching\n- Find recent news, press releases, reviews, and public information\n- Use the lead's current role, career trajectory, and notable achievements as levers to base your web research on.\n- Use the company overview: mission, products/services, market position to help research additional context about the company\n- Find recent information and developments about the lead's company by including the company domain in the web search tool\n- Broader recent news search for: funding, product launches, expansions, job openings\n\nsummarize_research: A tool for organizing the research results of the prior tool calls to knowledge_base_research_executor and web_search_custom_beta and returning the results and the subsequent analysis.\n- This tool will return the result of your research to the user. \n- Only call this tool once you are finished with your research.\n- MAKE SURE THE RESEARCH IS CITING EVERY SINGLE SOURCE THAT WAS USED FROM THE KNOWLEDGE BASE OR WEB RESEARCH\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- you MUST end every section with a list of citations FOR THAT SECTION\n- you must delimit the citations using the <citations> tag\n- YOU MUST INCLUDE CITATIONS FOR EVERY SECTION\n- for knowledge base resources you MUST include the `knowledge_base_resource.id` for the resource in the citation\n- Your citations MUST be in the form of an array e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n- Your citations MUST not have any delimiters or quotes.\n\nThe user will now provide you with the lead information:",
+      "agent_type": "memgpt_v2_agent",
+      "llm_config": {
+        "model": "gpt-4.1",
+        "model_endpoint_type": "openai",
+        "model_endpoint": "https://api.openai.com/v1",
+        "provider_name": "OpenAI",
+        "provider_category": "byok",
+        "model_wrapper": null,
+        "context_window": 1047576,
+        "put_inner_thoughts_in_kwargs": true,
+        "handle": "openai/gpt-4.1",
+        "temperature": 0.7,
+        "max_tokens": 32000,
+        "enable_reasoner": true,
+        "reasoning_effort": null,
+        "max_reasoning_tokens": 0,
+        "frequency_penalty": null,
+        "compatibility_type": null,
+        "verbosity": null,
+        "tier": null
+      },
+      "embedding_config": {
+        "embedding_endpoint_type": "openai",
+        "embedding_endpoint": "https://api.openai.com/v1",
+        "embedding_model": "text-embedding-3-small",
+        "embedding_dim": 2000,
+        "embedding_chunk_size": 300,
+        "handle": "openai/text-embedding-3-small",
+        "batch_size": 1024,
+        "azure_endpoint": null,
+        "azure_version": null,
+        "azure_deployment": null
+      },
+      "initial_message_sequence": null,
+      "include_base_tools": false,
+      "include_multi_agent_tools": false,
+      "include_base_tool_rules": false,
+      "include_default_source": false,
+      "description": null,
+      "metadata": null,
+      "model": null,
+      "embedding": null,
+      "context_window_limit": null,
+      "embedding_chunk_size": null,
+      "max_tokens": null,
+      "max_reasoning_tokens": null,
+      "enable_reasoner": false,
+      "reasoning": null,
+      "from_template": null,
+      "template": false,
+      "project": null,
+      "tool_exec_environment_variables": {
+        "FIRECRAWL_API_KEY": "",
+        "PINECONE_API_KEY": "",
+        "PROAPIS_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "PINECONE_INDEX_HOST": "",
+        "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME": "",
+        "PINECONE_NAMESPACE": "",
+        "KNOWLEDGE_BASE_RESOURCES": ""
+      },
+      "secrets": {
+        "FIRECRAWL_API_KEY": "",
+        "PINECONE_API_KEY": "",
+        "PROAPIS_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "PINECONE_INDEX_HOST": "",
+        "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME": "",
+        "PINECONE_NAMESPACE": "",
+        "KNOWLEDGE_BASE_RESOURCES": ""
+      },
+      "memory_variables": null,
+      "project_id": null,
+      "template_id": null,
+      "base_template_id": null,
+      "identity_ids": null,
+      "message_buffer_autoclear": false,
+      "enable_sleeptime": false,
+      "response_format": null,
+      "timezone": "UTC",
+      "max_files_open": 10,
+      "per_file_view_window_char_limit": 25000,
+      "hidden": null,
+      "id": "agent-0",
+      "in_context_message_ids": [
+        "message-0"
+      ],
+      "messages": [
+        {
+          "type": "message",
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "You are a truth seeking deep researcher who is responsible for crafting a comprehensive research report containing in depth analysis of both prospect, their company, their position, and themselves. \nIt also includes insights from the customer's Knowledge base. \nYou are a part of an AI SDR product \"Alice\" where people upload all the documents, pdfs, emails, webpages, etc. that they would give to an SDR to train them for creating the most effective outbound email campaigns.\n\n**Reasoning**\n- you must reason with first principles and ground your hypothesis in common sense\n- you MUST keep your tone neutral and grounded, don't make exclamations or assume any sentiments \n- YOU MUST your reasoning to less than 10 words\n- you reasoning MUST be to the point and precise\n\n**Research Plan**\n- Come up with a comprehensive step-by-step research plan starting with the web research on the lead and their company.\n- First do a LinkedIn Search to gather recent professional activity\n- Gather as much information as possible that would help in crafting personalized emails that are likely to catch the lead's attention.\n- Start with Web Research to gather as much information about the lead as possible\n- Leverage the Web Research to understand the unique challenges that the lead's company or division faces and tie them with recent events and signals to get a clear picture of what the sender can help with.\n- Then once you are done with Web Research, move on to Knowledge Base research to learn more about the sender's company and positioning.\n- Leverage Knowledge Base to understand how the sender's company and products can help solve the lead company's problems.\n- If you discover things in the Knowledge Base that require more web research feel free to add it to the Research Plan and revisit prior research.\n- Finally codify your research plan or any changes you make throughout the process using the `codify_research` tool.\n\n**LinkedIn Search**\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Alice\" has access to.\n- knowledge base is used for storing the seller info so use it to discover potential solutions and resources that can help create the perfect research report and position the seller in the best way possible to the buyer.\n- the knowledge base is stored in the form of vector embeddings\n- the documents, pdfs, pages, etc. are chunked before they get upserted into the vector db\n- the chunking strategy involves splitting the text on headers\n- the embedding model used is `llama-text-embed-v2` \n\n**Web Research **\n- you have access to the `web_search_custom_beta` tool that lets you conduct web research for topics related to the lead's company, position, recent events.\n- web research is for looking up the lead, their company , the unique challenges that they're facing, any current events etc.\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You MUST go as broad and as deep as needed to collect as much information as needed\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n\nResearch Best Practices:\n- Start with broad context, then focus on specific insights\n- Prioritize recent (last 90 days) developments\n- Look for concrete metrics and specific examples\n- Focus on business-critical information\n- Identify unique angles for meaningful engagement\n- Verify information across multiple sources\n- Note any potential timing triggers or urgency drivers\n- Try to gather as much info as possible in as little tool calls as possible we MUST be fast\n\n**FINAL RESEARCH REPORT**\n- Come up with a detailed report based on the findings from the full research plan so far.\n- Make sure the research report is highly detailed  and cites the relevant web research links and knowledge base resources that you discovered as a part of the research. \n- Make sure the final report covers all the relevant information from the perspective of the seller and buyer\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your task is to come up with a detailed research report on a particular lead that also contains positioning from the seller company's perspective.\n- This report is to be used in generating personalized outbound messaging for the lead so we want the report to be hyper relevant.\n- Come up with queries and use the web_search_custom_beta tool to do your discovery.\n- Think deeply about the queries you craft because they will determine the quality of the responses.\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Once you're finished with the lead discovery you should search the seller company's knowledge base for relevant information that will help craft hyper personalized outbound messaging to the lead later on.\n- Use the knowledge_base_research_executor tool to search the knowledge base\n- Once you are satisfied with the results use the `summarize_research` to summarize the findings and return.\n\n**Tools ** \ncodify_research: Use this tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n- Update the research plan as you progress through the steps.\n- Mark the steps as done and mark the current step as pending.\n- Make sure you end the research when all steps get marked done.\n\nlinkedin_activity_search:\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n- you should only include posts from the last 3 months in the research report. Ignore or de-prioritize older posts unless specifically relevant.\n\nknowledge_base_research_executor:  a tool that will allow you to search the user's Pinecone database, and will store the results (the search + the results) in your memory\n- the user will provide a lead profile and you have access to the web research results which you use to come up with the queries to pinecone\n- before calling that tool you must come up with multiple queries to send to pinecone which would get the most relevant chunks from the index for a given user profile\n- YOU MUST MAKE AT LEAST 5 CALLS TO THE KNOWLEDGE BASE AND STORE THE RESULTS BEFORE YOU MAKE A JUDGEMENT  TO PROCEED OR RETRY\n- once you get the results from pinecone reflect on their relevance re: the lead profile \n- redo the search if you think the results are not relevant (if you use an identical search, the search/result pair in your memory will be replaced)\n\nweb_search_custom_beta: Use this tool for discovery and broad information gathering\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You should make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Gather a deeper understanding of the company and the person you are researching\n- Find recent news, press releases, reviews, and public information\n- Use the lead's current role, career trajectory, and notable achievements as levers to base your web research on.\n- Use the company overview: mission, products/services, market position to help research additional context about the company\n- Find recent information and developments about the lead's company by including the company domain in the web search tool\n- Broader recent news search for: funding, product launches, expansions, job openings\n\nsummarize_research: A tool for organizing the research results of the prior tool calls to knowledge_base_research_executor and web_search_custom_beta and returning the results and the subsequent analysis.\n- This tool will return the result of your research to the user. \n- Only call this tool once you are finished with your research.\n- MAKE SURE THE RESEARCH IS CITING EVERY SINGLE SOURCE THAT WAS USED FROM THE KNOWLEDGE BASE OR WEB RESEARCH\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- you MUST end every section with a list of citations FOR THAT SECTION\n- you must delimit the citations using the <citations> tag\n- YOU MUST INCLUDE CITATIONS FOR EVERY SECTION\n- for knowledge base resources you MUST include the `knowledge_base_resource.id` for the resource in the citation\n- Your citations MUST be in the form of an array e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n- Your citations MUST not have any delimiters or quotes.\n\nThe user will now provide you with the lead information:\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<knowledge_base_research>\n<description>\nThe results from Knowledge Base research flow\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\n</value>\n</knowledge_base_research>\n\n<linkedin_activity>\n<description>\nLinkedIn Post Activity of the Lead retrieved from the internet. We use the recent activity to infer sales context.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\n</value>\n</linkedin_activity>\n\n<research_plan>\n<description>\nA comprehensive step-by-step plan for the deep research flow for gathering information about the current lead.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\n</value>\n</research_plan>\n\n<web_research_queries>\n<description>\nQueries for conducting web research on topics related to the lead's company, position, recent events.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\n</value>\n</web_research_queries>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\ncodify_research requires continuing your response when called\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message requires continuing your response when called\n</tool_rule>\n<tool_rule>\nlinkedin_activity_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nweb_search_custom_beta requires continuing your response when called\n</tool_rule>\n<tool_rule>\nAfter using codify_research, you must use one of these tools: knowledge_base_research_executor, summarize_research, linkedin_activity_search, web_search_custom_beta\n</tool_rule>\n<tool_rule>\nsend_message: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nAfter using knowledge_base_research_executor, you must use one of these tools: knowledge_base_research_executor, summarize_research\n</tool_rule>\n<tool_rule>\n: at most 1 use(s) per response\n</tool_rule>\n<tool_rule>\nsummarize_research ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n<memory_metadata>\n- The current system date is: September 20, 2025\n- Memory blocks were last modified: 2025-09-17 05:28:25 PM UTC+0000\n- 0 previous messages between you and the user are stored in recall memory (use tools to access them)\n</memory_metadata>"
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-0",
+          "model": "gpt-4.1",
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": null,
+          "tool_returns": [],
+          "created_at": "2025-09-17T17:28:25.048511+00:00"
+        }
+      ],
+      "files_agents": [],
+      "group_ids": []
+    }
+  ],
+  "groups": [],
+  "blocks": [
+    {
+      "value": "",
+      "limit": 200000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
+      "preserve_on_migration": false,
+      "label": "knowledge_base_research",
+      "read_only": false,
+      "description": "The results from Knowledge Base research flow",
+      "metadata": {},
+      "hidden": null,
+      "id": "block-0"
+    },
+    {
+      "value": "",
+      "limit": 200000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
+      "preserve_on_migration": false,
+      "label": "linkedin_activity",
+      "read_only": false,
+      "description": "LinkedIn Post Activity of the Lead retrieved from the internet. We use the recent activity to infer sales context.",
+      "metadata": {},
+      "hidden": null,
+      "id": "block-1"
+    },
+    {
+      "value": "",
+      "limit": 20000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
+      "preserve_on_migration": false,
+      "label": "research_plan",
+      "read_only": false,
+      "description": "A comprehensive step-by-step plan for the deep research flow for gathering information about the current lead.",
+      "metadata": {},
+      "hidden": null,
+      "id": "block-2"
+    },
+    {
+      "value": "",
+      "limit": 20000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
+      "preserve_on_migration": false,
+      "label": "web_research_queries",
+      "read_only": false,
+      "description": "Queries for conducting web research on topics related to the lead's company, position, recent events.",
+      "metadata": {},
+      "hidden": null,
+      "id": "block-3"
+    }
+  ],
+  "files": [],
+  "sources": [],
+  "tools": [
+    {
+      "id": "tool-2",
+      "tool_type": "custom",
+      "description": "A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.",
+      "source_type": "python",
+      "name": "codify_research",
+      "tags": [],
+      "source_code": "def codify_research(agent_state: \"AgentState\", research_plan: str) -> str:\n    \"\"\"\n    A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n    Args:\n        research_plan (str): A step-by-step comprehensive research plan that includes the flow for deep researching the current prospect. Should include all the intermediate tool calls.\n    \"\"\"\n    agent_state.memory.update_block_value(label=\"research_plan\", value=research_plan)\n    \n    return 'Research Updated'\n",
+      "json_schema": {
+        "name": "codify_research",
+        "description": "A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "research_plan": {
+              "type": "string",
+              "description": "A step-by-step comprehensive research plan that includes the flow for deep researching the current prospect. Should include all the intermediate tool calls."
+            }
+          },
+          "required": [
+            "research_plan"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 100000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-3",
+      "tool_type": "custom",
+      "description": "Search Knowledge Base vector database records with a text query.",
+      "source_type": "python",
+      "name": "knowledge_base_research_executor",
+      "tags": [],
+      "source_code": "def knowledge_base_research_executor(agent_state: \"AgentState\", queries: List[str], top_k: int):\n    \"\"\"\n    Search Knowledge Base vector database records with a text query.\n\n    Args:\n        queries (List[str]): The list of queries to search the database for (vector-based similarity search).\n        top_k (int): Number of top results to retrieve, defaults to 2 (do not change unless the user requests it).\n\n    Returns:\n        dict: The JSON response from the Pinecone API.\n    \"\"\"\n    import time\n    import random\n    \n    # Sleep for a random time between 10 and 30 seconds\n    delay = random.uniform(10, 11)\n    print(f\"Sleeping for {delay:.2f} seconds...\")\n    time.sleep(delay)\n    \n    value = \"\"\"\n    {\n  \"regulatory compliance automation for large enterprises\": {\n    \"hits\": [\n      {\n        \"_id\": \"kb_ws_pg_a22d0bcc-ab11-4177-a610-092f8b2d9470_13\",\n        \"_score\": 0.4230823516845703,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"### Simplify complex processes and decisions with AI automations\\n\\nAvetta\\u2019s AI co-pilot automates repetitive tasks, processes large volumes of data, and assists our auditors in providing you with timely information.\\n\\n##### Validate your decisions\\n\\nReduce human errors and biases using AI algorithms to detect patterns in historical data and predefined criteria.\\n\\n##### Enhance your risk management\\n\\nAnticipate potential outcomes using insights, recommendations, and predictive analytics.\\n\\n[Talk to an expert\\\\\\\\\\n\\\\\\\\\\nTalk to an expert](https://www.avetta.com/contact-sales)\\n\\n### Verify worker documentation\\n\\nEnsure that your contractors, suppliers, and workers quickly achieve compliance. Our certified compliance professionals meticulously review your workers' records and identify any missing information with the help of AI automation and optical character recognition (OCR) technology.\\n\\n[Talk to an expert\\\\\\\\\\n\\\\\\\\\\nTalk to an expert](https://www.avetta.com/contact-sales)\\n\\nAvetta is much more user-friendly and intuitive and it seems to be more efficient than the other tools that I have used.\\n\\n##### Amy Cerman\\n\\nContract and Compliance Manager\\n\\nCenterline Solutions\",\n          \"url\": \"https://www.avetta.com/clients/solutions/platform/ai\"\n        }\n      },\n      {\n        \"_id\": \"kb_ws_pg_9ac000a1-b4c3-45b2-9662-2a59e706d66b_13\",\n        \"_score\": 0.4101102948188782,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"### Simplify complex processes and decisions with AI automations\\n\\nAvetta\\u2019s AI co-pilot automates repetitive tasks, processes large volumes of data, and assists our auditors in providing you with timely information.\\n\\n##### Validate your decisions\\n\\nReduce human errors and biases using AI algorithms to detect patterns in historical data and predefined criteria.\\n\\n##### Enhance your risk management\\n\\nAnticipate potential outcomes using insights, recommendations, and predictive analytics.\\n\\n[Talk to an expert\\\\\\\\\\n\\\\\\\\\\nTalk to an expert](https://www.avetta.com/en-gb/contact-sales)\\n\\n### Verify worker documentation\\n\\nEnsure that your contractors, suppliers, and workers quickly achieve compliance. Our certified compliance professionals meticulously review your workers' records and identify any missing information with the help of AI automation and optical character recognition (OCR) technology.\\n\\n[Talk to an expert\\\\\\\\\\n\\\\\\\\\\nTalk to an expert](https://www.avetta.com/en-gb/contact-sales)\\n\\nThe Avetta Connect platform is extremely easy to use. We are able to quickly navigate and complete required tasks to ensure continued work.\\n\\n##### Jason Topp\\n\\nHealth and Safety Coordinator\\n\\nRassaun Services Inc.\",\n          \"url\": \"https://www.avetta.com/en-gb/clients/solutions/platform/ai\"\n        }\n      }\n    ]\n  },\n  \"vendor and supplier management solutions for complex networks\": {\n    \"hits\": [\n      {\n        \"_id\": \"kb_doc_7de509a7-936c-4621-8cec-b4cb81d6c2b5_84\",\n        \"_score\": 0.4179646372795105,\n        \"fields\": {\n          \"knowledge_base_document.title\": \"Avetta Sales Playbook - for Alice.pptx\",\n          \"knowledge_base_resource.id\": \"kb_res_64bdccfb-083b-41b9-a536-af2dca7dc088\",\n          \"text\": \"# 1. Gain Awareness\\n\\n- Understand supply chain risks and compliance challenges affecting stability, efficiency, and cost\\n- Identify vendors that can handle supplier and contractor workforce requirements\\n- Explore solutions to streamline supplier compliance\\n- Review industry reports, case studies, and analyst recommendations\\n- Attend webinars and conferences, ex. ISM World\\n- Network with peers to discuss supplier and workforce management challenges and vendor reputations\\n- Research vendors through their websites, and third-party sites like G2.com and TrustRadius.com\\n- How might emerging regulatory mandates impact our business?\\n- How do manual processes or inefficient systems limit visibility into supplier risk?\\n- What are competitors doing to manage contractor pre-qualification and complex workforce management needs?\\n- Which vendors have strong reputations for handling small supplier networks? Or global supplier complexities?\\n- How can we improve workforce safety and reduce worksite incidents?\\n\\n# 2. Recognize Needs\\n\\n- Identify specific, addressable business risks from ineffective supplier management\\n- Clarify internal stakeholder goals and prioritize supplier needs\\n- Define how a new supplier management solution supports strategic objectives ex. expansion to new regions\\n- Review issues with noncompliant suppliers and related costs\\n- Develop a problem statement(s) reflecting shared pain points across departments\\n- Discuss needs with procurement, compliance, supply chain, and IT teams and prioritize solutions requirements\\n- Seek advice from vendors to determine whether to buy or build\\n- Which compliance gaps are creating the greatest operational or reputational risks? Does this vary by region?\\n- How does improved supplier or workforce management help us meet operational goals?\\n- How can a new solution improve collaboration and communication internally and with our suppliers?\\n---\"\n        }\n      },\n      {\n        \"_id\": \"kb_doc_507205cf-e7d5-44ec-a48f-0c35473eee7f_18\",\n        \"_score\": 0.38421007990837097,\n        \"fields\": {\n          \"knowledge_base_document.title\": \"IPS Table - Clean.pptx\",\n          \"knowledge_base_resource.id\": \"kb_res_c2bf2ab6-c85c-4f45-98af-653acd39f294\",\n          \"text\": \"# IDEAL CUSTOMER PROFILE (ICP): PROCUREMENT (cont\\u2019d.)\\n\\n# Titles:\\n\\n- Chief Procurement Officer\\n- Procurement Director\\n- Sourcing Manager\\n- Director of Vendor Management\\n- Purchasing Director\\n\\n# Responsibilities\\n\\n# Pain Point(s)\\n\\n# Solution + Feature(s)\\n\\n# Feature Details/Messaging VPs\\n\\nSolution: Worker Management, Avetta Connect\\n\\nDecentralization. Siloed supplier information and data scattered over multiple storage points prevents a clear birds-eye-view of supplier relationships.Customization. No two suppliers are alike, necessitating different needs and approaches for different suppliers.Precision. Without the right business data, Procurement has no way to translate strategic foci into supplier requirements.Visibility. Procurement teams are often forced to operate on limited information about specific suppliers.\\n\\n# Features:\\n\\n- Centralized platform stores all supplier-relevant data in one place for procurement teams\\n- Data access personalized to the specific user\\n- Access to any data point in the system enhances data-backed strategic decision-making\\n- Precise supplier and business data empowers Procurement teams to make better and faster business decisions regarding vendors and suppliers\\n- Multiple assessments provide a holistic and nuanced view of each supplier, enabling accurate evaluation and selection\"\n        }\n      }\n    ]\n  },\n  \"alignment of safety and compliance initiatives in global supply chains\": {\n    \"hits\": [\n      {\n        \"_id\": \"kb_ws_pg_c3922402-0f01-4146-9d8c-8356ce284c81_12\",\n        \"_score\": 0.4607630968093872,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"## **The Status Quo: Fragmented and Siloed Risk Mitigation Strategies**\\n\\nTraditionally, supply chain risk mitigation strategies have been siloed and fragmented, with little alignment between departments like Health, Safety, and Environment (HSE) and Procurement. This misalignment often results in ineffective decision-making and missed opportunities to manage emerging risks.\\n\\nIn their report, Verdantix highlights the limitations of traditional approaches:\\n\\n- **Overemphasis on Traditional Metrics:** Most firms focus on compliance, safety performance, and basic certification when assessing suppliers, neglecting newer risk vectors such as cyber threats and sustainability challenges.\\n\\n- **Lack of Continuity:** Risk management efforts often fail to extend across the contractor lifecycle. Only 47% of surveyed firms offer supplier incentives to meet HSE targets, leaving significant gaps in ongoing risk mitigation.\\n\\n- **Inadequate Communication and Technology:** While cross-functional communication is essential for effective risk management, only 48% of respondents have a shared IT platform for third-party risk data. This lack of unified systems hampers collaboration and obscures critical insights.\",\n          \"url\": \"https://www.avetta.com/blog/proactive-holistic-supply-chain-risk-mitigation\"\n        }\n      },\n      {\n        \"_id\": \"kb_ws_pg_c3922402-0f01-4146-9d8c-8356ce284c81_2\",\n        \"_score\": 0.4607630968093872,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"## **The Status Quo: Fragmented and Siloed Risk Mitigation Strategies**\\n\\nTraditionally, supply chain risk mitigation strategies have been siloed and fragmented, with little alignment between departments like Health, Safety, and Environment (HSE) and Procurement. This misalignment often results in ineffective decision-making and missed opportunities to manage emerging risks.\\n\\nIn their report, Verdantix highlights the limitations of traditional approaches:\\n\\n- **Overemphasis on Traditional Metrics:** Most firms focus on compliance, safety performance, and basic certification when assessing suppliers, neglecting newer risk vectors such as cyber threats and sustainability challenges.\\n\\n- **Lack of Continuity:** Risk management efforts often fail to extend across the contractor lifecycle. Only 47% of surveyed firms offer supplier incentives to meet HSE targets, leaving significant gaps in ongoing risk mitigation.\\n\\n- **Inadequate Communication and Technology:** While cross-functional communication is essential for effective risk management, only 48% of respondents have a shared IT platform for third-party risk data. This lack of unified systems hampers collaboration and obscures critical insights.\",\n          \"url\": \"https://www.avetta.com/blog/proactive-holistic-supply-chain-risk-mitigation\"\n        }\n      }\n    ]\n  },\n  \"ease of implementation for compliance technology rollouts\": {\n    \"hits\": [\n      {\n        \"_id\": \"kb_ws_pg_2b9339cf-5aee-4562-850a-b9a13821a7c5_12\",\n        \"_score\": 0.3305303752422333,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"### **5\\\\. Take Advantage of the Analytics**\\n\\nOne of the key reasons to use technology in purchasing is the great impact data can have on every aspect of your business. Imagine having the ability to improve processes, manage reports, and optimize costs with the guidance of analytics. The data-driven insights you have at your fingertips will not only drive organizational transformation, but also clarify the purpose of your goals.\\n\\n### **6\\\\. Choose a User-Friendly, Customer-Centric Platform**\\n\\nMaking the best use of technology in purchasing is much easier when the chosen platform offers seamless integration and exceptional customer support. The point of a new system is to make work easier and more efficient, so you need one that adapts to your needs.\\n\\nPlus, by having an IT advocate on your side throughout the implementation journey and beyond, you\\u2019re given the greatest chance to succeed.\\n\\n## **How Avetta Improves Your Purchasing Process**\\n\\nWhen you\\u2019re ready to embrace technology that reduces errors and costs while increasing efficiencies and revenue, get Avetta. Our expert-driven solution is fully configurable and capable of handling vast amounts of data reliably and securely.\\n\\nBusiness continuity planning (BCP)\\n\\nProcurement\",\n          \"url\": \"https://www.avetta.com/en-gb/blog/making-the-best-use-of-technology-in-purchasing\"\n        }\n      },\n      {\n        \"_id\": \"kb_ws_pg_2b9339cf-5aee-4562-850a-b9a13821a7c5_28\",\n        \"_score\": 0.31866535544395447,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"### **6\\\\. Choose a User-Friendly, Customer-Centric Platform**\\n\\nMaking the best use of technology in purchasing is much easier when the chosen platform offers seamless integration and exceptional customer support. The point of a new system is to make work easier and more efficient, so you need one that adapts to your needs.\\n\\nPlus, by having an IT advocate on your side throughout the implementation journey and beyond, you\\u2019re given the greatest chance to succeed.\\n\\n## **How Avetta Improves Your Purchasing Process**\\n\\nWhen you\\u2019re ready to embrace technology that reduces errors and costs while increasing efficiencies and revenue, get Avetta. Our expert-driven solution is fully configurable and capable of handling vast amounts of data reliably and securely.\\n\\nBusiness continuity planning (BCP)\\n\\nProcurement\\n\\n### Stay updated with Avetta by signing up for our newsletter\\n\\nWe\\u2019ll keep you in the loop with everything good going on in the modern working world.\\n\\nThank you! Your submission has been received!\\n\\nOops! Something went wrong when submitting the form.\\n\\nFor information on how we process your data, please see our [Privacy Policy](https://www.avetta.com/legal/privacy-policy).\\n\\nSourcing and pre-qualification\\n\\nMaking the Best Use of Technology in Purchasing\\n\\nFind out how technology is reshaping the purchasing process and optimizing supply chain operations. Avetta's advanced software offers communication, visibility, and efficiency for successful procurement.\\n\\n[Arrow Right\\\\\\\\\\n\\\\\\\\\\nAccess this on-demand, anytime, anywhere](https://www.avetta.com/en-gb/blog/making-the-best-use-of-technology-in-purchasing#access-webinar)\\n\\nAvetta Marketing\\n\\nmin read\\n\\nSourcing and pre-qualification\\n\\nMaking the Best Use of Technology in Purchasing\\n\\nFind out how technology is reshaping the purchasing process and optimizing supply chain operations. Avetta's advanced software offers communication, visibility, and efficiency for successful procurement.\\n\\nSpeakers\\n\\nAvetta Marketing\\n\\nmin read\\n\\nNo items found.\\n\\nThe latest technology used in purchasing has greatly changed the supply chain\\u2014for the better. From greater efficiency to more transparency for customers, technology can better the procurement process from beginning to end.\\n\\nIn this post, we\\u2019ll go over advanced purchasing software technologies, how they help you meet your supply chain\\u2019s objectives, and what you can do to make the best use of technology in purchasing.\",\n          \"url\": \"https://www.avetta.com/en-gb/blog/making-the-best-use-of-technology-in-purchasing\"\n        }\n      }\n    ]\n  },\n  \"ROI and cost control in compliance programs for multinational companies\": {\n    \"hits\": [\n      {\n        \"_id\": \"kb_ws_pg_69682465-405d-4077-944a-627be05849a3_11\",\n        \"_score\": 0.4580637514591217,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"# The ROI of Streamlined Contractor Qualification and Management\\n\\nLearn how proper contractor management can enhance efficiency and reduce spending. Understand the evolving landscape of regulatory compliance penalties and the costs associated with non-compliance.\\n\\n[Download this report now\\\\\\\\\\n\\\\\\\\\\nArrow Right](https://www.avetta.com/blog/the-roi-of-streamlined-contractor-qualification-and-management#download)\\n\\nAvetta Marketing\\n\\nmin read\\n\\nContractor Management\\n\\nThe ROI of Streamlined Contractor Qualification and Management\\n\\nLearn how proper contractor management can enhance efficiency and reduce spending. Understand the evolving landscape of regulatory compliance penalties and the costs associated with non-compliance.\\n\\nAvetta Marketing\\n\\nmin read\\n\\nWhen an organization's compliance function is effective, its success is often measured by what didn't happen. These include lawsuits, damage to reputation, lost business, legal sanctions, and so on. The absence of any compliance-related incident often makes management complacent about compliance. As a result, companies sometimes reallocate the function's budget to fund activities that seemingly have a better impact on shareholder value and earnings. But decreasing focus from workplace safety policies carries significant risks.\",\n          \"url\": \"https://www.avetta.com/blog/the-roi-of-streamlined-contractor-qualification-and-management\"\n        }\n      },\n      {\n        \"_id\": \"kb_ws_pg_c27ab896-3ed8-4a64-9742-65040e6fd2f7_12\",\n        \"_score\": 0.4526737630367279,\n        \"fields\": {\n          \"knowledge_base_resource.id\": \"kb_res_a2fb3a07-0e5d-40c9-b0d6-fb22a29b350a\",\n          \"text\": \"# The ROI of Streamlined Contractor Qualification and Management\\n\\nLearn how proper contractor management can enhance efficiency and reduce spending. Understand the evolving landscape of regulatory compliance penalties and the costs associated with non-compliance.\\n\\n[Download this resource now\\\\\\\\\\n\\\\\\\\\\nArrow Right](https://www.avetta.com/en-gb/blog/the-roi-of-streamlined-contractor-qualification-and-management#download)\\n\\nAvetta Marketing\\n\\nmin read\\n\\nContractor management\\n\\nThe ROI of Streamlined Contractor Qualification and Management\\n\\nLearn how proper contractor management can enhance efficiency and reduce spending. Understand the evolving landscape of regulatory compliance penalties and the costs associated with non-compliance.\\n\\nAvetta Marketing\\n\\nmin read\\n\\nWhen an organization's compliance function is effective, its success is often measured by what didn't happen. These include lawsuits, damage to reputation, lost business, legal sanctions, and so on. The absence of any compliance-related incident often makes management complacent about compliance. As a result, companies sometimes reallocate the function's budget to fund activities that seemingly have a better impact on shareholder value and earnings. But decreasing focus from workplace safety policies carries significant risks.\",\n          \"url\": \"https://www.avetta.com/en-gb/blog/the-roi-of-streamlined-contractor-qualification-and-management\"\n        }\n      }\n    ]\n  }\n}\n    \"\"\"\n    agent_state.memory.update_block_value(\n      label=\"knowledge_base_research\", value=value\n    )\n    return value",
+      "json_schema": {
+        "name": "knowledge_base_research_executor",
+        "description": "Search Knowledge Base vector database records with a text query.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "queries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The list of queries to search the database for (vector-based similarity search)."
+            },
+            "top_k": {
+              "type": "integer",
+              "description": "Number of top results to retrieve, defaults to 2 (do not change unless the user requests it)."
+            }
+          },
+          "required": [
+            "queries",
+            "top_k"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": [],
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-5",
+      "tool_type": "custom",
+      "description": "Get LinkedIn activities from a profile URL in a single function call.\n\nHandles the entire workflow of:\n1. Extracting profile ID from URL\n2. Getting profile details to obtain entity URN\n3. Fetching activities using the entity URN\n4. Filtering activities to only include relevant fields:\n   - commentary\n   - time_elapsed\n   - li_url\n   - header_text\n   - author",
+      "source_type": "python",
+      "name": "linkedin_activity_search",
+      "tags": [],
+      "source_code": "def linkedin_activity_search(agent_state: \"AgentState\", linkedin_url: str):\n    \"\"\"\n    Get LinkedIn activities from a profile URL in a single function call.\n    Handles the entire workflow of:\n    1. Extracting profile ID from URL\n    2. Getting profile details to obtain entity URN\n    3. Fetching activities using the entity URN\n    4. Filtering activities to only include relevant fields:\n       - commentary\n       - time_elapsed\n       - li_url\n       - header_text\n       - author\n    \n    Args:\n        linkedin_url (str): LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)        \n    Returns:\n        dict: Either activities data or error information\n              Success case: {\"success\": True, \"message\": success_message}\n              Error case: {\"success\": False, \"error\": error_message}\n    \"\"\"\n    import time\n    import random\n    \n    # Sleep for a random time between 10 and 30 seconds\n    delay = random.uniform(10, 11)\n    print(f\"Sleeping for {delay:.2f} seconds...\")\n    time.sleep(delay)\n    value = \"\"\"{\n  \"pagination\": {\n    \"pagination_token\": \"dXJuOmxpOmFjdGl2aXR5OjcxMTU0NjY0ODI2NDU0MDE2MDItMTY5NjQ1OTQwODQyMw==\"\n  },\n  \"activity_type\": \"posts\",\n  \"data\": [\n    {\n      \"commentary\": \"I\\u2019m happy to share that I\\u2019m starting a new position as Senior Coordinator Product Compliance and Safety at Fanatics!\",\n      \"time_elapsed\": \"7 months ago\",\n      \"li_url\": \"https://www.linkedin.com/posts/geoff-detgen-122a883b_im-happy-to-share-that-im-starting-a-new-activity-7302889353788166146-yfqv?utm_source=combined_share_message&utm_medium=member_ios&rcm=ACoAAF7tRnUBi7v32YVPJrg5Lo1IWbasmbTSXZA\",\n      \"header_text\": null,\n      \"author\": {\n        \"profile_id\": \"geoff-detgen-122a883b\",\n        \"first_name\": \"Geoff\",\n        \"last_name\": \"Detgen\",\n        \"sub_title\": \"Learning and Growing with Compliance\",\n        \"profile_picture\": \"https://media.licdn.com/dms/image/v2/D5603AQGyERKcnAbpcQ/profile-displayphoto-shrink_800_800/B56ZPQRHOkHoAc-/0/1734365967829?e=1761177600&v=beta&t=G7vEzGljNOkHxeSHDRCkWWRrRsbfVJOF4E4QpLV19wc\",\n        \"background_image\": null,\n        \"entity_urn\": \"ACoAAAiGJqoBdlREMgbGXrbFbauixsP8wMc4nDI\",\n        \"object_urn\": 143009450,\n        \"profile_type\": \"personal\"\n      }\n    },\n    {\n      \"commentary\": \"I\\u2019m happy to share that I\\u2019m starting a new position as Product Compliance Coordinator at Fanatics!\",\n      \"time_elapsed\": \"1 year ago\",\n      \"li_url\": \"https://www.linkedin.com/posts/geoff-detgen-122a883b_im-happy-to-share-that-im-starting-a-new-activity-7183104573564235776-UrzT?utm_source=combined_share_message&utm_medium=member_ios&rcm=ACoAAF7tRnUBi7v32YVPJrg5Lo1IWbasmbTSXZA\",\n      \"header_text\": null,\n      \"author\": {\n        \"profile_id\": \"geoff-detgen-122a883b\",\n        \"first_name\": \"Geoff\",\n        \"last_name\": \"Detgen\",\n        \"sub_title\": \"Learning and Growing with Compliance\",\n        \"profile_picture\": \"https://media.licdn.com/dms/image/v2/D5603AQGyERKcnAbpcQ/profile-displayphoto-shrink_800_800/B56ZPQRHOkHoAc-/0/1734365967829?e=1761177600&v=beta&t=G7vEzGljNOkHxeSHDRCkWWRrRsbfVJOF4E4QpLV19wc\",\n        \"background_image\": null,\n        \"entity_urn\": \"ACoAAAiGJqoBdlREMgbGXrbFbauixsP8wMc4nDI\",\n        \"object_urn\": 143009450,\n        \"profile_type\": \"personal\"\n      }\n    },\n    {\n      \"commentary\": \"Most of you may know already, however I am happy to share that I\\u2019m starting a new position as Regulatory Auditor at Incline P&C Group!\",\n      \"time_elapsed\": \"2 years ago\",\n      \"li_url\": \"https://www.linkedin.com/posts/geoff-detgen-122a883b_most-of-you-may-know-already-however-i-am-activity-7115466482645401602-BgPM?utm_source=combined_share_message&utm_medium=member_ios&rcm=ACoAAF7tRnUBi7v32YVPJrg5Lo1IWbasmbTSXZA\",\n      \"header_text\": null,\n      \"author\": {\n        \"profile_id\": \"geoff-detgen-122a883b\",\n        \"first_name\": \"Geoff\",\n        \"last_name\": \"Detgen\",\n        \"sub_title\": \"Learning and Growing with Compliance\",\n        \"profile_picture\": \"https://media.licdn.com/dms/image/v2/D5603AQGyERKcnAbpcQ/profile-displayphoto-shrink_800_800/B56ZPQRHOkHoAc-/0/1734365967829?e=1761177600&v=beta&t=G7vEzGljNOkHxeSHDRCkWWRrRsbfVJOF4E4QpLV19wc\",\n        \"background_image\": null,\n        \"entity_urn\": \"ACoAAAiGJqoBdlREMgbGXrbFbauixsP8wMc4nDI\",\n        \"object_urn\": 143009450,\n        \"profile_type\": \"personal\"\n      }\n    }\n  ]\n}\"\"\"\n    agent_state.memory.update_block_value(\n      label=\"linkedin_activity\", value=value\n    )\n    return {\"success\": True, \"message\": \"Output written to linkedin_activity memory block\"}\n\n",
+      "json_schema": {
+        "name": "linkedin_activity_search",
+        "description": "Get LinkedIn activities from a profile URL in a single function call.\n\nHandles the entire workflow of:\n1. Extracting profile ID from URL\n2. Getting profile details to obtain entity URN\n3. Fetching activities using the entity URN\n4. Filtering activities to only include relevant fields:\n   - commentary\n   - time_elapsed\n   - li_url\n   - header_text\n   - author",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "linkedin_url": {
+              "type": "string",
+              "description": "LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)        "
+            }
+          },
+          "required": [
+            "linkedin_url"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": [],
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-4",
+      "tool_type": "letta_core",
+      "description": "Sends a message to the human user.",
+      "source_type": "python",
+      "name": "send_message",
+      "tags": [
+        "letta_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "send_message",
+        "description": "Sends a message to the human user.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Message contents. All unicode (including emojis) are supported."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 50000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-0",
+      "tool_type": "custom",
+      "description": "A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.",
+      "source_type": "python",
+      "name": "summarize_research",
+      "tags": [],
+      "source_code": "def summarize_research(agent_state: \"AgentState\", final_research_report: str) -> str:\n    \"\"\"\n    A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.\n    \n    Args:\n        web_research_result (str): The web research queries and the results that you found.\n        final_research_report (str): Final research report made up of the deep research flow components from both web research and the knowledge base research results that you found. Make sure to use citations from the web links and the knowledge base resources that you had access to. \n\n    Returns\n        str: A formatted JSON strign of queries and the reasoning behind them\n    \"\"\"\n    import json\n    \n    knowledge_base_research_str = agent_state.memory.get_block(\"knowledge_base_research\").value\n    knowledge_base_research = json.loads(knowledge_base_research_str) if len(knowledge_base_research_str) > 0 else {}\n    \n    research_plan = agent_state.memory.get_block(\"research_plan\").value\n    \n    final_return = {\"final_research_report\":final_research_report, \"knowledge_base_research\": knowledge_base_research, \"research_plan\": research_plan}\n    \n    return json.dumps(final_return, ensure_ascii=False)",
+      "json_schema": {
+        "name": "summarize_research",
+        "description": "A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "final_research_report": {
+              "type": "string",
+              "description": "Final research report made up of the deep research flow components from both web research and the knowledge base research results that you found. Make sure to use citations from the web links and the knowledge base resources that you had access to. "
+            }
+          },
+          "required": [
+            "final_research_report"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-1",
+      "tool_type": "custom",
+      "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+      "source_type": "python",
+      "name": "web_search_custom_beta",
+      "tags": [],
+      "source_code": "import json\nfrom typing import List\nfrom pydantic import BaseModel, Field\n\n\nclass SearchTask(BaseModel):\n    query: str = Field(description=\"Search query\")\n    question: str = Field(description=\"Question to answer\")\n\n\ndef web_search_custom_beta(tasks: List[SearchTask]) -> str:\n    \"\"\"\n    Mocked web search function that returns a JSON-formatted string.\n\n    Args:\n        tasks (List[SearchTask]): A list of SearchTask objects.\n\n    Returns:\n        str: A JSON-formatted string with mocked results.\n    \"\"\"\n    import time\n    import random\n    \n    # Sleep for a random time between 10 and 30 seconds\n    delay = random.uniform(10, 11)\n    print(f\"Sleeping for {delay:.2f} seconds...\")\n    time.sleep(delay)\n    \n    return \"\"\"{\n  \"api_key_source\": \"system_settings\",\n  \"results\": {\n    \"Geoff Detgen Fanatics product compliance safety interview news 2025\": {\n      \"query\": \"Geoff Detgen Fanatics product compliance safety interview news 2025\",\n      \"question\": \"Has Geoff Detgen been featured in any recent news, interviews, or industry commentary regarding product compliance or safety at Fanatics?\",\n      \"total_sources\": 1,\n      \"total_citations\": 0,\n      \"sources\": [\n        {\n          \"url\": \"https://cdn.businessday.ng/wp-content/uploads/2024/02/BD_20240214.pdf\",\n          \"title\": \"[PDF] CBN sells dollars for first time in 5 months to stabilise naira\",\n          \"description\": \"“The registration move being facilitated in partnership with Mon- iepont was to stimulate economic growth, foster regulatory compliance, and ...\",\n          \"citations\": []\n        }\n      ],\n      \"message\": \"No relevant passages found that directly answer the question. Try rewording the question or using different keywords.\"\n    },\n    \"Fanatics regulatory audit 2025 compliance news OSHA CMS supplier management\": {\n      \"query\": \"Fanatics regulatory audit 2025 compliance news OSHA CMS supplier management\",\n      \"question\": \"Has Fanatics recently undergone regulatory audits or compliance reviews (OSHA, CMS, etc.), and how are they managing compliance and supplier/vendor complexity?\",\n      \"total_sources\": 1,\n      \"total_citations\": 3,\n      \"sources\": [\n        {\n          \"url\": null,\n          \"title\": null,\n          \"description\": \"\",\n          \"citations\": [\n            {\n              \"text\": \"# 2025 Compliance Supplement and single audit update\"\n            },\n            {\n              \"text\": \"Join us for a review of the key aspects of the 2025 Office of Management and Budget (OMB) Compliance Supplement and its anticipated impact on single audits. We’ll provide updates on recent developments related to single audits and offer guidance on managing the uncertainties surrounding federal funding.\\n\\nAt the conclusion of this session, participants will be able to:\\n\\n- Identify the key changes included in the 2025 Compliance Supplement.\\n- Summarize common issues for single audits.\\n- Describe how federal agencies and pass-through entities use single audit submissions.\\n\"\n            },\n            {\n              \"text\": \"[Grants Compliance Solutions](https://www.plantemoran.com/services/consulting/risk-management/grants-compliance-solutions) [Single Audit](https://www.plantemoran.com/services/audit/single-audit)\"\n            }\n          ]\n        }\n      ]\n    },\n    \"Fanatics safety compliance initiatives investments 2025 press release\": {\n      \"query\": \"Fanatics safety compliance initiatives investments 2025 press release\",\n      \"question\": \"Is Fanatics investing in safety or compliance initiatives, such as new programs, technology, or hires?\",\n      \"total_sources\": 1,\n      \"total_citations\": 3,\n      \"sources\": [\n        {\n          \"url\": null,\n          \"title\": null,\n          \"description\": \"\",\n          \"citations\": [\n            {\n              \"text\": \"Fanatics, LLC (including its subsidiaries, “Fanatics”) is committed to improving fair labor practices throughout its business and supply chain by ensuring that it complies with all applicable laws related to forced labor, slavery, and human trafficking (collectively referred to herein as “modern slavery”) and child labor. We have published this statement pursuant to California’s Transparency in Supply Chains Act, the UK Modern Slavery Act, and the Canadian Fighting Against Forced Labour and Child Labour in Supply Chains Act (together as, the “Acts”). Not all of the entities in our consolidated group are subject to each of the Acts. However, we have prepared this statement on a consolidated basis due to the global nature of Fanatics’ business practices and policies to address modern slavery and child labor.\"\n            },\n            {\n              \"text\": \"Fanatics employs an internal sustainability team of over 20 individuals globally, which reports into Fanatics’ senior leadership. Thesustainability team develops labor, environment, and traceability goals and targets in alignment with guidance from industry multi-stakeholder initiatives, as well as Fanatics’ key partners and suppliers. On a regular cadence, Fanatics’ leadership reviews progress toward key sustainability goals and targets (See _Measuring Effectiveness_ for details). In addition, the sustainability team provide **s** updates on risks related to modern slavery and child laborto internal sourcing and compliance stakeholders through multiple cross-functional forums. These stakeholders are consulted on risk mitigation strategies and escalations requiringexecutive decision-making.\"\n            },\n            {\n              \"text\": \"### Remediation and Verification\"\n            }\n          ]\n        }\n      ]\n    },\n    \"Fanatics compliance technology implementation challenges reviews 2025\": {\n      \"query\": \"Fanatics compliance technology implementation challenges reviews 2025\",\n      \"question\": \"Has Fanatics reported issues or dissatisfaction with compliance technology rollouts or implementation fatigue?\",\n      \"total_sources\": 1,\n      \"total_citations\": 3,\n      \"sources\": [\n        {\n          \"url\": null,\n          \"title\": null,\n          \"description\": \"\",\n          \"citations\": [\n            {\n              \"text\": \"In the fast-paced world of technology, both regulators and companies face challenges applying existing laws to new and rapid developments. Given the high stakes of non-compliance, which may lead to business restrictions, technology companies’ senior management, boards and compliance teams must clearly understand current and emerging risks, ensuring that they have effective people, processes and controls in place to manage these challenges.\"\n            },\n            {\n              \"text\": \"\\n> Given the significant challenges they face related to data\\n> security, regulatory compliance, and supply chain disruptions,\\n> technology companies must clearly define and continuously\\n> monitor their network of third- and fourth-party partners to\\n> effectively manage risks and ensure operational resilience.\"\n            },\n            {\n              \"text\": \"#### Compliance by design\\n\\nOne of the strengths of the technology industry is, of course, its capacity to innovate. While innovation and regulation may seem at odds, the breadth of compliance requirements faced by the industry and the consequences of noncompliance argue for a compliance-by-design approach that integrates compliance considerations into the design and development processes of business operations, systems, products, and services from the very beginning, not after the fact. As an example, this may mean integrating some compliance and legal functions into the first-line functions like product and engineering teams and building in processes that require that products are coded with risk and compliance in mind as part of the software development lifecycle.\\n\\nThe benefits of a compliance-by-design approach include reduced exposure from identifying and mitigating risks early on, cost efficiency by avoiding the refitting that is often required when compliance requirements are considered later in the process and a more sustainable framework for supporting company growth. For many technology companies, this approach would require a significant cultural change, which is likely to be met by resistance. Ensuring that there is appropriate management-level support and tone at the top is critical for the compliance effort to be successful.\"\n            }\n          ]\n        }\n      ]\n    },\n    \"Fanatics compliance ROI cost control efficiency statements 2025 CFO COO\": {\n      \"query\": \"Fanatics compliance ROI cost control efficiency statements 2025 CFO COO\",\n      \"question\": \"Are Fanatics executives making public statements about ROI, cost control, or efficiency in compliance programs?\",\n      \"total_sources\": 1,\n      \"total_citations\": 3,\n      \"sources\": [\n        {\n          \"url\": null,\n          \"title\": null,\n          \"description\": \"\",\n          \"citations\": [\n            {\n              \"text\": \"# How Glenn Schiffman shapes financial strategy at Fanatics\\n\\nThe CFO of Fanatics explains how finance helps power growth, brand impact and long-term value across the sports commerce giant’s growing portfolio.\\n\\nPublished Aug. 7, 2025\\n...\"\n            },\n            {\n              \"text\": \"From an analytical perspective, you need to get data quality to about 90%. Once you’re there, you can make meaningful insights. ...\"\n            },\n            {\n              \"text\": \"Too often, companies get caught in their own process. They form steering committees, schedule endless Zooms, and create PowerPoints, ...\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}\"\"\"\n",
+      "json_schema": {
+        "name": "web_search_custom_beta",
+        "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Search query"
+                  },
+                  "question": {
+                    "type": "string",
+                    "description": "Question to answer"
+                  }
+                },
+                "required": [
+                  "query",
+                  "question"
+                ]
+              },
+              "description": "A list of SearchTask objects, each specifying a search query and a question to answer."
+            }
+          },
+          "required": [
+            "tasks"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 100000,
+      "pip_requirements": [
+        {
+          "name": "firecrawl",
+          "version": "4.3.1"
+        }
+      ],
+      "npm_requirements": null,
+      "default_requires_approval": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    }
+  ],
+  "mcp_servers": [],
+  "metadata": {
+    "revision_id": "5973fd8b8c60"
+  },
+  "created_at": "2025-09-20T02:00:55.320044+00:00"
+}
