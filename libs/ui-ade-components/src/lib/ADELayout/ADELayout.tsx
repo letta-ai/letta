@@ -284,11 +284,6 @@ function DesktopLayout() {
             <ADEAccordionGroup
               panels={[
                 {
-                  id: 'context-window',
-                  label: t('contextWindow'),
-                  content: <ContextWindowPanel />,
-                },
-                {
                   id: 'core-memories',
                   label: editCoreMemoriesTitle,
                   content: <EditMemory />,

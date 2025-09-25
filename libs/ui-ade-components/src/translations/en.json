@@ -1557,6 +1557,11 @@
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {
+        "contextViewer": {
+          "show": "Show context viewer",
+          "hide": "Hide context viewer"
+        },
+        "summarize": "Run summarization",
         "runDebugger": {
           "show": "Show run debugger",
           "hide": "Hide run debugger"
@@ -2592,7 +2597,7 @@
       "remainingTokens": "{percentageRemaining} left",
       "viewContextWindow": "Context explorer",
       "summarize": "Summarize",
-      "usage": "<used></used> of <total></total> tokens used",
+      "usage": "<used></used> of <total></total> tokens",
       "systemPrompt": "System instructions",
       "toolPrompt": "Tools descriptions",
       "memoryBlocks": "Core memory",

@@ -1,12 +1,12 @@
 .button-secondary-border {
   // safari does not support hsl with css variables
-  border-color: hsl(0, 0%, 35%);
+  border-color: #C9CDD1;
 }
 
 @media (prefers-color-scheme: light) {
   [data-mode='dark'] {
     .button-secondary-border {
-      border-color: hsl(0, 0, 24%);
+      border-color: hsl(0, 0%, 24%);
     }
   }
 }
@@ -16,7 +16,7 @@
   [data-mode='auto'],
   [data-mode='dark'] {
     .button-secondary-border {
-      border-color: hsl(0, 0, 24%);
+      border-color: hsl(0, 0%, 24%);
     }
   }
 }

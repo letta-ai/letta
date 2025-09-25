@@ -28,6 +28,13 @@ import {
   AgentResetMessagesDialog,
   AgentSimulatorOptionsMenu,
 } from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
+import {
+  ContextEditorDialog,
+  contextEditorDialogState,
+  ContextWindowPanel,
+} from '../../ContextEditorPanel/ContextEditorPanel';
+import { useAtom } from 'jotai';
+import './AgentSimulatorHeader.scss';
 
 function AgentVariablesContainer() {
   const agentState = useCurrentAgent();
@@ -59,6 +66,7 @@ function AgentVariablesContainer() {
       trigger={
         <Button
           bold
+          hideLabel
           data-testid="toggle-variables-button"
           preIcon={
             hasVariableIssue ? (
@@ -180,6 +188,7 @@ function AgentSimulatedStatusWrapper() {
 
 export function AgentSimulatorHeader() {
   const { isTourActive, currentStep } = useQuickADETour();
+  const [_, setShowContextViewer] = useAtom(contextEditorDialogState);
 
   if (isTourActive && currentStep !== 'simulator') {
     /* Hides the header during the tour  because it pops up over the tour steps */
@@ -204,10 +213,28 @@ export function AgentSimulatorHeader() {
         gap={false}
         align="center"
         color="background-grey2"
-        className="pointer-events-auto border h-biHeight-sm border-background-grey3-border"
+        className="pointer-events-auto shadow-sm border h-biHeight border-background-grey3-border"
       >
-        <AgentVariablesContainer />
-        <AgentSimulatorOptionsMenu />
+        <HStack
+          className="px-[1.5px]"
+          paddingRight="small"
+        >
+          <HStack
+            padding="xxsmall"
+
+            onClick={() => {
+              setShowContextViewer(true);
+            }}
+            className="hover:bg-secondary-hover context-window-container cursor-pointer"
+          >
+            <ContextWindowPanel />
+          </HStack>
+          <ContextEditorDialog />
+        </HStack>
+        <HStack fullHeight borderLeft align="center" paddingRight="xsmall" paddingLeft="xxsmall" gap="small">
+          <AgentVariablesContainer />
+          <AgentSimulatorOptionsMenu />
+        </HStack>
       </HStack>
     </HStack>
   );

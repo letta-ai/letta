@@ -3,11 +3,8 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
 import {
-  Button,
   Chart,
   Code,
-  CompressIcon,
-  ContextExplorerIcon,
   DynamicApp,
   HStack,
   makeFormattedTooltip,
@@ -25,7 +22,6 @@ import { atom, useAtom } from 'jotai';
 import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../../hooks';
 import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import { SummerizerDialog } from '../../../SummerizerDialog/SummerizerDialog';
 import type * as echarts from 'echarts';
 
 const CONTEXT_PARTS = {
@@ -509,45 +505,18 @@ export function ContextWindowPanel() {
   );
 
   return (
-    <VStack fullWidth gap="small" paddingX="small" paddingBottom="xsmall">
-      <HStack gap="small" fullWidth>
+    <VStack className="w-[200px]" fullWidth gap="small" >
+      <HStack gap={false} fullWidth>
         <div className="w-full relative">
-          <div className="w-full relative z-[1] px-[1px]">
+          <div className="w-full relative z-[1]">
             <Chart
               onInit={onChartInit}
-              height={25}
+              height={4}
               options={standardChartOptions}
             />
           </div>
-          <div className="h-[19px] mt-[3px] w-full absolute z-[0] pointer-events-none top-0 bg-panel-input-background border border-input" />
+          <div className="h-[4px]  w-full absolute z-[0] pointer-events-none top-0 context-window-container-bar  bg-panel-input-background " />
         </div>
-        <HStack align="center">
-          <ContextEditorDialog
-            trigger={
-              <Button
-                square
-                size="2xsmall"
-                color="secondary"
-                hideLabel
-                id="open-context-window-simulator"
-                preIcon={<ContextExplorerIcon />}
-                label={t('ContextWindowPreview.viewContextWindow')}
-              />
-            }
-          />
-          <SummerizerDialog
-            trigger={
-              <Button
-                square
-                size="2xsmall"
-                hideLabel
-                color="tertiary"
-                preIcon={<CompressIcon />}
-                label={t('ContextWindowPreview.summarize')}
-              />
-            }
-          />
-        </HStack>
       </HStack>
       <HStack align="center" justify="spaceBetween">
         <HStack gap={false} fullWidth justify="spaceBetween">
@@ -742,12 +711,12 @@ function ContextWindowSimulator() {
 }
 
 interface ContextEditorDialogProps {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
 }
 
-const contextEditorDialogState = atom<boolean>(false);
+export const contextEditorDialogState = atom<boolean>(false);
 
-function ContextEditorDialog(props: ContextEditorDialogProps) {
+export function ContextEditorDialog(props: ContextEditorDialogProps) {
   const { trigger } = props;
 
   const [open, setOpen] = useAtom(contextEditorDialogState);

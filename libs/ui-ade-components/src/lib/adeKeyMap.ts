@@ -18,5 +18,8 @@ export const adeKeyMap = {
   },
   TOGGLE_RUN_DEBUGGER: {
     command: 'shift+alt+d',
+  },
+  CONTEXT_VIEWER: {
+    command: 'shift+alt+c',
   }
 };
