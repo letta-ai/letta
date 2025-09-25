@@ -134,10 +134,10 @@ env:
   LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
   # feature flags
   LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: true
-  LETTA_DISABLE_SQLALCHEMY_POOLING: true
+  LETTA_DISABLE_SQLALCHEMY_POOLING: false
   LETTA_UVICORN_WORKERS: 1
   # set to 10 for random reason: just need something here but in theory ignoring these parameters
-  LETTA_PG_POOL_SIZE: 10
+  LETTA_PG_POOL_SIZE: 25
   LETTA_PG_MAX_OVERFLOW: 10
   LETTA_DEFAULT_LLM_HANDLE: openai/gpt-4.1
   LETTA_DEFAULT_EMBEDDING_HANDLE: openai/text-embedding-3-small
