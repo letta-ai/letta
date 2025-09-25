@@ -38,6 +38,7 @@ import './AdvancedCoreMemoryEditor.scss';
 import { currentAdvancedCoreMemoryAtom } from './currentAdvancedCoreMemoryAtom';
 import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
 import { DetachMemoryBlock } from './DetachMemoryBlock/DetachMemoryBlock';
+import { RenameLabelDialog } from './RenameLabelDialog/RenameLabelDialog';
 import { useUpdateMemoryBlock } from '../../../hooks/useUpdateMemoryBlock/useUpdateMemoryBlock';
 import { useDeleteMemoryBlock } from '../../../hooks/useDeleteMemoryBlock/useDeleteMemoryBlock';
 import { useListMemories } from '../../../hooks/useListMemories/useListMemories';
@@ -197,6 +198,10 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
           </HStack>
           <HStack gap={false}>
             {!isTemplate && <DetachMemoryBlock blockId={memory.id || ''} />}
+            <RenameLabelDialog
+              blockId={memory.id || ''}
+              currentLabel={memory.label || ''}
+            />
             <DeleteMemoryBlockDialog blockId={memory.id || ''} />
           </HStack>
         </HStack>
@@ -743,7 +748,7 @@ function EditorContent() {
   return (
     <VStack fullWidth fullHeight overflowY="auto">
       <AdvancedMemoryEditorForm
-        key={selectedMemoryBlock.id}
+        key={selectedMemoryBlock.label || selectedMemoryBlock.id}
         memory={selectedMemoryBlock}
         onClose={close}
         onFormDirtyChange={setHasUnsavedChanges}

@@ -283,5 +283,28 @@
     "noItemsFound": "No items found",
     "goTo": "Go to {item}"
   },
-  "tokens": "{count} tokens"
+  "tokens": "{count} tokens",
+  "components/RenameLabelDialog": {
+    "title": "Rename Memory Block Label",
+    "trigger": "Rename label",
+    "error": "There was an error renaming the memory block label, please try again or contact support.",
+    "form": {
+      "label": {
+        "label": "New Label",
+        "placeholder": "my-new-label",
+        "error": "Labels must be alphanumeric and underscores or dashes only, and cannot start with a number"
+      },
+      "cancel": "Cancel",
+      "rename": "Rename"
+    },
+    "errors": {
+      "noPermission": "No permission to update memory blocks",
+      "agentIdRequired": "Agent ID is required",
+      "blockIdRequired": "Block ID is required",
+      "updateInProgress": "Update already in progress",
+      "labelExists": "A memory block with the label \"{label}\" already exists",
+      "updateFailed": "Failed to update memory block name",
+      "noPermissionTemplate": "No permission to update templates"
+    }
+  }
 }

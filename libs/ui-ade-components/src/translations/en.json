@@ -1231,6 +1231,20 @@
         "placeholder": "Search by label"
       },
       "create": "New block"
+    },
+    "RenameLabelDialog": {
+      "title": "Rename Memory Block Label",
+      "trigger": "Rename label",
+      "error": "There was an error renaming the memory block label, please try again or contact support.",
+      "form": {
+        "label": {
+          "label": "New Label",
+          "placeholder": "my-new-label",
+          "error": "Labels must be alphanumeric and underscores or dashes only, and cannot start with a number"
+        },
+        "cancel": "Cancel",
+        "rename": "Rename"
+      }
     }
   },
   "ADE/useCurrentSimulatedAgent": {
