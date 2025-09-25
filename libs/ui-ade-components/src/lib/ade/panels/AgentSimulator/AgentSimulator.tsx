@@ -27,36 +27,7 @@ import { RunDebugViewer } from './RunDebugViewer/RunDebugViewer';
 import { useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { AgentSimulatorEmptyState } from './AgentSimulatorEmptyState';
-
-interface QuickAgentSimulatorOnboardingProps {
-  children: React.ReactNode;
-}
-
-function QuickAgentSimulatorOnboarding(
-  props: QuickAgentSimulatorOnboardingProps,
-) {
-  const t = useTranslations('ADE/AgentSimulator.QuickOnboarding');
-  const { children } = props;
-
-  const { currentStep } = useQuickADETour();
-
-  if (currentStep !== 'message') {
-    return <>{children}</>;
-  }
-
-  return (
-    <OnboardingAsideFocus
-      title={t('title')}
-      placement="top-start"
-      description={t('description')}
-      isOpen
-      totalSteps={4}
-      currentStep={1}
-    >
-      {children}
-    </OnboardingAsideFocus>
-  );
-}
+import { QuickAgentSimulatorOnboarding } from './QuickAgentSimulatorOnboarding';
 
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
@@ -159,9 +130,13 @@ export function AgentSimulator() {
                 </ErrorBoundary>
               </VStack>
               {showRunDebugger && <RunDebugViewer />}
-              <QuickAgentSimulatorOnboarding>
-                {data && <AgentChatInput />}
-              </QuickAgentSimulatorOnboarding>
+              {!isNewEmptyStateMessageADE ? (
+                <QuickAgentSimulatorOnboarding>
+                  {data && <AgentChatInput />}
+                </QuickAgentSimulatorOnboarding>
+              ) : (
+                <>{data && <AgentChatInput />}</>
+              )}
             </VStack>
           </VStack>
         )}
