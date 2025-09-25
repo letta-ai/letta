@@ -36,12 +36,9 @@ export function RenameLabelDialog(props: RenameLabelDialogProps) {
 
   const renameLabelSchema = useMemo(() => {
     return z.object({
-      label: z.string().refine((value) => {
-        // For new/changed labels, apply the strict validation
-        return /^[a-zA-Z_-][a-zA-Z0-9_-]*$/.test(value);
-      }, t('form.label.error')),
+      label: z.string().min(1),
     });
-  }, [t]);
+  }, []);
 
   type RenameLabelPayload = z.infer<typeof renameLabelSchema>;
 
