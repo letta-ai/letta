@@ -844,7 +844,7 @@ class Message(BaseMessage):
             }
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or text_content is not None
+            assert self.tool_calls is not None or text_content is not None, vars(self)
 
             # if native content, then put it directly inside the content
             if native_content:

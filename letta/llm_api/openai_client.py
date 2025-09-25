@@ -300,6 +300,7 @@ class OpenAIClient(LLMClientBase):
             tool_choice=tool_choice,
             max_output_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
+            parallel_tool_calls=False,
         )
 
         # Add verbosity control for GPT-5 models
