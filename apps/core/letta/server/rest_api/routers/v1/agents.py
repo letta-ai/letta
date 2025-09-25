@@ -1777,7 +1777,9 @@ async def preview_raw_payload(
     be sent to the LLM provider. Useful for debugging and inspection.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent = await server.agent_manager.get_agent_by_id_async(
+        agent_id, actor, include_relationships=["multi_agent_group", "memory", "sources"]
+    )
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",
