@@ -382,6 +382,7 @@ class LettaAgentV3(LettaAgentV2):
                 is_denial=(approval_response.approve == False) if approval_response is not None else False,
                 denial_reason=approval_response.denial_reason if approval_response is not None else None,
             )
+            # NOTE: there is an edge case where persisted_messages is empty (the LLM did a "no-op")
 
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(persisted_messages[new_message_idx:])
@@ -391,7 +392,7 @@ class LettaAgentV3(LettaAgentV2):
                 # In the normal streaming path, the tool call is surfaced via the streaming interface
                 # (llm_adapter.tool_call), so don't rely solely on the local `tool_call` variable.
                 has_tool_return = any(m.role == "tool" for m in persisted_messages)
-                if persisted_messages[-1].role != "approval" and has_tool_return:
+                if len(persisted_messages) > 0 and persisted_messages[-1].role != "approval" and has_tool_return:
                     tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
                     if include_return_message_types is None or tool_return.message_type in include_return_message_types:
                         yield tool_return
@@ -419,6 +420,7 @@ class LettaAgentV3(LettaAgentV2):
                 await self.agent_manager.update_message_ids_async(
                     agent_id=self.agent_state.id, message_ids=self.agent_state.message_ids, actor=self.actor
                 )
+            # TODO should we be logging this even if persisted_messages is empty? Technically, there still was an LLM call
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             import traceback
@@ -566,8 +568,15 @@ class LettaAgentV3(LettaAgentV2):
             )
             return persisted_messages, continue_stepping, stop_reason
 
+        # -1. no tool call, no content
+        if tool_call is None and (content is None or len(content) == 0):
+            # Edge case is when there's also no content - basically, the LLM "no-op'd"
+            # In this case, we actually do not want to persist the no-op message
+            continue_stepping, heartbeat_reason, stop_reason = False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+            messages_to_persist = initial_messages or []
+
         # 0. If there's no tool call, we can early exit
-        if tool_call is None:
+        elif tool_call is None:
             # TODO could just hardcode the line here instead of calling the function...
             continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
                 # agent_state=agent_state,
