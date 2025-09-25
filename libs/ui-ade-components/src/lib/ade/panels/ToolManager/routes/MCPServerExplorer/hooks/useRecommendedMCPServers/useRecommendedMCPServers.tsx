@@ -190,7 +190,7 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         setup: {
           type: 'custom-url',
           baseUrl: 'https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key',
-          requiresApiKey: true,
+          requiresApiKey: false,
           hideApiKeyField: true,
           placeholder: 'https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key',
           instructions: t.rich('exa.instructions', {
