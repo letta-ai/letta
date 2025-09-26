@@ -14,7 +14,6 @@ import {
 import { cn } from '@letta-cloud/ui-styles';
 import { ArrowUpIcon } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import type { EChartsOption } from 'echarts';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
@@ -50,14 +49,6 @@ export function MetricCard(props: MetricCardProps) {
   const { formatDate } = useFormatters();
   const { granularity } = useObservabilityContext();
   const styles = useCurrentStyles();
-
-  const { width = 0 } = useViewportSize();
-  const [debouncedWidth] = useDebouncedValue(width, 100);
-
-  const chartWidth = React.useMemo(() => {
-    const width = debouncedWidth < 1300 ? 100 : 200;
-    return width;
-  }, [debouncedWidth]);
 
   const renderTrendIcon = () => {
     if (!trend || trend === 'neutral') return null;
@@ -222,11 +213,11 @@ export function MetricCard(props: MetricCardProps) {
             {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
           </HStack>
         </VStack>
-        <div className="min-w-[30px] flex-1 h-[45px] flex items-center justify-center">
+        <div className="min-w-[30px]  flex-1 h-[45px] flex items-center justify-center">
           {isLoading ? (
             <Skeleton className="w-full h-[45px]" />
           ) : (
-            <Chart key={chartWidth} options={chartOptions} width={chartWidth} height={45} />
+            <Chart  options={chartOptions}  height={45} />
           )}
         </div>
       </HStack>
