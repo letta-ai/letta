@@ -283,7 +283,7 @@ agent_state = client.agents.create(
 
 # Or attach tools to an existing agent
 client.agents.tool.attach(
-    agent_id=agent_state.id
+    agent_id=agent_state.id,
     tool_id=tool.id
 )
 
