@@ -2,6 +2,7 @@ from typing import Literal, Optional
 
 import pytest
 
+from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import (
     AnthropicProvider,
@@ -356,7 +357,7 @@ def test_reasoning_toggle_by_provider(
         handle=handle,
         context_window=1024,
     )
-    new_config = LLMConfig.apply_reasoning_setting_to_config(config, reasoning=reasoning)
+    new_config = LLMConfig.apply_reasoning_setting_to_config(config, reasoning=reasoning, agent_type=AgentType.memgpt_v2_agent)
 
     assert new_config.enable_reasoner == expected_enable_reasoner
     assert new_config.put_inner_thoughts_in_kwargs == expected_put_inner_thoughts_in_kwargs

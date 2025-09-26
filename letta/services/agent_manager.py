@@ -315,7 +315,20 @@ class AgentManager:
             raise ValueError("llm_config and embedding_config are required")
 
         if agent_create.reasoning is not None:
-            agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(agent_create.llm_config, agent_create.reasoning)
+            agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(
+                agent_create.llm_config,
+                agent_create.reasoning,
+                agent_create.agent_type,
+            )
+        # For v1 agents, enforce sane defaults even when reasoning is omitted
+        elif agent_create.agent_type == AgentType.letta_v1_agent:
+            # Default togglable models (Anthropic 3.7/4) to enabled; others disabled
+            default_reasoning = LLMConfig.is_anthropic_reasoning_model(agent_create.llm_config)
+            agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(
+                agent_create.llm_config,
+                default_reasoning,
+                agent_create.agent_type,
+            )
 
         # blocks
         block_ids = list(agent_create.block_ids or [])
@@ -642,7 +655,11 @@ class AgentManager:
 
             if agent_update.reasoning is not None:
                 llm_config = agent_update.llm_config or agent.llm_config
-                agent_update.llm_config = LLMConfig.apply_reasoning_setting_to_config(llm_config, agent_update.reasoning)
+                agent_update.llm_config = LLMConfig.apply_reasoning_setting_to_config(
+                    llm_config,
+                    agent_update.reasoning,
+                    agent.agent_type,
+                )
 
             scalar_updates = {
                 "name": agent_update.name,
