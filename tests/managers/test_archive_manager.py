@@ -270,3 +270,248 @@ async def test_archive_manager_get_agent_from_passage_async(server: SyncServer, 
     await server.passage_manager.delete_passage_by_id_async(passage.id, actor=default_user)
     await server.passage_manager.delete_passage_by_id_async(orphan_passage.id, actor=default_user)
     await server.archive_manager.delete_archive_async(orphan_archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_archive_async(server: SyncServer, default_user):
+    """Test creating a new archive with various parameters."""
+    # test creating with name and description
+    archive = await server.archive_manager.create_archive_async(
+        name="test_archive_basic", description="Test archive description", actor=default_user
+    )
+
+    assert archive.name == "test_archive_basic"
+    assert archive.description == "Test archive description"
+    assert archive.organization_id == default_user.organization_id
+    assert archive.id is not None
+
+    # test creating without description
+    archive2 = await server.archive_manager.create_archive_async(name="test_archive_no_desc", actor=default_user)
+
+    assert archive2.name == "test_archive_no_desc"
+    assert archive2.description is None
+    assert archive2.organization_id == default_user.organization_id
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_archive_by_id_async(server: SyncServer, default_user):
+    """Test retrieving an archive by its ID."""
+    # create an archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_get_by_id", description="Archive to test get_by_id", actor=default_user
+    )
+
+    # retrieve the archive
+    retrieved = await server.archive_manager.get_archive_by_id_async(archive_id=archive.id, actor=default_user)
+
+    assert retrieved.id == archive.id
+    assert retrieved.name == "test_get_by_id"
+    assert retrieved.description == "Archive to test get_by_id"
+    assert retrieved.organization_id == default_user.organization_id
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+    # test getting non-existent archive should raise
+    with pytest.raises(Exception):
+        await server.archive_manager.get_archive_by_id_async(archive_id=str(uuid.uuid4()), actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_update_archive_async(server: SyncServer, default_user):
+    """Test updating archive name and description."""
+    # create an archive
+    archive = await server.archive_manager.create_archive_async(
+        name="original_name", description="original description", actor=default_user
+    )
+
+    # update name only
+    updated = await server.archive_manager.update_archive_async(archive_id=archive.id, name="updated_name", actor=default_user)
+
+    assert updated.id == archive.id
+    assert updated.name == "updated_name"
+    assert updated.description == "original description"
+
+    # update description only
+    updated = await server.archive_manager.update_archive_async(
+        archive_id=archive.id, description="updated description", actor=default_user
+    )
+
+    assert updated.name == "updated_name"
+    assert updated.description == "updated description"
+
+    # update both
+    updated = await server.archive_manager.update_archive_async(
+        archive_id=archive.id, name="final_name", description="final description", actor=default_user
+    )
+
+    assert updated.name == "final_name"
+    assert updated.description == "final description"
+
+    # verify changes persisted
+    retrieved = await server.archive_manager.get_archive_by_id_async(archive_id=archive.id, actor=default_user)
+
+    assert retrieved.name == "final_name"
+    assert retrieved.description == "final description"
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_list_archives_async(server: SyncServer, default_user, sarah_agent):
+    """Test listing archives with various filters and pagination."""
+    # create test archives
+    archives = []
+    for i in range(5):
+        archive = await server.archive_manager.create_archive_async(
+            name=f"list_test_archive_{i}", description=f"Description {i}", actor=default_user
+        )
+        archives.append(archive)
+
+    # test basic listing
+    result = await server.archive_manager.list_archives_async(actor=default_user, limit=10)
+    assert len(result) >= 5
+
+    # test with limit
+    result = await server.archive_manager.list_archives_async(actor=default_user, limit=3)
+    assert len(result) == 3
+
+    # test filtering by name
+    result = await server.archive_manager.list_archives_async(actor=default_user, name="list_test_archive_2")
+    assert len(result) == 1
+    assert result[0].name == "list_test_archive_2"
+
+    # attach an archive to agent and test agent_id filter
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=sarah_agent.id, archive_id=archives[0].id, is_owner=True, actor=default_user
+    )
+
+    result = await server.archive_manager.list_archives_async(actor=default_user, agent_id=sarah_agent.id)
+    assert len(result) >= 1
+    assert archives[0].id in [a.id for a in result]
+
+    # test pagination with after
+    all_archives = await server.archive_manager.list_archives_async(actor=default_user, limit=100)
+    if len(all_archives) > 2:
+        first_batch = await server.archive_manager.list_archives_async(actor=default_user, limit=2)
+        second_batch = await server.archive_manager.list_archives_async(actor=default_user, after=first_batch[-1].id, limit=2)
+        assert len(second_batch) <= 2
+        assert first_batch[-1].id not in [a.id for a in second_batch]
+
+    # cleanup
+    for archive in archives:
+        await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer, default_user, sarah_agent):
+    """Test attaching agents to archives with ownership settings."""
+    # create archives
+    archive1 = await server.archive_manager.create_archive_async(name="archive_for_attachment_1", actor=default_user)
+    archive2 = await server.archive_manager.create_archive_async(name="archive_for_attachment_2", actor=default_user)
+
+    # create another agent
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_attach_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # attach agent as owner
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=sarah_agent.id, archive_id=archive1.id, is_owner=True, actor=default_user
+    )
+
+    # verify attachment
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert sarah_agent.id in agent_ids
+
+    # attach agent as non-owner
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive1.id, is_owner=False, actor=default_user
+    )
+
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert len(agent_ids) == 2
+    assert agent2.id in agent_ids
+
+    # test updating ownership (attach again with different is_owner)
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive1.id, is_owner=True, actor=default_user
+    )
+
+    # verify still only 2 agents (no duplicate)
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert len(agent_ids) == 2
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive1.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_default_archive_for_agent_async(server: SyncServer, default_user):
+    """Test getting default archive for an agent."""
+    # create agent without archive
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_default_archive_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # should return None when no archive exists
+    archive = await server.archive_manager.get_default_archive_for_agent_async(agent_id=agent.id, actor=default_user)
+    assert archive is None
+
+    # create and attach an archive
+    created_archive = await server.archive_manager.create_archive_async(name="default_archive", actor=default_user)
+
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent.id, archive_id=created_archive.id, is_owner=True, actor=default_user
+    )
+
+    # should now return the archive
+    archive = await server.archive_manager.get_default_archive_for_agent_async(agent_id=agent.id, actor=default_user)
+    assert archive is not None
+    assert archive.id == created_archive.id
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(created_archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_or_set_vector_db_namespace_async(server: SyncServer, default_user):
+    """Test getting or setting vector database namespace for an archive."""
+    # create an archive
+    archive = await server.archive_manager.create_archive_async(name="test_vector_namespace", actor=default_user)
+
+    # get/set namespace for the first time
+    namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive_id=archive.id)
+
+    assert namespace is not None
+    assert archive.id in namespace
+
+    # verify it returns the same namespace on subsequent calls
+    namespace2 = await server.archive_manager.get_or_set_vector_db_namespace_async(archive_id=archive.id)
+
+    assert namespace == namespace2
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
