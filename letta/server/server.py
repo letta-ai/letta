@@ -200,63 +200,6 @@ class SyncServer(object):
         # TODO: Replace this with the Anthropic client we have in house
         self.anthropic_async_client = AsyncAnthropic()
 
-    async def init_async(self, init_with_default_org_and_user: bool = True):
-        # Make default user and org
-        if init_with_default_org_and_user:
-            self.default_org = await self.organization_manager.create_default_organization_async()
-            self.default_user = await self.user_manager.create_default_actor_async()
-            print(f"Default user: {self.default_user} and org: {self.default_org}")
-            await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
-
-            # Add composio keys to the tool sandbox env vars of the org
-            if tool_settings.composio_api_key:
-                manager = SandboxConfigManager()
-                sandbox_config = await manager.get_or_create_default_sandbox_config_async(
-                    sandbox_type=SandboxType.LOCAL, actor=self.default_user
-                )
-
-                await manager.create_sandbox_env_var_async(
-                    SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-                    sandbox_config_id=sandbox_config.id,
-                    actor=self.default_user,
-                )
-
-            # For OSS users, create a local sandbox config
-            oss_default_user = await self.user_manager.get_default_actor_async()
-            use_venv = False if not tool_settings.tool_exec_venv_name else True
-            venv_name = tool_settings.tool_exec_venv_name or "venv"
-            tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
-
-            venv_dir = Path(tool_dir) / venv_name
-            tool_path = Path(tool_dir)
-
-            if tool_path.exists() and not tool_path.is_dir():
-                logger.error(f"LETTA_TOOL_SANDBOX_DIR exists but is not a directory: {tool_dir}")
-            else:
-                if not tool_path.exists():
-                    logger.warning(f"LETTA_TOOL_SANDBOX_DIR does not exist, creating now: {tool_dir}")
-                    tool_path.mkdir(parents=True, exist_ok=True)
-
-                if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
-                    logger.warning(
-                        f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
-                    )
-
-                sandbox_config_create = SandboxConfigCreate(
-                    config=LocalSandboxConfig(sandbox_dir=tool_settings.tool_exec_dir, use_venv=use_venv, venv_name=venv_name)
-                )
-                sandbox_config = await self.sandbox_config_manager.create_or_update_sandbox_config_async(
-                    sandbox_config_create=sandbox_config_create, actor=oss_default_user
-                )
-                logger.debug(f"Successfully created default local sandbox config:\n{sandbox_config.get_local_config().model_dump()}")
-
-                if use_venv and tool_settings.tool_exec_autoreload_venv:
-                    prepare_local_sandbox(
-                        sandbox_config.get_local_config(),
-                        env=os.environ.copy(),
-                        force_recreate=True,
-                    )
-
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider(name="letta")]
         if model_settings.openai_api_key:
@@ -363,6 +306,63 @@ class SyncServer(object):
                     api_key=model_settings.openrouter_api_key,
                 )
             )
+
+    async def init_async(self, init_with_default_org_and_user: bool = True):
+        # Make default user and org
+        if init_with_default_org_and_user:
+            self.default_org = await self.organization_manager.create_default_organization_async()
+            self.default_user = await self.user_manager.create_default_actor_async()
+            print(f"Default user: {self.default_user} and org: {self.default_org}")
+            await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
+
+            # Add composio keys to the tool sandbox env vars of the org
+            if tool_settings.composio_api_key:
+                manager = SandboxConfigManager()
+                sandbox_config = await manager.get_or_create_default_sandbox_config_async(
+                    sandbox_type=SandboxType.LOCAL, actor=self.default_user
+                )
+
+                await manager.create_sandbox_env_var_async(
+                    SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
+                    sandbox_config_id=sandbox_config.id,
+                    actor=self.default_user,
+                )
+
+            # For OSS users, create a local sandbox config
+            oss_default_user = await self.user_manager.get_default_actor_async()
+            use_venv = False if not tool_settings.tool_exec_venv_name else True
+            venv_name = tool_settings.tool_exec_venv_name or "venv"
+            tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
+
+            venv_dir = Path(tool_dir) / venv_name
+            tool_path = Path(tool_dir)
+
+            if tool_path.exists() and not tool_path.is_dir():
+                logger.error(f"LETTA_TOOL_SANDBOX_DIR exists but is not a directory: {tool_dir}")
+            else:
+                if not tool_path.exists():
+                    logger.warning(f"LETTA_TOOL_SANDBOX_DIR does not exist, creating now: {tool_dir}")
+                    tool_path.mkdir(parents=True, exist_ok=True)
+
+                if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
+                    logger.warning(
+                        f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
+                    )
+
+                sandbox_config_create = SandboxConfigCreate(
+                    config=LocalSandboxConfig(sandbox_dir=tool_settings.tool_exec_dir, use_venv=use_venv, venv_name=venv_name)
+                )
+                sandbox_config = await self.sandbox_config_manager.create_or_update_sandbox_config_async(
+                    sandbox_config_create=sandbox_config_create, actor=oss_default_user
+                )
+                logger.debug(f"Successfully created default local sandbox config:\n{sandbox_config.get_local_config().model_dump()}")
+
+                if use_venv and tool_settings.tool_exec_autoreload_venv:
+                    prepare_local_sandbox(
+                        sandbox_config.get_local_config(),
+                        env=os.environ.copy(),
+                        force_recreate=True,
+                    )
 
     async def init_mcp_clients(self):
         # TODO: remove this
