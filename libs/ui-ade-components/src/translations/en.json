@@ -378,7 +378,9 @@
       "reasoning": {
         "label": "Reasoning",
         "tooltip": "Enable reasoning for this agent",
-        "disabledTooltip": "Reasoning cannot be disabled for this model"
+        "disabledTooltip": "Reasoning cannot be disabled for this model",
+        "v1Supported": "This model supports reasoning",
+        "v1Unsupported": "This model does not support reasoning"
       }
     }
   },
