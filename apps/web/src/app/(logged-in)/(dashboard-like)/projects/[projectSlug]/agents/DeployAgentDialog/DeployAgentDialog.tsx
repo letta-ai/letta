@@ -1,3 +1,4 @@
+"use client";
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ActionCard,
@@ -31,7 +32,9 @@ import {
   type PublicTemplateDetailsType,
 } from '@letta-cloud/sdk-cloud-api';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
+import type { StarterKitArchitecture } from '@letta-cloud/config-agent-starter-kits';
 import { isFetchError } from '@ts-rest/react-query/v5';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { BillingLink } from '@letta-cloud/ui-component-library';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
@@ -172,7 +175,7 @@ function FromStarterKit(props: FromStarterKitProps) {
   });
 
   const handleSelectStarterKit = useCallback(
-    (starterKitId: string) => {
+    (starterKitId: string, architecture?: StarterKitArchitecture) => {
       onIsCreating(true);
 
       trackClientSideEvent(AnalyticsEvent.CREATE_AGENT, {
@@ -186,11 +189,20 @@ function FromStarterKit(props: FromStarterKitProps) {
         },
         body: {
           projectId,
+          agentType: architecture === 'letta_v1' ? 'letta_v1_agent' : undefined,
         },
       });
     },
     [mutate, onIsCreating, projectId],
   );
+
+  // Feature flag: Letta V1 architecture tab (match existing pattern)
+  const { data: enabledLettaV1 } = useFeatureFlag('LETTA_V1_ARCHITECTURE');
+  const architectures = React.useMemo<StarterKitArchitecture[]>(() => {
+    const base: StarterKitArchitecture[] = ['memgpt', 'sleeptime'];
+    if (enabledLettaV1) base.push('letta_v1');
+    return base;
+  }, [enabledLettaV1]);
 
   return (
     <Section
@@ -198,9 +210,9 @@ function FromStarterKit(props: FromStarterKitProps) {
       description={t('FromStarterKit.description')}
     >
       <StarterKitSelector
-        architectures={['memgpt', 'sleeptime']}
-        onSelectStarterKit={(_, kit) => {
-          handleSelectStarterKit(kit.id);
+        architectures={architectures}
+        onSelectStarterKit={(_, kit, arch) => {
+          handleSelectStarterKit(kit.id, arch);
         }}
       />
     </Section>

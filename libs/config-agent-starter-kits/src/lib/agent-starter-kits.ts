@@ -15,7 +15,7 @@ export interface StarterKitTool {
 }
 
 
-export type StarterKitArchitecture = 'memgpt_v2_agent' | 'memgpt' | 'sleeptime';
+export type StarterKitArchitecture = 'memgpt_v2_agent' | 'memgpt' | 'sleeptime' | 'letta_v1';
 
 export type StarterKitId = 'scratch' | 'sleepTime' | 'voiceSleepTime' | 'deepThought' | 'characterRoleplay' | 'personalAssistant' | 'customerSupport' | 'companion';
 

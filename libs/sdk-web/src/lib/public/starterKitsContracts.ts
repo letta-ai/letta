@@ -11,6 +11,7 @@ const CreatedAgentFromStarterKitSchema = z.object({
 const CreateAgentFromStarterKitBodySchema = z.object({
   projectId: z.string().optional(),
   name: z.string().optional(),
+  agentType: z.string().optional(),
 });
 
 const createAgentFromStarterKitContract = c.mutation({
@@ -30,10 +31,15 @@ const CreatedTemplateFromStarterKitSchema = z.object({
   projectSlug: z.string(),
 });
 
+const CreateTemplateFromStarterKitBodySchema = z.object({
+  projectId: z.string().optional(),
+  name: z.string().optional(),
+});
+
 const createTemplateFromStarterKitContract = c.mutation({
   method: 'POST',
   path: '/starter-kits/:starterKitId/templates',
-  body: CreateAgentFromStarterKitBodySchema,
+  body: CreateTemplateFromStarterKitBodySchema,
   pathParams: z.object({
     starterKitId: z.string(),
   }),

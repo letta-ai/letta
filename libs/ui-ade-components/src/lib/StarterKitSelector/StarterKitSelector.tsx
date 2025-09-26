@@ -33,6 +33,7 @@ function ArchitectureSelector(props: ArchitectureSelectorProps) {
         memgpt: t('memgpt'),
         sleeptime: t('sleepTime'),
         memgpt_v2_agent: t('memgpt'),
+        letta_v1: t('lettaV1Alpha'),
       }),
       [t],
     );
@@ -70,7 +71,11 @@ function ArchitectureSelector(props: ArchitectureSelectorProps) {
 }
 
 interface StarterKitSelectorProps {
-  onSelectStarterKit: (title: string, starterKit: StarterKit) => void;
+  onSelectStarterKit: (
+    title: string,
+    starterKit: StarterKit,
+    architecture?: StarterKitArchitecture,
+  ) => void;
   architectures: StarterKitArchitecture[];
 }
 
@@ -101,7 +106,8 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
 
   const t = useTranslations('components/StarterKitSelector');
   const currentStarterKits = useMemo(() => {
-    const starterKits = entryMapToArchitecture[currentArchitecture];
+    const effectiveArch = currentArchitecture === 'letta_v1' ? 'memgpt' : currentArchitecture;
+    const starterKits = entryMapToArchitecture[effectiveArch];
     if (!starterKits) {
       return [];
     }
@@ -126,7 +132,21 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
         {currentStarterKits.map(([id, starterKit]) => {
           return (
             <StarterKitItems
-              onSelectStarterKit={onSelectStarterKit}
+              onSelectStarterKit={(title, kit) => {
+                // If user is in the V1 architecture tab, inject letta_v1_agent into the payload
+                if (currentArchitecture === 'letta_v1') {
+                  const next = {
+                    ...kit,
+                    agentState: {
+                      ...kit.agentState,
+                      agent_type: 'letta_v1_agent',
+                    },
+                  } as StarterKit;
+                  onSelectStarterKit(title, next, currentArchitecture);
+                } else {
+                  onSelectStarterKit(title, kit, currentArchitecture);
+                }
+              }}
               key={id}
               starterKit={starterKit}
             />
