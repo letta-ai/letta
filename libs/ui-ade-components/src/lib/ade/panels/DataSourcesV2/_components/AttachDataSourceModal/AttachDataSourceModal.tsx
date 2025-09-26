@@ -5,7 +5,7 @@ import {
   type Source,
   useAgentsServiceAttachSourceToAgent,
   UseAgentsServiceRetrieveAgentKeyFn,
-  useSourcesServiceListSources,
+  useFoldersServiceListFolders,
 } from '@letta-cloud/sdk-core';
 import {
   Button,
@@ -23,9 +23,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentAgent } from '../../../../../hooks';
-import {
-  useIsSourceCompatibleWithAgent
-} from '../../hooks/useIsSourceCompatibleWithAgent/useIsSourceCompatibleWithAgent';
+import { useIsSourceCompatibleWithAgent } from '../../hooks/useIsSourceCompatibleWithAgent/useIsSourceCompatibleWithAgent';
 
 interface DataSourceItemProps {
   source: Source;
@@ -133,7 +131,9 @@ export function AttachDataSourceModal(props: AttachDataSourceModalProps) {
     data: allSources,
     isLoading,
     isError,
-  } = useSourcesServiceListSources();
+  } = useFoldersServiceListFolders({
+    name: search,
+  });
 
   const existingSourcesIdSet = useMemo(() => {
     if (!existingSources) {
@@ -154,21 +154,21 @@ export function AttachDataSourceModal(props: AttachDataSourceModalProps) {
     [onClose],
   );
 
+
+
   const handleAttachComplete = useCallback(() => {
     handleOpenChange(false);
   }, [handleOpenChange]);
 
-  const filteredSources = useMemo(() => {
+  const sources = useMemo(() => {
     if (!allSources) {
       return [];
     }
 
-    return allSources.filter((source) =>
-      source.name.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [allSources, search]);
+    return allSources;
+  }, [allSources]);
 
-  const isEmpty = filteredSources.length === 0 && !isLoading && !isError;
+  const isEmpty = sources.length === 0 && !isLoading && !isError;
 
   return (
     <Dialog
@@ -217,7 +217,7 @@ export function AttachDataSourceModal(props: AttachDataSourceModalProps) {
             </VStack>
           ) : (
             <VStack gap={false} fullWidth>
-              {filteredSources.map((source) => (
+              {sources.map((source) => (
                 <DataSourceItem
                   key={source.id}
                   source={source}
