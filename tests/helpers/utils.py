@@ -81,12 +81,12 @@ def retry_until_success(max_attempts=10, sleep_time_seconds=4):
     return decorator_retry
 
 
-def cleanup(server: SyncServer, agent_uuid: str, actor: User):
+async def cleanup_async(server: SyncServer, agent_uuid: str, actor: User):
     # Clear all agents
-    agent_states = server.agent_manager.list_agents(name=agent_uuid, actor=actor)
+    agent_states = await server.agent_manager.list_agents_async(name=agent_uuid, actor=actor)
 
     for agent_state in agent_states:
-        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=actor)
+        await server.agent_manager.delete_agent_async(agent_id=agent_state.id, actor=actor)
 
 
 # Utility functions
