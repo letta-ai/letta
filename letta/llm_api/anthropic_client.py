@@ -186,7 +186,7 @@ class AnthropicClient(LLMClientBase):
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
-        prefix_fill = True
+        prefix_fill = True if agent_type != AgentType.letta_v1_agent else False
         if not self.use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
