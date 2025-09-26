@@ -294,7 +294,8 @@ class AnthropicClient(LLMClientBase):
             if "tools" in data:
                 for tool in data["tools"]:
                     tool["input_schema"]["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
-                    if REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
+                    if "required" in tool["input_schema"] and REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
+                        # NOTE: required is not always present
                         tool["input_schema"]["required"].remove(REQUEST_HEARTBEAT_PARAM)
 
         else:
