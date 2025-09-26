@@ -243,7 +243,7 @@ function SelectedTemplateStateWrapper(
     ),
     queryData: {
       params: {
-        project,
+        project_id: project,
         template_version: templateVersion,
       },
     },
@@ -378,7 +378,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
 
     createAgent({
       params: {
-        project: projectSlug,
+        project_id: projectSlug,
         template_version: `${selectedTemplate.name}:${selectedTemplate.latest_version}`,
       },
       body: {

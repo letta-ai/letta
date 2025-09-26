@@ -15,7 +15,7 @@ export function useCurrentTemplateSnapshot(version: string) {
       `${templateName}:${version}`,
     ),
     queryData: {
-      params: { project: projectSlug, template_version: `${templateName}:${version}` },
+      params: { project_id: projectSlug, template_version: `${templateName}:${version}` },
     },
     enabled: !!templateName && !!projectSlug,
     retry: false,

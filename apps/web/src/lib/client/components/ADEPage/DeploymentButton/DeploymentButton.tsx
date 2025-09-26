@@ -236,7 +236,7 @@ function CreateNewTemplateVersionDialog(
                 message: values.message,
               },
               params: {
-                project: slug,
+                project_id: slug,
                 template_name: templateName,
               },
             });

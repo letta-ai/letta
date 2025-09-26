@@ -86,7 +86,7 @@ export function DeleteTemplateDialog(props: DeleteTemplateDialogProps) {
   const handleSubmit = useCallback(() => {
     mutate({
       params: {
-        project: projectSlug,
+        project_id: projectSlug,
         template_name: templateName,
       },
       body: undefined,

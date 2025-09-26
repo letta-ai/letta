@@ -30,7 +30,7 @@ export function TemplateDescription() {
 
     mutate({
       params: {
-        project: projectSlug,
+        project_id: projectSlug,
         template_name: templateName,
       },
       body: {

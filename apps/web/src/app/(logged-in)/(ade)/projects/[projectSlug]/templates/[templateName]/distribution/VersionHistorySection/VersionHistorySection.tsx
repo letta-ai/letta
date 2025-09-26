@@ -97,7 +97,7 @@ export function VersionHistorySection() {
           offset: '0',
         },
         params: {
-          project_slug: projectSlug,
+          project_id: projectSlug,
           name: templateName,
         },
       },

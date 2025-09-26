@@ -28,7 +28,7 @@ export default function TemplatePage() {
       ),
       queryData: {
         params: {
-          project: projectSlug,
+          project_id: projectSlug,
           template_version: `${templateName}:latest`,
         },
       },

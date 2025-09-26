@@ -86,7 +86,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
     mutate(
       {
         params: {
-          project: projectSlug,
+          project_id: projectSlug,
           template_version: `${templateName}:latest`,
         },
         body: {},

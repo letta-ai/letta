@@ -62,7 +62,7 @@ export function UpdateTemplateNameDialog(props: UpdateTemplateNameDialogProps) {
       cloudTemplateMutate(
         {
           params: {
-            project: projectSlug,
+            project_id: projectSlug,
             template_name: templateName || '',
           },
           body: {

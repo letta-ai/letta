@@ -11,11 +11,11 @@ const c = initContract();
 
 const createAgentsFromTemplate = c.mutation({
   method: 'POST',
-  path: '/v1/templates/:project/:template_version/agents',
+  path: '/v1/templates/:project_id/:template_version/agents',
   description: 'Creates an Agent or multiple Agents from a template',
   summary: 'Create agents from a template (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_version: z.string().openapi({
       description:
         'The template version, formatted as {template-name}:{version-number} or {template-name}:latest',
@@ -151,12 +151,12 @@ const listTemplates = c.query({
 });
 
 const saveTemplateVersion = c.mutation({
-  path: '/v1/templates/:project/:template_name',
+  path: '/v1/templates/:project_id/:template_name',
   method: 'POST',
   description: 'Saves the current version of the template as a new version',
   summary: 'Save template version (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_name: z.string().openapi({
       description:
         'The template version, formatted as {template-name}, any version appended will be ignored',
@@ -192,13 +192,13 @@ const saveTemplateVersion = c.mutation({
 });
 
 const getTemplateSnapshot = c.query({
-  path: '/v1/templates/:project/:template_version/snapshot',
+  path: '/v1/templates/:project_id/:template_version/snapshot',
   method: 'GET',
   description:
     'Get a snapshot of the template version, this will return the template state at a specific version',
   summary: 'Get template snapshot (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_version: z.string().openapi({
       description:
         'The template version, formatted as {template-name}:{version-number} or {template-name}:latest',
@@ -210,12 +210,12 @@ const getTemplateSnapshot = c.query({
 });
 
 const forkTemplate = c.mutation({
-  path: '/v1/templates/:project/:template_version/fork',
+  path: '/v1/templates/:project_id/:template_version/fork',
   method: 'POST',
   description: 'Forks a template version into a new template',
   summary: 'Fork template (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_version: z.string().openapi({
       description:
         'The template version, formatted as {template-name}:{version-number} or {template-name}:latest',
@@ -258,7 +258,7 @@ export type CreateTemplateFromAgentFile = {
 };
 
 const createTemplate = c.mutation({
-  path: '/v1/templates/:project',
+  path: '/v1/templates/:project_id',
   method: 'POST',
   description: 'Creates a new template from an existing agent or agent file',
   summary: 'Create template (Cloud-only)',
@@ -317,7 +317,7 @@ const createTemplate = c.mutation({
         'The type of template to create, currently only agent templates are supported',
     }),
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
   }),
   responses: {
     201: PublicTemplateDetails,
@@ -329,11 +329,11 @@ const createTemplate = c.mutation({
 
 const listTemplateVersions = c.query({
   method: 'GET',
-  path: '/v1/templates/:project_slug/:name/versions',
+  path: '/v1/templates/:project_id/:name/versions',
   description: 'List all versions of a specific template',
   summary: 'List template versions (Cloud-only)',
   pathParams: z.object({
-    project_slug: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     name: z.string().openapi({
       description: 'The template name (without version)',
     }),
@@ -375,12 +375,12 @@ const listTemplateVersions = c.query({
 });
 
 const deleteTemplate = c.mutation({
-  path: '/v1/templates/:project/:template_name',
+  path: '/v1/templates/:project_id/:template_name',
   method: 'DELETE',
   description: 'Deletes all versions of a template with the specified name',
   summary: 'Delete template (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_name: z.string().openapi({
       description: 'The template name (without version)',
     }),
@@ -397,13 +397,13 @@ const deleteTemplate = c.mutation({
 });
 
 const renameTemplate = c.mutation({
-  path: '/v1/templates/:project/:template_name/name',
+  path: '/v1/templates/:project_id/:template_name/name',
   method: 'PATCH',
   description:
     'Renames all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.',
   summary: 'Rename template (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_name: z.string().openapi({
       description:
         'The current template name (version will be automatically stripped if included)',
@@ -437,13 +437,13 @@ const renameTemplate = c.mutation({
 });
 
 const updateTemplateDescription = c.mutation({
-  path: '/v1/templates/:project/:template_name/description',
+  path: '/v1/templates/:project_id/:template_name/description',
   method: 'PATCH',
   description:
     'Updates the description for all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.',
   summary: 'Update template description (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_name: z.string().openapi({
       description:
         'The template name (version will be automatically stripped if included)',
@@ -468,12 +468,12 @@ const updateTemplateDescription = c.mutation({
 });
 
 const migrateDeployment = c.mutation({
-  path: '/v1/templates/:project/:template_name/deployments/:deployment_id/migrate',
+  path: '/v1/templates/:project_id/:template_name/deployments/:deployment_id/migrate',
   method: 'POST',
   description: 'Migrates a deployment to a specific template version',
   summary: 'Migrate deployment to template version (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_name: z.string().openapi({
       description: 'The template name (without version)',
     }),
@@ -513,12 +513,12 @@ const migrateDeployment = c.mutation({
 });
 
 const setCurrentTemplateFromSnapshot = c.mutation({
-  path: '/v1/templates/:project/:template_version/snapshot',
+  path: '/v1/templates/:project_id/:template_version/snapshot',
   method: 'PUT',
   description: 'Updates the current working version of a template from a snapshot',
   summary: 'Set current template from snapshot (Cloud-only)',
   pathParams: z.object({
-    project: z.string().openapi({ description: 'The project slug' }),
+    project_id: z.string().openapi({ description: 'The project id' }),
     template_version: z.string().openapi({
       description: 'The template name with :current version (e.g., my-template:current)',
     }),
