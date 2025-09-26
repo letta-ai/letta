@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -259,7 +259,62 @@ class LLMConfig(BaseModel):
         return config.model_endpoint_type == "openai" and config.model.startswith("gpt-5")
 
     @classmethod
-    def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
+    def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool, agent_type: Optional["AgentType"] = None):
+        """
+        Normalize reasoning-related flags on the config based on the requested
+        "reasoning" setting, model capabilities, and optionally the agent type.
+
+        For AgentType.letta_v1_agent, we enforce stricter semantics:
+        - OpenAI native reasoning (o1/o3/o4/gpt-5): force enabled (non-togglable)
+        - Anthropic (claude 3.7 / 4): toggle honored (default on elsewhere)
+        - Google Gemini (2.5 family): force disabled until native reasoning supported
+        - All others: disabled (no simulated reasoning via kwargs)
+        """
+        # Late import to avoid circular import with Agent schema using LLMConfig
+        if TYPE_CHECKING:
+            from letta.schemas.enums import AgentType  # pragma: no cover
+        else:
+            try:
+                from letta.schemas.enums import AgentType  # type: ignore
+            except Exception:
+                AgentType = None  # type: ignore
+
+        # V1 agent policy: do not allow simulated reasoning for non-native models
+        if agent_type is not None and AgentType is not None and agent_type == AgentType.letta_v1_agent:  # type: ignore
+            # OpenAI native reasoning models: always on
+            if cls.is_openai_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.reasoning_effort is None:
+                    if config.model.startswith("gpt-5"):
+                        config.reasoning_effort = "minimal"
+                    else:
+                        config.reasoning_effort = "medium"
+                if config.model.startswith("gpt-5") and config.verbosity is None:
+                    config.verbosity = "medium"
+                return config
+
+            # Anthropic 3.7/4: toggle honored
+            if cls.is_anthropic_reasoning_model(config):
+                config.enable_reasoner = bool(reasoning)
+                config.put_inner_thoughts_in_kwargs = False
+                if config.enable_reasoner and config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+                return config
+
+            # Gemini (Vertex or Google AI): force disabled for v1 until native support
+            if cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = False
+                config.max_reasoning_tokens = 0
+                return config
+
+            # Everything else: disabled (no inner_thoughts-in-kwargs simulation)
+            config.put_inner_thoughts_in_kwargs = False
+            config.enable_reasoner = False
+            config.max_reasoning_tokens = 0
+            return config
+
         if not reasoning:
             if cls.is_openai_reasoning_model(config):
                 logger.warning("Reasoning cannot be disabled for OpenAI o1/o3/gpt-5 models")
