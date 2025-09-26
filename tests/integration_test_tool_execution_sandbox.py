@@ -256,7 +256,7 @@ def custom_test_sandbox_config(test_user):
     config_create = SandboxConfigCreate(config=local_sandbox_config.model_dump())
 
     # Create or update the sandbox configuration
-    manager.create_or_update_sandbox_config(sandbox_config_create=config_create, actor=test_user)
+    await manager.create_or_update_sandbox_config_async(sandbox_config_create=config_create, actor=test_user)
 
     return manager, local_sandbox_config
 
@@ -320,7 +320,7 @@ def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
     # Make a custom local sandbox config
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Make a environment variable with a long random string
     key = "secret_word"
@@ -340,14 +340,15 @@ def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
 
 
 @pytest.mark.local_sandbox
-def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_state, test_user):
+@pytest.mark.asyncio
+async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_state, test_user):
     manager = SandboxConfigManager()
     key = "secret_word"
 
     # Make a custom local sandbox config
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Make a environment variable with a long random string
     # Note: This has an overlapping key with agent state's environment variables
@@ -406,12 +407,13 @@ def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox
 
 
 @pytest.mark.e2b_sandbox
-def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
+@pytest.mark.asyncio
+async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Add an environment variable
     key = "secret_word"
@@ -426,10 +428,11 @@ def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_
 
 
 @pytest.mark.e2b_sandbox
-def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
+@pytest.mark.asyncio
+async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Add an environment variable
     key = "secret_word"
@@ -450,7 +453,7 @@ def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, c
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Run it again WITHOUT force recreating the venv
     sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user=test_user, force_recreate_venv=False)

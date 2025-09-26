@@ -34,12 +34,7 @@ class AsyncToolSandboxBase(ABC):
         self.tool_name = tool_name
         self.args = args
         self.user = user
-
-        self.tool = tool_object or ToolManager().get_tool_by_name(tool_name=tool_name, actor=self.user)
-        if self.tool is None:
-            raise ValueError(
-                f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
-            )
+        self.tool = tool_object
 
         # Store provided values or create manager to fetch them later
         self.provided_sandbox_config = sandbox_config
@@ -48,14 +43,27 @@ class AsyncToolSandboxBase(ABC):
         # Only create the manager if we need to (lazy initialization)
         self._sandbox_config_manager = None
 
-        # See if we should inject agent_state or not based on the presence of the "agent_state" arg
-        if "agent_state" in parse_function_arguments(self.tool.source_code, self.tool.name):
-            self.inject_agent_state = True
-        else:
-            self.inject_agent_state = False
+        self._initialized = False
 
-        # Detect if the tool function is async
-        self.is_async_function = self._detect_async_function()
+    async def _init_async(self):
+        """Must be called inside the run method before the sandbox can be used"""
+        if not self._initialized:
+            if not self.tool:
+                self.tool = await ToolManager().get_tool_by_name_async(tool_name=self.tool_name, actor=self.user)
+
+            # missing tool
+            if self.tool is None:
+                raise ValueError(
+                    f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
+                )
+
+            # TODO: deprecate this
+            if "agent_state" in parse_function_arguments(self.tool.source_code, self.tool.name):
+                self.inject_agent_state = True
+            else:
+                self.inject_agent_state = False
+            self.is_async_function = self._detect_async_function()
+        self._initialized = True
 
     # Lazily initialize the manager only when needed
     @property
@@ -82,6 +90,7 @@ class AsyncToolSandboxBase(ABC):
         Generate code to run inside of execution sandbox. Serialize the agent state and arguments, call the tool,
         then base64-encode/pickle the result. Constructs the python file.
         """
+        await self._init_async()
         future_import = False
         schema_code = None
 
