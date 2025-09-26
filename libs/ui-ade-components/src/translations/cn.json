@@ -251,7 +251,9 @@
       "reasoning": {
         "label": "推理",
         "tooltip": "启用此智能体的推理",
-        "disabledTooltip": "推理无法禁用此模型"
+        "disabledTooltip": "此模型无法关闭推理",
+        "v1Supported": "此模型支持推理",
+        "v1Unsupported": "此模型不支持推理"
       }
     }
   },
