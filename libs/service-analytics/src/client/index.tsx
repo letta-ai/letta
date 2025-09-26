@@ -91,7 +91,6 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
   useEffect(() => {
     try {
       if (!posthogKey || !posthogHost) {
-        console.error('Error retrieving PH values');
         return;
       }
       posthog.init(posthogKey, {

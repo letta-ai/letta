@@ -2538,6 +2538,7 @@
     }
   },
   "client/hooks/useWelcomeText": {
+    "loading": "Loading up your letta project homepage",
     "goodMorning": "Good morning, {firstName} ☀\uFE0F",
     "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
     "goodEvening": "Good evening, {firstName} \uD83C\uDF15",
