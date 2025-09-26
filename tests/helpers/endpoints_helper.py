@@ -39,7 +39,7 @@ LLM_CONFIG_PATH = "tests/configs/llm_model_configs/letta-hosted.json"
 # ======================================================================================================================
 
 
-def setup_agent(
+async def setup_agent(
     server: SyncServer,
     filename: str,
     memory_human_str: str = get_human_text(DEFAULT_HUMAN),
@@ -81,8 +81,8 @@ def setup_agent(
         include_base_tools=include_base_tools,
         include_base_tool_rules=include_base_tool_rules,
     )
-    actor = server.user_manager.get_user_or_default()
-    agent_state = server.create_agent(request=request, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    agent_state = await server.create_agent_async(request=request, actor=actor)
 
     return agent_state
 
