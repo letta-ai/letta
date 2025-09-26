@@ -1876,7 +1876,8 @@
       "description": "您的智能体的基础架构，它决定了初始工具和系统指令。"
     },
     "memgpt": "默认",
-    "sleepTime": "睡眠时间"
+    "sleepTime": "睡眠时间",
+    "lettaV1Alpha": "Letta V1（测试）"
   },
   "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/RequestEvent": {
     "name": "步骤输入",

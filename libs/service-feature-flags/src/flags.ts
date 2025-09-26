@@ -192,6 +192,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  LETTA_V1_ARCHITECTURE: {
+    description: 'Enable Letta V1 (alpha) architecture tab in Create Agent',
+    expiryDate: '9999-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

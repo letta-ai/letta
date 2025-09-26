@@ -1,3 +1,4 @@
+"use client";
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
@@ -10,7 +11,6 @@ import {
   Section,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { useQueryClient } from '@tanstack/react-query';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
@@ -27,7 +27,9 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator';
 import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
+import type { StarterKitArchitecture } from '@letta-cloud/config-agent-starter-kits';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -131,9 +133,13 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     return undefined;
   }, [error, t]);
 
-  const { data: enabledSleeptimeTemplates } = useFeatureFlag(
-    'SLEEPTIME_TEMPLATES',
-  );
+  const { data: enabledSleeptimeTemplates } = useFeatureFlag('SLEEPTIME_TEMPLATES');
+
+  const architectures = React.useMemo<StarterKitArchitecture[]>(() => {
+    const base: StarterKitArchitecture[] = ['memgpt'];
+    if (enabledSleeptimeTemplates) base.push('sleeptime');
+    return base;
+  }, [enabledSleeptimeTemplates]);
 
   const [canCreateTemplate] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
@@ -173,10 +179,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           <VStack>
             {errorMessage && <Alert title={errorMessage} />}
             <StarterKitSelector
-              architectures={[
-                'memgpt',
-                ...(enabledSleeptimeTemplates ? ['sleeptime' as const] : []),
-              ]}
+              architectures={architectures}
               onSelectStarterKit={(_, kit) => {
                 handleSelectStarterKit(kit.id);
               }}

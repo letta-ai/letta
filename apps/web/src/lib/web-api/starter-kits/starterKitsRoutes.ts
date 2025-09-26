@@ -176,6 +176,11 @@ async function createAgentFromStarterKit(
     // Backend will add tool rules via include_base_tool_rules (defaults to true)
   };
 
+  // Optional override of agent type from client (e.g., letta_v1_agent)
+  if (req.body.agentType) {
+    agentBody.agent_type = req.body.agentType;
+  }
+
   // Only add tool_ids if we have custom tools
   if (toolIds.length > 0) {
     agentBody.tool_ids = toolIds;

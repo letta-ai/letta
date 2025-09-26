@@ -26,6 +26,8 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { ConnectToLocalServerCommand } from '$web/client/components';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import type { StarterKitArchitecture } from '@letta-cloud/config-agent-starter-kits';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;
@@ -158,6 +160,14 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
     return false;
   }, [isSuccess, isPending, llmModels, embeddingModels, t]);
 
+  // Feature flag: Letta V1 architecture tab
+  const { data: isLettaV1ArchEnabled } = useFeatureFlag('LETTA_V1_ARCHITECTURE');
+  const architectures = useMemo<StarterKitArchitecture[]>(() => {
+    const base: StarterKitArchitecture[] = ['memgpt', 'sleeptime'];
+    if (isLettaV1ArchEnabled) base.push('letta_v1');
+    return base;
+  }, [isLettaV1ArchEnabled]);
+
   return (
     <Dialog
       hideFooter
@@ -215,10 +225,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                   </VStack>
                 </Alert>
               ) : (
-                <StarterKitSelector
-                  architectures={['memgpt', 'sleeptime']}
-                  onSelectStarterKit={handleCreateAgent}
-                />
+                <StarterKitSelector architectures={architectures} onSelectStarterKit={handleCreateAgent} />
               )}
             </VStack>
           </VStack>

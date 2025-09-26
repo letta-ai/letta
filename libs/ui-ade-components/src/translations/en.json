@@ -2913,7 +2913,8 @@
       "description": "The base architecture of your agent, which determines the initial tools and system instructions."
     },
     "memgpt": "Default",
-    "sleepTime": "Sleep-time"
+    "sleepTime": "Sleep-time",
+    "lettaV1Alpha": "Letta V1 (alpha)"
   },
   "SummerizerDialog": {
     "title": "Trigger Manual Summarization",
