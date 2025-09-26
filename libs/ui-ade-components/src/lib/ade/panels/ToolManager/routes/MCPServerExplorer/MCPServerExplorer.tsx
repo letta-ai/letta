@@ -41,10 +41,9 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   }
 }
 
-
 export function MCPServerExplorer() {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
-  const toolManagerState = useToolManagerState();
+  const { setPath } = useToolManagerState();
   const recommendedServers = useRecommendedMCPServers();
   const [search, setSearch] = useState('');
 
@@ -98,7 +97,7 @@ export function MCPServerExplorer() {
             title={t('types.connected.label')}
             description={t('types.connected.description')}
             onClick={() => {
-              toolManagerState.setPath('/mcp-servers');
+              setPath('/mcp-servers');
             }}
           />
           <AddServerDialog

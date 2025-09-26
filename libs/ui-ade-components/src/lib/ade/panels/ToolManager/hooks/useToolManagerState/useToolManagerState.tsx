@@ -18,6 +18,7 @@ interface ToolManagerState {
   path: ToolManagerPaths | null;
   isConfirmationDialogOpen: boolean;
   currentToolId: string | null;
+  selectedServerKey: string | null;
 }
 
 const initialState: ToolManagerState = {
@@ -25,6 +26,7 @@ const initialState: ToolManagerState = {
   isConfirmationDialogOpen: false,
   path: null,
   currentToolId: null,
+  selectedServerKey: null,
 };
 
 interface ToolManagerContextState {
@@ -72,14 +74,14 @@ export function useToolManagerState() {
   const pathname = usePathname();
   const { developmentServerId } = useParams<{ developmentServerId?: string }>();
 
-  const [dirtyToolMap] = useAtom(dirtyToolAtom)
+  const [dirtyToolMap] = useAtom(dirtyToolAtom);
 
   const hasDirtyTools = useMemo(() => {
     return Object.values(dirtyToolMap).some((isDirty) => isDirty);
   }, [dirtyToolMap]);
 
   const isInStandaloneToolManager = useMemo(() => {
-    return !(pathname.includes('agents') || pathname.includes('templates'))
+    return !(pathname.includes('agents') || pathname.includes('templates'));
   }, [pathname]);
 
   const isInSelfHostedServers = useMemo(() => {
@@ -88,13 +90,10 @@ export function useToolManagerState() {
 
   const closeToolManager = useCallback(
     (confirmed?: boolean) => {
-
-
-
-      if ((toolManagerState.requireConfirmation || hasDirtyTools) && !confirmed) {
-
-
-
+      if (
+        (toolManagerState.requireConfirmation || hasDirtyTools) &&
+        !confirmed
+      ) {
         setToolManagerState((prev) => ({
           ...prev,
           isConfirmationDialogOpen: true,
@@ -140,7 +139,6 @@ export function useToolManagerState() {
         }
 
         if (path.includes('mcp')) {
-
           // mcp has its own route
           router.push(`${basePath}${path}`);
           return;
@@ -158,7 +156,13 @@ export function useToolManagerState() {
 
       setToolManagerState((prev) => ({ ...prev, path }));
     },
-    [isInStandaloneToolManager, isInSelfHostedServers, developmentServerId, router, setToolManagerState]
+    [
+      isInStandaloneToolManager,
+      isInSelfHostedServers,
+      developmentServerId,
+      router,
+      setToolManagerState,
+    ],
   );
 
   const setSelectedToolId = useCallback(
@@ -168,11 +172,24 @@ export function useToolManagerState() {
     [setToolManagerState],
   );
 
+  const setSelectedServerKey = useCallback(
+    (serverKey: string | null) => {
+      console.log('serverKey', serverKey);
+      setToolManagerState((prev) => ({
+        ...prev,
+        selectedServerKey: serverKey,
+      }));
+    },
+    [setToolManagerState],
+  );
+
   return useMemo(
     () => ({
       setPath,
       setSelectedToolId,
+      setSelectedServerKey,
       currentToolId: toolManagerState.currentToolId,
+      selectedServerKey: toolManagerState.selectedServerKey,
       currentPath: toolManagerState.path,
       isConfirmationDialogOpen: toolManagerState.isConfirmationDialogOpen,
       setDialogOpen,
@@ -182,7 +199,9 @@ export function useToolManagerState() {
     }),
     [
       setSelectedToolId,
+      setSelectedServerKey,
       toolManagerState.currentToolId,
+      toolManagerState.selectedServerKey,
       toolManagerState.path,
       toolManagerState.isConfirmationDialogOpen,
       closeToolManager,

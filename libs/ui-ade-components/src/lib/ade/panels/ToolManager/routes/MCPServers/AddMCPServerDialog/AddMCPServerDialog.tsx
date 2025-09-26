@@ -8,6 +8,7 @@ import {
   FormProvider,
   RawInputContainer,
   TabGroup,
+  toast,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -46,6 +47,37 @@ import {
 } from '../hooks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useToolManagerState } from '../../../hooks/useToolManagerState/useToolManagerState';
+
+function useAddMcpServerMutation(onSuccess: () => void) {
+  const queryClient = useQueryClient();
+  const { setPath, setSelectedServerKey } = useToolManagerState();
+
+  return useToolsServiceAddMcpServer({
+    onSuccess: (response) => {
+      toast.success('Successfully added MCP Server');
+      queryClient.setQueriesData<ListMcpServersResponse | undefined>(
+        {
+          queryKey: UseToolsServiceListMcpServersKeyFn(),
+        },
+        () => {
+          return response.reduce((acc, item) => {
+            acc[item.server_name] = item;
+            return acc;
+          }, {} as ListMcpServersResponse);
+        },
+      );
+
+      // Select the newly created server and navigate to MCP servers
+      if (response.length > 0) {
+        setSelectedServerKey(response[response.length - 1].server_name);
+        setPath('/mcp-servers');
+      }
+
+      onSuccess();
+    },
+  });
+}
 
 interface AddStdioServerFormProps {
   onCancel: () => void;
@@ -93,25 +125,8 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
     },
   });
 
-  const queryClient = useQueryClient();
   const { mutate, isPending, isError, error, reset } =
-    useToolsServiceAddMcpServer({
-      onSuccess: (response) => {
-        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-          {
-            queryKey: UseToolsServiceListMcpServersKeyFn(),
-          },
-          () => {
-            return response.reduce((acc, item) => {
-              acc[item.server_name] = item;
-              return acc;
-            }, {} as ListMcpServersResponse);
-          },
-        );
-
-        onSuccess();
-      },
-    });
+    useAddMcpServerMutation(onSuccess);
 
   const handleReset = useCallback(() => {
     form.reset();
@@ -195,25 +210,8 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
     },
   });
 
-  const queryClient = useQueryClient();
   const { mutate, isPending, isError, error, reset } =
-    useToolsServiceAddMcpServer({
-      onSuccess: (response) => {
-        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-          {
-            queryKey: UseToolsServiceListMcpServersKeyFn(),
-          },
-          () => {
-            return response.reduce((acc, item) => {
-              acc[item.server_name] = item;
-              return acc;
-            }, {} as ListMcpServersResponse);
-          },
-        );
-
-        onSuccess();
-      },
-    });
+    useAddMcpServerMutation(onSuccess);
 
   const handleReset = useCallback(() => {
     form.reset();
@@ -303,25 +301,8 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
     },
   });
 
-  const queryClient = useQueryClient();
   const { mutate, isPending, isError, error, reset } =
-    useToolsServiceAddMcpServer({
-      onSuccess: (response) => {
-        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
-          {
-            queryKey: UseToolsServiceListMcpServersKeyFn(),
-          },
-          () => {
-            return response.reduce((acc, item) => {
-              acc[item.server_name] = item;
-              return acc;
-            }, {} as ListMcpServersResponse);
-          },
-        );
-
-        onSuccess();
-      },
-    });
+    useAddMcpServerMutation(onSuccess);
 
   const handleReset = useCallback(() => {
     form.reset();

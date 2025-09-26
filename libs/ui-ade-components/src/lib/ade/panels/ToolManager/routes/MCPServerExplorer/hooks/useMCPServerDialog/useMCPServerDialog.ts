@@ -12,7 +12,7 @@ import type { CustomUrlRecommendedServer } from '../useRecommendedMCPServers/use
 import { SERVER_CONFIGS } from '../../constants';
 
 export function useMCPServerDialog(server: CustomUrlRecommendedServer) {
-  const { setPath } = useToolManagerState();
+  const { setPath, setSelectedServerKey } = useToolManagerState();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -41,6 +41,11 @@ export function useMCPServerDialog(server: CustomUrlRecommendedServer) {
           }, {} as ListMcpServersResponse),
       );
       setOpen(false);
+
+      // Select the newly created server and navigate to mcp-servers
+      if (response.length > 0) {
+        setSelectedServerKey(response[0].server_name);
+      }
       setPath('/mcp-servers');
     },
   });

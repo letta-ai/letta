@@ -18,9 +18,7 @@ import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
 import type { Tool } from '@letta-cloud/sdk-core';
-import { selectedServerKeyAtom } from '../../routes/MCPServers/MCPServers';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
-import { useAtom } from 'jotai/index';
 
 interface MCPToolViewerProps {
   tags: string[];
@@ -39,10 +37,9 @@ interface MCPToolContentProps {
 function MCPToolContent(props: MCPToolContentProps) {
   const { serverName, description } = props;
 
-  const { setPath } = useToolManagerState();
+  const { setPath, setSelectedServerKey } = useToolManagerState();
 
   const t = useTranslations('ToolManager/MCPToolViewer');
-  const [_, setSelectedServerKey] = useAtom(selectedServerKeyAtom);
 
   if (!serverName) {
     return <Alert title={t('noServerFound')} />;
