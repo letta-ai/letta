@@ -458,15 +458,16 @@ class OpenAIClient(LLMClientBase):
         # So strip them manually for v3
         if agent_type == AgentType.letta_v1_agent:
             new_tools = []
-            for tool in data.tools:
-                # Remove request_heartbeat from the properties if it exists
-                if tool.function.parameters and "properties" in tool.function.parameters:
-                    tool.function.parameters["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
-                    # Also remove from required list if present
-                    if "required" in tool.function.parameters and REQUEST_HEARTBEAT_PARAM in tool.function.parameters["required"]:
-                        tool.function.parameters["required"].remove(REQUEST_HEARTBEAT_PARAM)
-                new_tools.append(tool.model_copy(deep=True))
-            data.tools = new_tools
+            if data.tools:
+                for tool in data.tools:
+                    # Remove request_heartbeat from the properties if it exists
+                    if tool.function.parameters and "properties" in tool.function.parameters:
+                        tool.function.parameters["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                        # Also remove from required list if present
+                        if "required" in tool.function.parameters and REQUEST_HEARTBEAT_PARAM in tool.function.parameters["required"]:
+                            tool.function.parameters["required"].remove(REQUEST_HEARTBEAT_PARAM)
+                    new_tools.append(tool.model_copy(deep=True))
+                data.tools = new_tools
 
         if data.tools is not None and len(data.tools) > 0:
             # Convert to structured output style (which has 'strict' and no optionals)

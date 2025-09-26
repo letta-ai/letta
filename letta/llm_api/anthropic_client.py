@@ -291,10 +291,11 @@ class AnthropicClient(LLMClientBase):
             # Both drop heartbeats in the payload
             data["messages"] = drop_heartbeats(data["messages"])
             # And drop heartbeats in the tools
-            for tool in data["tools"]:
-                tool["input_schema"]["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
-                if REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
-                    tool["input_schema"]["required"].remove(REQUEST_HEARTBEAT_PARAM)
+            if "tools" in data:
+                for tool in data["tools"]:
+                    tool["input_schema"]["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                    if REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
+                        tool["input_schema"]["required"].remove(REQUEST_HEARTBEAT_PARAM)
 
         else:
             # Strip heartbeat pings if extended thinking
