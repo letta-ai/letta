@@ -23,7 +23,7 @@ function Title({ title, className }: TitleProps) {
 
   if (typeof title === 'string') {
     return (
-      <Typography suppressHydrationWarning align="left" variant="heading3" overrideEl="h1" className={className}
+      <Typography align="left" variant="heading3" overrideEl="h1" className={className}
       >
         {title}
       </Typography>
