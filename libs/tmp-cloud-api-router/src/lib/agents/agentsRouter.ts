@@ -84,15 +84,6 @@ async function createAgent(
     };
   }
 
-  if (projectSlug && project_id) {
-    return {
-      status: 400,
-      body: {
-        message: 'project and project_id cannot be used together',
-      },
-    };
-  }
-
   // identify the project id
   let projectId = project_id;
 
@@ -215,7 +206,7 @@ async function createAgent(
     await cloudApiRouter.templates.createAgentsFromTemplate(
       {
         params: {
-          project: tplt.project.slug,
+          project_id: tplt.project.slug,
           template_version: from_template,
         },
         body: {

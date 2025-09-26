@@ -6116,20 +6116,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_version}/agents": {
+    "/v1/templates/{project_id}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
         "summary": "Create agents from a template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_version",
@@ -12586,20 +12586,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_name}": {
+    "/v1/templates/{project_id}/{template_name}": {
       "post": {
         "description": "Saves the current version of the template as a new version",
         "summary": "Save template version (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_name",
@@ -12714,13 +12714,13 @@
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_name",
@@ -12780,20 +12780,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_version}/snapshot": {
+    "/v1/templates/{project_id}/{template_version}/snapshot": {
       "get": {
         "description": "Get a snapshot of the template version, this will return the template state at a specific version",
         "summary": "Get template snapshot (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_version",
@@ -13322,13 +13322,13 @@
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_version",
@@ -13423,20 +13423,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_version}/fork": {
+    "/v1/templates/{project_id}/{template_version}/fork": {
       "post": {
         "description": "Forks a template version into a new template",
         "summary": "Fork template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_version",
@@ -13535,20 +13535,20 @@
         }
       }
     },
-    "/v1/templates/{project}": {
+    "/v1/templates/{project_id}": {
       "post": {
         "description": "Creates a new template from an existing agent or agent file",
         "summary": "Create template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           }
         ],
         "operationId": "templates.createTemplate",
@@ -13682,20 +13682,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_name}/name": {
+    "/v1/templates/{project_id}/{template_name}/name": {
       "patch": {
         "description": "Renames all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.",
         "summary": "Rename template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_name",
@@ -13794,20 +13794,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_name}/description": {
+    "/v1/templates/{project_id}/{template_name}/description": {
       "patch": {
         "description": "Updates the description for all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.",
         "summary": "Update template description (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_name",
@@ -13888,20 +13888,20 @@
         }
       }
     },
-    "/v1/templates/{project_slug}/{name}/versions": {
+    "/v1/templates/{project_id}/{name}/versions": {
       "get": {
         "description": "List all versions of a specific template",
         "summary": "List template versions (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project_slug",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "name",
@@ -13999,20 +13999,20 @@
         }
       }
     },
-    "/v1/templates/{project}/{template_name}/deployments/{deployment_id}/migrate": {
+    "/v1/templates/{project_id}/{template_name}/deployments/{deployment_id}/migrate": {
       "post": {
         "description": "Migrates a deployment to a specific template version",
         "summary": "Migrate deployment to template version (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "project",
+            "name": "project_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The project slug"
+            "description": "The project id"
           },
           {
             "name": "template_name",

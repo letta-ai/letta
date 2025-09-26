@@ -67,7 +67,7 @@ export function CreateTemplateButton() {
 
     mutate({
       params: {
-        project: slug,
+        project_id: slug,
       },
       body: {
         type: 'agent',

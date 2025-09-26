@@ -94,7 +94,7 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
 
       createAgent({
         params: {
-          project: projectSlug,
+          project_id: projectSlug,
           template_version: `${templateName}:${version}`,
         },
         body: {

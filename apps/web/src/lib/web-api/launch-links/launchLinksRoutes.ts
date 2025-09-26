@@ -392,7 +392,7 @@ async function createShareChatFromLaunchLink(
   const response = await cloudApiRouter.templates.createAgentsFromTemplate(
     {
       params: {
-        project: projectSlug || '',
+        project_id: projectSlug || '',
         template_version: `${launchLink.agentTemplate.name}:${deployedAgentTemplate.version}`,
       },
       body: {

@@ -26,7 +26,7 @@ import {
   SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS, migrateClassicTemplateEntities, migrateAllDeploymentsByBaseTemplateId
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
-import { and, eq, ilike, count, not, desc } from 'drizzle-orm';
+import { and, eq, ilike, count, not, desc, or } from 'drizzle-orm';
 import { validateVersionString } from '@letta-cloud/utils-shared';
 import { generateTemplateSnapshot } from '@letta-cloud/utils-shared';
 import { environment } from '@letta-cloud/config-environment-variables';
@@ -49,6 +49,20 @@ type CreateAgentsFromTemplateResponse = ServerInferResponses<
   typeof cloudContracts.templates.createAgentsFromTemplate
 >;
 
+
+function getProjectFromSlugOrId(slugOrId: string, orgId: string) {
+  return db.query.projects.findFirst({
+    where: and(
+      or(eq(projects.id, slugOrId), eq(projects.slug, slugOrId)),
+      eq(projects.organizationId, orgId),
+    ),
+    columns: {
+      id: true,
+      slug: true,
+    },
+  });
+}
+
 async function createAgentsFromTemplate(
   req: CreateAgentsFromTemplateRequest,
   context: SDKContext,
@@ -66,7 +80,21 @@ async function createAgentsFromTemplate(
     tags,
   } = req.body;
 
-  const { template_version, project: projectSlug } = req.params;
+  const { template_version, project_id } = req.params;
+
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  const { slug: projectSlug } = project;
+
 
   const versionString = `${projectSlug}/${template_version}`;
 
@@ -80,33 +108,14 @@ async function createAgentsFromTemplate(
     };
   }
 
-  const [template, project] = await Promise.all([
-    getTemplateByName({
-      versionString,
-      organizationId,
-      includeAgents: true,
-      includeBlocks: true,
-      lettaAgentsId: lettaAgentsUserId,
-    }),
-    db.query.projects.findFirst({
-      where: and(
-        eq(projects.slug, projectSlug),
-        eq(projects.organizationId, organizationId),
-      ),
-      columns: {
-        id: true,
-      },
-    }),
-  ]);
+  const template = await getTemplateByName({
+    versionString,
+    organizationId,
+    includeAgents: true,
+    includeBlocks: true,
+    lettaAgentsId: lettaAgentsUserId,
+  });
 
-  if (!project) {
-    return {
-      status: 404,
-      body: {
-        message: 'Project not found',
-      },
-    };
-  }
 
   if (!template) {
     return {
@@ -340,9 +349,21 @@ async function getTemplateSnapshot(
     req,
     context,
   );
-  const { template_version, project } = req.params;
+  const { template_version, project_id } = req.params;
 
-  const versionString = `${project}/${template_version}`;
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  const { slug: projectSlug } = project;
+  const versionString = `${projectSlug}/${template_version}`;
 
   if (validateVersionString(versionString) === false) {
     return {
@@ -405,7 +426,7 @@ async function saveTemplateVersion(
     req,
     context,
   );
-  const { project, template_name } = req.params;
+  const { project_id, template_name } = req.params;
   const {
     preserve_environment_variables_on_migration = false,
     migrate_agents,
@@ -413,14 +434,9 @@ async function saveTemplateVersion(
     message,
   } = req.body;
 
-  const projectData = await db.query.projects.findFirst({
-    where: eq(projects.slug, project),
-    columns: {
-      id: true,
-    },
-  });
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
 
-  if (!projectData) {
+  if (!project) {
     return {
       status: 404,
       body: {
@@ -441,14 +457,14 @@ async function saveTemplateVersion(
   }
 
   const newVersion = await saveTemplate({
-    projectSlug: project,
+    projectSlug: project.slug,
     templateName: template_name,
     organizationId,
     lettaAgentsId: lettaAgentsUserId,
     message: message || '',
   });
 
-  const versionString = `${project}/${template_name}:latest`;
+  const versionString = `${project.slug}/${template_name}:latest`;
 
   if (validateVersionString(versionString) === false) {
     return {
@@ -485,7 +501,7 @@ async function saveTemplateVersion(
       const baseTemplate = await getTemplateByName({
         lettaAgentsId: lettaAgentsUserId,
         organizationId,
-        versionString: `${project}/${template_name}:current`,
+        versionString: `${project.slug}/${template_name}:current`,
       })
 
       if (!baseTemplate) {
@@ -519,11 +535,11 @@ async function saveTemplateVersion(
     body: {
       id: newVersion.id,
       name: newVersion.name,
-      project_slug: project,
+      project_slug: project.slug,
       project_id: newVersion.projectId,
       description: newVersion.description || '',
       latest_version: newVersion.version,
-      template_deployment_slug: `${project}/${newVersion.name}:${newVersion.version}`,
+      template_deployment_slug: `${project.slug}/${newVersion.name}:${newVersion.version}`,
       updated_at: newVersion.updatedAt.toISOString(),
     },
   };
@@ -545,10 +561,22 @@ async function forkTemplate(
     req,
     context,
   );
-  const { template_version, project } = req.params;
+  const { template_version, project_id } = req.params;
   const { name } = req.body || {};
 
-  const versionString = `${project}/${template_version}`;
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  const { slug: projectSlug } = project;
+  const versionString = `${projectSlug}/${template_version}`;
 
   if (validateVersionString(versionString) === false) {
     return {
@@ -581,7 +609,7 @@ async function forkTemplate(
       sourceTemplateId: sourceTemplate.id,
       organizationId,
       lettaAgentsId: lettaAgentsUserId,
-      projectSlug: project,
+      projectSlug: projectSlug,
       name,
     });
 
@@ -590,11 +618,11 @@ async function forkTemplate(
       body: {
         id: newTemplate.id,
         name: newTemplate.name,
-        project_slug: project,
+        project_slug: projectSlug,
         project_id: newTemplate.projectId,
         description: newTemplate.description || '',
         latest_version: newTemplate.version,
-        template_deployment_slug: `${project}/${newTemplate.name}:${newTemplate.version}`,
+        template_deployment_slug: `${projectSlug}/${newTemplate.name}:${newTemplate.version}`,
         updated_at: newTemplate.updatedAt.toISOString(),
       },
     };
@@ -624,13 +652,24 @@ async function createTemplate(
     req,
     context,
   );
-  const { project } = req.params;
+  const { project_id } = req.params;
   const { name, type } = req.body;
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 400,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -806,12 +845,23 @@ async function deleteTemplate(
   context: SDKContext,
 ): Promise<DeleteTemplateResponse> {
   const { organizationId } = getContextDataHack(req, context);
-  const { project, template_name } = req.params;
+  const { project_id, template_name } = req.params;
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -839,7 +889,7 @@ async function deleteTemplate(
       return {
         status: 404,
         body: {
-          message: `Template '${template_name}' not found in project '${project}'`,
+          message: `Template '${template_name}' not found in project '${project.slug}'`,
         },
       };
     }
@@ -885,16 +935,27 @@ async function renameTemplate(
   context: SDKContext,
 ): Promise<RenameTemplateResponse> {
   const { organizationId } = getContextDataHack(req, context);
-  const { project, template_name } = req.params;
+  const { project_id, template_name } = req.params;
   const { new_name } = req.body;
 
   // Strip version from template name if accidentally included
   const [nameWithoutVersion] = template_name.split(':');
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -921,7 +982,7 @@ async function renameTemplate(
     return {
       status: 404,
       body: {
-        message: `Template '${nameWithoutVersion}' not found in project '${project}'`,
+        message: `Template '${nameWithoutVersion}' not found in project '${project.slug}'`,
       },
     };
   }
@@ -939,7 +1000,7 @@ async function renameTemplate(
     return {
       status: 409,
       body: {
-        message: `Template '${new_name}' already exists in project '${project}'`,
+        message: `Template '${new_name}' already exists in project '${project.slug}'`,
       },
     };
   }
@@ -987,13 +1048,24 @@ async function listTemplateVersions(
   context: SDKContext,
 ): Promise<ListTemplateVersionsResponse> {
   const { organizationId } = getContextDataHack(req, context);
-  const { project_slug, name } = req.params;
+  const { project_id, name } = req.params;
   const { offset = 0, limit = 50 } = req.query;
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project_slug),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -1025,7 +1097,7 @@ async function listTemplateVersions(
       return {
         status: 404,
         body: {
-          message: `Template '${name}' not found in project '${project_slug}'`,
+          message: `Template '${name}' not found in project '${project.slug}'`,
         },
       };
     }
@@ -1091,16 +1163,27 @@ async function updateTemplateDescription(
   context: SDKContext,
 ): Promise<UpdateTemplateDescriptionResponse> {
   const { organizationId } = getContextDataHack(req, context);
-  const { project, template_name } = req.params;
+  const { project_id, template_name } = req.params;
   const { description } = req.body;
 
   // Strip version from template name if accidentally included
   const [nameWithoutVersion] = template_name.split(':');
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -1127,7 +1210,7 @@ async function updateTemplateDescription(
     return {
       status: 404,
       body: {
-        message: `Template '${nameWithoutVersion}' not found in project '${project}'`,
+        message: `Template '${nameWithoutVersion}' not found in project '${project.slug}'`,
       },
     };
   }
@@ -1178,7 +1261,7 @@ async function migrateDeployment(
     req,
     context,
   );
-  const { project, template_name, deployment_id } = req.params;
+  const { project_id, template_name, deployment_id } = req.params;
   const {
     version,
     preserve_tool_variables = false,
@@ -1186,10 +1269,21 @@ async function migrateDeployment(
     memory_variables,
   } = req.body;
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });
@@ -1217,7 +1311,7 @@ async function migrateDeployment(
     return {
       status: 404,
       body: {
-        message: `Template '${template_name}' version '${version}' not found in project '${project}'`,
+        message: `Template '${template_name}' version '${version}' not found in project '${project.slug}'`,
       },
     };
   }
@@ -1236,7 +1330,7 @@ async function migrateDeployment(
     return {
       status: 404,
       body: {
-        message: `Base template 'current' version for '${template_name}' not found in project '${project}'`,
+        message: `Base template 'current' version for '${template_name}' not found in project '${project.slug}'`,
       },
     };
   }
@@ -1306,7 +1400,7 @@ async function setCurrentTemplateFromSnapshotHandler(
   context: SDKContext,
 ): Promise<SetCurrentTemplateFromSnapshotResponse> {
   const { organizationId } = getContextDataHack(req, context);
-  const { project, template_version } = req.params;
+  const { project_id, template_version } = req.params;
   const snapshot = req.body;
 
   // Validate template_version format (must be template_name:current)
@@ -1321,10 +1415,21 @@ async function setCurrentTemplateFromSnapshotHandler(
 
   const templateName = template_version.replace(':current', '');
 
-  // Get the project by slug
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
   const projectData = await db.query.projects.findFirst({
     where: and(
-      eq(projects.slug, project),
+      eq(projects.id, project.id),
       eq(projects.organizationId, organizationId),
     ),
   });

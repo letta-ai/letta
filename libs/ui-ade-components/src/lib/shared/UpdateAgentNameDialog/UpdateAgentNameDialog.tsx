@@ -103,7 +103,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
         cloudTemplateMutate(
           {
             params: {
-              project: projectSlug,
+              project_id: projectSlug,
               template_name: templateName || '',
             },
             body: {
