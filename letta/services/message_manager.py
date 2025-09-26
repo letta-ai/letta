@@ -377,37 +377,36 @@ class MessageManager:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
             await session.commit()
+        # session is now fully closed
 
-            # embed messages in turbopuffer if enabled
-            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
+        # embed messages in turbopuffer if enabled (outside of DB session)
+        from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and result:
-                # extract agent_id from the first message (all should have same agent_id)
-                agent_id = result[0].agent_id
-                if agent_id:
-                    if strict_mode:
-                        # wait for embedding to complete
-                        await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
-                    else:
-                        # fire and forget - run embedding in background
-                        fire_and_forget(
-                            self._embed_messages_background(result, actor, agent_id, project_id, template_id),
-                            task_name=f"embed_messages_for_agent_{agent_id}",
-                        )
-
-            # if allow_partial, combine newly created with existing
-            if allow_partial and existing_messages:
-                # fetch the existing messages to return complete data
-                async with db_registry.async_session() as session:
-                    existing_ids = [msg.id for msg in existing_messages if msg.id]
-                    query = select(MessageModel).where(
-                        MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id
+        if should_use_tpuf_for_messages() and result:
+            # extract agent_id from the first message (all should have same agent_id)
+            agent_id = result[0].agent_id
+            if agent_id:
+                if strict_mode:
+                    # wait for embedding to complete
+                    await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
+                else:
+                    # fire and forget - run embedding in background
+                    fire_and_forget(
+                        self._embed_messages_background(result, actor, agent_id, project_id, template_id),
+                        task_name=f"embed_messages_for_agent_{agent_id}",
                     )
-                    existing_result = await session.execute(query)
-                    existing_fetched = [msg.to_pydantic() for msg in existing_result.scalars()]
-                    result.extend(existing_fetched)
 
-            return result
+        # if allow_partial, combine newly created with existing
+        if allow_partial and existing_messages:
+            # fetch the existing messages to return complete data
+            async with db_registry.async_session() as session:
+                existing_ids = [msg.id for msg in existing_messages if msg.id]
+                query = select(MessageModel).where(MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id)
+                existing_result = await session.execute(query)
+                existing_fetched = [msg.to_pydantic() for msg in existing_result.scalars()]
+                result.extend(existing_fetched)
+
+        return result
 
     async def _embed_messages_background(
         self,
@@ -539,27 +538,28 @@ class MessageManager:
             await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_message = message.to_pydantic()
             await session.commit()
+        # session is now fully closed
 
-            # update message in turbopuffer if enabled (delete and re-insert)
-            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
+        # update message in turbopuffer if enabled (delete and re-insert) - outside of DB session
+        from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and pydantic_message.agent_id:
-                # extract text content from updated message
-                text = self._extract_message_text(pydantic_message)
+        if should_use_tpuf_for_messages() and pydantic_message.agent_id:
+            # extract text content from updated message
+            text = self._extract_message_text(pydantic_message)
 
-                # only update in turbopuffer if there's text content
-                if text:
-                    if strict_mode:
-                        # wait for embedding update to complete
-                        await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
-                    else:
-                        # fire and forget - run embedding update in background
-                        fire_and_forget(
-                            self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
-                            task_name=f"update_message_embedding_{message_id}",
-                        )
+            # only update in turbopuffer if there's text content
+            if text:
+                if strict_mode:
+                    # wait for embedding update to complete
+                    await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
+                else:
+                    # fire and forget - run embedding update in background
+                    fire_and_forget(
+                        self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
+                        task_name=f"update_message_embedding_{message_id}",
+                    )
 
-            return pydantic_message
+        return pydantic_message
 
     async def _update_message_embedding_background(
         self, message: PydanticMessage, text: str, actor: PydanticUser, project_id: Optional[str] = None, template_id: Optional[str] = None
@@ -627,6 +627,8 @@ class MessageManager:
     @trace_method
     async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
         """Delete a message (async version with turbopuffer support)."""
+        # capture agent_id before deletion
+        agent_id = None
         async with db_registry.async_session() as session:
             try:
                 msg = await MessageModel.read_async(
@@ -636,26 +638,24 @@ class MessageManager:
                 )
                 agent_id = msg.agent_id
                 await msg.hard_delete_async(session, actor=actor)
-
-                # delete from turbopuffer if enabled
-                from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
-
-                if should_use_tpuf_for_messages() and agent_id:
-                    try:
-                        tpuf_client = TurbopufferClient()
-                        await tpuf_client.delete_messages(
-                            agent_id=agent_id, organization_id=actor.organization_id, message_ids=[message_id]
-                        )
-                        logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
-                    except Exception as e:
-                        logger.error(f"Failed to delete message from Turbopuffer: {e}")
-                        if strict_mode:
-                            raise  # Re-raise the exception in strict mode
-
-                return True
-
             except NoResultFound:
                 raise ValueError(f"Message with id {message_id} not found.")
+        # session is now fully closed
+
+        # delete from turbopuffer if enabled (outside of DB session)
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+        if should_use_tpuf_for_messages() and agent_id:
+            try:
+                tpuf_client = TurbopufferClient()
+                await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=[message_id])
+                logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete message from Turbopuffer: {e}")
+                if strict_mode:
+                    raise  # Re-raise the exception in strict mode
+
+        return True
 
     @enforce_types
     @trace_method
@@ -819,6 +819,7 @@ class MessageManager:
         while enforcing permission checks and avoiding any ORM‑level loads.
         Optionally excludes specific message IDs from deletion.
         """
+        rowcount = 0
         async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
             await validate_agent_exists_async(session, agent_id, actor)
@@ -833,31 +834,33 @@ class MessageManager:
                 stmt = stmt.where(~MessageModel.id.in_(exclude_ids))
 
             result = await session.execute(stmt)
+            rowcount = result.rowcount
 
             # 4) commit once
             await session.commit()
+        # session is now fully closed
 
-            # 5) delete from turbopuffer if enabled
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+        # 5) delete from turbopuffer if enabled (outside of DB session)
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages():
-                try:
-                    tpuf_client = TurbopufferClient()
-                    if exclude_ids:
-                        # if we're excluding some IDs, we can't use delete_all
-                        # would need to query all messages first then delete specific ones
-                        # for now, log a warning
-                        logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
-                    # delete all messages for the agent from turbopuffer
-                    await tpuf_client.delete_all_messages(agent_id, actor.organization_id)
-                    logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
-                    if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+        if should_use_tpuf_for_messages():
+            try:
+                tpuf_client = TurbopufferClient()
+                if exclude_ids:
+                    # if we're excluding some IDs, we can't use delete_all
+                    # would need to query all messages first then delete specific ones
+                    # for now, log a warning
+                    logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
+                # delete all messages for the agent from turbopuffer
+                await tpuf_client.delete_all_messages(agent_id, actor.organization_id)
+                logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                if strict_mode:
+                    raise  # Re-raise the exception in strict mode
 
-            # 6) return the number of rows deleted
-            return result.rowcount
+        # 6) return the number of rows deleted
+        return rowcount
 
     @enforce_types
     @trace_method
@@ -869,11 +872,13 @@ class MessageManager:
         if not message_ids:
             return 0
 
-        async with db_registry.async_session() as session:
-            # get agent_ids BEFORE deleting (for turbopuffer)
-            agent_ids = []
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+        # get agent_ids BEFORE deleting (for turbopuffer)
+        agent_ids = []
+        rowcount = 0
 
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+        async with db_registry.async_session() as session:
             if should_use_tpuf_for_messages():
                 agent_query = (
                     select(MessageModel.agent_id)
@@ -887,25 +892,27 @@ class MessageManager:
             # issue a CORE DELETE against the mapped class for specific message IDs
             stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
             result = await session.execute(stmt)
+            rowcount = result.rowcount
 
             # commit once
             await session.commit()
+        # session is now fully closed
 
-            # delete from turbopuffer if enabled
-            if should_use_tpuf_for_messages() and agent_ids:
-                try:
-                    tpuf_client = TurbopufferClient()
-                    # delete from each affected agent's namespace
-                    for agent_id in agent_ids:
-                        await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=message_ids)
-                    logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
-                    if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+        # delete from turbopuffer if enabled (outside of DB session)
+        if should_use_tpuf_for_messages() and agent_ids:
+            try:
+                tpuf_client = TurbopufferClient()
+                # delete from each affected agent's namespace
+                for agent_id in agent_ids:
+                    await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=message_ids)
+                logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                if strict_mode:
+                    raise  # Re-raise the exception in strict mode
 
-            # return the number of rows deleted
-            return result.rowcount
+        # return the number of rows deleted
+        return rowcount
 
     @enforce_types
     @trace_method
