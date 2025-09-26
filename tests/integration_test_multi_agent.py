@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import threading
@@ -147,7 +148,7 @@ def roll_dice_tool(client):
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agent(client, server, agent_obj, other_agent_obj):
     secret_word = "banana"
-    actor = server.user_manager.get_user_or_default()
+    actor = asyncio.run(server.user_manager.get_actor_or_default_async())
 
     # Encourage the agent to send a message to the other agent_obj with the secret string
     response = client.agents.messages.create(
@@ -161,11 +162,13 @@ def test_send_message_to_agent(client, server, agent_obj, other_agent_obj):
     )
 
     # Conversation search the other agent
-    messages = server.get_agent_recall(
-        user_id=actor.id,
-        agent_id=other_agent_obj.id,
-        reverse=True,
-        return_message_object=False,
+    messages = asyncio.run(
+        server.get_agent_recall(
+            user_id=actor.id,
+            agent_id=other_agent_obj.id,
+            reverse=True,
+            return_message_object=False,
+        )
     )
 
     # Check for the presence of system message
@@ -176,7 +179,7 @@ def test_send_message_to_agent(client, server, agent_obj, other_agent_obj):
             break
 
     # Search the sender agent for the response from another agent
-    in_context_messages = AgentManager().get_in_context_messages(agent_id=agent_obj.id, actor=actor)
+    in_context_messages = asyncio.run(AgentManager().get_in_context_messages(agent_id=agent_obj.id, actor=actor))
     found = False
     target_snippet = f"'agent_id': '{other_agent_obj.id}', 'response': ["
 
