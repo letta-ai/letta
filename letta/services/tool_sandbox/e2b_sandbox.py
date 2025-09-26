@@ -44,6 +44,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
     ) -> ToolExecutionResult:
+        await self._init_async()
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:

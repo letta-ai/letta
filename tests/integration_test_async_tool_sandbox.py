@@ -48,24 +48,17 @@ def disable_db_pooling_for_tests():
         del os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"]
 
 
-@pytest.fixture(autouse=True)
-async def cleanup_db_connections():
-    """Cleanup database connections after each test."""
-    yield
-
-    # Dispose async engines in the current event loop
-    try:
-        if hasattr(db_registry, "_async_engines"):
-            for engine in db_registry._async_engines.values():
-                if engine:
-                    await engine.dispose()
-        # Reset async initialization to force fresh connections
-        db_registry._initialized["async"] = False
-        db_registry._async_engines.clear()
-        db_registry._async_session_factories.clear()
-    except Exception as e:
-        # Log the error but don't fail the test
-        print(f"Warning: Failed to cleanup database connections: {e}")
+# @pytest.fixture(autouse=True)
+# async def cleanup_db_connections():
+#    """Cleanup database connections after each test."""
+#    yield
+#
+#    # Dispose async engines in the current event loop
+#    try:
+#        await close_db()
+#    except Exception as e:
+#        # Log the error but don't fail the test
+#        print(f"Warning: Failed to cleanup database connections: {e}")
 
 
 # Fixtures
@@ -81,6 +74,7 @@ def server():
     config.save()
 
     server = SyncServer(init_with_default_org_and_user=True)
+    # create user/org
     yield server
 
 
@@ -96,21 +90,21 @@ async def clear_tables():
 
 
 @pytest.fixture
-def test_organization():
+async def test_organization():
     """Fixture to create and return the default organization."""
-    org = OrganizationManager().create_organization(Organization(name=org_name))
+    org = await OrganizationManager().create_organization_async(Organization(name=org_name))
     yield org
 
 
 @pytest.fixture
-def test_user(test_organization):
+async def test_user(test_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = UserManager().create_user(User(name=user_name, organization_id=test_organization.id))
+    user = await UserManager().create_actor_async(User(name=user_name, organization_id=test_organization.id))
     yield user
 
 
 @pytest.fixture
-def add_integers_tool(test_user):
+async def add_integers_tool(test_user):
     def add(x: int, y: int) -> int:
         """
         Simple function that adds two integers.
@@ -125,12 +119,12 @@ def add_integers_tool(test_user):
         return x + y
 
     tool = create_tool_from_func(add)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def cowsay_tool(test_user):
+async def cowsay_tool(test_user):
     # This defines a tool for a package we definitely do NOT have in letta
     # If this test passes, that means the tool was correctly executed in a separate Python environment
     def cowsay() -> str:
@@ -147,12 +141,12 @@ def cowsay_tool(test_user):
         cowsay.cow(os.getenv("secret_word"))
 
     tool = create_tool_from_func(cowsay)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def get_env_tool(test_user):
+async def get_env_tool(test_user):
     def get_env() -> str:
         """
         Simple function that returns the secret word env variable.
@@ -167,12 +161,12 @@ def get_env_tool(test_user):
         return secret_word
 
     tool = create_tool_from_func(get_env)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def get_warning_tool(test_user):
+async def get_warning_tool(test_user):
     def warn_hello_world() -> str:
         """
         Simple function that warns hello world.
@@ -187,12 +181,12 @@ def get_warning_tool(test_user):
         return msg
 
     tool = create_tool_from_func(warn_hello_world)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def always_err_tool(test_user):
+async def always_err_tool(test_user):
     def error() -> str:
         """
         Simple function that errors
@@ -205,46 +199,47 @@ def always_err_tool(test_user):
         raise ZeroDivisionError("This is an intentionally weird division!")
 
     tool = create_tool_from_func(error)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def list_tool(test_user):
+async def list_tool(test_user):
     def create_list():
         """Simple function that returns a list"""
 
         return [1] * 5
 
     tool = create_tool_from_func(create_list)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def clear_core_memory_tool(test_user):
+async def clear_core_memory_tool(test_user):
     def clear_memory(agent_state: "AgentState"):
         """Clear the core memory"""
         agent_state.memory.get_block("human").value = ""
         agent_state.memory.get_block("persona").value = ""
 
     tool = create_tool_from_func(clear_memory)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def external_codebase_tool(test_user):
+async def external_codebase_tool(test_user):
     from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import adjust_menu_prices
 
     tool = create_tool_from_func(adjust_menu_prices)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-async def agent_state(server):
-    actor = server.user_manager.get_user_or_default()
+async def agent_state(server: SyncServer):
+    await server.init_async(init_with_default_org_and_user=True)
+    actor = await server.user_manager.create_default_actor_async()
     agent_state = await server.create_agent_async(
         CreateAgent(
             memory_blocks=[
@@ -269,7 +264,7 @@ async def agent_state(server):
 
 
 @pytest.fixture
-def custom_test_sandbox_config(test_user):
+async def custom_test_sandbox_config(test_user):
     """
     Fixture to create a consistent local sandbox configuration for tests.
 
@@ -293,14 +288,14 @@ def custom_test_sandbox_config(test_user):
     config_create = SandboxConfigCreate(config=local_sandbox_config.model_dump())
 
     # Create or update the sandbox configuration
-    manager.create_or_update_sandbox_config(sandbox_config_create=config_create, actor=test_user)
+    await manager.create_or_update_sandbox_config_async(sandbox_config_create=config_create, actor=test_user)
 
     return manager, local_sandbox_config
 
 
 # Tool-specific fixtures
 @pytest.fixture
-def tool_with_pip_requirements(test_user):
+async def tool_with_pip_requirements(test_user):
     def use_requests_and_numpy() -> str:
         """
         Function that uses requests and numpy packages to test tool-specific pip requirements.
@@ -325,14 +320,14 @@ def tool_with_pip_requirements(test_user):
     # Add pip requirements to the tool - using more recent versions for E2B compatibility
     tool.pip_requirements = [
         PipRequirement(name="requests", version="2.31.0"),
-        PipRequirement(name="numpy", version="1.26.0"),
+        PipRequirement(name="numpy"),  # , version="1.26.0"),
     ]
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def tool_with_broken_pip_requirements(test_user):
+async def tool_with_broken_pip_requirements(test_user):
     def use_broken_package() -> str:
         """
         Function that requires a package with known compatibility issues.
@@ -350,15 +345,15 @@ def tool_with_broken_pip_requirements(test_user):
     tool = create_tool_from_func(use_broken_package)
     # Add pip requirements that will fail in E2B environment
     tool.pip_requirements = [
-        PipRequirement(name="numpy", version="1.24.0"),  # Known to have compatibility issues
+        PipRequirement(name="numpy"),  # , version="1.24.0"),  # Known to have compatibility issues
         PipRequirement(name="nonexistent-package-12345"),  # This package doesn't exist
     ]
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def core_memory_tools(test_user):
+async def core_memory_tools(test_user):
     """Create all base tools for testing."""
     tools = {}
     for func in [
@@ -366,13 +361,13 @@ def core_memory_tools(test_user):
         core_memory_append,
     ]:
         tool = create_tool_from_func(func)
-        tool = ToolManager().create_or_update_tool(tool, test_user)
+        tool = await ToolManager().create_or_update_tool_async(tool, test_user)
         tools[func.__name__] = tool
     yield tools
 
 
 @pytest.fixture
-def async_add_integers_tool(test_user):
+async def async_add_integers_tool(test_user):
     async def async_add(x: int, y: int) -> int:
         """
         Async function that adds two integers.
@@ -391,12 +386,12 @@ def async_add_integers_tool(test_user):
         return x + y
 
     tool = create_tool_from_func(async_add)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def async_get_env_tool(test_user):
+async def async_get_env_tool(test_user):
     async def async_get_env() -> str:
         """
         Async function that returns the secret word env variable.
@@ -414,12 +409,12 @@ def async_get_env_tool(test_user):
         return secret_word
 
     tool = create_tool_from_func(async_get_env)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def async_stateful_tool(test_user):
+async def async_stateful_tool(test_user):
     async def async_clear_memory(agent_state: "AgentState"):
         """Async function that clears the core memory"""
         import asyncio
@@ -430,12 +425,12 @@ def async_stateful_tool(test_user):
         agent_state.memory.get_block("persona").value = ""
 
     tool = create_tool_from_func(async_clear_memory)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def async_error_tool(test_user):
+async def async_error_tool(test_user):
     async def async_error() -> str:
         """
         Async function that errors
@@ -451,12 +446,12 @@ def async_error_tool(test_user):
         raise ValueError("This is an intentional async error!")
 
     tool = create_tool_from_func(async_error)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def async_list_tool(test_user):
+async def async_list_tool(test_user):
     async def async_create_list() -> list:
         """Async function that returns a list"""
         import asyncio
@@ -465,12 +460,12 @@ def async_list_tool(test_user):
         return [1, 2, 3, 4, 5]
 
     tool = create_tool_from_func(async_create_list)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
 @pytest.fixture
-def async_complex_tool(test_user):
+async def async_complex_tool(test_user):
     async def async_complex_computation(iterations: int = 3) -> dict:
         """
         Async function that performs complex computation with multiple awaits.
@@ -502,7 +497,7 @@ def async_complex_tool(test_user):
         }
 
     tool = create_tool_from_func(async_complex_computation)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
+    tool = await ToolManager().create_or_update_tool_async(tool, test_user)
     yield tool
 
 
@@ -555,11 +550,11 @@ async def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
     manager = SandboxConfigManager()
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     key = "secret_word"
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
     )
 
@@ -575,10 +570,12 @@ async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, ag
     key = "secret_word"
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     wrong_val = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user)
+    await manager.create_sandbox_env_var_async(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user
+    )
 
     correct_val = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
     agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
@@ -629,11 +626,11 @@ async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, c
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     key = "secret_word"
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
     )
 
@@ -649,7 +646,7 @@ async def test_local_sandbox_with_tool_pip_requirements(disable_e2b_api_key, too
     manager = SandboxConfigManager()
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir, use_venv=True).model_dump())
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxLocal(
         tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements, force_recreate_venv=True
@@ -673,7 +670,7 @@ async def test_local_sandbox_with_mixed_pip_requirements(disable_e2b_api_key, to
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(sandbox_dir=sandbox_dir, use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxLocal(
         tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements, force_recreate_venv=True
@@ -691,11 +688,11 @@ async def test_local_sandbox_with_mixed_pip_requirements(disable_e2b_api_key, to
 async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     key = "secret_word"
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
     )
 
@@ -707,7 +704,7 @@ async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxLocal(cowsay_tool.name, {}, user=test_user, force_recreate_venv=False)
     result = await sandbox.run()
@@ -739,11 +736,11 @@ async def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test
 async def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig(pip_requirements=["cowsay"]).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     key = "secret_word"
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string),
         sandbox_config_id=config.id,
         actor=test_user,
@@ -769,7 +766,7 @@ async def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory
 async def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_env_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxE2B(get_env_tool.name, {}, user=test_user)
     result = await sandbox.run()
@@ -777,7 +774,7 @@ async def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set,
 
     key = "secret_word"
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string),
         sandbox_config_id=config.id,
         actor=test_user,
@@ -797,8 +794,8 @@ async def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, age
     correct_val = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
 
     config_create = SandboxConfigCreate(config=LocalSandboxConfig().model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
-    manager.create_sandbox_env_var(
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=wrong_val),
         sandbox_config_id=config.id,
         actor=test_user,
@@ -826,7 +823,7 @@ async def test_e2b_sandbox_with_tool_pip_requirements(check_e2b_key_is_set, tool
     """Test that E2B sandbox installs tool-specific pip requirements."""
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxE2B(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
     result = await sandbox.run()
@@ -845,7 +842,7 @@ async def test_e2b_sandbox_with_mixed_pip_requirements(check_e2b_key_is_set, too
 
     # Add sandbox-level pip requirement
     config_create = SandboxConfigCreate(config=E2BSandboxConfig(pip_requirements=["cowsay"]).model_dump())
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxE2B(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
     result = await sandbox.run()
@@ -864,7 +861,7 @@ async def test_e2b_sandbox_with_broken_tool_pip_requirements_error_handling(
     """Test that E2B sandbox provides informative error messages for broken tool pip requirements."""
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
-    manager.create_or_update_sandbox_config(config_create, test_user)
+    await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     sandbox = AsyncToolSandboxE2B(tool_with_broken_pip_requirements.name, {}, user=test_user, tool_object=tool_with_broken_pip_requirements)
 
@@ -889,14 +886,17 @@ async def test_e2b_sandbox_with_broken_tool_pip_requirements_error_handling(
 # Async function tests
 
 
-def test_async_function_detection(add_integers_tool, async_add_integers_tool, test_user):
+@pytest.mark.asyncio
+async def test_async_function_detection(add_integers_tool, async_add_integers_tool, test_user):
     """Test that async function detection works correctly"""
     # Test sync function detection
     sync_sandbox = AsyncToolSandboxE2B(add_integers_tool.name, {}, test_user, tool_object=add_integers_tool)
+    await sync_sandbox._init_async()
     assert not sync_sandbox.is_async_function
 
     # Test async function detection
     async_sandbox = AsyncToolSandboxE2B(async_add_integers_tool.name, {}, test_user, tool_object=async_add_integers_tool)
+    await async_sandbox._init_async()
     assert async_sandbox.is_async_function
 
 
@@ -1005,12 +1005,12 @@ async def test_local_sandbox_async_with_env_vars(disable_e2b_api_key, async_get_
     # Create custom local sandbox config
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
-    # Create environment variable
+    # Create environment variablecreate_user_async
     key = "secret_word"
     test_value = "async_local_test_value_789"
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=test_value), sandbox_config_id=config.id, actor=test_user
     )
 
@@ -1026,12 +1026,12 @@ async def test_e2b_sandbox_async_with_env_vars(check_e2b_key_is_set, async_get_e
     """Test async function with environment variables in E2B sandbox"""
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     # Create environment variable
     key = "secret_word"
     test_value = "async_e2b_test_value_456"
-    manager.create_sandbox_env_var(
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=test_value), sandbox_config_id=config.id, actor=test_user
     )
 
@@ -1102,10 +1102,12 @@ async def test_local_sandbox_async_per_agent_env(disable_e2b_api_key, async_get_
     key = "secret_word"
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
     wrong_val = "wrong_async_local_value"
-    manager.create_sandbox_env_var(SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user)
+    await manager.create_sandbox_env_var_async(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user
+    )
 
     correct_val = "correct_async_local_value"
     agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
@@ -1126,8 +1128,8 @@ async def test_e2b_sandbox_async_per_agent_env(check_e2b_key_is_set, async_get_e
     correct_val = "correct_async_e2b_value"
 
     config_create = SandboxConfigCreate(config=LocalSandboxConfig().model_dump())
-    config = manager.create_or_update_sandbox_config(config_create, test_user)
-    manager.create_sandbox_env_var(
+    config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
+    await manager.create_sandbox_env_var_async(
         SandboxEnvironmentVariableCreate(key=key, value=wrong_val),
         sandbox_config_id=config.id,
         actor=test_user,
