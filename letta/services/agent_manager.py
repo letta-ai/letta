@@ -1042,9 +1042,9 @@ class AgentManager:
     # TODO: This can also be made more efficient, instead of getting, setting, we can do it all in one db session for one query.
     @enforce_types
     @trace_method
-    def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
-        message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
-        return self.message_manager.get_messages_by_ids(message_ids=message_ids, actor=actor)
+    async def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     @enforce_types
     @trace_method

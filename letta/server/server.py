@@ -626,7 +626,7 @@ class SyncServer(object):
         # delete the passage
         await self.passage_manager.delete_passage_by_id_async(passage_id=memory_id, actor=actor)
 
-    def get_agent_recall(
+    async def get_agent_recall(
         self,
         user_id: str,
         agent_id: str,
@@ -642,9 +642,9 @@ class SyncServer(object):
     ) -> Union[List[Message], List[LettaMessage]]:
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
 
-        actor = self.user_manager.get_user_or_default(user_id=user_id)
+        actor = await self.user_manager.get_actor_or_default_async(actor_id=user_id)
 
-        records = self.message_manager.list_messages_for_agent(
+        records = await self.message_manager.list_messages_for_agent_async(
             agent_id=agent_id,
             actor=actor,
             after=after,
