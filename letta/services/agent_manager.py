@@ -1303,10 +1303,8 @@ class AgentManager:
             PydanticAgentState: The updated agent state with only the original system message preserved.
         """
         async with db_registry.async_session() as session:
-            # Retrieve the existing agent (will raise NoResultFound if invalid)
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
 
-            # Ensure agent has message_ids with at least one message
             if not agent.message_ids or len(agent.message_ids) == 0:
                 logger.error(
                     f"Agent {agent_id} has no message_ids. Agent details: "
@@ -1315,13 +1313,12 @@ class AgentManager:
                 )
                 raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 
-            # Get the system message ID (first message)
             system_message_id = agent.message_ids[0]
 
-            # Delete all messages for the agent except the system message
-            await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor, exclude_ids=[system_message_id])
+        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor, exclude_ids=[system_message_id])
 
-            # Update agent to only keep the system message
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
             agent_state = await agent.to_pydantic_async(include_relationships=["sources"])
