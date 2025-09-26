@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from letta.config import LettaConfig
@@ -236,7 +238,7 @@ async def test_round_robin(server, default_user, four_participant_agents):
             assert message.name == four_participant_agents[i // 2].name
 
         for agent_id in group.agent_ids:
-            agent_messages = server.get_agent_recall(
+            agent_messages = await server.get_agent_recall(
                 user_id=default_user.id,
                 agent_id=agent_id,
                 group_id=group.id,
@@ -292,7 +294,7 @@ async def test_round_robin(server, default_user, four_participant_agents):
             assert message.name == four_participant_agents[::-1][i // 2].name
 
         for i in range(len(group.agent_ids)):
-            agent_messages = server.get_agent_recall(
+            agent_messages = await server.get_agent_recall(
                 user_id=default_user.id,
                 agent_id=group.agent_ids[i],
                 group_id=group.id,
