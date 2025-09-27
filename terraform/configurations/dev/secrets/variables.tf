@@ -481,6 +481,12 @@ variable "dev_memgpt_server_LETTA_TEMPORAL_API_KEY" {
   sensitive   = true
 }
 
+variable "dev_memgpt_server_LETTA_MISTRAL_API_KEY" {
+  description = "Temporal API Key for memgpt-server service"
+  type        = string
+  sensitive   = true
+}
+
 # memgpt-server-voice secrets
 
 variable "dev_memgpt_server_voice_OPENAI_API_KEY" {

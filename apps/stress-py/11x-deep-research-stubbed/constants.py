@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 
 # api configuration
-BASE_URL = "https://api-dev.letta.com"
-TOKEN = os.environ.get("LETTA_STAGING_API_TOKEN")
+BASE_URL = os.environ.get("LETTA_SERVER_URL", "https://api-dev.letta.com")
+TOKEN = os.environ.get("LETTA_STAGING_API_TOKEN", "")
 TIMEOUT = 15000
 
 # agent configuration
@@ -11,10 +11,12 @@ AGENT_FILE_PATH = Path(__file__).parent / "stubbed_research_agent.json"
 PROJECT_NAME = "default-project"
 
 # load test configuration
-N = 1
+N = int(os.environ.get("N", 100))  # Number of operations to perform
 BATCH_SIZE = 250
 BATCH_DELAY = 0.1
-MAX_CONCURRENCY = 250
+MAX_CONCURRENCY = int(
+    os.environ.get("MAX_CONCURRENCY", 10)
+)  # Concurrent operations limit
 
 # webhook configuration
 CALLBACK_URL = "https://webhook.site/67177677-797b-414e-ae74-60471dbca4da"

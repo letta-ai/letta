@@ -61,11 +61,11 @@ ingress:
 
 resources:
   limits:
-    cpu: 500m
+    cpu: 0.5
     memory: 512Mi
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 0.5
+    memory: 512Mi
 
 livenessProbe:
   httpGet:
@@ -77,11 +77,11 @@ readinessProbe:
     port: 8080
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
+  enabled: true
+  minReplicas: 4
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
 volumes: []

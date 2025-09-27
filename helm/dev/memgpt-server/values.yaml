@@ -65,10 +65,10 @@ ingress:
 resources:
   limits:
     cpu: 1
-    memory: 2Gi
+    memory: 6Gi
   requests:
     cpu: 1
-    memory: 1Gi
+    memory: 3Gi
 
 livenessProbe:
   failureThreshold: 5
@@ -97,7 +97,7 @@ autoscaling:
   minReplicas: 12
   maxReplicas: 30
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
 volumes: []
@@ -170,3 +170,4 @@ secretsProvider:
     - LETTA_ENCRYPTION_KEY
     - COMPOSIO_API_KEY
     - LETTA_TEMPORAL_API_KEY
+    - LETTA_MISTRAL_API_KEY
