@@ -17,7 +17,7 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 import { z } from 'zod';
 import { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';

@@ -20,7 +20,7 @@ import {
 import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface ConfigSchemaItem {

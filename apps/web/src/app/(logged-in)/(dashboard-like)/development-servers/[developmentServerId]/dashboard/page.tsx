@@ -141,7 +141,7 @@ function DevelopmentServersDashboardPage() {
             <CTACard
               action={
                 <Button
-                  href="/development-servers/local/agents"
+                  href={`/development-servers/${developmentServerId}/agents`}
                   label={t('gettingStarted.actions.viewAgents.cta')}
                   color="primary"
                 />

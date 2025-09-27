@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 import {
   ActionCard,
   ArrowRightIcon,

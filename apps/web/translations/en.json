@@ -2417,6 +2417,10 @@
     "actions": "Actions",
     "deleteAgent": "Delete Agent"
   },
+  "development-servers/wrapper": {
+    "goToList": "Return to project list",
+    "error": "There was an error finding your server, ensure that this is the correct url or that you did not delete the connection."
+  },
   "development-servers/components/UserIsNotConnectedComponent": {
     "connecting": "Attempting to connect to your server...",
     "issuesConnecting": "Issues connecting? Check our <link>self-hosting guide</link>."
@@ -2838,7 +2842,7 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "nav": {
-      "localDev": "Return to self-hosted homepage",
+      "localDev": "Return to your agents",
       "project": "Return to {projectName} dashboard",
       "template": "Return to {templateName}"
     },
