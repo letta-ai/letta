@@ -55,6 +55,7 @@ import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
 import { useAtom } from 'jotai/index';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -456,6 +457,8 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
     return { name, version };
   }, [agentTemplates]);
 
+  const developmentServerConfig = useCurrentDevelopmentServerConfig();
+
   const projectUrl = !id ? projectSlug : `/projects/${projectSlug}`;
 
   return (
@@ -478,7 +481,7 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
         />
         <HStack align="center" paddingLeft="medium" gap="medium">
           <Button
-            href={isLocal ? '/development-servers' : projectUrl}
+            href={isLocal ? `/development-servers/${developmentServerConfig?.id}/agents` : projectUrl}
             preIcon={<ProjectsIcon size="medium" color="default" />}
             label={
               isLocal ? t('nav.localDev') : t('nav.project', { projectName })

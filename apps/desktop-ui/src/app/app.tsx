@@ -37,7 +37,7 @@ import {
   DataSourceDetailTable,
   DataSourcesList,
 } from '@letta-cloud/ui-ade-components';
-import { useDesktopConfig } from './hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 
 function DataSourceDetailTableWrapper() {
   const { dataSourceId } = useParams<{ dataSourceId: string }>();

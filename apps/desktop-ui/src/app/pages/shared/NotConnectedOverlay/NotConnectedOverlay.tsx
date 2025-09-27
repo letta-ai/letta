@@ -7,7 +7,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { Link } from 'react-router-dom';
-import { useDesktopConfig } from '../../../hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 
 interface NotConnectedOverlayProps {
   children: React.ReactNode;

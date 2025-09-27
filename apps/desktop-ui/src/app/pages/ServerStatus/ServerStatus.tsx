@@ -12,7 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import type { ServerLogType } from '@letta-cloud/types';
 import { useEffect, useRef, useState } from 'react';
-import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 
 export function ServerStatus() {
   const t = useTranslations('ServerStatus');

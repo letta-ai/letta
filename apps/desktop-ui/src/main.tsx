@@ -13,7 +13,7 @@ import {
   en as componentTranslations,
   Toaster,
 } from '@letta-cloud/ui-component-library';
-import { useDesktopConfig } from './app/hooks/useDesktopConfig/useDesktopConfig';
+import { useDesktopConfig } from '@letta-cloud/utils-client';
 import { PHProvider } from '@letta-cloud/service-analytics/client';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

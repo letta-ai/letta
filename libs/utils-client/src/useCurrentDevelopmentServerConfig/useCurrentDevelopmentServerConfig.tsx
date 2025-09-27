@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { useDesktopConfig } from '../useDesktopConfig/useDesktopConfig';
 
 export interface DevelopmentServerConfig {
   id: string;
@@ -16,8 +17,9 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
   const { developmentServerId } = useParams<{ developmentServerId: string }>();
   const t = useTranslations('development-servers/hooks');
 
-  const isLocal =
-    developmentServerId === 'local' || CURRENT_RUNTIME === 'letta-desktop';
+
+  const { desktopConfig } = useDesktopConfig();
+
 
   const { data } = webApi.developmentServers.getDevelopmentServer.useQuery({
     queryKey:
@@ -29,17 +31,25 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
         developmentServerId,
       },
     },
-    enabled: !isLocal && !!developmentServerId && developmentServerId !== 'local',
+    enabled: !!developmentServerId ,
   });
 
   return useMemo((): DevelopmentServerConfig | null => {
-    if (isLocal) {
+    if (CURRENT_RUNTIME === 'letta-desktop') {
+      let url = 'http://localhost:8283';
+      let password = '';
+
+      if (desktopConfig?.databaseConfig.type === 'local') {
+        url = desktopConfig.databaseConfig.url || url;
+        password = desktopConfig.databaseConfig.token || password;
+      }
+
       return {
         id: 'local',
         name: t('localAgents'),
-        url: 'http://localhost:8283',
-        password: '',
-      };
+        url,
+        password,
+      }
     }
 
     if (!data) {
@@ -52,5 +62,5 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
       url: data.body.developmentServer.url,
       password: data.body.developmentServer.password || '',
     };
-  }, [data, isLocal, t]);
+  }, [data, desktopConfig, t]);
 }

@@ -17,3 +17,4 @@ export * from './useStepDuration/useStepDuration';
 export * from './useTotalTraceDuration/useTotalTraceDuration';
 export * from './disableClosingOnNetworkInspector/disableClosingOnNetworkInspector';
 export * from './parseMessageFromPartialJson/parseMessageFromParialJson';
+export * from './useDesktopConfig/useDesktopConfig';
