@@ -4,7 +4,7 @@
 
 project_id: &project_id memgpt-428419
 lettaEnv: &lettaEnv dev
-replicaCount: 1
+replicaCount: 4
 
 image:
   repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/cloud-api
@@ -64,11 +64,11 @@ ingress:
 
 resources:
   limits:
-    cpu: 500m
+    cpu: 0.5
     memory: 512Mi
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 0.5
+    memory: 512Mi
 
 livenessProbe:
   httpGet:
@@ -80,11 +80,11 @@ readinessProbe:
     port: 8080
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
+  enabled: true
+  minReplicas: 4
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
 volumes: []

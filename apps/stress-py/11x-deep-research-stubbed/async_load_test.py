@@ -57,7 +57,12 @@ async def main():
     global start_time
     start_time = time.time()
 
-    client = AsyncLetta(base_url=BASE_URL, token=TOKEN, timeout=TIMEOUT)
+    # Only pass token if it's set
+    client_kwargs = {"base_url": BASE_URL, "timeout": TIMEOUT}
+    if TOKEN:
+        client_kwargs["token"] = TOKEN
+
+    client = AsyncLetta(**client_kwargs)
     print(f"Starting {N} jobs with concurrency limit of {MAX_CONCURRENCY}...")
 
     # Upload the agent file as a template
