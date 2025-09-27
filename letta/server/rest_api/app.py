@@ -179,6 +179,7 @@ def create_application() -> "FastAPI":
     if SENTRY_ENABLED:
         sentry_sdk.init(
             dsn=os.getenv("SENTRY_DSN"),
+            environment=os.getenv("LETTA_ENVIRONMENT", "undefined"),
             traces_sample_rate=1.0,
             _experiments={
                 "continuous_profiling_auto_start": True,
