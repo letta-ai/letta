@@ -182,6 +182,11 @@ navigation:
               - page: Local (stdio) Servers
                 path: pages/mcp/stdio.mdx
 
+      - section: Integrations
+        contents:
+          - page: Telegram Bot
+            path: pages/tutorials/telegram_bot.mdx
+
       #- section: Tool Execution
       #  contents:
       #    - page: Overview
