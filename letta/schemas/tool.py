@@ -16,12 +16,10 @@ from letta.constants import (
 # MCP Tool metadata constants for schema health status
 MCP_TOOL_METADATA_SCHEMA_STATUS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_STATUS"
 MCP_TOOL_METADATA_SCHEMA_WARNINGS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_WARNINGS"
-from letta.functions.ast_parsers import get_function_name_and_docstring
 from letta.functions.composio_helpers import generate_composio_tool_wrapper
-from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
+from letta.functions.functions import get_json_schema_from_module
 from letta.functions.mcp_client.types import MCPTool
 from letta.functions.schema_generator import (
-    generate_schema_from_args_schema_v2,
     generate_tool_schema_for_composio,
     generate_tool_schema_for_mcp,
 )
@@ -80,46 +78,19 @@ class Tool(BaseTool):
     def refresh_source_code_and_json_schema(self):
         """
         Refresh name, description, source_code, and json_schema.
+
+        Note: Schema generation for custom tools is now handled at creation/update time in ToolManager.
+        This method only handles built-in Letta tools.
         """
-        from letta.functions.helpers import generate_model_from_args_json_schema
-
-        if self.tool_type == ToolType.CUSTOM and not self.json_schema:
-            # attempt various fallbacks to get the JSON schema
-            if not self.source_code:
-                logger.error("Custom tool with id=%s is missing source_code field", self.id)
-                raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
-
-            if self.source_type == ToolSourceType.typescript:
-                # TypeScript tools don't support args_json_schema, only direct schema generation
-                if not self.json_schema:
-                    try:
-                        from letta.functions.typescript_parser import derive_typescript_json_schema
-
-                        self.json_schema = derive_typescript_json_schema(source_code=self.source_code)
-                    except Exception as e:
-                        logger.error("Failed to derive TypeScript json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
-            elif (
-                self.source_type == ToolSourceType.python or self.source_type is None
-            ):  # default to python if not provided for backwards compatability
-                # Python tool handling
-                # Always derive json_schema for freshest possible json_schema
-                if self.args_json_schema is not None:
-                    name, description = get_function_name_and_docstring(self.source_code, self.name)
-                    args_schema = generate_model_from_args_json_schema(self.args_json_schema)
-                    self.json_schema = generate_schema_from_args_schema_v2(
-                        args_schema=args_schema,
-                        name=name,
-                        description=description,
-                        append_heartbeat=False,
-                    )
-                else:  # elif not self.json_schema: # TODO: JSON schema is not being derived correctly the first time?
-                    # If there's not a json_schema provided, then we need to re-derive
-                    try:
-                        self.json_schema = derive_openai_json_schema(source_code=self.source_code)
-                    except Exception as e:
-                        logger.error("Failed to derive json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
-            else:
-                raise ValueError(f"Unknown tool source type: {self.source_type}")
+        if self.tool_type == ToolType.CUSTOM:
+            # Custom tools should already have their schema set during creation/update
+            # No schema generation happens here anymore
+            if not self.json_schema:
+                logger.warning(
+                    "Custom tool with id=%s name=%s is missing json_schema. Schema should be set during creation/update.",
+                    self.id,
+                    self.name,
+                )
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE, ToolType.LETTA_SLEEPTIME_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
@@ -138,23 +109,6 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.EXTERNAL_COMPOSIO}:
             # Composio schemas handled separately
             pass
-
-        # At this point, we need to validate that at least json_schema is populated
-        if not self.json_schema:
-            logger.error("Tool with id=%s name=%s tool_type=%s is missing a json_schema", self.id, self.name, self.tool_type)
-            raise ValueError(f"Tool with id={self.id} name={self.name} tool_type={self.tool_type} is missing a json_schema.")
-
-        # Derive name from the JSON schema if not provided
-        if not self.name:
-            # TODO: This in theory could error, but name should always be on json_schema
-            # TODO: Make JSON schema a typed pydantic object
-            self.name = self.json_schema.get("name")
-
-        # Derive description from the JSON schema if not provided
-        if not self.description:
-            # TODO: This in theory could error, but description should always be on json_schema
-            # TODO: Make JSON schema a typed pydantic object
-            self.description = self.json_schema.get("description")
 
         return self
 
@@ -253,6 +207,7 @@ class ToolUpdate(LettaBase):
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     metadata_: Optional[Dict[str, Any]] = Field(None, description="A dictionary of additional metadata for the tool.")
     default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
+    # name: Optional[str] = Field(None, description="The name of the tool (must match the JSON schema name and source code function name).")
 
     model_config = ConfigDict(extra="ignore")  # Allows extra fields without validation errors
     # TODO: Remove this, and clean usage of ToolUpdate everywhere else

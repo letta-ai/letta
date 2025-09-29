@@ -50,7 +50,8 @@ def run_server():
     start_server(debug=True)
 
 
-@pytest.fixture(scope="module")
+# @pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def client() -> LettaSDKClient:
     # Get URL from environment or start server
     server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:{SERVER_PORT}")
@@ -65,8 +66,8 @@ def client() -> LettaSDKClient:
     yield client
 
 
-@pytest.fixture(scope="module")
-def server():
+@pytest.fixture(scope="function")
+async def server():
     """
     Creates a SyncServer instance for testing.
 
@@ -74,7 +75,9 @@ def server():
     """
     config = LettaConfig.load()
     config.save()
-    return SyncServer()
+    server = SyncServer()
+    await server.init_async()
+    return server
 
 
 @pytest.fixture(scope="function")
