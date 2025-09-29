@@ -45,3 +45,4 @@ export * from './lib/getCachedLLMConfig/getCachedLLMConfig';
 export * from './lib/setCurrentTemplateFromSnapshot/setCurrentTemplateFromSnapshot';
 export * from './lib/updateTemplateFromAgentFile/updateTemplateFromAgentFile';
 export * from './lib/migrateClassicTemplateEntities/migrateClassicTemplateEntities';
+export * from './lib/recurringCreditsManager/recurringCreditsManager';
