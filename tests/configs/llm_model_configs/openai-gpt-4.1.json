@@ -1,0 +1,13 @@
+{
+  "model": "gpt-4.1",
+  "model_endpoint_type": "openai",
+  "model_endpoint": "https://api.openai.com/v1",
+  "model_wrapper": null,
+  "context_window": 256000,
+  "put_inner_thoughts_in_kwargs": true,
+  "handle": "openai/gpt-4.1",
+  "temperature": 0.7,
+  "max_tokens": 8192,
+  "enable_reasoner": false,
+  "max_reasoning_tokens": 0
+}
