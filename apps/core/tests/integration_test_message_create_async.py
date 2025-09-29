@@ -29,12 +29,12 @@ from letta.agents.temporal.activities import (
 )
 from letta.agents.temporal.temporal_agent_workflow import TemporalAgentWorkflow
 from letta.agents.temporal.types import WorkflowInputParams
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import RunStatus
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
 from letta.schemas.run import Run
-from letta.services.job_manager import JobManager
 from letta.services.organization_manager import OrganizationManager
+from letta.services.run_manager import RunManager
 from letta.services.user_manager import UserManager
 
 
@@ -185,19 +185,18 @@ async def test_execute_workflow(client: AsyncLetta, default_organization: Organi
         embedding="letta/letta-free",
         tags=["test"],
     )
-    job_manager = JobManager()
+    run_manager = RunManager()
     run = Run(
-        user_id=user.id,
-        status=JobStatus.created,
+        status=RunStatus.created,
         agent_id=agent.id,
         background=True,  # Async endpoints are always background
         metadata={
-            "job_type": "send_message_async",
+            "run_type": "send_message_async",
             "agent_id": agent.id,
             "lettuce": True,
         },
     )
-    run = await job_manager.create_job_async(pydantic_job=run, actor=user)
+    run = await run_manager.create_run(pydantic_run=run, actor=user)
     async with await WorkflowEnvironment.start_time_skipping() as env:
         # Create worker with shared event loop
         worker = Worker(

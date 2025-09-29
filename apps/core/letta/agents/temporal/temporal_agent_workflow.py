@@ -27,7 +27,7 @@ from letta.agents.temporal.constants import (
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
@@ -99,19 +99,6 @@ class TemporalAgentWorkflow:
         stop_reason = StopReasonType.end_turn
         response_messages = []
 
-        await workflow.execute_activity(
-            update_run,
-            UpdateRunParams(
-                run_id=params.run_id,
-                actor=params.actor,
-                job_status=JobStatus.pending,
-                stop_reason=None,
-                persisted_messages=[],
-            ),
-            start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-            schedule_to_close_timeout=UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-        )
-
         # Prepare messages (context + new input), no persistence
         prepared: PreparedMessages = await workflow.execute_activity(
             prepare_messages,
@@ -164,6 +151,33 @@ class TemporalAgentWorkflow:
             response_messages,
             use_assistant_message=params.use_assistant_message,
             reverse=False,
+        )
+        # Finalize run with all messages to avoid partial metadata overwrites
+        # Determine final stop reason and run status
+        try:
+            if isinstance(stop_reason, StopReasonType):
+                final_stop_reason_type = stop_reason
+            elif isinstance(stop_reason, LettaStopReason):
+                final_stop_reason_type = stop_reason.stop_reason
+            elif isinstance(stop_reason, str):
+                final_stop_reason_type = StopReasonType(stop_reason)
+            else:
+                final_stop_reason_type = StopReasonType.end_turn
+        except Exception:
+            final_stop_reason_type = StopReasonType.end_turn
+
+        await workflow.execute_activity(
+            update_run,
+            UpdateRunParams(
+                run_id=params.run_id,
+                actor=params.actor,
+                run_status=final_stop_reason_type.run_status,
+                stop_reason=LettaStopReason(stop_reason=final_stop_reason_type),
+                # Pass all messages accumulated across the workflow
+                persisted_messages=response_messages,
+            ),
+            start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+            schedule_to_close_timeout=UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
         )
         return FinalResult(
             stop_reason=stop_reason.value if isinstance(stop_reason, StopReasonType) else str(stop_reason),
@@ -606,22 +620,6 @@ class TemporalAgentWorkflow:
             schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
         )
 
-        await workflow.execute_activity(
-            update_run,
-            UpdateRunParams(
-                run_id=run_id,
-                actor=actor,
-                job_status=(
-                    JobStatus.running if continue_stepping else (stop_reason.stop_reason.run_status if stop_reason else JobStatus.completed)
-                ),
-                stop_reason=(
-                    None if continue_stepping else (stop_reason if stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn))
-                ),
-                persisted_messages=persisted_messages_result.messages,
-            ),
-            start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-            schedule_to_close_timeout=UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-        )
         return persisted_messages_result.messages, continue_stepping, stop_reason, last_function_response
 
     async def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):

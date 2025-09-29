@@ -478,24 +478,6 @@ export function ListRuns(props: ListRunsProps) {
       //   ),
       // },
       {
-        id: 'jobType',
-        header: t('columns.jobType'),
-        accessorFn: (row) => row.job_type,
-        cell: ({ row }) => {
-          const jobType = get(row.original.metadata, 'job_type', '-');
-
-          if (!jobType || typeof jobType !== 'string') {
-            return <Typography variant="body3">-</Typography>;
-          }
-
-          return (
-            <Typography variant="body3">
-              {jobType}
-            </Typography>
-          )
-        },
-      },
-      {
         id: 'duration',
         header: t('columns.duration'),
         accessorFn: (row) => row.total_duration_ns,

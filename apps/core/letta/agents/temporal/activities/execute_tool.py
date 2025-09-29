@@ -9,9 +9,9 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 
 
@@ -24,7 +24,7 @@ async def execute_tool(params: ExecuteToolParams) -> ExecuteToolResult:
     message_manager = MessageManager()
     agent_manager = AgentManager()
     block_manager = BlockManager()
-    job_manager = JobManager()
+    run_manager = RunManager()
     passage_manager = PassageManager()
 
     target_tool = next((x for x in params.agent_state.tools if x.name == params.tool_name), None)
@@ -46,7 +46,7 @@ async def execute_tool(params: ExecuteToolParams) -> ExecuteToolResult:
         message_manager=message_manager,
         agent_manager=agent_manager,
         block_manager=block_manager,
-        job_manager=job_manager,
+        run_manager=run_manager,
         passage_manager=passage_manager,
         sandbox_env_vars=sandbox_env_vars,
         actor=params.actor,
