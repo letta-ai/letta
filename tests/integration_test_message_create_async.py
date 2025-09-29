@@ -124,7 +124,18 @@ async def default_organization():
 
 @pytest.mark.asyncio(loop_scope="function")
 async def test_execute_workflow(client: AsyncLetta, default_organization: Organization):
-    """Test the temporal agent workflow execution."""
+    """
+    Test the temporal agent workflow execution.
+
+    This test validates that the Temporal workflow infrastructure is working correctly by:
+    1. Setting up a Temporal workflow environment with time-skipping
+    2. Creating a worker with all required activities
+    3. Executing a workflow that processes a user message
+    4. Verifying the workflow completes successfully and produces expected outputs
+
+    The focus is on integration testing of the Temporal workflow system, not on
+    testing individual message schemas or agent logic.
+    """
     # import os
     # import asyncio
     # import logging
@@ -224,20 +235,79 @@ async def test_execute_workflow(client: AsyncLetta, default_organization: Organi
             )
 
             # Verify the workflow executed successfully
-            assert result is not None
-            assert hasattr(result, "messages")
-            assert hasattr(result, "usage")
-            assert len(result.messages) > 0
+            assert result is not None, "Workflow result should not be None"
+            assert hasattr(result, "messages"), "Result should have messages attribute"
+            assert hasattr(result, "usage"), "Result should have usage attribute"
+            assert hasattr(result, "stop_reason"), "Result should have stop_reason attribute"
 
-            # Print result for debugging
-            print("✓ Workflow completed successfully!")
-            print(f"✓ Messages count: {len(result.messages)}")
-            for index, message in enumerate(result.messages):
-                print(
-                    f"    Message {index}: {message.model_dump(exclude={'id', 'date', 'name', 'otid', 'sender_id', 'step_id', 'run_id', 'seq_id', 'is_err', 'signature', 'source'})}"
-                )
-            print(f"✓ Usage: {result.usage}")
-            print(f"✓ Stop reason: {result.stop_reason}")
+            # ====== TEMPORAL WORKFLOW EXECUTION VALIDATION ======
+            # The focus is on verifying the temporal workflow executed correctly,
+            # not on detailed message structure validation
+
+            # 1. Verify workflow completed successfully
+            assert result is not None, "Workflow should return a result"
+            assert hasattr(result, "messages"), "Result should contain messages"
+            assert hasattr(result, "stop_reason"), "Result should have stop_reason"
+            assert hasattr(result, "usage"), "Result should have usage tracking"
+
+            # 2. Verify workflow produced messages (workflow activities executed)
+            assert len(result.messages) > 0, "Workflow should produce at least one message"
+
+            # 3. Verify the workflow processed the user input
+            user_messages = [msg for msg in result.messages if hasattr(msg, "message_type") and msg.message_type == "user_message"]
+            assert len(user_messages) >= 1, "Workflow should have processed the user message"
+
+            # 4. Verify the workflow generated an LLM response
+            assistant_messages = [
+                msg for msg in result.messages if hasattr(msg, "message_type") and msg.message_type == "assistant_message"
+            ]
+            assert len(assistant_messages) >= 1, "Workflow should have generated at least one assistant response"
+
+            # 5. Verify workflow executed the requested tool (roll_dice)
+            # This validates that the workflow properly handled tool execution activities
+            tool_executed = False
+            for msg in result.messages:
+                if hasattr(msg, "message_type"):
+                    if msg.message_type == "tool_call_message" and hasattr(msg, "tool_call"):
+                        if msg.tool_call.name == "roll_dice":
+                            tool_executed = True
+                            break
+                    elif msg.message_type == "tool_return_message":
+                        # Tool was executed and returned a result
+                        tool_executed = True
+                        break
+            assert tool_executed, "Workflow should have executed the roll_dice tool as requested"
+
+            # 6. Verify workflow activities tracked token usage
+            # This validates the llm_request activity executed correctly
+            if result.usage:
+                assert hasattr(result.usage, "total_tokens"), "Workflow should track total tokens"
+                if hasattr(result.usage, "total_tokens") and result.usage.total_tokens is not None:
+                    assert result.usage.total_tokens > 0, "Workflow should have consumed tokens during LLM request activity"
+
+            # 7. Verify workflow terminated properly
+            assert result.stop_reason in ["max_steps", "user_interrupted", "finished", "error", "end_turn"], (
+                f"Workflow should terminate with a valid reason, got: {result.stop_reason}"
+            )
+
+            # 8. Verify workflow created messages with IDs
+            # Some message types might share IDs (e.g., tool calls and returns)
+            # so we just verify that messages have IDs
+            message_ids = [msg.id for msg in result.messages if hasattr(msg, "id")]
+            assert len(message_ids) > 0, "Messages should have IDs assigned by the workflow"
+
+            # 9. Log workflow execution summary for debugging
+            print("\n✓ Temporal workflow executed successfully!")
+            print(f"✓ Total messages processed: {len(result.messages)}")
+            print(f"✓ Workflow stop reason: {result.stop_reason}")
+            if result.usage and hasattr(result.usage, "total_tokens"):
+                print(f"✓ Total tokens used: {result.usage.total_tokens}")
+
+            message_types = {}
+            for msg in result.messages:
+                if hasattr(msg, "message_type"):
+                    message_types[msg.message_type] = message_types.get(msg.message_type, 0) + 1
+            print(f"✓ Message types processed: {message_types}")
 
     # Skip agent deletion to avoid cleanup issues
     # client.agents.delete(agent.id)
