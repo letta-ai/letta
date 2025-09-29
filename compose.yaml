@@ -34,28 +34,16 @@ services:
     environment:
       - LETTA_PG_URI=${LETTA_PG_URI:-postgresql://${LETTA_PG_USER:-letta}:${LETTA_PG_PASSWORD:-letta}@${LETTA_DB_HOST:-letta-db}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB:-letta}}
       - LETTA_DEBUG=True
+      # Password protection
+      - SECURE=${SECURE}
+      - LETTA_SERVER_PASSWORD=${LETTA_SERVER_PASSWORD}
+      # Common LLM providers - add your keys to the .env file
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - AZURE_API_KEY=${AZURE_API_KEY}
-      - AZURE_BASE_URL=${AZURE_BASE_URL}
-      - AZURE_API_VERSION=${AZURE_API_VERSION}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - VLLM_API_BASE=${VLLM_API_BASE}
-      - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
-      - OPENLLM_API_KEY=${OPENLLM_API_KEY}
-      - LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT}
-      - CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT}
-      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
-      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
-    # volumes:
-    # - ./configs/server_config.yaml:/root/.letta/config # config file
-    # - ~/.letta/credentials:/root/.letta/credentials # credentials file
-    # Uncomment this line to mount a local directory for tool execution, and specify the mount path
-    # before running docker compose: `export LETTA_SANDBOX_MOUNT_PATH=$PWD/directory`
-    # - ${LETTA_SANDBOX_MOUNT_PATH:?}:/root/.letta/tool_execution_dir # mounted volume for tool execution
+      # Local models
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
   letta_nginx:
     hostname: letta-nginx
     image: nginx:stable-alpine3.17-slim
