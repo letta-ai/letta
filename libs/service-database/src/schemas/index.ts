@@ -1269,6 +1269,7 @@ export const organizationCreditTransactions = pgTable(
     modelId: text('model_id'),
     modelTier: modelTierEnum('model_tier_type'),
     amount: numeric('amount').notNull(),
+    trueCost: numeric('true_cost').notNull(),
     transactionType: transactionTypesEnum('transaction_type').notNull(),
     note: text('note'),
     createdAt: timestamp('created_at').notNull().defaultNow(),

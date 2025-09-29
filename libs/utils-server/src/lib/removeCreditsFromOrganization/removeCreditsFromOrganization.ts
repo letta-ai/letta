@@ -20,6 +20,8 @@ import type { ModelTiersType } from '@letta-cloud/types';
 interface RemoveCreditsFromOrganizationOptions {
   stepId?: string;
   amount: number;
+  // this is "real" cost in credits, if there were no discounts or free credits applied
+  trueCost?: number;
   source: string;
   coreOrganizationId: string;
   modelId?: string;
@@ -105,6 +107,7 @@ export async function removeCreditsFromOrganization(
     source,
     stepId,
     amount,
+    trueCost = amount,
   } = options;
 
   if (isNaN(amount)) {
@@ -137,6 +140,7 @@ export async function removeCreditsFromOrganization(
       .insert(organizationCreditTransactions)
       .values({
         amount: amount.toString(),
+        trueCost: trueCost.toString(),
         organizationId,
         stepId,
         source,

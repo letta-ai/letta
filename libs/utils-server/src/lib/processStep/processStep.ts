@@ -16,6 +16,10 @@ import {
   organizationCreditTransactions,
 } from '@letta-cloud/service-database';
 import type { PaymentCustomerSubscription } from '@letta-cloud/types';
+import {
+  getRemainingRecurrentCredits,
+  incrementRecurrentCreditUsage
+} from '../recurringCreditsManager/recurringCreditsManager';
 
 
 async function processStepWithLegacySubscription(step: Step, subscription: PaymentCustomerSubscription) {
@@ -93,6 +97,7 @@ async function processStepWithLegacySubscription(step: Step, subscription: Payme
       amount,
       coreOrganizationId: step.organization_id,
       source: 'inference',
+      trueCost: creditCost,
       stepId: step.id,
       modelTier: modelTier?.tier,
       modelId: modelData?.modelId,
@@ -108,6 +113,68 @@ async function processStepWithLegacySubscription(step: Step, subscription: Payme
 
     return null;
   }
+}
+
+export async function processStepWithSubscription(step: Step, subscription: PaymentCustomerSubscription) {
+  if (
+    !step.model ||
+    !step.model_endpoint ||
+    !step.context_window_limit ||
+    !step.organization_id
+  ) {
+    return null;
+  }
+
+  const [creditCost, modelData, remainingRecurrentCredits] = await Promise.all([
+    getCreditCostPerModel({
+      modelName: step.model,
+      modelEndpoint: step.model_endpoint,
+      contextWindowSize: step.context_window_limit,
+    }),
+    getRedisData('modelNameAndEndpointToIdMap', {
+      modelName: step.model,
+      modelEndpoint: step.model_endpoint,
+    }),
+    getRemainingRecurrentCredits(step.organization_id, subscription),
+  ]);
+
+  try {
+    if (typeof creditCost !== 'number') {
+      console.warn(
+        `Model ${step.model} [${step.model_endpoint}] has a cost of 0 credits`,
+      );
+      return null;
+    }
+
+
+    const recurrentCostToDeduct = Math.min(creditCost, remainingRecurrentCredits);
+    // if we go over the limit, we need to deduct credits
+    const additionalCostToDeduct = creditCost - recurrentCostToDeduct;
+
+    if (recurrentCostToDeduct > 0) {
+      await incrementRecurrentCreditUsage(step.organization_id, subscription, recurrentCostToDeduct);
+    }
+
+    return await removeCreditsFromOrganization({
+      amount: additionalCostToDeduct,
+      coreOrganizationId: step.organization_id,
+      source: 'inference',
+      trueCost: creditCost,
+      stepId: step.id,
+      modelTier: 'per-inference',
+      modelId: modelData?.modelId,
+      note: `Deducted ${recurrentCostToDeduct} recurrent and ${additionalCostToDeduct} additional credits for model ${step.model}`,
+    });
+  } catch (e) {
+    console.error(
+      `Failed to deduct credits from organization ${step.organization_id} for model ${step.model}`,
+    );
+    console.error(e);
+
+    return null;
+  }
+
+
 }
 
 interface ProcessStepResponse {
@@ -159,6 +226,7 @@ export async function processStep(
       .insert(organizationCreditTransactions)
       .values({
         amount: '0',
+        trueCost: '0',
         organizationId: org.organizationId,
         stepId: step.id,
         source: 'inference',
@@ -177,8 +245,8 @@ export async function processStep(
   const subscription = await getCustomerSubscription(step.organization_id);
 
   if (subscription.tier !== 'pro') {
-    await processStepWithLegacySubscription(step, subscription);
+    return await processStepWithLegacySubscription(step, subscription);
+  } else {
+    return await processStepWithSubscription(step, subscription);
   }
-
-  return null;
 }
