@@ -9,14 +9,14 @@ slug: concepts
 
 **[Letta](https://letta.com)** was created by the same team that created **[MemGPT](https://research.memgpt.ai)**.
 
-**MemGPT a _research paper_** that introduced the idea of self-editing memory in LLMs as well as other "LLM OS" concepts.
-To understand the key ideas behind the MemGPT paper, see our [MemGPT concepts guide](/letta_memgpt).
+**MemGPT is a _research paper_** that introduced the idea of self-editing memory in LLMs as well as other "LLM OS" concepts.
+To understand the key ideas behind the MemGPT paper, see our [MemGPT concepts guide](/concepts/memgpt).
 
 MemGPT also refers to a particular **agent architecture** popularized by the research paper and open source, where the agent has a particular set of memory tools that make the agent particularly useful for long-range chat applications and document search.
 
 **Letta is a _framework_** that allows you to build complex agents (such as MemGPT agents, or even more complex agent architectures) and run them as **services** behind REST APIs.
 
-The **Letta Cloud platform** allows you easily build and scale agent deployments to power production applications.
+The **Letta Cloud platform** allows you to easily build and scale agent deployments to power production applications.
 The **Letta ADE** (Agent Developer Environment) is an application for agent developers that makes it easy to design and debug complex agents.
 
 ## Agents ("LLM agents")
@@ -24,7 +24,7 @@ Agents are LLM processes which can:
 
 1. Have internal **state** (i.e. memory)
 
-2. Can take **actions** to modify their state
+2. Take **actions** to modify their state
 
 3. Run **autonomously**
 
@@ -43,7 +43,7 @@ It includes the "agent runtime", which manages the execution of functions reques
 In Letta, all state is *persisted* by default. This means that each time the LLM is run, the state of the agent such as its memories, message history, and tools are all persisted to a DB backend.
 
 Because all state is persisted, you can always re-load agents, tools, sources, etc. at a later point in time.
-You can also load the same agent accross multiple machines or services, as long as they can can connect to the same DB backend.
+You can also load the same agent across multiple machines or services, as long as they can connect to the same DB backend.
 
 ## Agent microservices ("agents-as-a-service")
 Letta follows the model of treating agents as individual services. That is, you interact with agents through a REST API:
@@ -52,7 +52,7 @@ POST /agents/{agent_id}/messages
 ```
 Since agents are designed to be services, they can be *deployed* and connected to external applications.
 
-For example, you want to create a personalizated chatbot, you can create an agent per-user, where each agent has its own custom memory about the individual user.
+For example, if you want to create a personalized chatbot, you can create an agent per-user, where each agent has its own custom memory about the individual user.
 
 ## Stateful vs stateless APIs
-`ChatCompletions` is the standard for interacting with LLMs as a service. Since it is a stateless API (no notion of sessions or identify accross requests, and no state management on the server-side), client-side applications must manage things like agent memory, user personalization, and message history, and translate this state back into the `ChatCompletions` API format. Letta's APIs are designed to be *stateful*, so that this state management is done on the server, not the client.
+`ChatCompletions` is the standard for interacting with LLMs as a service. Since it is a stateless API (no notion of sessions or identity across requests, and no state management on the server-side), client-side applications must manage things like agent memory, user personalization, and message history, and translate this state back into the `ChatCompletions` API format. Letta's APIs are designed to be *stateful*, so that this state management is done on the server, not the client.

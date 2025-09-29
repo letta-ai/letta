@@ -8,6 +8,30 @@ slug: guides/agents/memory-blocks
 Interested in learning more about the origin of memory blocks? Read our [blog post](https://www.letta.com/blog/memory-blocks).
 </Info>
 
+## What are memory blocks?
+
+Memory blocks are structured sections of the agent's context window that persist across all interactions. They are always visible - no retrieval needed.
+
+**Memory blocks are Letta's core abstraction.** Create a block with a descriptive label and the agent learns how to use it. This simple mechanism enables capabilities impossible with traditional context management.
+
+**Key properties:**
+- **Agent-managed** - Agents autonomously organize information based on block labels
+- **Flexible** - Use for any purpose: knowledge, guidelines, state tracking, scratchpad space
+- **Shareable** - Multiple agents can access the same block; update once, visible everywhere
+- **Always visible** - Blocks stay in context, never need retrieval
+
+**Examples:**
+- Store tool usage guidelines so agents avoid past mistakes
+- Maintain working memory in a scratchpad block
+- Mirror external state (user's current document) for real-time awareness
+- Share read-only policies across all agents from a central source
+- Coordinate multi-agent systems: parent agents watch subagent result blocks update in real-time
+- Enable emergent behavior: add `performance_tracking` or `emotional_state` and watch agents start using them
+
+Memory blocks aren't just storage - they're a coordination primitive that enables sophisticated agent behavior.
+
+## Memory block structure
+
 Memory blocks represent a section of an agent's context window. An agent may have multiple memory blocks, or none at all. A memory block consists of:
 * A `label`, which is a unique identifier for the block
 * A `description`, which describes the purpose of the block

@@ -4,48 +4,102 @@ subtitle: What is agent memory, and how does it work?
 slug: guides/agents/memory
 ---
 
-Agent memory is what enables AI agents to maintain persistent state, learn from interactions, and develop long-term relationships with users. Unlike traditional chatbots that treat each conversation as isolated, agents with sophisticated memory systems can build understanding over time.
+## What is agent memory?
 
-## The MemGPT Approach to Memory
+**Agent memory in Letta is about managing what information is in the agent's context window.**
 
-Letta is built by the creators of [MemGPT](https://arxiv.org/abs/2310.08560), a research paper that introduced the concept of an "LLM Operating System" for memory management. The base agent design in Letta is a MemGPT-style agent, which means it inherits the core principles of:
+The context window is a scarce resource - you can't fit everything into it. Effective memory management is about deciding what stays in context (immediately visible) and what moves to external storage (retrieved when needed).
 
-- **Self-editing memory**: Agents can modify their own memory using tools
-- **Memory hierarchy**: Different types of memory for different purposes
-- **Context window management**: Intelligent loading and unloading of information
+Agent memory enables AI agents to maintain persistent state, learn from interactions, and develop long-term relationships with users. Unlike traditional chatbots that treat each conversation as isolated, agents with sophisticated memory systems can build understanding over time.
 
 ## Types of Memory in Letta
 
 Letta agents have access to multiple memory systems:
 
 ### Core Memory (In-Context)
-Fast, always-accessible memory that stays in the agent's context window. This includes:
-- **Persona**: The agent's personality and role
-- **Human**: Information about the user
-- **Custom memory blocks**: Additional structured information
+Memory blocks are structured sections of the agent's context window that persist across all interactions. They are always visible - no retrieval needed.
+
+**Memory blocks are Letta's core abstraction.** You can create blocks with any descriptive label - the agent learns how to use them autonomously. This enables everything from simple user preferences to sophisticated multi-agent coordination.
+
+[Learn more about memory blocks →](/guides/agents/memory-blocks)
 
 ### External Memory (Out-of-Context)
-Long-term storage for large amounts of information:
-- Conversation history beyond context limits (e.g. "recall memory")
-- Vector databases for semantic search (e.g. "archival memory")
-- Uploaded documents and files
+External memory provides unlimited storage for information that doesn't need to be always visible. Agents retrieve from external memory on-demand using search tools.
 
-## Why Agent Memory Matters
+Letta provides several built-in external memory systems:
+- **Conversation search** - Search past messages using full-text and semantic search
+- **Archival memory** - Agent-managed semantically searchable database for facts and knowledge
+- **Letta Filesystem** - File management system for documents and data ([learn more](/guides/agents/filesystem))
 
-Effective memory management enables:
+Agents can also access any external data source through [MCP servers](/guides/mcp/overview) or [custom tools](/guides/agents/custom-tools) - databases, APIs, vector stores, or third-party services.
 
-- **Personalization**: Agents remember user preferences and history
-- **Learning**: Agents improve performance through accumulated experience
-- **Context preservation**: Important information persists across conversations
-- **Scalability**: Handle unlimited conversation length and data volume
+## How Agents Manage Their Memory
 
-## Memory Management in Practice
+**What makes Letta unique is that agents don't just read from memory - they actively manage it.** Unlike traditional RAG systems that passively retrieve information, Letta agents use built-in tools to decide what to remember, update, and search for.
 
-Letta provides multiple ways to work with agent memory:
+When a user mentions they've switched from Python to TypeScript, the agent may choose to update its memory:
 
-- **Automatic management**: Agents intelligently decide what to remember
-- **Manual control**: Developers can directly view and modify memory blocks
-- **Shared memory**: Multiple agents can access common memory blocks
-- **External data sources**: Connect agents to files, databases, and APIs
+```python
+memory_replace(
+    block_label="human",
+    old_text="Prefers Python for development",
+    new_text="Currently using TypeScript for main project"
+)
+```
 
-Memory blocks are the fundamental units of Letta's memory system - they can be modified by the agent itself, other agents, or developers through the API.
+Agents have three primary tools for editing memory blocks:
+- `memory_replace` - Search and replace for precise edits
+- `memory_insert` - Insert a line into a block
+- `memory_rethink` - Rewrite an entire block
+
+These tools can be attached or detached based on your use case. Not all agents need all tools (for example, some agents may not need `memory_rethink`), and memory tools can be removed entirely from an agent if needed.
+
+The agent decides what information is important enough to persist in its memory blocks, actively maintaining this information over time. This enables agents to build understanding through conversation rather than just retrieving relevant documents.
+
+## Memory Blocks vs RAG
+
+Traditional RAG retrieves semantically similar chunks on-demand. Letta's memory blocks are **persistent, structured context** that agents actively maintain.
+
+**Use memory blocks for:**
+- Information that should always be visible (user preferences, agent persona)
+- Knowledge that evolves over time (project status, learned preferences)
+
+**Use external memory (RAG-style) for:**
+- Large document collections
+- Historical conversation logs
+- Static reference material
+
+**Best practice:** Use both together. Memory blocks hold the "executive summary" while external storage holds the full details.
+
+## Research Background
+
+Letta is built by the creators of [MemGPT](https://arxiv.org/abs/2310.08560), a research paper that introduced the concept of an "LLM Operating System" for memory management. The base agent design in Letta is a MemGPT-style agent, which inherits core principles of self-editing memory, memory hierarchy, and intelligent context window management.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Memory Blocks Guide"
+    href="/guides/agents/memory-blocks"
+  >
+    Learn how to implement and configure memory blocks in your agents
+  </Card>
+  <Card
+    title="Context Engineering"
+    href="/guides/agents/context-engineering"
+  >
+    Optimize memory performance and advanced memory management
+  </Card>
+  <Card
+    title="Shared Memory Patterns"
+    href="/guides/agents/multiagent-memory"
+  >
+    Use shared memory across multiple agents
+  </Card>
+  <Card
+    title="MemGPT Paper"
+    href="https://arxiv.org/abs/2310.08560"
+  >
+    Read the research behind Letta's memory system
+  </Card>
+</CardGroup>
