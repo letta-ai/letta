@@ -31,11 +31,6 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
-  RECOMMENDED_MCP: {
-    description: 'Recommended MCP',
-    expiryDate: '2025-12-01',
-    flagValue: z.boolean(),
-  },
   SHARE_AGENT_FILE: {
     description: 'Share agent file',
     expiryDate: '2025-07-01',
