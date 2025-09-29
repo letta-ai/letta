@@ -25,10 +25,11 @@ import {
   migrateDeploymentEntities,
   setCurrentTemplateFromSnapshot,
   SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS,
+  migrateClassicTemplateEntities,
+  migrateAllDeploymentsByBaseTemplateId,
+  AgentCreationError,
   updateTemplateFromAgentFile,
   UPDATE_TEMPLATE_FROM_AGENT_FILE_ERRORS,
-  migrateClassicTemplateEntities,
-  migrateAllDeploymentsByBaseTemplateId
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { and, eq, ilike, count, not, desc, or } from 'drizzle-orm';
@@ -202,12 +203,21 @@ async function createAgentsFromTemplate(
       },
     };
   } catch (e) {
-    console.log(e)
+    if (e instanceof AgentCreationError) {
+      return {
+        status: 400,
+        body: {
+          message: e.message,
+          details: e.body,
+        },
+      }
+    }
+
     if (e instanceof Error) {
       const messages = Object.values(CreateEntitiesFromTemplateErrors);
       if (messages.includes(e.message)) {
         return {
-          status: 500,
+          status: 400,
           body: {
             message: e.message,
           },
