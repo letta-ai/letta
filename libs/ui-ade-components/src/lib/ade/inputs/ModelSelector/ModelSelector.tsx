@@ -3,6 +3,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   brandKeyToLogo,
   Button,
+  CopyButton,
   HStack,
   InfoIcon,
   isBrandKey,
@@ -153,6 +154,27 @@ export function ModelSelector(props: LocalModelSelectorProps) {
           />
         )}
       </HStack>
+      {llmConfig?.handle && (
+        <HStack fullWidth align="center">
+          <Typography
+            noWrap
+            overflow="ellipsis"
+            align="left"
+            font="mono"
+            color="muted"
+            variant="body4"
+          >
+            {llmConfig.handle}
+          </Typography>
+          <CopyButton
+            color="tertiary"
+            size="small"
+            copyButtonText="Copy model handle"
+            textToCopy={llmConfig.handle}
+            hideLabel
+          />
+        </HStack>
+      )}
       {isModelInvalid && (
         <VStack border padding="small"  align="start" color="warning">
           <Typography variant="body3">
