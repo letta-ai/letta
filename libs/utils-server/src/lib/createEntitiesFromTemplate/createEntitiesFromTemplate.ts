@@ -56,8 +56,19 @@ export const CreateEntitiesFromTemplateErrors = {
   TEMPLATE_CORRUPTED: 'This template was corrupted, contact support',
   NO_ROOT_TEMPLATE: 'No root template found',
   CORE_ERROR: 'There was an critical error, contact support',
-  FAILED_TO_CREATE_AGENT: 'Failed to create agent, contact support',
+  FAILED_TO_CREATE_AGENT: 'Failed to create agent, see details',
+  SEVERE_FAILED_TO_CREATE_AGENT: 'Failed to create agent, contact support',
 };
+
+export class AgentCreationError extends Error {
+  body?: unknown;
+
+  constructor(message: string, body?: unknown) {
+    super(message);
+    this.name = 'AgentCreationError';
+    this.body = body;
+  }
+}
 
 export async function createEntitiesFromTemplate(
   options: CreateEntitiesFromTemplateOptions,
@@ -158,7 +169,6 @@ export async function createEntitiesFromTemplate(
             },
           ).catch((error) => {
             if (isAPIError(error)) {
-              console.log(error.body);
               Sentry.captureException(error, {
                 extra: {
                   template: template.name,
@@ -299,25 +309,26 @@ export async function createEntitiesFromTemplate(
           },
         ).catch((error) => {
           if (isAPIError(error)) {
-            console.log(error.body)
+            const err = new AgentCreationError(
+                CreateEntitiesFromTemplateErrors.FAILED_TO_CREATE_AGENT,
+              );
 
-            Sentry.captureException(error, {
-              extra: {
-                template: template.name,
-                body: error.body,
-              },
-            });
+            err.body = error.body;
+
+            throw err;
           } else {
             Sentry.captureException(error, {
               extra: {
                 template: template.name,
               },
             });
+
+
+            throw new Error(
+              CreateEntitiesFromTemplateErrors.SEVERE_FAILED_TO_CREATE_AGENT,
+            );
           }
 
-          throw new Error(
-            CreateEntitiesFromTemplateErrors.FAILED_TO_CREATE_AGENT,
-          );
         });
 
         if (newAgent && newAgent.id) {
