@@ -9167,6 +9167,18 @@ export const $Message = {
       title: 'Step Id',
       description: 'The id of the step that this message was created in.',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+      description: 'The id of the run that this message was created in.',
+    },
     otid: {
       anyOf: [
         {
@@ -11022,53 +11034,23 @@ export const $RoundRobinManagerUpdate = {
 
 export const $Run = {
   properties: {
-    created_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created By Id',
-      description: 'The id of the user that made this object.',
+    id: {
+      type: 'string',
+      pattern: '^(job|run)-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Run',
+      examples: ['run-123e4567-e89b-12d3-a456-426614174000'],
     },
-    last_updated_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Last Updated By Id',
-      description: 'The id of the user that made this object.',
+    status: {
+      $ref: '#/components/schemas/RunStatus',
+      description: 'The current status of the run.',
+      default: 'created',
     },
     created_at: {
       type: 'string',
       format: 'date-time',
       title: 'Created At',
-      description: 'The unix timestamp of when the job was created.',
-    },
-    updated_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Updated At',
-      description: 'The timestamp when the object was last updated.',
-    },
-    status: {
-      $ref: '#/components/schemas/JobStatus',
-      description: 'The status of the job.',
-      default: 'created',
+      description: 'The timestamp when the run was created.',
     },
     completed_at: {
       anyOf: [
@@ -11081,18 +11063,25 @@ export const $Run = {
         },
       ],
       title: 'Completed At',
-      description: 'The unix timestamp of when the job was completed.',
+      description: 'The timestamp when the run was completed.',
     },
-    stop_reason: {
+    agent_id: {
+      type: 'string',
+      title: 'Agent Id',
+      description:
+        'The unique identifier of the agent associated with the run.',
+    },
+    background: {
       anyOf: [
         {
-          $ref: '#/components/schemas/StopReasonType',
+          type: 'boolean',
         },
         {
           type: 'null',
         },
       ],
-      description: 'The reason why the run was stopped.',
+      title: 'Background',
+      description: 'Whether the run was created in background mode.',
     },
     metadata: {
       anyOf: [
@@ -11105,35 +11094,29 @@ export const $Run = {
         },
       ],
       title: 'Metadata',
-      description: 'The metadata of the job.',
+      description: 'Additional metadata for the run.',
     },
-    job_type: {
-      $ref: '#/components/schemas/JobType',
-      default: 'run',
-    },
-    background: {
+    request_config: {
       anyOf: [
         {
-          type: 'boolean',
+          $ref: '#/components/schemas/LettaRequestConfig',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Background',
-      description: 'Whether the job was created in background mode.',
+      description: 'The request configuration for the run.',
     },
-    agent_id: {
+    stop_reason: {
       anyOf: [
         {
-          type: 'string',
+          $ref: '#/components/schemas/StopReasonType',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Agent Id',
-      description: 'The agent associated with this job/run.',
+      description: 'The reason why the run was stopped.',
     },
     callback_url: {
       anyOf: [
@@ -11145,7 +11128,7 @@ export const $Run = {
         },
       ],
       title: 'Callback Url',
-      description: 'If set, POST to this URL when the job completes.',
+      description: 'If set, POST to this URL when the run completes.',
     },
     callback_sent_at: {
       anyOf: [
@@ -11209,49 +11192,31 @@ export const $Run = {
       title: 'Total Duration Ns',
       description: 'Total run duration in nanoseconds',
     },
-    id: {
-      type: 'string',
-      pattern: '^(job|run)-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Run',
-      examples: ['run-123e4567-e89b-12d3-a456-426614174000'],
-    },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description: 'The unique identifier of the user associated with the run.',
-    },
-    request_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/LettaRequestConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The request configuration for the run.',
-    },
   },
   additionalProperties: false,
   type: 'object',
+  required: ['agent_id'],
   title: 'Run',
-  description: `Representation of a run, which is a job with a 'run' prefix in its ID.
-Inherits all fields and behavior from Job except for the ID prefix.
+  description: `Representation of a run - a conversation or processing session for an agent.
+Runs track when agents process messages and maintain the relationship between agents, steps, and messages.
 
 Parameters:
     id (str): The unique identifier of the run (prefixed with 'run-').
-    status (JobStatus): The status of the run.
-    created_at (datetime): The unix timestamp of when the run was created.
-    completed_at (datetime): The unix timestamp of when the run was completed.
-    user_id (str): The unique identifier of the user associated with the run.`,
+    status (JobStatus): The current status of the run.
+    created_at (datetime): The timestamp when the run was created.
+    completed_at (datetime): The timestamp when the run was completed.
+    agent_id (str): The unique identifier of the agent associated with the run.
+    stop_reason (StopReasonType): The reason why the run was stopped.
+    background (bool): Whether the run was created in background mode.
+    metadata (dict): Additional metadata for the run.
+    request_config (LettaRequestConfig): The request configuration for the run.`,
+} as const;
+
+export const $RunStatus = {
+  type: 'string',
+  enum: ['created', 'running', 'completed', 'failed', 'cancelled'],
+  title: 'RunStatus',
+  description: 'Status of the run.',
 } as const;
 
 export const $SSEServerConfig = {
@@ -12237,7 +12202,7 @@ export const $Step = {
       description:
         'The unique identifier of the provider that was configured for this step',
     },
-    job_id: {
+    run_id: {
       anyOf: [
         {
           type: 'string',
@@ -12246,9 +12211,9 @@ export const $Step = {
           type: 'null',
         },
       ],
-      title: 'Job Id',
+      title: 'Run Id',
       description:
-        'The unique identifier of the job that this step belongs to. Only included for async calls.',
+        'The unique identifier of the run that this step belongs to. Only included for async calls.',
     },
     agent_id: {
       anyOf: [
@@ -12533,7 +12498,7 @@ export const $StepMetrics = {
       title: 'Provider Id',
       description: 'The unique identifier of the provider.',
     },
-    job_id: {
+    run_id: {
       anyOf: [
         {
           type: 'string',
@@ -12542,8 +12507,8 @@ export const $StepMetrics = {
           type: 'null',
         },
       ],
-      title: 'Job Id',
-      description: 'The unique identifier of the job.',
+      title: 'Run Id',
+      description: 'The unique identifier of the run.',
     },
     agent_id: {
       anyOf: [

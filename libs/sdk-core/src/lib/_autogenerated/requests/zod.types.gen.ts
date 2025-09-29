@@ -3860,6 +3860,14 @@ export const Message = z.object({
       z.undefined(),
     ])
     .optional(),
+  run_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   otid: z
     .union([
       z.string(),
@@ -6601,66 +6609,107 @@ export const RetrieveStreamRequest = z.object({
     .optional(),
 });
 
+export type RunStatus = z.infer<typeof RunStatus>;
+export const RunStatus = z.union([
+  z.literal('created'),
+  z.literal('running'),
+  z.literal('completed'),
+  z.literal('failed'),
+  z.literal('cancelled'),
+]);
+
 export type Run = z.infer<typeof Run>;
 export const Run = z.object({
-  created_by_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  last_updated_by_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  created_at: z.string().optional(),
-  updated_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  status: JobStatus.optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  status: z.union([RunStatus, z.undefined()]).optional(),
+  created_at: z.union([z.string(), z.undefined()]).optional(),
   completed_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  stop_reason: z
     .union([
-      StopReasonType,
+      z.string(),
       z.null(),
-      z.array(z.union([StopReasonType, z.null()])),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z.string(),
+  background: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
     ])
     .optional(),
   metadata: z
-    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
-    .optional(),
-  job_type: JobType.optional(),
-  background: z
-    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
-    .optional(),
-  agent_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  callback_url: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  callback_sent_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  callback_status_code: z
-    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
-    .optional(),
-  callback_error: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  ttft_ns: z
-    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
-    .optional(),
-  total_duration_ns: z
-    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
-    .optional(),
-  id: z.string().optional(),
-  user_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
     .optional(),
   request_config: z
     .union([
       LettaRequestConfig,
       z.null(),
       z.array(z.union([LettaRequestConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stop_reason: z
+    .union([
+      StopReasonType,
+      z.null(),
+      z.array(z.union([StopReasonType, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  callback_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  callback_sent_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  callback_status_code: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  callback_error: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  ttft_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  total_duration_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
     ])
     .optional(),
 });
@@ -6967,7 +7016,7 @@ export const Step = z.object({
       z.undefined(),
     ])
     .optional(),
-  job_id: z
+  run_id: z
     .union([
       z.string(),
       z.null(),
@@ -7145,7 +7194,7 @@ export const StepMetrics = z.object({
       z.undefined(),
     ])
     .optional(),
-  job_id: z
+  run_id: z
     .union([
       z.string(),
       z.null(),

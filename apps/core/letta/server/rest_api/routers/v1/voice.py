@@ -52,7 +52,7 @@ async def create_voice_chat_completions(
         message_manager=server.message_manager,
         agent_manager=server.agent_manager,
         block_manager=server.block_manager,
-        job_manager=server.job_manager,
+        run_manager=server.run_manager,
         passage_manager=server.passage_manager,
         actor=actor,
     )

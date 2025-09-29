@@ -35,6 +35,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     step_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("steps.id", ondelete="SET NULL"), nullable=True, doc="ID of the step that this message belongs to"
     )
+    run_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("runs.id", ondelete="SET NULL"), nullable=True, doc="ID of the run that this message belongs to"
+    )
     otid: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The offline threading ID associated with this message")
     tool_returns: Mapped[List[ToolReturn]] = mapped_column(
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
@@ -68,11 +71,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="raise")
     step: Mapped["Step"] = relationship("Step", back_populates="messages", lazy="selectin")
-
-    # Job relationship
-    job_message: Mapped[Optional["JobMessage"]] = relationship(
-        "JobMessage", back_populates="message", uselist=False, cascade="all, delete-orphan", single_parent=True
-    )
+    run: Mapped["Run"] = relationship("Run", back_populates="messages", lazy="selectin")
 
     @property
     def job(self) -> Optional["Job"]:

@@ -3514,6 +3514,10 @@ export type Message = {
    */
   step_id?: string | null;
   /**
+   * The id of the run that this message was created in.
+   */
+  run_id?: string | null;
+  /**
    * The offline threading id associated with this message
    */
   otid?: string | null;
@@ -4266,62 +4270,61 @@ export type RoundRobinManagerUpdate = {
 };
 
 /**
- * Representation of a run, which is a job with a 'run' prefix in its ID.
- * Inherits all fields and behavior from Job except for the ID prefix.
+ * Representation of a run - a conversation or processing session for an agent.
+ * Runs track when agents process messages and maintain the relationship between agents, steps, and messages.
  *
  * Parameters:
  * id (str): The unique identifier of the run (prefixed with 'run-').
- * status (JobStatus): The status of the run.
- * created_at (datetime): The unix timestamp of when the run was created.
- * completed_at (datetime): The unix timestamp of when the run was completed.
- * user_id (str): The unique identifier of the user associated with the run.
+ * status (JobStatus): The current status of the run.
+ * created_at (datetime): The timestamp when the run was created.
+ * completed_at (datetime): The timestamp when the run was completed.
+ * agent_id (str): The unique identifier of the agent associated with the run.
+ * stop_reason (StopReasonType): The reason why the run was stopped.
+ * background (bool): Whether the run was created in background mode.
+ * metadata (dict): Additional metadata for the run.
+ * request_config (LettaRequestConfig): The request configuration for the run.
  */
 export type Run = {
   /**
-   * The id of the user that made this object.
+   * The human-friendly ID of the Run
    */
-  created_by_id?: string | null;
+  id?: string;
   /**
-   * The id of the user that made this object.
+   * The current status of the run.
    */
-  last_updated_by_id?: string | null;
+  status?: RunStatus;
   /**
-   * The unix timestamp of when the job was created.
+   * The timestamp when the run was created.
    */
   created_at?: string;
   /**
-   * The timestamp when the object was last updated.
-   */
-  updated_at?: string | null;
-  /**
-   * The status of the job.
-   */
-  status?: JobStatus;
-  /**
-   * The unix timestamp of when the job was completed.
+   * The timestamp when the run was completed.
    */
   completed_at?: string | null;
+  /**
+   * The unique identifier of the agent associated with the run.
+   */
+  agent_id: string;
+  /**
+   * Whether the run was created in background mode.
+   */
+  background?: boolean | null;
+  /**
+   * Additional metadata for the run.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The request configuration for the run.
+   */
+  request_config?: LettaRequestConfig | null;
   /**
    * The reason why the run was stopped.
    */
   stop_reason?: StopReasonType | null;
   /**
-   * The metadata of the job.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-  job_type?: JobType;
-  /**
-   * Whether the job was created in background mode.
-   */
-  background?: boolean | null;
-  /**
-   * The agent associated with this job/run.
-   */
-  agent_id?: string | null;
-  /**
-   * If set, POST to this URL when the job completes.
+   * If set, POST to this URL when the run completes.
    */
   callback_url?: string | null;
   /**
@@ -4344,19 +4347,17 @@ export type Run = {
    * Total run duration in nanoseconds
    */
   total_duration_ns?: number | null;
-  /**
-   * The human-friendly ID of the Run
-   */
-  id?: string;
-  /**
-   * The unique identifier of the user associated with the run.
-   */
-  user_id?: string | null;
-  /**
-   * The request configuration for the run.
-   */
-  request_config?: LettaRequestConfig | null;
 };
+
+/**
+ * Status of the run.
+ */
+export type RunStatus =
+  | 'created'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 /**
  * Configuration for an MCP server using SSE
@@ -4769,9 +4770,9 @@ export type Step = {
    */
   provider_id?: string | null;
   /**
-   * The unique identifier of the job that this step belongs to. Only included for async calls.
+   * The unique identifier of the run that this step belongs to. Only included for async calls.
    */
-  job_id?: string | null;
+  run_id?: string | null;
   /**
    * The ID of the agent that performed the step.
    */
@@ -4873,9 +4874,9 @@ export type StepMetrics = {
    */
   provider_id?: string | null;
   /**
-   * The unique identifier of the job.
+   * The unique identifier of the run.
    */
-  job_id?: string | null;
+  run_id?: string | null;
   /**
    * The unique identifier of the agent.
    */

@@ -185,7 +185,7 @@ function RunDebugViewerTable(props: RunDebugViewerTableProps) {
                 <CancelRunButton
                   runId={run.id || ''}
                   agentId={agentId}
-                  isRunning={run.status === 'running' || run.status === 'pending'}
+                  isRunning={run.status === 'running'}
                 />
               </HStack>
             </TableCell>
@@ -200,9 +200,6 @@ function RunDebugViewerTable(props: RunDebugViewerTableProps) {
             </TableCell>
             <TableCell size="compact">
               <DateCell date={run.created_at} />
-            </TableCell>
-            <TableCell size="compact">
-              <Typography variant="body4">{run.job_type || '-'}</Typography>
             </TableCell>
             <TableCell size="compact">
               <Typography variant="body4">{run.id}</Typography>
