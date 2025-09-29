@@ -60,7 +60,6 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <RecordVisit />
-
       {props.children}
     </HydrationBoundary>
   );
