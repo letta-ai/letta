@@ -43,6 +43,7 @@ env:
   NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
   NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
   GIT_HASH: ${{ github.sha }}
+  NEXT_PUBLIC_GIT_HASH: ${{ github.sha }}
   POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
   TWILIO_SID: ${{ secrets.TWILIO_SID }}
   TWILIO_SECRET: ${{ secrets.TWILIO_SECRET }}
