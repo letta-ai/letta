@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import RunStatus
 
 
 class StopReasonType(str, Enum):
@@ -19,14 +19,14 @@ class StopReasonType(str, Enum):
     requires_approval = "requires_approval"
 
     @property
-    def run_status(self) -> JobStatus:
+    def run_status(self) -> RunStatus:
         if self in (
             StopReasonType.end_turn,
             StopReasonType.max_steps,
             StopReasonType.tool_rule,
             StopReasonType.requires_approval,
         ):
-            return JobStatus.completed
+            return RunStatus.completed
         elif self in (
             StopReasonType.error,
             StopReasonType.invalid_tool_call,
@@ -34,9 +34,9 @@ class StopReasonType(str, Enum):
             StopReasonType.invalid_llm_response,
             StopReasonType.llm_api_error,
         ):
-            return JobStatus.failed
+            return RunStatus.failed
         elif self == StopReasonType.cancelled:
-            return JobStatus.cancelled
+            return RunStatus.cancelled
         else:
             raise ValueError("Unknown StopReasonType")
 

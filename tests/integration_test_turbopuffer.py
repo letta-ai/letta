@@ -900,7 +900,7 @@ async def test_message_embedding_without_config(server, default_user, sarah_agen
     assert all(msg.agent_id == sarah_agent.id for msg in created)
 
     # Messages should be in SQL
-    sql_messages = await server.message_manager.list_messages_for_agent_async(
+    sql_messages = await server.message_manager.list_messages(
         agent_id=sarah_agent.id,
         actor=default_user,
         limit=10,

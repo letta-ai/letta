@@ -22,7 +22,7 @@ from letta.orm import Base
 from letta.schemas.agent import CreateAgent
 from letta.schemas.block import Block as PydanticBlock, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.enums import JobStatus, MessageRole, RunStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.job import BatchJob, Job as PydanticJob
@@ -524,13 +524,13 @@ async def default_job(server: SyncServer, default_user):
 
 
 @pytest.fixture
-async def default_run(server: SyncServer, default_user):
+async def default_run(server: SyncServer, default_user, sarah_agent):
     """Create and return a default run."""
     run_pydantic = PydanticRun(
-        user_id=default_user.id,
-        status=JobStatus.pending,
+        agent_id=sarah_agent.id,
+        status=RunStatus.created,
     )
-    run = await server.job_manager.create_job_async(pydantic_job=run_pydantic, actor=default_user)
+    run = await server.run_manager.create_run(pydantic_run=run_pydantic, actor=default_user)
     yield run
 
 
