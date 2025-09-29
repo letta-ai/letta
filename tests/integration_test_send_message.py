@@ -1511,53 +1511,47 @@ def test_async_greeting_with_assistant_message(
     )
     run = wait_for_run_completion(client, run.id)
 
-    result = run.metadata.get("result")
-    assert result is not None, "Run metadata missing 'result' key"
-
-    messages = cast_message_dict_to_messages(result["messages"])
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
-
     messages = client.runs.messages.list(run_id=run.id)
+    usage = client.runs.usage.retrieve(run_id=run.id)
+
     assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
-@pytest.mark.parametrize(
-    "llm_config",
-    TESTED_LLM_CONFIGS,
-    ids=[c.model for c in TESTED_LLM_CONFIGS],
-)
-def test_async_greeting_without_assistant_message(
-    disable_e2b_api_key: Any,
-    client: Letta,
-    agent_state: AgentState,
-    llm_config: LLMConfig,
-) -> None:
-    """
-    Tests sending a message as an asynchronous job using the synchronous client.
-    Waits for job completion and asserts that the result messages are as expected.
-    """
-    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-
-    run = client.agents.messages.create_async(
-        agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
-        use_assistant_message=False,
-    )
-    run = wait_for_run_completion(client, run.id)
-
-    result = run.metadata.get("result")
-    assert result is not None, "Run metadata missing 'result' key"
-
-    messages = cast_message_dict_to_messages(result["messages"])
-    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
-
-    messages = client.runs.messages.list(run_id=run.id)
-    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
-    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+# NOTE: deprecated in preparation of letta_v1_agent
+# @pytest.mark.parametrize(
+#    "llm_config",
+#    TESTED_LLM_CONFIGS,
+#    ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# def test_async_greeting_without_assistant_message(
+#    disable_e2b_api_key: Any,
+#    client: Letta,
+#    agent_state: AgentState,
+#    llm_config: LLMConfig,
+# ) -> None:
+#    """
+#    Tests sending a message as an asynchronous job using the synchronous client.
+#    Waits for job completion and asserts that the result messages are as expected.
+#    """
+#    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+#    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#
+#    run = client.agents.messages.create_async(
+#        agent_id=agent_state.id,
+#        messages=USER_MESSAGE_FORCE_REPLY,
+#        use_assistant_message=False,
+#    )
+#    run = wait_for_run_completion(client, run.id)
+#
+#    messages = client.runs.messages.list(run_id=run.id)
+#    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
+#
+#    messages = client.runs.messages.list(run_id=run.id)
+#    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config)
+#    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
+#    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 @pytest.mark.parametrize(
@@ -1600,13 +1594,6 @@ def test_async_tool_call(
         request_options={"timeout_in_seconds": 300},
     )
     run = wait_for_run_completion(client, run.id)
-
-    result = run.metadata.get("result")
-    assert result is not None, "Run metadata missing 'result' key"
-
-    messages = cast_message_dict_to_messages(result["messages"])
-    assert_tool_call_response(messages, llm_config=llm_config)
-
     messages = client.runs.messages.list(run_id=run.id)
     assert_tool_call_response(messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -1737,10 +1724,7 @@ def test_async_greeting_with_callback_url(
         run = wait_for_run_completion(client, run.id)
 
         # Validate job completed successfully
-        result = run.metadata.get("result")
-        assert result is not None, "Run metadata missing 'result' key"
-
-        messages = cast_message_dict_to_messages(result["messages"])
+        messages = client.runs.messages.list(run_id=run.id)
         assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
 
         # Validate callback was received
@@ -1752,13 +1736,13 @@ def test_async_greeting_with_callback_url(
         callback_data = callback["data"]
 
         # Check required fields
-        assert "job_id" in callback_data, "Callback missing 'job_id' field"
+        assert "run_id" in callback_data, "Callback missing 'run_id' field"
         assert "status" in callback_data, "Callback missing 'status' field"
         assert "completed_at" in callback_data, "Callback missing 'completed_at' field"
         assert "metadata" in callback_data, "Callback missing 'metadata' field"
 
         # Validate field values
-        assert callback_data["job_id"] == run.id, f"Job ID mismatch: {callback_data['job_id']} != {run.id}"
+        assert callback_data["run_id"] == run.id, f"Job ID mismatch: {callback_data['run_id']} != {run.id}"
         assert callback_data["status"] == "completed", f"Expected status 'completed', got {callback_data['status']}"
         assert callback_data["completed_at"] is not None, "completed_at should not be None"
         assert callback_data["metadata"] is not None, "metadata should not be None"
@@ -1766,7 +1750,8 @@ def test_async_greeting_with_callback_url(
         # Validate that callback metadata contains the result
         assert "result" in callback_data["metadata"], "Callback metadata missing 'result' field"
         callback_result = callback_data["metadata"]["result"]
-        assert callback_result == result, "Callback result doesn't match job result"
+        callback_messages = cast_message_dict_to_messages(callback_result["messages"])
+        assert callback_messages == messages, "Callback result doesn't match job result"
 
         # Validate HTTP headers
         headers = callback["headers"]

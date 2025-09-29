@@ -10,10 +10,10 @@ from letta.schemas.enums import StepStatus
 from letta.schemas.step import Step as PydanticStep
 
 if TYPE_CHECKING:
-    from letta.orm.job import Job
     from letta.orm.message import Message
     from letta.orm.organization import Organization
     from letta.orm.provider import Provider
+    from letta.orm.run import Run
     from letta.orm.step_metrics import StepMetrics
 
 
@@ -22,7 +22,7 @@ class Step(SqlalchemyBase, ProjectMixin):
 
     __tablename__ = "steps"
     __pydantic_model__ = PydanticStep
-    __table_args__ = (Index("ix_steps_job_id", "job_id"),)
+    __table_args__ = (Index("ix_steps_run_id", "run_id"),)
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"step-{uuid.uuid4()}")
     origin: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The surface that this agent step was initiated from.")
@@ -36,8 +36,8 @@ class Step(SqlalchemyBase, ProjectMixin):
         nullable=True,
         doc="The unique identifier of the provider that was configured for this step",
     )
-    job_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True, doc="The unique identified of the job run that triggered this step"
+    run_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("runs.id", ondelete="SET NULL"), nullable=True, doc="The unique identifier of the run that this step belongs to"
     )
     agent_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The name of the model used for this step.")
     provider_name: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The name of the provider used for this step.")
@@ -69,7 +69,7 @@ class Step(SqlalchemyBase, ProjectMixin):
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
     provider: Mapped[Optional["Provider"]] = relationship("Provider")
-    job: Mapped[Optional["Job"]] = relationship("Job", back_populates="steps")
+    run: Mapped[Optional["Run"]] = relationship("Run", back_populates="steps")
 
     # Relationships (backrefs)
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="step", cascade="save-update", lazy="noload")

@@ -13,7 +13,7 @@ from letta.settings import DatabaseChoice, settings
 
 if TYPE_CHECKING:
     from letta.orm.agent import Agent
-    from letta.orm.job import Job
+    from letta.orm.run import Run
     from letta.orm.step import Step
 
 
@@ -38,10 +38,10 @@ class StepMetrics(SqlalchemyBase, ProjectMixin, AgentMixin):
         nullable=True,
         doc="The unique identifier of the provider",
     )
-    job_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("jobs.id", ondelete="SET NULL"),
+    run_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("runs.id", ondelete="SET NULL"),
         nullable=True,
-        doc="The unique identifier of the job",
+        doc="The unique identifier of the run",
     )
     step_start_ns: Mapped[Optional[int]] = mapped_column(
         BigInteger,
@@ -81,7 +81,7 @@ class StepMetrics(SqlalchemyBase, ProjectMixin, AgentMixin):
 
     # Relationships (foreign keys)
     step: Mapped["Step"] = relationship("Step", back_populates="metrics", uselist=False)
-    job: Mapped[Optional["Job"]] = relationship("Job")
+    run: Mapped[Optional["Run"]] = relationship("Run")
     agent: Mapped[Optional["Agent"]] = relationship("Agent")
 
     def create(

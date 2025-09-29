@@ -7,14 +7,14 @@ from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import JobStatus, RunStatus
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.run import Run
+from letta.schemas.run import Run, RunUpdate
 from letta.schemas.user import User
 from letta.services.group_manager import GroupManager
 from letta.utils import safe_create_task
@@ -134,14 +134,14 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,
     ) -> str:
         run = Run(
-            user_id=self.actor.id,
-            status=JobStatus.created,
+            agent_id=sleeptime_agent_id,
+            status=RunStatus.created,
             metadata={
-                "job_type": "sleeptime_agent_send_message_async",  # is this right?
+                "run_type": "sleeptime_agent_send_message_async",  # is this right?
                 "agent_id": sleeptime_agent_id,
             },
         )
-        run = await self.job_manager.create_job_async(pydantic_job=run, actor=self.actor)
+        run = await self.run_manager.create_run(pydantic_run=run, actor=self.actor)
 
         safe_create_task(
             self._participant_agent_step(
@@ -167,15 +167,15 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,
     ) -> LettaResponse:
         try:
-            # Update job status
-            job_update = JobUpdate(status=JobStatus.running)
-            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
+            # Update run status
+            run_update = RunUpdate(status=RunStatus.running)
+            await self.run_manager.update_run_by_id_async(run_id=run_id, update=run_update, actor=self.actor)
 
             # Create conversation transcript
             prior_messages = []
             if self.group.sleeptime_agent_frequency:
                 try:
-                    prior_messages = await self.message_manager.list_messages_for_agent_async(
+                    prior_messages = await self.message_manager.list_messages(
                         agent_id=foreground_agent_id,
                         actor=self.actor,
                         after=last_processed_message_id,
@@ -212,22 +212,22 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                 use_assistant_message=use_assistant_message,
             )
 
-            # Update job status
-            job_update = JobUpdate(
-                status=JobStatus.completed,
+            # Update run status
+            run_update = RunUpdate(
+                status=RunStatus.completed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={
                     "result": result.model_dump(mode="json"),
                     "agent_id": sleeptime_agent_state.id,
                 },
             )
-            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
+            await self.run_manager.update_run_by_id_async(run_id=run_id, update=run_update, actor=self.actor)
             return result
         except Exception as e:
-            job_update = JobUpdate(
-                status=JobStatus.failed,
+            run_update = RunUpdate(
+                status=RunStatus.failed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={"error": str(e)},
             )
-            await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
+            await self.run_manager.update_run_by_id_async(run_id=run_id, update=run_update, actor=self.actor)
             raise

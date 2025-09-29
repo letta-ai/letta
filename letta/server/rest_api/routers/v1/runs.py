@@ -8,7 +8,7 @@ from temporalio.client import Client
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm.errors import NoResultFound
-from letta.schemas.enums import JobStatus, JobType
+from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import RetrieveStreamRequest
 from letta.schemas.letta_stop_reason import StopReasonType
@@ -23,6 +23,7 @@ from letta.server.rest_api.streaming_response import (
     cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
+from letta.services.run_manager import RunManager
 from letta.settings import settings
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -49,27 +50,26 @@ async def list_runs(
     List all runs.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
+
     statuses = None
     if active:
-        statuses = [JobStatus.created, JobStatus.running]
+        statuses = [RunStatus.created, RunStatus.running]
     if agent_id:
         # NOTE: we are deprecating agent_ids so this will the primary path soon
         agent_ids = [agent_id]
 
-    jobs = await server.job_manager.list_jobs_async(
+    runs = await runs_manager.list_runs(
         actor=actor,
+        agent_ids=agent_ids,
         statuses=statuses,
-        job_type=JobType.RUN,
         limit=limit,
         before=before,
         after=after,
-        ascending=False,
+        ascending=ascending,
         stop_reason=stop_reason,
-        # agent_id=agent_id,
-        agent_ids=agent_ids,
         background=background,
     )
-    runs = [Run.from_job(job) for job in jobs]
     return runs
 
 
@@ -84,16 +84,16 @@ async def list_active_runs(
     List all active runs.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
 
     if agent_id:
         agent_ids = [agent_id]
     else:
         agent_ids = None
 
-    active_runs = await server.job_manager.list_jobs_async(
-        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=agent_ids, background=background
+    active_runs = await runs_manager.list_runs(
+        actor=actor, statuses=[RunStatus.created, RunStatus.running], agent_ids=agent_ids, background=background
     )
-    active_runs = [Run.from_job(job) for job in active_runs]
 
     return active_runs
 
@@ -108,12 +108,13 @@ async def retrieve_run(
     Get the status of a run.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
 
     try:
-        job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
 
-        use_lettuce = job.metadata.get("lettuce") and settings.temporal_endpoint
-        if use_lettuce and job.status not in [JobStatus.completed, JobStatus.failed, JobStatus.cancelled]:
+        use_lettuce = run.metadata and run.metadata.get("lettuce") and settings.temporal_endpoint
+        if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
             client = await Client.connect(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
@@ -126,25 +127,17 @@ async def retrieve_run(
             desc = await handle.describe()
 
             # Map the status to our enum
-            job_status = JobStatus.created
+            run_status = RunStatus.created
             if desc.status.name == "RUNNING":
-                job_status = JobStatus.running
+                run_status = RunStatus.running
             elif desc.status.name == "COMPLETED":
-                job_status = JobStatus.completed
+                run_status = RunStatus.completed
             elif desc.status.name == "FAILED":
-                job_status = JobStatus.failed
+                run_status = RunStatus.failed
             elif desc.status.name == "CANCELED":
-                job_status = JobStatus.canceled
-            # elif desc.status.name == "TERMINATED":
-            #     job_status = JobStatus.terminated
-            # elif desc.status.name == "TIMED_OUT":
-            #     job_status = JobStatus.timed_out
-            # elif desc.status.name == "CONTINUED_AS_NEW":
-            #     return WorkflowStatus.CONTINUED_AS_NEW
-            # else:
-            #     return WorkflowStatus.UNKNOWN
-            job.status = job_status
-        return Run.from_job(job)
+                run_status = RunStatus.cancelled
+            run.status = run_status
+        return run
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")
 
@@ -176,23 +169,11 @@ async def list_run_messages(
 ):
     """Get response messages associated with a run."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    try:
-        messages = await server.job_manager.get_run_messages(
-            run_id=run_id,
-            actor=actor,
-            limit=limit,
-            before=before,
-            after=after,
-            ascending=(order == "asc"),
-        )
-        return messages
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.run_manager.get_run_messages(run_id=run_id, actor=actor, before=before, after=after, limit=limit, order=order)
 
 
 @router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="retrieve_run_usage")
-def retrieve_run_usage(
+async def retrieve_run_usage(
     run_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
@@ -200,8 +181,14 @@ def retrieve_run_usage(
     """
     Get usage statistics for a run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
-    raise Exception("Not implemented")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
+
+    try:
+        usage = await runs_manager.get_run_usage(run_id=run_id, actor=actor)
+        return usage
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
 
 
 @router.get(
@@ -237,10 +224,11 @@ async def list_run_steps(
         raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
 
     try:
-        steps = await server.job_manager.get_job_steps(
-            job_id=run_id,
+        steps = await runs_manager.get_run_steps(
+            run_id=run_id,
             actor=actor,
             limit=limit,
             before=before,
@@ -262,10 +250,11 @@ async def delete_run(
     Delete a run by its run_id.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
 
     try:
-        job = await server.job_manager.delete_job_by_id_async(job_id=run_id, actor=actor)
-        return Run.from_job(job)
+        run = await runs_manager.delete_run_by_id(run_id=run_id, actor=actor)
+        return run
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")
 
@@ -309,12 +298,12 @@ async def retrieve_stream(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
+
     try:
-        job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")
-
-    run = Run.from_job(job)
 
     if not run.background:
         raise HTTPException(status_code=400, detail="Run was not created in background mode, so it cannot be retrieved.")
@@ -345,8 +334,8 @@ async def retrieve_stream(
     if settings.enable_cancellation_aware_streaming:
         stream = cancellation_aware_stream_wrapper(
             stream_generator=stream,
-            job_manager=server.job_manager,
-            job_id=run_id,
+            run_manager=server.run_manager,
+            run_id=run_id,
             actor=actor,
         )
 
