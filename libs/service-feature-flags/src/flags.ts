@@ -197,6 +197,12 @@ export const featureFlags = {
     expiryDate: '9999-12-31',
     flagValue: z.boolean(),
   },
+  MEMORY_BLOCK_REDESIGN: {
+    description:
+      'Memory block redesign for ADE, Core Memory Editor, Memory Blocks',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
