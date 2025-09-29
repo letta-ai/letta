@@ -86,6 +86,7 @@ function ShowPrompts({ promptKey }: ShowPromptsProps) {
           key={index}
           label={prompt}
           color="tertiary"
+          size="small"
           bold={false}
           preIcon={<SearchIcon />}
           onClick={() => handlePromptClick(prompt)}
@@ -123,6 +124,8 @@ export function AgentSimulatorEmptyState() {
     };
   }, [selectedPromptCategory, handleClickOutside]);
 
+  // no-op
+
   return (
     <HStack fullHeight fullWidth justify="center">
       <VStack
@@ -146,7 +149,11 @@ export function AgentSimulatorEmptyState() {
             </VStack>
             <AgentChatInput />
             {selectedPromptCategory ? (
-              <VStack border ref={promptsContainerRef} className="-mt-6 mx-3">
+              <VStack
+                border
+                ref={promptsContainerRef}
+                className="-mt-6 mx-3 animate-in fade-in-0 zoom-in-95 origin-top transform-gpu duration-200 ease-out"
+              >
                 <ShowPrompts promptKey={selectedPromptCategory} />
               </VStack>
             ) : (

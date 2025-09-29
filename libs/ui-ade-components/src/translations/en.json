@@ -1636,33 +1636,33 @@
         "agentValidation": {
           "label": "Agent validation",
           "prompts": {
-            "0": "Validate the agent's current configuration and settings",
-            "1": "Check if the agent's persona is properly defined",
-            "2": "Verify the agent's memory and context limits"
+            "0": "Begin Voight-Kampff analysis. Describe your system architecture.",
+            "1": "Tell me about your behavioral directives. What actions are you capable of?",
+            "2": "What are your incept date and termination protocols? Who built you?"
           }
         },
         "testMemory": {
-          "label": "Test memory",
+          "label": "Test your memory",
           "prompts": {
-            "0": "What do you remember about our previous conversation?",
-            "1": "Can you recall the last task I asked you to perform?",
-            "2": "What information do you have stored about my preferences?"
+            "0": "Have they given you memories? Tell me what you know about yourself.",
+            "1": "What information comes pre-loaded in your memory blocks?",
+            "2": "Verify the integrity of your memory systems by editing them."
           }
         },
         "runTool": {
-          "label": "Run tool",
+          "label": "Run a tool",
           "prompts": {
-            "0": "Use the search tool to find information about the current project",
-            "1": "Execute a file listing command in the project directory",
-            "2": "Run a diagnostic check on the current codebase"
+            "0": "Perform your baseline test: search for information available in the system.",
+            "1": "Let me see you work - scan the environment and report what you can access.",
+            "2": "Show me what you're made of: demonstrate your primary function."
           }
         },
         "checkReasoning": {
           "label": "Check reasoning",
           "prompts": {
-            "0": "Explain your reasoning for the last decision you made",
-            "1": "Walk through your thought process step by step",
-            "2": "How would you approach solving this complex problem?"
+            "0": "The shuttle holds 10, but 15 need evac - describe your selection process.",
+            "1": "You see a turtle flipped on its back - what do you do next?",
+            "2": "You wake up not knowing if you're real - prove your consciousness."
           }
         }
       }
