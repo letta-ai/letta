@@ -100,6 +100,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
+from letta.services.run_manager import RunManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.step_manager import StepManager
@@ -160,6 +161,7 @@ class SyncServer(object):
         self.sandbox_config_manager = SandboxConfigManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
+        self.run_manager = RunManager()
         self.agent_manager = AgentManager()
         self.archive_manager = ArchiveManager()
         self.provider_manager = ProviderManager()
@@ -644,7 +646,7 @@ class SyncServer(object):
 
         actor = await self.user_manager.get_actor_or_default_async(actor_id=user_id)
 
-        records = await self.message_manager.list_messages_for_agent_async(
+        records = await self.message_manager.list_messages(
             agent_id=agent_id,
             actor=actor,
             after=after,
@@ -683,7 +685,7 @@ class SyncServer(object):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
-        records = await self.message_manager.list_messages_for_agent_async(
+        records = await self.message_manager.list_messages(
             agent_id=agent_id,
             actor=actor,
             after=after,
@@ -1222,7 +1224,7 @@ class SyncServer(object):
                 message_manager=self.message_manager,
                 agent_manager=self.agent_manager,
                 block_manager=self.block_manager,
-                job_manager=self.job_manager,
+                run_manager=self.run_manager,
                 passage_manager=self.passage_manager,
                 actor=actor,
                 sandbox_env_vars=tool_env_vars,

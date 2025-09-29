@@ -13,23 +13,23 @@ from starlette.types import Send
 
 from letta.errors import LettaUnexpectedStreamCancellationError, PendingApprovalError
 from letta.log import get_logger
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import RunStatus
 from letta.schemas.letta_ping import LettaPing
 from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
-from letta.services.job_manager import JobManager
+from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
 
-class JobCancelledException(Exception):
-    """Exception raised when a job is explicitly cancelled (not due to client timeout)"""
+class RunCancelledException(Exception):
+    """Exception raised when a run is explicitly cancelled (not due to client timeout)"""
 
-    def __init__(self, job_id: str, message: str = None):
-        self.job_id = job_id
-        super().__init__(message or f"Job {job_id} was explicitly cancelled")
+    def __init__(self, run_id: str, message: str = None):
+        self.run_id = run_id
+        super().__init__(message or f"Run {run_id} was explicitly cancelled")
 
 
 async def add_keepalive_to_stream(
@@ -109,21 +109,21 @@ async def add_keepalive_to_stream(
 # TODO (cliandy) wrap this and handle types
 async def cancellation_aware_stream_wrapper(
     stream_generator: AsyncIterator[str | bytes],
-    job_manager: JobManager,
-    job_id: str,
+    run_manager: RunManager,
+    run_id: str,
     actor: User,
     cancellation_check_interval: float = 0.5,
 ) -> AsyncIterator[str | bytes]:
     """
-    Wraps a stream generator to provide real-time job cancellation checking.
+    Wraps a stream generator to provide real-time run cancellation checking.
 
-    This wrapper periodically checks for job cancellation while streaming and
+    This wrapper periodically checks for run cancellation while streaming and
     can interrupt the stream at any point, not just at step boundaries.
 
     Args:
         stream_generator: The original stream generator to wrap
-        job_manager: Job manager instance for checking job status
-        job_id: ID of the job to monitor for cancellation
+        run_manager: Run manager instance for checking run status
+        run_id: ID of the run to monitor for cancellation
         actor: User/actor making the request
         cancellation_check_interval: How often to check for cancellation (seconds)
 
@@ -131,7 +131,7 @@ async def cancellation_aware_stream_wrapper(
         Stream chunks from the original generator until cancelled
 
     Raises:
-        asyncio.CancelledError: If the job is cancelled during streaming
+        asyncio.CancelledError: If the run is cancelled during streaming
     """
     last_cancellation_check = asyncio.get_event_loop().time()
 
@@ -141,32 +141,32 @@ async def cancellation_aware_stream_wrapper(
             current_time = asyncio.get_event_loop().time()
             if current_time - last_cancellation_check >= cancellation_check_interval:
                 try:
-                    job = await job_manager.get_job_by_id_async(job_id=job_id, actor=actor)
-                    if job.status == JobStatus.cancelled:
-                        logger.info(f"Stream cancelled for job {job_id}, interrupting stream")
+                    run = await run_manager.get_run_by_id_async(run_id=run_id, actor=actor)
+                    if run.status == RunStatus.cancelled:
+                        logger.info(f"Stream cancelled for run {run_id}, interrupting stream")
                         # Send cancellation event to client
                         cancellation_event = {"message_type": "stop_reason", "stop_reason": "cancelled"}
                         yield f"data: {json.dumps(cancellation_event)}\n\n"
-                        # Raise custom exception for explicit job cancellation
-                        raise JobCancelledException(job_id, f"Job {job_id} was cancelled")
+                        # Raise custom exception for explicit run cancellation
+                        raise RunCancelledException(run_id, f"Run {run_id} was cancelled")
                 except Exception as e:
                     # Log warning but don't fail the stream if cancellation check fails
-                    logger.warning(f"Failed to check job cancellation for job {job_id}: {e}")
+                    logger.warning(f"Failed to check run cancellation for run {run_id}: {e}")
 
                 last_cancellation_check = current_time
 
             yield chunk
 
-    except JobCancelledException:
-        # Re-raise JobCancelledException to distinguish from client timeout
-        logger.info(f"Stream for job {job_id} was explicitly cancelled and cleaned up")
+    except RunCancelledException:
+        # Re-raise RunCancelledException to distinguish from client timeout
+        logger.info(f"Stream for run {run_id} was explicitly cancelled and cleaned up")
         raise
     except asyncio.CancelledError:
         # Re-raise CancelledError (likely client timeout) to ensure proper cleanup
-        logger.info(f"Stream for job {job_id} was cancelled (likely client timeout) and cleaned up")
+        logger.info(f"Stream for run {run_id} was cancelled (likely client timeout) and cleaned up")
         raise
     except Exception as e:
-        logger.error(f"Error in cancellation-aware stream wrapper for job {job_id}: {e}")
+        logger.error(f"Error in cancellation-aware stream wrapper for run {run_id}: {e}")
         raise
 
 
@@ -267,12 +267,12 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         self._client_connected = False
                         # Continue processing but don't try to send more data
 
-        # Handle explicit job cancellations (should not throw error)
-        except JobCancelledException as exc:
-            logger.info(f"Stream was explicitly cancelled for job {exc.job_id}")
+        # Handle explicit run cancellations (should not throw error)
+        except RunCancelledException as exc:
+            logger.info(f"Stream was explicitly cancelled for run {exc.run_id}")
             # Handle explicit cancellation gracefully without error
             more_body = False
-            cancellation_resp = {"message": "Job was cancelled"}
+            cancellation_resp = {"message": "Run was cancelled"}
             cancellation_event = f"event: cancelled\ndata: {json.dumps(cancellation_resp)}\n\n".encode(self.charset)
             if not self.response_started:
                 await send(

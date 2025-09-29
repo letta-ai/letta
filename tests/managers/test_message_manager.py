@@ -296,7 +296,7 @@ async def test_modify_letta_message(server: SyncServer, sarah_agent, default_use
     Test updating a message.
     """
 
-    messages = await server.message_manager.list_messages_for_agent_async(agent_id=sarah_agent.id, actor=default_user)
+    messages = await server.message_manager.list_messages(agent_id=sarah_agent.id, actor=default_user)
     letta_messages = PydanticMessage.to_letta_messages_from_list(messages=messages)
 
     system_message = [msg for msg in letta_messages if msg.message_type == "system_message"][0]

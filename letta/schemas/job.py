@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from letta.schemas.letta_request import LettaRequest
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_time
@@ -112,3 +115,13 @@ class LettaRequestConfig(BaseModel):
     include_return_message_types: Optional[List[MessageType]] = Field(
         default=None, description="Only return specified message types in the response. If `None` (default) returns all messages."
     )
+
+    @classmethod
+    def from_letta_request(cls, request: "LettaRequest") -> "LettaRequestConfig":
+        """Create a LettaRequestConfig from a LettaRequest."""
+        return cls(
+            use_assistant_message=request.use_assistant_message,
+            assistant_message_tool_name=request.assistant_message_tool_name,
+            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            include_return_message_types=request.include_return_message_types,
+        )

@@ -24,6 +24,7 @@ from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
+from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.user import User
 from letta.server.server import SyncServer
@@ -166,8 +167,17 @@ def agent_serialization_manager(server, default_user):
 
 
 async def send_message_to_agent(server: SyncServer, agent_state, actor: User, messages: list[MessageCreate]):
+    run = Run(
+        agent_id=agent_state.id,
+    )
+    run = await server.run_manager.create_run(
+        pydantic_run=run,
+        actor=actor,
+    )
+
     agent_loop = AgentLoop.load(agent_state=agent_state, actor=actor)
     result = await agent_loop.step(
+        run_id=run.id,
         input_messages=messages,
     )
     return result
@@ -1170,8 +1180,8 @@ class TestAgentFileImport:
         assert len(imported_agent.tools) == len(test_agent.tools)
         assert len(imported_agent.memory.blocks) == len(test_agent.memory.blocks)
 
-        original_messages = await server.message_manager.list_messages_for_agent_async(test_agent.id, default_user)
-        imported_messages = await server.message_manager.list_messages_for_agent_async(imported_agent_id, other_user)
+        original_messages = await server.message_manager.list_messages(actor=default_user, agent_id=test_agent.id)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
 
         assert len(imported_messages) == len(original_messages)
 
@@ -1191,7 +1201,7 @@ class TestAgentFileImport:
 
         assert len(imported_agent.message_ids) == len(test_agent.message_ids)
 
-        imported_messages = await server.message_manager.list_messages_for_agent_async(imported_agent_id, other_user)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
         imported_message_ids = {msg.id for msg in imported_messages}
 
         for in_context_id in imported_agent.message_ids:
@@ -1500,7 +1510,7 @@ class TestAgentFileEdgeCases:
         # Verify all messages imported correctly
         assert result.success
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_messages = await server.message_manager.list_messages_for_agent_async(imported_agent_id, other_user)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
 
         assert len(imported_messages) >= num_messages
 
@@ -1533,7 +1543,7 @@ class TestAgentFileValidation:
     async def test_message_schema_conversion(self, test_agent, server, default_user):
         """Test MessageSchema.from_message conversion."""
         # Get a message from the test agent
-        messages = await server.message_manager.list_messages_for_agent_async(test_agent.id, default_user)
+        messages = await server.message_manager.list_messages(actor=default_user, agent_id=test_agent.id)
         if messages:
             original_message = messages[0]
 

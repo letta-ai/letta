@@ -10,7 +10,6 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
-from letta.orm.job_messages import JobMessage
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step, Step as StepModel
@@ -40,8 +39,6 @@ class JobManager:
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
-        from letta.orm.agents_runs import AgentsRuns
-
         async with db_registry.async_session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
@@ -55,16 +52,10 @@ class JobManager:
 
             job_data = pydantic_job.model_dump(to_orm=True)
             # Remove agent_id from job_data as it's not a field in the Job ORM model
-            # The relationship is handled through the AgentsRuns association table
             job_data.pop("agent_id", None)
             job = JobModel(**job_data)
             job.organization_id = actor.organization_id
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
-
-            # If this is a Run with an agent_id, create the agents_runs association
-            if agent_id and isinstance(pydantic_job, PydanticRun):
-                agents_run = AgentsRuns(agent_id=agent_id, run_id=job.id)
-                session.add(agents_run)
 
             await session.commit()
 
@@ -223,8 +214,6 @@ class JobManager:
         """List all jobs with optional pagination and status filter."""
         from sqlalchemy import and_, or_, select
 
-        from letta.orm.agents_runs import AgentsRuns
-
         async with db_registry.async_session() as session:
             # build base query
             query = select(JobModel).where(JobModel.user_id == actor.id).where(JobModel.job_type == job_type)
@@ -246,11 +235,6 @@ class JobManager:
                 column = getattr(JobModel, "metadata_")
                 column = column.op("->>")("source_id")
                 query = query.where(column == source_id)
-
-            # If agent_id filter is provided, join with agents_runs table
-            if agent_ids:
-                query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
-                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
 
             # handle cursor-based pagination
             if before or after:
@@ -323,33 +307,6 @@ class JobManager:
             job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor)
             await job.hard_delete_async(db_session=session, actor=actor)
             return job.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    async def add_messages_to_job_async(self, job_id: str, message_ids: List[str], actor: PydanticUser) -> None:
-        """
-        Associate a message with a job by creating a JobMessage record.
-        Each message can only be associated with one job.
-
-        Args:
-            job_id: The ID of the job
-            message_id: The ID of the message to associate
-            actor: The user making the request
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        if not message_ids:
-            return
-
-        async with db_registry.async_session() as session:
-            # First verify job exists and user has access
-            await self._verify_job_access_async(session, job_id, actor, access=["write"])
-
-            # Create new JobMessage associations
-            job_messages = [JobMessage(job_id=job_id, message_id=message_id) for message_id in message_ids]
-            session.add_all(job_messages)
-            await session.commit()
 
     @enforce_types
     @trace_method
@@ -569,57 +526,6 @@ class JobManager:
             # Continue silently - callback failures should not affect job completion
         finally:
             return result
-
-    @enforce_types
-    @trace_method
-    async def get_job_messages(
-        self,
-        job_id: str,
-        actor: PydanticUser,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        limit: Optional[int] = 100,
-        role: Optional[MessageRole] = None,
-        ascending: bool = True,
-    ) -> List[PydanticMessage]:
-        """
-        Get all messages associated with a job.
-
-        Args:
-            job_id: The ID of the job to get messages for
-            actor: The user making the request
-            before: Cursor for pagination
-            after: Cursor for pagination
-            limit: Maximum number of messages to return
-            role: Optional filter for message role
-            ascending: Optional flag to sort in ascending order
-
-        Returns:
-            List of messages associated with the job
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        async with db_registry.async_session() as session:
-            # Build filters
-            filters = {}
-            if role is not None:
-                filters["role"] = role
-
-            # Get messages
-            messages = await MessageModel.list_async(
-                db_session=session,
-                before=before,
-                after=after,
-                ascending=ascending,
-                limit=limit,
-                actor=actor,
-                join_model=JobMessage,
-                join_conditions=[MessageModel.id == JobMessage.message_id, JobMessage.job_id == job_id],
-                **filters,
-            )
-
-        return [message.to_pydantic() for message in messages]
 
     @enforce_types
     @trace_method

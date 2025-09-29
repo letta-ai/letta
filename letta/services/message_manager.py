@@ -307,6 +307,7 @@ class MessageManager:
         self,
         pydantic_msgs: List[PydanticMessage],
         actor: PydanticUser,
+        run_id: Optional[str] = None,
         strict_mode: bool = False,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
@@ -669,8 +670,9 @@ class MessageManager:
         query_text: Optional[str] = None,
         limit: Optional[int] = 50,
         ascending: bool = True,
+        run_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
-        return await self.list_messages_for_agent_async(
+        return await self.list_messages(
             agent_id=agent_id,
             actor=actor,
             after=after,
@@ -679,14 +681,15 @@ class MessageManager:
             roles=[MessageRole.user],
             limit=limit,
             ascending=ascending,
+            run_id=run_id,
         )
 
     @enforce_types
     @trace_method
-    async def list_messages_for_agent_async(
+    async def list_messages(
         self,
-        agent_id: str,
         actor: PydanticUser,
+        agent_id: Optional[str] = None,
         after: Optional[str] = None,
         before: Optional[str] = None,
         query_text: Optional[str] = None,
@@ -695,9 +698,10 @@ class MessageManager:
         ascending: bool = True,
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
+        run_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
-        Most performant query to list messages for an agent by directly querying the Message table.
+        Most performant query to list messages by directly querying the Message table.
 
         This function filters by the agent_id (leveraging the index on messages.agent_id)
         and applies pagination using sequence_id as the cursor.
@@ -715,6 +719,7 @@ class MessageManager:
             ascending: If True, sort by sequence_id ascending; if False, sort descending.
             group_id: Optional group ID to filter messages by group_id.
             include_err: Optional boolean to include errors and error statuses. Used for debugging only.
+            run_id: Optional run ID to filter messages by run_id.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -725,14 +730,20 @@ class MessageManager:
 
         async with db_registry.async_session() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
-            await validate_agent_exists_async(session, agent_id, actor)
 
             # Build a query that directly filters the Message table by agent_id.
-            query = select(MessageModel).where(MessageModel.agent_id == agent_id)
+            query = select(MessageModel)
+
+            if agent_id:
+                await validate_agent_exists_async(session, agent_id, actor)
+                query = query.where(MessageModel.agent_id == agent_id)
 
             # If group_id is provided, filter messages by group_id.
             if group_id:
                 query = query.where(MessageModel.group_id == group_id)
+
+            if run_id:
+                query = query.where(MessageModel.run_id == run_id)
 
             if not include_err:
                 query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
@@ -972,7 +983,7 @@ class MessageManager:
             except Exception as e:
                 logger.error(f"Failed to search messages with Turbopuffer, falling back to SQL: {e}")
                 # fall back to SQL search
-                messages = await self.list_messages_for_agent_async(
+                messages = await self.list_messages(
                     agent_id=agent_id,
                     actor=actor,
                     query_text=query_text,
@@ -992,7 +1003,7 @@ class MessageManager:
                 return message_tuples
         else:
             # use sql-based search
-            messages = await self.list_messages_for_agent_async(
+            messages = await self.list_messages(
                 agent_id=agent_id,
                 actor=actor,
                 query_text=query_text,

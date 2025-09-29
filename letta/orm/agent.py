@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
+    from letta.orm.run import Run
     from letta.orm.source import Source
     from letta.orm.tool import Tool
 
@@ -133,8 +134,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         lazy="selectin",
         doc="Tags associated with the agent.",
     )
-    runs: Mapped[List["AgentsRuns"]] = relationship(
-        "AgentsRuns",
+    runs: Mapped[List["Run"]] = relationship(
+        "Run",
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",

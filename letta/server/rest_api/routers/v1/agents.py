@@ -30,13 +30,13 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
-from letta.schemas.enums import JobType
+from letta.schemas.enums import RunStatus
 from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
-from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
+from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
@@ -50,7 +50,7 @@ from letta.schemas.memory import (
 )
 from letta.schemas.message import MessageCreate, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
-from letta.schemas.run import Run
+from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
@@ -58,6 +58,7 @@ from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.server import SyncServer
+from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 
@@ -195,7 +196,7 @@ async def export_agent(
     if use_legacy_format:
         # Use the legacy serialization method
         try:
-            agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
+            agent = await server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
             return agent.model_dump()
         except NoResultFound:
             raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
@@ -432,8 +433,6 @@ async def create_agent(
     """
     Create an agent.
     """
-    # TODO remove
-    # agent.agent_type = AgentType.letta_v1_agent
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.create_agent_async(agent, actor=actor)
@@ -1117,8 +1116,6 @@ async def modify_message(
     """
     # TODO: support modifying tool calls/returns
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    # TODO: implement
     return await server.message_manager.update_message_by_letta_message_async(
         message_id=message_id, letta_message_update=request, actor=actor
     )
@@ -1168,33 +1165,26 @@ async def send_message(
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
-        job_status = JobStatus.created
-        run = await server.job_manager.create_job_async(
-            pydantic_job=Run(
-                user_id=actor.id,
-                status=job_status,
+        runs_manager = RunManager()
+        run = await runs_manager.create_run(
+            pydantic_run=PydanticRun(
                 agent_id=agent_id,
                 background=False,
                 metadata={
-                    "job_type": "send_message",
+                    "run_type": "send_message",
                 },
-                request_config=LettaRequestConfig(
-                    use_assistant_message=request.use_assistant_message,
-                    assistant_message_tool_name=request.assistant_message_tool_name,
-                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                    include_return_message_types=request.include_return_message_types,
-                ),
+                request_config=LettaRequestConfig.from_letta_request(request),
             ),
             actor=actor,
         )
     else:
         run = None
 
-    job_update_metadata = None
     # TODO (cliandy): clean this up
     redis_client = await get_redis_client()
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
+    run_update_metadata = None
     try:
         result = None
         if agent_eligible and model_compatible:
@@ -1220,17 +1210,17 @@ async def send_message(
                 assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
                 include_return_message_types=request.include_return_message_types,
             )
-        job_status = result.stop_reason.stop_reason.run_status
+        run_status = result.stop_reason.stop_reason.run_status
         return result
     except PendingApprovalError as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        run_update_metadata = {"error": str(e)}
+        run_status = RunStatus.failed
         raise HTTPException(
             status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
         )
     except Exception as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        run_update_metadata = {"error": str(e)}
+        run_status = RunStatus.failed
         raise
     finally:
         if settings.track_agent_run:
@@ -1239,12 +1229,14 @@ async def send_message(
             else:
                 # NOTE: we could also consider this an error?
                 stop_reason = None
-            await server.job_manager.safe_update_job_status_async(
-                job_id=run.id,
-                new_status=job_status,
+            await server.run_manager.update_run_by_id_async(
+                run_id=run.id,
+                update=RunUpdate(
+                    status=run_status,
+                    metadata=run_update_metadata,
+                    stop_reason=stop_reason,
+                ),
                 actor=actor,
-                metadata=job_update_metadata,
-                stop_reason=stop_reason,
             )
 
 
@@ -1301,28 +1293,21 @@ async def send_message_streaming(
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
 
-    # Create a new job for execution tracking
+    # Create a new run for execution tracking
     if settings.track_agent_run:
-        job_status = JobStatus.created
-        run = await server.job_manager.create_job_async(
-            pydantic_job=Run(
-                user_id=actor.id,
-                status=job_status,
+        runs_manager = RunManager()
+        run = await runs_manager.create_run(
+            pydantic_run=PydanticRun(
                 agent_id=agent_id,
                 background=request.background or False,
                 metadata={
-                    "job_type": "send_message_streaming",
+                    "run_type": "send_message_streaming",
                 },
-                request_config=LettaRequestConfig(
-                    use_assistant_message=request.use_assistant_message,
-                    assistant_message_tool_name=request.assistant_message_tool_name,
-                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                    include_return_message_types=request.include_return_message_types,
-                ),
+                request_config=LettaRequestConfig.from_letta_request(request),
             ),
             actor=actor,
         )
-        job_update_metadata = None
+        run_update_metadata = None
         await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
     else:
         run = None
@@ -1398,7 +1383,7 @@ async def send_message_streaming(
                         stream_generator=raw_stream,
                         redis_client=redis_client,
                         run_id=run.id,
-                        job_manager=server.job_manager,
+                        run_manager=server.run_manager,
                         actor=actor,
                     ),
                     label=f"background_stream_processor_{run.id}",
@@ -1434,24 +1419,24 @@ async def send_message_streaming(
                 include_return_message_types=request.include_return_message_types,
             )
         if settings.track_agent_run:
-            job_status = JobStatus.running
+            run_status = RunStatus.running
         return result
     except PendingApprovalError as e:
         if settings.track_agent_run:
-            job_update_metadata = {"error": str(e)}
-            job_status = JobStatus.failed
+            run_update_metadata = {"error": str(e)}
+            run_status = RunStatus.failed
         raise HTTPException(
             status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
         )
     except Exception as e:
         if settings.track_agent_run:
-            job_update_metadata = {"error": str(e)}
-            job_status = JobStatus.failed
+            run_update_metadata = {"error": str(e)}
+            run_status = RunStatus.failed
         raise
     finally:
         if settings.track_agent_run:
-            await server.job_manager.safe_update_job_status_async(
-                job_id=run.id, new_status=job_status, actor=actor, metadata=job_update_metadata
+            await server.run_manager.update_run_by_id_async(
+                run_id=run.id, update=RunUpdate(status=run_status, metadata=run_update_metadata), actor=actor
             )
 
 
@@ -1480,31 +1465,30 @@ async def cancel_agent_run(
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
         if run_id is None:
             logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
-            job_ids = await server.job_manager.list_jobs_async(
+            run_ids = await server.run_manager.list_runs(
                 actor=actor,
-                statuses=[JobStatus.created, JobStatus.running],
-                job_type=JobType.RUN,
+                statuses=[RunStatus.created, RunStatus.running],
                 ascending=False,
-                agent_ids=[agent_id],
+                agent_id=agent_id,  # NOTE: this will override agent_ids if provided
             )
-            run_ids = [Run.from_job(job).id for job in job_ids]
+            run_ids = [run.id for run in run_ids]
         else:
             run_ids = [run_id]
 
     results = {}
     for run_id in run_ids:
-        run = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
+        run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
         if run.metadata.get("lettuce") and settings.temporal_endpoint:
             client = await Client.connect(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
                 api_key=settings.temporal_api_key,
-                tls=settings.temporal_tls,  # This should be false for local runs
+                tls=True,  # This should be false for local runs
             )
             await client.cancel_workflow(run_id)
-        success = await server.job_manager.safe_update_job_status_async(
-            job_id=run_id,
-            new_status=JobStatus.cancelled,
+        success = await server.run_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.cancelled),
             actor=actor,
         )
         results[run_id] = "cancelled" if success else "failed"
@@ -1559,7 +1543,7 @@ async def _process_message_background(
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
 ) -> None:
-    """Background task to process the message and update job status."""
+    """Background task to process the message and update run status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
     try:
         agent = await server.agent_manager.get_agent_by_id_async(
@@ -1596,7 +1580,7 @@ async def _process_message_background(
                 input_messages=messages,
                 stream_steps=False,
                 stream_tokens=False,
-                metadata={"job_id": run_id},
+                metadata={"run_id": run_id},
                 # Support for AssistantMessage
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
@@ -1604,34 +1588,40 @@ async def _process_message_background(
                 include_return_message_types=include_return_message_types,
             )
 
-        job_update = JobUpdate(
-            status=JobStatus.completed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"result": result.model_dump(mode="json")},
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.completed, stop_reason=result.stop_reason.stop_reason),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
     except PendingApprovalError as e:
-        # Update job status to failed with specific error info
-        job_update = JobUpdate(
-            status=JobStatus.failed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"error": str(e), "error_code": "PENDING_APPROVAL", "pending_request_id": e.pending_request_id},
+        # Update run status to failed with specific error info
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.failed),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
     except Exception as e:
-        # Update job status to failed
-        job_update = JobUpdate(
-            status=JobStatus.failed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"error": str(e)},
+        # Update run status to failed
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.failed),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
 
 @router.post(
     "/{agent_id}/messages/async",
-    response_model=Run,
+    response_model=PydanticRun,
     operation_id="create_agent_message_async",
 )
 async def send_message_async(
@@ -1644,33 +1634,26 @@ async def send_message_async(
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
 
-    This is "asynchronous" in the sense that it's a background job and explicitly must be fetched by the run ID.
-    This is more like `send_message_job`
+    This is "asynchronous" in the sense that it's a background run and explicitly must be fetched by the run ID.
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    # Create a new job
+    # Create a new run
     use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint is not None
-    run = Run(
-        user_id=actor.id,
-        status=JobStatus.created,
+    run = PydanticRun(
         callback_url=request.callback_url,
         agent_id=agent_id,
         background=True,  # Async endpoints are always background
         metadata={
-            "job_type": "send_message_async",
-            "agent_id": agent_id,
+            "run_type": "send_message_async",
             "lettuce": use_lettuce,
         },
-        request_config=LettaRequestConfig(
-            use_assistant_message=request.use_assistant_message,
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-            include_return_message_types=request.include_return_message_types,
-        ),
+        request_config=LettaRequestConfig.from_letta_request(request),
     )
-    run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
+    run = await server.run_manager.create_run(
+        pydantic_run=run,
+        actor=actor,
+    )
 
     if use_lettuce:
         agent_state = await server.agent_manager.get_agent_by_id_async(
@@ -1713,17 +1696,21 @@ async def send_message_async(
             # Don't mark as failed since the shielded task is still running
         except Exception as e:
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
-            safe_create_task(
-                server.job_manager.update_job_by_id_async(
-                    job_id=run.id,
-                    job_update=JobUpdate(
-                        status=JobStatus.failed,
-                        completed_at=datetime.now(timezone.utc),
-                        metadata={"error": str(e)},
-                    ),
+            from letta.services.run_manager import RunManager
+
+            async def update_failed_run():
+                runs_manager = RunManager()
+                from letta.schemas.enums import RunStatus
+
+                await runs_manager.update_run_by_id_async(
+                    run_id=run.id,
+                    update=RunUpdate(status=RunStatus.failed),
                     actor=actor,
-                ),
-                label=f"update_failed_job_{run.id}",
+                )
+
+            safe_create_task(
+                update_failed_run(),
+                label=f"update_failed_run_{run.id}",
             )
 
     task.add_done_callback(handle_task_completion)

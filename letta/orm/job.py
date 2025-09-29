@@ -11,11 +11,8 @@ from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
 from letta.schemas.letta_stop_reason import StopReasonType
 
 if TYPE_CHECKING:
-    from letta.orm.agents_runs import AgentsRuns
-    from letta.orm.job_messages import JobMessage
     from letta.orm.message import Message
     from letta.orm.organization import Organization
-    from letta.orm.step import Step
     from letta.orm.user import User
 
 
@@ -62,11 +59,8 @@ class Job(SqlalchemyBase, UserMixin):
 
     # relationships
     user: Mapped["User"] = relationship("User", back_populates="jobs")
-    job_messages: Mapped[List["JobMessage"]] = relationship("JobMessage", back_populates="job", cascade="all, delete-orphan")
-    steps: Mapped[List["Step"]] = relationship("Step", back_populates="job", cascade="save-update")
     # organization relationship (nullable for backward compatibility)
     organization: Mapped[Optional["Organization"]] = relationship("Organization", back_populates="jobs")
-    agent: Mapped[List["AgentsRuns"]] = relationship("AgentsRuns", back_populates="run", cascade="all, delete-orphan")
 
     @property
     def messages(self) -> List["Message"]:

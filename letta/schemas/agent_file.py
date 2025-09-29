@@ -168,7 +168,7 @@ class AgentSchema(CreateAgent):
             per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
         )
 
-        messages = await message_manager.list_messages_for_agent_async(
+        messages = await message_manager.list_messages(
             agent_id=agent_state.id, actor=actor, limit=50
         )  # TODO: Expand to get more messages
 

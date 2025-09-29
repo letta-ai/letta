@@ -300,7 +300,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=self.current_run_id if self.current_run_id else None,
+                    run_id=self.current_run_id if self.current_run_id else None,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -644,7 +644,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=run_id if run_id else self.current_run_id,
+                    run_id=run_id if run_id else self.current_run_id,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -768,7 +768,7 @@ class LettaAgent(BaseAgent):
                             step_id=step_id,
                             agent_state=agent_state,
                             step_metrics=step_metrics,
-                            job_id=run_id if run_id else self.current_run_id,
+                            run_id=run_id if run_id else self.current_run_id,
                         )
 
                 except Exception as e:
@@ -989,7 +989,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=self.current_run_id if self.current_run_id else None,
+                    run_id=self.current_run_id if self.current_run_id else None,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -1676,6 +1676,7 @@ class LettaAgent(BaseAgent):
                 reasoning_content=None,
                 pre_computed_assistant_message_id=None,
                 step_id=step_id,
+                run_id=self.current_run_id,
                 is_approval_response=True,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
@@ -1786,6 +1787,7 @@ class LettaAgent(BaseAgent):
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
+                run_id=self.current_run_id,
                 is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
@@ -1793,13 +1795,6 @@ class LettaAgent(BaseAgent):
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
-
-        if run_id:
-            await self.job_manager.add_messages_to_job_async(
-                job_id=run_id,
-                message_ids=[m.id for m in persisted_messages if m.role != "user"],
-                actor=self.actor,
-            )
 
         return persisted_messages, continue_stepping, stop_reason
 

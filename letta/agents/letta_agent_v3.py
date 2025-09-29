@@ -472,9 +472,11 @@ class LettaAgentV3(LettaAgentV2):
                         for message in input_messages_to_persist:
                             message.is_err = True
                             message.step_id = step_id
+                            message.run_id = run_id
                         await self.message_manager.create_many_messages_async(
                             input_messages_to_persist,
                             actor=self.actor,
+                            run_id=run_id,
                             project_id=self.agent_state.project_id,
                             template_id=self.agent_state.template_id,
                         )
@@ -555,14 +557,23 @@ class LettaAgentV3(LettaAgentV2):
                 reasoning_content=None,
                 pre_computed_assistant_message_id=None,
                 step_id=step_id,
+                run_id=run_id,
                 is_approval_response=True,
                 force_set_request_heartbeat=False,
                 add_heartbeat_on_continue=False,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
+
+            # Set run_id on all messages before persisting
+            for message in messages_to_persist:
+                if message.run_id is None:
+                    message.run_id = run_id
+                print("MESSSAGE RUN ID", message.run_id, run_id)
+
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist,
                 actor=self.actor,
+                run_id=run_id,
                 project_id=agent_state.project_id,
                 template_id=agent_state.template_id,
             )
@@ -603,6 +614,7 @@ class LettaAgentV3(LettaAgentV2):
                 reasoning_content=content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
+                run_id=run_id,
                 is_approval_response=is_approval or is_denial,
                 force_set_request_heartbeat=False,
                 add_heartbeat_on_continue=False,
@@ -642,6 +654,7 @@ class LettaAgentV3(LettaAgentV2):
                     reasoning_content=content,
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
+                    run_id=run_id,
                 )
                 messages_to_persist = (initial_messages or []) + [approval_message]
                 continue_stepping = False
@@ -719,22 +732,22 @@ class LettaAgentV3(LettaAgentV2):
                     reasoning_content=content,
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
+                    run_id=run_id,
                     is_approval_response=is_approval or is_denial,
                     force_set_request_heartbeat=False,
                     add_heartbeat_on_continue=False,
                 )
                 messages_to_persist = (initial_messages or []) + tool_call_messages
 
-        persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
-        )
+        # Set run_id on all messages before persisting
+        for message in messages_to_persist:
+            if message.run_id is None:
+                message.run_id = run_id
+            print("MESSSAGE RUN ID", message.run_id, run_id)
 
-        if run_id:
-            await self.job_manager.add_messages_to_job_async(
-                job_id=run_id,
-                message_ids=[m.id for m in persisted_messages if m.role != "user"],
-                actor=self.actor,
-            )
+        persisted_messages = await self.message_manager.create_many_messages_async(
+            messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
+        )
 
         return persisted_messages, continue_stepping, stop_reason
 

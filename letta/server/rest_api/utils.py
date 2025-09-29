@@ -190,6 +190,7 @@ def create_approval_request_message_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
+    run_id: str = None,
 ) -> Message:
     # Construct the tool call with the assistant's message
     # Force set request_heartbeat in tool_args to calculated continue_stepping
@@ -213,6 +214,7 @@ def create_approval_request_message_from_llm_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
         step_id=step_id,
+        run_id=run_id,
     )
     if pre_computed_assistant_message_id:
         approval_message.id = pre_computed_assistant_message_id
@@ -230,6 +232,8 @@ def create_letta_messages_from_llm_response(
     function_response: Optional[str],
     timezone: str,
     actor: User,
+    run_id: str | None = None,
+    step_id: str = None,
     continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
     reasoning_content: Optional[
@@ -237,7 +241,6 @@ def create_letta_messages_from_llm_response(
     ] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
-    step_id: str | None = None,
     is_approval_response: bool | None = None,
     # force set request_heartbeat, useful for v2 loop to ensure matching tool rules
     force_set_request_heartbeat: bool = True,
@@ -278,6 +281,7 @@ def create_letta_messages_from_llm_response(
                 tool_call_id=tool_call_id,
                 created_at=get_utc_time(),
                 batch_item_id=llm_batch_item_id,
+                run_id=run_id,
             )
         else:
             # Safeguard against empty text messages
@@ -300,6 +304,7 @@ def create_letta_messages_from_llm_response(
                     tool_call_id=None,
                     created_at=get_utc_time(),
                     batch_item_id=llm_batch_item_id,
+                    run_id=run_id,
                 )
             else:
                 assistant_message = None
@@ -330,6 +335,7 @@ def create_letta_messages_from_llm_response(
                     # func_return=tool_execution_result.func_return,
                 )
             ],
+            run_id=run_id,
         )
         messages.append(tool_message)
 

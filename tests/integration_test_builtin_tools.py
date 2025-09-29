@@ -303,7 +303,7 @@ async def test_web_search_uses_exa():
             message_manager=MagicMock(),
             agent_manager=MagicMock(),
             block_manager=MagicMock(),
-            job_manager=MagicMock(),
+            run_manager=MagicMock(),
             passage_manager=MagicMock(),
             actor=MagicMock(),
         )

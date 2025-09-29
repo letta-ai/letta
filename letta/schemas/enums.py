@@ -51,6 +51,11 @@ class MessageRole(str, Enum):
     approval = "approval"
 
 
+class MessageSourceType(str, Enum):
+    input = "input"  # external input
+    output = "output"  # internal output
+
+
 class OptionState(str, Enum):
     """Useful for kwargs that are bool + default option"""
 
@@ -76,6 +81,18 @@ class JobStatus(StrEnum):
     @property
     def is_terminal(self):
         return self in (JobStatus.completed, JobStatus.failed, JobStatus.cancelled, JobStatus.expired)
+
+
+class RunStatus(StrEnum):
+    """
+    Status of the run.
+    """
+
+    created = "created"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
 
 
 class AgentStepStatus(str, Enum):

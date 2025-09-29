@@ -194,6 +194,7 @@ class Message(BaseMessage):
     tool_call_id: Optional[str] = Field(default=None, description="The ID of the tool call. Only applicable for role tool.")
     # Extras
     step_id: Optional[str] = Field(default=None, description="The id of the step that this message was created in.")
+    run_id: Optional[str] = Field(default=None, description="The id of the run that this message was created in.")
     otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
     tool_returns: Optional[List[ToolReturn]] = Field(default=None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
@@ -209,6 +210,13 @@ class Message(BaseMessage):
     denial_reason: Optional[str] = Field(default=None, description="The reason the tool call request was denied.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
+
+    # validate that run_id is set
+    # @model_validator(mode="after")
+    # def validate_run_id(self):
+    #    if self.run_id is None:
+    #        raise ValueError("Run ID is required")
+    #    return self
 
     @field_validator("role")
     @classmethod
@@ -323,6 +331,7 @@ class Message(BaseMessage):
                     approve=self.approve,
                     approval_request_id=self.approval_request_id,
                     reason=self.denial_reason,
+                    run_id=self.run_id,
                 )
                 messages.append(approval_response_message)
         else:
@@ -353,6 +362,7 @@ class Message(BaseMessage):
                             sender_id=self.sender_id,
                             step_id=self.step_id,
                             is_err=self.is_err,
+                            run_id=self.run_id,
                         )
                     )
                 else:
@@ -367,6 +377,7 @@ class Message(BaseMessage):
                             sender_id=self.sender_id,
                             step_id=self.step_id,
                             is_err=self.is_err,
+                            run_id=self.run_id,
                         )
                     )
 
@@ -401,6 +412,7 @@ class Message(BaseMessage):
                             otid=otid,
                             step_id=self.step_id,
                             is_err=self.is_err,
+                            run_id=self.run_id,
                         )
                     )
 
@@ -432,6 +444,7 @@ class Message(BaseMessage):
                         otid=otid,
                         step_id=self.step_id,
                         is_err=self.is_err,
+                        run_id=self.run_id,
                     )
                 )
 
@@ -489,6 +502,7 @@ class Message(BaseMessage):
                         sender_id=self.sender_id,
                         step_id=self.step_id,
                         is_err=self.is_err,
+                        run_id=self.run_id,
                     )
                 )
             else:
@@ -506,6 +520,7 @@ class Message(BaseMessage):
                         sender_id=self.sender_id,
                         step_id=self.step_id,
                         is_err=self.is_err,
+                        run_id=self.run_id,
                     )
                 )
         return messages
@@ -549,6 +564,7 @@ class Message(BaseMessage):
             sender_id=self.sender_id,
             step_id=self.step_id,
             is_err=self.is_err,
+            run_id=self.run_id,
         )
 
     @staticmethod
@@ -582,6 +598,7 @@ class Message(BaseMessage):
             sender_id=self.sender_id,
             step_id=self.step_id,
             is_err=self.is_err,
+            run_id=self.run_id,
         )
 
     def _convert_system_message(self) -> SystemMessage:
@@ -599,6 +616,7 @@ class Message(BaseMessage):
             otid=self.otid,
             sender_id=self.sender_id,
             step_id=self.step_id,
+            run_id=self.run_id,
         )
 
     @staticmethod
@@ -612,6 +630,7 @@ class Message(BaseMessage):
         name: Optional[str] = None,
         group_id: Optional[str] = None,
         tool_returns: Optional[List[ToolReturn]] = None,
+        run_id: Optional[str] = None,
     ) -> Message:
         """Convert a ChatCompletion message object into a Message object (synced to DB)"""
         if not created_at:
@@ -673,6 +692,7 @@ class Message(BaseMessage):
                     id=str(id),
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
             else:
                 return Message(
@@ -687,6 +707,7 @@ class Message(BaseMessage):
                     created_at=created_at,
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
 
         elif "function_call" in openai_message_dict and openai_message_dict["function_call"] is not None:
@@ -722,6 +743,7 @@ class Message(BaseMessage):
                     id=str(id),
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
             else:
                 return Message(
@@ -736,6 +758,7 @@ class Message(BaseMessage):
                     created_at=created_at,
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
 
         else:
@@ -771,6 +794,7 @@ class Message(BaseMessage):
                     id=str(id),
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
             else:
                 return Message(
@@ -785,6 +809,7 @@ class Message(BaseMessage):
                     created_at=created_at,
                     tool_returns=tool_returns,
                     group_id=group_id,
+                    run_id=run_id,
                 )
 
     def to_openai_dict_search_results(self, max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN) -> dict:

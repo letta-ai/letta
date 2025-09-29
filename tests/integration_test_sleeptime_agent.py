@@ -150,7 +150,7 @@ async def test_sleeptime_group_chat(client):
         run_ids.extend(response.usage.run_ids or [])
 
         runs = client.runs.list()
-        agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
+        agent_runs = [run for run in runs if run.agent_id == sleeptime_agent_id]
         assert len(agent_runs) == len(run_ids)
 
     # 6. Verify run status after sleep

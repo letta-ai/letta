@@ -8,8 +8,10 @@ from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.config import LettaConfig
 from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.message import MessageCreate
+from letta.schemas.run import Run
 from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, RequiredBeforeExitToolRule, TerminalToolRule
 from letta.server.server import SyncServer
+from letta.services.run_manager import RunManager
 from letta.services.telemetry_manager import NoopTelemetryManager
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
@@ -244,8 +246,17 @@ async def run_agent_step(agent_state, input_messages, actor):
         actor=actor,
     )
 
+    run = Run(
+        agent_id=agent_state.id,
+    )
+    run = await RunManager().create_run(
+        pydantic_run=run,
+        actor=actor,
+    )
+
     return await agent_loop.step(
         input_messages,
+        run_id=run.id,
         max_steps=50,
         use_assistant_message=False,
     )
