@@ -8,3 +8,7 @@ export function getRedisModelTransactionsKey(
 ) {
   return `${MODEL_TRANSACTIONS_REDIS_KEY}:${type}:${organizationId}`;
 }
+
+export function getRecurringCreditUsageKey(organizationId: string, subscription: { billingPeriodStart: string; billingPeriodEnd: string }) {
+  return `recurringCreditUsage:${organizationId}:${subscription.billingPeriodStart}:${subscription.billingPeriodEnd}`;
+}

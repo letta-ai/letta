@@ -1,4 +1,4 @@
-import type { BillingTiersType } from '@letta-cloud/types';
+import type { BillingTiersType, PaymentCustomerSubscription } from '@letta-cloud/types';
 
 export interface UsageLimits {
   providers: number;
@@ -88,9 +88,29 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     apiKeys: 5_000, // 5,000 API keys
     abTests: 10_000,
   },
+  pro: {
+    monthlyCost: 20,
+    providers: 5,
+    agents: 10_000_000,
+    identities: 10_000_000,
+    projects: 100,
+    dataSources: 10_000_000,
+    templates: 20,
+    tools: 300,
+    filesPerMinute: 150,
+    fileSizePerMinute: TwentyFiveMB, // 10 MB per minute
+    groups: 10,
+    blocks: 100_000_000,
+    premiumInferencesPerMonth: 0,
+    freeInferencesPerMonth: 0,
+    fileSize: TwentyFiveMB,
+    storage: OneGB * 10, // 1 GB
+    apiKeys: 1_000, // 100 API keys
+    abTests: 1_000,
+  },
   free: {
     monthlyCost: 0,
-    providers: 50,
+    providers: 5,
     agents: 100,
     identities: 100,
     dataSources: 25,
@@ -109,6 +129,19 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     abTests: 10,
   },
 };
+
+export function getRecurrentSubscriptionLimits(subscription: PaymentCustomerSubscription) {
+  const { tier } = subscription;
+
+  switch (tier) {
+    case 'free':
+      return 5_000;
+    case 'pro':
+      return 20_000;
+    default:
+      return 0;
+  }
+}
 
 export function getUsageLimits(billingTier: BillingTiersType) {
   return limitMap[billingTier] || limitMap.free;

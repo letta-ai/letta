@@ -15,15 +15,10 @@ import {
   db,
   organizationCreditTransactions,
 } from '@letta-cloud/service-database';
+import type { PaymentCustomerSubscription } from '@letta-cloud/types';
 
-interface ProcessStepResponse {
-  newCredits?: string;
-  transactionId: string;
-}
 
-export async function processStep(
-  step: Step,
-): Promise<ProcessStepResponse | null> {
+async function processStepWithLegacySubscription(step: Step, subscription: PaymentCustomerSubscription) {
   if (
     !step.model ||
     !step.model_endpoint ||
@@ -31,34 +26,6 @@ export async function processStep(
     !step.organization_id
   ) {
     return null;
-  }
-
-  if (step.provider_category === 'byok') {
-    const org = await getRedisData('coreOrganizationIdToOrganizationId', {
-      coreOrganizationId: step.organization_id,
-    });
-
-    if (!org) {
-      return null;
-    }
-
-    const [txn] = await db
-      .insert(organizationCreditTransactions)
-      .values({
-        amount: '0',
-        organizationId: org.organizationId,
-        stepId: step.id,
-        source: 'inference',
-        note: `BYOK transaction for model ${step.model}`,
-        transactionType: 'subtraction',
-      })
-      .returning({
-        id: organizationCreditTransactions.id,
-      }).onConflictDoNothing()
-
-    return {
-      transactionId: txn.id,
-    };
   }
 
   const [creditCost, modelData, webOrgId] = await Promise.all([
@@ -84,30 +51,12 @@ export async function processStep(
       return null;
     }
 
-    const transactionLock = await createUniqueRedisProperty(
-      'transactionLock',
-      {},
-      step.id,
-      {
-        // expires in 15 minutes
-        expiresAt: Date.now() + 15 * 60 * 1000,
-        data: {
-          lockedAt: Date.now(),
-        },
-      },
-    );
-
-    if (!transactionLock) {
-      console.warn(`Transaction lock already exists for step ${step.id}`);
-      return null;
-    }
-
     let amount = creditCost;
 
     const modelTier = modelData?.modelId
       ? await getRedisData('modelIdToModelTier', {
-          modelId: modelData.modelId,
-        })
+        modelId: modelData.modelId,
+      })
       : undefined;
 
     if (
@@ -115,10 +64,6 @@ export async function processStep(
       modelTier &&
       ['free', 'premium'].includes(modelTier?.tier || '')
     ) {
-      const subscription = await getCustomerSubscription(
-        webOrgId.organizationId,
-      );
-
       const subTier = subscription.tier || 'free';
 
       const usageLimits = getUsageLimits(subTier);
@@ -163,4 +108,77 @@ export async function processStep(
 
     return null;
   }
+}
+
+interface ProcessStepResponse {
+  newCredits?: string;
+  transactionId: string;
+}
+
+export async function processStep(
+  step: Step,
+): Promise<ProcessStepResponse | null> {
+  if (
+    !step.model ||
+    !step.model_endpoint ||
+    !step.context_window_limit ||
+    !step.organization_id
+  ) {
+    return null;
+  }
+
+  const transactionLock = await createUniqueRedisProperty(
+    'transactionLock',
+    {},
+    step.id,
+    {
+      // expires in 15 minutes
+      expiresAt: Date.now() + 15 * 60 * 1000,
+      data: {
+        lockedAt: Date.now(),
+      },
+    },
+  );
+
+  if (!transactionLock) {
+    console.warn(`Transaction lock already exists for step ${step.id}`);
+    return null;
+  }
+
+
+  if (step.provider_category === 'byok') {
+    const org = await getRedisData('coreOrganizationIdToOrganizationId', {
+      coreOrganizationId: step.organization_id,
+    });
+
+    if (!org) {
+      return null;
+    }
+
+    const [txn] = await db
+      .insert(organizationCreditTransactions)
+      .values({
+        amount: '0',
+        organizationId: org.organizationId,
+        stepId: step.id,
+        source: 'inference',
+        note: `BYOK transaction for model ${step.model}`,
+        transactionType: 'subtraction',
+      })
+      .returning({
+        id: organizationCreditTransactions.id,
+      }).onConflictDoNothing()
+
+    return {
+      transactionId: txn.id,
+    };
+  }
+
+  const subscription = await getCustomerSubscription(step.organization_id);
+
+  if (subscription.tier !== 'pro') {
+    await processStepWithLegacySubscription(step, subscription);
+  }
+
+  return null;
 }
