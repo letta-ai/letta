@@ -54,7 +54,7 @@ export function CurrentPlan() {
     switch (billingTier) {
       case 'free':
         return t('tiers.free.title');
-      case 'pro':
+      case 'pro-legacy':
         return t('tiers.pro.title');
       case 'scale':
         return t('tiers.scale.title');

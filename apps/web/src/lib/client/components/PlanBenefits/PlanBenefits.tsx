@@ -72,7 +72,7 @@ function FreePlanBenefits() {
 function ProPlanBenefits() {
   const t = useTranslations('components/PlanBenefits');
 
-  const limits = getUsageLimits('pro');
+  const limits = getUsageLimits('pro-legacy');
 
   const { formatFileSize, formatNumber } = useFormatters();
 
@@ -168,7 +168,7 @@ export function PlanBenefits(props: PlanBenefitsProps) {
   switch (props.billingTier) {
     case 'free':
       return <FreePlanBenefits />;
-    case 'pro':
+    case 'pro-legacy':
       return <ProPlanBenefits />;
     case 'enterprise':
       return <EnterprisePlanBenefits />;

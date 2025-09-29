@@ -8,7 +8,7 @@ jest.mock('@letta-cloud/service-database', () => ({
 import { getCustomerSubscription } from './getCustomerSubscription';
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
-import { PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
+import { LEGACY_PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 jest.mock('../getStripeClient/getStripeClient');
@@ -56,7 +56,7 @@ describe('getCustomerSubscription', () => {
   describe('Redis caching', () => {
     it('should return cached data when available', async () => {
       const cachedResult = {
-        tier: 'pro' as const,
+        tier: 'pro-legacy' as const,
         billingPeriodEnd: '2024-01-31',
         billingPeriodStart: '2024-01-01',
         id: 'sub_123',
@@ -153,7 +153,7 @@ describe('getCustomerSubscription', () => {
       });
     });
 
-    it('should return pro tier for active pro subscription', async () => {
+    it('should return pro-legacy tier for active pro-legacy subscription', async () => {
       const mockStripe = {
         subscriptions: {
           list: jest.fn().mockResolvedValue({
@@ -165,7 +165,7 @@ describe('getCustomerSubscription', () => {
                   data: [
                     {
                       price: {
-                        product: PRO_PLAN_PRODUCT_IDS[0],
+                        product: LEGACY_PRO_PLAN_PRODUCT_IDS[0],
                       },
                     },
                   ],
@@ -183,7 +183,7 @@ describe('getCustomerSubscription', () => {
       const result = await getCustomerSubscription(mockOrganizationId);
 
       expect(result).toEqual({
-        tier: 'pro',
+        tier: 'pro-legacy',
         billingPeriodEnd: '2024-02-01T00:00:00.000Z',
         billingPeriodStart: '2024-01-01T00:00:00.000Z',
         id: 'sub_123',
@@ -241,7 +241,7 @@ describe('getCustomerSubscription', () => {
                   data: [
                     {
                       price: {
-                        product: PRO_PLAN_PRODUCT_IDS[0],
+                        product: LEGACY_PRO_PLAN_PRODUCT_IDS[0],
                       },
                     },
                   ],
@@ -259,7 +259,7 @@ describe('getCustomerSubscription', () => {
       const result = await getCustomerSubscription(mockOrganizationId);
 
       expect(result).toEqual({
-        tier: 'pro',
+        tier: 'pro-legacy',
         billingPeriodEnd: '2024-02-01T00:00:00.000Z',
         billingPeriodStart: '2024-01-01T00:00:00.000Z',
         cancelled: true,
@@ -279,7 +279,7 @@ describe('getCustomerSubscription', () => {
                   data: [
                     {
                       price: {
-                        product: PRO_PLAN_PRODUCT_IDS[0],
+                        product: LEGACY_PRO_PLAN_PRODUCT_IDS[0],
                       },
                     },
                   ],
@@ -297,7 +297,7 @@ describe('getCustomerSubscription', () => {
       const result = await getCustomerSubscription(mockOrganizationId);
 
       expect(result).toEqual({
-        tier: 'pro',
+        tier: 'pro-legacy',
         billingPeriodEnd: '2024-02-01T00:00:00.000Z',
         billingPeriodStart: '2024-01-01T00:00:00.000Z',
         id: 'sub_trial',
@@ -317,7 +317,7 @@ describe('getCustomerSubscription', () => {
                   data: [
                     {
                       price: {
-                        product: PRO_PLAN_PRODUCT_IDS[0],
+                        product: LEGACY_PRO_PLAN_PRODUCT_IDS[0],
                       },
                     },
                   ],
@@ -408,7 +408,7 @@ describe('getCustomerSubscription', () => {
                   data: [
                     {
                       price: {
-                        product: PRO_PLAN_PRODUCT_IDS[0],
+                        product: LEGACY_PRO_PLAN_PRODUCT_IDS[0],
                       },
                     },
                   ],
@@ -429,7 +429,7 @@ describe('getCustomerSubscription', () => {
         'customerSubscription',
         { organizationId: mockOrganizationId },
         expect.objectContaining({
-          data: expect.objectContaining({ tier: 'pro' }),
+          data: expect.objectContaining({ tier: 'pro-legacy' }),
           expiresAt: expect.any(Number),
         }),
       );

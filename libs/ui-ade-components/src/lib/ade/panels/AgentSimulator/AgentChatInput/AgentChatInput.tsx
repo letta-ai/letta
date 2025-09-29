@@ -138,7 +138,7 @@ export function AgentChatInput() {
             return t(
               'hasFailedToSendMessageText.agentLimitExceeded.enterprise',
             );
-          case 'pro':
+          case 'pro-legacy':
             return t.rich('hasFailedToSendMessageText.agentLimitExceeded.pro', {
               link: (chunks) => {
                 return (
@@ -168,7 +168,7 @@ export function AgentChatInput() {
         if (billingTier === 'enterprise') {
           return t('hasFailedToSendMessageText.freeUsageExceeded.enterprise');
         }
-        if (billingTier === 'pro') {
+        if (billingTier === 'pro-legacy') {
           return t.rich('hasFailedToSendMessageText.freeUsageExceeded.pro', {
             link: (chunks) => {
               return (
@@ -204,7 +204,7 @@ export function AgentChatInput() {
           return t('hasFailedToSendMessageText.premiumUsageExceeded.scale');
         }
 
-        if (billingTier === 'pro') {
+        if (billingTier === 'pro-legacy') {
           return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.pro', {
             link: (chunks) => {
               return (

@@ -128,7 +128,7 @@ function AccountDetailsCTA(props: AccountDetailsCTAProps) {
   switch (billingTier) {
     case 'free':
       return <HStack></HStack>;
-    case 'pro':
+    case 'pro-legacy':
     case 'scale':
       return (
         <SubscribedView
@@ -218,7 +218,7 @@ function SubscriptionDetails() {
     switch (data?.body.billingTier) {
       case 'free':
         return t('SubscriptionDetails.description.free');
-      case 'pro':
+      case 'pro-legacy':
         return t('SubscriptionDetails.description.pro');
       case 'scale':
         return t('SubscriptionDetails.description.scale');

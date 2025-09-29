@@ -20,7 +20,7 @@ export const SCALE_PLAN_PRODUCT_IDS = [
   'prod_SJ7PCALsx1uv67',
 ];
 
-export const PRO_PLAN_PRODUCT_IDS = [
+export const LEGACY_PRO_PLAN_PRODUCT_IDS = [
   // https://dashboard.stripe.com/products/prod_SBTwGZfXZVdEah
   'prod_SBTwGZfXZVdEah',
   // https://dashboard.stripe.com/test/products/prod_SBTziQ1oxYLnNc
