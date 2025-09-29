@@ -13600,6 +13600,10 @@
                         "type": "string",
                         "pattern": "^[a-zA-Z0-9_-]+$",
                         "description": "Optional custom name for the template. If not provided, a random name will be generated."
+                      },
+                      "update_existing_tools": {
+                        "type": "boolean",
+                        "description": "If true, update existing custom tools source_code and json_schema (source_type cannot be changed)"
                       }
                     },
                     "required": ["type", "agent_file"],
@@ -14062,6 +14066,133 @@
                   }
                 },
                 "required": ["version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project_id}/{template_name}/agent-file": {
+      "put": {
+        "description": "Updates the current working version of a template from an agent file",
+        "summary": "Update current template from agent file (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project id"
+          },
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name (without version)"
+          }
+        ],
+        "operationId": "templates.updateCurrentTemplateFromAgentFile",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agent_file_json": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "nullable": true
+                    },
+                    "description": "The agent file to update the current template version from"
+                  },
+                  "update_existing_tools": {
+                    "default": false,
+                    "type": "boolean",
+                    "description": "If true, update existing custom tools source_code and json_schema (source_type cannot be changed)"
+                  },
+                  "save_existing_changes": {
+                    "default": false,
+                    "type": "boolean",
+                    "description": "If true, Letta will automatically save any changes as a version before updating the template"
+                  }
+                },
+                "required": ["agent_file_json"]
               }
             }
           }

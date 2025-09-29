@@ -43,4 +43,5 @@ export * from './lib/migrateDeploymentEntities/migrateDeploymentEntities';
 export * from './lib/migrateAllDeploymentsByBaseTemplateId/migrateAllDeploymentsByBaseTemplateId';
 export * from './lib/getCachedLLMConfig/getCachedLLMConfig';
 export * from './lib/setCurrentTemplateFromSnapshot/setCurrentTemplateFromSnapshot';
+export * from './lib/updateTemplateFromAgentFile/updateTemplateFromAgentFile';
 export * from './lib/migrateClassicTemplateEntities/migrateClassicTemplateEntities';

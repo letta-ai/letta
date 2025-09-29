@@ -34,6 +34,7 @@ interface CreateTemplateOptions {
   name?: string;
   allowNameOverride?: boolean;
   userId: string;
+  updateExistingTools?: boolean;
 }
 
 export const CREATE_TEMPLATE_ERRORS = {
@@ -287,6 +288,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
     userId,
     base,
     tx,
+    updateExistingTools = false,
   } = options;
 
   // Get project
@@ -339,6 +341,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
         toolMapping = await mapToolsFromAgentFile({
           base,
           lettaAgentsId,
+          updateExistingTools,
         });
       } catch (_) {
         // If tool creation fails, throw a specific error

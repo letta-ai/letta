@@ -1,5 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
+import { deepEqual } from 'fast-equals';
 
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import {
@@ -23,7 +24,11 @@ import {
   CreateEntitiesFromTemplateErrors,
   migrateDeploymentEntities,
   setCurrentTemplateFromSnapshot,
-  SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS, migrateClassicTemplateEntities, migrateAllDeploymentsByBaseTemplateId
+  SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS,
+  updateTemplateFromAgentFile,
+  UPDATE_TEMPLATE_FROM_AGENT_FILE_ERRORS,
+  migrateClassicTemplateEntities,
+  migrateAllDeploymentsByBaseTemplateId
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { and, eq, ilike, count, not, desc, or } from 'drizzle-orm';
@@ -757,7 +762,7 @@ async function createTemplate(
       lettaTemplate = result.lettaTemplate;
       projectSlug = result.projectSlug;
     } else if (type === 'agent_file') {
-      const { agent_file: agentFileSchema } = req.body;
+      const { agent_file: agentFileSchema, update_existing_tools = false } = req.body;
 
       if (!agentFileSchema) {
         return {
@@ -775,6 +780,7 @@ async function createTemplate(
         userId,
         base: agentFileSchema as AgentFileSchema,
         name,
+        updateExistingTools: update_existing_tools,
       });
       lettaTemplate = result.lettaTemplate;
       projectSlug = result.projectSlug;
@@ -1480,6 +1486,123 @@ async function setCurrentTemplateFromSnapshotHandler(
   }
 }
 
+type UpdateCurrentTemplateFromAgentFileRequest = ServerInferRequest<
+  typeof cloudContracts.templates.updateCurrentTemplateFromAgentFile
+>;
+type UpdateCurrentTemplateFromAgentFileResponse = ServerInferResponses<
+  typeof cloudContracts.templates.updateCurrentTemplateFromAgentFile
+>;
+
+async function updateCurrentTemplateFromAgentFileHandler(
+  req: UpdateCurrentTemplateFromAgentFileRequest,
+  context: SDKContext,
+): Promise<UpdateCurrentTemplateFromAgentFileResponse> {
+  const { organizationId, lettaAgentsUserId } = getContextDataHack(req, context);
+  const { project_id, template_name } = req.params;
+  const { agent_file_json: agentFile, update_existing_tools = false, save_existing_changes = false } = req.body;
+
+  const project = await getProjectFromSlugOrId(project_id, organizationId);
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Get full project data with organization check
+  const projectData = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, project.id),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!projectData) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  try {
+    // Check if we need to save existing changes
+    if (save_existing_changes) {
+      try {
+        // Get current and latest versions to compare snapshots
+        const currentTemplate = await getTemplateByName({
+          lettaAgentsId: lettaAgentsUserId,
+          organizationId,
+          versionString: `${projectData.slug}/${template_name}:current`,
+        });
+
+        const latestTemplate = await getTemplateByName({
+          lettaAgentsId: lettaAgentsUserId,
+          organizationId,
+          versionString: `${projectData.slug}/${template_name}:latest`,
+        });
+
+
+
+        // Compare snapshots - if they're different, there are unsaved changes
+        if (!deepEqual(currentTemplate, latestTemplate)) {
+          // Save existing changes before updating
+          await saveTemplate({
+            projectSlug: projectData.slug,
+            templateName: template_name,
+            organizationId,
+            lettaAgentsId: lettaAgentsUserId,
+            message: 'Auto-save before updating from agent file',
+          });
+        }
+      } catch (error) {
+        // If save fails or comparison fails, log warning but continue
+        console.warn('Failed to save existing changes before update:', error);
+      }
+    }
+
+    const result = await updateTemplateFromAgentFile({
+      projectId: projectData.id,
+      templateName: template_name,
+      organizationId,
+      lettaAgentsId: lettaAgentsUserId,
+      agentFile: agentFile as AgentFileSchema,
+      updateExistingTools: update_existing_tools,
+    });
+
+    return {
+      status: 200,
+      body: result,
+    };
+  } catch (error) {
+    console.error('Error updating current template from agent file:', error);
+
+    // Handle known errors
+    if (error instanceof Error) {
+      const knownErrors = Object.values(UPDATE_TEMPLATE_FROM_AGENT_FILE_ERRORS);
+      if (knownErrors.includes(error.message)) {
+        return {
+          status: 400,
+          body: {
+            message: error.message,
+          },
+        };
+      }
+    }
+
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to update current template from agent file',
+      },
+    };
+  }
+}
+
 export const templatesRouter = {
   createAgentsFromTemplate,
   listTemplates,
@@ -1493,4 +1616,5 @@ export const templatesRouter = {
   listTemplateVersions,
   migrateDeployment,
   setCurrentTemplateFromSnapshot: setCurrentTemplateFromSnapshotHandler,
+  updateCurrentTemplateFromAgentFile: updateCurrentTemplateFromAgentFileHandler,
 };
