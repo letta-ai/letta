@@ -14,7 +14,31 @@ import { VStack } from '@letta-cloud/ui-component-library';
 
 export const metadata = {
   title: 'Letta',
-  description: 'Advancing the frontier of AI systems with memory',
+  description:
+    'The platform for stateful agents. Build AI agents with long-term memory, advanced reasoning, and custom tools using the Letta API and Agent Development Environment (ADE).',
+  metadataBase: new URL('https://af.directory'),
+  openGraph: {
+    title: 'Letta',
+    description:
+      'The platform for stateful agents. Build AI agents with long-term memory, advanced reasoning, and custom tools using the Letta API and Agent Development Environment (ADE).',
+    type: 'website',
+    siteName: 'Letta',
+    images: [
+      {
+        url: '/seo/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Letta cover',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Letta',
+    description:
+      'The platform for stateful agents. Build AI agents with long-term memory, advanced reasoning, and custom tools using the Letta API and Agent Development Environment (ADE).',
+    images: ['/seo/og-image.jpg'],
+  },
 };
 
 const manrope = Manrope({
