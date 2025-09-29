@@ -2212,6 +2212,44 @@ def test_upsert_tools(client: LettaSDKClient):
     client.tools.delete(tool.id)
 
 
+def test_run_list(client: LettaSDKClient):
+    """Test listing runs."""
+
+    # create an agent
+    agent = client.agents.create(
+        name="test_run_list",
+        memory_blocks=[
+            CreateBlock(label="persona", value="you are a helpful assistant"),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    # message an agent
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            MessageCreate(role="user", content="Hello, how are you?"),
+        ],
+    )
+
+    # message an agent async
+    async_run = client.agents.messages.create_async(
+        agent_id=agent.id,
+        messages=[
+            MessageCreate(role="user", content="Hello, how are you?"),
+        ],
+    )
+
+    # list runs
+    runs = client.runs.list(agent_ids=[agent.id])
+    assert len(runs) == 2
+    assert async_run.id in [run.id for run in runs]
+
+    # test get run
+    run = client.runs.retrieve(runs[0].id)
+    assert run.agent_id == agent.id
+
 @pytest.mark.asyncio
 async def test_create_batch(client: LettaSDKClient, server: SyncServer):
     # create agents
