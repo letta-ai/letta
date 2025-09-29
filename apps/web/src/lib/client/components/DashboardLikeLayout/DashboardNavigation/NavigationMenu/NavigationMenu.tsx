@@ -22,7 +22,9 @@ import {
   PlusIcon,
   McpIcon,
   BarChartIcon,
-  PersonIcon, EyeOpenIcon
+  PersonIcon,
+  EyeOpenIcon,
+  AppVersion,
 } from '@letta-cloud/ui-component-library';
 import { DashboardNavigationButton } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigationButton/DashboardNavigationButton';
 import { useTranslations } from '@letta-cloud/translations';
@@ -102,8 +104,7 @@ function ProjectSpecificNavigation() {
 
   const t = useTranslations('DashboardNavigation.ProjectSpecificNavigation');
 
-
-  const { data: isRunsPageEnabled } = useFeatureFlag('RUNS_PAGE')
+  const { data: isRunsPageEnabled } = useFeatureFlag('RUNS_PAGE');
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
@@ -210,14 +211,20 @@ function ToolsNavigationItems() {
         href="javascript:void(0)"
         id="tools"
         label={t('tools')}
-        postIcon={isExpanded ? <ChevronDownIcon color="muted" size="xsmall" /> : <ChevronRightIcon color="muted" size="xsmall" />}
+        postIcon={
+          isExpanded ? (
+            <ChevronDownIcon color="muted" size="xsmall" />
+          ) : (
+            <ChevronRightIcon color="muted" size="xsmall" />
+          )
+        }
         icon={<ToolsIcon />}
         onClick={handleToolsClick}
       />
       <div
         className={cn(
           'transition-all overflow-hidden duration-500',
-          isExpanded ? 'max-h-[500px]' : 'max-h-0'
+          isExpanded ? 'max-h-[500px]' : 'max-h-0',
         )}
       >
         <DashboardNavigationButton
@@ -478,7 +485,10 @@ export function NavigationMenu(props: NavigationMenuProps) {
           'absolute transition-opacity w-full h-full bg-background-grey duration-500',
         )}
       >
-        <SettingsMenu />
+        <VStack fullHeight justify="spaceBetween">
+          <SettingsMenu />
+          <AppVersion />
+        </VStack>
       </div>
       <VStack gap={false}>
         <div
