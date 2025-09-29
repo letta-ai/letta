@@ -21,6 +21,7 @@ import {
   Typography,
   useForm,
   VStack,
+  toast,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -47,7 +48,10 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { MY_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 import { useAtom } from 'jotai/index';
-import { dirtyToolAtom, stagedToolAtom } from './hooks/useStagedCode/useStagedCode';
+import {
+  dirtyToolAtom,
+  stagedToolAtom,
+} from './hooks/useStagedCode/useStagedCode';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -74,7 +78,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
   const { trigger } = props;
   const t = useTranslations('ToolManager');
 
-  const { setPath } = useToolManagerState();
+  const { setPath, setSelectedToolId } = useToolManagerState();
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
@@ -101,7 +105,6 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
   });
 
   const queryClient = useQueryClient();
-  const { setSelectedToolId } = useToolManagerState();
 
   const { mutate, isPending, error, reset } = useToolsServiceCreateTool({
     onSuccess: (data) => {
@@ -116,8 +119,8 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
       });
       reset();
 
+      toast.success(t('CreateToolDialog.success'));
       setDialogOpen(false);
-      setPath('/custom');
 
       queryClient.setQueriesData<Tool[]>(
         {
@@ -142,6 +145,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
       );
 
       setSelectedToolId(data.id);
+      setPath('/custom');
     },
   });
 
@@ -206,6 +210,8 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
     },
     [mutate],
   );
+
+  // here
 
   return (
     <FormProvider {...form}>
@@ -600,14 +606,11 @@ function ToolManagerContent() {
 
 function ConfirmLeaveDialog() {
   const t = useTranslations('ToolManager');
-  const {
-    closeToolManager,
-    isConfirmationDialogOpen,
-    setDialogOpen,
-  } = useToolManagerState();
+  const { closeToolManager, isConfirmationDialogOpen, setDialogOpen } =
+    useToolManagerState();
 
   const [dirtyToolMap] = useAtom(dirtyToolAtom);
-  const [stagedToolMap, setStagedTools ] = useAtom(stagedToolAtom)
+  const [stagedToolMap, setStagedTools] = useAtom(stagedToolAtom);
 
   const dirtyToolNames = useMemo(() => {
     return Object.entries(dirtyToolMap)
@@ -625,39 +628,24 @@ function ConfirmLeaveDialog() {
         closeToolManager(true);
       }}
     >
-      <Typography>
-        {t('confirmLeave.description')}
-      </Typography>
+      <Typography>{t('confirmLeave.description')}</Typography>
       {dirtyToolNames.length > 0 && (
-        <VStack
-           as="ul"
-        >
+        <VStack as="ul">
           {dirtyToolNames.map((name) => (
-            <Typography
-              as="li"
-              key={name}
-            >
+            <Typography as="li" key={name}>
               • {name}
             </Typography>
           ))}
         </VStack>
       )}
-      <Typography>
-        {t('confirmLeave.confirm')}
-      </Typography>
-
+      <Typography>{t('confirmLeave.confirm')}</Typography>
     </Dialog>
-  )
+  );
 }
 
 export function ToolManager() {
-  const {
-    closeToolManager,
-    openToolManager,
-    isToolManagerOpen,
-  } = useToolManagerState();
-
-
+  const { closeToolManager, openToolManager, isToolManagerOpen } =
+    useToolManagerState();
 
   const t = useTranslations('ToolManager');
 
