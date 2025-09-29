@@ -7,12 +7,17 @@ from typing import List
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta
+from letta_client import AsyncLetta
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
+from temporalio.worker.workflow_sandbox import (
+    SandboxedWorkflowRunner,
+    SandboxRestrictions,
+)
 
 from letta.agents.temporal.activities import (
     create_messages,
+    create_step,
     example_activity,
     execute_tool,
     llm_request,
@@ -20,12 +25,15 @@ from letta.agents.temporal.activities import (
     refresh_context_and_system_message,
     summarize_conversation_history,
     update_message_ids,
+    update_run,
 )
 from letta.agents.temporal.temporal_agent_workflow import TemporalAgentWorkflow
 from letta.agents.temporal.types import WorkflowInputParams
-from letta.schemas.agent import AgentState
+from letta.schemas.enums import JobStatus
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
+from letta.schemas.run import Run
+from letta.services.job_manager import JobManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 
@@ -97,25 +105,25 @@ def server_url() -> str:
     return url
 
 
-@pytest.fixture(scope="module")
-def client(server_url: str) -> Letta:
+@pytest.fixture(scope="function")
+async def client(server_url: str) -> AsyncLetta:
     """
     Creates and returns a synchronous Letta REST client for testing.
     """
-    client_instance = Letta(base_url=server_url)
+    client_instance = AsyncLetta(base_url=server_url)
     yield client_instance
 
 
 @pytest.fixture
-def default_organization():
+async def default_organization():
     """Fixture to create and return the default organization."""
     manager = OrganizationManager()
-    org = manager.create_default_organization()
+    org = await manager.create_default_organization_async()
     yield org
 
 
 @pytest.mark.asyncio(loop_scope="function")
-async def test_execute_workflow(client: Letta, default_organization: Organization):
+async def test_execute_workflow(client: AsyncLetta, default_organization: Organization):
     """Test the temporal agent workflow execution."""
     # import os
     # import asyncio
@@ -152,20 +160,33 @@ async def test_execute_workflow(client: Letta, default_organization: Organizatio
     task_queue_name = str(uuid.uuid4())
 
     manager = UserManager()
-    user = manager.create_default_user(org_id=default_organization.id)
+    user = await manager.create_default_actor_async(org_id=default_organization.id)
 
-    client.tools.upsert_base_tools()
-    dice_tool = client.tools.upsert_from_function(func=roll_dice)
+    await client.tools.upsert_base_tools()
+    dice_tool = await client.tools.upsert_from_function(func=roll_dice)
 
-    send_message_tool = client.tools.list(name="send_message")[0]
-    agent = client.agents.create(
+    send_message_tool = await client.tools.list(name="send_message")
+    agent = await client.agents.create(
         name="test-agent",
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, dice_tool.id],
+        tool_ids=[send_message_tool[0].id, dice_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["test"],
     )
+    job_manager = JobManager()
+    run = Run(
+        user_id=user.id,
+        status=JobStatus.created,
+        agent_id=agent.id,
+        background=True,  # Async endpoints are always background
+        metadata={
+            "job_type": "send_message_async",
+            "agent_id": agent.id,
+            "lettuce": True,
+        },
+    )
+    run = await job_manager.create_job_async(pydantic_job=run, actor=user)
     async with await WorkflowEnvironment.start_time_skipping() as env:
         # Create worker with shared event loop
         worker = Worker(
@@ -180,8 +201,11 @@ async def test_execute_workflow(client: Letta, default_organization: Organizatio
                 example_activity,
                 execute_tool,
                 create_messages,
+                create_step,
                 update_message_ids,
+                update_run,
             ],
+            workflow_runner=SandboxedWorkflowRunner(restrictions=SandboxRestrictions.default.with_passthrough_modules("letta")),
         )
 
         async with worker:
@@ -190,7 +214,7 @@ async def test_execute_workflow(client: Letta, default_organization: Organizatio
                 messages=USER_MESSAGE_ROLL_DICE,
                 actor=user,
                 max_steps=10,
-                run_id="run-" + str(uuid.uuid4()),
+                run_id=run.id,
             )
             result = await env.client.execute_workflow(
                 TemporalAgentWorkflow.run,
