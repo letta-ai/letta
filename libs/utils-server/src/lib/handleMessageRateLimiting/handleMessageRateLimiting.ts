@@ -241,7 +241,6 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  const handleRoot = agent.llm_config.handle?.split('/')[0];
   const isByok = agent.llm_config.provider_category === 'byok';
 
   if (isByok) {
@@ -250,28 +249,6 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  if (!agent || !handleRoot) {
-    return {
-      isRateLimited: true,
-      reasons: ['model-unknown'],
-    };
-  }
-
-  if (
-    ![
-      'openai',
-      'together',
-      'mistralai',
-      'anthropic',
-      'google_ai',
-      'xai',
-    ].includes(handleRoot)
-  ) {
-    // is a custom model
-    return {
-      isRateLimited: false,
-    };
-  }
 
   const [modelMetaData, coreOrganization] = await Promise.all([
     getRedisData('modelNameAndEndpointToIdMap', {
