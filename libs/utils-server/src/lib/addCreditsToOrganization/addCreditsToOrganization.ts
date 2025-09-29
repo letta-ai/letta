@@ -49,6 +49,7 @@ export async function addCreditsToOrganization(
     source,
     organizationId,
     note,
+    trueCost: amount.toString(),
     transactionType: 'addition',
   });
 

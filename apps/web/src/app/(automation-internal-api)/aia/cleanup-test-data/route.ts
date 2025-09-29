@@ -230,6 +230,7 @@ export async function POST(request: Request) {
             note: 'E2E test cleanup reset credits',
             amount: orgCredits,
             source: 'e2e-cleanup',
+            trueCost: orgCredits,
             coreOrganizationId:
               currentOrganizationCredits.organization.lettaAgentsId,
           });
