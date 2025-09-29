@@ -10,8 +10,10 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { ToolManagerPaths } from '../../toolManagerRoutes';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
-import { useAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { dirtyToolAtom } from '../useStagedCode/useStagedCode';
+
+export const currentToolIdAtom = atom<string | null>(null);
 
 interface ToolManagerState {
   requireConfirmation: boolean;
@@ -75,6 +77,7 @@ export function useToolManagerState() {
   const { developmentServerId } = useParams<{ developmentServerId?: string }>();
 
   const [dirtyToolMap] = useAtom(dirtyToolAtom);
+  const [currentToolId, setCurrentToolId] = useAtom(currentToolIdAtom);
 
   const hasDirtyTools = useMemo(() => {
     return Object.values(dirtyToolMap).some((isDirty) => isDirty);
@@ -116,8 +119,9 @@ export function useToolManagerState() {
         path: initialPath,
         currentToolId: initialToolId || null,
       });
+      setCurrentToolId(initialToolId || null);
     },
-    [setToolManagerState],
+    [setToolManagerState, setCurrentToolId],
   );
 
   const setDialogOpen = useCallback(
@@ -146,7 +150,6 @@ export function useToolManagerState() {
 
         if (CURRENT_RUNTIME === 'letta-docker-enterprise') {
           window.location.reload();
-
           return;
         }
 
@@ -167,14 +170,13 @@ export function useToolManagerState() {
 
   const setSelectedToolId = useCallback(
     (toolId: string | null) => {
-      setToolManagerState((prev) => ({ ...prev, currentToolId: toolId }));
+      setCurrentToolId(toolId);
     },
-    [setToolManagerState],
+    [setCurrentToolId],
   );
 
   const setSelectedServerKey = useCallback(
     (serverKey: string | null) => {
-      console.log('serverKey', serverKey);
       setToolManagerState((prev) => ({
         ...prev,
         selectedServerKey: serverKey,
@@ -188,7 +190,7 @@ export function useToolManagerState() {
       setPath,
       setSelectedToolId,
       setSelectedServerKey,
-      currentToolId: toolManagerState.currentToolId,
+      currentToolId,
       selectedServerKey: toolManagerState.selectedServerKey,
       currentPath: toolManagerState.path,
       isConfirmationDialogOpen: toolManagerState.isConfirmationDialogOpen,
@@ -200,7 +202,7 @@ export function useToolManagerState() {
     [
       setSelectedToolId,
       setSelectedServerKey,
-      toolManagerState.currentToolId,
+      currentToolId,
       toolManagerState.selectedServerKey,
       toolManagerState.path,
       toolManagerState.isConfirmationDialogOpen,

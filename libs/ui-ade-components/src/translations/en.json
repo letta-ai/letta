@@ -2208,6 +2208,7 @@
         "placeholder": "'{'\n\t\"mcpServers\": '{'\n\t\t\"server-name\": '{'\n\t\t\t\"command\": \"npx\",\n\t\t\t\"args\": [\n\t\t\t\t\"mcp-remote\",\n\t\t\t\t\"https://remote.mcp.server/mcp\",\n\t\t\t\t\"--header\",\n\t\t\t\t\"Authorization: Bearer $'{'AUTH_TOKEN'}'\"\n\t\t\t],\n\t\t\t\"env\": '{'\n\t\t\t\t\"AUTH_TOKEN\": \"...\"\n\t\t\t'}'\n\t\t'}'\n\t'}'\n'}'"
       },
       "error": "There was an error adding this server, please try again or contact support.",
+      "success": "Successfully added MCP Server",
       "duplicateName": {
         "error": "Server name already exists, please try a different name."
       },
@@ -2315,6 +2316,7 @@
       "languageLabel": "Language",
       "placeholder": "My tool",
       "restriction": "Tools must be alphanumeric and underscores only",
+      "success": "Successfully created new tool",
       "errors": {
         "default": "There was an error creating this tool, please try again or contact support.",
         "overage": "You have reached the maximum number of tools for your plan (<limit></limit>), please <link>upgrade</link> or delete some tools.",

@@ -52,10 +52,11 @@ import { useToolManagerState } from '../../../hooks/useToolManagerState/useToolM
 function useAddMcpServerMutation(onSuccess: () => void) {
   const queryClient = useQueryClient();
   const { setPath, setSelectedServerKey } = useToolManagerState();
+  const t = useTranslations('ToolsEditor/MCPServers.AddServerDialog');
 
   return useToolsServiceAddMcpServer({
     onSuccess: (response) => {
-      toast.success('Successfully added MCP Server');
+      toast.success(t('success'));
       queryClient.setQueriesData<ListMcpServersResponse | undefined>(
         {
           queryKey: UseToolsServiceListMcpServersKeyFn(),

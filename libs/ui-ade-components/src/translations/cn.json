@@ -1284,6 +1284,7 @@
         "description": "请提供参数，用逗号分隔"
       },
       "error": "添加此服务器时出错，请重试或联系客服。",
+      "success": "成功添加MCP服务器",
       "submit": "添加服务器",
       "cancel": "取消"
     }
@@ -1401,6 +1402,7 @@
       "languageLabel": "语言",
       "placeholder": "我的工具",
       "restriction": "工具必须只包含字母数字和下划线",
+      "success": "成功创建新工具",
       "errors": {
         "default": "创建此工具时出错，请重试或联系客服。",
         "overage": "您已达到您计划的工具最大数量(<limit></limit>)，请<link>升级</link>或删除一些工具。",
