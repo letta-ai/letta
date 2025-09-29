@@ -26,11 +26,6 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
-  TOOLS_ON_DASHBOARD: {
-    description: 'Tools on dashboard',
-    expiryDate: '2025-09-01',
-    flagValue: z.boolean(),
-  },
   EMAIL_SIGNUP: {
     description: 'Email signup',
     expiryDate: '2024-07-01',
@@ -39,11 +34,6 @@ export const featureFlags = {
   RECOMMENDED_MCP: {
     description: 'Recommended MCP',
     expiryDate: '2025-12-01',
-    flagValue: z.boolean(),
-  },
-  GENERAL_ACCESS: {
-    description: 'General access',
-    expiryDate: '2025-07-01',
     flagValue: z.boolean(),
   },
   SHARE_AGENT_FILE: {
@@ -134,11 +124,6 @@ export const featureFlags = {
   },
   AGENT_RUN_CANCELLATION_V2: {
     description: 'Enable agent run cancellation v2',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
-  FAVORITE_PROJECTS: {
-    description: 'Enable favorite projects functionality',
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },

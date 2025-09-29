@@ -22,10 +22,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { useFormatters } from '@letta-cloud/utils-client';
 import {
+  useFeatureFlag,
   webApi,
   type webApiContracts,
-  webApiQueryKeys,
-  useFeatureFlag,
+  webApiQueryKeys
 } from '@letta-cloud/sdk-web';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -58,7 +58,6 @@ interface ProjectCardProps {
   url: string;
   isFavorited?: boolean;
   onToggleFavorite?: (projectId: string, isFavorited: boolean) => void;
-  showFavoriteButton?: boolean;
 }
 
 function ProjectCard(props: ProjectCardProps) {
@@ -69,7 +68,6 @@ function ProjectCard(props: ProjectCardProps) {
     url,
     isFavorited,
     onToggleFavorite,
-    showFavoriteButton,
   } = props;
   const t = useTranslations('projects/page/CloudProjectsList');
   const { formatDateAndTime } = useFormatters();
@@ -156,31 +154,29 @@ function ProjectCard(props: ProjectCardProps) {
 
   return (
     <div className="relative">
-      {showFavoriteButton && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '0.5rem',
-            right: '0.5rem',
-            zIndex: 10,
-          }}
-        >
-          <Button
-            color="tertiary"
-            size="small"
-            hideLabel
-            onClick={handleFavoriteClick}
-            preIcon={
-              isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
-            }
-            label={
-              isFavorited
-                ? t('projectsList.projectItem.removeFromFavorites')
-                : t('projectsList.projectItem.addToFavorites')
-            }
-          />
-        </div>
-      )}
+      <div
+        style={{
+          position: 'absolute',
+          top: '0.5rem',
+          right: '0.5rem',
+          zIndex: 10,
+        }}
+      >
+        <Button
+          color="tertiary"
+          size="small"
+          hideLabel
+          onClick={handleFavoriteClick}
+          preIcon={
+            isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
+          }
+          label={
+            isFavorited
+              ? t('projectsList.projectItem.removeFromFavorites')
+              : t('projectsList.projectItem.addToFavorites')
+          }
+        />
+      </div>
 
       {recentAgentsAndTemplatesEnabled && (
         <div
@@ -290,7 +286,6 @@ export function CloudProjectsList(props: ProjectsListProps) {
   const t = useTranslations('projects/page/CloudProjectsList');
   const [debouncedSearch] = useDebouncedValue(props.search, 500);
   const queryClient = useQueryClient();
-  const { data: favoriteProjectsEnabled } = useFeatureFlag('FAVORITE_PROJECTS');
 
   const { data, isError } = webApi.projects.getProjects.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectsWithSearch({
@@ -400,7 +395,6 @@ export function CloudProjectsList(props: ProjectsListProps) {
             url={`/projects/${project.slug}`}
             isFavorited={project.isFavorited}
             onToggleFavorite={handleToggleFavorite}
-            showFavoriteButton={favoriteProjectsEnabled === true}
           />
         ))}
       </NiceGridDisplay>
