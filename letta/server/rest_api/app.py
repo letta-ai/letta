@@ -20,6 +20,8 @@ from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import (
     BedrockPermissionError,
     LettaAgentNotFoundError,
+    LettaToolCreateError,
+    LettaToolNameConflictError,
     LettaUserNotFoundError,
     LLMAuthenticationError,
     LLMError,
@@ -240,6 +242,8 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
+    app.add_exception_handler(LettaToolCreateError, _error_handler_400)
+    app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
