@@ -1,62 +1,68 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
-from letta.schemas.enums import JobType
-from letta.schemas.job import Job, JobBase, LettaRequestConfig
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.schemas.enums import RunStatus
+from letta.schemas.job import LettaRequestConfig
+from letta.schemas.letta_base import LettaBase
 from letta.schemas.letta_stop_reason import StopReasonType
 
 
-class RunBase(JobBase):
-    """Base class for Run schemas that inherits from JobBase but uses 'run' prefix for IDs"""
-
+class RunBase(LettaBase):
     __id_prefix__ = "run"
-    job_type: JobType = JobType.RUN
 
 
 class Run(RunBase):
     """
-    Representation of a run, which is a job with a 'run' prefix in its ID.
-    Inherits all fields and behavior from Job except for the ID prefix.
+    Representation of a run - a conversation or processing session for an agent.
+    Runs track when agents process messages and maintain the relationship between agents, steps, and messages.
 
     Parameters:
         id (str): The unique identifier of the run (prefixed with 'run-').
-        status (JobStatus): The status of the run.
-        created_at (datetime): The unix timestamp of when the run was created.
-        completed_at (datetime): The unix timestamp of when the run was completed.
-        user_id (str): The unique identifier of the user associated with the run.
+        status (JobStatus): The current status of the run.
+        created_at (datetime): The timestamp when the run was created.
+        completed_at (datetime): The timestamp when the run was completed.
+        agent_id (str): The unique identifier of the agent associated with the run.
+        stop_reason (StopReasonType): The reason why the run was stopped.
+        background (bool): Whether the run was created in background mode.
+        metadata (dict): Additional metadata for the run.
+        request_config (LettaRequestConfig): The request configuration for the run.
     """
 
     id: str = RunBase.generate_id_field()
-    user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the run.")
+
+    # Core run fields
+    status: RunStatus = Field(default=RunStatus.created, description="The current status of the run.")
+    created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the run was created.")
+    completed_at: Optional[datetime] = Field(None, description="The timestamp when the run was completed.")
+
+    # Agent relationship
+    agent_id: str = Field(..., description="The unique identifier of the agent associated with the run.")
+
+    # Run configuration
+    background: Optional[bool] = Field(None, description="Whether the run was created in background mode.")
+    metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Additional metadata for the run.")
     request_config: Optional[LettaRequestConfig] = Field(None, description="The request configuration for the run.")
     stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the run was stopped.")
 
-    @classmethod
-    def from_job(cls, job: Job) -> "Run":
-        """
-        Convert a Job instance to a Run instance by replacing the ID prefix.
-        All other fields are copied as-is.
+    # Callback configuration
+    callback_url: Optional[str] = Field(None, description="If set, POST to this URL when the run completes.")
+    callback_sent_at: Optional[datetime] = Field(None, description="Timestamp when the callback was last attempted.")
+    callback_status_code: Optional[int] = Field(None, description="HTTP status code returned by the callback endpoint.")
+    callback_error: Optional[str] = Field(None, description="Optional error message from attempting to POST the callback endpoint.")
 
-        Args:
-            job: The Job instance to convert
+    # Timing metrics (in nanoseconds for precision)
+    ttft_ns: Optional[int] = Field(None, description="Time to first token for a run in nanoseconds")
+    total_duration_ns: Optional[int] = Field(None, description="Total run duration in nanoseconds")
 
-        Returns:
-            A new Run instance with the same data but 'run-' prefix in ID
-        """
-        # Convert job dict to exclude None values
-        job_data = job.model_dump(exclude_none=True)
 
-        # Create new Run instance with converted data
-        return cls(**job_data)
+class RunUpdate(RunBase):
+    """Update model for Run."""
 
-    def to_job(self) -> Job:
-        """
-        Convert this Run instance to a Job instance by replacing the ID prefix.
-        All other fields are copied as-is.
-
-        Returns:
-            A new Job instance with the same data but 'job-' prefix in ID
-        """
-        run_data = self.model_dump(exclude_none=True)
-        return Job(**run_data)
+    status: Optional[RunStatus] = Field(None, description="The status of the run.")
+    completed_at: Optional[datetime] = Field(None, description="The timestamp when the run was completed.")
+    stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the run was stopped.")
+    metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Additional metadata for the run.")
+    model_config = ConfigDict(extra="ignore")  # Ignores extra fields

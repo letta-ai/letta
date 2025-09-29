@@ -266,7 +266,7 @@ async def test_model_compatibility(model, message, server, server_url, actor, ro
                 print(chunk.choices[0].delta.content)
 
     # Get the messages and assert based on the message type
-    messages = await server.message_manager.list_messages_for_agent_async(agent_id=main_agent.id, actor=actor)
+    messages = await server.message_manager.list_messages(agent_id=main_agent.id, actor=actor)
     # Find user message with our request
     user_messages = [msg for msg in messages if msg.role == MessageRole.user and message in str(msg.content)]
     assert len(user_messages) >= 1, f"Should find user message containing: {message}"
