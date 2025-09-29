@@ -55,7 +55,6 @@ import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
 import { useAtom } from 'jotai/index';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -418,14 +417,11 @@ export const DESKTOP_ADE_HEADER_CLASSNAME =
 export function DesktopADEHeader(props: DesktopADEHeaderProps) {
   const { name: agentName } = props;
 
-  const { name: projectName, id, slug: projectSlug } = useCurrentProject();
+  const { slug: projectSlug } = useCurrentProject();
 
   const { template_id } = useCurrentAgent();
 
-  const { isLocal, isTemplate } = useCurrentAgentMetaData();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const [mounted, setMounted] = useState(false);
 
@@ -457,10 +453,6 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
     return { name, version };
   }, [agentTemplates]);
 
-  const developmentServerConfig = useCurrentDevelopmentServerConfig();
-
-  const projectUrl = !id ? projectSlug : `/projects/${projectSlug}`;
-
   return (
     <HStack
       justify="spaceBetween"
@@ -471,24 +463,23 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
       gap="small"
       color="background"
     >
-      <HStack overflowX="hidden" align="center" fullHeight gap={false}>
-        <ProjectSelector
-          trigger={
-            <button className="h-full gap-2 flex items-center justify-center">
-              <ADEHeaderLogoContainer />
-            </button>
-          }
-        />
+      <HStack overflowX="hidden" fullHeight gap={false}>
+        <Link href="/">
+          <button className="h-full gap-2 flex items-center justify-center">
+            <ADEHeaderLogoContainer />
+          </button>
+        </Link>
         <HStack align="center" paddingLeft="medium" gap="medium">
-          <Button
-            href={isLocal ? `/development-servers/${developmentServerConfig?.id}/agents` : projectUrl}
-            preIcon={<ProjectsIcon size="medium" color="default" />}
-            label={
-              isLocal ? t('nav.localDev') : t('nav.project', { projectName })
+          <ProjectSelector
+            trigger={
+              <Button
+                preIcon={<ProjectsIcon size="medium" color="default" />}
+                label="View projects"
+                hideLabel
+                size="small"
+                color="tertiary"
+              />
             }
-            hideLabel
-            size="small"
-            color="tertiary"
           />
           <HStack align="center">
             {mounted && agentTemplateVersion && !isTemplate && (
