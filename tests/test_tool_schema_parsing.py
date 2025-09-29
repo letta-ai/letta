@@ -277,42 +277,6 @@ def _run_composio_test(action_name, openai_model, structured_output):
         return (action_name, False, str(e))  # Failure with error message
 
 
-@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
-@pytest.mark.parametrize("structured_output", [True])
-def test_composio_tool_schema_generation(openai_model: str, structured_output: bool):
-    """Test that we can generate the schemas for some Composio tools."""
-
-    if not os.getenv("COMPOSIO_API_KEY"):
-        pytest.skip("COMPOSIO_API_KEY not set")
-
-    start_time = time.time()
-
-    action_names = [
-        "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",  # Simple
-        "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
-        "SALESFORCE_RETRIEVE_LEAD_BY_ID",  # has an array arg, needs to be converted properly
-        "FIRECRAWL_SEARCH",  # has an optional array arg, needs to be converted properly
-    ]
-
-    # Create a pool of processes
-    pool = mp.Pool(processes=min(mp.cpu_count(), len(action_names)))
-
-    # Map the work to the pool
-    func = partial(_run_composio_test, openai_model=openai_model, structured_output=structured_output)
-    results = pool.map(func, action_names)
-
-    # Check results
-    for action_name, success, error_message in results:
-        print(f"Test for {action_name}: {'SUCCESS' if success else 'FAILED - ' + error_message}")
-        assert success, f"Test for {action_name} failed: {error_message}"
-
-    pool.close()
-    pool.join()
-
-    end_time = time.time()
-    print(f"Total execution time: {end_time - start_time:.2f} seconds")
-
-
 # Helper function for pydantic args schema test
 def _run_pydantic_args_test(filename, openai_model, structured_output):
     """Run a single pydantic args schema test case"""
@@ -342,6 +306,9 @@ def _run_pydantic_args_test(filename, openai_model, structured_output):
             source_code=last_function_source,
             args_json_schema=args_schema,
         )
+        from letta.services.tool_schema_generator import generate_schema_for_tool_creation
+
+        tool.json_schema = generate_schema_for_tool_creation(tool)
         schema = tool.json_schema
 
         # We expect this to fail for all_python_complex with structured_output=True

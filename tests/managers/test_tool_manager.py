@@ -96,6 +96,7 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
+from letta.services.tool_schema_generator import generate_schema_for_tool_creation
 from letta.settings import settings, tool_settings
 from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
@@ -689,23 +690,25 @@ async def test_list_tools_with_tool_types(server: SyncServer, default_user):
 
     # create custom tools
     custom_tool1 = PydanticTool(
-        name="calculator",
+        name="calculator_tool",
         description="Math tool",
         source_code=parse_source_code(calculator_tool),
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    custom_tool1.json_schema = derive_openai_json_schema(source_code=custom_tool1.source_code, name=custom_tool1.name)
+    # Use generate_schema_for_tool_creation to generate schema
+    custom_tool1.json_schema = generate_schema_for_tool_creation(custom_tool1)
     custom_tool1 = await server.tool_manager.create_or_update_tool_async(custom_tool1, actor=default_user)
 
     custom_tool2 = PydanticTool(
-        name="weather",
+        # name="weather_tool",
         description="Weather tool",
         source_code=parse_source_code(weather_tool),
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    custom_tool2.json_schema = derive_openai_json_schema(source_code=custom_tool2.source_code, name=custom_tool2.name)
+    # Use generate_schema_for_tool_creation to generate schema
+    custom_tool2.json_schema = generate_schema_for_tool_creation(custom_tool2)
     custom_tool2 = await server.tool_manager.create_or_update_tool_async(custom_tool2, actor=default_user)
 
     # test filtering by single tool type
@@ -744,13 +747,13 @@ async def test_list_tools_with_exclude_tool_types(server: SyncServer, default_us
         return msg
 
     special = PydanticTool(
-        name="special",
+        name="special_tool",
         description="Special tool",
         source_code=parse_source_code(special_tool),
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    special.json_schema = derive_openai_json_schema(source_code=special.source_code, name=special.name)
+    special.json_schema = generate_schema_for_tool_creation(special)
     special = await server.tool_manager.create_or_update_tool_async(special, actor=default_user)
 
     # test excluding EXTERNAL_MCP (should get all tools since none are MCP)
@@ -796,15 +799,15 @@ async def test_list_tools_with_names(server: SyncServer, default_user):
         return "gamma"
 
     alpha = PydanticTool(name="alpha_tool", description="Alpha", source_code=parse_source_code(alpha_tool), source_type="python")
-    alpha.json_schema = derive_openai_json_schema(source_code=alpha.source_code, name=alpha.name)
+    alpha.json_schema = generate_schema_for_tool_creation(alpha)
     alpha = await server.tool_manager.create_or_update_tool_async(alpha, actor=default_user)
 
     beta = PydanticTool(name="beta_tool", description="Beta", source_code=parse_source_code(beta_tool), source_type="python")
-    beta.json_schema = derive_openai_json_schema(source_code=beta.source_code, name=beta.name)
+    beta.json_schema = generate_schema_for_tool_creation(beta)
     beta = await server.tool_manager.create_or_update_tool_async(beta, actor=default_user)
 
     gamma = PydanticTool(name="gamma_tool", description="Gamma", source_code=parse_source_code(gamma_tool), source_type="python")
-    gamma.json_schema = derive_openai_json_schema(source_code=gamma.source_code, name=gamma.name)
+    gamma.json_schema = generate_schema_for_tool_creation(gamma)
     gamma = await server.tool_manager.create_or_update_tool_async(gamma, actor=default_user)
 
     # test filtering by single name
@@ -852,15 +855,15 @@ async def test_list_tools_with_tool_ids(server: SyncServer, default_user):
         return "3"
 
     t1 = PydanticTool(name="tool1", description="First", source_code=parse_source_code(tool1), source_type="python")
-    t1.json_schema = derive_openai_json_schema(source_code=t1.source_code, name=t1.name)
+    t1.json_schema = generate_schema_for_tool_creation(t1)
     t1 = await server.tool_manager.create_or_update_tool_async(t1, actor=default_user)
 
     t2 = PydanticTool(name="tool2", description="Second", source_code=parse_source_code(tool2), source_type="python")
-    t2.json_schema = derive_openai_json_schema(source_code=t2.source_code, name=t2.name)
+    t2.json_schema = generate_schema_for_tool_creation(t2)
     t2 = await server.tool_manager.create_or_update_tool_async(t2, actor=default_user)
 
     t3 = PydanticTool(name="tool3", description="Third", source_code=parse_source_code(tool3), source_type="python")
-    t3.json_schema = derive_openai_json_schema(source_code=t3.source_code, name=t3.name)
+    t3.json_schema = generate_schema_for_tool_creation(t3)
     t3 = await server.tool_manager.create_or_update_tool_async(t3, actor=default_user)
 
     # test filtering by single id
@@ -910,19 +913,19 @@ async def test_list_tools_with_search(server: SyncServer, default_user):
     calc_add = PydanticTool(
         name="calculator_add", description="Add numbers", source_code=parse_source_code(calculator_add), source_type="python"
     )
-    calc_add.json_schema = derive_openai_json_schema(source_code=calc_add.source_code, name=calc_add.name)
+    calc_add.json_schema = generate_schema_for_tool_creation(calc_add)
     calc_add = await server.tool_manager.create_or_update_tool_async(calc_add, actor=default_user)
 
     calc_sub = PydanticTool(
         name="calculator_subtract", description="Subtract numbers", source_code=parse_source_code(calculator_subtract), source_type="python"
     )
-    calc_sub.json_schema = derive_openai_json_schema(source_code=calc_sub.source_code, name=calc_sub.name)
+    calc_sub.json_schema = generate_schema_for_tool_creation(calc_sub)
     calc_sub = await server.tool_manager.create_or_update_tool_async(calc_sub, actor=default_user)
 
     weather = PydanticTool(
         name="weather_forecast", description="Weather", source_code=parse_source_code(weather_forecast), source_type="python"
     )
-    weather.json_schema = derive_openai_json_schema(source_code=weather.source_code, name=weather.name)
+    weather.json_schema = generate_schema_for_tool_creation(weather)
     weather = await server.tool_manager.create_or_update_tool_async(weather, actor=default_user)
 
     # test searching for "calculator" (should find both calculator tools)
@@ -965,7 +968,7 @@ async def test_list_tools_return_only_letta_tools(server: SyncServer, default_us
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    custom.json_schema = derive_openai_json_schema(source_code=custom.source_code, name=custom.name)
+    custom.json_schema = generate_schema_for_tool_creation(custom)
     custom = await server.tool_manager.create_or_update_tool_async(custom, actor=default_user)
 
     # test without filter (should get custom tool + all letta tools)
@@ -1013,48 +1016,45 @@ async def test_list_tools_combined_filters(server: SyncServer, default_user):
         return "weather"
 
     calc1 = PydanticTool(
-        name="calculator_add", description="Add", source_code=parse_source_code(calc_add), source_type="python", tool_type=ToolType.CUSTOM
+        name="calc_add", description="Add", source_code=parse_source_code(calc_add), source_type="python", tool_type=ToolType.CUSTOM
     )
-    calc1.json_schema = derive_openai_json_schema(source_code=calc1.source_code, name=calc1.name)
+    calc1.json_schema = generate_schema_for_tool_creation(calc1)
     calc1 = await server.tool_manager.create_or_update_tool_async(calc1, actor=default_user)
 
     calc2 = PydanticTool(
-        name="calculator_multiply",
         description="Multiply",
         source_code=parse_source_code(calc_multiply),
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    calc2.json_schema = derive_openai_json_schema(source_code=calc2.source_code, name=calc2.name)
+    calc2.json_schema = generate_schema_for_tool_creation(calc2)
     calc2 = await server.tool_manager.create_or_update_tool_async(calc2, actor=default_user)
 
     weather = PydanticTool(
-        name="weather_current",
+        name="weather_tool",
         description="Weather",
         source_code=parse_source_code(weather_tool),
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
-    weather.json_schema = derive_openai_json_schema(source_code=weather.source_code, name=weather.name)
+    weather.json_schema = generate_schema_for_tool_creation(weather)
     weather = await server.tool_manager.create_or_update_tool_async(weather, actor=default_user)
 
     # combine search with tool_types
     tools = await server.tool_manager.list_tools_async(
-        actor=default_user, search="calculator", tool_types=[ToolType.CUSTOM.value], upsert_base_tools=False
+        actor=default_user, search="calc", tool_types=[ToolType.CUSTOM.value], upsert_base_tools=False
     )
     assert len(tools) == 2
-    assert all("calculator" in t.name and t.tool_type == ToolType.CUSTOM for t in tools)
+    assert all("calc" in t.name and t.tool_type == ToolType.CUSTOM for t in tools)
 
     # combine names with tool_ids
-    tools = await server.tool_manager.list_tools_async(
-        actor=default_user, names=["calculator_add"], tool_ids=[calc1.id], upsert_base_tools=False
-    )
+    tools = await server.tool_manager.list_tools_async(actor=default_user, names=["calc_add"], tool_ids=[calc1.id], upsert_base_tools=False)
     assert len(tools) == 1
     assert tools[0].id == calc1.id
 
     # combine search with exclude_tool_types
     tools = await server.tool_manager.list_tools_async(
-        actor=default_user, search="calculator", exclude_tool_types=[ToolType.EXTERNAL_MCP.value], upsert_base_tools=False
+        actor=default_user, search="cal", exclude_tool_types=[ToolType.EXTERNAL_MCP.value], upsert_base_tools=False
     )
     assert len(tools) == 2
 
@@ -1091,13 +1091,13 @@ async def test_count_tools_async(server: SyncServer, default_user):
     ta = PydanticTool(
         name="tool_a", description="A", source_code=parse_source_code(tool_a), source_type="python", tool_type=ToolType.CUSTOM
     )
-    ta.json_schema = derive_openai_json_schema(source_code=ta.source_code, name=ta.name)
+    ta.json_schema = generate_schema_for_tool_creation(ta)
     ta = await server.tool_manager.create_or_update_tool_async(ta, actor=default_user)
 
     tb = PydanticTool(
         name="tool_b", description="B", source_code=parse_source_code(tool_b), source_type="python", tool_type=ToolType.CUSTOM
     )
-    tb.json_schema = derive_openai_json_schema(source_code=tb.source_code, name=tb.name)
+    tb.json_schema = generate_schema_for_tool_creation(tb)
     tb = await server.tool_manager.create_or_update_tool_async(tb, actor=default_user)
 
     # upsert base tools to ensure we have Letta tools for counting
@@ -1167,8 +1167,8 @@ async def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     assert updated_tool.tool_type == ToolType.EXTERNAL_MCP
 
 
-#@pytest.mark.asyncio
-#async def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
+# @pytest.mark.asyncio
+# async def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
 #    def counter_tool(counter: int):
 #        """
 #        Args:
@@ -1205,8 +1205,8 @@ async def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
 #    assert updated_tool.tool_type == ToolType.CUSTOM
 
 
-#@pytest.mark.asyncio
-#async def test_update_tool_source_code_refreshes_schema_only(server: SyncServer, print_tool, default_user):
+# @pytest.mark.asyncio
+# async def test_update_tool_source_code_refreshes_schema_only(server: SyncServer, print_tool, default_user):
 #    def counter_tool(counter: int):
 #        """
 #        Args:
@@ -1701,7 +1701,7 @@ async def test_create_tool_with_pip_requirements(server: SyncServer, default_use
     tool = PydanticTool(
         description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
     )
-    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_json_schema = generate_schema_for_tool_creation(tool)
     derived_name = derived_json_schema["name"]
     tool.json_schema = derived_json_schema
     tool.name = derived_name
@@ -1767,7 +1767,7 @@ async def test_update_tool_clear_pip_requirements(server: SyncServer, default_us
     tool = PydanticTool(
         description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
     )
-    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_json_schema = generate_schema_for_tool_creation(tool)
     derived_name = derived_json_schema["name"]
     tool.json_schema = derived_json_schema
     tool.name = derived_name
@@ -1817,7 +1817,7 @@ async def test_pip_requirements_roundtrip(server: SyncServer, default_user, defa
     tool = PydanticTool(
         description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata, pip_requirements=pip_reqs
     )
-    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+    derived_json_schema = generate_schema_for_tool_creation(tool)
     derived_name = derived_json_schema["name"]
     tool.json_schema = derived_json_schema
     tool.name = derived_name
@@ -1859,3 +1859,360 @@ async def test_update_default_requires_approval(server: SyncServer, bash_tool, d
 
     # Assertions
     assert updated_tool.default_requires_approval == True
+
+
+# ======================================================================================================================
+# ToolManager Schema tests
+# ======================================================================================================================
+
+
+async def test_create_tool_with_json_schema(server: SyncServer, default_user, default_organization):
+    """Test that json_schema is used when provided at creation."""
+    tool_manager = server.tool_manager
+
+    source_code = """
+def test_function(arg1: str) -> str:
+    return arg1
+"""
+
+    json_schema = {
+        "name": "test_function",
+        "description": "A test function",
+        "parameters": {"type": "object", "properties": {"arg1": {"type": "string"}}, "required": ["arg1"]},
+    }
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+        json_schema=json_schema,
+    )
+
+    created_tool = await tool_manager.create_tool_async(tool, default_user)
+
+    assert created_tool.json_schema == json_schema
+    assert created_tool.name == "test_function"
+    assert created_tool.description == "A test function"
+
+
+async def test_create_tool_with_args_json_schema(server: SyncServer, default_user, default_organization):
+    """Test that schema is generated from args_json_schema at creation."""
+    tool_manager = server.tool_manager
+
+    source_code = """
+def test_function(arg1: str, arg2: int) -> str:
+    '''This is a test function'''
+    return f"{arg1} {arg2}"
+"""
+
+    args_json_schema = {
+        "type": "object",
+        "properties": {
+            "arg1": {"type": "string", "description": "First argument"},
+            "arg2": {"type": "integer", "description": "Second argument"},
+        },
+        "required": ["arg1", "arg2"],
+    }
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+        args_json_schema=args_json_schema,
+    )
+
+    created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+
+    assert created_tool.json_schema is not None
+    assert created_tool.json_schema["name"] == "test_function"
+    assert created_tool.json_schema["description"] == "This is a test function"
+    assert "parameters" in created_tool.json_schema
+    assert created_tool.json_schema["parameters"]["properties"]["arg1"]["type"] == "string"
+    assert created_tool.json_schema["parameters"]["properties"]["arg2"]["type"] == "integer"
+
+
+async def test_create_tool_with_docstring_no_schema(server: SyncServer, default_user, default_organization):
+    """Test that schema is generated from docstring when no schema provided."""
+    tool_manager = server.tool_manager
+
+    source_code = """
+def test_function(arg1: str, arg2: int = 5) -> str:
+    '''
+    This is a test function
+
+    Args:
+        arg1: First argument
+        arg2: Second argument
+
+    Returns:
+        A string result
+    '''
+    return f"{arg1} {arg2}"
+"""
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+    )
+
+    created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+
+    assert created_tool.json_schema is not None
+    assert created_tool.json_schema["name"] == "test_function"
+    assert "This is a test function" in created_tool.json_schema["description"]
+    assert "parameters" in created_tool.json_schema
+
+
+async def test_create_tool_with_docstring_and_args_schema(server: SyncServer, default_user, default_organization):
+    """Test that args_json_schema takes precedence over docstring."""
+    tool_manager = server.tool_manager
+
+    source_code = """
+def test_function(old_arg: str) -> str:
+    '''Old docstring that should be overridden'''
+    return old_arg
+"""
+
+    args_json_schema = {
+        "type": "object",
+        "properties": {"new_arg": {"type": "string", "description": "New argument from schema"}},
+        "required": ["new_arg"],
+    }
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+        args_json_schema=args_json_schema,
+    )
+
+    created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+
+    assert created_tool.json_schema is not None
+    assert created_tool.json_schema["name"] == "test_function"
+    # The description should come from the docstring
+    assert created_tool.json_schema["description"] == "Old docstring that should be overridden"
+    # But parameters should come from args_json_schema
+    assert "new_arg" in created_tool.json_schema["parameters"]["properties"]
+    assert "old_arg" not in created_tool.json_schema["parameters"]["properties"]
+
+
+async def test_error_no_docstring_or_schema(server: SyncServer, default_user, default_organization):
+    """Test error when no docstring or schema provided (minimal function)."""
+    tool_manager = server.tool_manager
+
+    # Minimal function with no docstring - should still derive basic schema
+    source_code = """
+def test_function():
+    pass
+"""
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+
+
+async def test_error_on_create_tool_with_name_conflict(server: SyncServer, default_user, default_organization):
+    """Test error when json_schema name conflicts with function name."""
+    tool_manager = server.tool_manager
+
+    source_code = """
+def test_function(arg1: str) -> str:
+    return arg1
+"""
+
+    # JSON schema with conflicting name
+    json_schema = {
+        "name": "different_name",
+        "description": "A test function",
+        "parameters": {"type": "object", "properties": {"arg1": {"type": "string"}}, "required": ["arg1"]},
+    }
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+        json_schema=json_schema,
+    )
+
+    # This should succeed at creation - the tool name takes precedence
+    created_tool = await tool_manager.create_tool_async(tool, default_user)
+    assert created_tool.name == "test_function"
+
+
+async def test_update_tool_with_json_schema(server: SyncServer, default_user, default_organization):
+    """Test update with a new json_schema."""
+    tool_manager = server.tool_manager
+
+    # Create initial tool
+    source_code = """
+def test_function() -> str:
+    return "hello"
+"""
+
+    tool = PydanticTool(
+        name="test_update_json_schema",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+        json_schema={"name": "test_update_json_schema", "description": "Original"},
+    )
+
+    created_tool = await tool_manager.create_tool_async(tool, default_user)
+
+    # Update with new json_schema
+    new_schema = {
+        "name": "test_update_json_schema",
+        "description": "Updated description",
+        "parameters": {"type": "object", "properties": {"new_arg": {"type": "string"}}, "required": ["new_arg"]},
+    }
+
+    update = ToolUpdate(json_schema=new_schema)
+    updated_tool = await tool_manager.update_tool_by_id_async(created_tool.id, update, default_user)
+
+    assert updated_tool.json_schema == new_schema
+    assert updated_tool.json_schema["description"] == "Updated description"
+
+
+async def test_update_tool_with_args_json_schema(server: SyncServer, default_user, default_organization):
+    """Test update with args_json_schema."""
+    tool_manager = server.tool_manager
+
+    # Create initial tool
+    source_code = """
+def test_function() -> str:
+    '''Original function'''
+    return "hello"
+"""
+
+    tool = PydanticTool(
+        name="test_function",
+        tool_type=ToolType.CUSTOM,
+        source_code=source_code,
+    )
+
+    created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+
+    # Update with args_json_schema
+    new_source_code = """
+def test_function(new_arg: str) -> str:
+    '''Updated function'''
+    return new_arg
+"""
+
+    args_json_schema = {
+        "type": "object",
+        "properties": {"new_arg": {"type": "string", "description": "New argument"}},
+        "required": ["new_arg"],
+    }
+
+    update = ToolUpdate(source_code=new_source_code, args_json_schema=args_json_schema)
+    updated_tool = await tool_manager.update_tool_by_id_async(created_tool.id, update, default_user)
+
+    assert updated_tool.json_schema is not None
+    assert updated_tool.json_schema["description"] == "Updated function"
+    assert "new_arg" in updated_tool.json_schema["parameters"]["properties"]
+
+
+async def test_update_tool_with_no_schema(server: SyncServer, default_user, default_organization):
+    """Test update with no schema changes."""
+    tool_manager = server.tool_manager
+
+    # Create initial tool
+    original_schema = {
+        "name": "test_no_schema_update",
+        "description": "Original description",
+        "parameters": {"type": "object", "properties": {}},
+    }
+
+    tool = PydanticTool(
+        name="test_no_schema_update",
+        tool_type=ToolType.CUSTOM,
+        source_code="def test_function(): pass",
+        json_schema=original_schema,
+    )
+
+    created_tool = await tool_manager.create_tool_async(tool, default_user)
+
+    # Update with only description (no schema change)
+    update = ToolUpdate(description="New description")
+    updated_tool = await tool_manager.update_tool_by_id_async(created_tool.id, update, default_user)
+
+    # Schema should remain unchanged
+    assert updated_tool.json_schema == original_schema
+    assert updated_tool.description == "New description"
+
+
+async def test_update_tool_name(server: SyncServer, default_user, default_organization):
+    """Test various name update scenarios."""
+    tool_manager = server.tool_manager
+
+    # Create initial tool
+    original_schema = {"name": "original_name", "description": "Test", "parameters": {"type": "object", "properties": {}}}
+
+    tool = PydanticTool(
+        name="original_name",
+        tool_type=ToolType.CUSTOM,
+        source_code="def original_name(): pass",
+        json_schema=original_schema,
+    )
+
+    created_tool = await tool_manager.create_or_update_tool_async(tool, default_user)
+    assert created_tool.name == "original_name"
+    assert created_tool.json_schema["name"] == "original_name"
+
+    matching_schema = {"name": "matched_name", "description": "Test", "parameters": {"type": "object", "properties": {}}}
+    update = ToolUpdate(json_schema=matching_schema)
+    updated_tool3 = await tool_manager.update_tool_by_id_async(created_tool.id, update, default_user)
+    assert updated_tool3.name == "matched_name"
+    assert updated_tool3.json_schema["name"] == "matched_name"
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_corrupted_tool(server: SyncServer, default_user, print_tool):
+    """Test that list_tools still works even if there's a corrupted tool (missing json_schema) in the database."""
+
+    # First, verify we have a normal tool
+    tools = await server.tool_manager.list_tools_async(actor=default_user, upsert_base_tools=False)
+    initial_tool_count = len(tools)
+    assert any(t.id == print_tool.id for t in tools)
+
+    # Now insert a corrupted tool directly into the database (bypassing normal validation)
+    # This simulates a tool that somehow got corrupted in the database
+    from letta.orm.tool import Tool as ToolModel
+
+    async with db_registry.async_session() as session:
+        # Create a tool with no json_schema (corrupted state)
+        corrupted_tool = ToolModel(
+            id=f"tool-corrupted-{uuid.uuid4()}",
+            name="corrupted_tool",
+            description="This tool has no json_schema",
+            tool_type=ToolType.CUSTOM,
+            source_code="def corrupted_tool(): pass",
+            json_schema=None,  # Explicitly set to None to simulate corruption
+            organization_id=default_user.organization_id,
+            created_by_id=default_user.id,
+            last_updated_by_id=default_user.id,
+            tags=["corrupted"],
+        )
+
+        session.add(corrupted_tool)
+        await session.commit()
+        corrupted_tool_id = corrupted_tool.id
+
+    # Now try to list tools - it should still work and not include the corrupted tool
+    # The corrupted tool should be automatically excluded from results
+    tools = await server.tool_manager.list_tools_async(actor=default_user, upsert_base_tools=False)
+
+    # Verify listing still works
+    assert len(tools) == initial_tool_count  # Corrupted tool should not be in the results
+    assert any(t.id == print_tool.id for t in tools)  # Normal tool should still be there
+    assert not any(t.id == corrupted_tool_id for t in tools)  # Corrupted tool should not be there
+
+    # Verify the corrupted tool's name is not in the results
+    assert not any(t.name == "corrupted_tool" for t in tools)
