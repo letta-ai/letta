@@ -46,6 +46,7 @@ export const environment = createEnv({
     INTERCOM_SECRET: z.string().optional(),
   },
   client: {
+    NEXT_PUBLIC_GIT_HASH: z.string().optional(),
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
     NEXT_PUBLIC_AGENTFILES_SITE: z.string().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISH_KEY: z.string().optional(),
@@ -53,6 +54,7 @@ export const environment = createEnv({
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
   },
   runtimeEnv: {
+    NEXT_PUBLIC_GIT_HASH: process.env.NEXT_PUBLIC_GIT_HASH,
     TEMPORAL_LETTUCE_NAMESPACE: process.env.TEMPORAL_LETTUCE_NAMESPACE,
     TEMPORAL_LETTUCE_API_HOST: process.env.TEMPORAL_LETTUCE_API_HOST,
     TEMPORAL_LETTUCE_CA_PEM: process.env.TEMPORAL_LETTUCE_CA_PEM,

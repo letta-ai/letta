@@ -278,3 +278,5 @@ export * from './lib/core/DateTimePicker/DateTimePicker';
 export * from './lib/reusable/CardButton/CardButton';
 
 export * from './lib/reusable/CardButtonGroup/CardButtonGroup';
+
+export * from './lib/reusable/AppVersion/AppVersion';

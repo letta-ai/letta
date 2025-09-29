@@ -1,5 +1,6 @@
 import {
   Alert,
+  AppVersion,
   Button,
   ChipSelect,
   CogIcon,
@@ -124,56 +125,59 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
 
   const type = form.watch('type');
 
-  const handleSubmit = useCallback((values: EditDatabaseSettingsPayload) => {
-    setIsOpen(false);
+  const handleSubmit = useCallback(
+    (values: EditDatabaseSettingsPayload) => {
+      setIsOpen(false);
 
-    if (values.type === 'embedded') {
+      if (values.type === 'embedded') {
+        void handleSetDesktopConfig({
+          version: '1',
+          databaseConfig: {
+            type: values.type,
+            embeddedType: 'sqlite',
+          },
+        });
+        return;
+      }
+
+      if (values.type === 'local') {
+        void handleSetDesktopConfig({
+          version: '1',
+          databaseConfig: {
+            type: values.type,
+            url: values.url || 'http://localhost:8283',
+            ...(values.token && { token: values.token }),
+          },
+        });
+        return;
+      }
+
+      if (values.type === 'cloud') {
+        void handleSetDesktopConfig({
+          version: '1',
+          databaseConfig: {
+            type: values.type,
+            token: values.token || '',
+          },
+        });
+        return;
+      }
+
+      if (!values.connectionString) {
+        toast.error(t('EditDatabaseSettingsDialog.connectionString.missing'));
+        return;
+      }
+
       void handleSetDesktopConfig({
         version: '1',
         databaseConfig: {
           type: values.type,
-          embeddedType: 'sqlite',
+          connectionString: values.connectionString,
         },
       });
-      return;
-    }
-
-    if (values.type === 'local') {
-      void handleSetDesktopConfig({
-        version: '1',
-        databaseConfig: {
-          type: values.type,
-          url: values.url || 'http://localhost:8283',
-          ...(values.token && { token: values.token }),
-        },
-      });
-      return;
-    }
-
-    if (values.type === 'cloud') {
-      void handleSetDesktopConfig({
-        version: '1',
-        databaseConfig: {
-          type: values.type,
-          token: values.token || '',
-        },
-      });
-      return;
-    }
-
-    if (!values.connectionString) {
-      toast.error(t('EditDatabaseSettingsDialog.connectionString.missing'));
-      return;
-    }
-
-    void handleSetDesktopConfig({
-      version: '1',
-      databaseConfig: {
-        type: values.type,
-        connectionString: values.connectionString,
-      },
-    });
-  }, [handleSetDesktopConfig, t]);
+    },
+    [handleSetDesktopConfig, t],
+  );
   return (
     <FormProvider {...form}>
       <Dialog
@@ -414,8 +418,9 @@ export function Settings() {
       subtitle={t('subtitle')}
       title={t('title')}
     >
-      <VStack padding>
+      <VStack padding justify="spaceBetween" fullHeight>
         <DatabaseSettings />
+        <AppVersion />
       </VStack>
     </DesktopPageLayout>
   );
