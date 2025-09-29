@@ -42,6 +42,7 @@ export function ProfilePopover(props: ProfilePopoverProps) {
               imageSrc={user?.imageUrl || ''}
               size={size}
               name={user?.name || ''}
+              framed
             />
           }
         />

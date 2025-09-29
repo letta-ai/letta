@@ -18,10 +18,22 @@ const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
       xlarge: 'h-[48px] w-[48px] text-base',
       xxlarge: 'h-[72px] w-[72px] text-[28px]',
     },
+    framed: {
+      true: '',
+      false: '',
+    },
   },
   defaultVariants: {
     size: 'medium',
+    framed: false,
   },
+  compoundVariants: [
+    {
+      size: 'medium',
+      framed: true,
+      className: 'border button-secondary-border p-[5px]',
+    },
+  ],
 });
 
 type AvatarVariantProps = VariantProps<typeof avatarVariants>;
@@ -32,10 +44,10 @@ type AvatarRootProps = AvatarVariantProps &
 const AvatarRoot = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   AvatarRootProps
->(({ className, size, ...props }, ref) => (
+>(({ className, size, framed, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
-    className={cn(avatarVariants({ size }), className)}
+    className={cn(avatarVariants({ size, framed }), className)}
     {...props}
   />
 ));
@@ -83,7 +95,7 @@ function getBackgroundFromName(name: string) {
 }
 
 export function Avatar(props: AvatarProps) {
-  const { imageSrc, size, name = 'UU' } = props;
+  const { imageSrc, size, framed, name = 'UU' } = props;
 
   const initials = useMemo(() => {
     const [firstName = '', lastName = ''] = (name || 'uu').split(' ');
@@ -91,7 +103,7 @@ export function Avatar(props: AvatarProps) {
   }, [name]);
 
   return (
-    <AvatarRoot size={size}>
+    <AvatarRoot size={size} framed={framed}>
       <AvatarImage src={imageSrc} alt={name} />
       <AvatarFallback
         className="font-normal text-black"
