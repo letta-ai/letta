@@ -383,17 +383,18 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             {"role": "user", "content": summary_transcript},
         ]
     input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
-    request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, llm_config, tools=[])
+    # Build a local LLMConfig for v1-style summarization which uses native content and must not
+    # include inner thoughts in kwargs to avoid conflicts in Anthropic formatting
+    summarizer_llm_config = LLMConfig(**llm_config.model_dump())
+    summarizer_llm_config.put_inner_thoughts_in_kwargs = False
 
-    # NOTE: we should disable the inner_thoughts_in_kwargs here, because we don't use it
-    # I'm leaving it commented it out for now for safety but is fine assuming the var here is a copy not a reference
-    # llm_config.put_inner_thoughts_in_kwargs = False
+    request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, summarizer_llm_config, tools=[])
     try:
-        response_data = await llm_client.request_async(request_data, llm_config)
+        response_data = await llm_client.request_async(request_data, summarizer_llm_config)
     except Exception as e:
         # handle LLM error (likely a context window exceeded error)
         raise llm_client.handle_llm_error(e)
-    response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, llm_config)
+    response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")
         # TODO raise an error error instead?

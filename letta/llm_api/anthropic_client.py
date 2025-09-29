@@ -187,6 +187,9 @@ class AnthropicClient(LLMClientBase):
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
         prefix_fill = True if agent_type != AgentType.letta_v1_agent else False
+        is_v1 = agent_type == AgentType.letta_v1_agent
+        # Determine local behavior for putting inner thoughts in kwargs without mutating llm_config
+        put_kwargs = bool(llm_config.put_inner_thoughts_in_kwargs) and not is_v1
         if not self.use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
@@ -236,11 +239,17 @@ class AnthropicClient(LLMClientBase):
             tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
-            if not llm_config.put_inner_thoughts_in_kwargs:
-                logger.warning(
-                    f"Force setting put_inner_thoughts_in_kwargs to True for Claude because there is a forced tool call: {force_tool_call}"
-                )
-                llm_config.put_inner_thoughts_in_kwargs = True
+            if not put_kwargs:
+                if is_v1:
+                    # For v1 agents, native content is used and kwargs must remain disabled to avoid conflicts
+                    logger.warning(
+                        "Forced tool call requested but inner_thoughts_in_kwargs is disabled for v1 agent; proceeding without inner thoughts in kwargs."
+                    )
+                else:
+                    logger.warning(
+                        f"Force enabling inner thoughts in kwargs for Claude due to forced tool call: {force_tool_call} (local override only)"
+                    )
+                    put_kwargs = True
         else:
             tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools] if tools is not None else None
@@ -251,7 +260,7 @@ class AnthropicClient(LLMClientBase):
 
         # Add inner thoughts kwarg
         # TODO: Can probably make this more efficient
-        if tools_for_request and len(tools_for_request) > 0 and llm_config.put_inner_thoughts_in_kwargs:
+        if tools_for_request and len(tools_for_request) > 0 and put_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
                 functions=[t.function.model_dump() for t in tools_for_request],
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
@@ -274,10 +283,10 @@ class AnthropicClient(LLMClientBase):
         data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
             messages=messages[1:],
             inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-            put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
+            put_inner_thoughts_in_kwargs=put_kwargs,
             # if react, use native content + strip heartbeats
-            native_content=agent_type == AgentType.letta_v1_agent,
-            strip_request_heartbeat=agent_type == AgentType.letta_v1_agent,
+            native_content=is_v1,
+            strip_request_heartbeat=is_v1,
         )
 
         # Ensure first message is user
@@ -307,7 +316,7 @@ class AnthropicClient(LLMClientBase):
         # https://docs.anthropic.com/en/api/messages#body-messages
         # NOTE: cannot prefill with tools for opus:
         # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
-        if prefix_fill and not llm_config.put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
+        if prefix_fill and not put_kwargs and "opus" not in data["model"]:
             data["messages"].append(
                 # Start the thinking process for the assistant
                 {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
