@@ -287,19 +287,9 @@ async def create_tool(
     """
     Create a new tool
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        tool = Tool(**request.model_dump(exclude_unset=True))
-        return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
-    except UniqueConstraintViolationError as e:
-        clean_error_message = "Tool with this name already exists."
-        raise HTTPException(status_code=409, detail=clean_error_message)
-    except LettaToolCreateError as e:
-        # HTTP 400 == Bad Request
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Catch other unexpected errors and raise an internal server error
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    tool = Tool(**request.model_dump(exclude_unset=True))
+    return await server.tool_manager.create_or_update_tool_async(pydantic_tool=tool, actor=actor)
 
 
 @router.put("/", response_model=Tool, operation_id="upsert_tool")
@@ -311,21 +301,9 @@ async def upsert_tool(
     """
     Create or update a tool
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        tool = await server.tool_manager.create_or_update_tool_async(
-            pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor
-        )
-        return tool
-    except UniqueConstraintViolationError as e:
-        # Log the error and raise a conflict exception
-        raise HTTPException(status_code=409, detail=str(e))
-    except LettaToolCreateError as e:
-        # HTTP 400 == Bad Request
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Catch other unexpected errors and raise an internal server error
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor)
+    return tool
 
 
 @router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
@@ -338,19 +316,9 @@ async def modify_tool(
     """
     Update an existing tool
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
-        return tool
-    except LettaToolNameConflictError as e:
-        # HTTP 409 == Conflict
-        raise HTTPException(status_code=409, detail=str(e))
-    except LettaToolCreateError as e:
-        # HTTP 400 == Bad Request
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Catch other unexpected errors and raise an internal server error
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+    return tool
 
 
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
@@ -376,25 +344,17 @@ async def run_tool_from_source(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.run_tool_from_source(
-            tool_source=request.source_code,
-            tool_source_type=request.source_type,
-            tool_args=request.args,
-            tool_env_vars=request.env_vars,
-            tool_name=request.name,
-            tool_args_json_schema=request.args_json_schema,
-            tool_json_schema=request.json_schema,
-            pip_requirements=request.pip_requirements,
-            actor=actor,
-        )
-    except LettaToolCreateError as e:
-        # HTTP 400 == Bad Request
-        raise HTTPException(status_code=400, detail=str(e))
-
-    except Exception as e:
-        # Catch other unexpected errors and raise an internal server error
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    return await server.run_tool_from_source(
+        tool_source=request.source_code,
+        tool_source_type=request.source_type,
+        tool_args=request.args,
+        tool_env_vars=request.env_vars,
+        tool_name=request.name,
+        tool_args_json_schema=request.args_json_schema,
+        tool_json_schema=request.json_schema,
+        pip_requirements=request.pip_requirements,
+        actor=actor,
+    )
 
 
 # Specific routes for Composio

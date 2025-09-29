@@ -1181,6 +1181,8 @@ class SyncServer(object):
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
 
+        from letta.services.tool_schema_generator import generate_schema_for_tool_creation, generate_schema_for_tool_update
+
         if tool_source_type not in (None, ToolSourceType.python, ToolSourceType.typescript):
             raise ValueError("Tool source type is not supported at this time. Found {tool_source_type}")
 
@@ -1203,6 +1205,11 @@ class SyncServer(object):
                 source_type=tool_source_type,
             )
 
+        # try to get the schema
+        if not tool.name:
+            if not tool.json_schema:
+                tool.json_schema = generate_schema_for_tool_creation(tool)
+            tool.name = tool.json_schema.get("name")
         assert tool.name is not None, "Failed to create tool object"
 
         # TODO eventually allow using agent state in tools
