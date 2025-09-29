@@ -14,7 +14,6 @@ import {
   HuggingFaceIcon,
   ComposioLogoMarkDynamic,
 } from '@letta-cloud/ui-component-library';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface DefinedUrlSetupType {
   url: string;
@@ -55,7 +54,6 @@ export type CustomUrlRecommendedServer = Omit<RecommendedServer, 'setup'> & {
 
 export function useRecommendedMCPServers(): RecommendedServer[] {
   const t = useTranslations('ToolManager/RecommendedMCPServers');
-  const { data: enabled } = useFeatureFlag('RECOMMENDED_MCP');
 
   return useMemo(() => {
     const recommendedServers: RecommendedServer[] = [
@@ -249,6 +247,6 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
       },
     ];
 
-    return enabled ? recommendedServers : [];
-  }, [t, enabled]);
+    return recommendedServers;
+  }, [t]);
 }
