@@ -32,6 +32,7 @@ const testClusterAgentFileName = `e2e-test-cluster-agent-file`;
 const testVoiceSleeptimeAgentFileName = `e2e-test-voice-sleeptime-agent-file`;
 const testRoundRobinAgentFileName = `e2e-test-round-robin-agent-file`;
 const testSupervisorAgentFileName = `e2e-test-supervisor-agent-file`;
+const testUpdateTemplateFromAgentFileName = `e2e-test-update-template-from-agent-file`;
 
 const customName = `custom-template-name`;
 
@@ -110,6 +111,7 @@ beforeAll(async () => {
     testVoiceSleeptimeAgentFileName,
     testRoundRobinAgentFileName,
     testSupervisorAgentFileName,
+    testUpdateTemplateFromAgentFileName,
   ].forEach(async (name) => {
     try {
       await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${name}`);
@@ -1188,6 +1190,170 @@ describe('Templates', () => {
           expect(toolResponse.data.source_code).toContain('return a + b');
         }
       }
+    });
+
+    beforeEach(async () => {
+      // Clean up any test functions and templates that might exist from previous runs
+      const testFunctionNames = [
+        'test_function_create_update',
+        'test_function_create_prevent_source_type'
+      ];
+
+      const testTemplateNames = [
+        'test-update-tools-template',
+        'test-source-type-change-template'
+      ];
+
+      for (const functionName of testFunctionNames) {
+        try {
+          const existingTools = await lettaAxiosSDK.get('/v1/tools', {
+            params: { names: [functionName] }
+          });
+
+          for (const tool of existingTools.data) {
+            if (tool.name === functionName) {
+              await lettaAxiosSDK.delete(`/v1/tools/${tool.id}`);
+            }
+          }
+        } catch (error) {
+          // Ignore errors - tool might not exist
+        }
+      }
+
+      // Clean up test templates
+      for (const templateName of testTemplateNames) {
+        try {
+          await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${templateName}`);
+        } catch (error) {
+          // Ignore errors - template might not exist
+        }
+      }
+    });
+
+    it('should create template from agent file with update_existing_tools=true', async () => {
+      // delete any existing tool with the function name
+      try {
+        const existingTools = await lettaAxiosSDK.get('/v1/tools', {
+          params: { names: ['test_function_create_update'] }
+        });
+
+        for (const tool of existingTools.data) {
+          if (tool.name === 'test_function_create_update') {
+            await lettaAxiosSDK.delete(`/v1/tools/${tool.id}`);
+          }
+        }
+      } catch (error) {
+        // Ignore errors - tool might not exist
+      }
+
+      // Use constant function name - will be cleaned up by beforeEach
+      const functionName = 'test_function_create_update';
+
+      // Create initial tool
+      const initialToolResponse = await lettaAxiosSDK.post(
+        '/v1/tools',
+        {
+          source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+          source_type: 'python',
+          json_schema: {
+            name: functionName,
+            description: 'Original existing function',
+            parameters: {
+              type: 'object',
+              properties: {
+                x: { type: 'string', description: 'Input parameter' },
+              },
+              required: ['x'],
+            },
+          },
+        }
+      );
+
+      expect(initialToolResponse.status).toBe(200);
+      const existingToolId = initialToolResponse.data.id;
+
+      // Create agent file that references the existing tool with updated code
+      const agentFileWithUpdatedTool = {
+        agents: [
+          {
+            id: 'test-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Test Agent',
+            system: 'You are a test agent.',
+            tool_ids: ['existing-tool'],
+            block_ids: ['test-block'],
+            source_ids: [],
+            tags: ['test'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'test-block',
+            label: 'human',
+            value: 'Test human block',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'existing-tool',
+            name: functionName, // Same name as existing tool
+            description: 'Updated existing function description',
+            source_code: `def ${functionName}(x: str) -> str:\n    return f"Updated: {x}"`, // Updated code
+            source_type: 'python', // Same source_type (required)
+            tags: ['updated'],
+            tool_type: 'custom',
+            json_schema: {
+              name: functionName,
+              description: 'Updated existing function description',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Updated input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const testTemplateName = 'test-update-tools-template';
+
+      // Create template with update_existing_tools=true
+      const createResponse = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: agentFileWithUpdatedTool,
+          name: testTemplateName,
+          update_existing_tools: true,
+        },
+      );
+
+      expect(createResponse.status).toBe(201);
+      expect(createResponse.data).toHaveProperty('id');
+      expect(createResponse.data.name).toBe(testTemplateName);
+
+      // Verify the existing tool was updated
+      const updatedToolResponse = await lettaAxiosSDK.get(`/v1/tools/${existingToolId}`);
+      expect(updatedToolResponse.status).toBe(200);
+      expect(updatedToolResponse.data.source_code).toContain('Updated: {x}');
+      expect(updatedToolResponse.data.json_schema.description).toBe('Updated existing function description');
+      expect(updatedToolResponse.data.source_type).toBe('python'); // Should remain unchanged
+
+      // Clean up
+      await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+      await lettaAxiosSDK.delete(`/v1/tools/${existingToolId}`);
     });
   });
 
@@ -4711,6 +4877,2158 @@ describe('Templates', () => {
         }
       }
     }, 90000);
+  });
+
+  describe('/v1/templates/{project}/{template_name}/agent-file PUT', () => {
+    let testTemplateName: string;
+
+    beforeEach(async () => {
+      testTemplateName = `${testUpdateTemplateFromAgentFileName}-${Date.now()}`;
+
+      // Clean up any existing template with this name
+      try {
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+
+      // Create a basic template for testing updates
+      const initialAgentFile = {
+        agents: [
+          {
+            id: 'original-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Original Agent',
+            system: 'You are the original agent.',
+            tool_ids: ['original-tool'],
+            block_ids: ['original-block'],
+            source_ids: [],
+            tags: ['original'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'original-block',
+            label: 'human',
+            value: 'Original human block content',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'original-tool',
+            name: 'original_function',
+            description: 'Original tool function',
+            source_code: 'def original_function(x: str) -> str:\n    return f"Original: {x}"',
+            source_type: 'python',
+            tags: ['original'],
+            json_schema: {
+              name: 'original_function',
+              description: 'Original tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const createResponse = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: initialAgentFile,
+          name: testTemplateName,
+        },
+      );
+      expect(createResponse.status).toBe(201);
+    });
+
+    afterEach(async () => {
+      // Clean up the test template
+      try {
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    });
+
+    it('should update current template from agent file preserving existing entity IDs', async () => {
+      // 1. Get initial snapshot to capture entity IDs
+      const initialSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(initialSnapshotResponse.status).toBe(200);
+      const initialSnapshot = initialSnapshotResponse.data;
+
+      // 2. Update template with modified agent file (using same IDs to test preservation)
+      const updatedAgentFile = {
+        agents: [
+          {
+            id: 'original-agent', // Same ID - should update existing
+            agent_type: 'memgpt_v2_agent',
+            name: 'Updated Agent Name',
+            system: 'You are the updated agent with new system prompt.',
+            tool_ids: ['original-tool'],
+            block_ids: ['original-block'],
+            source_ids: [],
+            tags: ['original', 'updated'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.5, // Changed temperature
+              context_window: 64000, // Changed context window
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'original-block', // Same ID - should update existing
+            label: 'human',
+            value: 'Updated human block content with modifications',
+            limit: 1500, // Changed limit
+            description: 'Updated block description',
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'original-tool', // Same ID - should update existing
+            name: 'updated_function',
+            description: 'Updated tool function',
+            source_code: 'def updated_function(x: str) -> str:\n    return f"Updated: {x}"',
+            source_type: 'python',
+            tags: ['original', 'updated'],
+            json_schema: {
+              name: 'updated_function',
+              description: 'Updated tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Updated input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const updateResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: updatedAgentFile },
+      );
+
+      if (updateResponse.status !== 200) {
+        console.error('Update Error:', JSON.stringify(updateResponse.data, null, 2));
+      }
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.data).toHaveProperty('success', true);
+      expect(updateResponse.data.message).toContain('successfully');
+
+      // 3. Get updated snapshot to verify changes
+      const updatedSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(updatedSnapshotResponse.status).toBe(200);
+      const updatedSnapshot = updatedSnapshotResponse.data;
+
+      // 4. Verify entity IDs were preserved (key feature of our implementation)
+      expect(updatedSnapshot.agents).toHaveLength(1);
+      expect(updatedSnapshot.blocks).toHaveLength(1);
+
+      const updatedAgent = updatedSnapshot.agents[0];
+      const updatedBlock = updatedSnapshot.blocks[0];
+      const initialAgent = initialSnapshot.agents[0];
+      const initialBlock = initialSnapshot.blocks[0];
+
+      // Entity IDs should be the same (preserved)
+      expect(updatedAgent.entityId).toBe(initialAgent.entityId);
+      expect(updatedBlock.entityId).toBe(initialBlock.entityId);
+
+      // But content should be updated
+      expect(updatedAgent.systemPrompt).toBe('You are the updated agent with new system prompt.');
+      expect(updatedAgent.tags).toEqual(['original', 'updated']);
+      expect(updatedAgent.properties.temperature).toBe(0.5);
+      expect(updatedAgent.properties.context_window_limit).toBe(64000);
+
+      expect(updatedBlock.value).toBe('Updated human block content with modifications');
+      expect(updatedBlock.limit).toBe(1500);
+      expect(updatedBlock.description).toBe('Updated block description');
+    });
+
+    it('should add new entities when agent file contains new IDs', async () => {
+      // Update template with agent file containing new entities
+      const agentFileWithNewEntities = {
+        agents: [
+          {
+            id: 'original-agent', // Existing agent
+            agent_type: 'memgpt_v2_agent',
+            name: 'Original Agent',
+            system: 'You are the original agent.',
+            tool_ids: ['original-tool'],
+            block_ids: ['original-block', 'new-block'],
+            source_ids: [],
+            tags: ['original'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'original-block', // Existing block
+            label: 'human',
+            value: 'Original human block content',
+            limit: 1000,
+          },
+          {
+            id: 'new-block', // New block
+            label: 'persona',
+            value: 'New persona block added during update',
+            limit: 2000,
+            description: 'New block added via update',
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'original-tool', // Existing tool
+            name: 'original_function',
+            description: 'Original tool function',
+            source_code: 'def original_function(x: str) -> str:\n    return f"Original: {x}"',
+            source_type: 'python',
+            tags: ['original'],
+            json_schema: {
+              name: 'original_function',
+              description: 'Original tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+          {
+            id: 'new-tool', // New tool
+            name: 'new_function',
+            description: 'New tool function',
+            source_code: 'def new_function(y: int) -> int:\n    return y * 2',
+            source_type: 'python',
+            tags: ['new'],
+            json_schema: {
+              name: 'new_function',
+              description: 'New tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  y: { type: 'integer', description: 'Input number' },
+                },
+                required: ['y'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const updateResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: agentFileWithNewEntities },
+      );
+
+
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.data).toHaveProperty('success', true);
+
+      // Verify the new entities were added
+      const updatedSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(updatedSnapshotResponse.status).toBe(200);
+      const updatedSnapshot = updatedSnapshotResponse.data;
+
+      // Should now have 2 agents and 2 blocks
+      expect(updatedSnapshot.agents).toHaveLength(1);
+      expect(updatedSnapshot.blocks).toHaveLength(2);
+
+      // Verify the new entities exist
+      const newBlock = updatedSnapshot.blocks.find((b: any) => b.entityId === 'new-block');
+
+      expect(newBlock).toBeDefined();
+      expect(newBlock.label).toBe('persona');
+      expect(newBlock.value).toBe('New persona block added during update');
+      expect(newBlock.description).toBe('New block added via update');
+
+      // Verify relationships were created correctly
+      expect(updatedSnapshot.relationships).toHaveLength(2);
+    });
+
+    it('should remove entities when agent file no longer contains their IDs', async () => {
+      // First, add an extra agent to have something to remove
+      const agentFileWithExtra = {
+        agents: [
+          {
+            id: 'original-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Original Agent',
+            system: 'You are the original agent.',
+            tool_ids: ['original-tool'],
+            block_ids: ['original-block'],
+            source_ids: [],
+            tags: ['original'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+          {
+            id: 'temporary-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Temporary Agent',
+            system: 'I will be removed.',
+            tool_ids: ['temporary-tool'],
+            block_ids: ['temporary-block'],
+            source_ids: [],
+            tags: ['temporary'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.8,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'original-block',
+            label: 'human',
+            value: 'Original human block content',
+            limit: 1000,
+          },
+          {
+            id: 'temporary-block',
+            label: 'persona',
+            value: 'Temporary block to be removed',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'original-tool',
+            name: 'original_function',
+            description: 'Original tool function',
+            source_code: 'def original_function(x: str) -> str:\n    return f"Original: {x}"',
+            source_type: 'python',
+            tags: ['original'],
+            json_schema: {
+              name: 'original_function',
+              description: 'Original tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+          {
+            id: 'temporary-tool',
+            name: 'temporary_function',
+            description: 'Temporary tool function',
+            source_code: 'def temporary_function() -> str:\n    return "temporary"',
+            source_type: 'python',
+            tags: ['temporary'],
+            json_schema: {
+              name: 'temporary_function',
+              description: 'Temporary tool function',
+              parameters: {
+                type: 'object',
+                properties: {},
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      // delete the template and recreate it to ensure a clean state
+      await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+
+      // create the template  with the agentFileWithExtra
+
+      const createResponse = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: agentFileWithExtra,
+          name: testTemplateName,
+        },
+      );
+
+
+      expect(createResponse.status).toBe(201);
+
+      // Verify they were added
+      const intermediateSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(intermediateSnapshotResponse.status).toBe(200);
+      expect(intermediateSnapshotResponse.data.agents).toHaveLength(2);
+      expect(intermediateSnapshotResponse.data.blocks).toHaveLength(2);
+
+      // Now update with original agent file (removing temporary entities)
+      const agentFileWithoutTemp = {
+        agents: [
+          {
+            id: 'original-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Original Agent',
+            system: 'You are the original agent.',
+            tool_ids: ['original-tool'],
+            block_ids: ['original-block'],
+            source_ids: [],
+            tags: ['original'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'original-block',
+            label: 'human',
+            value: 'Original human block content',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'original-tool',
+            name: 'original_function',
+            description: 'Original tool function',
+            source_code: 'def original_function(x: str) -> str:\n    return f"Original: {x}"',
+            source_type: 'python',
+            tags: ['original'],
+            json_schema: {
+              name: 'original_function',
+              description: 'Original tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const removeResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: agentFileWithoutTemp },
+      );
+      expect(removeResponse.status).toBe(200);
+
+      // Verify temporary entities were removed
+      const finalSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(finalSnapshotResponse.status).toBe(200);
+      const finalSnapshot = finalSnapshotResponse.data;
+
+      // Should be back to 1 agent and 1 block
+      expect(finalSnapshot.agents).toHaveLength(1);
+      expect(finalSnapshot.blocks).toHaveLength(1);
+
+      // Verify temporary entities are gone
+      const tempAgent = finalSnapshot.agents.find((a: any) => a.entityId === 'temporary-agent');
+      const tempBlock = finalSnapshot.blocks.find((b: any) => b.entityId === 'temporary-block');
+
+      expect(tempAgent).toBeUndefined();
+      expect(tempBlock).toBeUndefined();
+
+      // Original entities should still exist
+      const originalAgent = finalSnapshot.agents.find((a: any) => a.entityId === 'original-agent');
+      const originalBlock = finalSnapshot.blocks.find((b: any) => b.entityId === 'original-block');
+
+      expect(originalAgent).toBeDefined();
+      expect(originalBlock).toBeDefined();
+    });
+
+    it('should prevent template type changes', async () => {
+      // Try to update to a different template type (our initial template is 'classic')
+      const dynamicAgentFile = {
+        agents: [
+          {
+            id: 'manager-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Manager Agent',
+            system: 'You are a manager agent.',
+            tool_ids: ['manager-tool'],
+            block_ids: ['shared-block'],
+            source_ids: [],
+            tags: ['manager'],
+            group_ids: ['dynamic-group'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.5,
+              context_window: 128000,
+            },
+          },
+          {
+            id: 'worker-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Worker Agent',
+            system: 'You are a worker agent.',
+            tool_ids: ['worker-tool'],
+            block_ids: ['shared-block'],
+            source_ids: [],
+            tags: ['worker'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.3,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [
+          {
+            id: 'dynamic-group',
+            name: 'Dynamic Team',
+            manager_config: {
+              manager_type: 'dynamic',
+              manager_agent_id: 'manager-agent',
+              termination_token: 'DONE',
+              max_turns: 10,
+            },
+          },
+        ],
+        blocks: [
+          {
+            id: 'shared-block',
+            label: 'human',
+            value: 'Shared human block for dynamic template',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'manager-tool',
+            name: 'manage_function',
+            description: 'Manager tool function',
+            source_code: 'def manage_function() -> str:\n    return "managing"',
+            source_type: 'python',
+            tags: ['manager'],
+            json_schema: {
+              name: 'manage_function',
+              description: 'Manager tool function',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+          {
+            id: 'worker-tool',
+            name: 'work_function',
+            description: 'Worker tool function',
+            source_code: 'def work_function() -> str:\n    return "working"',
+            source_type: 'python',
+            tags: ['worker'],
+            json_schema: {
+              name: 'work_function',
+              description: 'Worker tool function',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const updateResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: dynamicAgentFile },
+      );
+
+      // Should return 400 error preventing template type change
+      expect(updateResponse.status).toBe(400);
+      expect(updateResponse.data).toHaveProperty('message');
+      expect(updateResponse.data.message).toContain('Cannot change template type when updating from agent file');
+
+      // Verify original template type is preserved
+      const snapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(snapshotResponse.status).toBe(200);
+      expect(snapshotResponse.data.type).toBe('classic'); // Should remain classic
+    });
+
+    it('should update group configuration without changing template type for same type', async () => {
+      // First, verify our template starts as classic
+      const initialSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(initialSnapshotResponse.status).toBe(200);
+      expect(initialSnapshotResponse.data.type).toBe('classic');
+
+      // Update with a classic template that has group configuration (should be allowed)
+      const classicAgentFileWithGroup = {
+        agents: [
+          {
+            id: 'single-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Single Agent',
+            system: 'You are a single agent in a classic template.',
+            tool_ids: ['single-tool'],
+            block_ids: ['single-block'],
+            source_ids: [],
+            tags: ['classic'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.7,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [], // Classic template - no groups
+        blocks: [
+          {
+            id: 'single-block',
+            label: 'human',
+            value: 'Updated human block for classic template',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'single-tool',
+            name: 'single_function',
+            description: 'Single tool function',
+            source_code: 'def single_function(x: str) -> str:\n    return f"Single: {x}"',
+            source_type: 'python',
+            tags: ['single'],
+            json_schema: {
+              name: 'single_function',
+              description: 'Single tool function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const updateResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: classicAgentFileWithGroup },
+      );
+
+      // Should succeed since we're keeping the same template type
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.data).toHaveProperty('success', true);
+
+      // Verify template type remains classic
+      const finalSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(finalSnapshotResponse.status).toBe(200);
+      expect(finalSnapshotResponse.data.type).toBe('classic'); // Should still be classic
+      expect(finalSnapshotResponse.data.agents).toHaveLength(1);
+      expect(finalSnapshotResponse.data.blocks).toHaveLength(1);
+    });
+
+    it('should return 400 for invalid agent file format', async () => {
+      const invalidAgentFile = {
+        // Missing required fields
+        invalid: true,
+      };
+
+      const response = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: invalidAgentFile },
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.data).toHaveProperty('message');
+      expect(response.data.message).toContain('Invalid agent file format');
+    });
+
+    it('should return 404 for non-existent template', async () => {
+      const agentFile = {
+        agents: [],
+        groups: [],
+        blocks: [],
+        files: [],
+        sources: [],
+        tools: [],
+        mcp_servers: [],
+      };
+
+      const response = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/non-existent-template/agent-file`,
+        { agent_file_json: agentFile },
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.data).toHaveProperty('message');
+      expect(response.data.message).toContain('Template not found');
+    });
+
+    it('should return 404 for non-existent project', async () => {
+      const agentFile = {
+        agents: [],
+        groups: [],
+        blocks: [],
+        files: [],
+        sources: [],
+        tools: [],
+        mcp_servers: [],
+      };
+
+      const response = await lettaAxiosSDK.put(
+        `/v1/templates/non-existent-project/${testTemplateName}/agent-file`,
+        { agent_file_json: agentFile },
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.data).toHaveProperty('message');
+      expect(response.data.message).toBe('Project not found');
+    });
+
+    it('should handle tools correctly by mapping agent file tool IDs to server tool IDs', async () => {
+      // Update with agent file containing custom tools
+      const agentFileWithTools = {
+        agents: [
+          {
+            id: 'test-agent',
+            agent_type: 'memgpt_v2_agent',
+            name: 'Test Agent',
+            system: 'You are a test agent with custom tools.',
+            tool_ids: ['custom-tool-1', 'custom-tool-2'],
+            block_ids: ['test-block'],
+            source_ids: [],
+            tags: ['test'],
+            llm_config: {
+              model: 'gpt-4o-mini',
+              temperature: 0.5,
+              context_window: 128000,
+            },
+          },
+        ],
+        groups: [],
+        blocks: [
+          {
+            id: 'test-block',
+            label: 'human',
+            value: 'Test block content',
+            limit: 1000,
+          },
+        ],
+        files: [],
+        sources: [],
+        tools: [
+          {
+            id: 'custom-tool-1',
+            name: 'custom_function_1',
+            description: 'First custom tool',
+            source_code: 'def custom_function_1(x: str) -> str:\n    return f"Custom 1: {x}"',
+            source_type: 'python',
+            tags: ['custom'],
+            json_schema: {
+              name: 'custom_function_1',
+              description: 'First custom tool',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input' },
+                },
+                required: ['x'],
+              },
+            },
+          },
+          {
+            id: 'custom-tool-2',
+            name: 'custom_function_2',
+            description: 'Second custom tool',
+            source_code: 'def custom_function_2(y: int) -> int:\n    return y * 3',
+            source_type: 'python',
+            tags: ['custom'],
+            json_schema: {
+              name: 'custom_function_2',
+              description: 'Second custom tool',
+              parameters: {
+                type: 'object',
+                properties: {
+                  y: { type: 'integer', description: 'Number' },
+                },
+                required: ['y'],
+              },
+            },
+          },
+        ],
+        mcp_servers: [],
+      };
+
+      const updateResponse = await lettaAxiosSDK.put(
+        `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+        { agent_file_json: agentFileWithTools },
+      );
+      expect(updateResponse.status).toBe(200);
+
+      // Verify tools were created and mapped
+      const updatedSnapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+      );
+      expect(updatedSnapshotResponse.status).toBe(200);
+      const updatedSnapshot = updatedSnapshotResponse.data;
+
+      const agent = updatedSnapshot.agents[0];
+      expect(agent.toolIds).toHaveLength(2);
+
+      // Tool IDs should be server-generated, not the original agent file IDs
+      expect(agent.toolIds).not.toContain('custom-tool-1');
+      expect(agent.toolIds).not.toContain('custom-tool-2');
+
+      // Verify we can retrieve each tool by its server-generated ID
+      for (const toolId of agent.toolIds) {
+        const toolResponse = await lettaAxiosSDK.get(`/v1/tools/${toolId}`);
+        expect(toolResponse.status).toBe(200);
+        expect(['custom_function_1', 'custom_function_2']).toContain(toolResponse.data.name);
+      }
+    });
+
+    describe('Group Templates', () => {
+      let testGroupTemplateName: string;
+
+      beforeEach(async () => {
+        testGroupTemplateName = `${testUpdateTemplateFromAgentFileName}-group-${Date.now()}`;
+
+        // Clean up any existing template with this name
+        try {
+          await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testGroupTemplateName}`);
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+
+        // Create a dynamic group template for testing updates
+        const initialDynamicAgentFile = {
+          agents: [
+            {
+              id: 'manager-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Manager Agent',
+              system: 'You are a manager agent that coordinates team activities.',
+              tool_ids: ['manager-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['manager', 'dynamic'],
+              group_ids: ['dynamic-group'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.5,
+                context_window: 128000,
+              },
+            },
+            {
+              id: 'worker-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Worker Agent',
+              system: 'You are a worker agent that follows manager instructions.',
+              tool_ids: ['worker-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['worker', 'dynamic'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [
+            {
+              id: 'dynamic-group',
+              name: 'Dynamic Team',
+              manager_config: {
+                manager_type: 'dynamic',
+                manager_agent_id: 'manager-agent',
+                termination_token: 'DONE',
+                max_turns: 10,
+              },
+            },
+          ],
+          blocks: [
+            {
+              id: 'shared-block',
+              label: 'human',
+              value: 'Shared human block for dynamic group template',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'manager-tool',
+              name: 'manage_function',
+              description: 'Manager coordination function',
+              source_code: 'def manage_function(task: str) -> str:\n    return f"Managing task: {task}"',
+              source_type: 'python',
+              tags: ['manager'],
+              json_schema: {
+                name: 'manage_function',
+                description: 'Manager coordination function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    task: { type: 'string', description: 'Task to manage' },
+                  },
+                  required: ['task'],
+                },
+              },
+            },
+            {
+              id: 'worker-tool',
+              name: 'work_function',
+              description: 'Worker execution function',
+              source_code: 'def work_function(action: str) -> str:\n    return f"Executing action: {action}"',
+              source_type: 'python',
+              tags: ['worker'],
+              json_schema: {
+                name: 'work_function',
+                description: 'Worker execution function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string', description: 'Action to execute' },
+                  },
+                  required: ['action'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialDynamicAgentFile,
+            name: testGroupTemplateName,
+          },
+        );
+        expect(createResponse.status).toBe(201);
+      });
+
+      afterEach(async () => {
+        // Clean up the test template
+        try {
+          await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testGroupTemplateName}`);
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      });
+
+      it('should update group template while preserving group configuration', async () => {
+        // 1. Verify initial group template structure
+        const initialSnapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testGroupTemplateName}:current/snapshot`,
+        );
+        expect(initialSnapshotResponse.status).toBe(200);
+        const initialSnapshot = initialSnapshotResponse.data;
+
+        expect(initialSnapshot.type).toBe('dynamic');
+        expect(initialSnapshot.configuration).toHaveProperty('managerAgentEntityId', 'manager-agent');
+        expect(initialSnapshot.configuration).toHaveProperty('terminationToken', 'DONE');
+        expect(initialSnapshot.configuration).toHaveProperty('maxTurns', 10);
+
+        // 2. Update the template with modified group configuration
+        const updatedDynamicAgentFile = {
+          agents: [
+            {
+              id: 'manager-agent', // Same ID - preserve entity
+              agent_type: 'memgpt_v2_agent',
+              name: 'Updated Manager Agent',
+              system: 'You are an updated manager agent with enhanced capabilities.',
+              tool_ids: ['manager-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['manager', 'dynamic', 'updated'],
+              group_ids: ['dynamic-group'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.3, // Changed temperature
+                context_window: 64000, // Changed context window
+              },
+            },
+            {
+              id: 'worker-agent', // Same ID - preserve entity
+              agent_type: 'memgpt_v2_agent',
+              name: 'Updated Worker Agent',
+              system: 'You are an updated worker agent with improved skills.',
+              tool_ids: ['worker-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['worker', 'dynamic', 'updated'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.8, // Changed temperature
+                context_window: 64000, // Changed context window
+              },
+            },
+          ],
+          groups: [
+            {
+              id: 'dynamic-group',
+              name: 'Updated Dynamic Team',
+              manager_config: {
+                manager_type: 'dynamic',
+                manager_agent_id: 'manager-agent',
+                termination_token: 'FINISHED', // Changed token
+                max_turns: 15, // Changed max turns
+              },
+            },
+          ],
+          blocks: [
+            {
+              id: 'shared-block', // Same ID - preserve entity
+              label: 'human',
+              value: 'Updated shared human block for dynamic group template',
+              limit: 1500, // Changed limit
+              description: 'Updated block for group template',
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'manager-tool', // Same ID - preserve entity
+              name: 'updated_manage_function',
+              description: 'Updated manager coordination function',
+              source_code: 'def updated_manage_function(task: str) -> str:\n    return f"Updated managing task: {task}"',
+              source_type: 'python',
+              tags: ['manager', 'updated'],
+              json_schema: {
+                name: 'updated_manage_function',
+                description: 'Updated manager coordination function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    task: { type: 'string', description: 'Task to manage' },
+                  },
+                  required: ['task'],
+                },
+              },
+            },
+            {
+              id: 'worker-tool', // Same ID - preserve entity
+              name: 'updated_work_function',
+              description: 'Updated worker execution function',
+              source_code: 'def updated_work_function(action: str) -> str:\n    return f"Updated executing action: {action}"',
+              source_type: 'python',
+              tags: ['worker', 'updated'],
+              json_schema: {
+                name: 'updated_work_function',
+                description: 'Updated worker execution function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string', description: 'Action to execute' },
+                  },
+                  required: ['action'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testGroupTemplateName}/agent-file`,
+          { agent_file_json: updatedDynamicAgentFile },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // 3. Verify the template was updated correctly
+        const updatedSnapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testGroupTemplateName}:current/snapshot`,
+        );
+        expect(updatedSnapshotResponse.status).toBe(200);
+        const updatedSnapshot = updatedSnapshotResponse.data;
+
+        // Template type should remain the same
+        expect(updatedSnapshot.type).toBe('dynamic');
+
+        // Group configuration should be updated
+        expect(updatedSnapshot.configuration).toHaveProperty('managerAgentEntityId', 'manager-agent');
+        expect(updatedSnapshot.configuration).toHaveProperty('terminationToken', 'FINISHED');
+        expect(updatedSnapshot.configuration).toHaveProperty('maxTurns', 15);
+
+        // Agents should be updated but entity IDs preserved
+        expect(updatedSnapshot.agents).toHaveLength(2);
+        const managerAgent = updatedSnapshot.agents.find((a: any) => a.tags?.includes('manager'));
+        const workerAgent = updatedSnapshot.agents.find((a: any) => a.tags?.includes('worker'));
+
+        expect(managerAgent).toBeDefined();
+        expect(managerAgent.entityId).toBe('manager-agent'); // Entity ID preserved
+        expect(managerAgent.systemPrompt).toBe('You are an updated manager agent with enhanced capabilities.');
+        expect(managerAgent.properties.temperature).toBe(0.3);
+
+        expect(workerAgent).toBeDefined();
+        expect(workerAgent.entityId).toBe('worker-agent'); // Entity ID preserved
+        expect(workerAgent.systemPrompt).toBe('You are an updated worker agent with improved skills.');
+        expect(workerAgent.properties.temperature).toBe(0.8);
+
+        // Block should be updated
+        expect(updatedSnapshot.blocks).toHaveLength(1);
+        const updatedBlock = updatedSnapshot.blocks[0];
+        expect(updatedBlock.entityId).toBe('shared-block'); // Entity ID preserved
+        expect(updatedBlock.value).toBe('Updated shared human block for dynamic group template');
+        expect(updatedBlock.limit).toBe(1500);
+      });
+
+      it('should add new agents to group template correctly', async () => {
+        // Add a new agent to the existing dynamic group template
+        const agentFileWithNewAgent = {
+          agents: [
+            {
+              id: 'manager-agent', // Existing agent
+              agent_type: 'memgpt_v2_agent',
+              name: 'Manager Agent',
+              system: 'You are a manager agent.',
+              tool_ids: ['manager-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['manager', 'dynamic'],
+              group_ids: ['dynamic-group'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.5,
+                context_window: 128000,
+              },
+            },
+            {
+              id: 'worker-agent', // Existing agent
+              agent_type: 'memgpt_v2_agent',
+              name: 'Worker Agent',
+              system: 'You are a worker agent.',
+              tool_ids: ['worker-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['worker', 'dynamic'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+            {
+              id: 'specialist-agent', // New agent
+              agent_type: 'memgpt_v2_agent',
+              name: 'Specialist Agent',
+              system: 'You are a specialist agent with domain expertise.',
+              tool_ids: ['specialist-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['specialist', 'dynamic'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.4,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [
+            {
+              id: 'dynamic-group',
+              name: 'Dynamic Team',
+              manager_config: {
+                manager_type: 'dynamic',
+                manager_agent_id: 'manager-agent',
+                termination_token: 'DONE',
+                max_turns: 10,
+              },
+            },
+          ],
+          blocks: [
+            {
+              id: 'shared-block',
+              label: 'human',
+              value: 'Shared human block for dynamic group template',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'manager-tool',
+              name: 'manage_function',
+              description: 'Manager coordination function',
+              source_code: 'def manage_function(task: str) -> str:\n    return f"Managing task: {task}"',
+              source_type: 'python',
+              tags: ['manager'],
+              json_schema: {
+                name: 'manage_function',
+                description: 'Manager coordination function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    task: { type: 'string', description: 'Task to manage' },
+                  },
+                  required: ['task'],
+                },
+              },
+            },
+            {
+              id: 'worker-tool',
+              name: 'work_function',
+              description: 'Worker execution function',
+              source_code: 'def work_function(action: str) -> str:\n    return f"Executing action: {action}"',
+              source_type: 'python',
+              tags: ['worker'],
+              json_schema: {
+                name: 'work_function',
+                description: 'Worker execution function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string', description: 'Action to execute' },
+                  },
+                  required: ['action'],
+                },
+              },
+            },
+            {
+              id: 'specialist-tool', // New tool
+              name: 'specialist_function',
+              description: 'Specialist analysis function',
+              source_code: 'def specialist_function(data: str) -> str:\n    return f"Analyzing data: {data}"',
+              source_type: 'python',
+              tags: ['specialist'],
+              json_schema: {
+                name: 'specialist_function',
+                description: 'Specialist analysis function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    data: { type: 'string', description: 'Data to analyze' },
+                  },
+                  required: ['data'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testGroupTemplateName}/agent-file`,
+          { agent_file_json: agentFileWithNewAgent },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // Verify the new agent was added
+        const updatedSnapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testGroupTemplateName}:current/snapshot`,
+        );
+        expect(updatedSnapshotResponse.status).toBe(200);
+        const updatedSnapshot = updatedSnapshotResponse.data;
+
+        // Should now have 3 agents
+        expect(updatedSnapshot.agents).toHaveLength(3);
+
+        // Verify the new specialist agent exists
+        const specialistAgent = updatedSnapshot.agents.find((a: any) => a.entityId === 'specialist-agent');
+        expect(specialistAgent).toBeDefined();
+        expect(specialistAgent.systemPrompt).toBe('You are a specialist agent with domain expertise.');
+        expect(specialistAgent.tags).toEqual(['specialist', 'dynamic']);
+
+        // Group configuration should remain the same
+        expect(updatedSnapshot.type).toBe('dynamic');
+        expect(updatedSnapshot.configuration).toHaveProperty('managerAgentEntityId', 'manager-agent');
+
+        // Verify relationships include the new agent
+        const specialistRelationship = updatedSnapshot.relationships.find(
+          (r: any) => r.agentEntityId === 'specialist-agent' && r.blockEntityId === 'shared-block'
+        );
+        expect(specialistRelationship).toBeDefined();
+      });
+
+      it('should prevent removing the manager agent from group template', async () => {
+        // Try to remove the manager agent (should fail)
+        const agentFileWithoutManager = {
+          agents: [
+            {
+              id: 'worker-agent', // Keep only worker agent
+              agent_type: 'memgpt_v2_agent',
+              name: 'Worker Agent',
+              system: 'You are a worker agent.',
+              tool_ids: ['worker-tool'],
+              block_ids: ['shared-block'],
+              source_ids: [],
+              tags: ['worker', 'dynamic'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [
+            {
+              id: 'dynamic-group',
+              name: 'Dynamic Team',
+              manager_config: {
+                manager_type: 'dynamic',
+                manager_agent_id: 'manager-agent', // Still references removed agent
+                termination_token: 'DONE',
+                max_turns: 10,
+              },
+            },
+          ],
+          blocks: [
+            {
+              id: 'shared-block',
+              label: 'human',
+              value: 'Shared human block for dynamic group template',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'worker-tool',
+              name: 'work_function',
+              description: 'Worker execution function',
+              source_code: 'def work_function(action: str) -> str:\n    return f"Executing action: {action}"',
+              source_type: 'python',
+              tags: ['worker'],
+              json_schema: {
+                name: 'work_function',
+                description: 'Worker execution function',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string', description: 'Action to execute' },
+                  },
+                  required: ['action'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testGroupTemplateName}/agent-file`,
+          { agent_file_json: agentFileWithoutManager },
+        );
+
+        // Should return 400 error preventing manager agent deletion
+        expect(updateResponse.status).toBe(400);
+        expect(updateResponse.data).toHaveProperty('message');
+        expect(updateResponse.data.message).toContain('Cannot delete agent that is a manager of the group');
+
+        // Verify original template is unchanged
+        const snapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testGroupTemplateName}:current/snapshot`,
+        );
+        expect(snapshotResponse.status).toBe(200);
+        expect(snapshotResponse.data.agents).toHaveLength(2); // Should still have both agents
+      });
+    });
+
+    describe('update_existing_tools parameter', () => {
+      beforeEach(async () => {
+        // Clean up any test functions and templates that might exist from previous runs
+        const testFunctionNames = [
+          'test_function_update_existing',
+          'test_function_update_prevent_source_type',
+          'test_function_default_behavior'
+        ];
+
+        const testTemplateNames = [
+          'test-update-existing-tools-template',
+          'test-prevent-source-type-change-template',
+          'test-no-update-tools-template'
+        ];
+
+        for (const functionName of testFunctionNames) {
+          try {
+            const existingTools = await lettaAxiosSDK.get('/v1/tools', {
+              params: { names: [functionName] }
+            });
+
+            for (const tool of existingTools.data) {
+              if (tool.name === functionName) {
+                await lettaAxiosSDK.delete(`/v1/tools/${tool.id}`);
+              }
+            }
+          } catch (error) {
+            // Ignore errors - tool might not exist
+          }
+        }
+
+        // Clean up test templates
+        for (const templateName of testTemplateNames) {
+          try {
+            await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${templateName}`);
+          } catch (error) {
+            // Ignore errors - template might not exist
+          }
+        }
+      });
+
+      it('should update existing custom tools when update_existing_tools=true', async () => {
+        // Use constant function name - will be cleaned up by beforeEach
+        const functionName = 'test_function_update_existing';
+
+        const existingToolResponse = await lettaAxiosSDK.post(
+          '/v1/tools',
+          {
+            source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+            source_type: 'python',
+            json_schema: {
+              name: functionName,
+              description: 'Original existing function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          }
+        );
+
+        expect(existingToolResponse.status).toBe(200);
+        const existingToolId = existingToolResponse.data.id;
+
+        // Create initial template with the existing tool
+        const initialAgentFile = {
+          agents: [
+            {
+              id: 'test-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Test Agent',
+              system: 'You are a test agent.',
+              tool_ids: ['existing-tool'],
+              block_ids: ['test-block'],
+              source_ids: [],
+              tags: ['test'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [],
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Test human block',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName,
+              description: 'Original existing function description',
+              source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+              source_type: 'python',
+              tags: ['original'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Original existing function description',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const testTemplateName = 'test-update-existing-tools-template';
+
+        // Create initial template
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialAgentFile,
+            name: testTemplateName,
+          },
+        );
+
+        expect(createResponse.status).toBe(201);
+
+        // Now update the template with modified tool and update_existing_tools=true
+        const updatedAgentFile = {
+          ...initialAgentFile,
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName, // Same name
+              description: 'Updated existing function description',
+              source_code: `def ${functionName}(x: str) -> str:\n    return f"Updated: {x}"`, // Updated code
+              source_type: 'python', // Same source_type (required)
+              tags: ['updated'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Updated existing function description',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Updated input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+          {
+            agent_file_json: updatedAgentFile,
+            update_existing_tools: true
+          },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // Verify the existing tool was updated
+        const updatedToolResponse = await lettaAxiosSDK.get(`/v1/tools/${existingToolId}`);
+        expect(updatedToolResponse.status).toBe(200);
+        expect(updatedToolResponse.data.source_code).toContain('Updated: {x}');
+        expect(updatedToolResponse.data.json_schema.description).toBe('Updated existing function description');
+        expect(updatedToolResponse.data.source_type).toBe('python'); // Should remain unchanged
+
+        // Clean up
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+        await lettaAxiosSDK.delete(`/v1/tools/${existingToolId}`);
+      });
+
+      it('should prevent source_type changes when update_existing_tools=true', async () => {
+        // Use constant function name - will be cleaned up by beforeEach
+        const functionName = 'test_function_update_prevent_source_type';
+
+        const existingToolResponse = await lettaAxiosSDK.post(
+          '/v1/tools',
+          {
+            source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+            source_type: 'python',
+            json_schema: {
+              name: functionName,
+              description: 'Original existing function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          }
+        );
+
+        expect(existingToolResponse.status).toBe(200);
+        const existingToolId = existingToolResponse.data.id;
+
+        // Create initial template
+        const initialAgentFile = {
+          agents: [
+            {
+              id: 'test-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Test Agent',
+              system: 'You are a test agent.',
+              tool_ids: ['existing-tool'],
+              block_ids: ['test-block'],
+              source_ids: [],
+              tags: ['test'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [],
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Test human block',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName,
+              description: 'Original existing function description',
+              source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+              source_type: 'python',
+              tags: ['original'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Original existing function description',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const testTemplateName = 'test-prevent-source-type-change-template';
+
+        // Create initial template
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialAgentFile,
+            name: testTemplateName,
+          },
+        );
+
+        expect(createResponse.status).toBe(201);
+
+        // Try to update with different source_type
+        const updatedAgentFileWithChangedSourceType = {
+          ...initialAgentFile,
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName, // Same name
+              description: 'Function with changed source type',
+              source_code: 'function existingFunction(x) { return `Changed: ${x}`; }', // JavaScript code
+              source_type: 'javascript', // Different source_type (should be rejected)
+              tags: ['changed'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Function with changed source type',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+          {
+            agent_file_json: updatedAgentFileWithChangedSourceType,
+            update_existing_tools: true
+          },
+        );
+
+        console.log('Update Response:', updateResponse.data);
+
+        expect(updateResponse.status).toBe(400);
+        expect(updateResponse.data).toHaveProperty('message');
+        expect(updateResponse.data.message).toContain('Cannot change source_type');
+
+        // Verify the original tool was not modified
+        const originalToolResponse = await lettaAxiosSDK.get(`/v1/tools/${existingToolId}`);
+        expect(originalToolResponse.status).toBe(200);
+        expect(originalToolResponse.data.source_code).toContain('Original: {x}');
+        expect(originalToolResponse.data.source_type).toBe('python');
+
+        // Clean up
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+        await lettaAxiosSDK.delete(`/v1/tools/${existingToolId}`);
+      });
+
+      it('should not update tools when update_existing_tools=false (default behavior)', async () => {
+        // Use constant function name - will be cleaned up by beforeEach
+        const functionName = 'test_function_default_behavior';
+
+        const existingToolResponse = await lettaAxiosSDK.post(
+          '/v1/tools',
+          {
+            source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+            source_type: 'python',
+            json_schema: {
+              name: functionName,
+              description: 'Original existing function',
+              parameters: {
+                type: 'object',
+                properties: {
+                  x: { type: 'string', description: 'Input parameter' },
+                },
+                required: ['x'],
+              },
+            },
+          }
+        );
+
+        expect(existingToolResponse.status).toBe(200);
+        const existingToolId = existingToolResponse.data.id;
+
+        // Create initial template
+        const initialAgentFile = {
+          agents: [
+            {
+              id: 'test-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Test Agent',
+              system: 'You are a test agent.',
+              tool_ids: ['existing-tool'],
+              block_ids: ['test-block'],
+              source_ids: [],
+              tags: ['test'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [],
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Test human block',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName,
+              description: 'Original existing function description',
+              source_code: `def ${functionName}(x: str) -> str:\n    return f"Original: {x}"`,
+              source_type: 'python',
+              tags: ['original'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Original existing function description',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+          mcp_servers: [],
+        };
+
+        const testTemplateName = 'test-no-update-tools-template';
+
+        // Create initial template
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialAgentFile,
+            name: testTemplateName,
+          },
+        );
+
+        expect(createResponse.status).toBe(201);
+
+        // Update template with modified tool but update_existing_tools=false (default)
+        const updatedAgentFile = {
+          ...initialAgentFile,
+          tools: [
+            {
+              id: 'existing-tool',
+              name: functionName,
+              description: 'Updated existing function description',
+              source_code: `def ${functionName}(x: str) -> str:\n    return f"Updated: {x}"`, // Updated code
+              source_type: 'python',
+              tags: ['updated'],
+              tool_type: 'custom',
+              json_schema: {
+                name: functionName,
+                description: 'Updated existing function description',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    x: { type: 'string', description: 'Updated input parameter' },
+                  },
+                  required: ['x'],
+                },
+              },
+            },
+          ],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+          {
+            agent_file_json: updatedAgentFile
+            // update_existing_tools not specified (defaults to false)
+          },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // Verify the existing tool was NOT updated (should keep original values)
+        const unchangedToolResponse = await lettaAxiosSDK.get(`/v1/tools/${existingToolId}`);
+        expect(unchangedToolResponse.status).toBe(200);
+        expect(unchangedToolResponse.data.source_code).toContain('Original: {x}'); // Should be unchanged
+        expect(unchangedToolResponse.data.json_schema.description).toBe('Original existing function'); // Should be unchanged
+        expect(unchangedToolResponse.data.source_type).toBe('python');
+
+        // Clean up
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+        await lettaAxiosSDK.delete(`/v1/tools/${existingToolId}`);
+      });
+    });
+
+    describe('save_existing_changes parameter', () => {
+      beforeEach(async () => {
+        // Clean up any test templates that might exist from previous runs
+        const testTemplateNames = [
+          'test-save-changes-template',
+          'test-no-save-changes-template'
+        ];
+
+        for (const templateName of testTemplateNames) {
+          try {
+            await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${templateName}`);
+          } catch (error) {
+            // Ignore errors - template might not exist
+          }
+        }
+      });
+
+      it('should save existing changes before updating when save_existing_changes=true (default)', async () => {
+        const testTemplateName = 'test-save-changes-template';
+
+        // Create initial template from agent file
+        const initialAgentFile = {
+          agents: [
+            {
+              id: 'test-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Test Agent',
+              system: 'You are a test agent.',
+              tool_ids: [],
+              block_ids: ['test-block'],
+              source_ids: [],
+              tags: ['test'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [],
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Initial human block',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [],
+          mcp_servers: [],
+        };
+
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialAgentFile,
+            name: testTemplateName,
+          },
+        );
+
+        expect(createResponse.status).toBe(201);
+
+        // Get the initial version count
+        const initialVersionsResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}/versions`,
+        );
+        expect(initialVersionsResponse.status).toBe(200);
+        const initialVersionCount = initialVersionsResponse.data.versions.length;
+
+        // Use snapshot updater to make changes to the current working version
+        // This simulates user making manual changes that aren't yet saved
+        const snapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+        );
+        expect(snapshotResponse.status).toBe(200);
+
+        const modifiedSnapshot = {
+          ...snapshotResponse.data,
+          agents: snapshotResponse.data.agents.map((agent: any) => ({
+            ...agent,
+            systemPrompt: 'Modified system message via snapshot',
+          })),
+        };
+
+        const setSnapshotResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+          modifiedSnapshot,
+        );
+        expect(setSnapshotResponse.status).toBe(200);
+
+        // Now update from agent file with save_existing_changes=true (default)
+        // This should use deepEqual to detect that current != latest snapshots and auto-save before applying the agent file
+        const newAgentFile = {
+          ...initialAgentFile,
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Updated from agent file',
+              limit: 1000,
+            },
+          ],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+          {
+            agent_file_json: newAgentFile,
+            save_existing_changes: true,
+          },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // Verify a new version was created (auto-save of snapshot changes)
+        const updatedVersionsResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}/versions`,
+        );
+        expect(updatedVersionsResponse.status).toBe(200);
+        expect(updatedVersionsResponse.data.versions.length).toBe(initialVersionCount + 1);
+
+        // Verify the saved version contains the snapshot changes
+        const latestVersionSnapshot = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}:latest/snapshot`,
+        );
+
+        expect(latestVersionSnapshot.status).toBe(200);
+        expect(latestVersionSnapshot.data.agents[0].systemPrompt).toBe('Modified system message via snapshot');
+
+        // Verify the current version now has the agent file changes
+        const currentSnapshot = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+        );
+        expect(currentSnapshot.status).toBe(200);
+        expect(currentSnapshot.data.blocks[0].value).toBe('Updated from agent file');
+        expect(currentSnapshot.data.agents[0].systemPrompt).toBe('You are a test agent.');
+
+        // Clean up
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+      });
+
+      it('should not save existing changes when save_existing_changes=false', async () => {
+        const testTemplateName = 'test-no-save-changes-template';
+
+        // Create initial template from agent file
+        const initialAgentFile = {
+          agents: [
+            {
+              id: 'test-agent',
+              agent_type: 'memgpt_v2_agent',
+              name: 'Test Agent',
+              system: 'You are a test agent.',
+              tool_ids: [],
+              block_ids: ['test-block'],
+              source_ids: [],
+              tags: ['test'],
+              llm_config: {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                context_window: 128000,
+              },
+            },
+          ],
+          groups: [],
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Initial human block',
+              limit: 1000,
+            },
+          ],
+          files: [],
+          sources: [],
+          tools: [],
+          mcp_servers: [],
+        };
+
+        const createResponse = await lettaAxiosSDK.post(
+          `/v1/templates/${testProject}`,
+          {
+            type: 'agent_file',
+            agent_file: initialAgentFile,
+            name: testTemplateName,
+          },
+        );
+
+        expect(createResponse.status).toBe(201);
+
+        // Get the initial version count
+        const initialVersionsResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}/versions`,
+        );
+        expect(initialVersionsResponse.status).toBe(200);
+        const initialVersionCount = initialVersionsResponse.data.length;
+
+        // Use snapshot updater to make changes to the current working version
+        // This simulates user making manual changes that aren't yet saved
+        const snapshotResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+        );
+        expect(snapshotResponse.status).toBe(200);
+
+        const modifiedSnapshot = {
+          ...snapshotResponse.data,
+          agents: snapshotResponse.data.agents.map((agent: any) => ({
+            ...agent,
+            systemPrompt: 'Modified system message via snapshot',
+          })),
+        };
+
+        const setSnapshotResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+          modifiedSnapshot,
+        );
+        expect(setSnapshotResponse.status).toBe(200);
+
+        // Now update from agent file with save_existing_changes=false
+        // This should skip the snapshot comparison/save and only apply the agent file
+        const newAgentFile = {
+          ...initialAgentFile,
+          blocks: [
+            {
+              id: 'test-block',
+              label: 'human',
+              value: 'Updated from agent file',
+              limit: 1000,
+            },
+          ],
+        };
+
+        const updateResponse = await lettaAxiosSDK.put(
+          `/v1/templates/${testProject}/${testTemplateName}/agent-file`,
+          {
+            agent_file_json: newAgentFile,
+            save_existing_changes: false,
+          },
+        );
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.data).toHaveProperty('success', true);
+
+        // Verify no new version was created (no auto-save)
+        const updatedVersionsResponse = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}/versions`,
+        );
+        expect(updatedVersionsResponse.status).toBe(200);
+        expect(updatedVersionsResponse.data.length).toBe(initialVersionCount);
+
+        // Verify the current version has the agent file changes (snapshot changes were discarded)
+        const currentSnapshot = await lettaAxiosSDK.get(
+          `/v1/templates/${testProject}/${testTemplateName}:current/snapshot`,
+        );
+        expect(currentSnapshot.status).toBe(200);
+        expect(currentSnapshot.data.blocks[0].value).toBe('Updated from agent file');
+        // The system message should be from the original agent file, not the modified snapshot
+        expect(currentSnapshot.data.agents[0].systemPrompt).toBe('You are a test agent.');
+
+        // Clean up
+        await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${testTemplateName}`);
+      });
+    });
   });
 });
 

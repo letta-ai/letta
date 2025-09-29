@@ -2,12 +2,14 @@ import { ToolsService } from '@letta-cloud/sdk-core';
 import type {
   AgentFileSchema,
   letta__schemas__agent_file__AgentSchema,
-  ToolCreate
+  ToolCreate,
+  Tool
 } from '@letta-cloud/sdk-core';
 
 interface MapToolsFromAgentFileOptions {
   base: AgentFileSchema;
   lettaAgentsId: string;
+  updateExistingTools?: boolean;
 }
 
 interface ToolMapping {
@@ -40,7 +42,7 @@ export function extractToolNamesFromAgentFile(base: AgentFileSchema): string[] {
 export async function mapToolsFromAgentFile(
   options: MapToolsFromAgentFileOptions
 ): Promise<ToolMapping> {
-  const { base, lettaAgentsId } = options;
+  const { base, lettaAgentsId, updateExistingTools = false } = options;
 
   if (!base.tools?.length) {
     return {};
@@ -58,11 +60,13 @@ export async function mapToolsFromAgentFile(
     names: toolNames,
   }, { user_id: lettaAgentsId });
 
-  // Create a map from tool name to server tool ID
+  // Create a map from tool name to server tool ID and full tool objects for updates
   const nameToServerToolId: Record<string, string> = {};
+  const nameToServerTool: Record<string, Tool> = {};
   for (const tool of existingToolsResponse) {
     if (tool.name && tool.id) {
       nameToServerToolId[tool.name] = tool.id;
+      nameToServerTool[tool.name] = tool;
     }
   }
 
@@ -98,6 +102,45 @@ export async function mapToolsFromAgentFile(
     if (createdTool.id) {
       nameToServerToolId[toolName] = createdTool.id;
     }
+  }
+
+  // Update existing tools if requested
+  if (updateExistingTools) {
+    const existingToolNames = toolNames.filter(name => nameToServerToolId[name]);
+    const toolsToUpdate = base.tools.filter(tool =>
+      tool.name && existingToolNames.includes(tool.name) && tool.tool_type === 'custom'
+    );
+
+    const toolUpdatePromises = toolsToUpdate.map(async (agentFileTool) => {
+      if (!agentFileTool.name) return;
+
+      const existingTool = nameToServerTool[agentFileTool.name];
+      const toolId = nameToServerToolId[agentFileTool.name];
+
+      if (!existingTool || !toolId) return;
+
+      // Prevent source_type changes
+      if (agentFileTool.source_type && agentFileTool.source_type !== existingTool.source_type) {
+        throw new Error(`Cannot change source_type for existing tool '${agentFileTool.name}' from '${existingTool.source_type}' to '${agentFileTool.source_type}'`);
+      }
+
+      // Only update source_code and json_schema, preserve other fields including source_type
+      const updateData = {
+        source_code: agentFileTool.source_code || existingTool.source_code,
+        json_schema: agentFileTool.json_schema || existingTool.json_schema,
+        // Keep existing values for fields we don't want to change
+        source_type: existingTool.source_type,
+        description: existingTool.description,
+        tags: existingTool.tags,
+      };
+
+      await ToolsService.modifyTool({
+        toolId,
+        requestBody: updateData,
+      }, { user_id: lettaAgentsId });
+    });
+
+    await Promise.all(toolUpdatePromises);
   }
 
   // Create final mapping from agent file tool ID to server tool ID

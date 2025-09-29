@@ -255,6 +255,7 @@ export type CreateTemplateFromAgentFile = {
   type: 'agent_file';
   agent_file: AgentFileSchema;
   name?: string;
+  update_existing_tools?: boolean;
 };
 
 const createTemplate = c.mutation({
@@ -305,6 +306,9 @@ const createTemplate = c.mutation({
               description:
                 'Optional custom name for the template. If not provided, a random name will be generated.',
             }),
+          update_existing_tools: z.boolean().optional().openapi({
+            description: 'If true, update existing custom tools source_code and json_schema (source_type cannot be changed)',
+          }),
         })
         .openapi({
           summary: 'From Agent File',
@@ -543,6 +547,45 @@ const setCurrentTemplateFromSnapshot = c.mutation({
   },
 });
 
+const updateCurrentTemplateFromAgentFile = c.mutation({
+  path: '/v1/templates/:project_id/:template_name/agent-file',
+  method: 'PUT',
+  description: 'Updates the current working version of a template from an agent file',
+  summary: 'Update current template from agent file (Cloud-only)',
+  pathParams: z.object({
+    project_id: z.string().openapi({ description: 'The project id' }),
+    template_name: z.string().openapi({
+      description: 'The template name (without version)',
+    }),
+  }),
+  body: z.object({
+    agent_file_json: z.record(z.string(), z.any()).openapi({
+      description: 'The agent file to update the current template version from',
+    }),
+    update_existing_tools: z.boolean().optional().default(false).openapi({
+      description: 'If true, update existing custom tools source_code and json_schema (source_type cannot be changed)',
+    }),
+    save_existing_changes: z.boolean().optional().default(false).openapi({
+      description: 'If true, Letta will automatically save any changes as a version before updating the template',
+    }),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
 export const templatesContract = c.router({
   createAgentsFromTemplate,
   listTemplates,
@@ -556,6 +599,7 @@ export const templatesContract = c.router({
   listTemplateVersions,
   migrateDeployment,
   setCurrentTemplateFromSnapshot,
+  updateCurrentTemplateFromAgentFile,
 });
 
 export const templateQueryKeys = {
