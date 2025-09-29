@@ -87,7 +87,7 @@ describe('getRedisModelTransactions', () => {
 
     it('should throw error when database query returns no results', async () => {
       const mockSubscription = {
-        tier: 'pro' as const,
+        tier: 'pro-legacy' as const,
         billingPeriodStart: '2024-01-01T00:00:00Z',
         billingPeriodEnd: '2024-02-01T00:00:00Z',
       };
@@ -106,7 +106,7 @@ describe('getRedisModelTransactions', () => {
 
   describe('expiration time calculation', () => {
     const mockSubscription = {
-      tier: 'pro' as const,
+      tier: 'pro-legacy' as const,
       billingPeriodStart: '2024-01-01T00:00:00Z',
       billingPeriodEnd: '2024-02-01T00:00:00Z',
     };
@@ -183,7 +183,7 @@ describe('getRedisModelTransactions', () => {
 
   describe('Redis operations', () => {
     const mockSubscription = {
-      tier: 'pro' as const,
+      tier: 'pro-legacy' as const,
       billingPeriodStart: '2024-01-01T00:00:00Z',
       billingPeriodEnd: '2024-02-01T00:00:00Z',
     };
@@ -226,7 +226,7 @@ describe('getRedisModelTransactions', () => {
 
   describe('database query validation', () => {
     const mockSubscription = {
-      tier: 'pro' as const,
+      tier: 'pro-legacy' as const,
       billingPeriodStart: '2024-01-01T00:00:00Z',
       billingPeriodEnd: '2024-02-01T00:00:00Z',
     };

@@ -2,7 +2,7 @@ import {
   SCALE_PLAN_IDS,
   PRO_PLAN_PRICE_IDS,
   SCALE_PLAN_PRODUCT_IDS,
-  PRO_PLAN_PRODUCT_IDS,
+  LEGACY_PRO_PLAN_PRODUCT_IDS,
 } from './constants';
 
 describe('Payment Constants', () => {
@@ -71,20 +71,20 @@ describe('Payment Constants', () => {
 
   describe('PRO_PLAN_PRODUCT_IDS', () => {
     it('should contain valid stripe product IDs', () => {
-      expect(PRO_PLAN_PRODUCT_IDS).toHaveLength(2);
-      expect(PRO_PLAN_PRODUCT_IDS).toContain('prod_SBTwGZfXZVdEah');
-      expect(PRO_PLAN_PRODUCT_IDS).toContain('prod_SBTziQ1oxYLnNc');
+      expect(LEGACY_PRO_PLAN_PRODUCT_IDS).toHaveLength(2);
+      expect(LEGACY_PRO_PLAN_PRODUCT_IDS).toContain('prod_SBTwGZfXZVdEah');
+      expect(LEGACY_PRO_PLAN_PRODUCT_IDS).toContain('prod_SBTziQ1oxYLnNc');
     });
 
     it('should contain only string values', () => {
-      PRO_PLAN_PRODUCT_IDS.forEach((id) => {
+      LEGACY_PRO_PLAN_PRODUCT_IDS.forEach((id) => {
         expect(typeof id).toBe('string');
         expect(id).toBeTruthy();
       });
     });
 
     it('should contain valid stripe product ID format', () => {
-      PRO_PLAN_PRODUCT_IDS.forEach((id) => {
+      LEGACY_PRO_PLAN_PRODUCT_IDS.forEach((id) => {
         expect(id).toMatch(/^prod_[A-Za-z0-9]+$/);
       });
     });
@@ -96,14 +96,14 @@ describe('Payment Constants', () => {
     });
 
     it('should have matching number of price and product IDs for pro plan', () => {
-      expect(PRO_PLAN_PRICE_IDS).toHaveLength(PRO_PLAN_PRODUCT_IDS.length);
+      expect(PRO_PLAN_PRICE_IDS).toHaveLength(LEGACY_PRO_PLAN_PRODUCT_IDS.length);
     });
 
     it('should not have overlapping IDs between different plan types', () => {
       const allPriceIds = [...SCALE_PLAN_IDS, ...PRO_PLAN_PRICE_IDS];
       const allProductIds = [
         ...SCALE_PLAN_PRODUCT_IDS,
-        ...PRO_PLAN_PRODUCT_IDS,
+        ...LEGACY_PRO_PLAN_PRODUCT_IDS,
       ];
 
       expect(new Set(allPriceIds).size).toBe(allPriceIds.length);

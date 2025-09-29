@@ -39,7 +39,7 @@ function SelectedPlan(props: SelectedPlanProps) {
     switch (plan) {
       case 'free':
         return t('PlanComparisonView.free.usage');
-      case 'pro':
+      case 'pro-legacy':
         return t('PlanComparisonView.pro.usage');
       case 'scale':
         return t('PlanComparisonView.scale.usage');
@@ -83,7 +83,7 @@ function SelectedPlan(props: SelectedPlanProps) {
     switch (plan) {
       case 'free':
         return t('PlanComparisonView.free.label');
-      case 'pro':
+      case 'pro-legacy':
         return t('PlanComparisonView.pro.label');
       case 'scale':
         return t('PlanComparisonView.scale.label');
@@ -122,14 +122,14 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
 
   const [plan, setPlan] = useState<BillingTiersType>(() => {
     if (billingTier === 'free') {
-      return 'pro';
+      return 'pro-legacy';
     }
 
-    if (billingTier === 'pro') {
+    if (billingTier === 'pro-legacy') {
       return 'scale';
     }
 
-    return 'pro';
+    return 'pro-legacy';
   });
 
   const items = useMemo(() => {
@@ -140,7 +140,7 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
       },
       {
         label: t('PlanComparisonView.pro.label'),
-        value: 'pro',
+        value: 'pro-legacy',
       },
       {
         label: t('PlanComparisonView.scale.label'),
@@ -165,11 +165,11 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             disabled
           />
         );
-      case 'pro':
+      case 'pro-legacy':
         return (
           <Button
             onClick={() => {
-              onSelectPlan('pro');
+              onSelectPlan('pro-legacy');
             }}
             bold
             data-testid="choose-pro"
@@ -356,7 +356,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       }
 
       switch (selectedPlan) {
-        case 'pro':
+        case 'pro-legacy':
           window.location.href = '/upgrade/pro';
           break;
         case 'scale':

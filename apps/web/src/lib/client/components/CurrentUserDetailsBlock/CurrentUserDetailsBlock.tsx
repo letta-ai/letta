@@ -28,7 +28,7 @@ export function CurrentUserDetailsBlock() {
     switch (billingData?.body.billingTier) {
       case 'free':
         return t('subscription.free');
-      case 'pro':
+      case 'pro-legacy':
         return t('subscription.pro');
       case 'scale':
         return t('subscription.scale');
@@ -43,7 +43,7 @@ export function CurrentUserDetailsBlock() {
     switch (billingData?.body.billingTier) {
       case 'free':
         return 'warning';
-      case 'pro':
+      case 'pro-legacy':
         return 'info';
       case 'scale':
         return 'info';

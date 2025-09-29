@@ -48,7 +48,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     apiKeys: 100_000, // 100,000 API keys
     abTests: 100_000_000,
   },
-  pro: {
+  'pro-legacy': {
     monthlyCost: 20,
     providers: 50,
     agents: 10000,

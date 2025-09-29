@@ -24,7 +24,7 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
     throw new Error('Customer not found');
   }
 
-  if (!['pro', 'scale'].includes(tier)) {
+  if (!['pro-legacy', 'scale'].includes(tier)) {
     throw new Error('Unsupported tier');
   }
 
@@ -38,7 +38,7 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
 
   let priceId: string | undefined = '';
 
-  if (tier === 'pro') {
+  if (tier === 'pro-legacy') {
     priceId = plans.data.find((price) =>
       PRO_PLAN_PRICE_IDS.includes(price.id),
     )?.id;

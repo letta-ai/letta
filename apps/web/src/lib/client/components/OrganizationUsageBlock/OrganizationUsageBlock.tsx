@@ -111,7 +111,7 @@ export function OrganizationUsageBlock() {
           ),
         })}
       />
-      {(billingTier === 'free' || billingTier === 'pro') && (
+      {(billingTier === 'free' || billingTier === 'pro-legacy') && (
         <UpgradePlanDialog
           trigger={
             <Button
@@ -120,7 +120,7 @@ export function OrganizationUsageBlock() {
               bold
               _use_rarely_className="mt-1"
               label={
-                billingTier === 'pro' ? t('upgradeToScale') : t('upgradeToPro')
+                billingTier === 'pro-legacy' ? t('upgradeToScale') : t('upgradeToPro')
               }
             />
           }

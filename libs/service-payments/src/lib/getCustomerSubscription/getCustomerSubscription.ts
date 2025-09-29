@@ -7,7 +7,7 @@ import type {
 } from '@letta-cloud/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import type { Stripe } from 'stripe';
-import { PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
+import { LEGACY_PRO_PLAN_PRODUCT_IDS, SCALE_PLAN_PRODUCT_IDS } from '../constants';
 import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 
 function getProductFromStripeSubscription(
@@ -23,8 +23,8 @@ function getProductFromStripeSubscription(
     return 'scale';
   }
 
-  if (PRO_PLAN_PRODUCT_IDS.includes(product)) {
-    return 'pro';
+  if (LEGACY_PRO_PLAN_PRODUCT_IDS.includes(product)) {
+    return 'pro-legacy';
   }
 
   return 'free';
