@@ -25,9 +25,7 @@ import { useAtom } from 'jotai';
 import { AgentChatInput } from './AgentChatInput/AgentChatInput';
 import { RunDebugViewer } from './RunDebugViewer/RunDebugViewer';
 import { useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { AgentSimulatorEmptyState } from './AgentSimulatorEmptyState';
-import { QuickAgentSimulatorOnboarding } from './QuickAgentSimulatorOnboarding';
 
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
@@ -92,27 +90,21 @@ function InvalidMessages() {
 }
 
 export function AgentSimulator() {
-  const [renderMode] = useAtom(chatroomRenderModeAtom);
-
   const { id: agentId } = useCurrentAgent();
-
-  const [isPending] = useAtom(isSendingMessageAtom);
-  const [showRunDebugger] = useAtom(showRunDebuggerAtom);
-
-  const { data: isNewEmptyStateMessageADE } = useFeatureFlag(
-    'NEW_EMPTY_STATE_MESSAGE_ADE',
-  );
-
   const { data } = useAgentMessages({
     agentId,
   });
+
+  const [renderMode] = useAtom(chatroomRenderModeAtom);
+  const [isPending] = useAtom(isSendingMessageAtom);
+  const [showRunDebugger] = useAtom(showRunDebuggerAtom);
 
   return (
     <AgentSimulatorOnboarding>
       <VStack position="relative" gap={false} fullHeight fullWidth>
         <AgentSimulatorHeader />
 
-        {data && data?.pages[0].length === 1 && isNewEmptyStateMessageADE ? (
+        {data && data?.pages[0].length === 1 ? (
           <AgentSimulatorEmptyState />
         ) : (
           <VStack collapseHeight gap={false} fullWidth>
@@ -130,13 +122,7 @@ export function AgentSimulator() {
                 </ErrorBoundary>
               </VStack>
               {showRunDebugger && <RunDebugViewer />}
-              {!isNewEmptyStateMessageADE ? (
-                <QuickAgentSimulatorOnboarding>
-                  {data && <AgentChatInput />}
-                </QuickAgentSimulatorOnboarding>
-              ) : (
-                <>{data && <AgentChatInput />}</>
-              )}
+              {data && <AgentChatInput />}
             </VStack>
           </VStack>
         )}
