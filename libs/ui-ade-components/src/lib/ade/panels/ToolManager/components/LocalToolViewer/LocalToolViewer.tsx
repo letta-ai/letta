@@ -15,7 +15,6 @@ import {
   Badge,
   Button,
   Code,
-  CodeIcon,
   CogIcon,
   DataObjectIcon,
   ErrorIcon,
@@ -946,23 +945,6 @@ function LocalToolPanels(props: LocalToolsViewerProps) {
   );
 }
 
-function CodeButton() {
-  const { setMode, mode } = useEditMode();
-  const t = useTranslations('ToolsEditor/LocalToolsViewer');
-
-  return (
-    <Button
-      label={t('code')}
-      color="tertiary"
-      onClick={() => {
-        setMode('code');
-      }}
-      preIcon={<CodeIcon />}
-      active={mode === 'code'}
-      size="xsmall"
-    />
-  );
-}
 
 interface LocalToolsViewerProps {
   tool: Tool;
@@ -972,7 +954,6 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
   const { tool } = props;
 
   const { tools } = useCurrentAgent();
-  const { data: isAIAssistantEnabled } = useFeatureFlag('AI_TOOL_ASSISTANT');
 
   const isAttached = useMemo(() => {
     return tools?.some((t) => t.id === tool.id);
@@ -999,11 +980,7 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
             paddingX="medium"
           >
             <HStack align="center">
-              {isAIAssistantEnabled ? (
-                <ToolAssistant tool={tool} />
-              ) : (
-                <CodeButton />
-              )}
+              <ToolAssistant tool={tool} />
             </HStack>
 
             <HStack gap="small" align="center">
