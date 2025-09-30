@@ -322,28 +322,47 @@ async def test_provider_llm_models_consistency():
 
 
 @pytest.mark.parametrize(
-    "handle, reasoning, expected_enable_reasoner, expected_put_inner_thoughts_in_kwargs, expected_max_reasoning_tokens, expected_reasoning_effort",
+    "handle, agent_type, reasoning, expected_enable_reasoner, expected_put_inner_thoughts_in_kwargs, expected_max_reasoning_tokens, expected_reasoning_effort",
     [
-        ("openai/gpt-4o-mini", True, True, True, 0, None),
-        ("openai/gpt-4o-mini", False, False, False, 0, None),
-        ("openai/o3-mini", True, True, False, 0, "medium"),
-        ("openai/o3-mini", False, True, False, 0, "medium"),
-        ("anthropic/claude-3.5-sonnet", True, True, True, 0, None),
-        ("anthropic/claude-3.5-sonnet", False, False, False, 0, None),
-        ("anthropic/claude-3-7-sonnet", True, True, False, 1024, None),
-        ("anthropic/claude-3-7-sonnet", False, False, False, 0, None),
-        ("anthropic/claude-sonnet-4", True, True, False, 1024, None),
-        ("anthropic/claude-sonnet-4", False, False, False, 0, None),
-        ("google_vertex/gemini-2.0-flash", True, True, True, 0, None),
-        ("google_vertex/gemini-2.0-flash", False, False, False, 0, None),
-        ("google_vertex/gemini-2.5-flash", True, True, True, 1024, None),
-        ("google_vertex/gemini-2.5-flash", False, False, False, 0, None),
-        ("google_vertex/gemini-2.5-pro", True, True, True, 1024, None),
-        ("google_vertex/gemini-2.5-pro", True, True, True, 1024, None),
+        # send message agent loop
+        ("openai/gpt-4o-mini", AgentType.memgpt_v2_agent, True, True, True, 0, None),
+        ("openai/gpt-4o-mini", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("openai/o3-mini", AgentType.memgpt_v2_agent, True, True, False, 0, "medium"),
+        ("openai/o3-mini", AgentType.memgpt_v2_agent, False, True, False, 0, "medium"),
+        ("anthropic/claude-3.5-sonnet", AgentType.memgpt_v2_agent, True, True, True, 0, None),
+        ("anthropic/claude-3.5-sonnet", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("anthropic/claude-3-7-sonnet", AgentType.memgpt_v2_agent, True, True, False, 1024, None),
+        ("anthropic/claude-3-7-sonnet", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, True, True, False, 1024, None),
+        ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, True, True, True, 0, None),
+        ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.5-flash", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
+        ("google_vertex/gemini-2.5-flash", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
+        # assistant message agent loop
+        ("openai/gpt-4o-mini", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("openai/gpt-4o-mini", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("openai/o3-mini", AgentType.letta_v1_agent, True, True, False, 0, "medium"),
+        ("openai/o3-mini", AgentType.letta_v1_agent, False, True, False, 0, "medium"),
+        ("anthropic/claude-3.5-sonnet", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("anthropic/claude-3.5-sonnet", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("anthropic/claude-3-7-sonnet", AgentType.letta_v1_agent, True, True, False, 1024, None),
+        ("anthropic/claude-3-7-sonnet", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, True, True, False, 1024, None),
+        ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, True, False, False, 0, None),
     ],
 )
 def test_reasoning_toggle_by_provider(
     handle: str,
+    agent_type: AgentType,
     reasoning: bool,
     expected_enable_reasoner: bool,
     expected_put_inner_thoughts_in_kwargs: bool,
@@ -357,7 +376,7 @@ def test_reasoning_toggle_by_provider(
         handle=handle,
         context_window=1024,
     )
-    new_config = LLMConfig.apply_reasoning_setting_to_config(config, reasoning=reasoning, agent_type=AgentType.memgpt_v2_agent)
+    new_config = LLMConfig.apply_reasoning_setting_to_config(config, reasoning=reasoning, agent_type=agent_type)
 
     assert new_config.enable_reasoner == expected_enable_reasoner
     assert new_config.put_inner_thoughts_in_kwargs == expected_put_inner_thoughts_in_kwargs
