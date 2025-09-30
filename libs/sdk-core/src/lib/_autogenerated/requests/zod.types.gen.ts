@@ -267,6 +267,7 @@ export const ChildToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
   children: z.array(z.string()),
 });
 
@@ -282,6 +283,7 @@ export const InitToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
@@ -296,6 +298,7 @@ export const TerminalToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
@@ -310,6 +313,7 @@ export const ConditionalToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
   default_child: z
     .union([
       z.string(),
@@ -334,6 +338,7 @@ export const ContinueToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type RequiredBeforeExitToolRule = z.infer<
@@ -350,6 +355,7 @@ export const RequiredBeforeExitToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type MaxCountPerStepToolRule = z.infer<typeof MaxCountPerStepToolRule>;
@@ -364,6 +370,7 @@ export const MaxCountPerStepToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
   max_count_limit: z.number(),
 });
 
@@ -379,6 +386,7 @@ export const ParentToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
   children: z.array(z.string()),
 });
 
@@ -394,6 +402,7 @@ export const RequiresApprovalToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  requires_force_tool_call: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type AgentType = z.infer<typeof AgentType>;
