@@ -139,10 +139,7 @@ class RunManager:
 
     @enforce_types
     async def update_run_by_id_async(
-        self,
-        run_id: str,
-        update: RunUpdate,
-        actor: PydanticUser,
+        self, run_id: str, update: RunUpdate, actor: PydanticUser, refresh_result_messages: bool = True
     ) -> PydanticRun:
         """Update a run using a RunUpdate object."""
 
@@ -183,12 +180,13 @@ class RunManager:
 
         # Dispatch callback outside of database session if needed
         if needs_callback:
-            result = LettaResponse(
-                messages=await self.get_run_messages(run_id=run_id, actor=actor),
-                stop_reason=LettaStopReason(stop_reason=pydantic_run.stop_reason),
-                usage=await self.get_run_usage(run_id=run_id, actor=actor),
-            )
-            final_metadata["result"] = result.model_dump()
+            if refresh_result_messages:
+                result = LettaResponse(
+                    messages=await self.get_run_messages(run_id=run_id, actor=actor),
+                    stop_reason=LettaStopReason(stop_reason=pydantic_run.stop_reason),
+                    usage=await self.get_run_usage(run_id=run_id, actor=actor),
+                )
+                final_metadata["result"] = result.model_dump()
             callback_info = {
                 "run_id": run_id,
                 "callback_url": callback_url,
