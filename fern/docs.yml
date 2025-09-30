@@ -284,6 +284,8 @@ navigation:
       #      path: pages/cloud/versions.mdx
       - section: Additional Resources
         contents:
+          - page: Agent Memory Comparison
+            path: pages/education/agent-memory-comparison.mdx
           - page: Letta Desktop Troubleshooting
             path: pages/desktop/troubleshooting.mdx
           - page: ADE Troubleshooting

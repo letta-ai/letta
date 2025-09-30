@@ -1,0 +1,704 @@
+---
+title: Agent Memory Comparison
+slug: guides/education/agent-memory-comparison
+---
+
+If you're building AI agents, you've probably run into a fundamental limitation: LLMs forget everything the moment you close the conversation. This article explains how agent memory works and compares five popular solutions that solve this problem: Mem0, Zep, Cognee, Letta Platform, and AI Memory SDK.
+
+## What is Agent Memory?
+
+When you call an LLM like GPT-4 or Claude, it only knows what's in the current prompt. There's no persistent memory of past conversations, user preferences, or learned behaviors. This stateless design works fine for one-off questions, but breaks down when building agents that need to maintain context across multiple interactions.
+
+Agent memory solves this by adding persistent storage that agents can read from and write to. This transforms stateless LLMs into stateful agents that can remember user preferences, learn from past interactions, and provide personalized experiences.
+
+The simplest form of memory is keeping conversation history in the context window. But context windows have limits, making this expensive and slow. The diagram below shows the difference between approaches: stateless agents require manual prompt engineering to manage an unstructured context window, while stateful agents use structured memory blocks. A memory system like Letta automatically compiles context from persistent state storage into these organized blocks.
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/stateful_agents_dark.webp" />
+
+Agent memory typically involves two components:
+
+**Working Memory**: The information currently loaded in the agent's context window. This is like your short-term memory when having a conversation. It holds the immediate context needed to respond to the current request.
+
+**Long-Term Storage**: External databases (vector stores, knowledge graphs, or traditional databases) that store information beyond what fits in the context. Agents retrieve relevant information from long-term storage and load it into working memory as needed.
+
+The challenge is deciding what information to store, how to organize it, and when to retrieve it. Different memory solutions take different approaches to solving these problems.
+
+## How Agent Memory Works
+
+Before diving into specific tools, it helps to understand the different architectural approaches to agent memory. Each solution in this article takes one of these approaches (or combines them).
+
+### Drop-In Memory Layers
+
+This approach treats memory as an external service that wraps around your existing stateless agent. You continue using your LLM as before, but before each request, the memory layer retrieves relevant context and injects it into the prompt. After each response, it extracts and stores important information.
+
+Think of it like adding a note-taking assistant that sits between you and your agent. The agent itself stays stateless, but the memory layer manages what to remember and when to surface it.
+
+Tools like [Mem0](https://mem0.ai) use this approach. They provide APIs to store and retrieve memories, but your agent architecture stays largely the same.
+
+### Temporal Knowledge Graphs
+
+Facts change. A user might move from San Francisco to New York, then back to San Francisco. Their job title might change. Their preferences might evolve. Most memory systems either overwrite old information or accumulate contradictions.
+
+Temporal knowledge graphs solve this by tracking when facts are valid. Instead of storing "User lives in San Francisco," they store "User lived in San Francisco (valid: Jan 2023 - May 2024)" and "User lives in New York (valid: May 2024 - present)."
+
+This approach builds a graph where entities (users, places, concepts) are nodes and relationships are edges with time metadata. When you query the graph, you can ask for current facts or historical context.
+
+[Zep](https://www.getzep.com) uses this approach with their Graphiti engine, which builds temporal knowledge graphs from conversations and business data.
+
+### Semantic Knowledge Graphs
+
+While temporal graphs focus on when facts are valid, semantic knowledge graphs focus on what facts mean and how they relate. This approach uses ontologies (structured representations of domain knowledge) to understand the relationships between concepts.
+
+Instead of just storing chunks of text in a vector database, semantic knowledge graphs build structured representations. When you mention "Python," the system understands it relates to "programming languages," "Guido van Rossum," and "machine learning libraries." These relationships enable more intelligent retrieval.
+
+This approach combines vector search for semantic similarity with graph traversal for relationship-based queries. You can ask "What programming languages has the user worked with?" and get answers that understand the conceptual relationships.
+
+[Cognee](https://www.cognee.ai) builds these semantic knowledge graphs on-the-fly during document processing and retrieval.
+
+### Stateful Programming vs Pluggable Memory
+
+The previous three approaches treat memory as a feature you add to stateless agents. But there's a fundamentally different approach: designing agents to be stateful from the ground up.
+
+In stateful programming, memory isn't an add-on. The agent's entire architecture revolves around maintaining and modifying state over time. Instead of retrieving memories before each request, the agent continuously operates with persistent state.
+
+This is similar to the difference between functional programming (stateless) and object-oriented programming (stateful). In functional programming, functions don't maintain state between calls. In OOP, objects maintain internal state that persists and evolves.
+
+Stateful agents have memory blocks that they can read and write to directly. These memory blocks are part of the agent's core architecture, not external storage accessed through APIs. The agent can decide what to remember, what to forget, and how to organize its own memory.
+
+The [Letta Platform](https://www.letta.com) takes this stateful programming approach. Agents exist as persistent entities with self-modifying memory, not as stateless functions called on demand.
+
+For developers who want memory capabilities without adopting the full stateful paradigm, pluggable memory solutions like the AI Memory SDK provide a middle ground. These are lightweight libraries that add memory to existing applications without requiring an architectural shift.
+
+## Mem0: Universal Memory Layer for LLM Applications
+
+Mem0 (pronounced "mem-zero") is a drop-in memory layer that adds persistent memory to AI applications. It sits between your LLM and your application logic, automatically extracting and storing important information from conversations.
+
+### How Mem0 Works
+
+Mem0 uses a two-phase approach to manage memory:
+
+**Extraction Phase**: When you add messages to Mem0, it analyzes the conversation to identify important facts, preferences, and context. It uses an LLM (GPT-4 by default) to determine what's worth remembering. This isn't just storing raw messages. Mem0 distills conversations into structured memories like "User prefers vegetarian food" or "User works as a backend developer in Python."
+
+**Update Phase**: After extraction, Mem0 intelligently updates its memory store. If new information contradicts existing memories, it updates them. If information is redundant, it consolidates. This prevents memory from growing unbounded with duplicate or outdated information.
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/02-mem0-architecture.svg" />
+
+### Multi-Level Memory: User, Session, and Agent State
+
+Mem0 organizes memories into three levels:
+
+**User Memory**: Long-term facts about individual users that persist across all sessions. This includes preferences, biographical information, and historical context. User memories are identified by a `user_id`.
+
+**Session Memory**: Temporary context for a specific conversation or task. Session memories are useful for maintaining context within a single interaction but can be discarded afterward. These use a `session_id`.
+
+**Agent Memory**: Information about the agent itself, its capabilities, learned behaviors, or instructions. This helps agents maintain consistent personas and improve over time. These use an `agent_id`.
+
+### Implementing Mem0 in Your Application
+
+Install Mem0:
+
+```bash
+pip install mem0ai
+```
+
+Basic setup and memory storage:
+
+```python
+from mem0 import Memory
+
+# Initialize memory
+m = Memory()
+
+# Add a conversation to memory
+messages = [
+    {"role": "user", "content": "Hi, I'm Alex. I'm a vegetarian."},
+    {"role": "assistant", "content": "Hello Alex! I'll remember that you're vegetarian."},
+    {"role": "user", "content": "I love Italian food."},
+    {"role": "assistant", "content": "Great! I'll keep that in mind."}
+]
+
+# Store with user ID
+m.add(messages, user_id="alex")
+```
+
+Retrieving memories:
+
+```python
+# Get all memories for a user
+all_memories = m.get_all(user_id="alex")
+print(all_memories)
+# Output: [
+#   {"memory": "User is named Alex"},
+#   {"memory": "User is vegetarian"},
+#   {"memory": "User loves Italian food"}
+# ]
+
+# Search for specific information
+results = m.search(
+    query="What are Alex's food preferences?",
+    user_id="alex"
+)
+print(results)
+# Returns relevant memories ranked by relevance
+```
+
+Configuring Mem0 with a vector store:
+
+```python
+from mem0 import Memory
+
+config = {
+    "vector_store": {
+        "provider": "qdrant",
+        "config": {
+            "host": "localhost",
+            "port": 6333
+        }
+    }
+}
+
+m = Memory.from_config(config)
+```
+
+Mem0 works with OpenAI by default but supports other LLM providers. It integrates with popular frameworks like LangChain, LangGraph, and CrewAI, making it easy to add memory to existing agent implementations.
+
+## Zep: Temporal Knowledge Graphs for Agent Memory
+
+Zep is a context engineering platform built around temporal knowledge graphs. Unlike systems that simply store facts, Zep tracks how information changes over time and maintains historical context. This makes it particularly useful when facts evolve or contradict previous information.
+
+### How Zep Works
+
+At the core of Zep is Graphiti, an open-source library for building temporal knowledge graphs. When you add conversation data to Zep, Graphiti extracts entities (people, places, concepts) and relationships (works at, lives in, prefers) and stores them as a graph.
+
+What makes this temporal is that each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as ended and creates a new fact with its own validity period.
+
+For example, if a user says "I moved from Austin to Seattle," Zep creates two location relationships with different time periods. When you query "Where does the user live?" you get Seattle. But you can also query historical information like "Where did the user live in March 2024?" and get Austin.
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/03-zep-temporal-graph.svg" />
+
+Zep uses hybrid search combining vector similarity (for semantic matching) and graph traversal (for relationship-based queries). This lets you ask questions like "What companies has the user worked for?" and get answers that understand the relationships between entities.
+
+### Tracking Change Over Time
+
+The temporal aspect becomes valuable in real-world scenarios where information changes:
+
+- User preferences evolve (stopped being vegetarian, changed career paths)
+- Business data updates (company acquisitions, org changes)
+- Relationships change (manager changes, location changes)
+
+Traditional memory systems handle these changes by either overwriting old data (losing history) or accumulating contradictory facts (creating confusion). Temporal graphs maintain both current truth and historical context.
+
+### Integrating Zep into Your Agent
+
+Install Graphiti:
+
+```bash
+pip install graphiti-core
+```
+
+Set up environment variables for your graph database:
+
+```bash
+export OPENAI_API_KEY=your_openai_api_key
+export NEO4J_URI=bolt://localhost:7687
+export NEO4J_USER=neo4j
+export NEO4J_PASSWORD=password
+```
+
+Initialize Graphiti and build indices:
+
+```python
+from graphiti_core import Graphiti
+from graphiti_core.nodes import EpisodeType
+
+# Initialize with Neo4j
+graphiti = Graphiti(
+    uri="bolt://localhost:7687",
+    user="neo4j",
+    password="password"
+)
+
+# Build indices (one-time setup)
+await graphiti.build_indices_and_constraints()
+```
+
+Add conversation data as episodes:
+
+```python
+# First conversation
+await graphiti.add_episode(
+    name="User location update",
+    episode_body="The user mentioned they live in Austin and work at TechCorp",
+    source=EpisodeType.message,
+    source_description="Chat message from user onboarding"
+)
+
+# Later conversation with updated information
+await graphiti.add_episode(
+    name="User relocation",
+    episode_body="The user said they moved to Seattle and started at NewCompany",
+    source=EpisodeType.message,
+    source_description="Chat message from follow-up"
+)
+```
+
+Query with temporal awareness:
+
+```python
+# Get current facts
+results = await graphiti.search(
+    query="Where does the user live and where do they work?",
+    num_results=5
+)
+
+for result in results:
+    print(f"Fact: {result.fact}")
+    print(f"Valid from: {result.valid_from}")
+    if result.valid_until:
+        print(f"Valid until: {result.valid_until}")
+    print("---")
+
+# Output includes both historical and current facts with validity periods
+```
+
+Zep also offers a cloud-hosted version if you don't want to manage your own graph database infrastructure. The Graphiti library supports Neo4j, Amazon Neptune, FalkorDB, and Kuzu as database backends.
+
+
+## Cognee: Semantic Memory with Knowledge Graphs
+
+Cognee is an open-source library that builds semantic knowledge graphs from your data. It's designed to provide sophisticated semantic understanding through knowledge graph construction.
+
+### How Cognee Works
+
+Traditional RAG (Retrieval Augmented Generation) systems embed documents into vectors and retrieve chunks based on similarity. This works but misses relationships between concepts.
+
+Cognee takes a different approach. When you add data, it builds a knowledge graph that captures entities and their relationships. The graph uses ontologies (structured representations of domain knowledge) to understand how concepts relate to each other.
+
+For example, if your documents mention "Python," "machine learning," and "scikit-learn," Cognee doesn't just store these as separate chunks. It understands that Python is a programming language, machine learning is a field, and scikit-learn is a Python library for machine learning. These relationships enable smarter retrieval.
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/04-cognee-semantic-graph.svg" />
+
+### Building Knowledge Graphs
+
+Cognee combines two storage layers:
+
+**Vector Database**: For semantic similarity search. Supports Weaviate, Qdrant, LanceDB, and others.
+
+**Graph Database**: For relationship modeling. Supports Neo4j and Kuzu.
+
+When you query Cognee, it searches both the vector space for semantically similar content and the graph for related concepts. This hybrid approach lets you ask questions like "What Python libraries are mentioned?" and get answers that understand Python as a programming language context.
+
+The knowledge graph is built automatically during the "cognify" process, which analyzes your data, extracts entities and relationships, and structures them according to domain ontologies.
+
+### Adding Cognee to Your Agent
+
+Install Cognee:
+
+```bash
+pip install cognee
+```
+
+The basic 5-line implementation:
+
+```python
+import cognee
+import asyncio
+
+async def main():
+    # Add data to Cognee
+    await cognee.add("Natural language processing (NLP) is an interdisciplinary subfield of computer science.")
+
+    # Process into knowledge graph
+    await cognee.cognify()
+
+    # Query with semantic understanding
+    result = await cognee.search(query_text="Tell me about NLP")
+    print(result)
+
+asyncio.run(main())
+```
+
+Working with multiple documents:
+
+```python
+import cognee
+import asyncio
+
+async def main():
+    # Add related documents
+    documents = [
+        "GPT-4 is a large language model developed by OpenAI.",
+        "OpenAI was founded in 2015 by Sam Altman, Elon Musk, and others.",
+        "Sam Altman is the CEO of OpenAI and formerly led Y Combinator."
+    ]
+
+    await cognee.add(documents)
+    await cognee.cognify()
+
+    # Query understanding relationships
+    result = await cognee.search(query_text="Who leads OpenAI?")
+    print(result)
+    # Returns answer understanding the relationships between
+    # Sam Altman, CEO role, and OpenAI
+
+asyncio.run(main())
+```
+
+Configuring database backends:
+
+Cognee is configured using environment variables, typically stored in a `.env` file in your project's root directory. The library automatically loads these variables on startup.
+
+Here is an example `.env` file for connecting to Qdrant and Neo4j:
+
+```ini
+LLM_PROVIDER="openai"
+LLM_MODEL="gpt-4"
+LLM_API_KEY="your_openai_api_key"
+
+VECTOR_DB_PROVIDER="qdrant"
+# QDRANT_URL="http://localhost:6333" # Optional: for non-default host
+
+GRAPH_DB_PROVIDER="neo4j"
+NEO4J_URI="bolt://localhost:7687"
+NEO4J_USER="neo4j"
+NEO4J_PASSWORD="password"
+```
+
+Cognee integrates with agent frameworks like CrewAI and LangChain, making it easy to add semantic memory to existing agent implementations. The knowledge graph construction is automatic, so you don't need to manually define schemas or relationships.
+
+## Letta: Memory as Infrastructure
+
+Letta takes a fundamentally different approach from the other solutions in this article. While Mem0, Zep, and Cognee add memory capabilities to stateless agents, Letta is a general-purpose memory programming system for building stateful agents where memory is embedded into the agent's core architecture.
+
+### How Letta Works
+
+The Letta Platform treats agents as persistent entities with continuous state, not as functions called on demand. When you create a Letta agent, it exists on the server and maintains state even when your application isn't running. There are no sessions or conversation threads. Each agent has a single, perpetual existence.
+
+This fundamentally changes how you think about agent development. Instead of fetching relevant memories before each LLM call, the agent continuously operates with its memory state. Memory isn't something you manage externally. It's part of the agent's core architecture.
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/05-letta-stateful-architecture.svg" />
+
+Letta was built by the researchers behind MemGPT, which pioneered the concept of treating LLM context management like an operating system manages memory. The platform provides sophisticated memory management that lets agents learn how to use tools, evolve personalities, and improve their capabilities over time.
+
+### Core Memory + Archival Memory
+
+Letta implements a two-tier memory architecture:
+
+**Core Memory (Memory Blocks)**: Lives inside the agent's context window and is always available. This is the most important component for making your agent maintain consistent state across turns. Core memory is organized into memory blocks that the agent can read and write to directly, holding the agent's most critical, frequently-accessed state.
+
+**Archival Memory**: Provides long-term retrieval for information outside the context window. When an agent needs information from archival memory, it retrieves relevant pieces and loads them into core memory. Letta also supports file-based retrieval through the Letta Filesystem.
+
+This hierarchy is similar to how operating systems manage RAM and disk storage. Hot data stays in RAM (core memory), while cold data lives on disk (archival memory) and is paged in when needed.
+
+### Memory Blocks: Self-Modifying Agent State
+
+Memory blocks are the fundamental units of Letta's memory system. Each block is a structured piece of information that the agent can modify. Unlike external memory systems where you programmatically update memories through APIs, Letta agents can directly edit their own memory blocks.
+
+For example, a Letta agent might have memory blocks for:
+
+- **Human Block**: Information about the user (name, preferences, history)
+- **Persona Block**: The agent's identity and behavior guidelines
+- **Custom Blocks**: Domain-specific state (project context, code knowledge, etc.)
+
+These blocks are editable by the agent itself, other agents, or developers through the API. This enables agents to learn and adapt their behavior based on experience.
+
+Memory blocks can also be shared between multiple agents. By attaching the same block to different agents, you can create powerful multi-agent systems where agents collaborate through shared memory. For example, multiple agents working on a project could share an "organization" or "project context" block, allowing them to maintain synchronized state and share learned information.
+
+### Building with Letta
+
+Install Letta:
+
+```bash
+pip install letta-client
+```
+
+Start the local server:
+
+```bash
+letta server
+```
+
+Using the visual Agent Development Environment:
+
+<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/agent-development-environment.png" />
+
+The Letta platform includes a visual ADE (Agent Development Environment) that lets you:
+- Create and configure agents through a UI
+- View agent memory blocks in real-time
+- Monitor the agent's decision-making process
+- Test and debug agent behavior
+
+Creating an agent with the Python SDK (local server):
+
+```python
+from letta_client import Letta
+
+# Connect to local Letta server
+client = Letta(base_url="http://localhost:8283")
+
+# Create agent with memory blocks
+agent = client.agents.create(
+    memory_blocks=[
+        {
+            "label": "human",
+            "value": "Name: Sarah. Role: Senior Backend Engineer. Preferences: Prefers Python over JavaScript, likes concise explanations."
+        },
+        {
+            "label": "persona",
+            "value": "I am a helpful coding assistant. I adapt my explanations to the user's expertise level and communication style."
+        }
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
+)
+
+print(f"Created agent: {agent.id}")
+```
+
+Chatting with the agent:
+
+```python
+# Send message to stateful agent
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        {"role": "user", "content": "Can you help me optimize this SQL query?"}
+    ]
+)
+
+# Agent responds with context from its memory blocks
+print(response.messages[0].content)
+```
+
+Updating memory blocks programmatically:
+
+```python
+# Retrieve a specific memory block by label
+human_block = client.agents.blocks.retrieve(
+    agent_id=agent.id,
+    block_label="human"
+)
+
+# Update the block with new information
+client.blocks.modify(
+    block_id=human_block.id,
+    value="Name: Sarah. Role: Senior Backend Engineer. Preferences: Prefers Python over JavaScript, likes concise explanations. Currently working on: Microservices migration project."
+)
+```
+
+Using Letta Cloud (hosted platform):
+
+```python
+from letta_client import Letta
+
+# Connect to Letta Cloud
+client = Letta(token="YOUR_LETTA_API_KEY")
+
+# Create agent (same API, hosted infrastructure)
+agent = client.agents.create(
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {"label": "human", "value": "The human's name is Alex."},
+        {"label": "persona", "value": "I am a helpful assistant."}
+    ]
+)
+```
+
+Creating shared memory blocks for multi-agent systems:
+
+```python
+# Create a shared memory block
+shared_block = client.blocks.create(
+    label="project_context",
+    description="Shared knowledge about the current project",
+    value="Project: Building a chat application. Tech stack: Python, FastAPI, React. Timeline: 3 months.",
+    limit=4000
+)
+
+# Create multiple agents that share this block
+agent1 = client.agents.create(
+    memory_blocks=[
+        {"label": "persona", "value": "I am a backend specialist."}
+    ],
+    block_ids=[shared_block.id],  # Attach shared block
+    model="openai/gpt-4o-mini"
+)
+
+agent2 = client.agents.create(
+    memory_blocks=[
+        {"label": "persona", "value": "I am a frontend specialist."}
+    ],
+    block_ids=[shared_block.id],  # Both agents share this block
+    model="openai/gpt-4o-mini"
+)
+
+# Both agents can now access and modify the shared project context
+```
+
+The key distinction is that Letta agents are stateful by design. The memory isn't managed separately from the agent. It's integral to how the agent operates. This enables more sophisticated agent behaviors like self-improvement, personality evolution, and complex multi-turn interactions where the agent truly learns from experience.
+
+Letta is also fully interoperable with other memory solutions. You can use Mem0, Zep, Cognee, or any other tool within Letta agents through custom Python tools or MCP (Model Context Protocol) servers. This lets you combine Letta's stateful architecture with specialized memory systems for specific use cases.
+
+## Letta's AI Memory SDK
+
+The [AI Memory SDK](https://www.piwheels.org/project/ai-memory-sdk/) is a separate solution from Letta (though built by the same team) that provides pluggable memory for developers who want memory capabilities without adopting a full stateful agent platform.
+
+### What is Letta's AI Memory SDK?
+
+The AI Memory SDK uses Letta agents (subagents) under the hood for memory management. You get the benefits of Letta's memory handling in a lightweight package that integrates with your existing LLM setup, without needing to adopt the full stateful agent infrastructure.
+
+### How AI Memory SDK Works
+
+Like Mem0 or Zep, you initialize a memory instance, add conversations, and retrieve context when needed. The difference is that the AI Memory SDK runs background Letta agents (called "subconscious memory agents") that asynchronously process conversations during "sleeptime"—between interactions rather than during them.
+
+These background agents automatically maintain two memory blocks per user: a conversation summary and a user profile. You retrieve this learned context and inject it into your prompts, similar to Mem0 or Zep, but memory formation happens through autonomous agents rather than direct LLM extraction or graph algorithms.
+
+For more complex memory architectures—custom memory blocks, agents that modify their own memory, or persistent agent personalities—use the full Letta platform.
+
+### Implementing AI Memory SDK
+
+Install the SDK:
+
+```bash
+pip install ai-memory-sdk
+```
+
+Set up environment variables:
+
+```bash
+export LETTA_API_KEY=your_letta_api_key
+export OPENAI_API_KEY=your_openai_api_key
+```
+
+Basic integration with OpenAI:
+
+```python
+from openai import OpenAI
+from ai_memory_sdk import Memory
+
+# Initialize memory and OpenAI client
+memory = Memory()
+openai_client = OpenAI()
+
+def chat_with_memory(message, user_id="default_user"):
+    # Get or initialize user memory
+    user_memory = memory.get_user_memory(user_id)
+    if not user_memory:
+        memory.initialize_user_memory(user_id, reset=True)
+
+    # Retrieve formatted memory for prompt
+    memory_prompt = memory.get_user_memory(user_id, prompt_formatted=True)
+
+    # Build system prompt with memory context
+    system_prompt = f"<system>You are a helpful AI assistant.</system>\n{memory_prompt}"
+
+    # Create messages
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": message}
+    ]
+
+    # Get response from LLM
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages
+    )
+
+    # Extract response and save to memory
+    assistant_response = response.choices[0].message.content
+    messages.append({"role": "assistant", "content": assistant_response})
+    memory.add_messages(user_id, messages)
+
+    return assistant_response
+
+# Use it
+response = chat_with_memory("Hi, I'm learning Python", user_id="alice")
+print(response)
+
+# Later conversation remembers context
+response = chat_with_memory("What resources should I start with?", user_id="alice")
+print(response)  # Agent remembers Alice is learning Python
+```
+
+Semantic search through conversation history:
+
+```python
+# Search past conversations
+results = memory.query(
+    user_id="alice",
+    query="What programming topics did we discuss?"
+)
+
+for result in results:
+    print(f"Message: {result['content']}")
+    print(f"Relevance: {result['score']}")
+    print("---")
+```
+
+The AI Memory SDK automatically generates user summaries, maintains conversation history, and provides semantic search capabilities. It processes messages asynchronously, so memory updates happen in the background without blocking your application.
+
+The SDK is experimental and actively developed. The roadmap includes TypeScript support, learning from files, and enhanced memory management features.
+
+## Choosing the Right Memory Solution for Your Agent
+
+Each of these solutions takes a different approach to agent memory. The right choice depends on your use case, existing architecture, and how much control you need over memory management.
+
+**Choose Mem0 when:**
+
+You want a simple drop-in solution that works with your existing agent framework. Mem0 requires minimal code changes and handles memory extraction and consolidation automatically. Good for adding memory to chatbots, customer support agents, or personal assistants where you need user/session/agent level memory organization.
+
+Best for developers who want memory without architectural changes to their application.
+
+**Choose Zep when:**
+
+Facts in your domain change over time and you need to track that history. Zep's temporal knowledge graphs excel when information evolves (user preferences change, job roles update, locations shift) and you need both current truth and historical context.
+
+Particularly valuable for enterprise applications that combine conversational data with business data, or when you need to query "What did the user prefer in Q1 vs Q3?"
+
+Best for applications where temporal awareness and data evolution matter.
+
+**Choose Cognee when:**
+
+You need semantic understanding of relationships between concepts. Cognee's knowledge graph construction helps when working with domain-specific knowledge where understanding relationships is as important as retrieving information.
+
+Good for applications processing technical documentation, research papers, or complex knowledge bases where "What are the dependencies?" is as important as "What is X?"
+
+Best for developers who value semantic understanding.
+
+**Choose Letta Platform when:**
+
+You're building agents that need to truly evolve over time. Letta's stateful architecture works best for long-running agents that need to learn how to use tools better, develop consistent personalities, or improve their behavior based on experience.
+
+The platform approach makes sense when you want infrastructure that manages agent state for you, complete with a visual development environment and sophisticated memory programming primitives.
+
+Best for building production agent applications where agents are first-class entities, not ephemeral function calls.
+
+**Choose AI Memory SDK when:**
+
+You love Letta's memory management but don't need the full stateful agent platform. The AI Memory SDK gives you pluggable memory capabilities you can add to existing applications without adopting new infrastructure.
+
+Good for developers who want more sophisticated memory handling than simple vector storage but aren't ready to commit to the stateful agent paradigm.
+
+Best for adding memory to existing applications with minimal architectural impact.
+
+**Interoperability Note:**
+
+Letta is fully interoperable with these other tools. You can use Mem0, Zep, or Cognee within Letta agents through custom tools or MCP (Model Context Protocol) servers. Letta's platform can incorporate external memory systems as additional data sources while maintaining its own core memory architecture.
+
+## Further Reading and Resources
+
+### Official Documentation
+
+- **Letta**: [docs.letta.com](https://docs.letta.com/) - Platform documentation and SDK references
+- **Mem0**: [docs.mem0.ai](https://docs.mem0.ai/) - Complete API reference and integration guides
+- **Zep**: [help.getzep.com](https://help.getzep.com/) - Platform docs and Graphiti library reference
+- **Cognee**: [cognee.ai](https://www.cognee.ai/) - Getting started guides and examples
+
+### Source Code
+
+- **Letta**: [github.com/letta-ai/letta](https://github.com/letta-ai/letta)
+- **Letta's AI Memory SDK**: [github.com/letta-ai/ai-memory-sdk](https://github.com/letta-ai/ai-memory-sdk)
+- **Mem0**: [github.com/mem0ai/mem0](https://github.com/mem0ai/mem0)
+- **Graphiti (Zep)**: [github.com/getzep/graphiti](https://github.com/getzep/graphiti)
+- **Cognee**: [github.com/topoteretes/cognee](https://github.com/topoteretes/cognee)
