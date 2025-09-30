@@ -29,6 +29,7 @@ async function processStepWithLegacySubscription(step: Step, subscription: Payme
     !step.context_window_limit ||
     !step.organization_id
   ) {
+    console.log('Step is missing required fields');
     return null;
   }
 
@@ -194,13 +195,15 @@ export async function processStep(
     return null;
   }
 
+  console.log('Start processing step', step.id);
+
   const transactionLock = await createUniqueRedisProperty(
     'transactionLock',
     {},
     step.id,
     {
       // expires in 15 minutes
-      expiresAt: Date.now() + 15 * 60 * 1000,
+      expiresAt: Date.now() + 15 * 60,
       data: {
         lockedAt: Date.now(),
       },
@@ -214,6 +217,7 @@ export async function processStep(
 
 
   if (step.provider_category === 'byok') {
+    console.log('Processing BYOK step', step.id);
     const org = await getRedisData('coreOrganizationIdToOrganizationId', {
       coreOrganizationId: step.organization_id,
     });
@@ -245,8 +249,10 @@ export async function processStep(
   const subscription = await getCustomerSubscription(step.organization_id);
 
   if (subscription.tier !== 'pro') {
+    console.log('Processing step with legacy subscription', step.id);
     return await processStepWithLegacySubscription(step, subscription);
   } else {
+    console.log('Processing step with pro subscription', step.id);
     return await processStepWithSubscription(step, subscription);
   }
 }

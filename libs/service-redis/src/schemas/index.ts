@@ -178,7 +178,7 @@ const modelNameAndEndpointToIdMapDefinition = generateDefinitionSatisfies({
 const transactionLockDefinition = generateDefinitionSatisfies({
   baseKey: 'transactionLock',
   input: z.object({}),
-  getKey: () => 'transactionLock:lock',
+  getKey: () => 'transactionLock:locks',
   output: z.object({ lockedAt: z.number() }),
 });
 
