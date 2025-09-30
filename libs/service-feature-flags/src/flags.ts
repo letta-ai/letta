@@ -147,11 +147,6 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
-  HUMAN_IN_THE_LOOP: {
-    description: 'Enable human in the loop for agent runs',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
   ENABLE_NEW_PROJECT_VIEW: {
     description: 'Enable the new project view',
     expiryDate: '2025-12-31',
