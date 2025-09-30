@@ -6,7 +6,7 @@
     "start": "node ./dist/main.js",
     "test:e2e": "jest --detectOpenHandles --forceExit --config=jest.config.ts -- e2e/default.test.ts e2e/templates.test.ts",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register ./src/main.ts",
-    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp --external:date-fns --external:@clickhouse/client --external:posthog-node --external:fast-equals --external:@google-cloud/profiler",
+    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp --external:date-fns --external:@clickhouse/client --external:posthog-node --external:fast-equals",
     "test:branch-regression": "jest --detectOpenHandles --forceExit -- e2e/database-compatibility.test.ts"
   },
   "devDependencies": {
@@ -32,13 +32,13 @@
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.7",
     "@clickhouse/client": "^1.11.1",
-    "@google-cloud/profiler": "^6.0.3",
     "@launchdarkly/node-server-sdk": "^9.7.7",
     "@react-email/components": "^0.0.33",
     "@sentry/node": "^10.17.0",
     "@sentry/profiling-node": "^10.17.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "^5.69.0",
+    "fast-equals": "^5.2.2",
     "@temporalio/client": "^1.11.7",
     "@temporalio/workflow": "^1.11.7",
     "@ts-rest/express": "^3.52.0",
@@ -52,7 +52,6 @@
     "drizzle-orm": "^0.38.3",
     "express": "^4.21.2",
     "express-winston": "^4.2.0",
-    "fast-equals": "^5.2.2",
     "http-proxy": "^1.18.1",
     "http-proxy-middleware": "^3.0.3",
     "https-proxy-agent": "^7.0.6",
