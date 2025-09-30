@@ -6,15 +6,16 @@ import {
   perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import { AgentsService, type MessageCreate } from '@letta-cloud/sdk-core';
-import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { AgentsService, type AgentState, type MessageCreate } from '@letta-cloud/sdk-core';
+import { getRecurrentSubscriptionLimits, getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
-import type { RateLimitReason } from '@letta-cloud/types';
+import type { PaymentCustomerSubscription, RateLimitReason } from '@letta-cloud/types';
 import { getCanAgentBeUsed } from './getCanAgentBeUsed/getCanAgentBeUsed';
 import type { Request } from 'express';
+import { getRemainingRecurrentCredits } from '../recurringCreditsManager/recurringCreditsManager';
 type ModelType = 'embedding' | 'inference';
 
 interface IsRateLimitedForCreatingMessagesPayload {
@@ -179,77 +180,17 @@ function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
 }
 
-export async function handleMessageRateLimiting(
-  req: Request,
-  payload: IsRateLimitedForCreatingMessagesPayload,
+interface HandleRateLimitingPayload {
+  agent: AgentState;
+  organizationId: string;
+  usageLimits: ReturnType<typeof getUsageLimits>;
+  type: ModelType;
+}
+
+async function handleLegacyRateLimiting(
+  payload: HandleRateLimitingPayload,
 ) {
-  const { organizationId, agentId, type, lettaAgentsUserId } = payload;
-
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId,
-      includeRelationships: [],
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
-
-  req.headers['x-agent-id'] = agentId;
-
-  if (agent.project_id) {
-    req.headers['x-project-id'] = agent.project_id;
-  }
-
-  if (agent.template_id) {
-    req.headers['x-template-id'] = agent.template_id;
-  }
-
-  if (agent.base_template_id) {
-    req.headers['x-base-template-id'] = agent.base_template_id;
-  }
-
-  if (!agent) {
-    return {
-      isRateLimited: true,
-      reasons: ['agent-not-found'],
-    };
-  }
-
-  const subscription = await getCustomerSubscription(organizationId);
-
-  const usageLimits = getUsageLimits(subscription.tier);
-
-  const isDeployedAgent = await getRedisData('deployedAgent', {
-    agentId,
-  });
-
-  const canAgentBeUsed =
-    !isDeployedAgent?.isDeployed ||
-    (await getCanAgentBeUsed({
-      agentId,
-      baseTemplateId: agent.base_template_id || '',
-      organizationId,
-      agentLimit: usageLimits.agents,
-      billingPeriodStart: subscription.billingPeriodStart,
-    }));
-
-  if (!canAgentBeUsed) {
-    return {
-      isRateLimited: true,
-      reasons: ['agents-limit-exceeded'],
-    };
-  }
-
-  const isByok = agent.llm_config.provider_category === 'byok';
-
-  if (isByok) {
-    return {
-      isRateLimited: false,
-    };
-  }
-
-
+  const { agent, organizationId, usageLimits, type } = payload;
   const [modelMetaData, coreOrganization] = await Promise.all([
     getRedisData('modelNameAndEndpointToIdMap', {
       modelName: agent.llm_config.model,
@@ -267,26 +208,7 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  // const encoding = getTikTokenEncoder(agent.llm_config.model);
-
-  // temporary
   const inputTokens = 1;
-  // const inputTokens = messages.reduce((acc, message) => {
-  //   let text = '';
-  //
-  //   if (Array.isArray(message.content)) {
-  //     text = message.content
-  //       .map((c) => (c.type === 'text' ? c.text : ''))
-  //       .join(' ');
-  //   } else {
-  //     text = message.content;
-  //   }
-  //
-  //   const tokenLength = encoding.encode(text).length;
-  //
-  //   return acc + tokenLength;
-  // }, 0);
-
   const modelId = modelMetaData.modelId;
 
   const currentMinute = Math.floor(Date.now() / 60000);
@@ -395,4 +317,219 @@ export async function handleMessageRateLimiting(
   return {
     isRateLimited: false,
   };
+}
+
+
+interface HandleNewRateLimitingPayload {
+  agent: AgentState;
+  organizationId: string;
+  type: ModelType;
+  subscription: PaymentCustomerSubscription
+}
+
+async function handleNewRateLimiting(
+  payload: HandleNewRateLimitingPayload,
+) {
+  const { agent, organizationId, type, subscription } = payload;
+
+  const [modelMetaData, coreOrganization] = await Promise.all([
+    getRedisData('modelNameAndEndpointToIdMap', {
+      modelName: agent.llm_config.model,
+      modelEndpoint: agent.llm_config.model_endpoint || '',
+    }),
+    getRedisData('organizationToCoreOrganization', {
+      organizationId,
+    }),
+  ]);
+
+  if (!modelMetaData || !coreOrganization?.coreOrganizationId) {
+    return {
+      isRateLimited: true,
+      reasons: ['model-unknown'],
+    };
+  }
+
+  const inputTokens = 1;
+  const modelId = modelMetaData.modelId;
+
+  const currentMinute = Math.floor(Date.now() / 60000);
+
+  const { maxRequestsPerMinutePerModel, maxTokensPerMinutePerModel } =
+    await getAndSeedOrganizationLimits({ organizationId, modelId, type });
+
+  const result = await Promise.all([
+    getRedisData('rpmWindow', {
+      modelId,
+      organizationId,
+      minute: currentMinute,
+    }),
+    getRedisData('tpmWindow', {
+      modelId,
+      organizationId,
+      minute: currentMinute,
+    }),
+    getOrganizationCredits(organizationId),
+    getCreditCostPerModel({
+      modelName: agent.llm_config.model,
+      modelEndpoint: agent.llm_config.model_endpoint || '',
+      contextWindowSize: inputTokens,
+    }),
+    getRemainingRecurrentCredits(organizationId, subscription)
+  ]);
+
+  const currentRequests =
+    result[0] && isANumberSafe(result[0]?.data) ? result[0].data : 0;
+  const currentTokens =
+    result[1] && isANumberSafe(result[1]?.data) ? result[1].data : 0;
+  const organizationCredits =
+    result[2] && isANumberSafe(result[2]) ? result[2] : 0;
+  const creditCost = result[3];
+  const recurrentCredits = result[4] && isANumberSafe(result[4]) ? result[4] : 0;
+
+  const rateLimitThresholds: RateLimitReason[] = [];
+
+  // if you have no credits, you are rate limited by the free/premium limits
+  if (
+    organizationCredits <= 0
+  ) {
+    if (recurrentCredits + 1 > getRecurrentSubscriptionLimits(subscription)) {
+      rateLimitThresholds.push('not-enough-credits');
+    }
+  } else {
+    // if you have credits, you are rate limited by the model limits
+    if (typeof creditCost !== 'number') {
+      rateLimitThresholds.push('context-window-size-not-supported');
+    } else if (organizationCredits - creditCost < 0) {
+      rateLimitThresholds.push('not-enough-credits');
+    }
+  }
+
+  if (currentRequests + 1 >= maxRequestsPerMinutePerModel) {
+    rateLimitThresholds.push('requests');
+  }
+
+  if (currentTokens + inputTokens >= maxTokensPerMinutePerModel) {
+    rateLimitThresholds.push('tokens');
+  }
+
+  if (rateLimitThresholds.length) {
+    return {
+      isRateLimited: true,
+      reasons: rateLimitThresholds,
+    };
+  }
+
+  await Promise.all([
+    setRedisData(
+      'rpmWindow',
+      { modelId, organizationId, minute: currentMinute },
+      {
+        // expires in 3 minutes
+        expiresAt: Date.now() + 3 * 60000,
+        data: { data: currentRequests + 1 },
+      },
+    ),
+    setRedisData(
+      'tpmWindow',
+      { modelId, organizationId, minute: currentMinute },
+      {
+        // expires in 3 minutes
+        expiresAt: Date.now() + 3 * 60000,
+        data: { data: currentTokens + inputTokens },
+      },
+    ),
+  ]);
+
+  return {
+    isRateLimited: false,
+  };
+}
+
+
+export async function handleMessageRateLimiting(
+  req: Request,
+  payload: IsRateLimitedForCreatingMessagesPayload,
+) {
+  const { organizationId, agentId, type, lettaAgentsUserId } = payload;
+
+  const agent = await AgentsService.retrieveAgent(
+    {
+      agentId,
+      includeRelationships: [],
+    },
+    {
+      user_id: lettaAgentsUserId,
+    },
+  );
+
+  req.headers['x-agent-id'] = agentId;
+
+  if (agent.project_id) {
+    req.headers['x-project-id'] = agent.project_id;
+  }
+
+  if (agent.template_id) {
+    req.headers['x-template-id'] = agent.template_id;
+  }
+
+  if (agent.base_template_id) {
+    req.headers['x-base-template-id'] = agent.base_template_id;
+  }
+
+  if (!agent) {
+    return {
+      isRateLimited: true,
+      reasons: ['agent-not-found'],
+    };
+  }
+
+  const subscription = await getCustomerSubscription(organizationId);
+
+  const usageLimits = getUsageLimits(subscription.tier);
+
+  const isDeployedAgent = await getRedisData('deployedAgent', {
+    agentId,
+  });
+
+  const canAgentBeUsed =
+    !isDeployedAgent?.isDeployed ||
+    (await getCanAgentBeUsed({
+      agentId,
+      baseTemplateId: agent.base_template_id || '',
+      organizationId,
+      agentLimit: usageLimits.agents,
+      billingPeriodStart: subscription.billingPeriodStart,
+    }));
+
+  if (!canAgentBeUsed) {
+    return {
+      isRateLimited: true,
+      reasons: ['agents-limit-exceeded'],
+    };
+  }
+
+  const isByok = agent.llm_config.provider_category === 'byok';
+
+  if (isByok) {
+    return {
+      isRateLimited: false,
+    };
+  }
+
+  if (subscription.tier !== 'pro') {
+    return await handleLegacyRateLimiting({
+      agent,
+      organizationId,
+      usageLimits,
+      type,
+    });
+  }
+
+  // new rate limiting system for pro users
+  return await handleNewRateLimiting({
+    agent,
+    organizationId,
+    type,
+    subscription
+  });
 }
