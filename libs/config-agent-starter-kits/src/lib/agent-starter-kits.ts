@@ -14,10 +14,17 @@ export interface StarterKitTool {
   code: string;
 }
 
-
 export type StarterKitArchitecture = 'memgpt_v2_agent' | 'memgpt' | 'sleeptime' | 'letta_v1';
 
-export type StarterKitId = 'scratch' | 'sleepTime' | 'voiceSleepTime' | 'deepThought' | 'characterRoleplay' | 'personalAssistant' | 'customerSupport' | 'companion';
+export type StarterKitId =
+  | 'scratch'
+  | 'sleepTime'
+  | 'voiceSleepTime'
+  | 'deepThought'
+  | 'characterRoleplay'
+  | 'personalAssistant'
+  | 'customerSupport'
+  | 'companion';
 
 export interface StarterKit {
   image: StaticImport | string;
@@ -37,7 +44,7 @@ export function isAStarterKitName(
 }
 
 export const STARTER_KITS: {
-  [K in StarterKitId]: StarterKit & { id: K }
+  [K in StarterKitId]: StarterKit & { id: K };
 } = {
   scratch: {
     id: 'scratch',
@@ -76,7 +83,7 @@ export const STARTER_KITS: {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-3-5-sonnet-20241022',
+      model: 'anthropic/claude-sonnet-4-20250514',
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
@@ -110,7 +117,7 @@ export const STARTER_KITS: {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-3-5-sonnet-20241022',
+      model: 'anthropic/claude-sonnet-4-20250514',
       enable_sleeptime: true,
       agent_type: 'voice_convo_agent',
       description:
@@ -179,7 +186,8 @@ export const STARTER_KITS: {
     agentState: {
       model: 'anthropic/claude-sonnet-4-20250514',
       tools: ['web_search'],
-      description: 'A deep research agent designed to conduct comprehensive research using web search capabilities.',
+      description:
+        'A deep research agent designed to conduct comprehensive research using web search capabilities.',
       memory_blocks: [
         {
           label: 'persona',
@@ -407,7 +415,7 @@ export const STARTER_KITS: {
     },
     image: companion,
     agentState: {
-      // model: 'anthropic/claude-sonnet-4-20250514',
+      model: 'anthropic/claude-sonnet-4-20250514',
       description:
         'Act as a companion to the user, providing emotional support and companionship.',
       memory_blocks: [
@@ -424,4 +432,4 @@ export const STARTER_KITS: {
       ],
     },
   },
-}
+};
