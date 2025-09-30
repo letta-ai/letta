@@ -1,13 +1,12 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 
-from letta.adapters.letta_llm_adapter import LettaLLMAdapter
+from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
-from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
-from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
-from letta.llm_api.llm_client_base import LLMClientBase
+from letta.interfaces.anthropic_streaming_interface import SimpleAnthropicStreamingInterface
+from letta.interfaces.openai_streaming_interface import SimpleOpenAIStreamingInterface
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
-from letta.schemas.llm_config import LLMConfig
+from letta.schemas.letta_message_content import SummarizedReasoningContent, TextContent
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -15,7 +14,7 @@ from letta.settings import settings
 from letta.utils import safe_create_task
 
 
-class LettaLLMStreamAdapter(LettaLLMAdapter):
+class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
     """
     Adapter for handling streaming LLM requests with immediate token yielding.
 
@@ -25,16 +24,12 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig) -> None:
-        super().__init__(llm_client, llm_config)
-        self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
-
     async def invoke_llm(
         self,
         request_data: dict,
         messages: list,
         tools: list,
-        use_assistant_message: bool,
+        use_assistant_message: bool,  # NOTE: not used
         requires_approval_tools: list[str] = [],
         step_id: str | None = None,
         actor: User | None = None,
@@ -53,21 +48,30 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
 
         # Instantiate streaming interface
         if self.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
-            self.interface = AnthropicStreamingInterface(
-                use_assistant_message=use_assistant_message,
-                put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
+            # NOTE: different
+            self.interface = SimpleAnthropicStreamingInterface(
                 requires_approval_tools=requires_approval_tools,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
-            # For non-v1 agents, always use Chat Completions streaming interface
-            self.interface = OpenAIStreamingInterface(
-                use_assistant_message=use_assistant_message,
-                is_openai_proxy=self.llm_config.provider_name == "lmstudio_openai",
-                put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
-                messages=messages,
-                tools=tools,
-                requires_approval_tools=requires_approval_tools,
-            )
+            # Decide interface based on payload shape
+            use_responses = "input" in request_data and "messages" not in request_data
+            # No support for Responses API proxy
+            is_proxy = self.llm_config.provider_name == "lmstudio_openai"
+            if use_responses and not is_proxy:
+                self.interface = SimpleOpenAIResponsesStreamingInterface(
+                    is_openai_proxy=False,
+                    messages=messages,
+                    tools=tools,
+                    requires_approval_tools=requires_approval_tools,
+                )
+            else:
+                self.interface = SimpleOpenAIStreamingInterface(
+                    is_openai_proxy=self.llm_config.provider_name == "lmstudio_openai",
+                    messages=messages,
+                    tools=tools,
+                    requires_approval_tools=requires_approval_tools,
+                    model=self.llm_config.model,
+                )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
 
@@ -93,7 +97,11 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             self.tool_call = None
 
         # Extract reasoning content from the interface
-        self.reasoning_content = self.interface.get_reasoning_content()
+        # TODO this should probably just be called "content"?
+        # self.reasoning_content = self.interface.get_reasoning_content()
+
+        # Extract non-reasoning content (eg text)
+        self.content: List[TextContent | SummarizedReasoningContent] = self.interface.get_content()
 
         # Extract usage statistics
         # Some providers don't provide usage in streaming, use fallback if needed
@@ -124,9 +132,6 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         # Log request and response data
         self.log_provider_trace(step_id=step_id, actor=actor)
 
-    def supports_token_streaming(self) -> bool:
-        return True
-
     def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
         """
         Log provider trace data for telemetry purposes in a fire-and-forget manner.
@@ -150,7 +155,10 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                     response_json={
                         "content": {
                             "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
-                            "reasoning": [content.model_dump_json() for content in self.reasoning_content],
+                            # "reasoning": [content.model_dump_json() for content in self.reasoning_content],
+                            # NOTE: different
+                            # TODO potentially split this into both content and reasoning?
+                            "content": [content.model_dump_json() for content in self.content],
                         },
                         "id": self.interface.message_id,
                         "model": self.interface.model,
@@ -164,6 +172,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                         },
                     },
                     step_id=step_id,  # Use original step_id for telemetry
+                    organization_id=actor.organization_id,
                 ),
             ),
             label="create_provider_trace",
