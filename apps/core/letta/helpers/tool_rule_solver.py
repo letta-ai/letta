@@ -209,3 +209,30 @@ class ToolRulesSolver(BaseModel):
                     violated_rules.append(rendered_prompt)
 
         return violated_rules
+
+    def should_force_tool_call(self) -> bool:
+        """
+        Determine if a tool call should be forced (using 'required' instead of 'auto') based on active constrained tool rules.
+
+        Returns:
+            bool: True if a constrained tool rule is currently active, False otherwise
+        """
+        # check if we're at the start with init rules
+        if not self.tool_call_history and self.init_tool_rules:
+            return True
+
+        # check if any constrained rule is currently active
+        if self.tool_call_history:
+            last_tool = self.tool_call_history[-1]
+
+            # check child-based rules (ChildToolRule, ConditionalToolRule)
+            for rule in self.child_based_tool_rules:
+                if rule.requires_force_tool_call and rule.tool_name == last_tool:
+                    return True
+
+            # check parent rules, `requires_force_tool_call` for safety in case this gets expanded
+            for rule in self.parent_tool_rules:
+                if rule.requires_force_tool_call and rule.tool_name == last_tool:
+                    return True
+
+        return False
