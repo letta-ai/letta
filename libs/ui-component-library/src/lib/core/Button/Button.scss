@@ -11,6 +11,14 @@
   }
 }
 
+/* Ensure button labels truncate gracefully within flex buttons */
+.button-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* allows flex child to shrink for ellipsis */
+}
+
 /* Follow the OS interface colours or force the use of the dark theme */
 @media (prefers-color-scheme: dark) {
   [data-mode='auto'],

@@ -87,6 +87,8 @@ function ShowPrompts({ promptKey }: ShowPromptsProps) {
           label={prompt}
           color="tertiary"
           size="small"
+          fullWidth
+          align="left"
           bold={false}
           preIcon={<SearchIcon />}
           onClick={() => handlePromptClick(prompt)}

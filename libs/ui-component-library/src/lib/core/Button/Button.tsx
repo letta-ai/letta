@@ -224,10 +224,12 @@ export const Button = forwardRef<
 
   const iconToRender = useMemo(() => {
     if (busy) {
-      return <SpinnerPrimitive  className={cn('text-inherit', iconSize)} />;
+      return (
+        <SpinnerPrimitive className={cn('text-inherit shrink-0', iconSize)} />
+      );
     }
 
-    return <Slot className={iconSize}>{preIcon}</Slot>;
+    return <Slot className={cn(iconSize, 'shrink-0')}>{preIcon}</Slot>;
   }, [iconSize, busy, preIcon]);
 
   return (
@@ -272,7 +274,7 @@ export const Button = forwardRef<
             {label}
           </span>
         )}
-        {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
+        {postIcon && <Slot className={cn(iconSize, 'shrink-0')}>{postIcon}</Slot>}
       </ButtonPrimitive>
     </MaybeTooltip>
   );
