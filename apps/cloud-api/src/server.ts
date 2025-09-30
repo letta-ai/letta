@@ -21,7 +21,7 @@ import { Readable } from 'node:stream';
 import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRateLimitMiddleware';
 import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
 import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentMiddleware';
-import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
+// import { contentModerationMiddleware } from './libs/contentModerationMiddleware/contentModerationMiddleware';
 import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
 import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware';
 import { datasourceMiddleware } from './libs/datasourceMiddleware/datasourceMiddleware';
@@ -145,7 +145,7 @@ export function startServer() {
 
   app.use(bodyParser.json({ limit: '25mb' }));
   app.use(rateLimitMiddleware);
-  app.use(contentModerationMiddleware);
+  // app.use(contentModerationMiddleware);
   app.use(itemRateLimitMiddleware);
   app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);
