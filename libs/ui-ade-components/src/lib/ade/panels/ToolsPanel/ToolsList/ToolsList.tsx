@@ -21,7 +21,6 @@ import {
 import { DetachToolDialog } from '../../ToolManager/components/DetachToolDialog/DetachToolDialog';
 import { EnableHITLForToolDialog } from '../components/EnableHITLForToolDialog/EnableHITLForToolDialog';
 import { DisableHITLForToolDialog } from '../components/DisableHITLForToolDialog/DisableHITLForToolDialog';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface ToolAccordionProps {
   tools: ParsedTool[];
@@ -118,8 +117,6 @@ function ToolOptions(props: ToolOptionsProps) {
     tool.name || '',
   );
 
-  const { data: isEnabled } = useFeatureFlag('HUMAN_IN_THE_LOOP');
-
   return (
     <DropdownMenu
       triggerAsChild
@@ -136,24 +133,20 @@ function ToolOptions(props: ToolOptionsProps) {
         />
       }
     >
-      {isEnabled && (
-        <>
-          {!toolRequiresApproval ? (
-            <EnableHITLForToolDialog
-              toolName={tool.name || ''}
-              trigger={
-                <DropdownMenuItem doNotCloseOnSelect label={t('enableHTIL')} />
-              }
-            />
-          ) : (
-            <DisableHITLForToolDialog
-              toolName={tool.name || ''}
-              trigger={
-                <DropdownMenuItem doNotCloseOnSelect label={t('disableHTIL')} />
-              }
-            />
-          )}
-        </>
+      {!toolRequiresApproval ? (
+        <EnableHITLForToolDialog
+          toolName={tool.name || ''}
+          trigger={
+            <DropdownMenuItem doNotCloseOnSelect label={t('enableHTIL')} />
+          }
+        />
+      ) : (
+        <DisableHITLForToolDialog
+          toolName={tool.name || ''}
+          trigger={
+            <DropdownMenuItem doNotCloseOnSelect label={t('disableHTIL')} />
+          }
+        />
       )}
       <DetachToolDialog
         toolType={tool.tool_type || 'custom'}
