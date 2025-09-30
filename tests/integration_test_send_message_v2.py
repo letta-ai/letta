@@ -275,7 +275,7 @@ async def agent_state(client: AsyncLetta) -> AgentState:
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
-@pytest.mark.parametrize("send_type", ["step", "stream_steps", "stream_tokens", "async"])
+@pytest.mark.parametrize("send_type", ["step", "stream_steps", "stream_tokens", "stream_tokens_background", "async"])
 @pytest.mark.asyncio(loop_scope="function")
 async def test_greeting(
     disable_e2b_api_key: Any,
@@ -306,11 +306,21 @@ async def test_greeting(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_FORCE_REPLY,
             stream_tokens=(send_type == "stream_tokens"),
+            background=(send_type == "stream_tokens_background"),
         )
         messages = await accumulate_chunks(response)
+        run_id = messages[0].run_id
 
     assert_greeting_response(
         messages, streaming=("stream" in send_type), token_streaming=(send_type == "stream_tokens"), llm_config=llm_config
     )
+
+    if "background" in send_type:
+        response = client.runs.stream(run_id=run_id, starting_after=0)
+        messages = await accumulate_chunks(response)
+        assert_greeting_response(
+            messages, streaming=("stream" in send_type), token_streaming=(send_type == "stream_tokens"), llm_config=llm_config
+        )
+
     messages_from_db = await client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_response(messages_from_db, from_db=True, llm_config=llm_config)
