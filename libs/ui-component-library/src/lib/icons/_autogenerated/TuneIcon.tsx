@@ -1,0 +1,22 @@
+import * as React from 'react';
+import type { IconWrappedProps } from '../IconWrapper';
+import { IconWrapper } from '../IconWrapper';
+
+export function TuneIcon(props: IconWrappedProps) {
+  return (
+    <IconWrapper {...props}>
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M8.4375 15.5625V11.4375H9.5625V12.9375H15.5625V14.0625H9.5625V15.5625H8.4375ZM2.4375 14.0625V12.9375H6.5625V14.0625H2.4375ZM5.4375 11.0625V9.5625H2.4375V8.4375H5.4375V6.9375H6.5625V11.0625H5.4375ZM8.4375 9.5625V8.4375H15.5625V9.5625H8.4375ZM11.4375 6.5625V2.4375H12.5625V3.9375H15.5625V5.0625H12.5625V6.5625H11.4375ZM2.4375 5.0625V3.9375H9.5625V5.0625H2.4375Z"
+          fill="currentColor"
+        />
+      </svg>
+    </IconWrapper>
+  );
+}

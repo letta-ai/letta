@@ -1,30 +1,19 @@
-import { useCurrentAgentMetaData } from '../../../hooks';
 import { PanelMainContent, VStack } from '@letta-cloud/ui-component-library';
-
-import { MessageBufferAutoclearSwitch } from '../../inputs/MessageBufferAutoclearSwitch/MessageBufferAutoclearSwitch';
-import { AgentType } from './components/AgentType/AgentType';
-import { MessageBufferLengthSlider } from '../../inputs/MessageBufferLengthSlider/MessageBufferLengthSlider';
-import { SleeptimeAgentFrequencyInput } from '../../inputs/SleeptimeAgentFrequencyInput/SleeptimeAgentFrequencyInput';
-import { MaxFilesInput } from '../../inputs/MaxFilesInput/MaxFilesInput';
-import { WindowCharLimitInput } from '../../inputs/WindowCharLimitInput/WindowCharLimitInput';
+import { AgentDescription } from '../../inputs/AgentDescription/AgentDescription';
+import { AgentTags } from '../../inputs/AgentTags/AgentTags';
+import { SharedAdvancedSettings } from '../SharedAdvancedSettings/SharedAdvancedSettings';
 
 function AgentAdvancedSettingsView() {
-  const { agentType, isSleeptimeAgent } = useCurrentAgentMetaData();
 
   return (
     <VStack gap="large">
+      {/* Metadata Section */}
       <VStack>
-        <AgentType />
-        <MessageBufferAutoclearSwitch />
-        <MaxFilesInput />
-        <WindowCharLimitInput />
+        <AgentTags />
+        <AgentDescription />
       </VStack>
-      <VStack gap="xlarge">
-        {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}
-        {isSleeptimeAgent && agentType !== 'voice_convo_agent' && (
-          <SleeptimeAgentFrequencyInput />
-        )}
-      </VStack>
+
+      <SharedAdvancedSettings />
     </VStack>
   );
 }

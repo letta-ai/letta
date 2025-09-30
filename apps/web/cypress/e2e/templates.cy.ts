@@ -53,7 +53,7 @@ describe(
           });
 
           cy.testStep('Update template name', () => {
-            cy.findByTestId('accordion-trigger:template-settings', {
+            cy.findByTestId('ade-tab-header:template-settings', {
               timeout: 50000,
             }).click();
 
@@ -86,7 +86,9 @@ describe(
       });
 
       it('should have attached the correct tools by default', () => {
-
+        cy.findByTestId('ade-tab-header:tools', {
+          timeout: 50000,
+        }).click();
 
         cy.testStep('Verify core tools are attached', () => {
           cy.findByTestId('tool-attached:send_message')
@@ -110,6 +112,10 @@ describe(
         () => {
           let initialAgent: AgentState;
           let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
+
+          cy.testStep('navigate to memories tab', () => {
+            cy.findByTestId('ade-tab-header:core-memories', { timeout: 50000 }).click();
+          });
 
           cy.testStep('Get initial agent state from template', () => {
             cy.getCurrentTemplateFromUrl().then((template) => {
@@ -238,6 +244,10 @@ describe(
         let initialAgent: AgentState;
         let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
 
+        cy.testStep('navigate to settings tab', () => {
+          cy.findByTestId('ade-tab-header:settings', { timeout: 50000 }).click();
+        });
+
         // PHASE 1: Initial state verification
         cy.testStep('Phase 1: Create initial agent from current template state', () => {
           cy.getCurrentTemplateFromUrl().then((template) => {
@@ -262,10 +272,6 @@ describe(
         });
 
         cy.testStep('Phase 1: Update llm_config properties in template editor', () => {
-          // Open LLM configuration panel
-          cy.findByTestId('accordion-trigger:llm-config', {
-            timeout: 50000,
-          }).click();
 
           // Update properties
           cy.findByTestId('slider-input:context-window-slider').clear().type('16000').blur();
@@ -322,6 +328,10 @@ describe(
           let initialAgent: AgentState;
           let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
 
+          cy.testStep('navigate to settings tab', () => {
+            cy.findByTestId('ade-tab-header:settings', { timeout: 50000 }).click();
+          });
+
           // PHASE 1: Initial state verification
           cy.testStep('Phase 1: Create initial agent from current template state', () => {
             cy.getCurrentTemplateFromUrl().then((template) => {
@@ -346,6 +356,10 @@ describe(
             });
           });
 
+
+          cy.testStep('navigate to core memories tab', () => {
+            cy.findByTestId('ade-tab-header:core-memories', { timeout: 50000 }).click();
+          });
           cy.testStep('Open the Advanced Core Memory Editor', () => {
             cy.findByTestId('open-advanced-memory-editor', {
               timeout: 50000,
@@ -616,12 +630,18 @@ describe(
         { tags: ['@deployment'] },
         () => {
           cy.testStep('Configure agent with all components', () => {
+            cy.findByTestId('ade-tab-header:datasources')
+              .should('be.visible')
+              .click();
             cy.findByTestId('create-new-data-source').click();
             cy.findByTestId('create-data-source-dialog-name').type(
               DATA_SOURCES.TEMPLATE,
             );
             cy.findByTestId('create-data-source-modal-confirm-button').click();
 
+            cy.findByTestId('ade-tab-header:tools')
+              .should('be.visible')
+              .click();
             cy.findByTestId('open-tool-explorer').click();
             cy.findByTestId('start-create-tool').click();
             cy.findByTestId('create-tool-dialog-name').type(TOOLS.FOR_TEMPLATE);

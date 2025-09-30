@@ -324,6 +324,7 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
           size="large"
           bold
           onClick={() => {
+
             setStep('tools');
           }}
           label={t('MemoryOnboarding.next')}
@@ -372,6 +373,9 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
                 onboarding_type: 'create:new_agent',
               },
             );
+
+            document.getElementById('ade-tab-header-tools')?.click();
+
 
             setStep('tools');
           }}

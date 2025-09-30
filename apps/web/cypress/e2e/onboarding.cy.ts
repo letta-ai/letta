@@ -64,13 +64,14 @@ describe(
             cy.findByTestId('onboarding-next-to-tools', { timeout: 30000 })
               .should('be.visible')
               .click();
+
           });
 
           cy.testStep('Progress through the Quick ADE Tour - Step 3 (Tools)', () => {
             // Wait for the tools tour step and finish
             cy.findByTestId('onboarding-next-finish', { timeout: 30000 })
               .should('be.visible')
-              .click();
+              .click({ force: true });
           });
 
           cy.testStep('Verify onboarding completion', () => {

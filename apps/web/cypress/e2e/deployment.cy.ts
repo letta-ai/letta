@@ -98,7 +98,7 @@ describe('letta', () => {
 
     // add identity
     // First open the Metadata accordion panel
-    cy.findByTestId('metadata').click();
+    cy.findByTestId('ade-tab-header:settings').click();
 
     cy.findByTestId('update-identities').click();
 
@@ -155,7 +155,7 @@ describe('letta', () => {
     cy.findAllByTestId('fullversion:DEPLOYMENTAGENT:3').first().should('exist');
 
     // Open Metadata accordion to access identity viewer
-    cy.findByTestId('metadata').click();
+    cy.findByTestId('ade-tab-header:settings').click();
 
     cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
       'have.value',

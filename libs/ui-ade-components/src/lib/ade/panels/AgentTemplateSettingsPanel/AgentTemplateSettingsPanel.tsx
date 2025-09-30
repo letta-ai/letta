@@ -9,6 +9,8 @@ import { useCurrentAgent } from '../../../hooks';
 import { ModelSelector } from '../../inputs/ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../../inputs/SystemPromptEditor/SystemPromptEditor';
 import { ReasoningSwitch } from '../../inputs/ReasoningSwitch/ReasoningSwitch';
+import { LLMConfigPanel } from '../LLMConfigPanel/LLMConfigPanel';
+import { EmbeddingConfiguration } from '../../inputs/EmbeddingConfiguration/EmbeddingConfiguration';
 
 export function AgentTemplateSettingsPanel() {
   const currentAgent = useCurrentAgent();
@@ -33,6 +35,11 @@ export function AgentTemplateSettingsPanel() {
         <ReasoningSwitch />
         <SystemPromptEditor />
       </VStack>
+      {/* LLM Configuration */}
+      <LLMConfigPanel />
+
+      {/* Embedding Configuration */}
+      <EmbeddingConfiguration />
     </PanelMainContent>
   );
 }

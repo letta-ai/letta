@@ -29,6 +29,10 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
 
   describe('Data Sources', () => {
     it('should create a datasource', { tags: ['@data-sources'] }, () => {
+      cy.testStep('navigate to data sources tab', () => {
+        cy.findByTestId('ade-tab-header:datasources', { timeout: 50000 }).click();
+      });
+
       cy.testStep('should be a clean datasource', () => {
         cy.findByTestId('no-datasources', {
           timeout: 50000,
@@ -51,15 +55,17 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
     });
 
     it('should detach and reattach a datasource', () => {
+      cy.testStep('navigate to data sources tab', () => {
+        cy.findByTestId('ade-tab-header:datasources', { timeout: 50000 }).click();
+      });
+
+
       cy.testStep('Detach and reattach data source', () => {
         cy.findByTestId('datasource-dropdown-menu', {
           timeout: 50000,
         }).click();
         cy.findByTestId('detach-data-source-dialog-trigger').click();
         cy.findByTestId('detach-data-source-dialog-confirm-button').click();
-        cy.findByTestId('datasources', {
-          timeout: 50000,
-        }).contains('Filesystem');
 
         cy.findByTestId('no-datasources', {
           timeout: 50000,
@@ -88,6 +94,10 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
 
   describe('Tool Management', () => {
     it('should create and attach tools', { tags: ['@tools'] }, () => {
+      cy.testStep('navigate to tools tab', () => {
+        cy.findByTestId('ade-tab-header:tools', { timeout: 50000 }).click();
+      });
+
       cy.testStep('Create and attach tool', () => {
         cy.findByTestId('open-tool-explorer').click();
         cy.findByTestId('start-create-tool').click();
@@ -103,7 +113,9 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
     });
 
     it('should handle tool detachment', { tags: ['@tools', '@detach'] }, () => {
-
+      cy.testStep('navigate to tools tab', () => {
+        cy.findByTestId('ade-tab-header:tools', { timeout: 50000 }).click();
+      });
 
       cy.testStep('Verify tool is attached', () => {
         cy.findByText(TOOLS.ROLL_D20, { timeout: 50000 }).should('exist');
@@ -130,6 +142,11 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
       'should edit memory block content',
       { tags: ['@memory-blocks'] },
       () => {
+        cy.testStep('navigate to memories tab', () => {
+          cy.findByTestId('ade-tab-header:core-memories', { timeout: 50000 }).click();
+        });
+
+
         cy.testStep('Verify agent structure', () => {
           cy.findByTestId('edit-memory-block-human-content', {
             timeout: 50000,
@@ -175,6 +192,9 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
       'should create and delete a memory block through the advanced editor',
       { tags: ['@memory-blocks', '@advanced-editor'] },
       () => {
+        cy.testStep('navigate to tools tab', () => {
+          cy.findByTestId('ade-tab-header:core-memories', { timeout: 50000 }).click();
+        });
         cy.testStep('Open the Advanced Core Memory Editor', () => {
           cy.findByTestId('open-advanced-memory-editor', {
             timeout: 50000,

@@ -1,18 +1,24 @@
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../hooks';
+'use client'
+import { useSyncUpdateCurrentAgent } from '../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { RawInput } from '@letta-cloud/ui-component-library';
 import React, { useState, useEffect } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 
-export function WindowCharLimitInput() {
-  const currentAgent = useCurrentAgent();
+
+interface WindowCharLimitInputProps {
+  defaultValue: string;
+}
+
+export function WindowCharLimitInput(props: WindowCharLimitInputProps) {
+  const { defaultValue } = props;
   const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
   const t = useTranslations('ADE/AdvancedSettings');
 
   const [invalidInputError, setInvalidInputError] = useState<boolean>(false);
 
   const [inputValue, setInputValue] = useState<string>(
-    currentAgent.per_file_view_window_char_limit?.toString() || '',
+    defaultValue
   );
   const [debouncedInput] = useDebouncedValue(inputValue, 500);
 

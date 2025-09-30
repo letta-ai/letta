@@ -24,6 +24,8 @@ import { ModelSelector } from '../../inputs/ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../../inputs/SystemPromptEditor/SystemPromptEditor';
 import { IdentityViewer } from '../../inputs/IdentityViewer/IdentityViewer';
 import { ReasoningSwitch } from '../../inputs/ReasoningSwitch/ReasoningSwitch';
+import { EmbeddingConfiguration } from '../../inputs/EmbeddingConfiguration/EmbeddingConfiguration';
+import { LLMConfigPanel } from '../LLMConfigPanel/LLMConfigPanel';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
@@ -150,6 +152,12 @@ export function AgentSettingsPanel() {
         <ReasoningSwitch />
         <IdentityViewer />
         <SystemPromptEditor />
+
+        {/* LLM Configuration */}
+        <LLMConfigPanel />
+
+        {/* Embedding Configuration */}
+        <EmbeddingConfiguration />
       </VStack>
     </PanelMainContent>
   );

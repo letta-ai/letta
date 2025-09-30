@@ -1,22 +1,30 @@
+'use client'
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { RawInput } from '@letta-cloud/ui-component-library';
 import React, { useState, useEffect } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 
-export function MaxFilesInput() {
+interface MaxFilesInputProps {
+  defaultValue: string;
+}
+
+export function MaxFilesInput(props: MaxFilesInputProps) {
+  const { defaultValue } = props;
   const currentAgent = useCurrentAgent();
   const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
   const t = useTranslations('ADE/AdvancedSettings');
 
   const [invalidInputError, setInvalidInputError] = useState<boolean>(false);
 
-  const [inputValue, setInputValue] = useState<string>(
-    currentAgent.max_files_open?.toString() || '',
-  );
+  const [inputValue, setInputValue] = useState<string>(defaultValue);
   const [debouncedInput] = useDebouncedValue(inputValue, 500);
 
   useEffect(() => {
+    if (debouncedInput === currentAgent.max_files_open?.toString()) {
+      return;
+    }
+
     if (debouncedInput === '') {
       setInvalidInputError(true);
       return;
@@ -39,7 +47,7 @@ export function MaxFilesInput() {
       ...existing,
       max_files_open: debouncedInputAsInt,
     }));
-  }, [debouncedInput, syncUpdateCurrentAgent]);
+  }, [debouncedInput, syncUpdateCurrentAgent, currentAgent.max_files_open]);
 
   return (
     <RawInput
