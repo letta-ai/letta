@@ -71,9 +71,14 @@ export function ModelSelector(props: LocalModelSelectorProps) {
         return;
       }
 
+      const modelName = selectedLLMConfig?.handle ? selectedLLMConfig.handle.split('/')[1] : selectedLLMConfig.model;
+
       syncUpdateCurrentAgent((prev) => {
         return {
-          llm_config: getMergedLLMConfig(selectedLLMConfig, prev.llm_config),
+          llm_config: {
+            ...getMergedLLMConfig(selectedLLMConfig, prev.llm_config),
+            model: modelName || selectedLLMConfig.model,
+          },
         };
       });
     }
