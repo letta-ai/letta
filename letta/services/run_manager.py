@@ -14,7 +14,7 @@ from letta.orm.run import Run as RunModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import MessageRole, RunStatus
+from letta.schemas.enums import AgentType, MessageRole, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_response import LettaResponse
@@ -25,6 +25,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.agent_manager import AgentManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.services.message_manager import MessageManager
 from letta.services.step_manager import StepManager
@@ -40,6 +41,7 @@ class RunManager:
         """Initialize the RunManager."""
         self.step_manager = StepManager()
         self.message_manager = MessageManager()
+        self.agent_manager = AgentManager()
 
     @enforce_types
     async def create_run(self, pydantic_run: PydanticRun, actor: PydanticUser) -> PydanticRun:
@@ -265,7 +267,10 @@ class RunManager:
         order: Literal["asc", "desc"] = "asc",
     ) -> List[LettaMessage]:
         """Get the result of a run."""
-        request_config = await self.get_run_request_config(run_id=run_id, actor=actor)
+        run = await self.get_run_by_id(run_id=run_id, actor=actor)
+        request_config = run.request_config
+        agent = await self.agent_manager.get_agent_by_id_async(agent_id=run.agent_id, actor=actor, include_relationships=[])
+        text_is_assistant_message = agent.agent_type == AgentType.letta_v1_agent
 
         messages = await self.message_manager.list_messages(
             actor=actor,
@@ -275,7 +280,9 @@ class RunManager:
             after=after,
             ascending=(order == "asc"),
         )
-        letta_messages = PydanticMessage.to_letta_messages_from_list(messages, reverse=(order != "asc"))
+        letta_messages = PydanticMessage.to_letta_messages_from_list(
+            messages, reverse=(order != "asc"), text_is_assistant_message=text_is_assistant_message
+        )
 
         if request_config and request_config.include_return_message_types:
             include_return_message_types_set = set(request_config.include_return_message_types)
