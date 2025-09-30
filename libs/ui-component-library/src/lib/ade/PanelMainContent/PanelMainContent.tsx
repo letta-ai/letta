@@ -17,7 +17,7 @@ export function PanelMainContent(props: PanelElementsListProps) {
       zIndex="base"
       fullWidth
       gap={gap}
-      collapseHeight
+
     >
       {children}
     </VStack>

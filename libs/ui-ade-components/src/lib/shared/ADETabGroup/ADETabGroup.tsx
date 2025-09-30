@@ -1,5 +1,6 @@
 'use client';
 import {
+  Frame,
   HStack,
   MaybeTooltip,
   Typography,
@@ -188,9 +189,9 @@ export function ADETabGroup(props: ADETabGroupProps) {
         </HStack>
         <div className="w-full absolute pointer-events-none  z-0 bottom-0 h-full left-0 tab-group-unfocused-area"></div>
       </HStack>
-      <VStack overflowY="auto" collapseHeight flex color="background-grey">
+      <Frame overflowY="auto" collapseHeight flex color="background-grey">
         {selectedTabContent}
-      </VStack>
+      </Frame>
     </VStack>
   );
 }
