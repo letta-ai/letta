@@ -1333,6 +1333,16 @@ async def send_message_streaming(
                     async for chunk in stream:
                         yield chunk
 
+                    if run:
+                        runs_manager = RunManager()
+                        from letta.schemas.enums import RunStatus
+
+                        await runs_manager.update_run_by_id_async(
+                            run_id=run.id,
+                            update=RunUpdate(status=RunStatus.completed, stop_reason=agent_loop.stop_reason.stop_reason.value),
+                            actor=actor,
+                        )
+
                 except LLMTimeoutError as e:
                     error_data = {
                         "error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": str(e)}

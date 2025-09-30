@@ -9,6 +9,8 @@ from typing import AsyncIterator, Dict, List, Optional
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
 from letta.schemas.enums import RunStatus
+from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.run import RunUpdate
 from letta.schemas.user import User
 from letta.services.run_manager import RunManager
 from letta.utils import safe_create_task
@@ -236,8 +238,11 @@ async def create_background_stream_processor(
         # error_chunk = {"error": {"message": str(e)}}
         # Mark run_id terminal state
         if run_manager and actor:
-            await run_manager.safe_update_run_status_async(
-                run_id=run_id, new_status=RunStatus.failed, actor=actor, metadata={"error": str(e)}
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value),
+                actor=actor,
+                metadata={"error": str(e)},
             )
 
         error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
@@ -245,6 +250,12 @@ async def create_background_stream_processor(
     finally:
         if should_stop_writer:
             await writer.stop()
+        if run_manager and actor:
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn.value),
+                actor=actor,
+            )
 
 
 async def redis_sse_stream_generator(

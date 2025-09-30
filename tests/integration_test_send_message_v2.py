@@ -33,7 +33,7 @@ from letta_client.types import (
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import AgentType
+from letta.schemas.enums import AgentType, JobStatus
 from letta.schemas.letta_ping import LettaPing
 from letta.schemas.llm_config import LLMConfig
 
@@ -293,6 +293,7 @@ async def test_greeting(
             messages=USER_MESSAGE_FORCE_REPLY,
         )
         messages = response.messages
+        run_id = messages[0].run_id
     elif send_type == "async":
         run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
@@ -301,6 +302,7 @@ async def test_greeting(
         run = await wait_for_run_completion(client, run.id)
         messages = await client.runs.messages.list(run_id=run.id)
         messages = [m for m in messages if m.message_type != "user_message"]
+        run_id = run.id
     else:
         response = client.agents.messages.create_stream(
             agent_id=agent_state.id,
@@ -324,3 +326,7 @@ async def test_greeting(
 
     messages_from_db = await client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+    assert run_id is not None
+    run = await client.runs.retrieve(run_id=run_id)
+    assert run.status == JobStatus.completed
