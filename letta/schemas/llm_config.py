@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.log import get_logger
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import AgentType, ProviderCategory
 
 logger = get_logger(__name__)
 
@@ -270,17 +270,8 @@ class LLMConfig(BaseModel):
         - Google Gemini (2.5 family): force disabled until native reasoning supported
         - All others: disabled (no simulated reasoning via kwargs)
         """
-        # Late import to avoid circular import with Agent schema using LLMConfig
-        if TYPE_CHECKING:
-            from letta.schemas.enums import AgentType  # pragma: no cover
-        else:
-            try:
-                from letta.schemas.enums import AgentType  # type: ignore
-            except Exception:
-                AgentType = None  # type: ignore
-
         # V1 agent policy: do not allow simulated reasoning for non-native models
-        if agent_type is not None and AgentType is not None and agent_type == AgentType.letta_v1_agent:  # type: ignore
+        if agent_type is not None and agent_type == AgentType.letta_v1_agent:
             # OpenAI native reasoning models: always on
             if cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
