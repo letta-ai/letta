@@ -18,6 +18,7 @@ class BaseToolRule(LettaBase):
         None,
         description="Optional template string (ignored). Rendering uses fast built-in formatting for performance.",
     )
+    requires_force_tool_call: bool = False
 
     def __hash__(self):
         """Base hash using tool_name and type."""
@@ -48,6 +49,7 @@ class ChildToolRule(BaseToolRule):
         default=None,
         description="Optional template string (ignored).",
     )
+    requires_force_tool_call: bool = True
 
     def __hash__(self):
         """Hash including children list (sorted for consistency)."""
@@ -76,6 +78,7 @@ class ParentToolRule(BaseToolRule):
     type: Literal[ToolRuleType.parent_last_tool] = ToolRuleType.parent_last_tool
     children: List[str] = Field(..., description="The children tools that can be invoked.")
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = True
 
     def __hash__(self):
         """Hash including children list (sorted for consistency)."""
@@ -106,6 +109,7 @@ class ConditionalToolRule(BaseToolRule):
     child_output_mapping: Dict[Any, str] = Field(..., description="The output case to check for mapping")
     require_output_mapping: bool = Field(default=False, description="Whether to throw an error when output doesn't match any case")
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = True
 
     def __hash__(self):
         """Hash including all configuration fields."""
@@ -187,6 +191,7 @@ class InitToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.run_first] = ToolRuleType.run_first
+    requires_force_tool_call: bool = True
 
 
 class TerminalToolRule(BaseToolRule):
@@ -196,6 +201,7 @@ class TerminalToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.exit_loop] = ToolRuleType.exit_loop
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = False
 
     def render_prompt(self) -> str | None:
         return f"<tool_rule>\n{self.tool_name} ends your response (yields control) when called\n</tool_rule>"
@@ -208,6 +214,7 @@ class ContinueToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.continue_loop] = ToolRuleType.continue_loop
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = False
 
     def render_prompt(self) -> str | None:
         return f"<tool_rule>\n{self.tool_name} requires continuing your response when called\n</tool_rule>"
@@ -220,6 +227,7 @@ class RequiredBeforeExitToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.required_before_exit] = ToolRuleType.required_before_exit
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = False
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Returns all available tools - the logic for preventing exit is handled elsewhere."""
@@ -237,6 +245,7 @@ class MaxCountPerStepToolRule(BaseToolRule):
     type: Literal[ToolRuleType.max_count_per_step] = ToolRuleType.max_count_per_step
     max_count_limit: int = Field(..., description="The max limit for the total number of times this tool can be invoked in a single step.")
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+    requires_force_tool_call: bool = False
 
     def __hash__(self):
         """Hash including max_count_limit."""
@@ -268,6 +277,7 @@ class RequiresApprovalToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.requires_approval] = ToolRuleType.requires_approval
+    requires_force_tool_call: bool = False
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Does not enforce any restrictions on which tools are valid"""
