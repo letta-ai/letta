@@ -81,6 +81,65 @@ results = archival_memory_search(
 
 Results return semantically relevant information - the agent doesn't need exact keywords.
 
+**What agents receive:** Each result contains:
+- `content` - The stored text
+- `tags` - Associated tags
+- `timestamp` - When the memory was created
+- `relevance` - Scoring information (`rrf_score`, `vector_rank`, `fts_rank`)
+
+Letta uses **hybrid search** combining semantic (vector) and keyword (full-text) search, ranked using Reciprocal Rank Fusion (RRF). Higher `rrf_score` means more relevant.
+
+## Writing effective queries
+
+Letta uses OpenAI's `text-embedding-3-small` model, which handles natural language questions well. Agents can use various query styles:
+
+**Natural language questions work best:**
+```python
+archival_memory_search(query="How does the test work?")
+# Returns: "The Voight-Kampff test measures involuntary emotional responses..."
+```
+
+**Keywords also work:**
+```python
+archival_memory_search(query="replicant lifespan")
+# Returns memories containing both keywords and semantically related concepts
+```
+
+**Concept-based queries leverage semantic understanding:**
+```python
+archival_memory_search(query="artificial memories")
+# Returns: "...experimental replicant with implanted memories..."
+# (semantic match despite different terminology)
+```
+
+**Pagination:** Agents receive multiple results per search. If an agent doesn't paginate correctly, you can instruct it to adjust the `page` parameter or remind it to iterate through results.
+
+### Filtering by time
+
+Agents can search by date ranges:
+
+```python
+# Recent memories
+archival_memory_search(
+    query="test results",
+    start_datetime="2025-09-29T00:00:00"
+)
+
+# Specific time window
+archival_memory_search(
+    query="replicant cases",
+    start_datetime="2025-09-29T00:00:00",
+    end_datetime="2025-09-30T23:59:59"
+)
+```
+
+**Note:**
+- Agents cannot control insertion timestamps - memories are timestamped automatically
+- Developers can backdate memories via SDK by providing a `created_at` timestamp
+- Agents know the current day but not the current time
+- Agents can see timestamps of messages they've received
+- Time filtering is useful for queries like "what did we discuss last week?"
+
 ## Tags and organization
 
 Tags help agents organize and filter archival memories. **Agents always know what tags exist in their archive** since tag lists are compiled into the context window.
@@ -276,6 +335,18 @@ An agent with 32k+ memories tracking interactions:
 - Cross-references related research
 - Builds a semantic knowledge graph
 
+## Performance and scale
+
+Archival memory has no practical size limits and remains fast at scale:
+
+**Letta Cloud:** Uses [TurboPuffer](https://turbopuffer.com/) for extremely fast semantic search, even with hundreds of thousands of memories.
+
+**Self-hosted:** Uses pgvector (PostgreSQL) for vector search. Performance scales well with proper indexing.
+
+**Letta Desktop:** Uses SQLite with vector search extensions. Suitable for personal use cases.
+
+No matter the backend, archival memory scales to large archives without performance degradation.
+
 ## Archival memory vs other memory types
 
 | Feature | Memory Blocks | Archival Memory | Conversation Search |
@@ -288,32 +359,89 @@ An agent with 32k+ memories tracking interactions:
 | **Use case** | Current state | Long-term facts | Past messages |
 | **Best for** | Active context | Historical records | Conversation history |
 
+### When to use archival vs conversation search
+
+**Archival memory** is for **intentional** storage:
+- Agents decide what's worth remembering long-term
+- Used for facts, knowledge, and reference material
+- Curated by the agent through active insertion
+
+**Conversation search** is for **historical** retrieval:
+- Searches through actual past messages
+- Used to recall what was said in previous conversations
+- Automatic - no agent curation needed
+
+**Example:**
+- User says: "I prefer Python for data science projects"
+- **Archival:** Agent inserts "User prefers Python for data science" as a fact
+- **Conversation search:** Agent can search for the original message later
+
+Use archival for structured knowledge, conversation search for historical context.
+
+## Embedding models and search quality
+
+Archival search quality depends on the agent's embedding model:
+
+**Letta Cloud:** All agents use `text-embedding-3-small`, which is optimized for most use cases. This model cannot be changed.
+
+**Self-hosted:** Embedding model is pinned to the agent at creation. The default `text-embedding-3-small` is sufficient for nearly all use cases.
+
+### Changing embedding models (self-hosted only)
+
+To change an agent's embedding model, you must:
+1. List and export all archival memories
+2. Delete all archival memories
+3. Update the agent's embedding model
+4. Re-insert all memories (they'll be re-embedded)
+
+<Warning>
+Changing embedding models is a destructive operation. Export your archival memories first.
+</Warning>
+
 ## Best practices
 
-**1. Use tags consistently**
-Establish a tag taxonomy and stick to it. Inconsistent tagging makes retrieval harder.
+**1. Avoid over-insertion**
+The most common pitfall is inserting too many memories, creating clutter. Trust the agent to decide what's worth storing long-term.
 
-**2. Use the hybrid approach**
+**2. Track query effectiveness**
+If archival search quality matters, have the agent track its performance in a memory block:
+```python
+# Agent creates a memory block
+memory_insert(
+    block_label="archival_tracking",
+    content="""
+    Query patterns: Natural language questions work best
+    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
+    Success rate: ~85% of searches return relevant results
+    """
+)
+```
+
+**3. Let agents experiment**
+Agents can test different query styles to understand what works:
+```python
+# Agent tries variations
+archival_memory_search(query="How does the Voight-Kampff test work?")
+archival_memory_search(query="Voight-Kampff procedure")
+archival_memory_search(query="replicant detection method")
+```
+
+**Important:** Have the agent persist learnings from experimentation in a memory block, not in archival (avoid meta-clutter).
+
+**4. Use tags consistently**
+Establish a tag taxonomy and stick to it. Good language models typically handle tagging well.
+
+**5. Use the hybrid approach**
 Store both atomic facts and comprehensive narratives when dealing with complex information.
 
-**3. Add context to insertions**
+**6. Add context to insertions**
 ❌ Don't: "Likes replicants"
 ✅ Do: "Deckard shows unusual empathy toward replicants, particularly Rachael, suggesting possible replicant identity"
 
-**4. Let the agent decide**
-Don't over-insert. Trust the agent to determine what's worth storing long-term.
-
-**5. Pre-load domain knowledge**
+**7. Pre-load domain knowledge**
 For specialized agents, seed archival with relevant information upfront via backfilling.
 
-**6. Track archival performance**
-Create a memory block to track:
-- Frequently searched topics
-- Search success rates
-- Common retrieval patterns
-- Tag usage effectiveness
-
-**7. Consider latency**
+**8. Consider latency**
 Forced archival search adds overhead. For real-time applications, make it optional or use it selectively.
 
 ## Advanced: Archival performance tracking
