@@ -33,6 +33,7 @@ async def update_run(params: UpdateRunParams) -> None:
         run_id=params.run_id,
         update=update,
         actor=params.actor,
+        refresh_result_messages=False,  # TODO: Temporary field while there's discrepancies between Temporal / rest of message invocation endpoints
     )
 
     # TODO: we shouldn't have a try / catch here and fix idempotency thoroughly, fixing to enable re-running jobs
