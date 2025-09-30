@@ -102,7 +102,6 @@
   --destructive-diff: 10, 100%, 60%, 0.16;
   --destructive-diff-content: 10, 67%, 48%;
 
-
   --background-grey2-border: 210, 13%, 94%;
   --background-grey3-border: 210, 3%, 89%;
 
@@ -118,6 +117,12 @@
 
   --background-grey2: 180, 6%, 97%;
   --background-grey2-content: var(--text-default);
+
+  --blue2: 240, 92%, 35%;
+  --blue2-content: var(--text-default);
+
+  --background-blue2: var(--blue2);
+  --background-blue2-content: var(--blue2-content);
 
   --project-card-background: 210, 17%, 98%;
   --card-background: 0, 0%, 97%;
@@ -292,6 +297,12 @@
 
   --background-grey2: 0, 0%, 13%;
   --background-grey2-content: var(--text-default);
+
+  --blue2: 249, 60%, 61%;
+  --blue2-content: var(--text-default);
+
+  --background-blue2: var(--blue2);
+  --background-blue2-content: var(--blue2-content);
 
   --button-border: 0.56 0.03 17%;
 
@@ -556,7 +567,6 @@ summary::-webkit-details-marker {
   }
 }
 
-
 .stabilize-scrollbar {
   scrollbar-gutter: stable;
 }
@@ -564,5 +574,3 @@ summary::-webkit-details-marker {
 .w-fullplusscollbar {
   width: 100%;
 }
-
-

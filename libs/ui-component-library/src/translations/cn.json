@@ -106,5 +106,13 @@
   "components/CardButtonGroup": {
     "noItemsFound": "未找到项目"
   },
-  "tokens": "令牌"
+  "tokens": "令牌",
+  "components/CoreMemoryCard": {
+    "chars": "{numChar} 字符",
+    "updated": "更新于 {relativeDate}",
+    "sharedAgents": "与 {count} 个代理共享",
+    "readOnly": "此块为只读",
+    "editable": "此块为可读写（可编辑）",
+    "preserved": "此内存块在代理版本间保留，如果您编辑它，更改将不会应用到现有代理"
+  }
 }

@@ -1,0 +1,13 @@
+.slide-up-animation-diff-values {
+  animation: slideUpStayDiffValues 0.8s ease-out forwards;
+  overflow: hidden;
+}
+
+@keyframes slideUpStayDiffValues {
+  0% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(-39px);
+  }
+}
