@@ -2,7 +2,6 @@
 import React, { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Avatar,
   Button,
   Card,
   LoadingEmptyStatusComponent,
@@ -10,7 +9,6 @@ import {
   StarIcon,
   StarFilledIcon,
   Typography,
-  HStack,
   VStack,
   CardButtonGroup,
   LettaInvaderOutlineIcon,
@@ -22,7 +20,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { useFormatters } from '@letta-cloud/utils-client';
 import {
-  useFeatureFlag,
   webApi,
   type webApiContracts,
   webApiQueryKeys
@@ -71,10 +68,6 @@ function ProjectCard(props: ProjectCardProps) {
   } = props;
   const t = useTranslations('projects/page/CloudProjectsList');
   const { formatDateAndTime } = useFormatters();
-
-  const { data: recentAgentsAndTemplatesEnabled } = useFeatureFlag(
-    'RECENT_AGENTS_AND_TEMPLATES',
-  );
 
   function handleFavoriteClick(e: React.MouseEvent) {
     e.preventDefault();
@@ -178,106 +171,68 @@ function ProjectCard(props: ProjectCardProps) {
         />
       </div>
 
-      {recentAgentsAndTemplatesEnabled && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '7.25rem',
-            left: '1rem',
-            right: '1rem',
-            zIndex: 10,
+      <div
+        style={{
+          position: 'absolute',
+          top: '7.25rem',
+          left: '1rem',
+          right: '1rem',
+          zIndex: 10,
+        }}
+      >
+        <CardButtonGroup
+          projectUrl={url}
+          isLoading={isLoadingRecentItems}
+          items={recentItems}
+          minRows={3}
+          emptyConfig={{
+            className: 'h-[100px]',
+            label: t('projectsList.projectItem.noTemplatesAndAgents'),
           }}
-        >
-          <CardButtonGroup
-            projectUrl={url}
-            isLoading={isLoadingRecentItems}
-            items={recentItems}
-            minRows={3}
-            emptyConfig={{
-              className: 'h-[100px]',
-              label: t('projectsList.projectItem.noTemplatesAndAgents'),
-            }}
-            className={'h-[100px]'}
-            projectLabel={projectName}
-          />
-        </div>
-      )}
+          className={'h-[100px]'}
+          projectLabel={projectName}
+        />
+      </div>
 
-      {!recentAgentsAndTemplatesEnabled ? (
-        <Card
-          href={url}
-          className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer"
-        >
-          <VStack fullWidth>
-            <VStack gap="medium" fullWidth>
-              <Avatar size="medium" name={projectName} />
-              <VStack gap="text">
-                <Typography
-                  bold
-                  align="left"
-                  variant="body"
-                  noWrap
-                  fullWidth
-                  overflow="ellipsis"
-                >
-                  {projectName}
+      <Link href={url}>
+        <Card className="w-full flex bg-project-card-background border border-background-grey3-border project-card h-[240px] cursor-pointer project-button">
+          <VStack fullWidth padding="xxsmall" paddingY="medium">
+            <VStack gap="large" fullWidth>
+              <Tooltip
+                content={t('projectsList.projectItem.goTo', {
+                  item: projectName,
+                })}
+              >
+                <VStack gap="small">
+                  <Typography
+                    bold
+                    align="left"
+                    variant="heading4"
+                    noWrap
+                    fullWidth
+                    overflow="ellipsis"
+                  >
+                    {projectName}
+                  </Typography>
+                  <Typography variant="body" color="muted">
+                    {lastUpdatedAt
+                      ? t('projectsList.projectItem.lastUpdatedAt', {
+                          date: formatDateAndTime(lastUpdatedAt),
+                        })
+                      : t('projectsList.projectItem.noLastUpdatedAt')}
+                  </Typography>
+                </VStack>
+              </Tooltip>
+
+              <VStack gap="small">
+                <Typography variant="body3" color="lighter">
+                  {t('projectsList.projectItem.lastWorkedOn')}
                 </Typography>
-                <HStack>
-                  {
-                    <Typography variant="body" color="muted">
-                      {lastUpdatedAt
-                        ? t('projectsList.projectItem.lastUpdatedAt', {
-                            date: formatDateAndTime(lastUpdatedAt),
-                          })
-                        : t('projectsList.projectItem.noLastUpdatedAt')}
-                    </Typography>
-                  }
-                </HStack>
               </VStack>
             </VStack>
           </VStack>
         </Card>
-      ) : (
-        <Link href={url}>
-          <Card className="w-full flex bg-project-card-background border border-background-grey3-border project-card h-[240px] cursor-pointer project-button">
-            <VStack fullWidth padding="xxsmall" paddingY="medium">
-              <VStack gap="large" fullWidth>
-                <Tooltip
-                  content={t('projectsList.projectItem.goTo', {
-                    item: projectName,
-                  })}
-                >
-                  <VStack gap="small">
-                    <Typography
-                      bold
-                      align="left"
-                      variant="heading4"
-                      noWrap
-                      fullWidth
-                      overflow="ellipsis"
-                    >
-                      {projectName}
-                    </Typography>
-                    <Typography variant="body" color="muted">
-                      {lastUpdatedAt
-                        ? t('projectsList.projectItem.lastUpdatedAt', {
-                            date: formatDateAndTime(lastUpdatedAt),
-                          })
-                        : t('projectsList.projectItem.noLastUpdatedAt')}
-                    </Typography>
-                  </VStack>
-                </Tooltip>
-
-                <VStack gap="small">
-                  <Typography variant="body3" color="lighter">
-                    {t('projectsList.projectItem.lastWorkedOn')}
-                  </Typography>
-                </VStack>
-              </VStack>
-            </VStack>
-          </Card>
-        </Link>
-      )}
+      </Link>
     </div>
   );
 }
