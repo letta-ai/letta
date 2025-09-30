@@ -92,7 +92,7 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@react-email/components": "^0.0.33",
-    "@sentry/nextjs": "^8.47.0",
+    "@sentry/nextjs": "^10.17.0",
     "@storybook/addon-docs": "8.4.7",
     "@storybook/addon-themes": "^8.4.7",
     "@stripe/react-stripe-js": "^3.1.1",
