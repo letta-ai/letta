@@ -132,11 +132,6 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
-  RECENT_AGENTS_AND_TEMPLATES: {
-    description: 'Enable recent agents and templates in the Projects dashboard',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
   LLM_TOOL_SCHEMA_GENERATION: {
     description: 'LLM tool schema generation',
     expiryDate: '2025-12-31',
