@@ -20,6 +20,7 @@ import {
   getRemainingRecurrentCredits,
   incrementRecurrentCreditUsage
 } from '../recurringCreditsManager/recurringCreditsManager';
+import { eq } from 'drizzle-orm';
 
 
 async function processStepWithLegacySubscription(step: Step, subscription: PaymentCustomerSubscription) {
@@ -215,6 +216,17 @@ export async function processStep(
     return null;
   }
 
+  const existingTransaction = await db.query.organizationCreditTransactions.findFirst({
+    where: eq(organizationCreditTransactions.stepId, step.id)
+  })
+
+  if (existingTransaction) {
+    console.log('Transaction already exists for step', step.id);
+    return {
+      transactionId: existingTransaction.id,
+      newCredits: undefined
+    };
+  }
 
   if (step.provider_category === 'byok') {
     console.log('Processing BYOK step', step.id);
