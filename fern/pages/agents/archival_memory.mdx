@@ -1,0 +1,476 @@
+---
+title: Archival Memory
+subtitle: Long-term semantic storage for agent knowledge
+slug: guides/agents/archival-memory
+---
+
+## What is archival memory?
+
+Archival memory is a semantically searchable database where agents store facts, knowledge, and information for long-term retrieval. Unlike memory blocks that are always visible, archival memory is queried on-demand when relevant.
+
+**Key characteristics:**
+- **Agent-immutable** - Agents cannot easily modify or delete archival memories (though developers can via SDK)
+- **Unlimited storage** - No practical size limits
+- **Semantic search** - Find information by meaning, not exact keywords
+- **Tagged organization** - Agents can categorize memories with tags
+
+**Best for:** Event descriptions, reports, articles, historical records, and reference material that doesn't change frequently.
+
+## When to use archival memory
+
+**Use archival memory for:**
+- Document repositories (API docs, technical guides, research papers)
+- Conversation logs beyond the context window
+- Customer interaction history and support tickets
+- Reports, articles, and written content
+- Code examples and technical references
+- Training materials and educational content
+- User research data and feedback
+- Historical records and event logs
+
+**Don't use archival memory for:**
+- Information that should always be visible → Use memory blocks
+- Frequently changing state → Use memory blocks
+- Current working memory → Use scratchpad blocks
+- Information that needs frequent modification → Use memory blocks
+
+## How agents interact with archival memory
+
+Agents have two primary tools for archival memory:
+
+### Inserting information
+
+Agents can insert memories during conversations:
+
+```python
+# Agent inserts after learning something
+archival_memory_insert(
+    content="Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
+    tags=["replicant", "history", "retirement"]
+)
+```
+
+Developers can also insert programmatically:
+
+<CodeGroup>
+```python Python
+client.agents.passages.insert(
+    agent_id=agent.id,
+    content="The Tyrell Corporation's motto: 'More human than human'",
+    tags=["company", "motto", "tyrell"]
+)
+```
+```typescript TypeScript
+await client.agents.passages.insert(agent.id, {
+    content: "The Tyrell Corporation's motto: 'More human than human'",
+    tags: ["company", "motto", "tyrell"]
+});
+```
+</CodeGroup>
+
+### Searching for information
+
+```python
+# Agent searches semantically
+results = archival_memory_search(
+    query="replicant lifespan",
+    tags=["technical"],  # Optional: filter by tags
+    page=0
+)
+```
+
+Results return semantically relevant information - the agent doesn't need exact keywords.
+
+## Tags and organization
+
+Tags help agents organize and filter archival memories. **Agents always know what tags exist in their archive** since tag lists are compiled into the context window.
+
+**Common tag patterns:**
+- `user_info`, `professional`, `personal_history`
+- `documentation`, `technical`, `reference`
+- `conversation`, `milestone`, `event`
+- `company_policy`, `procedure`, `guideline`
+
+**Tag search modes:**
+- Match any tag
+- Match all tags
+- Filter by date ranges
+
+Example of organized tagging:
+
+```python
+# Atomic memory with precise tags
+archival_memory_insert(
+    content="Nexus-6 replicants have a four-year lifespan",
+    tags=["technical", "replicant", "nexus-6"]
+)
+
+# Later, easy retrieval
+archival_memory_search(
+    query="how long do replicants live",
+    tags=["technical"]
+)
+```
+
+## Atomic vs comprehensive memories
+
+There are two approaches to storing information in archival memory:
+
+### Atomic approach
+Store single, discrete facts:
+- "Roy Batty led the replicant group"
+- "Rachael is a Nexus-7 prototype with implanted memories"
+- "The Voight-Kampff test measures empathic responses"
+
+**Pros:** Precise retrieval, granular tagging
+**Cons:** Loses narrative context and relationships
+
+### Comprehensive approach
+Store complete narratives:
+- "Roy Batty's final monologue: After leading a group of escaped Nexus-6 replicants back to Earth, Roy confronted his creator Eldon Tyrell seeking more life. When Tyrell couldn't extend his lifespan, Roy killed him. In his final moments, Roy saved Deckard's life and delivered the 'Tears in Rain' speech before his four-year lifespan expired."
+
+**Pros:** Maintains context and causal relationships
+**Cons:** Harder to retrieve specific facts
+
+### Recommended: Hybrid approach
+Store both atomic facts AND comprehensive narratives:
+- Atomic memories for precise retrieval ("Roy Batty's lifespan: 4 years")
+- Comprehensive memories for context (full narrative of his final scenes)
+- Tag both appropriately
+
+This gives you precision when needed and context when relevant.
+
+## Backfilling archives
+
+You can pre-load archival memory with existing knowledge:
+
+<CodeGroup>
+```python Python
+# Load company policies
+policies = [
+    "All replicants must undergo Voight-Kampff testing upon arrival",
+    "Blade Runner units are authorized to retire rogue replicants",
+    "Tyrell Corporation employees must report suspected replicants immediately"
+]
+
+for policy in policies:
+    client.agents.passages.insert(
+        agent_id=agent.id,
+        content=policy,
+        tags=["policy", "company", "protocol"]
+    )
+
+# Load technical documentation
+docs = [
+    {
+        "content": "Nexus-6 replicants: Superior strength, agility, and intelligence. Four-year lifespan prevents emotional development.",
+        "tags": ["technical", "nexus-6", "specifications"]
+    },
+    {
+        "content": "Voight-Kampff test: Measures capillary dilation, blush response, and pupil dilation to detect replicants.",
+        "tags": ["technical", "testing", "voight-kampff"]
+    }
+]
+
+for doc in docs:
+    client.agents.passages.insert(
+        agent_id=agent.id,
+        content=doc["content"],
+        tags=doc["tags"]
+    )
+```
+```typescript TypeScript
+// Load company policies
+const policies = [
+    "All replicants must undergo Voight-Kampff testing upon arrival",
+    "Blade Runner units are authorized to retire rogue replicants",
+    "Tyrell Corporation employees must report suspected replicants immediately"
+];
+
+for (const policy of policies) {
+    await client.agents.passages.insert(agent.id, {
+        content: policy,
+        tags: ["policy", "company", "protocol"]
+    });
+}
+
+// Load technical documentation
+const docs = [
+    {
+        content: "Nexus-6 replicants: Superior strength, agility, and intelligence. Four-year lifespan prevents emotional development.",
+        tags: ["technical", "nexus-6", "specifications"]
+    },
+    {
+        content: "Voight-Kampff test: Measures capillary dilation, blush response, and pupil dilation to detect replicants.",
+        tags: ["technical", "testing", "voight-kampff"]
+    }
+];
+
+for (const doc of docs) {
+    await client.agents.passages.insert(agent.id, {
+        content: doc.content,
+        tags: doc.tags
+    });
+}
+```
+</CodeGroup>
+
+**Use cases for backfilling:**
+- Migrating knowledge bases to Letta
+- Seeding specialized agents with domain knowledge
+- Loading historical conversation logs
+- Importing research libraries
+
+## Enforcing archival usage with tool rules
+
+If your agent forgets to use archival memory, you can enforce it with tool rules:
+
+**Force archival search at turn start:**
+```
+Tool Rule: Start Constraint
+Tool: archival_memory_search
+```
+
+**Require at least one insertion per turn:**
+```
+Tool Rule: Required Before Exit
+Tool: archival_memory_insert
+```
+
+<Warning>
+**Note:** Anthropic models don't support strict structured output, so tool rules may not be enforced. Use OpenAI or Gemini models for guaranteed tool rule compliance.
+</Warning>
+
+**When to use tool rules:**
+- Knowledge management agents that should always search context
+- Agents that need to learn from every interaction
+- Librarian/archivist agents focused on information storage
+
+**Latency considerations:** Forcing archival search adds a tool call at the start of every turn. For latency-sensitive applications (like customer support), consider making archival search optional.
+
+## Real-world examples
+
+### Example 1: Personal knowledge manager
+An agent with 30k+ archival memories tracking:
+- Personal preferences and history
+- Technical learnings and insights
+- Article summaries and research notes
+- Conversation highlights
+
+### Example 2: Social media agent
+An agent with 32k+ memories tracking interactions:
+- User preferences and conversation history
+- Common topics and interests
+- Interaction patterns and communication styles
+- Tags by user, topic, and interaction type
+
+### Example 3: Customer support agent
+- Stores ticket resolutions and common issues
+- Tags by product, issue type, priority
+- Searches archival for similar past issues
+- Learns from successful resolutions over time
+
+### Example 4: Research assistant
+- Stores paper summaries with key findings
+- Tags by topic, methodology, author
+- Cross-references related research
+- Builds a semantic knowledge graph
+
+## Archival memory vs other memory types
+
+| Feature | Memory Blocks | Archival Memory | Conversation Search |
+|---------|--------------|-----------------|-------------------|
+| **Always visible** | ✅ Yes | ❌ No (searched) | ❌ No (searched) |
+| **Search type** | N/A | Semantic | Full-text + semantic |
+| **Storage limit** | Character limit | Unlimited | Unlimited |
+| **Agent modifiable** | ✅ Full edit control | ❌ Insert + search only | ❌ Search only |
+| **SDK modifiable** | ✅ Yes | ✅ Yes | ❌ No |
+| **Use case** | Current state | Long-term facts | Past messages |
+| **Best for** | Active context | Historical records | Conversation history |
+
+## Best practices
+
+**1. Use tags consistently**
+Establish a tag taxonomy and stick to it. Inconsistent tagging makes retrieval harder.
+
+**2. Use the hybrid approach**
+Store both atomic facts and comprehensive narratives when dealing with complex information.
+
+**3. Add context to insertions**
+❌ Don't: "Likes replicants"
+✅ Do: "Deckard shows unusual empathy toward replicants, particularly Rachael, suggesting possible replicant identity"
+
+**4. Let the agent decide**
+Don't over-insert. Trust the agent to determine what's worth storing long-term.
+
+**5. Pre-load domain knowledge**
+For specialized agents, seed archival with relevant information upfront via backfilling.
+
+**6. Track archival performance**
+Create a memory block to track:
+- Frequently searched topics
+- Search success rates
+- Common retrieval patterns
+- Tag usage effectiveness
+
+**7. Consider latency**
+Forced archival search adds overhead. For real-time applications, make it optional or use it selectively.
+
+## Advanced: Archival performance tracking
+
+Build self-improving agents by having them track archival effectiveness:
+
+<CodeGroup>
+```python Python
+# Create a memory block
+client.blocks.create(
+    label="archival_performance",
+    value="""
+    Frequently searched topics: [replicant specifications, test protocols, case histories]
+    Success rate: ~85% (queries return relevant results)
+    Common patterns: Queries about technical specs, protocol requirements, historical cases
+    Improvements needed: Better atomic granularity for technical specifications
+    Tag usage: technical (450), case_history (120), protocol (89)
+    """
+)
+```
+```typescript TypeScript
+// Create a memory block
+await client.blocks.create({
+    label: "archival_performance",
+    value: `
+    Frequently searched topics: [replicant specifications, test protocols, case histories]
+    Success rate: ~85% (queries return relevant results)
+    Common patterns: Queries about technical specs, protocol requirements, historical cases
+    Improvements needed: Better atomic granularity for technical specifications
+    Tag usage: technical (450), case_history (120), protocol (89)
+    `
+});
+```
+</CodeGroup>
+
+The agent can update this block based on search results and refine its archival strategy over time.
+
+## Modifying archival memories (SDK only)
+
+While agents cannot modify archival memories, developers can update or delete them via the SDK:
+
+<CodeGroup>
+```python Python
+# Update a memory
+client.agents.passages.update(
+    agent_id=agent.id,
+    passage_id=passage.id,
+    content="Updated content",
+    tags=["new", "tags"]
+)
+
+# Delete a memory
+client.agents.passages.delete(
+    agent_id=agent.id,
+    passage_id=passage.id
+)
+```
+```typescript TypeScript
+// Update a memory
+await client.agents.passages.update(agent.id, passage.id, {
+    content: "Updated content",
+    tags: ["new", "tags"]
+});
+
+// Delete a memory
+await client.agents.passages.delete(agent.id, passage.id);
+```
+</CodeGroup>
+
+This allows you to:
+- Fix incorrect information
+- Update outdated facts
+- Remove sensitive or irrelevant data
+- Reorganize tag structures
+
+## Programmatic access
+
+You can manage archival memory via the SDK:
+
+<CodeGroup>
+```python Python
+# Insert a memory
+client.agents.passages.insert(
+    agent_id=agent.id,
+    content="The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
+    tags=["technical", "testing", "protocol"]
+)
+
+# Search memories
+results = client.agents.passages.search(
+    agent_id=agent.id,
+    query="testing procedures",
+    tags=["protocol"],
+    page=0
+)
+
+# List all memories
+passages = client.agents.passages.list(
+    agent_id=agent.id,
+    limit=100
+)
+
+# Get a specific memory
+passage = client.agents.passages.get(
+    agent_id=agent.id,
+    passage_id=passage_id
+)
+```
+```typescript TypeScript
+// Insert a memory
+await client.agents.passages.insert(agent.id, {
+    content: "The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
+    tags: ["technical", "testing", "protocol"]
+});
+
+// Search memories
+const results = await client.agents.passages.search(agent.id, {
+    query: "testing procedures",
+    tags: ["protocol"],
+    page: 0
+});
+
+// List all memories
+const passages = await client.agents.passages.list(agent.id, {
+    limit: 100
+});
+
+// Get a specific memory
+const passage = await client.agents.passages.get(agent.id, passageId);
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Memory Blocks"
+    href="/guides/agents/memory-blocks"
+  >
+    Learn about always-visible memory
+  </Card>
+  <Card
+    title="Agent Memory Overview"
+    href="/guides/agents/memory"
+  >
+    Understand Letta's memory system
+  </Card>
+  <Card
+    title="Letta Filesystem"
+    href="/guides/agents/filesystem"
+  >
+    Work with documents and files
+  </Card>
+  <Card
+    title="Custom Tools"
+    href="/guides/agents/custom-tools"
+  >
+    Create tools for external data sources
+  </Card>
+</CardGroup>

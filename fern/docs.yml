@@ -120,6 +120,8 @@ navigation:
             contents:
               - page: Memory Blocks
                 path: pages/agents/memory_blocks.mdx
+              - page: Archival Memory
+                path: pages/agents/archival_memory.mdx
               - page: Agentic Context Engineering
                 path: pages/agents/context_engineering.mdx
           - page: Filesystem
