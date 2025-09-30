@@ -394,6 +394,7 @@ class Message(BaseMessage):
                         otid=otid,
                         step_id=self.step_id,
                         is_err=self.is_err,
+                        run_id=self.run_id,
                     )
                 )
 
@@ -429,6 +430,7 @@ class Message(BaseMessage):
                         sender_id=self.sender_id,
                         step_id=self.step_id,
                         is_err=self.is_err,
+                        run_id=self.run_id,
                     )
                 )
 
@@ -470,6 +472,7 @@ class Message(BaseMessage):
             sender_id=self.sender_id,
             step_id=self.step_id,
             # is_err=self.is_err,
+            run_id=self.run_id,
         )
 
     def _convert_tool_call_messages(
