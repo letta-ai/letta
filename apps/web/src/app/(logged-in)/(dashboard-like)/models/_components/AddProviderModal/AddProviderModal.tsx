@@ -36,7 +36,6 @@ import { useFormContext } from 'react-hook-form';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useCurrentUser } from '$web/client/hooks';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 function TestConnectionButton() {
   const [isTesting, setIsTesting] = useState(false);
@@ -258,11 +257,8 @@ export function AddProviderModal(props: CreateProviderModalProps) {
 
   const { watch } = form;
 
-  const { data: isAzureEnabled } = useFeatureFlag('BYOK_AZURE');
-  const { data: isTogetherEnabled } = useFeatureFlag('BYOK_TOGETHER');
-
   const providerItems = useMemo(() => {
-    const items = [
+    return [
       {
         label: brandKeyToName('openai'),
         value: 'openai',
@@ -283,26 +279,18 @@ export function AddProviderModal(props: CreateProviderModalProps) {
         value: 'bedrock',
         icon: brandKeyToLogo('bedrock'),
       },
-    ];
-
-    if (isAzureEnabled) {
-      items.push({
+      {
         label: brandKeyToName('azure'),
         value: 'azure',
         icon: brandKeyToLogo('azure'),
-      });
-    }
-
-    if (isTogetherEnabled) {
-      items.push({
+      },
+      {
         label: brandKeyToName('together'),
         value: 'together',
         icon: brandKeyToLogo('together'),
-      });
-    }
-
-    return items;
-  }, [isAzureEnabled, isTogetherEnabled]);
+      },
+    ];
+  }, []);
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
