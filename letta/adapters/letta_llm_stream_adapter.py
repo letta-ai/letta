@@ -25,8 +25,9 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig) -> None:
+    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig, run_id: str | None = None) -> None:
         super().__init__(llm_client, llm_config)
+        self.run_id = run_id
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
 
     async def invoke_llm(
@@ -57,6 +58,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 use_assistant_message=use_assistant_message,
                 put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
                 requires_approval_tools=requires_approval_tools,
+                run_id=self.run_id,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             # For non-v1 agents, always use Chat Completions streaming interface
@@ -67,6 +69,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 messages=messages,
                 tools=tools,
                 requires_approval_tools=requires_approval_tools,
+                run_id=self.run_id,
             )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")

@@ -76,11 +76,13 @@ class OpenAIStreamingInterface:
         tools: Optional[list] = None,
         put_inner_thoughts_in_kwarg: bool = True,
         requires_approval_tools: list = [],
+        run_id: str | None = None,
     ):
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
+        self.run_id = run_id
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
@@ -244,6 +246,7 @@ class OpenAIStreamingInterface:
                         state="omitted",
                         hidden_reasoning=None,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
                     )
                     yield hidden_message
                     prev_message_type = hidden_message.message_type
@@ -283,6 +286,7 @@ class OpenAIStreamingInterface:
                             reasoning=updates_inner_thoughts,
                             # name=name,
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                            run_id=self.run_id,
                         )
                         prev_message_type = reasoning_message.message_type
                         yield reasoning_message
@@ -324,6 +328,7 @@ class OpenAIStreamingInterface:
                                             tool_call_id=self.function_id_buffer,
                                         ),
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                        run_id=self.run_id,
                                     )
                                 else:
                                     tool_call_msg = ToolCallMessage(
@@ -335,6 +340,7 @@ class OpenAIStreamingInterface:
                                             tool_call_id=self.function_id_buffer,
                                         ),
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                        run_id=self.run_id,
                                     )
                                 prev_message_type = tool_call_msg.message_type
                                 yield tool_call_msg
@@ -380,6 +386,7 @@ class OpenAIStreamingInterface:
                                         date=datetime.now(timezone.utc),
                                         content=extracted,
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                        run_id=self.run_id,
                                     )
                                     prev_message_type = assistant_message.message_type
                                     yield assistant_message
@@ -405,6 +412,7 @@ class OpenAIStreamingInterface:
                                             ),
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                            run_id=self.run_id,
                                         )
                                     else:
                                         tool_call_msg = ToolCallMessage(
@@ -417,6 +425,7 @@ class OpenAIStreamingInterface:
                                             ),
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                            run_id=self.run_id,
                                         )
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
@@ -438,6 +447,7 @@ class OpenAIStreamingInterface:
                                             ),
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                            run_id=self.run_id,
                                         )
                                     else:
                                         tool_call_msg = ToolCallMessage(
@@ -450,6 +460,7 @@ class OpenAIStreamingInterface:
                                             ),
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                            run_id=self.run_id,
                                         )
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
@@ -470,7 +481,9 @@ class SimpleOpenAIStreamingInterface:
         tools: Optional[list] = None,
         requires_approval_tools: list = [],
         model: str = None,
+        run_id: str | None = None,
     ):
+        self.run_id = run_id
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
 
@@ -565,6 +578,7 @@ class SimpleOpenAIStreamingInterface:
                         state="omitted",
                         hidden_reasoning=None,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
                     )
                     self.content_messages.append(hidden_message)
                     prev_message_type = hidden_message.message_type
@@ -635,6 +649,7 @@ class SimpleOpenAIStreamingInterface:
                     content=[TextContent(text=message_delta.content)],
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    run_id=self.run_id,
                 )
                 self.content_messages.append(assistant_msg)
                 prev_message_type = assistant_msg.message_type
@@ -683,6 +698,7 @@ class SimpleOpenAIStreamingInterface:
                         ),
                         # name=name,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
                     )
                 else:
                     tool_call_msg = ToolCallMessage(
@@ -695,6 +711,7 @@ class SimpleOpenAIStreamingInterface:
                         ),
                         # name=name,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
                     )
                 prev_message_type = tool_call_msg.message_type
                 message_index += 1  # Increment for the next message
@@ -713,6 +730,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         tools: Optional[list] = None,
         requires_approval_tools: list = [],
         model: str = None,
+        run_id: str | None = None,
     ):
         self.is_openai_proxy = is_openai_proxy
         self.messages = messages
@@ -722,6 +740,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.tool_call_name = None
         # ID responses used
         self.message_id = None
+        self.run_id = run_id
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -872,6 +891,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         source="reasoner_model",
                         reasoning=concat_summary,
+                        run_id=self.run_id,
                     )
                 else:
                     return
@@ -893,6 +913,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                             arguments=arguments if arguments != "" else None,
                             tool_call_id=call_id,
                         ),
+                        run_id=self.run_id,
                     )
                 else:
                     yield ToolCallMessage(
@@ -904,6 +925,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                             arguments=arguments if arguments != "" else None,
                             tool_call_id=call_id,
                         ),
+                        run_id=self.run_id,
                     )
 
             elif isinstance(new_event_item, ResponseOutputMessage):
@@ -917,6 +939,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                                 otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                 date=datetime.now(timezone.utc),
                                 content=content_item.text,
+                                run_id=self.run_id,
                             )
                 else:
                     return
@@ -944,6 +967,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                 otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                 source="reasoner_model",
                 reasoning=summary_text,
+                run_id=self.run_id,
             )
 
         # Reasoning summary streaming
@@ -962,6 +986,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     source="reasoner_model",
                     reasoning=delta,
+                    run_id=self.run_id,
                 )
             else:
                 return
@@ -1001,6 +1026,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     date=datetime.now(timezone.utc),
                     content=delta,
+                    run_id=self.run_id,
                 )
             else:
                 return
@@ -1032,6 +1058,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         arguments=delta,
                         tool_call_id=None,
                     ),
+                    run_id=self.run_id,
                 )
             else:
                 yield ToolCallMessage(
@@ -1043,6 +1070,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         arguments=delta,
                         tool_call_id=None,
                     ),
+                    run_id=self.run_id,
                 )
 
         # Function calls

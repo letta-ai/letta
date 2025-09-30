@@ -51,6 +51,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             # NOTE: different
             self.interface = SimpleAnthropicStreamingInterface(
                 requires_approval_tools=requires_approval_tools,
+                run_id=self.run_id,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             # Decide interface based on payload shape
@@ -63,6 +64,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                     messages=messages,
                     tools=tools,
                     requires_approval_tools=requires_approval_tools,
+                    run_id=self.run_id,
                 )
             else:
                 self.interface = SimpleOpenAIStreamingInterface(
@@ -71,6 +73,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                     tools=tools,
                     requires_approval_tools=requires_approval_tools,
                     model=self.llm_config.model,
+                    run_id=self.run_id,
                 )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
