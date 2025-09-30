@@ -30,7 +30,6 @@ export function buildConfig(appDir: string): Config {
           dropdown: '11',
           tooltip: '12',
           draggedItem: '13',
-
         },
         gap: {
           2: 'var(--default-gap)',
@@ -134,6 +133,10 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--grey3))',
             content: 'hsl(var(--grey3-content))',
             border: 'hsl(var(--background-grey3-border))',
+          },
+          'background-blue2': {
+            DEFAULT: 'hsl(var(--background-blue2))',
+            content: 'hsl(var(--background-blue2-content))',
           },
           'background-black': {
             DEFAULT: 'hsl(var(--background-black))',

@@ -306,5 +306,13 @@
       "updateFailed": "Failed to update memory block name",
       "noPermissionTemplate": "No permission to update templates"
     }
+  },
+  "components/CoreMemoryCard": {
+    "chars": "{numChar} Chars",
+    "updated": "Updated {relativeDate}",
+    "sharedAgents": "Shared with {count} agents",
+    "readOnly": "This block is read-only",
+    "editable": "This block is read-write (editable)",
+    "preserved": "This memory block is preserved across agent versions, if you edit it, changes will not be applied to existing agents"
   }
 }

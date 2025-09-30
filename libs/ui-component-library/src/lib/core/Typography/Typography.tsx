@@ -48,6 +48,7 @@ const typographyVariants = cva('break-words', {
     },
     bold: {
       true: 'font-semibold',
+      false: 'font-normal',
     },
     semibold: {
       true: 'font-medium',
