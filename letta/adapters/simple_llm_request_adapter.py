@@ -66,6 +66,10 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         else:
             self.content = None
 
+        if self.reasoning_content and len(self.reasoning_content) > 0:
+            # Temp workaround to consolidate parts to persist reasoning content, this should be integrated better
+            self.content = self.reasoning_content + (self.content or [])
+
         # Extract tool call
         if self.chat_completions_response.choices[0].message.tool_calls:
             self.tool_call = self.chat_completions_response.choices[0].message.tool_calls[0]

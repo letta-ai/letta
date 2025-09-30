@@ -4,7 +4,6 @@ from typing import AsyncGenerator, Optional
 from opentelemetry.trace import Span
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
-from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.adapters.simple_llm_request_adapter import SimpleLLMRequestAdapter
 from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
 from letta.agents.helpers import (
@@ -89,7 +88,7 @@ class LettaAgentV3(LettaAgentV2):
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
                 # TODO need to support non-streaming adapter too
-                llm_adapter=LettaLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
+                llm_adapter=SimpleLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
                 run_id=run_id,
                 # use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
