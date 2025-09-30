@@ -81,13 +81,16 @@ results = archival_memory_search(
 
 Results return semantically relevant information - the agent doesn't need exact keywords.
 
-**What agents receive:** Each result contains:
+<Info>
+**Search results format:**
+Each result contains:
 - `content` - The stored text
 - `tags` - Associated tags
 - `timestamp` - When the memory was created
-- `relevance` - Scoring information (`rrf_score`, `vector_rank`, `fts_rank`)
+- `relevance` - Scoring with `rrf_score`, `vector_rank`, `fts_rank`
 
 Letta uses **hybrid search** combining semantic (vector) and keyword (full-text) search, ranked using Reciprocal Rank Fusion (RRF). Higher `rrf_score` means more relevant.
+</Info>
 
 ## Writing effective queries
 
@@ -112,7 +115,9 @@ archival_memory_search(query="artificial memories")
 # (semantic match despite different terminology)
 ```
 
+<Tip>
 **Pagination:** Agents receive multiple results per search. If an agent doesn't paginate correctly, you can instruct it to adjust the `page` parameter or remind it to iterate through results.
+</Tip>
 
 ### Filtering by time
 
@@ -133,12 +138,14 @@ archival_memory_search(
 )
 ```
 
-**Note:**
-- Agents cannot control insertion timestamps - memories are timestamped automatically
-- Developers can backdate memories via SDK by providing a `created_at` timestamp
+<Info>
+**Agent datetime awareness:**
 - Agents know the current day but not the current time
 - Agents can see timestamps of messages they've received
-- Time filtering is useful for queries like "what did we discuss last week?"
+- Agents cannot control insertion timestamps (automatic)
+- Developers can backdate memories via SDK with `created_at`
+- Time filtering enables queries like "what did we discuss last week?"
+</Info>
 
 ## Tags and organization
 
@@ -337,6 +344,7 @@ An agent with 32k+ memories tracking interactions:
 
 ## Performance and scale
 
+<Info>
 Archival memory has no practical size limits and remains fast at scale:
 
 **Letta Cloud:** Uses [TurboPuffer](https://turbopuffer.com/) for extremely fast semantic search, even with hundreds of thousands of memories.
@@ -346,6 +354,7 @@ Archival memory has no practical size limits and remains fast at scale:
 **Letta Desktop:** Uses SQLite with vector search extensions. Suitable for personal use cases.
 
 No matter the backend, archival memory scales to large archives without performance degradation.
+</Info>
 
 ## Archival memory vs other memory types
 
@@ -361,6 +370,7 @@ No matter the backend, archival memory scales to large archives without performa
 
 ### When to use archival vs conversation search
 
+<Tip>
 **Archival memory** is for **intentional** storage:
 - Agents decide what's worth remembering long-term
 - Used for facts, knowledge, and reference material
@@ -377,6 +387,7 @@ No matter the backend, archival memory scales to large archives without performa
 - **Conversation search:** Agent can search for the original message later
 
 Use archival for structured knowledge, conversation search for historical context.
+</Tip>
 
 ## Embedding models and search quality
 
@@ -400,8 +411,10 @@ Changing embedding models is a destructive operation. Export your archival memor
 
 ## Best practices
 
+<Warning>
 **1. Avoid over-insertion**
 The most common pitfall is inserting too many memories, creating clutter. Trust the agent to decide what's worth storing long-term.
+</Warning>
 
 **2. Track query effectiveness**
 If archival search quality matters, have the agent track its performance in a memory block:
