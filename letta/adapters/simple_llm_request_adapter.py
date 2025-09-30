@@ -1,22 +1,17 @@
 from typing import AsyncGenerator
 
-from letta.adapters.letta_llm_adapter import LettaLLMAdapter
+from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
-from letta.schemas.provider_trace import ProviderTraceCreate
-from letta.schemas.user import User
-from letta.settings import settings
-from letta.utils import safe_create_task
 
 
-class LettaLLMRequestAdapter(LettaLLMAdapter):
-    """
-    Adapter for handling blocking (non-streaming) LLM requests.
+class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
+    """Simplifying assumptions:
 
-    This adapter makes synchronous requests to the LLM and returns complete
-    responses. It extracts reasoning content, tool calls, and usage statistics
-    from the response and updates instance variables for access by the agent.
+    - No inner thoughts in kwargs
+    - No forced tool calls
+    - Content native as assistant message
     """
 
     async def invoke_llm(
@@ -60,12 +55,16 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
             ]
         elif self.chat_completions_response.choices[0].message.omitted_reasoning_content:
             self.reasoning_content = [OmittedReasoningContent()]
-        elif self.chat_completions_response.choices[0].message.content:
-            # Reasoning placed into content for legacy reasons
-            self.reasoning_content = [TextContent(text=self.chat_completions_response.choices[0].message.content)]
         else:
             # logger.info("No reasoning content found.")
             self.reasoning_content = None
+
+        if self.chat_completions_response.choices[0].message.content:
+            # NOTE: big difference - 'content' goes into 'content'
+            # Reasoning placed into content for legacy reasons
+            self.content = [TextContent(text=self.chat_completions_response.choices[0].message.content)]
+        else:
+            self.content = None
 
         # Extract tool call
         if self.chat_completions_response.choices[0].message.tool_calls:
@@ -83,29 +82,3 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
 
         yield None
         return
-
-    def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
-        """
-        Log provider trace data for telemetry purposes in a fire-and-forget manner.
-
-        Creates an async task to log the request/response data without blocking
-        the main execution flow. The task runs in the background.
-
-        Args:
-            step_id: The step ID associated with this request for logging purposes
-            actor: The user associated with this request for logging purposes
-        """
-        if step_id is None or actor is None or not settings.track_provider_trace:
-            return
-
-        safe_create_task(
-            self.telemetry_manager.create_provider_trace_async(
-                actor=actor,
-                provider_trace_create=ProviderTraceCreate(
-                    request_json=self.request_data,
-                    response_json=self.response_data,
-                    step_id=step_id,  # Use original step_id for telemetry
-                ),
-            ),
-            label="create_provider_trace",
-        )
