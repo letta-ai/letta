@@ -33,7 +33,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
-from letta.schemas.enums import RunStatus
+from letta.schemas.enums import AgentType, RunStatus
 from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import LettaRequestConfig
@@ -1659,7 +1659,7 @@ async def send_message_async(
         agent_state = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
-        if agent_state.multi_agent_group is None:
+        if agent_state.multi_agent_group is None and agent_state.agent_type != AgentType.letta_v1_agent:
             temporal_agent = TemporalAgent(agent_state=agent_state, actor=actor)
             await temporal_agent.step(
                 input_messages=request.messages,
