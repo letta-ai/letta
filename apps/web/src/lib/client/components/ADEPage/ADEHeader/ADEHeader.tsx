@@ -54,11 +54,14 @@ import { ExternalVersionManagementDialog } from '$web/client/components/ADEPage/
 import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
-import { useAtom } from 'jotai/index';
+import { useAtom, useSetAtom } from 'jotai/index';
+import { ShowHotkeysDialog } from './ShowHotkeysDialog/ShowHotkeysDialog';
+import { showHotkeysAtom } from './ShowHotkeysDialog/showHotkeysAtom';
 
 interface DesktopADEHeaderProps {
   name: string;
 }
+
 
 interface ForkAgentDialogProps {
   onClose: () => void;
@@ -136,6 +139,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
   const [openDialog, setOpenDialog] = useState<Dialogs | null>(null);
+  const setShowHotkeys = useSetAtom(showHotkeysAtom);
 
   const { isTemplate } = useCurrentAgentMetaData();
   const handleCloseDialog = useCallback(() => {
@@ -204,6 +208,10 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
       >
         <MessageDebuggerButton />
         <NetworkInspectorButton />
+        <DropdownMenuItem
+          onClick={() => setShowHotkeys(true)}
+          label={t('AgentSettingsDropdown.showHotkeys')}
+        />
         <DropdownMenuSeparator />
         {isTemplate && (
           <UpdateTemplateNameDialog
@@ -326,6 +334,8 @@ export function ADEHeaderLogoContainer() {
     </HStack>
   );
 }
+
+
 
 function NetworkInspectorButton() {
   const [_, setNetworkInspectorOpen] = useNetworkInspectorVisibility();
@@ -534,6 +544,7 @@ export function ADEHeader() {
       <HiddenOnMobile>
         <DesktopADEHeader name={name} />
       </HiddenOnMobile>
+      <ShowHotkeysDialog />
     </>
   );
 }

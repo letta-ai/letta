@@ -4,7 +4,7 @@ import {
   AdvancedAgentTemplateSettingsPanel,
   TemplateSettingsPanel,
   useADELayoutConfig,
-  useADEState
+  useADEState, adeKeyMap
 } from '@letta-cloud/ui-ade-components';
 import React, { useCallback, useRef } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
@@ -150,12 +150,14 @@ export function DesktopLayout() {
                 ...(isTemplate
                   ? [
                     {
+                      hotkey: adeKeyMap.OPEN_TEMPLATE_SETTINGS_PANEL.command,
                       id: 'template-settings',
                       title: t('templateSettings'),
                       icon: <TemplateIcon />,
                       content: <TemplateSettingsPanel />,
                     },
                     {
+                      hotkey: adeKeyMap.OPEN_AGENT_SETTINGS_PANEL.command,
                       id: 'settings',
                       title: t('agentTemplateSettings'),
                       icon: <LettaInvaderOutlineIcon />,
@@ -164,6 +166,7 @@ export function DesktopLayout() {
                   ]
                   : [
                     {
+                      hotkey: adeKeyMap.OPEN_AGENT_SETTINGS_PANEL.command,
                       id: 'settings',
                       title: t('agentSettings'),
                       icon: <LettaInvaderOutlineIcon />,
@@ -171,12 +174,14 @@ export function DesktopLayout() {
                     },
                   ]),
                 {
+                  hotkey: adeKeyMap.OPEN_TOOLS_PANEL.command,
                   id: 'tools',
                   title: toolsTitle,
                   icon: <ToolsIcon />,
                   content: <ToolsPanel />,
                 },
                 {
+                  hotkey: adeKeyMap.OPEN_DATASOURCES_PANEL.command,
                   id: 'datasources',
                   title: datasourcesTitle,
                   icon: <FolderIcon />,
@@ -185,6 +190,7 @@ export function DesktopLayout() {
                 ...(!isTemplate
                   ? [
                     {
+                      hotkey: adeKeyMap.OPEN_ADVANCED_SETTINGS.command,
                       id: 'advanced-settings',
                       title: t('advancedSettings'),
                       icon: <TuneIcon />,
@@ -193,6 +199,7 @@ export function DesktopLayout() {
                   ]
                   : [
                     {
+                      hotkey: adeKeyMap.OPEN_ADVANCED_SETTINGS.command,
                       id: 'advanced-settings',
                       title: t('advancedSettings'),
                       icon: <TuneIcon />,
@@ -232,11 +239,13 @@ export function DesktopLayout() {
                   icon: <MemoryBlocksIcon />,
                   title: editCoreMemoriesTitle,
                   content: <EditMemory />,
+                  hotkey: adeKeyMap.OPEN_CORE_MEMORY_PANEL.command,
                 },
                 {
                   icon: <ArchivalMemoriesIcon />,
                   id: 'archival-memories',
                   title: archivalMemoriesTitle,
+                  hotkey: adeKeyMap.OPEN_ARCHIVAL_MEMORY_PANEL.command,
                   content: <ArchivalMemoriesPanel />,
                 },
               ]}
