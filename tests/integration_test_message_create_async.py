@@ -1,7 +1,11 @@
+import asyncio
+import json
 import os
 import threading
 import time
 import uuid
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from queue import Queue
 from typing import List
 
 import pytest
@@ -36,6 +40,120 @@ from letta.schemas.run import Run
 from letta.services.organization_manager import OrganizationManager
 from letta.services.run_manager import RunManager
 from letta.services.user_manager import UserManager
+from tests.helpers.utils import upload_test_agentfile_from_disk_async
+
+
+class WebhookHandler(BaseHTTPRequestHandler):
+    """HTTP request handler for webhook callbacks."""
+
+    def do_POST(self):
+        """Handle POST requests to the webhook endpoint."""
+        content_length = int(self.headers.get("Content-Length", 0))
+        post_data = self.rfile.read(content_length)
+
+        print(f"✓ Webhook received at: {self.path}")
+        print(f"✓ Headers: {dict(self.headers)}")
+        print(f"✓ Body: {post_data.decode('utf-8') if post_data else 'Empty'}")
+
+        # Store the received webhook data
+        self.server.webhook_calls.put(
+            {
+                "path": self.path,
+                "headers": dict(self.headers),
+                "body": post_data.decode("utf-8") if post_data else "",
+                "timestamp": time.time(),
+            }
+        )
+
+        # Send response
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({"status": "received"}).encode())
+
+    def log_message(self, format, *args):
+        """Suppress default HTTP server logging."""
+        pass
+
+
+class TestWebhookServer:
+    """Test webhook server that runs in a separate thread."""
+
+    def __init__(self, port=0):
+        """Initialize the webhook server.
+
+        Args:
+            port: Port to listen on. If 0, a random available port is chosen.
+        """
+        self.port = port
+        self.server = None
+        self.thread = None
+        self.webhook_calls = Queue()
+        self.url = None
+
+    def start(self):
+        """Start the webhook server in a background thread."""
+        # Create server with custom handler
+        self.server = HTTPServer(("localhost", self.port), WebhookHandler)
+        self.server.webhook_calls = self.webhook_calls
+
+        # Get the actual port (useful if port was 0)
+        self.port = self.server.server_port
+        self.url = f"http://localhost:{self.port}"
+
+        # Start server in background thread
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+        # Wait for server to be ready
+        time.sleep(0.1)
+        return self.url
+
+    def stop(self):
+        """Stop the webhook server."""
+        if self.server:
+            self.server.shutdown()
+            self.server.server_close()
+        if self.thread:
+            self.thread.join(timeout=1)
+
+    def get_webhook_calls(self, timeout=5):
+        """Get all webhook calls received so far.
+
+        Args:
+            timeout: Maximum time to wait for calls.
+
+        Returns:
+            List of webhook call data.
+        """
+        calls = []
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            if not self.webhook_calls.empty():
+                try:
+                    call = self.webhook_calls.get_nowait()
+                    calls.append(call)
+                except:
+                    break
+            else:
+                break
+
+        return calls
+
+    def wait_for_webhook(self, timeout=10):
+        """Wait for at least one webhook call.
+
+        Args:
+            timeout: Maximum time to wait.
+
+        Returns:
+            The first webhook call received, or None if timeout.
+        """
+        try:
+            return self.webhook_calls.get(timeout=timeout)
+        except:
+            return None
 
 
 def roll_dice(num_sides: int) -> int:
@@ -66,6 +184,31 @@ USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+
+RESEARCH_INSTRUCTIONS: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content="\n    Lead Name: Kian Jones\n    Lead Title: Software Engineer\n    Lead LinkedIn URL: https://www.linkedin.com/in/kian-jones\n    Company Name: Letta\n    Company Domain: letta.com\n    Company Industry: technology/software/ai\n    \n**Research Instructions**\n",
+        otid=USER_MESSAGE_OTID,
+    )
+]
+
+
+@pytest.fixture(scope="function")
+async def webhook_server():
+    """
+    Fixture that provides a test webhook server for capturing callback requests.
+    The server runs in a background thread and automatically cleans up after the test.
+    """
+    server = TestWebhookServer()
+    webhook_url = server.start()
+    print(f"✓ Webhook server fixture started at: {webhook_url}")
+
+    yield server
+
+    # Cleanup
+    server.stop()
+    print("✓ Webhook server fixture stopped")
 
 
 @pytest.fixture(scope="module")
@@ -341,3 +484,174 @@ async def test_execute_workflow(client: AsyncLetta, default_organization: Organi
     # except Exception:
     #     # Suppress any cleanup errors completely
     #     pass
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_execute_workflow_with_callback(client: AsyncLetta, default_organization: Organization, webhook_server: TestWebhookServer):
+    """
+    Test the temporal agent workflow execution with callback.
+
+    This test validates that webhook callbacks are properly triggered during workflow execution:
+    1. Uses the webhook_server fixture to capture callbacks
+    2. Executes a workflow with a run that has a callback_url configured
+    3. Verifies that the webhook server receives the expected callbacks
+    4. Validates the webhook payload structure and content
+    """
+    webhook_url = webhook_server.url
+    task_queue_name = str(uuid.uuid4())
+
+    manager = UserManager()
+    user = await manager.create_default_actor_async(org_id=default_organization.id)
+
+    print("importing agent from file")
+    imported_af = await upload_test_agentfile_from_disk_async(
+        client, "../../../stress-py/11x-deep-research-stubbed/stubbed_research_agent.json"
+    )
+    agent = await client.agents.retrieve(imported_af.agent_ids[0])
+    print(agent.id, " imported from agent file")
+
+    run_manager = RunManager()
+    run = Run(
+        status=RunStatus.created,
+        agent_id=agent.id,
+        background=True,  # Async endpoints are always background
+        callback_url=webhook_url,  # Set the webhook URL on the Run
+        metadata={
+            "run_type": "send_message_async",
+            "agent_id": agent.id,
+            "lettuce": True,
+        },
+    )
+    run = await run_manager.create_run(pydantic_run=run, actor=user)
+    async with await WorkflowEnvironment.start_time_skipping() as env:
+        # Create worker with shared event loop
+        worker = Worker(
+            env.client,
+            task_queue=task_queue_name,
+            workflows=[TemporalAgentWorkflow],
+            activities=[
+                prepare_messages,
+                refresh_context_and_system_message,
+                llm_request,
+                summarize_conversation_history,
+                example_activity,
+                execute_tool,
+                create_messages,
+                create_step,
+                update_message_ids,
+                update_run,
+            ],
+            workflow_runner=SandboxedWorkflowRunner(restrictions=SandboxRestrictions.default.with_passthrough_modules("letta")),
+        )
+
+        async with worker:
+            workflow_input = WorkflowInputParams(
+                agent_state=agent,
+                messages=RESEARCH_INSTRUCTIONS,
+                actor=user,
+                max_steps=10,
+                run_id=run.id,
+            )
+            result = await env.client.execute_workflow(
+                TemporalAgentWorkflow.run,
+                workflow_input,
+                id=workflow_input.run_id,
+                task_queue=task_queue_name,
+            )
+
+            print("\n✓ Temporal workflow executed successfully!")
+            print(f"✓ Total messages processed: {len(result.messages)}")
+            print(f"✓ Workflow stop reason: {result.stop_reason}")
+            if result.usage and hasattr(result.usage, "total_tokens"):
+                print(f"✓ Total tokens used: {result.usage.total_tokens}")
+
+            message_types = {}
+            for msg in result.messages:
+                if hasattr(msg, "message_type"):
+                    message_types[msg.message_type] = message_types.get(msg.message_type, 0) + 1
+            print(f"✓ Message types processed: {message_types}")
+
+            # Check for webhook callbacks
+            print("\n📡 Checking for webhook callbacks...")
+            print(f"Run status: {result.stop_reason}")
+
+            # In time-skipping mode, callbacks might be processed differently
+            # Let's wait a bit and poll for callbacks
+            max_wait_time = 15
+            poll_interval = 0.5
+            start_time = time.time()
+            webhook_calls = []
+
+            while time.time() - start_time < max_wait_time:
+                webhook_calls = webhook_server.get_webhook_calls(timeout=0.1)
+                if webhook_calls:
+                    break
+                await asyncio.sleep(poll_interval)
+
+            # If still no callbacks, check if the run was properly marked as completed
+            print(f"Webhook URL configured: {webhook_url}")
+            print(f"Run ID: {run.id}")
+
+            # Assert webhook behavior
+            assert len(webhook_calls) > 0, "Expected at least one webhook callback, but received none"
+            print(f"✅ Received {len(webhook_calls)} webhook callback(s)")
+
+            # Validate webhook payload structure and content
+            for i, call in enumerate(webhook_calls):
+                print(f"\n📬 Webhook call #{i + 1}:")
+                print(f"  Path: {call['path']}")
+                print(f"  Headers: {list(call['headers'].keys())}")
+
+                # Parse and validate the JSON body
+                assert call["body"], "Webhook body should not be empty"
+
+                try:
+                    payload = json.loads(call["body"])
+                    print(f"  Payload keys: {list(payload.keys())}")
+
+                    # Assert required fields in webhook payload
+                    assert "run_id" in payload, f"Webhook payload missing 'run_id'. Got: {list(payload.keys())}"
+                    assert "status" in payload, f"Webhook payload missing 'status'. Got: {list(payload.keys())}"
+                    assert "completed_at" in payload, f"Webhook payload missing 'completed_at'. Got: {list(payload.keys())}"
+                    assert "metadata" in payload, f"Webhook payload missing 'metadata'. Got: {list(payload.keys())}"
+
+                    # Validate field values
+                    assert payload["run_id"] == run.id, f"Expected run_id {run.id}, got {payload['run_id']}"
+                    assert payload["status"] in ["completed", "failed"], f"Expected status 'completed' or 'failed', got {payload['status']}"
+                    assert payload["completed_at"] is not None, "completed_at should not be None"
+
+                    # Validate metadata contains result
+                    metadata = payload["metadata"]
+                    assert isinstance(metadata, dict), f"metadata should be a dict, got {type(metadata)}"
+
+                    if "result" in metadata:
+                        result_data = metadata["result"]
+                        assert isinstance(result_data, dict), f"result should be a dict, got {type(result_data)}"
+
+                        # Check for expected result fields
+                        if "messages" in result_data:
+                            assert isinstance(result_data["messages"], list), "messages should be a list"
+                            assert len(result_data["messages"]) > 0, "messages list should not be empty"
+                            print(f"  ✓ Result contains {len(result_data['messages'])} messages")
+
+                        if "stop_reason" in result_data:
+                            assert result_data["stop_reason"] is not None, "stop_reason should not be None"
+                            print(f"  ✓ Stop reason: {result_data['stop_reason']}")
+
+                        if "usage" in result_data:
+                            assert isinstance(result_data["usage"], dict), "usage should be a dict"
+                            print("  ✓ Usage statistics included")
+
+                    print(f"  ✓ Valid webhook payload for run {payload['run_id']}")
+                    print(f"  ✓ Run status: {payload['status']}")
+                    print(f"  ✓ Completed at: {payload['completed_at']}")
+
+                except json.JSONDecodeError as e:
+                    pytest.fail(f"Failed to parse webhook JSON payload: {e}. Body: {call['body'][:500]}")
+                except AssertionError:
+                    # Re-raise assertion errors
+                    raise
+                except Exception as e:
+                    pytest.fail(f"Unexpected error validating webhook payload: {e}")
+
+            print("\n✅ All webhook callbacks validated successfully!")
