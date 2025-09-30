@@ -39,6 +39,7 @@ import { BillingLink } from '@letta-cloud/ui-component-library';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
+import * as Sentry from '@sentry/nextjs';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -164,8 +165,10 @@ function FromStarterKit(props: FromStarterKitProps) {
       if (!isFetchError(error) && error.status === 402) {
         onError('overage');
       } else {
+        Sentry.captureException(error);
         onError('default');
       }
+
 
       onIsCreating(false);
     },
@@ -173,6 +176,8 @@ function FromStarterKit(props: FromStarterKitProps) {
       push(`/projects/${slug}/agents/${data.body.agentId}`);
     },
   });
+
+
 
   const handleSelectStarterKit = useCallback(
     (starterKitId: string, architecture?: StarterKitArchitecture) => {
@@ -248,6 +253,7 @@ function SelectedTemplateStateWrapper(
       },
     },
   });
+
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
