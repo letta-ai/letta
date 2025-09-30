@@ -89,7 +89,7 @@ SEND_MESSAGE_TOOL_NAME = "send_message"
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
 DEPRECATED_LETTA_TOOLS = ["archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
-BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace", "memory"]
 # New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
 BASE_MEMORY_TOOLS_V2 = [
     "memory_replace",
@@ -97,6 +97,11 @@ BASE_MEMORY_TOOLS_V2 = [
     # NOTE: leaving these ones out to simply the set? Can have these reserved for sleep-time
     # "memory_rethink",
     # "memory_finish_edits",
+]
+
+# v3 collection, currently just a omni memory tool for anthropic
+BASE_MEMORY_TOOLS_V3 = [
+    "memory",
 ]
 # Base tools if the memgpt agent has enable_sleeptime on
 BASE_SLEEPTIME_CHAT_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_search"]
@@ -118,6 +123,7 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
     "rethink_user_memory",
     "finish_rethinking_memory",
 ]
+
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
 LOCAL_ONLY_MULTI_AGENT_TOOLS = ["send_message_to_agent_async"]
