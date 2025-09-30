@@ -2860,7 +2860,26 @@
       "download": "Download AgentFile (.af)",
       "externalVersionManagement": "External Version Management",
       "networkInspector": "Network Inspector",
+      "showHotkeys": "Show all commands",
       "messageDebugMode": "Message debug mode"
+    },
+    "ShowHotkeysDialog": {
+      "title": "Keyboard shortcuts",
+      "openNetworkInspector": "Open network inspector",
+      "enableDebugMode": "Enable debug mode",
+      "resetMessages": "Reset messages",
+      "hideReasoning": "Hide reasoning",
+      "saveCustomTool": "Save custom tool",
+      "toggleRunDebugger": "Toggle run debugger",
+      "contextViewer": "Context viewer",
+      "openTemplateSettingsPanel": "Open template settings panel",
+      "openAgentSettingsPanel": "Open agent settings panel",
+      "openToolsPanel": "Open tools panel",
+      "openDatasourcesPanel": "Open datasources panel",
+      "openAdvancedSettings": "Open advanced settings",
+      "openCoreMemoryPanel": "Open core memory panel",
+      "openArchivalMemoryPanel": "Open archival memory panel",
+      "showHotkeys": "Toggle keyboard shortcuts"
     },
     "DeployAgentDialog": {
       "trigger": "Create an agent from template",
