@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_MEMORY_TOOLS_V2,
+    BASE_MEMORY_TOOLS_V3,
     BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
@@ -439,7 +440,7 @@ class AgentManager:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
-                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_MEMORY_TOOLS_V3 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
                 for tool_with_requires_approval in requires_approval:
@@ -1365,19 +1366,22 @@ class AgentManager:
         )
         if new_memory_str not in system_message.content[0].text:
             # update the blocks (LRW) in the DB
-            for label in agent_state.memory.list_block_labels():
-                updated_value = new_memory.get_block(label).value
-                if updated_value != agent_state.memory.get_block(label).value:
-                    # update the block if it's changed
-                    block_id = agent_state.memory.get_block(label).id
-                    await self.block_manager.update_block_async(
-                        block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor
-                    )
+            for label in new_memory.list_block_labels():
+                if label in agent_state.memory.list_block_labels():
+                    # Block exists in both old and new memory - check if value changed
+                    updated_value = new_memory.get_block(label).value
+                    if updated_value != agent_state.memory.get_block(label).value:
+                        # update the block if it's changed
+                        block_id = agent_state.memory.get_block(label).id
+                        await self.block_manager.update_block_async(
+                            block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor
+                        )
 
-            # refresh memory from DB (using block ids)
-            blocks = await self.block_manager.get_all_blocks_by_ids_async(
-                block_ids=[b.id for b in agent_state.memory.get_blocks()], actor=actor
-            )
+                # Note: New blocks are already persisted in the creation methods,
+                # so we don't need to handle them here
+
+            # refresh memory from DB (using block ids from the new memory)
+            blocks = await self.block_manager.get_all_blocks_by_ids_async(block_ids=[b.id for b in new_memory.get_blocks()], actor=actor)
 
             agent_state.memory = Memory(
                 blocks=blocks,

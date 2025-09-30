@@ -1,6 +1,81 @@
-from typing import List, Literal, Optional
+from typing import TYPE_CHECKING, Any, List, Literal, Optional
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
+
+if TYPE_CHECKING:
+    from letta.schemas.agent import AgentState
+
+
+def memory(
+    agent_state: "AgentState",
+    command: str,
+    path: Optional[str] = None,
+    file_text: Optional[str] = None,
+    description: Optional[str] = None,
+    old_str: Optional[str] = None,
+    new_str: Optional[str] = None,
+    insert_line: Optional[int] = None,
+    insert_text: Optional[str] = None,
+    old_path: Optional[str] = None,
+    new_path: Optional[str] = None,
+) -> Optional[str]:
+    """
+    Memory management tool with various sub-commands for memory block operations.
+
+    Args:
+        command (str): The sub-command to execute. Supported commands:
+            - "view": List memory blocks or view specific block content
+            - "create": Create a new memory block
+            - "str_replace": Replace text in a memory block
+            - "insert": Insert text at a specific line in a memory block
+            - "delete": Delete a memory block
+            - "rename": Rename a memory block
+        path (Optional[str]): Path to the memory block (for str_replace, insert, delete)
+        file_text (Optional[str]): The value to set in the memory block (for create)
+        description (Optional[str]): The description to set in the memory block (for create, rename)
+        old_str (Optional[str]): Old text to replace (for str_replace)
+        new_str (Optional[str]): New text to replace with (for str_replace)
+        insert_line (Optional[int]): Line number to insert at (for insert)
+        insert_text (Optional[str]): Text to insert (for insert)
+        old_path (Optional[str]): Old path for rename operation
+        new_path (Optional[str]): New path for rename operation
+        view_range (Optional[int]): Range of lines to view (for view)
+
+    Returns:
+        Optional[str]: Success message or error description
+
+    Examples:
+        # List all memory blocks
+        memory(agent_state, "view", path="/memories")
+
+        # View specific memory block content
+        memory(agent_state, "view", path="/memories/user_preferences")
+
+        # View first 10 lines of a memory block
+        memory(agent_state, "view", path="/memories/user_preferences", view_range=10)
+
+        # Replace text in a memory block
+        memory(agent_state, "str_replace", path="/memories/user_preferences", old_str="theme: dark", new_str="theme: light")
+
+        # Insert text at line 5
+        memory(agent_state, "insert", path="/memories/notes", insert_line=5, insert_text="New note here")
+
+        # Delete a memory block
+        memory(agent_state, "delete", path="/memories/old_notes")
+
+        # Rename a memory block
+        memory(agent_state, "rename", old_path="/memories/temp", new_path="/memories/permanent")
+
+        # Update the description of a memory block
+        memory(agent_state, "rename", path="/memories/temp", description="The user's temporary notes.")
+
+        # Create a memory block with starting text
+        memory(agent_state, "create", path="/memories/coding_preferences", "description": "The user's coding preferences.", "file_text": "The user seems to add type hints to all of their Python code.")
+
+        # Create an empty memory block
+        memory(agent_state, "create", path="/memories/coding_preferences", "description": "The user's coding preferences.")
+    """
+    raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
 
 def send_message(self: "Agent", message: str) -> Optional[str]:
@@ -201,7 +276,10 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
     """
 
     if agent_state.memory.get_block(target_block_label) is None:
-        agent_state.memory.create_block(label=target_block_label, value=new_memory)
+        from letta.schemas.block import Block
+
+        new_block = Block(label=target_block_label, value=new_memory)
+        agent_state.memory.set_block(new_block)
 
     agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
     return None
@@ -394,7 +472,10 @@ def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> No
         )
 
     if agent_state.memory.get_block(label) is None:
-        agent_state.memory.create_block(label=label, value=new_memory)
+        from letta.schemas.block import Block
+
+        new_block = Block(label=label, value=new_memory)
+        agent_state.memory.set_block(new_block)
 
     agent_state.memory.update_block_value(label=label, value=new_memory)
 
