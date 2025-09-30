@@ -272,11 +272,14 @@ class AnthropicStreamingInterface:
                 if not self.use_assistant_message:
                     # Only buffer the initial tool call message if it doesn't require approval
                     # For approval-required tools, we'll create the ApprovalRequestMessage later
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     if self.tool_call_name not in self.requires_approval_tools:
                         tool_call_msg = ToolCallMessage(
                             id=self.letta_message_id,
                             tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
                             date=datetime.now(timezone.utc).isoformat(),
+                            otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         )
                         self.tool_call_buffer.append(tool_call_msg)
             elif isinstance(content, BetaThinkingBlock):
@@ -737,20 +740,23 @@ class SimpleAnthropicStreamingInterface:
                 self.tool_call_id = content.id
                 self.tool_call_name = content.name
 
-                if prev_message_type and prev_message_type != "tool_call_message":
-                    message_index += 1
-
                 if self.tool_call_name in self.requires_approval_tools:
+                    if prev_message_type and prev_message_type != "approval_request_message":
+                        message_index += 1
                     tool_call_msg = ApprovalRequestMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
                         date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     )
                 else:
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
                         date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     )
                 prev_message_type = tool_call_msg.message_type
                 yield tool_call_msg
@@ -809,16 +815,22 @@ class SimpleAnthropicStreamingInterface:
                 self.accumulated_tool_call_args += delta.partial_json
 
                 if self.tool_call_name in self.requires_approval_tools:
+                    if prev_message_type and prev_message_type != "approval_request_message":
+                        message_index += 1
                     tool_call_msg = ApprovalRequestMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     )
                 else:
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     )
 
                 yield tool_call_msg
