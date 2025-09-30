@@ -284,7 +284,7 @@ navigation:
       #      path: pages/cloud/versions.mdx
       - section: Additional Resources
         contents:
-          - page: Agent Memory Comparison
+          - page: Letta vs Mem0 vs Zep vs Cognee - Agent Memory Solutions
             path: pages/education/agent-memory-comparison.mdx
           - page: Letta Desktop Troubleshooting
             path: pages/desktop/troubleshooting.mdx
