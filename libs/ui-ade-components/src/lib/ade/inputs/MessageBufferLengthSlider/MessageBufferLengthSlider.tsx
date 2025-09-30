@@ -1,3 +1,4 @@
+'use client'
 import { useCurrentGroup } from '../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';

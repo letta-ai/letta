@@ -24,49 +24,43 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { AgentSettingsPanel } from '../ade/panels/AgentSettingsPanel/AgentSettingsPanel';
 import { useTranslations } from '@letta-cloud/translations';
-import { useAgentBaseTypeName } from '../hooks';
 import {
-  ToolsPanel,
-  useToolsPanelTitle,
+  ToolsPanel, useToolsPanelTitle
 } from '../ade/panels/ToolsPanel/ToolsPanel';
 import { AdvancedSettingsPanel } from '../ade/panels/AdvancedSettingsPanel/AdvancedSettingsPanel';
 import { AgentSimulator } from '../ade/panels/AgentSimulator/AgentSimulator';
 import { ContextWindowPanel } from '../ade/panels/ContextEditorPanel/ContextEditorPanel';
 
 import {
-  EditMemory,
-  useEditCoreMemoriesTitle,
+  EditMemory, useEditCoreMemoriesTitle
 } from '../ade/panels/EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import {
-  ArchivalMemoriesPanel,
-  useArchivalMemoriesTitle,
+  ArchivalMemoriesPanel, useArchivalMemoriesTitle
 } from '../ade/panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import WelcomeWebp from './welcome-to-ade.webp';
-
-import type { ImperativePanelHandle } from 'react-resizable-panels';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import { useGlobalNetworkInterceptor } from '../hooks';
-import { DataSourcesPanel } from '../ade/panels/DataSourcesV2/DataSourcesPanel';
-import { LLMConfigPanel } from '../ade/panels/LLMConfigPanel/LLMConfigPanel';
-import { EmbeddingConfigPanel } from '../ade/panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
-import { MetadataPanel } from '../ade/panels/MetadataPanel/MetadataPanel';
+import { useAgentBaseTypeName, useGlobalNetworkInterceptor } from '../hooks';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
-import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
-import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 import { ToolManagerProvider } from '../ade/panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useADEState } from '../hooks/useADEState/useADEState';
-import { useDataSourcesTitle } from '../ade/panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
-import { TemplateDefaultsPanel } from '../ade/panels/TemplateDefaultsPanel/TemplateDefaultsPanel';
 import { AgentTemplateSettingsPanel } from '../ade/panels/AgentTemplateSettingsPanel/AgentTemplateSettingsPanel';
-import { TemplateSettingsPanel } from '../ade/panels/TemplateSettingsPanel/TemplateSettingsPanel';
+import { DesktopLayout } from './DesktopLayout/DesktopLayout';
+import { useDataSourcesTitle } from '../ade/panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
+
+interface AppPanel {
+  title: string;
+  mobileTitle: string;
+  icon: React.ReactNode;
+  content: React.ReactNode;
+}
+
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -82,232 +76,6 @@ function useADETitleTranslations() {
     editCoreMemoriesTitle,
     archivalMemoriesTitle,
   };
-}
-
-function DesktopLayout() {
-  const t = useTranslations('ADELayout');
-  const {
-    datasourcesTitle,
-    toolsTitle,
-    editCoreMemoriesTitle,
-    archivalMemoriesTitle,
-  } = useADETitleTranslations();
-
-  const { isTemplate } = useADEState();
-
-  const {
-    layoutConfig,
-    setLayoutConfig,
-    leftPanelToggleId,
-    rightPanelToggleId,
-  } = useADELayoutConfig();
-
-  const leftSidebarRef = useRef<ImperativePanelHandle>(null);
-  const rightSidebarRef = useRef<ImperativePanelHandle>(null);
-
-  const onLayout = useCallback(
-    (panelLayout: number[]) => {
-      setLayoutConfig({ panelLayout });
-    },
-    [setLayoutConfig],
-  );
-
-  const toggleLeftPanel = useCallback(() => {
-    if (!leftSidebarRef.current) {
-      return;
-    }
-
-    if (leftSidebarRef.current.isCollapsed()) {
-      leftSidebarRef.current.expand();
-
-      return;
-    }
-
-    leftSidebarRef.current.collapse();
-  }, [leftSidebarRef]);
-
-  const toggleRightPanel = useCallback(() => {
-    if (!rightSidebarRef.current) {
-      return;
-    }
-
-    if (rightSidebarRef.current.isCollapsed()) {
-      rightSidebarRef.current.expand();
-
-      return;
-    }
-
-    rightSidebarRef.current.collapse();
-  }, [rightSidebarRef]);
-
-  return (
-    <HStack
-      className={isTemplate ? 'border-t border-r border-b' : ''}
-      border={!isTemplate}
-      color="background-grey"
-      fullWidth
-      fullHeight
-    >
-      <NetworkInspector />
-      <div
-        className="w-[1px] h-[1px] opacity-0 fixed bg-transparent top-0 left-0"
-        onClick={toggleLeftPanel}
-        id={leftPanelToggleId}
-      ></div>
-      <div
-        className="w-[1px] h-[1px] opacity-0 fixed bg-transparent top-0 right-0"
-        onClick={toggleRightPanel}
-        id={rightPanelToggleId}
-      ></div>
-      <PanelGroup
-        onLayout={onLayout}
-        className="h-full"
-        direction="horizontal"
-        autoSaveId={!layoutConfig ? 'ade' : undefined}
-      >
-        <Panel
-          ref={leftSidebarRef}
-          collapsible
-          collapsedSize={0}
-          defaultSize={
-            typeof layoutConfig?.panelLayout[0] === 'number'
-              ? layoutConfig?.panelLayout[0] || 0
-              : 30
-          }
-          className="h-full ade-panel"
-          minSize={20}
-        >
-          <VStack gap={false} fullWidth fullHeight>
-            <ADEAccordionGroup
-              panels={[
-                ...(isTemplate
-                  ? [
-                      {
-                        id: 'template-settings',
-                        defaultOpen: false,
-                        label: t('templateSettings'),
-                        content: <TemplateSettingsPanel />,
-                        minHeight: 150,
-                      },
-                      {
-                        id: 'settings',
-                        label: t('agentTemplateSettings'),
-                        content: <AgentTemplateSettingsPanel />,
-                        minHeight: 150,
-                      },
-                    ]
-                  : [
-                      {
-                        id: 'settings',
-                        label: t('agentSettings'),
-                        content: <AgentSettingsPanel />,
-                        minHeight: 150,
-                      },
-                    ]),
-                {
-                  id: 'tools',
-                  label: toolsTitle,
-                  content: <ToolsPanel />,
-                  minHeight: 200,
-                },
-                {
-                  id: 'datasources',
-                  label: datasourcesTitle,
-                  minHeight: 200,
-                  content: <DataSourcesPanel />,
-                },
-                ...(!isTemplate
-                  ? [
-                      {
-                        id: 'metadata',
-                        label: t('metadata'),
-                        content: <MetadataPanel />,
-                        minHeight: 150,
-                        defaultOpen: false,
-                      },
-                    ]
-                  : [
-                      {
-                        id: 'defaults',
-                        label: t('defaults'),
-                        content: <TemplateDefaultsPanel />,
-                        minHeight: 150,
-                        defaultOpen: false,
-                      },
-                    ]),
-                {
-                  id: 'llm-config',
-                  label: t('llmConfig'),
-                  content: <LLMConfigPanel />,
-                  minHeight: 150,
-                  defaultOpen: false,
-                },
-                {
-                  id: 'embedding-config',
-                  label: t('embeddingConfig'),
-                  content: <EmbeddingConfigPanel />,
-                  minHeight: 200,
-                  defaultOpen: false,
-                },
-                {
-                  id: 'advanced-settings',
-                  label: t('advancedSettings'),
-                  content: <AdvancedSettingsPanel />,
-                  minHeight: 100,
-                  defaultOpen: false,
-                },
-              ]}
-            />
-          </VStack>
-        </Panel>
-        <PanelResizeHandle className="min-w-[1px] w-[1px] bg-border" />
-        <Panel
-          defaultSize={layoutConfig?.panelLayout[1] || 40}
-          className="h-full ade-panel"
-          minSize={30}
-        >
-          <AgentSimulator />
-        </Panel>
-        <PanelResizeHandle className="min-w-[1px] w-[1px] bg-border" />
-        <Panel
-          ref={rightSidebarRef}
-          collapsible
-          defaultSize={
-            typeof layoutConfig?.panelLayout[2] === 'number'
-              ? layoutConfig?.panelLayout[2] || 0
-              : 30
-          }
-          className="h-full ade-panel"
-          minSize={20}
-        >
-          <VStack gap={false} fullWidth fullHeight>
-            <ADEAccordionGroup
-              panels={[
-                {
-                  id: 'core-memories',
-                  label: editCoreMemoriesTitle,
-                  content: <EditMemory />,
-                },
-                {
-                  id: 'archival-memories',
-                  label: archivalMemoriesTitle,
-                  content: <ArchivalMemoriesPanel />,
-                  defaultOpen: false,
-                },
-              ]}
-            />
-          </VStack>
-        </Panel>
-      </PanelGroup>
-    </HStack>
-  );
-}
-
-interface AppPanel {
-  title: string;
-  mobileTitle: string;
-  icon: React.ReactNode;
-  content: React.ReactNode;
 }
 
 function useAppPanels(): Record<string, AppPanel> {
@@ -622,6 +390,7 @@ export function ADELayout() {
           fullHeight
           zIndex="rightAboveZero"
         >
+          <NetworkInspector />
           <HiddenOnMobile checkWithJs>
             <QuickADEOnboarding />
             <ADEOnboarding />

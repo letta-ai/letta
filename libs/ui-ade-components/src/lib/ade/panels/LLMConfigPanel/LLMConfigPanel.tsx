@@ -1,7 +1,6 @@
 import { useCurrentAgent } from '../../../hooks';
 import {
   LoadingEmptyStatusComponent,
-  PanelMainContent,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
@@ -50,7 +49,6 @@ export function LLMConfigPanel() {
   }
 
   return (
-    <PanelMainContent>
       <VStack>
         <ReasoningEffortDropdown />
         <VerbosityLevelDropdown />
@@ -102,6 +100,5 @@ export function LLMConfigPanel() {
             />
           )}
       </VStack>
-    </PanelMainContent>
   );
 }

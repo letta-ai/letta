@@ -229,9 +229,10 @@ Cypress.Commands.add(
           /\/projects\/(.+)\/templates\/(.+)/,
         );
 
-        cy.findByTestId('accordion-trigger:template-settings', {
-          timeout: 50000,
-        }).click();
+
+
+        cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
+
 
         cy.findByTestId('update-template-name-button', {
           timeout: 50000,
@@ -497,9 +498,7 @@ Cypress.Commands.add(
       'match',
       /\/projects\/(.+)\/templates\/(.+)/,
     );
-    cy.findByTestId('accordion-trigger:template-settings', {
-      timeout: 50000,
-    }).click();
+    cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
 
     cy.findByTestId('update-template-name-button', {
       timeout: 50000,

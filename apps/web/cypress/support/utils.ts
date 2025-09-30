@@ -344,9 +344,8 @@ export function createTemplate(templateType: string, agentName: string) {
   );
 
   if (agentName) {
-    cy.findByTestId('accordion-trigger:template-settings', {
-      timeout: 50000,
-    }).click();
+    cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
+
 
     safeClick('[data-testid="update-template-name-button"]');
     safeType(

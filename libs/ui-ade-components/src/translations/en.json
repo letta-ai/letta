@@ -56,6 +56,10 @@
       "tooltip": "Add a description to help others understand what this template is for and how to use it"
     }
   },
+  "ADE/AdvancedAgentTemplateSettingsPanel": {
+    "defaults": "Default agent values",
+    "advanced": "Advanced agent configuration"
+  },
   "AgentMobileNavigation": {
     "more": "More panels",
     "less": "Less panels"
