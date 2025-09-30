@@ -3,7 +3,7 @@ from typing import AsyncGenerator, List
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import SimpleAnthropicStreamingInterface
-from letta.interfaces.openai_streaming_interface import SimpleOpenAIStreamingInterface
+from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import SummarizedReasoningContent, TextContent
