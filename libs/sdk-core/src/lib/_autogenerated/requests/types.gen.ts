@@ -1074,6 +1074,7 @@ export type ChildToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
   /**
    * The children tools that can be invoked.
    */
@@ -1110,6 +1111,7 @@ export type ConditionalToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
   /**
    * The default child tool to be called. If None, any tool can be called.
    */
@@ -1223,6 +1225,7 @@ export type ContinueToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
 };
 
 export type CoreMemoryBlockSchema = {
@@ -2446,6 +2449,7 @@ export type InitToolRule = {
    * Optional template string (ignored). Rendering uses fast built-in formatting for performance.
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
 };
 
 /**
@@ -3396,6 +3400,7 @@ export type MaxCountPerStepToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
   /**
    * The max limit for the total number of times this tool can be invoked in a single step.
    */
@@ -3843,6 +3848,7 @@ export type ParentToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
   /**
    * The children tools that can be invoked.
    */
@@ -4223,6 +4229,7 @@ export type RequiredBeforeExitToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
 };
 
 /**
@@ -4238,6 +4245,7 @@ export type RequiresApprovalToolRule = {
    * Optional template string (ignored). Rendering uses fast built-in formatting for performance.
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
 };
 
 export type RetrieveStreamRequest = {
@@ -5057,6 +5065,7 @@ export type TerminalToolRule = {
    * Optional template string (ignored).
    */
   prompt_template?: string | null;
+  requires_force_tool_call?: boolean;
 };
 
 export type TextContent = {
