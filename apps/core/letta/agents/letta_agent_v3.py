@@ -568,7 +568,6 @@ class LettaAgentV3(LettaAgentV2):
             for message in messages_to_persist:
                 if message.run_id is None:
                     message.run_id = run_id
-                print("MESSSAGE RUN ID", message.run_id, run_id)
 
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist,
@@ -743,7 +742,6 @@ class LettaAgentV3(LettaAgentV2):
         for message in messages_to_persist:
             if message.run_id is None:
                 message.run_id = run_id
-            print("MESSSAGE RUN ID", message.run_id, run_id)
 
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
