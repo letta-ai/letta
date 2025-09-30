@@ -15,7 +15,7 @@ a = Analysis(
         ('DEP_PATH/letta/templates', 'letta/templates'),
         ('DEP_PATH/letta/humans/examples', 'letta/humans/examples'),
         ('DEP_PATH/letta/personas/examples', 'letta/personas/examples'),
-        ('DEP_PATH/letta/prompts/system', 'letta/prompts/system'),
+        ('DEP_PATH/letta/prompts/system_prompts', 'letta/prompts/system_prompts'),
         ('DEP_PATH/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('letta_desktop', 'letta_desktop'),
     ] + collect_data_files('blib2to3') + collect_data_files('datamodel_code_generator.model.template.pydantic_v2') + collect_data_files('magika') + collect_data_files('markitdown'),

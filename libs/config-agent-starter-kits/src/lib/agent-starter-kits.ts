@@ -83,7 +83,7 @@ export const STARTER_KITS: {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-sonnet-4-20250514',
+      model: 'anthropic/claude-sonnet-4-5-20250929',
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
@@ -117,7 +117,7 @@ export const STARTER_KITS: {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-sonnet-4-20250514',
+      model: 'anthropic/claude-sonnet-4-5-20250929',
       enable_sleeptime: true,
       agent_type: 'voice_convo_agent',
       description:
@@ -184,7 +184,7 @@ export const STARTER_KITS: {
       },
     ],
     agentState: {
-      model: 'anthropic/claude-sonnet-4-20250514',
+      model: 'anthropic/claude-sonnet-4-5-20250929',
       tools: ['web_search'],
       description:
         'A deep research agent designed to conduct comprehensive research using web search capabilities.',
@@ -415,7 +415,7 @@ export const STARTER_KITS: {
     },
     image: companion,
     agentState: {
-      model: 'anthropic/claude-sonnet-4-20250514',
+      model: 'anthropic/claude-sonnet-4-5-20250929',
       description:
         'Act as a companion to the user, providing emotional support and companionship.',
       memory_blocks: [
