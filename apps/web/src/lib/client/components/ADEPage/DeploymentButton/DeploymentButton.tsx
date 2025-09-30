@@ -1,6 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Badge,
   Button,
   Checkbox,
   CloseIcon,
@@ -18,7 +17,6 @@ import {
   VisibleOnMobile,
   Alert,
 } from '@letta-cloud/ui-component-library';
-import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 
 import { z } from 'zod';
 
@@ -30,8 +28,6 @@ import { useUserHasPermission } from '$web/client/hooks';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CompareTemplateVersions } from '$web/client/components';
-import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { CloudUpsellDeploy } from '$web/client/components/ADEPage/DeploymentButton/CloudUpsellButton/CloudUpsellButton';
 import { CreateTemplateButton } from '$web/client/components/ADEPage/DeploymentButton/CreateTemplateFromAgentButton/CreateTemplateFromAgentButton';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
@@ -185,8 +181,6 @@ function CreateNewTemplateVersionDialog(
 
   const templateName = useCurrentTemplateName();
 
-  const showOnboardingMessage = useShowOnboarding('save_version');
-
   type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
 
   const form = useForm<VersionAgentFormValues>({
@@ -289,22 +283,6 @@ function CreateNewTemplateVersionDialog(
                 </HStack>
               </CloseMiniApp>
             </HStack>
-            {showOnboardingMessage && (
-              <VStack paddingX paddingTop>
-                <HStack color="brand-light" padding="small">
-                  <VStack>
-                    <HStack>
-                      <Badge
-                        content={t('VersionAgentDialog.onboarding.badge')}
-                      />
-                    </HStack>
-                    <Typography>
-                      {t('VersionAgentDialog.onboarding.title')}
-                    </Typography>
-                  </VStack>
-                </HStack>
-              </VStack>
-            )}
             <HiddenOnMobile checkWithJs>
               <HStack fullWidth fullHeight gap={false} overflow="hidden">
                 <VStack fullWidth fullHeight flex overflow="hidden">
@@ -370,31 +348,6 @@ function CreateNewTemplateVersionDialog(
   );
 }
 
-interface OnboardingWrapperProps {
-  children: React.ReactNode;
-}
-
-function OnboardingWrapper(props: OnboardingWrapperProps) {
-  const { children } = props;
-  const t = useTranslations('DeploymentButton');
-
-  const show = useShowOnboarding('save_version');
-
-  return (
-    <OnboardingAsideFocus
-      spotlight
-      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
-      currentStep={4}
-      title={t('OnboardingWrapper.title')}
-      description={t('OnboardingWrapper.description')}
-      placement="bottom-end"
-      isOpen={show}
-    >
-      {children}
-    </OnboardingAsideFocus>
-  );
-}
-
 function TemplateVersionDisplay() {
   // get latest template version
   const t = useTranslations(
@@ -405,27 +358,22 @@ function TemplateVersionDisplay() {
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
 
-  const show = useShowOnboarding('save_version');
-
   if (!canUpdateTemplate) {
     return null;
   }
 
   return (
-    <OnboardingWrapper>
-      <CreateNewTemplateVersionDialog
-        trigger={
-          <Button
-            size="default"
-            _use_rarely_className={show ? 'shine' : ''}
-            data-testid="stage-new-version-button"
-            color="primary"
-            fullWidth
-            label={t('DeploymentButton.save')}
-          />
-        }
-      />
-    </OnboardingWrapper>
+    <CreateNewTemplateVersionDialog
+      trigger={
+        <Button
+          size="default"
+          data-testid="stage-new-version-button"
+          color="primary"
+          fullWidth
+          label={t('DeploymentButton.save')}
+        />
+      }
+    />
   );
 }
 

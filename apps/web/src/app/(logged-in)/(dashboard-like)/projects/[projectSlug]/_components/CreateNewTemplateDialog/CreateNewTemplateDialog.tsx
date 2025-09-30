@@ -14,11 +14,8 @@ import {
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
-import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 import { isAPIError } from '@letta-cloud/sdk-core';
-import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import {
   adjectives,
@@ -33,33 +30,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
-}
-
-interface OnboardingWrapperProps {
-  children: React.ReactNode;
-}
-
-function OnboardingWrapper(props: OnboardingWrapperProps) {
-  const { children } = props;
-  const t = useTranslations(
-    'projects/(projectSlug)/components/CreateNewTemplateDialog',
-  );
-
-  const show = useShowOnboarding('create_template');
-
-  return (
-    <OnboardingAsideFocus
-      spotlight
-      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
-      currentStep={2}
-      title={t('OnboardingWrapper.title')}
-      description={t('OnboardingWrapper.description')}
-      placement="left-start"
-      isOpen={show}
-    >
-      {children}
-    </OnboardingAsideFocus>
-  );
 }
 
 export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
@@ -153,16 +123,14 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     <Dialog
       title={t('title')}
       trigger={
-        <OnboardingWrapper>
-          <Slot
-            data-testid="create-agent-template-button"
-            onClick={() => {
-              setOpen(true);
-            }}
-          >
-            {trigger}
-          </Slot>
-        </OnboardingWrapper>
+        <Slot
+          data-testid="create-agent-template-button"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {trigger}
+        </Slot>
       }
       hideFooter
       disableForm

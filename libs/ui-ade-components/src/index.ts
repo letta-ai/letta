@@ -15,7 +15,6 @@ export * from './lib/ade/panels/AgentSimulator/QuickAgentSimulatorOnboarding';
 export * from './lib/IdentitiesTable/IdentitiesTable';
 export * from './lib/shared/ADEGroup/ADEGroup';
 export * from './lib/ImportAgentsDialog/ImportAgentsDialog';
-export * from './lib/hooks/useADETour/useADETour';
 export * from './lib/hooks/useQuickADETour/useQuickADETour';
 export * from './lib/DeleteAgentDialog/DeleteAgentDialog';
 export * from './lib/DeleteTemplateDialog/DeleteTemplateDialog';

@@ -15,8 +15,8 @@ import { webApiQueryKeys } from '$web/client';
 import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/LoggedInClientSideProviders';
 import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';
 import { router } from '$web/web-api/router';
-import { OnboardingProvider } from '$web/client/hooks/useOnboarding';
 import { VerifyAccountLoginWrapper } from '$web/server/components/LoggedInLayout/VerifyAccountLoginWrapper/VerifyAccountLoginWrapper';
+import { OnboardingProvider } from '$web/client/hooks/useOnboarding';
 
 interface InAppProps {
   children: ReactNode;
@@ -87,7 +87,10 @@ export async function LoggedInLayout(props: InAppProps) {
         <LoggedInClientSideProviders>
           <VerifyAccountLoginWrapper>
             <WelcomeOverlayWrapper>
-              <OnboardingProvider>{children}</OnboardingProvider>
+              <OnboardingProvider>
+                {children}
+
+              </OnboardingProvider>
             </WelcomeOverlayWrapper>
           </VerifyAccountLoginWrapper>
         </LoggedInClientSideProviders>

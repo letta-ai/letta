@@ -31,7 +31,6 @@ import {
 } from './AdvancedCoreMemoryEditor';
 import { useADEPermissions } from '../../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useADETour } from '../../../hooks/useADETour/useADETour';
 import './EditCoreMemoriesPanel.css';
 import type { Block } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
@@ -295,48 +294,6 @@ function AgentMemory(props: SimulatedMemoryProps) {
     </MemoryWrapper>
   );
 }
-
-interface MemoryOnboardingProps {
-  children: React.ReactNode;
-}
-
-function MemoryOnboarding(props: MemoryOnboardingProps) {
-  const t = useTranslations('ADE/EditCoreMemoriesPanel');
-  const { children } = props;
-
-  const { currentStep, setStep } = useADETour();
-
-  if (currentStep !== 'core_memories') {
-    return <>{children}</>;
-  }
-
-  return (
-    <OnboardingAsideFocus
-      className="w-full h-full"
-      title={t('MemoryOnboarding.title')}
-      placement="left-start"
-      description={t('MemoryOnboarding.description')}
-      isOpen
-      totalSteps={4}
-      nextStep={
-        <Button
-          fullWidth
-          size="large"
-          bold
-          onClick={() => {
-
-            setStep('tools');
-          }}
-          label={t('MemoryOnboarding.next')}
-        />
-      }
-      currentStep={2}
-    >
-      {children}
-    </OnboardingAsideFocus>
-  );
-}
-
 interface QuickMemoryOnboardingProps {
   children: React.ReactNode;
 }
@@ -539,7 +496,6 @@ export function EditMemory() {
           key={isTemplate ? 'templated' : 'agent'}
           defaultVisibleMemoryType={isTemplate ? 'templated' : 'agent'}
         >
-          <MemoryOnboarding>
             <VStack
               className="core-memory-panel"
               overflow="auto"
@@ -623,7 +579,6 @@ export function EditMemory() {
                 )}
               </VStack>
             </VStack>
-          </MemoryOnboarding>
         </VisibleMemoryTypeProvider>
       </QuickMemoryOnboarding>
     </PanelMainContent>

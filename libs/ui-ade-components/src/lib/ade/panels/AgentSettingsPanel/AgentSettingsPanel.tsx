@@ -10,7 +10,6 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { OnboardingAsideFocus } from '../../../OnboardingAsideFocus/OnboardingAsideFocus';
 
 import {
   useAgentBaseTypeName,
@@ -19,7 +18,6 @@ import {
 import { useADEState } from '../../../hooks/useADEState/useADEState';
 import { useTranslations } from '@letta-cloud/translations';
 import { UpdateNameDialog } from '../../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
-import { useADETour } from '../../../hooks/useADETour/useADETour';
 import { ModelSelector } from '../../inputs/ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../../inputs/SystemPromptEditor/SystemPromptEditor';
 import { IdentityViewer } from '../../inputs/IdentityViewer/IdentityViewer';
@@ -63,46 +61,6 @@ function AgentIdentifierToCopy() {
         hideLabel
       />
     </HStack>
-  );
-}
-
-interface AgentSettingsOnboardingProps {
-  children: React.ReactNode;
-}
-
-export function AgentSettingsOnboarding(props: AgentSettingsOnboardingProps) {
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const { children } = props;
-
-  const { currentStep, setStep } = useADETour();
-
-  if (currentStep !== 'template') {
-    return <>{children}</>;
-  }
-
-  return (
-    <OnboardingAsideFocus
-      className="w-full h-full"
-      title={t('AgentSettingsOnboarding.title')}
-      placement="right-start"
-      description={t('AgentSettingsOnboarding.description')}
-      isOpen
-      totalSteps={4}
-      nextStep={
-        <Button
-          fullWidth
-          size="large"
-          bold
-          onClick={() => {
-            setStep('core_memories');
-          }}
-          label={t('AgentSettingsOnboarding.next')}
-        />
-      }
-      currentStep={1}
-    >
-      {children}
-    </OnboardingAsideFocus>
   );
 }
 
