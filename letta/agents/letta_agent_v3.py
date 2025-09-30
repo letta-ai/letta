@@ -4,8 +4,9 @@ from typing import AsyncGenerator, Optional
 from opentelemetry.trace import Span
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
-from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter, SimpleLettaLLMRequestAdapter
-from letta.adapters.letta_llm_stream_adapter import SimpleLettaLLMStreamAdapter
+from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
+from letta.adapters.simple_llm_request_adapter import SimpleLLMRequestAdapter
+from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _load_last_function_response,
@@ -162,12 +163,12 @@ class LettaAgentV3(LettaAgentV2):
         first_chunk = True
 
         if stream_tokens:
-            llm_adapter = SimpleLettaLLMStreamAdapter(
+            llm_adapter = SimpleLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
             )
         else:
-            llm_adapter = SimpleLettaLLMRequestAdapter(
+            llm_adapter = SimpleLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
             )
