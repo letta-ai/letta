@@ -4,7 +4,16 @@ import {
 } from '@letta-cloud/service-redis';
 import { get } from 'lodash';
 import { mockDatabase } from '@letta-cloud/service-database-testing';
-import { getAndSeedOrganizationLimits } from './handleMessageRateLimiting';
+import { getAndSeedOrganizationLimits, handleMessageRateLimiting } from './handleMessageRateLimiting';
+import { AgentsService } from '@letta-cloud/sdk-core';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import { getRemainingRecurrentCredits } from '../recurringCreditsManager/recurringCreditsManager';
+import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
+import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
+
+jest.mock('@letta-cloud/utils-shared', () => ({
+  ...jest.requireActual('@letta-cloud/utils-shared'),
+}));
 
 jest.mock('@letta-cloud/config-environment-variables', () => {
   return {
@@ -21,18 +30,54 @@ jest.mock('@letta-cloud/service-redis', () => ({
   setRedisData: jest.fn(),
 }));
 
+// Mock sdk-core before it's imported to avoid circular dependency issues
+jest.mock('@letta-cloud/sdk-core', () => {
+  const actual = jest.requireActual('@letta-cloud/sdk-core');
+  return {
+    ...actual,
+    AgentsService: {
+      retrieveAgent: jest.fn(),
+    },
+  };
+});
+
 jest.mock('@letta-cloud/service-email', () => ({
   sendEmail: jest.fn(),
 }));
 
+jest.mock('@letta-cloud/service-payments', () => ({
+  getCustomerSubscription: jest.fn(),
+}));
+
+jest.mock('../recurringCreditsManager/recurringCreditsManager', () => ({
+  getRemainingRecurrentCredits: jest.fn(),
+}));
+
+jest.mock('../redisOrganizationCredits/redisOrganizationCredits', () => ({
+  getOrganizationCredits: jest.fn(),
+}));
+
+jest.mock('../getCreditCostPerModel/getCreditCostPerModel', () => ({
+  getCreditCostPerModel: jest.fn(),
+}));
+
+jest.mock('../redisModelTransactions/redisModelTransactions', () => ({
+  getRedisModelTransactions: jest.fn(),
+}));
+
 const getRedisData = getRedisDataBase as jest.Mock;
+const mockAgentsService = AgentsService as jest.Mocked<typeof AgentsService>;
+const mockGetCustomerSubscription = getCustomerSubscription as jest.Mock;
+const mockGetRemainingRecurrentCredits = getRemainingRecurrentCredits as jest.Mock;
+const mockGetOrganizationCredits = getOrganizationCredits as jest.Mock;
+const mockGetCreditCostPerModel = getCreditCostPerModel as jest.Mock;
 
 describe('getAndSeedOrganizationLimits', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it.only('should fetch limits from organizationLimits  ', async () => {
+  it('should fetch limits from organizationLimits  ', async () => {
     getRedisData.mockImplementation((query, payload) => {
       if (
         query === 'organizationRateLimitsPerModel' &&
@@ -83,7 +128,7 @@ describe('getAndSeedOrganizationLimits', () => {
     });
     expect(setRedisData).toHaveBeenCalledWith(
       'organizationRateLimitsPerModel',
-      { organizationId: '1' },
+      { organizationId: '1', modelId: 'chatgpt' },
       {
         expiresAt: expect.any(Number),
         data: {
@@ -157,7 +202,10 @@ describe('getAndSeedOrganizationLimits', () => {
         get(payload, 'modelId') === 'chatgpt' &&
         get(payload, 'organizationId') === '1'
       ) {
-        return undefined;
+        return {
+          maxRequestsPerMinutePerModel: undefined,
+          maxTokensPerMinutePerModel: undefined,
+        };
       }
 
       return null;
@@ -216,5 +264,297 @@ describe('getAndSeedOrganizationLimits', () => {
     expect(
       mockDatabase.query.inferenceModelsMetadata.findFirst,
     ).toHaveBeenCalled();
+  });
+});
+
+describe('handleMessageRateLimiting - Pro Subscriptions', () => {
+  const mockAgent = {
+    id: 'agent-1',
+    llm_config: {
+      model: 'gpt-4',
+      model_endpoint: 'https://api.openai.com/v1',
+      provider_category: 'managed',
+    },
+    project_id: 'project-1',
+    template_id: 'template-1',
+    base_template_id: 'base-template-1',
+  };
+
+  const mockRequest = {
+    headers: {},
+  } as any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAgentsService.retrieveAgent.mockResolvedValue(mockAgent as any);
+  });
+
+  it('should allow request for pro user with sufficient recurrent credits', async () => {
+    const mockSubscription = {
+      tier: 'pro',
+      billingPeriodStart: Date.now(),
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+    mockGetOrganizationCredits.mockResolvedValue(0); // No purchased credits
+    mockGetRemainingRecurrentCredits.mockResolvedValue(5); // Has recurrent credits
+    mockGetCreditCostPerModel.mockResolvedValue(1);
+
+    getRedisData.mockImplementation((query, payload) => {
+      if (query === 'modelNameAndEndpointToIdMap') {
+        return { modelId: 'gpt-4-model-id' };
+      }
+      if (query === 'organizationToCoreOrganization') {
+        return { coreOrganizationId: 'core-org-1' };
+      }
+      if (query === 'rpmWindow' || query === 'tpmWindow') {
+        return { data: 0 };
+      }
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      if (query === 'organizationRateLimitsPerModel') {
+        return {
+          maxRequestsPerMinutePerModel: 100,
+          maxTokensPerMinutePerModel: 1000,
+        };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    expect(result.isRateLimited).toBe(false);
+    expect(mockGetRemainingRecurrentCredits).toHaveBeenCalledWith('org-1', mockSubscription);
+  });
+
+  it('should rate limit pro user when recurrent credits are exceeded', async () => {
+    const mockSubscription = {
+      tier: 'pro',
+      billingPeriodStart: Date.now(),
+      stripeProductId: 'prod_starter',
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+    mockGetOrganizationCredits.mockResolvedValue(0); // No purchased credits
+    mockGetRemainingRecurrentCredits.mockResolvedValue(20000); // Exceeded recurrent limit (pro limit is 20,000)
+    mockGetCreditCostPerModel.mockResolvedValue(1);
+
+    getRedisData.mockImplementation((query, payload) => {
+      if (query === 'modelNameAndEndpointToIdMap') {
+        return { modelId: 'gpt-4-model-id' };
+      }
+      if (query === 'organizationToCoreOrganization') {
+        return { coreOrganizationId: 'core-org-1' };
+      }
+      if (query === 'rpmWindow' || query === 'tpmWindow') {
+        return { data: 0 };
+      }
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      if (query === 'organizationRateLimitsPerModel') {
+        return {
+          maxRequestsPerMinutePerModel: 100,
+          maxTokensPerMinutePerModel: 1000,
+        };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    expect(result.isRateLimited).toBe(true);
+    expect(result.reasons).toContain('not-enough-credits');
+  });
+
+  it('should use purchased credits when available for pro users', async () => {
+    const mockSubscription = {
+      tier: 'pro',
+      billingPeriodStart: Date.now(),
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+    mockGetOrganizationCredits.mockResolvedValue(100); // Has purchased credits
+    mockGetRemainingRecurrentCredits.mockResolvedValue(1001); // Recurrent credits exceeded (but should not matter)
+    mockGetCreditCostPerModel.mockResolvedValue(1);
+
+    getRedisData.mockImplementation((query, payload) => {
+      if (query === 'modelNameAndEndpointToIdMap') {
+        return { modelId: 'gpt-4-model-id' };
+      }
+      if (query === 'organizationToCoreOrganization') {
+        return { coreOrganizationId: 'core-org-1' };
+      }
+      if (query === 'rpmWindow' || query === 'tpmWindow') {
+        return { data: 0 };
+      }
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      if (query === 'organizationRateLimitsPerModel') {
+        return {
+          maxRequestsPerMinutePerModel: 100,
+          maxTokensPerMinutePerModel: 1000,
+        };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    expect(result.isRateLimited).toBe(false);
+    expect(mockGetOrganizationCredits).toHaveBeenCalledWith('org-1');
+  });
+
+  it('should still respect RPM and TPM limits for pro users', async () => {
+    const mockSubscription = {
+      tier: 'pro',
+      billingPeriodStart: Date.now(),
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+    mockGetOrganizationCredits.mockResolvedValue(100);
+    mockGetRemainingRecurrentCredits.mockResolvedValue(5);
+    mockGetCreditCostPerModel.mockResolvedValue(1);
+
+    getRedisData.mockImplementation((query, payload) => {
+      if (query === 'modelNameAndEndpointToIdMap') {
+        return { modelId: 'gpt-4-model-id' };
+      }
+      if (query === 'organizationToCoreOrganization') {
+        return { coreOrganizationId: 'core-org-1' };
+      }
+      if (query === 'rpmWindow') {
+        return { data: 99 }; // At RPM limit
+      }
+      if (query === 'tpmWindow') {
+        return { data: 0 };
+      }
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      if (query === 'organizationRateLimitsPerModel') {
+        return {
+          maxRequestsPerMinutePerModel: 100,
+          maxTokensPerMinutePerModel: 1000,
+        };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    expect(result.isRateLimited).toBe(true);
+    expect(result.reasons).toContain('requests');
+  });
+
+  it('should use legacy rate limiting for non-pro tiers', async () => {
+    const mockSubscription = {
+      tier: 'free',
+      billingPeriodStart: Date.now(),
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+    mockGetOrganizationCredits.mockResolvedValue(0);
+    mockGetCreditCostPerModel.mockResolvedValue(1);
+
+    getRedisData.mockImplementation((query, payload) => {
+      if (query === 'modelNameAndEndpointToIdMap') {
+        return { modelId: 'gpt-4-model-id' };
+      }
+      if (query === 'organizationToCoreOrganization') {
+        return { coreOrganizationId: 'core-org-1' };
+      }
+      if (query === 'rpmWindow' || query === 'tpmWindow') {
+        return { data: 0 };
+      }
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      if (query === 'organizationRateLimitsPerModel') {
+        return {
+          maxRequestsPerMinutePerModel: 100,
+          maxTokensPerMinutePerModel: 1000,
+        };
+      }
+      if (query === 'modelIdToModelTier') {
+        return { tier: 'free' };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    // Should not call pro-specific functions
+    expect(mockGetRemainingRecurrentCredits).not.toHaveBeenCalled();
+  });
+
+  it('should bypass rate limiting for BYOK agents', async () => {
+    const byokAgent = {
+      ...mockAgent,
+      llm_config: {
+        ...mockAgent.llm_config,
+        provider_category: 'byok',
+      },
+    };
+
+    mockAgentsService.retrieveAgent.mockResolvedValue(byokAgent as any);
+
+    const mockSubscription = {
+      tier: 'pro',
+      billingPeriodStart: Date.now(),
+    };
+
+    mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
+
+    getRedisData.mockImplementation((query) => {
+      if (query === 'deployedAgent') {
+        return { isDeployed: false };
+      }
+      return null;
+    });
+
+    const result = await handleMessageRateLimiting(mockRequest, {
+      organizationId: 'org-1',
+      agentId: 'agent-1',
+      messages: [],
+      type: 'inference',
+      lettaAgentsUserId: 'user-1',
+    });
+
+    expect(result.isRateLimited).toBe(false);
+    expect(mockGetRemainingRecurrentCredits).not.toHaveBeenCalled();
+    expect(mockGetOrganizationCredits).not.toHaveBeenCalled();
   });
 });
