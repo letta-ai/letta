@@ -178,13 +178,7 @@ export * from './lib/core/SideOverlay/SideOverlay';
 
 export * from './lib/onboarding/OnboardingPrimaryDialog/OnboardingPrimaryDialog';
 
-export * from './lib/onboarding/OnboardingCheckbox/OnboardingCheckbox';
-
-export * from './lib/onboarding/OnboardingRewardElement/OnboardingRewardElement';
-
 export * from './lib/onboarding/OnboardingSteps/OnboardingSteps';
-
-export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
 
 export * from './lib/reusable/CrossedOut/CrossedOut';
 

@@ -20,7 +20,6 @@ import { useCurrentAgent } from '../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolManager } from '../ToolManager/ToolManager';
 import { useToolManagerState } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
-import { useADETour } from '../../../hooks/useADETour/useADETour';
 import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
 import { MAX_TOOLS_THRESHOLD } from './constants';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
@@ -37,43 +36,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
   const t = useTranslations('ADE/Tools');
   const { children } = props;
 
-  const { currentStep, setStep } = useADETour();
   const { currentStep: quickStep, setStep: setQuickStep } = useQuickADETour();
-
-  if (currentStep === 'tools') {
-    return (
-      <OnboardingAsideFocus
-        className="w-full h-full"
-        title={t('ToolsOnboarding.title')}
-        placement="right-start"
-        description={t('ToolsOnboarding.description')}
-        isOpen
-        totalSteps={4}
-        nextStep={
-          <Button
-            fullWidth
-            size="large"
-            bold
-            onClick={() => {
-              trackClientSideEvent(
-                AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
-                {
-                  onboarding_type: 'create:new_agent',
-                  onboarding_step: 'view_tools_panel',
-                },
-              );
-
-              setStep('chat');
-            }}
-            label={t('ToolsOnboarding.next')}
-          />
-        }
-        currentStep={3}
-      >
-        <div className="h-full w-full">{children}</div>
-      </OnboardingAsideFocus>
-    );
-  }
 
   if (quickStep === 'tools') {
     return (

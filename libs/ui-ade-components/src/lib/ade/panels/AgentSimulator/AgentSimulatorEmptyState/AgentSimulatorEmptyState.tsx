@@ -14,7 +14,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useCurrentAgent } from '../../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { AgentChatInput } from '../AgentChatInput/AgentChatInput';
-import { useSendMessage } from '@letta-cloud/ui-ade-components';
+import { useQuickADETour, useSendMessage } from '@letta-cloud/ui-ade-components';
 import { QuickAgentSimulatorOnboarding } from '../QuickAgentSimulatorOnboarding';
 
 type PromptKey =
@@ -126,15 +126,15 @@ export function AgentSimulatorEmptyState() {
     };
   }, [selectedPromptCategory, handleClickOutside]);
 
-  // no-op
+  const { currentStep } = useQuickADETour();
 
   return (
     <HStack fullHeight fullWidth justify="center">
       <VStack
         fullHeight
         fullWidth
-        justify="center"
-        className="largerThanMobile:px-[10%]"
+        justify={currentStep === 'message' ? 'end' : 'center'}
+        className={currentStep === 'message' ? '' : 'largerThanMobile:px-[10%]'}
       >
         <QuickAgentSimulatorOnboarding>
           {/*Prevent layout shift when suggested prompt appears*/}

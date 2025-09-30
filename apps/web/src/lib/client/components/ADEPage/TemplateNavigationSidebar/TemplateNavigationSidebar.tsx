@@ -1,6 +1,5 @@
 import {
   useCurrentAgentMetaData,
-  OnboardingAsideFocus,
 } from '@letta-cloud/ui-ade-components';
 import {
   Button,
@@ -18,8 +17,6 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import React, { useMemo } from 'react';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 
@@ -45,41 +42,6 @@ function SidebarButton(props: SidebarButtonProps) {
       hideLabel
       _use_rarely_className="hover:!bg-brand-hover hover:!text-brand-hover-content"
     />
-  );
-}
-
-interface DistributionOnboardingStepProps {
-  children: React.ReactNode;
-}
-
-function DistributionOnboardingStep(props: DistributionOnboardingStepProps) {
-  const t = useTranslations('components/TemplateNavigationSidebar');
-  const { children } = props;
-
-  const showOnboarding = useShowOnboarding('deploy_agent');
-
-  const pathname = usePathname();
-
-  if (pathname.endsWith('distribution')) {
-    return <>{children}</>;
-  }
-
-  if (!showOnboarding) {
-    return <>{children}</>;
-  }
-
-  return (
-    <OnboardingAsideFocus
-      title={t('DistributionOnboardingStep.title')}
-      placement="right-start"
-      description={t('DistributionOnboardingStep.description')}
-      isOpen
-      spotlight
-      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
-      currentStep={5}
-    >
-      {children}
-    </OnboardingAsideFocus>
   );
 }
 
@@ -153,13 +115,11 @@ export function TemplateSidebarInner() {
         label={t('nav.templateEditor')}
         href={`/projects/${slug}/templates/${templateName}`}
       />
-      <DistributionOnboardingStep>
-        <SidebarButton
-          label={t('nav.distribution')}
-          icon={<RocketIcon />}
-          href={`/projects/${slug}/templates/${templateName}/distribution`}
-        />
-      </DistributionOnboardingStep>
+      <SidebarButton
+        label={t('nav.distribution')}
+        icon={<RocketIcon />}
+        href={`/projects/${slug}/templates/${templateName}/distribution`}
+      />
       <MigrationsButton />
       <SidebarButton
         icon={<MonitoringIcon />}

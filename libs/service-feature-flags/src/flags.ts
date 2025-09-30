@@ -67,11 +67,6 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
-  QUICK_ONBOARDING: {
-    description: 'Quick onboarding for new users',
-    expiryDate: '2025-08-01',
-    flagValue: z.boolean(),
-  },
   SHOW_ERRORED_MESSAGES: {
     description: 'Show errored messages in the messages panel',
     expiryDate: '2025-08-15',

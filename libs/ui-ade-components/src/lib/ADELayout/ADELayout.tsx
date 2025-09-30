@@ -13,7 +13,6 @@ import {
   Logo,
   OnboardingPrimaryDialog,
   OnboardingPrimaryHeading,
-  OnboardingSteps,
   SettingsApplicationsIcon,
   TemplateIcon,
   ToolsIcon,
@@ -39,13 +38,10 @@ import {
 } from '../ade/panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import React, { useMemo, useState } from 'react';
 import WelcomeWebp from './welcome-to-ade.webp';
-import { useADETour } from '../hooks/useADETour/useADETour';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
 import { useAgentBaseTypeName, useGlobalNetworkInterceptor } from '../hooks';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 import { ToolManagerProvider } from '../ade/panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
@@ -334,49 +330,6 @@ function QuickADEOnboarding() {
   return null;
 }
 
-function ADEOnboarding() {
-  const t = useTranslations('ADELayout');
-
-  const { currentStep, setStep } = useADETour();
-
-  if (currentStep !== 'welcome') {
-    return null;
-  }
-
-  return (
-    <OnboardingPrimaryDialog
-      isOpen
-      imageUrl={WelcomeWebp}
-      title={t('ADEOnboarding.welcome')}
-      primaryAction={
-        <Button
-          onClick={() => {
-            setStep('template');
-          }}
-          label={t('ADEOnboarding.start')}
-          color="primary"
-        />
-      }
-      secondaryAction={
-        <ConfirmPauseOnboardingDialog
-          trigger={<Button label={t('ADEOnboarding.skip')} color="tertiary" />}
-        />
-      }
-    >
-      <VStack>
-        <OnboardingPrimaryHeading
-          title={t('ADEOnboarding.welcome')}
-          description={t('ADEOnboarding.description')}
-        ></OnboardingPrimaryHeading>
-        <OnboardingSteps
-          currentStep={3}
-          totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
-        />
-      </VStack>
-    </OnboardingPrimaryDialog>
-  );
-}
-
 export function ADELayout() {
   useGlobalNetworkInterceptor();
 
@@ -393,7 +346,6 @@ export function ADELayout() {
           <NetworkInspector />
           <HiddenOnMobile checkWithJs>
             <QuickADEOnboarding />
-            <ADEOnboarding />
             <DesktopLayout />
           </HiddenOnMobile>
           <VisibleOnMobile checkWithJs>

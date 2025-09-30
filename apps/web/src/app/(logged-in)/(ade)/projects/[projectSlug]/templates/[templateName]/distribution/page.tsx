@@ -13,7 +13,6 @@ import {
   useCopyToClipboard,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 
 import React, { useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -21,14 +20,12 @@ import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurren
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { ADEGroup } from '@letta-cloud/ui-ade-components';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistorySection } from './VersionHistorySection/VersionHistorySection';
 
 import { CreateAgentFromTemplateDialog } from './CreateAgentFromTemplateDialog/CreateAgentFromTemplateDialog';
 import { TypescriptInstructions } from './TypescriptInstructions/TypescriptInstructions';
-import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -199,8 +196,7 @@ function DeploymentInstructions() {
       fullWidth
       paddingBottom="small"
     >
-      <DistributionOnboardingStepFinal>
-        <VStack fullWidth overflowX="hidden" fullHeight position="relative">
+      <VStack fullWidth overflowX="hidden" fullHeight position="relative">
           <HStack
             /* eslint-disable-next-line react/forbid-component-props */
             className="min-h-[45px]"
@@ -239,57 +235,10 @@ function DeploymentInstructions() {
           )}
           {deploymentMethod === 'letta-launch' && <LaunchLinks />}
         </VStack>
-      </DistributionOnboardingStepFinal>
     </VStack>
   );
 }
 
-
-interface DistributionOnboardingStepFinalProps {
-  children: React.ReactNode;
-}
-
-function DistributionOnboardingStepFinal(
-  props: DistributionOnboardingStepFinalProps,
-) {
-  const t = useTranslations('pages/distribution');
-  const { children } = props;
-
-  const showOnboarding = useShowOnboarding('deploy_agent');
-  const { setOnboardingStep } = useSetOnboardingStep();
-
-  if (!showOnboarding) {
-    return <>{children}</>;
-  }
-
-  return (
-    <OnboardingAsideFocus
-      title={t('DistributionOnboardingStepFinal.title')}
-      placement="left-start"
-      description={t('DistributionOnboardingStepFinal.description')}
-      isOpen
-      /* eslint-disable-next-line react/forbid-component-props */
-      className="w-full h-full"
-      nextStep={
-        <Button
-          label={t('DistributionOnboardingStepFinal.nextStep')}
-          color="primary"
-          fullWidth
-          onClick={() => {
-            setOnboardingStep({
-              onboardingStep: 'completed',
-              stepToClaim: 'deploy_agent',
-            });
-          }}
-        />
-      }
-      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
-      currentStep={5}
-    >
-      {children}
-    </OnboardingAsideFocus>
-  );
-}
 export default function DistributionPage() {
   const t = useTranslations('pages/distribution');
 
