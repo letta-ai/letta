@@ -1,0 +1,211 @@
+---
+title: Searching & Querying
+subtitle: How to search archival memory effectively
+slug: guides/agents/archival-search
+---
+
+## Search result format
+
+<Info>
+**What agents receive:** Each result contains:
+- `content` - The stored text
+- `tags` - Associated tags
+- `timestamp` - When the memory was created
+- `relevance` - Scoring with `rrf_score`, `vector_rank`, `fts_rank`
+
+Letta uses **hybrid search** combining semantic (vector) and keyword (full-text) search, ranked using Reciprocal Rank Fusion (RRF). Higher `rrf_score` means more relevant.
+</Info>
+
+## Writing effective queries
+
+Letta uses OpenAI's `text-embedding-3-small` model, which handles natural language questions well. Agents can use various query styles:
+
+**Natural language questions work best:**
+```python
+archival_memory_search(query="How does the test work?")
+# Returns: "The Voight-Kampff test measures involuntary emotional responses..."
+```
+
+**Keywords also work:**
+```python
+archival_memory_search(query="replicant lifespan")
+# Returns memories containing both keywords and semantically related concepts
+```
+
+**Concept-based queries leverage semantic understanding:**
+```python
+archival_memory_search(query="artificial memories")
+# Returns: "...experimental replicant with implanted memories..."
+# (semantic match despite different terminology)
+```
+
+<Tip>
+**Pagination:** Agents receive multiple results per search. If an agent doesn't paginate correctly, you can instruct it to adjust the `page` parameter or remind it to iterate through results.
+</Tip>
+
+## Filtering by time
+
+Agents can search by date ranges:
+
+```python
+# Recent memories
+archival_memory_search(
+    query="test results",
+    start_datetime="2025-09-29T00:00:00"
+)
+
+# Specific time window
+archival_memory_search(
+    query="replicant cases",
+    start_datetime="2025-09-29T00:00:00",
+    end_datetime="2025-09-30T23:59:59"
+)
+```
+
+<Info>
+**Agent datetime awareness:**
+- Agents know the current day but not the current time
+- Agents can see timestamps of messages they've received
+- Agents cannot control insertion timestamps (automatic)
+- Developers can backdate memories via SDK with `created_at`
+- Time filtering enables queries like "what did we discuss last week?"
+</Info>
+
+## Tags and organization
+
+Tags help agents organize and filter archival memories. **Agents always know what tags exist in their archive** since tag lists are compiled into the context window.
+
+**Common tag patterns:**
+- `user_info`, `professional`, `personal_history`
+- `documentation`, `technical`, `reference`
+- `conversation`, `milestone`, `event`
+- `company_policy`, `procedure`, `guideline`
+
+**Tag search modes:**
+- Match any tag
+- Match all tags
+- Filter by date ranges
+
+Example of organized tagging:
+
+```python
+# Atomic memory with precise tags
+archival_memory_insert(
+    content="Nexus-6 replicants have a four-year lifespan",
+    tags=["technical", "replicant", "nexus-6"]
+)
+
+# Later, easy retrieval
+archival_memory_search(
+    query="how long do replicants live",
+    tags=["technical"]
+)
+```
+
+## Performance and scale
+
+<Info>
+Archival memory has no practical size limits and remains fast at scale:
+
+**Letta Cloud:** Uses [TurboPuffer](https://turbopuffer.com/) for extremely fast semantic search, even with hundreds of thousands of memories.
+
+**Self-hosted:** Uses pgvector (PostgreSQL) for vector search. Performance scales well with proper indexing.
+
+**Letta Desktop:** Uses SQLite with vector search extensions. Suitable for personal use cases.
+
+No matter the backend, archival memory scales to large archives without performance degradation.
+</Info>
+
+## Embedding models and search quality
+
+Archival search quality depends on the agent's embedding model:
+
+**Letta Cloud:** All agents use `text-embedding-3-small`, which is optimized for most use cases. This model cannot be changed.
+
+**Self-hosted:** Embedding model is pinned to the agent at creation. The default `text-embedding-3-small` is sufficient for nearly all use cases.
+
+### Changing embedding models (self-hosted only)
+
+To change an agent's embedding model, you must:
+1. List and export all archival memories
+2. Delete all archival memories
+3. Update the agent's embedding model
+4. Re-insert all memories (they'll be re-embedded)
+
+<Warning>
+Changing embedding models is a destructive operation. Export your archival memories first.
+</Warning>
+
+## Programmatic access
+
+You can manage archival memory via the SDK:
+
+<CodeGroup>
+```python Python
+# Insert a memory
+client.agents.passages.insert(
+    agent_id=agent.id,
+    content="The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
+    tags=["technical", "testing", "protocol"]
+)
+
+# Search memories
+results = client.agents.passages.search(
+    agent_id=agent.id,
+    query="testing procedures",
+    tags=["protocol"],
+    page=0
+)
+
+# List all memories
+passages = client.agents.passages.list(
+    agent_id=agent.id,
+    limit=100
+)
+
+# Get a specific memory
+passage = client.agents.passages.get(
+    agent_id=agent.id,
+    passage_id=passage_id
+)
+```
+```typescript TypeScript
+// Insert a memory
+await client.agents.passages.insert(agent.id, {
+    content: "The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
+    tags: ["technical", "testing", "protocol"]
+});
+
+// Search memories
+const results = await client.agents.passages.search(agent.id, {
+    query: "testing procedures",
+    tags: ["protocol"],
+    page: 0
+});
+
+// List all memories
+const passages = await client.agents.passages.list(agent.id, {
+    limit: 100
+});
+
+// Get a specific memory
+const passage = await client.agents.passages.get(agent.id, passageId);
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Best Practices"
+    href="/guides/agents/archival-best-practices"
+  >
+    Learn patterns, pitfalls, and advanced usage
+  </Card>
+  <Card
+    title="Archival Memory Overview"
+    href="/guides/agents/archival-memory"
+  >
+    Back to archival memory overview
+  </Card>
+</CardGroup>

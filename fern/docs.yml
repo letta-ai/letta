@@ -120,8 +120,13 @@ navigation:
             contents:
               - page: Memory Blocks
                 path: pages/agents/memory_blocks.mdx
-              - page: Archival Memory
-                path: pages/agents/archival_memory.mdx
+              - section: Archival Memory
+                path: pages/agents/archival_memory_overview.mdx
+                contents:
+                  - page: Searching & Querying
+                    path: pages/agents/archival_search.mdx
+                  - page: Best Practices
+                    path: pages/agents/archival_best_practices.mdx
               - page: Agentic Context Engineering
                 path: pages/agents/context_engineering.mdx
           - page: Filesystem
