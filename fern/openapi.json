@@ -12293,6 +12293,14 @@
                                           ],
                                           "nullable": true
                                         },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
+                                        },
                                         "children": {
                                           "type": "array",
                                           "items": {
@@ -12345,6 +12353,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -12392,6 +12408,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -12439,6 +12463,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         },
                                         "default_child": {
                                           "oneOf": [
@@ -12527,6 +12559,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -12574,6 +12614,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -12621,6 +12669,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         },
                                         "max_count_limit": {
                                           "type": "number"
@@ -12675,6 +12731,14 @@
                                           ],
                                           "nullable": true
                                         },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
+                                        },
                                         "children": {
                                           "type": "array",
                                           "items": {
@@ -12727,6 +12791,14 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "requires_force_tool_call": {
+                                          "oneOf": [
+                                            {
+                                              "type": "boolean"
+                                            },
+                                            {}
+                                          ]
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -12791,6 +12863,14 @@
                                                 ],
                                                 "nullable": true
                                               },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
+                                              },
                                               "children": {
                                                 "type": "array",
                                                 "items": {
@@ -12846,6 +12926,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -12893,6 +12981,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -12940,6 +13036,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               },
                                               "default_child": {
                                                 "oneOf": [
@@ -13028,6 +13132,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -13075,6 +13187,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -13122,6 +13242,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               },
                                               "max_count_limit": {
                                                 "type": "number"
@@ -13175,6 +13303,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               },
                                               "children": {
                                                 "type": "array",
@@ -13231,6 +13367,14 @@
                                                   {}
                                                 ],
                                                 "nullable": true
+                                              },
+                                              "requires_force_tool_call": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
                                               }
                                             },
                                             "required": ["tool_name"]
@@ -23352,6 +23496,11 @@
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
           },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": true
+          },
           "children": {
             "items": {
               "type": "string"
@@ -23438,6 +23587,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": true
           },
           "default_child": {
             "anyOf": [
@@ -23669,6 +23823,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -26923,6 +27082,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": true
           }
         },
         "additionalProperties": false,
@@ -29039,6 +29203,11 @@
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
           },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": false
+          },
           "max_count_limit": {
             "type": "integer",
             "title": "Max Count Limit",
@@ -30067,6 +30236,11 @@
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
           },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": true
+          },
           "children": {
             "items": {
               "type": "string"
@@ -30895,6 +31069,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -30927,6 +31106,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -32821,6 +33005,11 @@
             ],
             "title": "Prompt Template",
             "description": "Optional template string (ignored)."
+          },
+          "requires_force_tool_call": {
+            "type": "boolean",
+            "title": "Requires Force Tool Call",
+            "default": false
           }
         },
         "additionalProperties": false,
