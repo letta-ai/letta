@@ -1,3 +1,4 @@
+import asyncio
 import io
 import json
 import os
@@ -50,8 +51,7 @@ def run_server():
     start_server(debug=True)
 
 
-# @pytest.fixture(scope="module")
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def client() -> LettaSDKClient:
     # Get URL from environment or start server
     server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:{SERVER_PORT}")
@@ -66,8 +66,8 @@ def client() -> LettaSDKClient:
     yield client
 
 
-@pytest.fixture(scope="function")
-async def server():
+@pytest.fixture(scope="module")
+def server():
     """
     Creates a SyncServer instance for testing.
 
@@ -76,7 +76,7 @@ async def server():
     config = LettaConfig.load()
     config.save()
     server = SyncServer()
-    await server.init_async()
+    asyncio.run(server.init_async())
     return server
 
 
@@ -2249,6 +2249,7 @@ def test_run_list(client: LettaSDKClient):
     # test get run
     run = client.runs.retrieve(runs[0].id)
     assert run.agent_id == agent.id
+
 
 @pytest.mark.asyncio
 async def test_create_batch(client: LettaSDKClient, server: SyncServer):
