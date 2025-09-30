@@ -273,6 +273,7 @@ class LettaAgentV2(BaseAgentV2):
             llm_adapter = LettaLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                run_id=run_id,
             )
         else:
             llm_adapter = LettaLLMRequestAdapter(
