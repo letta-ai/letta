@@ -115,8 +115,9 @@ class ToolRulesSolver(BaseModel):
                 tools = rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
                 valid_tool_sets.append(tools)
 
-            # Compute intersection of all valid tool sets
+            # Compute intersection of all valid tool sets and restrict to available_tools
             final_allowed_tools = set.intersection(*valid_tool_sets) if valid_tool_sets else available_tools
+            final_allowed_tools = final_allowed_tools & available_tools
 
             if error_on_empty and not final_allowed_tools:
                 raise ValueError("No valid tools found based on tool rules.")
@@ -127,31 +128,43 @@ class ToolRulesSolver(BaseModel):
         args_by_tool: dict[str, dict] = {}
         provenance_by_tool: dict[str, str] = {}
 
-        def _store_args(tool_name: str, args: dict, rule: BaseModel):
+        def _store_args(tool_name: str, args: dict, provenance: str):
             if not isinstance(args, dict) or len(args) == 0:
                 return
             if tool_name not in args_by_tool:
                 args_by_tool[tool_name] = {}
             args_by_tool[tool_name].update(args)  # last-write-wins
-            provenance_by_tool[tool_name] = f"{rule.__class__.__name__}({getattr(rule, 'tool_name', tool_name)})"
+            provenance_by_tool[tool_name] = provenance
 
-        allowed_set = set(allowed)
+        # For caching, restrict to actually available tools
+        allowed_set = set(allowed) & available_tools
 
+        last_tool = self.tool_call_history[-1] if self.tool_call_history else None
+
+        # Init rule args apply only at the beginning
         if not self.tool_call_history and self.init_tool_rules:
             for rule in self.init_tool_rules:
                 if hasattr(rule, "args") and getattr(rule, "args") and rule.tool_name in allowed_set:
-                    _store_args(rule.tool_name, getattr(rule, "args"), rule)
-        else:
-            for rule in (
-                self.child_based_tool_rules
-                + self.parent_tool_rules
-                + self.continue_tool_rules
-                + self.terminal_tool_rules
-                + self.required_before_exit_tool_rules
-                + self.requires_approval_tool_rules
-            ):
-                if hasattr(rule, "args") and getattr(rule, "args") and getattr(rule, "tool_name", None) in allowed_set:
-                    _store_args(rule.tool_name, getattr(rule, "args"), rule)
+                    _store_args(rule.tool_name, getattr(rule, "args"), f"InitToolRule({rule.tool_name})")
+
+        # ChildToolRule per-child args apply only when parent is the last tool
+        for rule in self.child_based_tool_rules:
+            if isinstance(rule, ChildToolRule) and last_tool == rule.tool_name:
+                child_map = rule.get_child_args_map()
+                for child_name, child_args in child_map.items():
+                    if child_name in allowed_set:
+                        _store_args(child_name, child_args, f"ChildToolRule({rule.tool_name}->{child_name})")
+
+        # Rule-level args for other rule types (future-proofing)
+        for rule in (
+            self.parent_tool_rules
+            + self.continue_tool_rules
+            + self.terminal_tool_rules
+            + self.required_before_exit_tool_rules
+            + self.requires_approval_tool_rules
+        ):
+            if hasattr(rule, "args") and getattr(rule, "args") and getattr(rule, "tool_name", None) in allowed_set:
+                _store_args(rule.tool_name, getattr(rule, "args"), f"{rule.__class__.__name__}({rule.tool_name})")
 
         self.last_prefilled_args_by_tool = args_by_tool
         self.last_prefilled_args_provenance = provenance_by_tool
