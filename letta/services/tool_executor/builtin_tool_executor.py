@@ -209,6 +209,39 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         from readability import Document
         from trafilatura import extract, fetch_url
 
+        # Try exa first
+        try:
+            from exa_py import Exa
+
+            agent_state_tool_env_vars = agent_state.get_agent_env_vars_as_dict()
+            exa_api_key = agent_state_tool_env_vars.get("EXA_API_KEY") or tool_settings.exa_api_key
+            if exa_api_key:
+                logger.info(f"[DEBUG] Starting Exa fetch content for url: '{url}'")
+                exa = Exa(api_key=exa_api_key)
+
+                results = exa.get_contents(
+                    [url],
+                    text=True,
+                ).results
+
+                if len(results) > 0:
+                    result = results[0]
+                    return json.dumps(
+                        {
+                            "title": result.title,
+                            "published_date": result.published_date,
+                            "author": result.author,
+                            "text": result.text,
+                        }
+                    )
+                else:
+                    logger.info(f"[DEBUG] Exa did not return content for '{url}', falling back to local fetch.")
+            else:
+                logger.info("[DEBUG] No Exa key available, falling back to local fetch.")
+        except ImportError:
+            logger.info("[DEBUG] Exa pip package unavailable, falling back to local fetch.")
+            pass
+
         try:
             # single thread pool call for the entire trafilatura pipeline
             def trafilatura_pipeline():
