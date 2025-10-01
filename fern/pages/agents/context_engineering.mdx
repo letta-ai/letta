@@ -26,7 +26,8 @@ Memory management with sleep-time compute can reduce the latency of your main ag
 You can enable agents to modify their own blocks with tools. By default, agents with type `memgpt_v2_agent` will have the tools `memory_insert` and `memory_replace` to allow them to manage values in their own blocks. The legacy tools `core_memory_replace` and `core_memory_append` are deprecated but still available for backwards compatibility for type `memgpt_agent`. You can also make custom modification to blocks by implementing your own custom tools that can access the agent's state by passing in the special `agent_state` parameter into your tools.
 
 Below is an example of a tool that re-writes the entire memory block of an agent with a new string:
-```python
+<CodeGroup>
+```python Python
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
     """
     Rewrite memory block for the main agent, new_memory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
@@ -45,6 +46,25 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
     agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
     return None
 ```
+```typescript TypeScript
+function rethinkMemory(agentState: AgentState, newMemory: string, targetBlockLabel: string): void {
+    /**
+     * Rewrite memory block for the main agent, newMemory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
+     *
+     * @param newMemory - The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
+     * @param targetBlockLabel - The name of the block to write to.
+     *
+     * @returns void - Always returns void as this function does not produce a response.
+     */
+
+    if (agentState.memory.getBlock(targetBlockLabel) === null) {
+        agentState.memory.createBlock(targetBlockLabel, newMemory);
+    }
+
+    agentState.memory.updateBlockValue(targetBlockLabel, newMemory);
+}
+```
+</CodeGroup>
 
 ## Modifying blocks via the API
 You can also [modify blocks via the API](/api-reference/agents/blocks/modify) to directly edit agents' context windows and memory. This can be useful in cases where you want to extract the contents of an agents memory some place in your application (for example, a dashboard or memory viewer), or when you want to programatically modify an agents memory state (for example, allowing an end-user to directly correct or modify their agent's memory).
@@ -55,8 +75,9 @@ You can also [modify blocks via the API](/api-reference/agents/blocks/modify) to
 Importing the Letta Python client inside a tool is a powerful way to allow agents to interact with other agents, since you can use any of the API endpoints. For example, you could create a custom tool that allows an agent to create another Letta agent.
 </Tip>
 
-You can allow agents to modify the blocks of other agents by creating tools that import the Letta Python SDK, then using the block update endpoint:
-```python maxLines=50
+You can allow agents to modify the blocks of other agents by creating tools that import the Letta SDK, then using the block update endpoint:
+<CodeGroup>
+```python Python
 def update_supervisor_block(block_label: str, new_value: str) -> None:
     """
     Update the value of a block in the supervisor agent.
@@ -80,3 +101,27 @@ def update_supervisor_block(block_label: str, new_value: str) -> None:
         value=new_value
     )
 ```
+```typescript TypeScript
+function updateSupervisorBlock(blockLabel: string, newValue: string): void {
+    /**
+     * Update the value of a block in the supervisor agent.
+     *
+     * @param blockLabel - The label of the block to update.
+     * @param newValue - The new value for the block.
+     *
+     * @returns void - Always returns void as this function does not produce a response.
+     */
+    const { LettaClient } = require('@letta-ai/letta-client');
+
+    const client = new LettaClient({
+        baseUrl: "http://localhost:8283"
+    });
+
+    await client.agents.blocks.modify(
+        agentId,
+        blockLabel,
+        newValue
+    );
+}
+```
+</CodeGroup>

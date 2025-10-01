@@ -59,7 +59,8 @@ Depending on your chosen [agent architecture](/guides/agents/architectures), the
 ## Tool rule examples
 
 For example, you can ensure that the agent will stop execution if either the `send_message` or `roll_d20` tool is called by specifying tool rules in the agent creation:
-```python title="python" {6-11}
+<CodeGroup>
+```python Python {6-11}
 # create a new agent
 agent_state = client.create_agent(
     # create the agent with an additional tool
@@ -75,5 +76,22 @@ agent_state = client.create_agent(
 
 print(f"Created agent with name {agent_state.name} with tools {agent_state.tools}")
 ```
+```typescript TypeScript {6-11}
+// create a new agent
+const agentState = await client.createAgent({
+    // create the agent with an additional tool
+    tools: [tool.name],
+    // add tool rules that terminate execution after specific tools
+    toolRules: [
+        // exit after roll_d20 is called
+        {toolName: tool.name, type: "exit_loop"},
+        // exit after send_message is called (default behavior)
+        {toolName: "send_message", type: "exit_loop"},
+    ],
+});
+
+console.log(`Created agent with name ${agentState.name} with tools ${agentState.tools}`);
+```
+</CodeGroup>
 
 You can see a full working example of tool rules [here](https://github.com/letta-ai/letta/blob/0.5.2/examples/tool_rule_usage.py).

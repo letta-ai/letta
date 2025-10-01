@@ -39,13 +39,22 @@ Agents can also access any external data source through [MCP servers](/guides/mc
 
 When a user mentions they've switched from Python to TypeScript, the agent may choose to update its memory:
 
-```python
+<CodeGroup>
+```python Python
 memory_replace(
     block_label="human",
     old_text="Prefers Python for development",
     new_text="Currently using TypeScript for main project"
 )
 ```
+```typescript TypeScript
+memory_replace(
+    block_label: "human",
+    old_text: "Prefers Python for development",
+    new_text: "Currently using TypeScript for main project"
+)
+```
+</CodeGroup>
 
 Agents have three primary tools for editing memory blocks:
 - `memory_replace` - Search and replace for precise edits
