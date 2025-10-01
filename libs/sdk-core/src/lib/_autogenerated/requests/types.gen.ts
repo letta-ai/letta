@@ -8220,6 +8220,16 @@ export type CreateInternalTemplateBlockData = {
 
 export type CreateInternalTemplateBlockResponse = Block;
 
+export type CreateInternalTemplateBlocksBatchData = {
+  requestBody: Array<InternalTemplateBlockCreate>;
+  userAgent?: string | null;
+  userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
+  xProjectId?: string | null;
+};
+
+export type CreateInternalTemplateBlocksBatchResponse = Array<Block>;
+
 export type ListDeploymentEntitiesData = {
   deploymentId: string;
   /**
@@ -11123,6 +11133,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/_internal_templates/blocks/batch': {
+    post: {
+      req: CreateInternalTemplateBlocksBatchData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Block>;
         /**
          * Validation Error
          */

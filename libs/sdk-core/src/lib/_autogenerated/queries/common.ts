@@ -3697,6 +3697,12 @@ export type InternalTemplatesServiceCreateInternalTemplateBlockMutationResult =
   Awaited<
     ReturnType<typeof InternalTemplatesService.createInternalTemplateBlock>
   >;
+export type InternalTemplatesServiceCreateInternalTemplateBlocksBatchMutationResult =
+  Awaited<
+    ReturnType<
+      typeof InternalTemplatesService.createInternalTemplateBlocksBatch
+    >
+  >;
 export type BlocksServiceCreateBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.createBlock>
 >;
