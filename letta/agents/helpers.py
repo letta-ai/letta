@@ -1,7 +1,7 @@
 import json
 import uuid
 import xml.etree.ElementTree as ET
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from letta.errors import PendingApprovalError
@@ -256,6 +256,106 @@ def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
         tool_args = {}
 
     return tool_args
+
+
+def _json_type_matches(value: Any, expected_type: Any) -> bool:
+    """Basic JSON Schema type checking for common types.
+
+    expected_type can be a string (e.g., "string") or a list (union).
+    This is intentionally lightweight; deeper validation can be added as needed.
+    """
+
+    def match_one(v: Any, t: str) -> bool:
+        if t == "string":
+            return isinstance(v, str)
+        if t == "integer":
+            # bool is subclass of int in Python; exclude
+            return isinstance(v, int) and not isinstance(v, bool)
+        if t == "number":
+            return (isinstance(v, int) and not isinstance(v, bool)) or isinstance(v, float)
+        if t == "boolean":
+            return isinstance(v, bool)
+        if t == "object":
+            return isinstance(v, dict)
+        if t == "array":
+            return isinstance(v, list)
+        if t == "null":
+            return v is None
+        # Fallback: don't over-reject on unknown types
+        return True
+
+    if isinstance(expected_type, list):
+        return any(match_one(value, t) for t in expected_type)
+    if isinstance(expected_type, str):
+        return match_one(value, expected_type)
+    return True
+
+
+def _schema_accepts_value(prop_schema: Dict[str, Any], value: Any) -> bool:
+    """Check if a value is acceptable for a property schema.
+
+    Handles: type, enum, const, anyOf, oneOf (by shallow traversal).
+    """
+    if prop_schema is None:
+        return True
+
+    # const has highest precedence
+    if "const" in prop_schema:
+        return value == prop_schema["const"]
+
+    # enums
+    if "enum" in prop_schema:
+        try:
+            return value in prop_schema["enum"]
+        except Exception:
+            return False
+
+    # unions
+    for union_key in ("anyOf", "oneOf"):
+        if union_key in prop_schema and isinstance(prop_schema[union_key], list):
+            for sub in prop_schema[union_key]:
+                if _schema_accepts_value(sub, value):
+                    return True
+            return False
+
+    # type-based
+    if "type" in prop_schema:
+        if not _json_type_matches(value, prop_schema["type"]):
+            return False
+
+    # No strict constraints specified: accept
+    return True
+
+
+def merge_and_validate_prefilled_args(tool: "Tool", llm_args: Dict[str, Any], prefilled_args: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge LLM-provided args with prefilled args from tool rules.
+
+    - Overlapping keys are replaced by prefilled values (prefilled wins).
+    - Validates that prefilled keys exist on the tool schema and that values satisfy
+      basic JSON Schema constraints (type/enum/const/anyOf/oneOf).
+    - Returns merged args, or raises ValueError on invalid prefilled inputs.
+    """
+    from letta.schemas.tool import Tool  # local import to avoid circulars in type hints
+
+    assert isinstance(tool, Tool)
+    schema = (tool.json_schema or {}).get("parameters", {})
+    props: Dict[str, Any] = schema.get("properties", {}) if isinstance(schema, dict) else {}
+
+    errors: list[str] = []
+    for k, v in prefilled_args.items():
+        if k not in props:
+            errors.append(f"Unknown argument '{k}' for tool '{tool.name}'.")
+            continue
+        if not _schema_accepts_value(props.get(k), v):
+            expected = props.get(k, {}).get("type")
+            errors.append(f"Invalid value for '{k}': {v!r} does not match expected schema type {expected!r}.")
+
+    if errors:
+        raise ValueError("; ".join(errors))
+
+    merged = dict(llm_args or {})
+    merged.update(prefilled_args)
+    return merged
 
 
 def _pop_heartbeat(tool_args: dict) -> bool:
