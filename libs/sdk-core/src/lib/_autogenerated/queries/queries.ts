@@ -4928,11 +4928,13 @@ export const useProvidersServiceRetrieveProvider = <
  * @param data.agentIds The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.stopReason Filter runs by stop reason.
- * @param data.after Cursor for pagination
- * @param data.before Cursor for pagination
+ * @param data.before Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order
+ * @param data.after Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order
  * @param data.limit Maximum number of runs to return
+ * @param data.order Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.active Filter for active runs.
- * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+ * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -4955,6 +4957,8 @@ export const useRunsServiceListRuns = <
     background,
     before,
     limit,
+    order,
+    orderBy,
     stopReason,
     userAgent,
     userId,
@@ -4970,6 +4974,8 @@ export const useRunsServiceListRuns = <
     background?: boolean;
     before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
@@ -4991,6 +4997,8 @@ export const useRunsServiceListRuns = <
         background,
         before,
         limit,
+        order,
+        orderBy,
         stopReason,
         userAgent,
         userId,
@@ -5010,6 +5018,8 @@ export const useRunsServiceListRuns = <
         background,
         before,
         limit,
+        order,
+        orderBy,
         stopReason,
         userAgent,
         userId,
