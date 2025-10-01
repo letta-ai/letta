@@ -44,6 +44,8 @@ import { useDeleteMemoryBlock } from '../../../hooks/useDeleteMemoryBlock/useDel
 import { useListMemories } from '../../../hooks/useListMemories/useListMemories';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { CoreMemoryCardItem } from './CoreMemoryCardItem';
 
 interface MemoryWarningProps {
   rootLabel: string;
@@ -502,6 +504,10 @@ function CoreMemorySidebar() {
   const agent = useCurrentAgent();
   const { isTemplate, templateId } = useCurrentAgentMetaData();
 
+  const { data: isMemoryBlockRedesignEnabled } = useFeatureFlag(
+    'MEMORY_BLOCK_REDESIGN',
+  );
+
   const { memories } = useListMemories({
     memoryType: isTemplate ? 'templated' : 'agent',
     agentId: isTemplate ? undefined : agent.id,
@@ -602,41 +608,58 @@ function CoreMemorySidebar() {
               </Typography>
             </HStack>
           )}
-          {blocks.map((block) => {
-            const isSelected = block.label === selectedMemoryBlockLabel;
-            return (
-              <VStack
-                aria-selected={isSelected}
-                as="button"
-                data-testid={`memory-block-${block.label}`}
-                key={block.id}
-                gap={false}
-                onClick={() => {
-                  if (!block.label) return;
 
-                  handleBlockClick(block.label);
-                }}
-                paddingX
-                overflowX="hidden"
-                align="start"
-                wrap={false}
-                paddingY="small"
-                color={isSelected ? 'background-grey3' : 'transparent'}
-              >
-                <Typography>{block.label}</Typography>
-                <Typography
-                  overflow="ellipsis"
-                  noWrap
-                  align="left"
-                  color="muted"
-                  variant="body3"
-                  fullWidth
+          {!isMemoryBlockRedesignEnabled ? (
+            blocks.map((block) => {
+              const isSelected = block.label === selectedMemoryBlockLabel;
+              return (
+                <VStack
+                  aria-selected={isSelected}
+                  as="button"
+                  data-testid={`memory-block-${block.label}`}
+                  key={block.id}
+                  gap={false}
+                  onClick={() => {
+                    if (!block.label) return;
+
+                    handleBlockClick(block.label);
+                  }}
+                  paddingX
+                  overflowX="hidden"
+                  align="start"
+                  wrap={false}
+                  paddingY="small"
+                  color={isSelected ? 'background-grey3' : 'transparent'}
                 >
-                  {block.id}
-                </Typography>
-              </VStack>
-            );
-          })}
+                  <Typography>{block.label}</Typography>
+                  <Typography
+                    overflow="ellipsis"
+                    noWrap
+                    align="left"
+                    color="muted"
+                    variant="body3"
+                    fullWidth
+                  >
+                    {block.id}
+                  </Typography>
+                </VStack>
+              );
+            })
+          ) : (
+            <VStack paddingX="small" gap="small">
+              {blocks.map((block) => {
+                const isSelected = block.label === selectedMemoryBlockLabel;
+                return (
+                  <CoreMemoryCardItem
+                    key={block.id}
+                    block={block}
+                    handleBlockClick={handleBlockClick}
+                    isSelected={isSelected}
+                  />
+                );
+              })}
+            </VStack>
+          )}
         </VStack>
       </VStack>
     </VStack>
