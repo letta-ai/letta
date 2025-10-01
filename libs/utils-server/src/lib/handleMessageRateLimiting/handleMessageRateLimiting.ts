@@ -16,6 +16,7 @@ import type { PaymentCustomerSubscription, RateLimitReason } from '@letta-cloud/
 import { getCanAgentBeUsed } from './getCanAgentBeUsed/getCanAgentBeUsed';
 import type { Request } from 'express';
 import { getRemainingRecurrentCredits } from '../recurringCreditsManager/recurringCreditsManager';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 type ModelType = 'embedding' | 'inference';
 
 interface IsRateLimitedForCreatingMessagesPayload {
@@ -516,7 +517,27 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  if (subscription.tier !== 'pro') {
+  if (subscription.tier === 'pro') {
+    return await handleNewRateLimiting({
+      agent,
+      organizationId,
+      type,
+      subscription
+    });
+  }
+
+  if (subscription.tier === 'free') {
+    const newBilling = await getSingleFlag('BILLING_V3', organizationId);
+
+    if (newBilling) {
+      return await handleNewRateLimiting({
+        agent,
+        organizationId,
+        type,
+        subscription
+      });
+    }
+
     return await handleLegacyRateLimiting({
       agent,
       organizationId,
@@ -525,11 +546,10 @@ export async function handleMessageRateLimiting(
     });
   }
 
-  // new rate limiting system for pro users
-  return await handleNewRateLimiting({
+  return await handleLegacyRateLimiting({
     agent,
     organizationId,
+    usageLimits,
     type,
-    subscription
   });
 }

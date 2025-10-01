@@ -21,6 +21,7 @@ import {
   incrementRecurrentCreditUsage
 } from '../recurringCreditsManager/recurringCreditsManager';
 import { eq } from 'drizzle-orm';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 
 async function processStepWithLegacySubscription(step: Step, subscription: PaymentCustomerSubscription) {
@@ -228,15 +229,18 @@ export async function processStep(
     };
   }
 
+  const org = await getRedisData('coreOrganizationIdToOrganizationId', {
+    coreOrganizationId: step.organization_id,
+  });
+
+  if (!org) {
+    console.error(`No organization found for coreOrganizationId ${step.organization_id}`);
+    return null;
+  }
+
+
   if (step.provider_category === 'byok') {
     console.log('Processing BYOK step', step.id);
-    const org = await getRedisData('coreOrganizationIdToOrganizationId', {
-      coreOrganizationId: step.organization_id,
-    });
-
-    if (!org) {
-      return null;
-    }
 
     const [txn] = await db
       .insert(organizationCreditTransactions)
@@ -258,13 +262,26 @@ export async function processStep(
     };
   }
 
-  const subscription = await getCustomerSubscription(step.organization_id);
+  const subscription = await getCustomerSubscription(org.organizationId);
 
-  if (subscription.tier !== 'pro') {
-    console.log('Processing step with legacy subscription', step.id);
-    return await processStepWithLegacySubscription(step, subscription);
-  } else {
+  if (subscription.tier === 'pro') {
     console.log('Processing step with pro subscription', step.id);
     return await processStepWithSubscription(step, subscription);
   }
+
+  if (subscription.tier === 'free') {
+    const newBilling = await getSingleFlag('BILLING_V3', org.organizationId);
+
+    if (newBilling) {
+      console.log('Processing step with free subscription and new billing', step.id);
+      return await processStepWithSubscription(step, subscription);
+    } else {
+      console.log('Processing step with free subscription and legacy billing', step.id);
+      return await processStepWithLegacySubscription(step, subscription);
+    }
+  }
+
+
+  console.log('Processing step with legacy subscription', step.id);
+  return await processStepWithLegacySubscription(step, subscription);
 }
