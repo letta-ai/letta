@@ -469,6 +469,8 @@ build-undertaker:
             --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
+            --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
+            --set env.UNDERTAKER_SENTRY_DSN="${UNDERTAKER_SENTRY_DSN}" \
             --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
             --set env.DATABASE_URL="${DATABASE_URL}"
     else
