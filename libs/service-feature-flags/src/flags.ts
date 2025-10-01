@@ -16,11 +16,6 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
-  DATASOURCES_V2: {
-    description: 'Datasources v2',
-    expiryDate: '2025-06-31',
-    flagValue: z.boolean(),
-  },
   LAUNCH_LINKS: {
     description: 'Launch links',
     expiryDate: '2024-01-31',
