@@ -11,6 +11,7 @@ class ExperimentalParams(BaseModel):
     """Experimental parameters used across REST API endpoints."""
 
     message_async: Optional[bool] = None
+    letta_v1_agent: Optional[bool] = None
 
 
 class HeaderParams(BaseModel):
@@ -27,6 +28,7 @@ def get_headers(
     user_agent: Optional[str] = Header(None, alias="User-Agent"),
     project_id: Optional[str] = Header(None, alias="X-Project-Id"),
     message_async: Optional[str] = Header(None, alias="X-Experimental-Message-Async"),
+    letta_v1_agent: Optional[str] = Header(None, alias="X-Experimental-Letta-V1-Agent"),
 ) -> HeaderParams:
     """Dependency injection function to extract common headers from requests."""
     return HeaderParams(
@@ -35,6 +37,7 @@ def get_headers(
         project_id=project_id,
         experimental_params=ExperimentalParams(
             message_async=(message_async == "true") if message_async else None,
+            letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,
         ),
     )
 

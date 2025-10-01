@@ -435,6 +435,8 @@ async def create_agent(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent:
+            agent.agent_type = AgentType.letta_v1_agent
         return await server.create_agent_async(agent, actor=actor)
     except Exception as e:
         traceback.print_exc()
