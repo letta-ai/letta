@@ -29,7 +29,7 @@ import {
   migrateAllDeploymentsByBaseTemplateId,
   AgentCreationError,
   updateTemplateFromAgentFile,
-  UPDATE_TEMPLATE_FROM_AGENT_FILE_ERRORS,
+  UPDATE_TEMPLATE_FROM_AGENT_FILE_ERRORS, BlockCreationError
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { and, eq, ilike, count, not, desc, or } from 'drizzle-orm';
@@ -204,6 +204,16 @@ async function createAgentsFromTemplate(
     };
   } catch (e) {
     if (e instanceof AgentCreationError) {
+      return {
+        status: 400,
+        body: {
+          message: e.message,
+          details: e.body,
+        },
+      }
+    }
+
+    if (e instanceof  BlockCreationError) {
       return {
         status: 400,
         body: {
