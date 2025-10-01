@@ -1368,11 +1368,11 @@ export type CreateAgentRequest = {
    */
   reasoning?: boolean | null;
   /**
-   * The template id used to configure the agent
+   * Deprecated: please use the 'create agents from a template' endpoint instead.
    */
   from_template?: string | null;
   /**
-   * Whether the agent is a template
+   * Deprecated: Whether the agent is a template
    */
   template?: boolean;
   /**
@@ -2583,11 +2583,11 @@ export type InternalTemplateAgentCreate = {
    */
   reasoning?: boolean | null;
   /**
-   * The template id used to configure the agent
+   * Deprecated: please use the 'create agents from a template' endpoint instead.
    */
   from_template?: string | null;
   /**
-   * Whether the agent is a template
+   * Deprecated: Whether the agent is a template
    */
   template?: boolean;
   /**
@@ -6024,11 +6024,11 @@ export type letta__schemas__agent_file__AgentSchema = {
    */
   reasoning?: boolean | null;
   /**
-   * The template id used to configure the agent
+   * Deprecated: please use the 'create agents from a template' endpoint instead.
    */
   from_template?: string | null;
   /**
-   * Whether the agent is a template
+   * Deprecated: Whether the agent is a template
    */
   template?: boolean;
   /**
@@ -8951,7 +8951,7 @@ export type ListRunsData = {
    */
   active?: boolean;
   /**
-   * Cursor for pagination
+   * Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order
    */
   after?: string | null;
   /**
@@ -8964,7 +8964,8 @@ export type ListRunsData = {
    */
   agentIds?: Array<string> | null;
   /**
-   * Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+   * Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.
+   * @deprecated
    */
   ascending?: boolean;
   /**
@@ -8972,13 +8973,21 @@ export type ListRunsData = {
    */
   background?: boolean | null;
   /**
-   * Cursor for pagination
+   * Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order
    */
   before?: string | null;
   /**
    * Maximum number of runs to return
    */
   limit?: number | null;
+  /**
+   * Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Filter runs by stop reason.
    */

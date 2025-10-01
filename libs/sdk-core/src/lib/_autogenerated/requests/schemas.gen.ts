@@ -3744,12 +3744,13 @@ export const $CreateAgentRequest = {
         },
       ],
       title: 'From Template',
-      description: 'The template id used to configure the agent',
+      description:
+        "Deprecated: please use the 'create agents from a template' endpoint instead.",
     },
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Whether the agent is a template',
+      description: 'Deprecated: Whether the agent is a template',
       default: false,
     },
     project: {
@@ -7083,12 +7084,13 @@ export const $InternalTemplateAgentCreate = {
         },
       ],
       title: 'From Template',
-      description: 'The template id used to configure the agent',
+      description:
+        "Deprecated: please use the 'create agents from a template' endpoint instead.",
     },
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Whether the agent is a template',
+      description: 'Deprecated: Whether the agent is a template',
       default: false,
     },
     project: {
@@ -15821,12 +15823,13 @@ export const $letta__schemas__agent_file__AgentSchema = {
         },
       ],
       title: 'From Template',
-      description: 'The template id used to configure the agent',
+      description:
+        "Deprecated: please use the 'create agents from a template' endpoint instead.",
     },
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Whether the agent is a template',
+      description: 'Deprecated: Whether the agent is a template',
       default: false,
     },
     project: {

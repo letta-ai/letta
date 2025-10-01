@@ -13069,15 +13069,17 @@ export const get_List_runs = {
           z.array(z.union([StopReasonType, z.null()])),
         ])
         .optional(),
-      after: z
+      before: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      before: z
+      after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       active: z.boolean().optional(),
       ascending: z.boolean().optional(),
     }),

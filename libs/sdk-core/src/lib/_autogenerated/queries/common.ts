@@ -3139,6 +3139,8 @@ export const UseRunsServiceListRunsKeyFn = (
     background,
     before,
     limit,
+    order,
+    orderBy,
     stopReason,
     userAgent,
     userId,
@@ -3154,6 +3156,8 @@ export const UseRunsServiceListRunsKeyFn = (
     background?: boolean;
     before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
@@ -3174,6 +3178,8 @@ export const UseRunsServiceListRunsKeyFn = (
       background,
       before,
       limit,
+      order,
+      orderBy,
       stopReason,
       userAgent,
       userId,
