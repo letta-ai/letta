@@ -316,6 +316,7 @@ export type CreditCardType = z.infer<typeof CreditCardSchema>;
 const GetCurrentOrganizationBillingInfoResponse = z.object({
   billingTier: BillingTiers,
   totalCredits: z.number(),
+  recurrentCredits: z.number(),
   isCancelled: z.boolean(),
   billingPeriodEnd: z.string().optional(),
 });

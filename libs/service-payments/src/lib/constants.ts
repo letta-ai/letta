@@ -6,10 +6,10 @@ export const SCALE_PLAN_IDS = [
 ];
 
 export const PRO_PLAN_PRICE_IDS = [
-  //https://dashboard.stripe.com/prices/price_1RH71QIITVhFnB4W94dbGkOr
-  'price_1RH71QIITVhFnB4W94dbGkOr',
-  //https://dashboard.stripe.com/prices/price_1RH6z1IITVhFnB4Wya5Ln5fy
-  'price_1RH6z1IITVhFnB4Wya5Ln5fy',
+  //https://dashboard.stripe.com/products/prod_T946ck0c4RAdzu
+  'prod_T946ck0c4RAdzu',
+  //https://dashboard.stripe.com/acct_1QiNygIITVhFnB4W/test/products/prod_T9WiCx6HiauffP
+  'prod_T9WiCx6HiauffP',
 ];
 
 export const SCALE_PLAN_PRODUCT_IDS = [

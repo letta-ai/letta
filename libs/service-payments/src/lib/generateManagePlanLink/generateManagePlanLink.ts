@@ -17,7 +17,7 @@ export async function generateManagePlanLink(organizationId: string) {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
-    return_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
+    return_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/usage`,
   });
 
   return session.url;

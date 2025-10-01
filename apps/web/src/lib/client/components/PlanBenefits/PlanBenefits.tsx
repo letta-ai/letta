@@ -8,8 +8,9 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { getRecurrentSubscriptionLimits, getUsageLimits } from '@letta-cloud/utils-shared';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface BenefitContainer {
   children: React.ReactNode;
@@ -36,10 +37,36 @@ function Benefit(props: BenefitProps) {
 
 function FreePlanBenefits() {
   const t = useTranslations('components/PlanBenefits');
+  const limit = getRecurrentSubscriptionLimits({
+    tier: 'free'
+  });
+  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
   const limits = getUsageLimits('free');
 
   const { formatFileSize, formatNumber } = useFormatters();
+
+  if (isBillingV3Enabled) {
+    return (
+      <BenefitContainer>
+        <Benefit
+          label={t.rich('free.credits', {
+            limit: () => formatNumber(limit),
+          })}
+        />
+        <Benefit label={t('free.agent', { limit: limits.agents })} />
+        <Benefit label={t('free.templates', { limit: limits.templates })} />
+        <Benefit
+          label={t('free.storage', {
+            limit: formatFileSize(limits.storage, {
+              unit: 'GB',
+              maximumFractionDigits: 0,
+            }),
+          })}
+        />
+      </BenefitContainer>
+    );
+  }
 
   return (
     <BenefitContainer>
@@ -69,7 +96,7 @@ function FreePlanBenefits() {
   );
 }
 
-function ProPlanBenefits() {
+function ProLegacyPlanBenefits() {
   const t = useTranslations('components/PlanBenefits');
 
   const limits = getUsageLimits('pro-legacy');
@@ -79,15 +106,49 @@ function ProPlanBenefits() {
   return (
     <BenefitContainer>
       <Benefit
-        label={t.rich('pro.premiumModelUsage', {
+        label={t.rich('pro-legacy.premiumModelUsage', {
           limit: () => formatNumber(limits.premiumInferencesPerMonth),
           link: (chunks) => <Link href="/models">{chunks}</Link>,
         })}
       />
       <Benefit
-        label={t.rich('pro.standardRequests', {
+        label={t.rich('pro-legacy.standardRequests', {
           limit: () => formatNumber(limits.freeInferencesPerMonth),
           link: (chunks) => <Link href="/models">{chunks}</Link>,
+        })}
+      />
+      <Benefit label={t('pro-legacy.agent', { limit: formatNumber(limits.agents) })} />
+      <Benefit
+        label={t('pro-legacy.templates', { limit: formatNumber(limits.agents) })}
+      />
+      <Benefit
+        label={t('pro-legacy.storage', {
+          limit: formatFileSize(limits.storage, {
+            unit: 'GB',
+            maximumFractionDigits: 0,
+          }),
+        })}
+      />
+    </BenefitContainer>
+  );
+}
+
+function ProPlanBenefits() {
+  const t = useTranslations('components/PlanBenefits');
+
+  const limit = getRecurrentSubscriptionLimits({
+    tier: 'pro'
+  });
+
+  const limits = getUsageLimits('pro');
+
+  const { formatFileSize, formatNumber } = useFormatters();
+
+  return (
+    <BenefitContainer>
+      <Benefit
+        label={t.rich('pro.credits', {
+          limit: () => formatNumber(limit),
         })}
       />
       <Benefit label={t('pro.agent', { limit: formatNumber(limits.agents) })} />
@@ -169,6 +230,8 @@ export function PlanBenefits(props: PlanBenefitsProps) {
     case 'free':
       return <FreePlanBenefits />;
     case 'pro-legacy':
+      return <ProLegacyPlanBenefits />;
+    case 'pro':
       return <ProPlanBenefits />;
     case 'enterprise':
       return <EnterprisePlanBenefits />;

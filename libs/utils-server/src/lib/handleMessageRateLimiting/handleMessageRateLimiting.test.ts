@@ -343,7 +343,7 @@ describe('handleMessageRateLimiting - Pro Subscriptions', () => {
 
     mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
     mockGetOrganizationCredits.mockResolvedValue(0); // No purchased credits
-    mockGetRemainingRecurrentCredits.mockResolvedValue(20000); // Exceeded recurrent limit (pro limit is 20,000)
+    mockGetRemainingRecurrentCredits.mockResolvedValue(0); // Exceeded recurrent limit (pro limit is 20,000)
     mockGetCreditCostPerModel.mockResolvedValue(1);
 
     getRedisData.mockImplementation((query, payload) => {
@@ -388,7 +388,7 @@ describe('handleMessageRateLimiting - Pro Subscriptions', () => {
 
     mockGetCustomerSubscription.mockResolvedValue(mockSubscription);
     mockGetOrganizationCredits.mockResolvedValue(100); // Has purchased credits
-    mockGetRemainingRecurrentCredits.mockResolvedValue(1001); // Recurrent credits exceeded (but should not matter)
+    mockGetRemainingRecurrentCredits.mockResolvedValue(0); // Recurrent credits exceeded (but should not matter)
     mockGetCreditCostPerModel.mockResolvedValue(1);
 
     getRedisData.mockImplementation((query, payload) => {

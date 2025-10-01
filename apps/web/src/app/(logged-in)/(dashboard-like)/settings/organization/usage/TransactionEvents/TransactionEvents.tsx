@@ -1,8 +1,6 @@
 'use client';
 import {
   ArrowUpIcon,
-  DashboardPageLayout,
-  DashboardPageSection,
   DataTable,
   HStack,
   Typography,
@@ -21,8 +19,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { Button } from '@letta-cloud/ui-component-library';
 import type { Step } from '@letta-cloud/sdk-core';
 import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
-import { ModelTierBadge } from '../../../models/_components/ModelTierBadge/ModelTierBadge';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
+import { ModelTierBadge } from '../../../../models/_components/ModelTierBadge/ModelTierBadge';
 
 interface InnerStepViewerProps {
   step: Step;
@@ -108,9 +106,9 @@ function AmountBadge(props: AmountBadgeProps) {
   );
 }
 
-export default function AuditLogPage() {
+export default function TransactionEvents() {
   const t = useTranslations('settings/audit-log');
-  const [limit, setLimit] = useState(0);
+  const limit = 10;
   const [offset, setOffset] = useState(0);
 
   const { data, isLoading: isLoadingTransactions } =
@@ -199,29 +197,18 @@ export default function AuditLogPage() {
   }, [data]);
 
   return (
-    <DashboardPageLayout
-      encapsulatedFullHeight
-      title={t('title')}
-      subtitle={t('description')}
-    >
-      <DashboardPageSection fullHeight>
-        <DataTable
-          fullHeight
-          autofitHeight
-          minHeight={400}
-          limit={limit}
-          onLimitChange={setLimit}
-          hasNextPage={data?.body.hasNextPage}
-          offset={offset}
-          onSetOffset={setOffset}
-          showPagination
-          loadingText={t('table.loading')}
-          noResultsText={t('table.noResults')}
-          columns={transactionColumns}
-          data={transactionList}
-          isLoading={isLoadingTransactions}
-        />
-      </DashboardPageSection>
-    </DashboardPageLayout>
+    <DataTable
+      minHeight={400}
+      limit={limit}
+      hasNextPage={data?.body.hasNextPage}
+      offset={offset}
+      onSetOffset={setOffset}
+      showPagination
+      loadingText={t('table.loading')}
+      noResultsText={t('table.noResults')}
+      columns={transactionColumns}
+      data={transactionList}
+      isLoading={isLoadingTransactions}
+    />
   );
 }

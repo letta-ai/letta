@@ -88,7 +88,7 @@ async function checkLowBalance(options: CheckLowBalanceOptions) {
         locale: 'en',
         organizationName: organization.name,
         threshold: `${LOW_BALANCE_THRESHOLD}.00`,
-        topUpUrl: `${process.env.NEXT_PUBLIC_CURRENT_HOST || ''}/settings/organization/billing`,
+        topUpUrl: `${process.env.NEXT_PUBLIC_CURRENT_HOST || ''}/settings/organization/usage`,
       },
     });
   } catch (_e) {

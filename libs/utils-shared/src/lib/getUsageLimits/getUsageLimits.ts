@@ -130,7 +130,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
   },
 };
 
-export function getRecurrentSubscriptionLimits(subscription: PaymentCustomerSubscription) {
+export function getRecurrentSubscriptionLimits(subscription: Partial<PaymentCustomerSubscription>) {
   const { tier } = subscription;
 
   switch (tier) {

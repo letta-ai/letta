@@ -1,7 +1,8 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
-import { PRO_PLAN_PRICE_IDS } from '../constants';
+import { LEGACY_PRO_PLAN_PRODUCT_IDS, PRO_PLAN_PRICE_IDS } from '../constants';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 export async function createProPaymentLink(organizationId: string) {
   const stripe = getStripeClient();
@@ -9,6 +10,8 @@ export async function createProPaymentLink(organizationId: string) {
   if (!stripe) {
     return null;
   }
+
+  const isBillingV3Enabled = await getSingleFlag('BILLING_V3', organizationId);
 
   const customer = await getPaymentCustomer(organizationId);
 
@@ -27,7 +30,11 @@ export async function createProPaymentLink(organizationId: string) {
   });
 
   const correctPriceId = response.data.find((price) => {
-    return PRO_PLAN_PRICE_IDS.includes(price.id);
+    if (isBillingV3Enabled) {
+      return PRO_PLAN_PRICE_IDS.includes(price.id);
+    }
+
+    return LEGACY_PRO_PLAN_PRODUCT_IDS.includes(price.id);
   });
 
   if (!correctPriceId) {
@@ -47,7 +54,7 @@ export async function createProPaymentLink(organizationId: string) {
       payment_method_save: 'enabled',
     },
     customer: customer.id,
-    success_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
+    success_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/usage`,
     automatic_tax: {
       enabled: true,
     },

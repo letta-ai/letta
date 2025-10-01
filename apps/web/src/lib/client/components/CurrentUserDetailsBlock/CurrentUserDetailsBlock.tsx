@@ -29,6 +29,7 @@ export function CurrentUserDetailsBlock() {
       case 'free':
         return t('subscription.free');
       case 'pro-legacy':
+      case 'pro':
         return t('subscription.pro');
       case 'scale':
         return t('subscription.scale');
@@ -44,6 +45,7 @@ export function CurrentUserDetailsBlock() {
       case 'free':
         return 'warning';
       case 'pro-legacy':
+      case 'pro':
         return 'info';
       case 'scale':
         return 'info';

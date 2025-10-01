@@ -7,7 +7,7 @@ import {
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { AgentsService, type AgentState, type MessageCreate } from '@letta-cloud/sdk-core';
-import { getRecurrentSubscriptionLimits, getUsageLimits } from '@letta-cloud/utils-shared';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
@@ -383,8 +383,8 @@ async function handleNewRateLimiting(
     result[1] && isANumberSafe(result[1]?.data) ? result[1].data : 0;
   const organizationCredits =
     result[2] && isANumberSafe(result[2]) ? result[2] : 0;
-  const creditCost = result[3];
-  const recurrentCredits = result[4] && isANumberSafe(result[4]) ? result[4] : 0;
+  const creditCost = result[3] && isANumberSafe(result[3]) ? result[3] : 0;
+  const remainingCredits = result[4] && isANumberSafe(result[4]) ? result[4] : 0;
 
   const rateLimitThresholds: RateLimitReason[] = [];
 
@@ -392,7 +392,7 @@ async function handleNewRateLimiting(
   if (
     organizationCredits <= 0
   ) {
-    if (recurrentCredits + 1 > getRecurrentSubscriptionLimits(subscription)) {
+    if (remainingCredits - creditCost < 0) {
       rateLimitThresholds.push('not-enough-credits');
     }
   } else {

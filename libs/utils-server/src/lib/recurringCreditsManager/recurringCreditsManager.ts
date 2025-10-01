@@ -26,9 +26,9 @@ async function buildRecurrantCreditUsage(organizationId: string, subscription: P
 
   await redis.setex(
     key,
-    totalAmount,
     // should expire every day
     24 * 60 * 60,
+    totalAmount,
   )
 
   return totalAmount;

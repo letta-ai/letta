@@ -122,7 +122,7 @@ describe('credit usage', () => {
 
     cy.googleLogin();
 
-    cy.visit('/settings/organization/billing');
+    cy.visit('/settings/organization/usage');
 
     cy.findByTestId('upgrade-to-pro', {
       timeout: 50000,
@@ -185,7 +185,7 @@ describe('credit usage', () => {
       },
     });
 
-    cy.visit('/settings/organization/billing');
+    cy.visit('/settings/organization/usage');
 
     cy.findByTestId('total-credits', {
       timeout: 50000,
@@ -240,7 +240,7 @@ describe('credit usage', () => {
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(5000);
 
-    cy.visit('/settings/organization/billing');
+    cy.visit('/settings/organization/usage');
 
     // tmp disable
     // cy.findByTestId('total-credits', {

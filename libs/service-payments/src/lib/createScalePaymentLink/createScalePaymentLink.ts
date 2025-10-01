@@ -47,7 +47,7 @@ export async function createScalePaymentLink(organizationId: string) {
       payment_method_save: 'enabled',
     },
     customer: customer.id,
-    success_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
+    success_url: `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/usage`,
     automatic_tax: {
       enabled: true,
     },

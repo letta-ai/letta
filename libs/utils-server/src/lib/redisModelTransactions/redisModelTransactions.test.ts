@@ -22,7 +22,10 @@ jest.mock('@letta-cloud/service-clickhouse', () => ({
 
 // Mock dependencies
 jest.mock('@letta-cloud/service-redis');
-jest.mock('@letta-cloud/service-database');
+jest.mock('@letta-cloud/service-database', () => ({
+  db: {},
+  organizationCreditTransactions: {},
+}));
 jest.mock('@letta-cloud/service-payments');
 jest.mock('@sentry/node');
 
@@ -45,11 +48,18 @@ describe('getRedisModelTransactions', () => {
   const testOrgId = 'org-123';
   const testRedisKey = 'redis:key:test';
 
+  let originalDb: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateRedisInstance.mockReturnValue(mockRedis as any);
     mockGetRedisModelTransactionsKey.mockReturnValue(testRedisKey);
-    (db as any) = mockDb;
+    originalDb = db;
+    Object.assign(db, mockDb);
+  });
+
+  afterEach(() => {
+    Object.assign(db, originalDb);
   });
 
   describe('when data exists in Redis cache', () => {
