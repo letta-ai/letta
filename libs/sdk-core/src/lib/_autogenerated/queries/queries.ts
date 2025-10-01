@@ -7947,6 +7947,67 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
     ...options,
   });
 /**
+ * Create Blocks Batch
+ * Create multiple blocks with template-related fields.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @param data.xExperimentalMessageAsync
+ * @returns Block Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
+  TData = Common.InternalTemplatesServiceCreateInternalTemplateBlocksBatchMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: InternalTemplateBlockCreate[];
+        userAgent?: string;
+        userId?: string;
+        xExperimentalMessageAsync?: string;
+        xProjectId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: InternalTemplateBlockCreate[];
+      userAgent?: string;
+      userId?: string;
+      xExperimentalMessageAsync?: string;
+      xProjectId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({
+      requestBody,
+      userAgent,
+      userId,
+      xExperimentalMessageAsync,
+      xProjectId,
+    }) =>
+      InternalTemplatesService.createInternalTemplateBlocksBatch({
+        requestBody,
+        userAgent,
+        userId,
+        xExperimentalMessageAsync,
+        xProjectId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create Block
  * @param data The data for the request.
  * @param data.requestBody

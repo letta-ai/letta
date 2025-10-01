@@ -11330,6 +11330,32 @@ export const post_Create_internal_template_block = {
   response: Block,
 };
 
+export type post_Create_internal_template_blocks_batch =
+  typeof post_Create_internal_template_blocks_batch;
+export const post_Create_internal_template_blocks_batch = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/_internal_templates/blocks/batch'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.array(InternalTemplateBlockCreate),
+  }),
+  response: z.array(Block),
+};
+
 export type get_List_deployment_entities = typeof get_List_deployment_entities;
 export const get_List_deployment_entities = {
   method: z.literal('GET'),
@@ -13480,6 +13506,8 @@ export const EndpointByMethod = {
     '/v1/_internal_templates/groups': post_Create_internal_template_group,
     '/v1/_internal_templates/agents': post_Create_internal_template_agent,
     '/v1/_internal_templates/blocks': post_Create_internal_template_block,
+    '/v1/_internal_templates/blocks/batch':
+      post_Create_internal_template_blocks_batch,
     '/v1/blocks/': post_Create_block,
     '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
     '/v1/sandbox-config/e2b/default':

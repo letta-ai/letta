@@ -250,6 +250,8 @@ import type {
   CreateInternalTemplateAgentResponse,
   CreateInternalTemplateBlockData,
   CreateInternalTemplateBlockResponse,
+  CreateInternalTemplateBlocksBatchData,
+  CreateInternalTemplateBlocksBatchResponse,
   ListDeploymentEntitiesData,
   ListDeploymentEntitiesResponse2,
   DeleteDeploymentData,
@@ -4419,6 +4421,34 @@ export class InternalTemplatesService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/_internal_templates/blocks',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Blocks Batch
+   * Create multiple blocks with template-related fields.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static createInternalTemplateBlocksBatch(
+    data: CreateInternalTemplateBlocksBatchData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateInternalTemplateBlocksBatchResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/_internal_templates/blocks/batch',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
