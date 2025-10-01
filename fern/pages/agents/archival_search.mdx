@@ -21,23 +21,45 @@ Letta uses **hybrid search** combining semantic (vector) and keyword (full-text)
 Letta uses OpenAI's `text-embedding-3-small` model, which handles natural language questions well. Agents can use various query styles:
 
 **Natural language questions work best:**
-```python
+
+<CodeGroup>
+```python Python
 archival_memory_search(query="How does the test work?")
 # Returns: "The Voight-Kampff test measures involuntary emotional responses..."
 ```
+```typescript TypeScript
+await archivalMemorySearch({query: "How does the test work?"})
+// Returns: "The Voight-Kampff test measures involuntary emotional responses..."
+```
+</CodeGroup>
 
 **Keywords also work:**
-```python
+
+<CodeGroup>
+```python Python
 archival_memory_search(query="replicant lifespan")
 # Returns memories containing both keywords and semantically related concepts
 ```
+```typescript TypeScript
+await archivalMemorySearch({query: "replicant lifespan"})
+// Returns memories containing both keywords and semantically related concepts
+```
+</CodeGroup>
 
 **Concept-based queries leverage semantic understanding:**
-```python
+
+<CodeGroup>
+```python Python
 archival_memory_search(query="artificial memories")
 # Returns: "...experimental replicant with implanted memories..."
 # (semantic match despite different terminology)
 ```
+```typescript TypeScript
+await archivalMemorySearch({query: "artificial memories"})
+// Returns: "...experimental replicant with implanted memories..."
+// (semantic match despite different terminology)
+```
+</CodeGroup>
 
 <Tip>
 **Pagination:** Agents receive multiple results per search. If an agent doesn't paginate correctly, you can instruct it to adjust the `page` parameter or remind it to iterate through results.
@@ -47,7 +69,8 @@ archival_memory_search(query="artificial memories")
 
 Agents can search by date ranges:
 
-```python
+<CodeGroup>
+```python Python
 # Recent memories
 archival_memory_search(
     query="test results",
@@ -61,6 +84,21 @@ archival_memory_search(
     end_datetime="2025-09-30T23:59:59"
 )
 ```
+```typescript TypeScript
+// Recent memories
+await archivalMemorySearch({
+    query: "test results",
+    startDatetime: "2025-09-29T00:00:00"
+})
+
+// Specific time window
+await archivalMemorySearch({
+    query: "replicant cases",
+    startDatetime: "2025-09-29T00:00:00",
+    endDatetime: "2025-09-30T23:59:59"
+})
+```
+</CodeGroup>
 
 <Info>
 **Agent datetime awareness:**
@@ -88,7 +126,8 @@ Tags help agents organize and filter archival memories. **Agents always know wha
 
 Example of organized tagging:
 
-```python
+<CodeGroup>
+```python Python
 # Atomic memory with precise tags
 archival_memory_insert(
     content="Nexus-6 replicants have a four-year lifespan",
@@ -101,6 +140,20 @@ archival_memory_search(
     tags=["technical"]
 )
 ```
+```typescript TypeScript
+// Atomic memory with precise tags
+await archivalMemoryInsert({
+    content: "Nexus-6 replicants have a four-year lifespan",
+    tags: ["technical", "replicant", "nexus-6"]
+})
+
+// Later, easy retrieval
+await archivalMemorySearch({
+    query: "how long do replicants live",
+    tags: ["technical"]
+})
+```
+</CodeGroup>
 
 ## Performance and scale
 

@@ -260,12 +260,21 @@ The agent can update this block based on search results and continuously refine 
 **4. Let agents experiment**
 
 Agents can test different query styles to understand what works:
-```python
+
+<CodeGroup>
+```python Python
 # Agent tries variations
 archival_memory_search(query="How does the Voight-Kampff test work?")
 archival_memory_search(query="Voight-Kampff procedure")
 archival_memory_search(query="replicant detection method")
 ```
+```typescript TypeScript
+// Agent tries variations
+await archivalMemorySearch({query: "How does the Voight-Kampff test work?"})
+await archivalMemorySearch({query: "Voight-Kampff procedure"})
+await archivalMemorySearch({query: "replicant detection method"})
+```
+</CodeGroup>
 
 **Important:** Have the agent persist learnings from experimentation in a memory block (like `archival_tracking` or `archival_policies`), not in archival itself (avoid meta-clutter).
 
