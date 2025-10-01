@@ -424,7 +424,7 @@ async def initialize_message_sequence_async(
         # Some LMStudio models (e.g. ministral) require the tool call ID to be 9 alphanumeric characters
         tool_call_id = uuid_str[:9] if llm_config.provider_name == "lmstudio_openai" else uuid_str
 
-        if agent_state.agent_type == AgentType.sleeptime_agent:
+        if agent_state.agent_type == AgentType.sleeptime_agent or agent_state.agent_type == AgentType.letta_v1_agent:
             initial_boot_messages = []
         elif llm_config.model is not None and "gpt-3.5" in llm_config.model:
             initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35", agent_state.timezone, tool_call_id)
