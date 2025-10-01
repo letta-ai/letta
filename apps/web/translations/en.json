@@ -2906,7 +2906,7 @@
       "openAdvancedSettings": "Open advanced settings",
       "openCoreMemoryPanel": "Open core memory panel",
       "openArchivalMemoryPanel": "Open archival memory panel",
-      "showHotkeys": "Toggle keyboard shortcuts"
+      "showHotkeys": "Toggle keyboard shortcuts dialog"
     },
     "DeployAgentDialog": {
       "trigger": "Create an agent from template",

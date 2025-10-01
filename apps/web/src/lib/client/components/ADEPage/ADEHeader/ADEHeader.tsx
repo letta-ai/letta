@@ -211,6 +211,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         <DropdownMenuItem
           onClick={() => setShowHotkeys(true)}
           label={t('AgentSettingsDropdown.showHotkeys')}
+          endBadge={<HotKey command={adeKeyMap.SHOW_HOTKEYS.command} />}
         />
         <DropdownMenuSeparator />
         {isTemplate && (
