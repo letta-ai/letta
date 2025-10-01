@@ -101,7 +101,8 @@ The messages you receive depend on your agent's configuration:
 
 ### Controlling Reasoning Messages
 
-```python
+<CodeGroup>
+```python Python
 # With reasoning (default) - includes reasoning_message events
 agent = client.agents.create(
     model="openai/gpt-4o-mini",
@@ -114,6 +115,20 @@ agent = client.agents.create(
     reasoning=False  # Disable reasoning messages
 )
 ```
+```typescript TypeScript
+// With reasoning (default) - includes reasoning_message events
+const agent = await client.agents.create({
+    model: "openai/gpt-4o-mini",
+    // reasoning: true is the default
+});
+
+// Without reasoning - no reasoning_message events
+const agentNoReasoning = await client.agents.create({
+    model: "openai/gpt-4o-mini",
+    reasoning: false  // Disable reasoning messages
+});
+```
+</CodeGroup>
 
 ## Step Streaming (Default)
 

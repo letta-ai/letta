@@ -199,7 +199,12 @@ const sharedBlockAgent2 = await client.agents.create({
 ```
 </CodeGroup>
 You can also attach blocks to existing agents:
-```python
+<CodeGroup>
+```python Python
 client.agents.blocks.attach(agent_id=agent.id, block_id=block.id)
 ```
+```typescript TypeScript
+await client.agents.blocks.attach(agent.id, block.id);
+```
+</CodeGroup>
 You can see all agents attached to a block by using the `block_id` field in the [blocks retrieve](/api-reference/blocks/retrieve) endpoint.
