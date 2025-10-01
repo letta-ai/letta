@@ -6,10 +6,12 @@ import './QuotaProgressBar.scss';
 interface QuotaProgressBarProps {
   max: number | 'infinite';
   value: number;
+  // When true, colors become more critical as value decreases (for remaining credits)
+  inverseColors?: boolean;
 }
 
 export function QuotaProgressBar(props: QuotaProgressBarProps) {
-  const { max, value } = props;
+  const { max, value, inverseColors = false } = props;
   const progress = useMemo(() => {
     if (max === 'infinite') {
       return 1;
@@ -26,16 +28,36 @@ export function QuotaProgressBar(props: QuotaProgressBarProps) {
   }, [progress]);
 
   const transitionColor = useMemo(() => {
-    if (isComplete) {
-      if (max === 'infinite') {
-        return 'infinite-transition';
-      }
-
-      return 'complete-transition';
+    // Infinite always shows success/green
+    if (max === 'infinite') {
+      return 'infinite-transition';
     }
 
+    if (inverseColors) {
+      // Remaining credits: more remaining => healthy (blue)
+      // Less remaining => caution/yellow then warning/red
+      if (progress <= 0.2) {
+        return 'warning-transition';
+      }
+      if (progress <= 0.5) {
+        return 'caution-transition';
+      }
+      // Even when progress === 1 (full remaining), keep healthy color
+      return 'progress-transition';
+    }
+
+    // Default behavior (usage): more used => more critical
+    if (isComplete) {
+      return 'complete-transition';
+    }
+    if (progress >= 0.8) {
+      return 'warning-transition';
+    }
+    if (progress >= 0.5) {
+      return 'caution-transition';
+    }
     return 'progress-transition';
-  }, [isComplete, max]);
+  }, [isComplete, max, progress, inverseColors]);
 
   return (
     <div

@@ -5,11 +5,9 @@ import {
   DataTable,
   HStack,
   isBrandKey,
-  InfoTooltip,
-  ChevronRightIcon,
   brandKeyToOwnerMap,
 } from '@letta-cloud/ui-component-library';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   type CostItemType,
   webApi,
@@ -20,7 +18,6 @@ import type { UsageLimits } from '@letta-cloud/utils-shared';
 import { creditsToDollars, getUsageLimits } from '@letta-cloud/utils-shared';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ModelName } from '../ModelName/ModelName';
-import { ModelDetailsOverlay } from '../ModelDetailsOverlay/ModelDetailsOverlay';
 import { ModelTierBadge } from '../ModelTierBadge/ModelTierBadge';
 
 interface BaseCostCellProps {
@@ -55,18 +52,17 @@ function BaseCostCell(props: BaseCostCellProps) {
   }
 
   if (!baseCost[0]) {
-    return <Typography>{t('BaseCostCell.notSupported')}</Typography>;
+    return <Typography variant="body2">{t('BaseCostCell.notSupported')}</Typography>;
   }
 
   return (
-    <HStack>
+    <Typography variant="body2">
       {t('BaseCostCell.perStep', {
         cost: formatCurrency(creditsToDollars(baseCost[0].cost), {
           maximumFractionDigits: 3,
         }),
       })}
-      <InfoTooltip text={t('BaseCostCell.perStepInfo')} />
-    </HStack>
+    </Typography>
   );
 }
 
@@ -124,7 +120,7 @@ export function LettaManagedModels() {
     return getUsageLimits(billingTier);
   }, [billingTier]);
 
-  const [selectedModel, setSelectedModel] = useState<CostItemType | null>(null);
+  // Rows are informational only; no row click behavior
 
   const columns: Array<ColumnDef<CostItemType>> = useMemo(
     () => [
@@ -134,7 +130,7 @@ export function LettaManagedModels() {
         cell: ({ row }) => {
           const { modelName, brand } = row.original;
           return (
-            <HStack gap="medium" align="center">
+            <HStack gap="large" align="center">
               <ModelName modelName={modelName} brand={brand} />
             </HStack>
           );
@@ -154,21 +150,12 @@ export function LettaManagedModels() {
         },
       },
       {
-        header: t('columns.baseCost'),
+        header: t('columns.tier'),
         cell: ({ row }) => {
           const { tier, costMap } = row.original;
 
           return <BaseCostCell usage={usage} costMap={costMap} tier={tier} />;
         },
-      },
-      {
-        id: 'actions',
-        meta: {
-          style: {
-            columnAlign: 'right',
-          },
-        },
-        cell: () => <ChevronRightIcon color="muted" />,
       },
     ],
     [t, usage],
@@ -176,21 +163,7 @@ export function LettaManagedModels() {
 
   return (
     <DashboardPageSection width="capped" title={t('title')} description={t('description')}>
-      {selectedModel && (
-        <ModelDetailsOverlay
-          model={selectedModel}
-          open={!!selectedModel}
-          setOpen={(open) => {
-            if (!open) {
-              setSelectedModel(null);
-            }
-          }}
-        />
-      )}
       <DataTable
-        onRowClick={(row) => {
-          setSelectedModel(row);
-        }}
         minHeight={500}
         isLoading={isLoading || billingLoading}
         columns={columns}

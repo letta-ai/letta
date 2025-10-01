@@ -23,4 +23,6 @@
 .fake-border {
   height: calc(100% - var(--head-cell-height));
   top: var(--head-cell-height);
+  /* Avoid double border between header and first row: no top border here */
+  border-top-width: 0 !important;
 }

@@ -5,6 +5,10 @@
   --infinite-color: #64CF64;
   --complete-color-start: rgba(207, 100, 137, 0.96);
   --complete-color: #CF6464;
+  --caution-color-start: rgba(255, 193, 7, 0.56);
+  --caution-color: #FFC107;
+  --warning-color-start: rgba(255, 87, 34, 0.56);
+  --warning-color: #FF5722;
 }
 
 .progress-transition {
@@ -17,4 +21,12 @@
 
 .complete-transition {
   background: linear-gradient(to right, var(--complete-color-start) 0%, var(--complete-color) 100%);
+}
+
+.caution-transition {
+  background: linear-gradient(to right, var(--caution-color-start) 0%, var(--caution-color) 100%);
+}
+
+.warning-transition {
+  background: linear-gradient(to right, var(--warning-color-start) 0%, var(--warning-color) 100%);
 }

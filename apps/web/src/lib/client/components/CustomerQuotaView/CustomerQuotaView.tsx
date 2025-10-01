@@ -1,5 +1,5 @@
 'use client';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   ChevronDownIcon,
   Button,
@@ -12,12 +12,15 @@ import {
   Typography,
   VStack,
   Spinner,
-  LoadingEmptyStatusComponent, InfoIcon, Tooltip
+  LoadingEmptyStatusComponent,
+  InfoIcon,
+  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { useMemo, useState } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
+import type { BillingTiersType } from '@letta-cloud/types';
 
 interface QuotaRowProps {
   label: string;
@@ -53,11 +56,13 @@ function QuotaRow(props: QuotaRowProps) {
 
 interface ViewAllQuotasProps {
   limits: ReturnType<typeof getUsageLimits>;
+  tier: BillingTiersType;
 }
 
-function ViewAllQuotas(props: ViewAllQuotasProps) {
-  const { limits } = props;
+export function ViewAllQuotas(props: ViewAllQuotasProps) {
+  const { limits, tier } = props;
   const [open, setIsOpen] = useState(false);
+  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
   const { formatFileSize } = useFormatters();
 
@@ -85,16 +90,20 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
       onOpenChange={setIsOpen}
     >
       <VStack padding="small" gap="small" color="background-grey2">
-        <QuotaRow
-          label={t('ViewAllQuotas.agents')}
-          value={allQuotasData?.body.agents}
-          max={limits.agents}
-        />
-        <QuotaRow
-          label={t('ViewAllQuotas.identities')}
-          value={allQuotasData?.body.identities}
-          max={limits.identities}
-        />
+        {!(tier === 'pro' && isBillingV3Enabled) && (
+          <QuotaRow
+            label={t('ViewAllQuotas.agents')}
+            value={allQuotasData?.body.agents}
+            max={limits.agents}
+          />
+        )}
+        {!(tier === 'pro' && isBillingV3Enabled) && (
+          <QuotaRow
+            label={t('ViewAllQuotas.identities')}
+            value={allQuotasData?.body.identities}
+            max={limits.identities}
+          />
+        )}
         <QuotaRow
           label={t('ViewAllQuotas.dataSources')}
           value={allQuotasData?.body.dataSources}
@@ -119,16 +128,13 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
           value={allQuotasData?.body.projects}
           max={limits.projects}
         />
-        <QuotaRow
-          label={t('ViewAllQuotas.projects')}
-          value={allQuotasData?.body.projects}
-          max={limits.projects}
-        />
-        <QuotaRow
-          label={t('ViewAllQuotas.memoryBlocks')}
-          value={allQuotasData?.body.memoryBlocks}
-          max={limits.blocks}
-        />
+        {!(tier === 'pro' && isBillingV3Enabled) && (
+          <QuotaRow
+            label={t('ViewAllQuotas.memoryBlocks')}
+            value={allQuotasData?.body.memoryBlocks}
+            max={limits.blocks}
+          />
+        )}
       </VStack>
       {!allQuotasData && (
         <HStack padding="xsmall" borderTop>
@@ -184,7 +190,7 @@ export function CustomerQuotaView() {
   }
 
   return (
-    <Section title={t('title')} actions={<ViewAllQuotas limits={limits} />}>
+    <Section title={t('title')}>
       <VStack border gap={false}>
         <QuotaBlock
           max={limits.premiumInferencesPerMonth}
@@ -200,7 +206,7 @@ export function CustomerQuotaView() {
         <HR />
         <QuotaBlock
           testId="agent-usage"
-          badge={(
+          badge={
             <Tooltip asChild content={t('agentUsage.tooltip')}>
               <Button
                 color="tertiary"
@@ -209,7 +215,7 @@ export function CustomerQuotaView() {
                 label={t('agentUsage.tooltipLabel')}
               />
             </Tooltip>
-          )}
+          }
           max={limits.agents}
           value={quotaData.body.agents}
           label={t('agentUsage.label')}

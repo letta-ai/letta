@@ -20,7 +20,7 @@ describe(
         () => {
           cy.testStep('Navigate to settings profile page', () => {
             cy.visitWithDevDelay('/settings/profile');
-            cy.get('h1').contains(/Profile/, { timeout: 30000 });
+            cy.get('h1').contains(/Account overview/, { timeout: 30000 });
           });
 
           cy.testStep('Click retry onboarding button', () => {

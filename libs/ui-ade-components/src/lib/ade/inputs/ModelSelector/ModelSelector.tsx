@@ -101,7 +101,9 @@ export function ModelSelector(props: LocalModelSelectorProps) {
       };
     }
 
-    return getSelectedOption(selectedModelValue);
+    const selected = getSelectedOption(selectedModelValue);
+    // Hide badge on the selected value (but keep badges in dropdown options)
+    return selected ? { ...selected, badge: undefined } : selected;
   }, [
     isLoading,
     getSelectedOption,

@@ -22,9 +22,15 @@ import {
   PlusIcon,
   McpIcon,
   BarChartIcon,
+  CreditCardIcon,
   PersonIcon,
   EyeOpenIcon,
   AppVersion,
+  ProjectsIcon,
+  GroupIcon,
+  CustomToolIcon,
+  TokenIcon,
+  LockClosedIcon, CompanyIcon
 } from '@letta-cloud/ui-component-library';
 import { DashboardNavigationButton } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigationButton/DashboardNavigationButton';
 import { useTranslations } from '@letta-cloud/translations';
@@ -54,9 +60,14 @@ function NavigationSection(props: NavigationMenuSection) {
   );
 }
 
-function Divider() {
+interface DividerProps {
+  withVerticalPadding?: boolean;
+}
+
+function Divider(props: DividerProps) {
+  const { withVerticalPadding = false } = props;
   return (
-    <HStack paddingX="large">
+    <HStack paddingX="large" paddingY={withVerticalPadding ? "xsmall" : undefined}>
       <HR />
     </HStack>
   );
@@ -119,7 +130,7 @@ function ProjectSpecificNavigation() {
 
   return (
     <NavigationSection>
-      <SectionHeader title="Project" />
+      <SectionHeader title={t('project')} />
       <DashboardNavigationButton
         href={`${baseUrl}`}
         id="project-dashboard"
@@ -374,7 +385,7 @@ function NavigationFooter() {
   return (
     <NavigationSection>
       <DashboardNavigationButton
-        href="/settings/profile"
+        href="/settings/account"
         id="settings-profile"
         label={t('profile')}
         icon={<PersonIcon />}
@@ -386,7 +397,7 @@ function NavigationFooter() {
         icon={<BarChartIcon />}
       />
       <DashboardNavigationButton
-        href="/settings/organization/account"
+        href="/settings/organization/settings"
         id="settings-profile"
         label={t('settings')}
         icon={<CogIcon />}
@@ -401,55 +412,69 @@ function SettingsMenu() {
 
   return (
     <NavigationSection>
-      <SectionHeader title={t('user')} />
-      <DashboardNavigationButton
-        href={`${baseUrl}/profile`}
-        id="settings-profile"
-        label={t('profile')}
-      />
-      <SectionHeader title={t('organization')} />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/account`}
-        id="settings-organization"
-        label={t('account')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/projects`}
-        id="settings-projects"
-        label={t('projects')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/members`}
-        id="settings-members"
-        label={t('members')}
-      />
+      <VStack gap={false} fullWidth paddingTop="large">
 
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/models`}
-        id="settings-models"
-        label={t('models')}
-      />
+        <DashboardNavigationButton
+          href={`${baseUrl}/account`}
+          id="settings-profile"
+          icon={<PersonIcon />}
+          label={t('profile')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/settings`}
+          id="settings-organization-account"
+          icon={<CompanyIcon />}
+          label={t('account')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/members`}
+          id="settings-members"
+          icon={<GroupIcon />}
+          label={t('members')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/projects`}
+          id="settings-projects"
+          icon={<ProjectsIcon />}
+          label={t('projects')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/environment-variables`}
+          id="settings-environmentVariables"
+          icon={<CustomToolIcon />}
+          label={t('environmentVariables')}
+        />
 
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/usage`}
-        id="usage"
-        label={t('usage')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/billing`}
-        id="settings-billing"
-        label={t('billing')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/rate-limits`}
-        id="rate-limits"
-        label={t('rate-limits')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/environment-variables`}
-        id="settings-environmentVariables"
-        label={t('environmentVariables')}
-      />
+        <Divider withVerticalPadding />
+
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/usage`}
+          id="usage"
+          icon={<BarChartIcon />}
+          label={t('usage')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/billing`}
+          id="settings-billing"
+          icon={<CreditCardIcon />}
+          label={t('billing')}
+        />
+
+        <Divider withVerticalPadding />
+
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/models`}
+          id="settings-models"
+          icon={<TokenIcon />}
+          label={t('models')}
+        />
+        <DashboardNavigationButton
+          href={`${baseUrl}/organization/rate-limits`}
+          id="rate-limits"
+          icon={<LockClosedIcon />}
+          label={t('rate-limits')}
+        />
+      </VStack>
     </NavigationSection>
   );
 }

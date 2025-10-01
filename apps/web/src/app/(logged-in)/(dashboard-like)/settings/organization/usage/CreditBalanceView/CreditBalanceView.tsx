@@ -47,29 +47,34 @@ export function CreditBalanceView() {
   return (
     <VStack
       className="min-h-[178px]"
-      color="background-grey2"
+      color="background-grey"
       padding
       border
+      gap="medium"
+      align="start"
       flex
     >
       <HStack align="center" gap="small">
         <LettaCoinIcon size="small" />
-        <HStack align="end" gap="small">
-          {t.rich('creditBalance', {
-            credits: () => (
-              <Typography bold variant="heading4">
-                {formatNumber(billingData?.body.totalCredits || 0)}
-              </Typography>
-            ),
-            small: (chunks) => (
-              <Typography className="pb-0.5" variant="body3">
-                {chunks}
-              </Typography>
-            ),
-          })}
-        </HStack>
+        <Typography noWrap>
+          <Typography
+            bold
+            variant="heading3"
+            overrideEl="span"
+            noWrap
+          >
+            {formatNumber(billingData?.body.totalCredits || 0)}
+          </Typography>
+          <Typography
+            overrideEl="span"
+            noWrap
+          >
+            {t('creditBalanceSuffix')}
+          </Typography>
+        </Typography>
       </HStack>
-      <HStack>
+
+      <HStack fullWidth padding="xxsmall">
         {tier === 'free' ? (
           <UpgradePlanDialog
             trigger={
@@ -95,31 +100,27 @@ export function CreditBalanceView() {
           />
         )}
       </HStack>
-      <VStack gap={false}>
-        <Typography bold>{t('label')}</Typography>
-        <VStack>
-          <Typography variant="body3" muted>
-            {t('description')}
+      <VStack gap="small" align="start">
+        <Typography variant="body" bold>
+          {t('label')}
+        </Typography>
+        <Typography variant="body3" color="lighter">
+          {t('description')}
+        </Typography>
+        {tier === 'free' ? (
+          <Typography variant="body3" color="lighter">
+            {t('disabledOnFree')}
           </Typography>
-          {tier === 'free' ? (
-            <Typography variant="body3" muted>
-              {t('disabledOnFree')}
-            </Typography>
-          ) : (
-            <HStack>
-              <ManagePlanButton />
-              <CancelPlanDialog
-                trigger={
-                  <Button
-                    size="xsmall"
-                    label={t('cancel')}
-                    color="tertiary"
-                  />
-                }
-              />
-            </HStack>
-          )}
-        </VStack>
+        ) : (
+          <HStack>
+            <ManagePlanButton />
+            <CancelPlanDialog
+              trigger={
+                <Button size="xsmall" label={t('cancel')} color="tertiary" />
+              }
+            />
+          </HStack>
+        )}
       </VStack>
     </VStack>
   );
