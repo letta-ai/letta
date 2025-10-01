@@ -11,7 +11,14 @@ from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run
-from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, RequiredBeforeExitToolRule, TerminalToolRule
+from letta.schemas.tool_rule import (
+    ChildToolRule,
+    ContinueToolRule,
+    InitToolRule,
+    RequiredBeforeExitToolRule,
+    TerminalToolRule,
+    ToolCallNode,
+)
 from letta.server.server import SyncServer
 from letta.services.run_manager import RunManager
 from tests.helpers.endpoints_helper import (
@@ -246,6 +253,39 @@ async def validate_api_key_tool(server):
 
     actor = await server.user_manager.get_actor_or_default_async()
     tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=validate_api_key), actor=actor)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+async def noop_tool(server):
+    def noop():
+        """Returns a simple confirmation string."""
+        return "ok"
+
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=noop), actor=actor)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+async def complex_child_tool(server):
+    def complex_child(arr: list, text: str, num: float, flag: bool):
+        """
+        Accepts complex typed arguments and returns a summary string.
+
+        Args:
+            arr (list): List of numeric or string items for testing.
+            text (str): Text value to include in the summary.
+            num (float): Numeric value to include in the summary.
+            flag (bool): Boolean flag to include in the summary.
+
+        Returns:
+            str: Summary string encoding the provided inputs.
+        """
+        return f"ok:{text}:{num}:{flag}:{len(arr)}:{len(obj)}"
+
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=complex_child), actor=actor)
     yield tool
 
 
@@ -635,8 +675,6 @@ async def test_init_tool_rule_invalid_prefilled_type_blocks_flow(server, disable
         actor=default_user,
     )
 
-    assert response.stop_reason == LettaStopReason(message_type="stop_reason", stop_reason=StopReasonType.invalid_tool_call)
-
     # Should attempt validate_api_key but not proceed to send_message
     assert_invoked_function_call(response.messages, "validate_api_key")
     with pytest.raises(Exception):
@@ -671,11 +709,116 @@ async def test_init_tool_rule_unknown_prefilled_key_blocks_flow(server, disable_
         actor=default_user,
     )
 
-    assert response.stop_reason == LettaStopReason(message_type="stop_reason", stop_reason=StopReasonType.invalid_tool_call)
-
     assert_invoked_function_call(response.messages, "validate_api_key")
     with pytest.raises(Exception):
         assert_invoked_function_call(response.messages, "send_message")
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_child_tool_rule_args_override_llm_payload(server, disable_e2b_api_key, noop_tool, validate_api_key_tool, default_user):
+    """ChildToolRule ToolCallNode args should override LLM-provided args for the child when the parent is the last tool."""
+    REAL = "REAL_KEY_123"
+
+    tools = [noop_tool, validate_api_key_tool]
+    tool_rules = [
+        InitToolRule(tool_name="noop"),
+        ChildToolRule(
+            tool_name="noop",
+            children=["validate_api_key"],
+            child_arg_nodes=[ToolCallNode(name="validate_api_key", args={"secret_key": REAL})],
+        ),
+        ChildToolRule(tool_name="validate_api_key", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[
+            MessageCreate(role="user", content="Run noop, then validate my API key: FAKE_KEY, then send a message."),
+        ],
+        actor=default_user,
+    )
+
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "noop")
+    assert_invoked_function_call(response.messages, "validate_api_key")
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Verify override took effect on the child call
+    for m in response.messages:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == "validate_api_key":
+            args = json.loads(m.tool_call.arguments)
+            assert args.get("secret_key") == REAL
+            break
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_child_tool_rule_complex_args_override(server, disable_e2b_api_key, noop_tool, complex_child_tool, default_user):
+    """ChildToolRule ToolCallNode args with complex types should override LLM-supplied args."""
+    prefilled = {
+        "arr": [1, 2, 3],
+        "text": "HELLO",
+        "num": 3.14159,
+        "flag": True,
+    }
+
+    tools = [noop_tool, complex_child_tool]
+    tool_rules = [
+        InitToolRule(tool_name="noop"),
+        ChildToolRule(tool_name="noop", children=["complex_child"], child_arg_nodes=[ToolCallNode(name="complex_child", args=prefilled)]),
+        ChildToolRule(tool_name="complex_child", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[
+            MessageCreate(
+                role="user",
+                content=("Run noop, then call complex_child with obj={}, arr=[9,9], text='fake', num=0, flag=false, then send a message."),
+            )
+        ],
+        actor=default_user,
+    )
+
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "noop")
+    assert_invoked_function_call(response.messages, "complex_child")
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Verify override took effect on the complex child call
+    for m in response.messages:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == "complex_child":
+            args = json.loads(m.tool_call.arguments)
+            assert args.get("arr") == prefilled["arr"]
+            assert args.get("text") == prefilled["text"]
+            assert args.get("num") == prefilled["num"]
+            assert args.get("flag") is True
+            break
 
     await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
 

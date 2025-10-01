@@ -255,6 +255,19 @@ export const CreateBlock = z.object({
     .optional(),
 });
 
+export type ToolCallNode = z.infer<typeof ToolCallNode>;
+export const ToolCallNode = z.object({
+  name: z.string(),
+  args: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type ChildToolRule = z.infer<typeof ChildToolRule>;
 export const ChildToolRule = z.object({
   tool_name: z.string(),
@@ -268,6 +281,14 @@ export const ChildToolRule = z.object({
     ])
     .optional(),
   children: z.array(z.string()),
+  child_arg_nodes: z
+    .union([
+      z.array(ToolCallNode),
+      z.null(),
+      z.array(z.union([z.array(ToolCallNode), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type InitToolRule = z.infer<typeof InitToolRule>;

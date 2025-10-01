@@ -325,17 +325,24 @@ Maintain only those files relevant to the user’s current interaction.
 Base instructions finished.
 </base_instructions>`;
 // Tool rule schemas - manually created to match exact SDK types
+export const ToolCallNodeSchema = z.object({
+  name: z.string(),
+  args: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
 export const ChildToolRuleSchema = z.object({
   tool_name: z.string(),
   type: z.literal('constrain_child_tools').optional(),
   prompt_template: z.string().nullable().optional(),
   children: z.array(z.string()),
+  child_arg_nodes: z.array(ToolCallNodeSchema).optional().nullable(),
 });
 
 export const InitToolRuleSchema = z.object({
   tool_name: z.string(),
   type: z.literal('run_first').optional(),
   prompt_template: z.string().nullable().optional(),
+  args: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 export const TerminalToolRuleSchema = z.object({
