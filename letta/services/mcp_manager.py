@@ -140,12 +140,44 @@ class MCPManager:
         for mcp_tool in mcp_tools:
             # TODO: @jnjpng move health check to tool class
             if mcp_tool.name == mcp_tool_name:
-                # Check tool health - reject only INVALID tools
-                if mcp_tool.health:
-                    if mcp_tool.health.status == "INVALID":
-                        raise ValueError(
-                            f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid.Reasons: {', '.join(mcp_tool.health.reasons)}"
-                        )
+                # Check tool health - but try normalization first for INVALID schemas
+                if mcp_tool.health and mcp_tool.health.status == "INVALID":
+                    logger.info(f"Attempting to normalize INVALID schema for tool {mcp_tool_name}")
+                    logger.info(f"Original health reasons: {mcp_tool.health.reasons}")
+
+                    # Try to normalize the schema and re-validate
+                    from letta.functions.schema_generator import normalize_mcp_schema
+                    from letta.functions.schema_validator import validate_complete_json_schema
+
+                    try:
+                        # Normalize the schema to fix common issues
+                        logger.debug(f"Normalizing schema for {mcp_tool_name}")
+                        normalized_schema = normalize_mcp_schema(mcp_tool.inputSchema)
+
+                        # Re-validate after normalization
+                        logger.debug(f"Re-validating schema for {mcp_tool_name}")
+                        health_status, health_reasons = validate_complete_json_schema(normalized_schema)
+                        logger.info(f"After normalization: status={health_status.value}, reasons={health_reasons}")
+
+                        # Update the tool's schema and health (use inputSchema, not input_schema)
+                        mcp_tool.inputSchema = normalized_schema
+                        mcp_tool.health.status = health_status.value
+                        mcp_tool.health.reasons = health_reasons
+
+                        # Log the normalization result
+                        if health_status.value != "INVALID":
+                            logger.info(f"✓ MCP tool {mcp_tool_name} schema normalized successfully: {health_status.value}")
+                        else:
+                            logger.warning(f"MCP tool {mcp_tool_name} still INVALID after normalization. Reasons: {health_reasons}")
+                    except Exception as e:
+                        logger.error(f"Failed to normalize schema for tool {mcp_tool_name}: {e}", exc_info=True)
+
+                # After normalization attempt, check if still INVALID
+                if mcp_tool.health and mcp_tool.health.status == "INVALID":
+                    raise ValueError(
+                        f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid even after normalization. "
+                        f"Reasons: {', '.join(mcp_tool.health.reasons)}"
+                    )
 
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
                 return await self.tool_manager.create_mcp_tool_async(

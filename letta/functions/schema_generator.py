@@ -588,11 +588,111 @@ def generate_schema_from_args_schema_v2(
     return function_call_json
 
 
+def normalize_mcp_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize an MCP JSON schema to fix common issues:
+    1. Add explicit 'additionalProperties': false to all object types
+    2. Add explicit 'type' field to properties using $ref
+    3. Process $defs recursively
+
+    Args:
+        schema: The JSON schema to normalize (will be modified in-place)
+
+    Returns:
+        The normalized schema (same object, modified in-place)
+    """
+    import copy
+
+    # Work on a deep copy to avoid modifying the original
+    schema = copy.deepcopy(schema)
+
+    def normalize_object_schema(obj_schema: Dict[str, Any], defs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Recursively normalize an object schema."""
+
+        # If this is an object type, add additionalProperties if missing
+        if obj_schema.get("type") == "object":
+            if "additionalProperties" not in obj_schema:
+                obj_schema["additionalProperties"] = False
+
+        # Handle properties
+        if "properties" in obj_schema:
+            for prop_name, prop_schema in obj_schema["properties"].items():
+                # Handle $ref references
+                if "$ref" in prop_schema:
+                    # Add explicit type based on the reference
+                    if "type" not in prop_schema:
+                        # Try to resolve the type from $defs if available
+                        if defs and prop_schema["$ref"].startswith("#/$defs/"):
+                            def_name = prop_schema["$ref"].split("/")[-1]
+                            if def_name in defs:
+                                ref_schema = defs[def_name]
+                                if "type" in ref_schema:
+                                    prop_schema["type"] = ref_schema["type"]
+
+                        # If still no type, assume object (common case for model references)
+                        if "type" not in prop_schema:
+                            prop_schema["type"] = "object"
+
+                    # Don't add additionalProperties to properties with $ref
+                    # The $ref schema itself will have additionalProperties
+                    # Adding it here makes the validator think it allows empty objects
+                    continue
+
+                # Recursively normalize nested objects
+                if isinstance(prop_schema, dict):
+                    if prop_schema.get("type") == "object":
+                        normalize_object_schema(prop_schema, defs)
+
+                    # Handle arrays with object items
+                    if prop_schema.get("type") == "array" and "items" in prop_schema:
+                        items = prop_schema["items"]
+                        if isinstance(items, dict):
+                            # Handle $ref in items
+                            if "$ref" in items and "type" not in items:
+                                if defs and items["$ref"].startswith("#/$defs/"):
+                                    def_name = items["$ref"].split("/")[-1]
+                                    if def_name in defs and "type" in defs[def_name]:
+                                        items["type"] = defs[def_name]["type"]
+                                if "type" not in items:
+                                    items["type"] = "object"
+
+                            # Recursively normalize items
+                            if items.get("type") == "object":
+                                normalize_object_schema(items, defs)
+
+                    # Handle anyOf (complex union types)
+                    if "anyOf" in prop_schema:
+                        for option in prop_schema["anyOf"]:
+                            if isinstance(option, dict) and option.get("type") == "object":
+                                normalize_object_schema(option, defs)
+
+        # Handle array items at the top level
+        if "items" in obj_schema and isinstance(obj_schema["items"], dict):
+            if obj_schema["items"].get("type") == "object":
+                normalize_object_schema(obj_schema["items"], defs)
+
+        return obj_schema
+
+    # Process $defs first if they exist
+    defs = schema.get("$defs", {})
+    if defs:
+        for def_name, def_schema in defs.items():
+            if isinstance(def_schema, dict):
+                normalize_object_schema(def_schema, defs)
+
+    # Process the main schema
+    normalize_object_schema(schema, defs)
+
+    return schema
+
+
 def generate_tool_schema_for_mcp(
     mcp_tool: MCPTool,
     append_heartbeat: bool = True,
     strict: bool = False,
 ) -> Dict[str, Any]:
+    from letta.functions.schema_validator import validate_complete_json_schema
+
     # MCP tool.inputSchema is a JSON schema
     # https://github.com/modelcontextprotocol/python-sdk/blob/775f87981300660ee957b63c2a14b448ab9c3675/src/mcp/types.py#L678
     parameters_schema = mcp_tool.inputSchema
@@ -603,11 +703,16 @@ def generate_tool_schema_for_mcp(
     assert "properties" in parameters_schema, parameters_schema
     # assert "required" in parameters_schema, parameters_schema
 
+    # Normalize the schema to fix common issues with MCP schemas
+    # This adds additionalProperties: false and explicit types for $ref properties
+    parameters_schema = normalize_mcp_schema(parameters_schema)
+
     # Zero-arg tools often omit "required" because nothing is required.
     # Normalise so downstream code can treat it consistently.
     parameters_schema.setdefault("required", [])
 
     # Process properties to handle anyOf types and make optional fields strict-compatible
+    # TODO: de-duplicate with handling in normalize_mcp_schema
     if "properties" in parameters_schema:
         for field_name, field_props in parameters_schema["properties"].items():
             # Handle anyOf types by flattening to type array
@@ -659,6 +764,14 @@ def generate_tool_schema_for_mcp(
         }
         if REQUEST_HEARTBEAT_PARAM not in parameters_schema["required"]:
             parameters_schema["required"].append(REQUEST_HEARTBEAT_PARAM)
+
+    # Re-validate the schema after normalization and update the health status
+    # This allows previously INVALID schemas to pass if normalization fixed them
+    if mcp_tool.health:
+        health_status, health_reasons = validate_complete_json_schema(parameters_schema)
+        mcp_tool.health.status = health_status.value
+        mcp_tool.health.reasons = health_reasons
+        logger.debug(f"MCP tool {name} schema health after normalization: {health_status.value}, reasons: {health_reasons}")
 
     # Return the final schema
     if strict:
