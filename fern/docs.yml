@@ -204,11 +204,11 @@ navigation:
           - page: Telegram Bot
             path: pages/tutorials/telegram_bot.mdx
 
-      - section: Key Concepts
+      - section: Research Background
         contents:
-          - page: Letta concepts
+          - page: Letta and MemGPT
             path: pages/concepts/letta.mdx
-          - page: MemGPT concepts
+          - page: MemGPT Paper Deep Dive
             path: pages/concepts/memgpt.mdx
 
       #- section: Tool Execution
