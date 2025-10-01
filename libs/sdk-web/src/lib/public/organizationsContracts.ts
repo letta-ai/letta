@@ -597,6 +597,41 @@ const getOrganizationPaymentMethodsContract = c.query({
   },
 });
 
+const AutoTopUpConfigurationSchema = z.object({
+  threshold: z.number(),
+  refillAmount: z.number(),
+  enabled: z.boolean(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export type AutoTopUpConfigurationType = z.infer<typeof AutoTopUpConfigurationSchema>;
+
+const getAutoTopUpConfigurationContract = c.query({
+  path: '/organizations/self/auto-top-up',
+  method: 'GET',
+  responses: {
+    200: AutoTopUpConfigurationSchema,
+  },
+});
+
+const UpsertAutoTopUpConfigurationPayload = z.object({
+  threshold: z.number(),
+  refillAmount: z.number(),
+  enabled: z.boolean(),
+});
+
+const upsertAutoTopUpConfigurationContract = c.mutation({
+  path: '/organizations/self/auto-top-up',
+  method: 'PUT',
+  body: UpsertAutoTopUpConfigurationPayload,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -629,6 +664,8 @@ export const organizationsContract = c.router({
   resumeOrganizationSubscription: resumeOrganizationSubscriptionContract,
   getOrganizationQuotas: getOrganizationQuotasContract,
   getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
+  getAutoTopUpConfiguration: getAutoTopUpConfigurationContract,
+  upsertAutoTopUpConfiguration: upsertAutoTopUpConfigurationContract,
 });
 
 export const organizationsQueryClientKeys = {
@@ -659,4 +696,5 @@ export const organizationsQueryClientKeys = {
   ) => [...organizationsQueryClientKeys.getOrganizationBillingHistory, search],
   getFullOrganizationQuotas: ['organizations', 'self', 'quotas', 'full'],
   getOrganizationPaymentMethods: ['organizations', 'self', 'payment-methods'],
+  getAutoTopUpConfiguration: ['organizations', 'self', 'auto-top-up'],
 };

@@ -951,6 +951,7 @@
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
   "organization/usage/CreditBalanceView": {
+    "autoTopUp": "Auto purchase credit configuration",
     "creditBalance": "<credits></credits><small>credit balance</small>",
     "upgrade": "Upgrade your plan",
     "purchase": "Purchase credits",
@@ -968,7 +969,13 @@
     "description": "{credits} credits included in your plan",
     "resetTime": "Next reset on: {date}",
     "remainingSuffix": " of {limit} remaining"
-
+  },
+  "organization/usage/AutoTopUpPreview": {
+    "enabled": "Automatically adds <refillAmount></refillAmount> when balance goes below <credits></credits>",
+    "disabled": "Auto top-up disabled",
+    "loading": "Loading...",
+    "tooltip": "Top ups are triggered after a successful agent run. If you set a top up amount that's lower than your current credits, it won't top up until the next agent run.",
+    "manage": "Manage"
   },
   "organization/usage": {
     "creditsHistory": "All events",
@@ -1258,7 +1265,6 @@
       "trigger": "Upgrade to Pro"
     },
     "title": "Current plan <plan></plan>"
-
   },
   "organization/settings": {
     "title": "Settings",
@@ -1420,6 +1426,36 @@
       "title": "Remove member",
       "trigger": "Remove member",
       "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
+    }
+  },
+  "components/AutoTopUpConfigurationDialog": {
+    "title": "Auto top-up configuration",
+    "errors": {
+      "default": "There was an error saving auto top-up configuration, please try again or contact support.",
+      "thresholdMin": "Threshold must be at least 0",
+      "refillAmountRequired": "Please select a refill amount"
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "noDefaultPaymentMethod": {
+      "title": "No default payment method",
+      "description": "You need to set a default payment method to enable auto top-up.",
+      "action": "Add payment method"
+    },
+    "form": {
+      "enabled": {
+        "label": "Enable auto top-up",
+        "description": "Automatically purchase credits when your balance falls below the threshold. This will use your default payment method."
+      },
+      "threshold": {
+        "label": "Threshold",
+        "description": "When your purchased credits drops below this amount, credits will be automatically purchased",
+        "placeholder": "10000"
+      },
+      "refillAmount": {
+        "label": "Refill amount",
+        "description": "The amount of credits to purchase when auto top-up is triggered"
+      }
     }
   },
   "components/PurchaseCreditsDialog": {

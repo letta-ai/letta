@@ -1,5 +1,6 @@
 import {
   agentTemplates,
+  autoTopUpCreditsConfiguration,
   db,
   organizationBillingDetails,
   organizationCredits,
@@ -773,7 +774,7 @@ async function getOrganizationPaymentMethods(): Promise<GetOrganizationPaymentMe
     listCreditCards({
       organizationId: activeOrganizationId,
     }),
-    getPaymentCustomer(activeOrganizationId),
+    getPaymentCustomer(activeOrganizationId, true),
   ]);
 
   return {
@@ -1551,6 +1552,95 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
   };
 }
 
+type GetAutoTopUpConfigurationResponse = ServerInferResponses<
+  typeof contracts.organizations.getAutoTopUpConfiguration
+>;
+
+async function getAutoTopUpConfiguration(): Promise<GetAutoTopUpConfigurationResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const config = await db.query.autoTopUpCreditsConfiguration.findFirst({
+    where: eq(autoTopUpCreditsConfiguration.organizationId, activeOrganizationId),
+  });
+
+  return {
+    status: 200,
+    body: config
+      ? {
+          threshold: config.threshold,
+          refillAmount: config.refillAmount,
+          enabled: config.enabled,
+          createdAt: config.createdAt.toISOString(),
+          updatedAt: config.updatedAt.toISOString(),
+        }
+      : {
+          threshold: 5000,
+          refillAmount: 5000,
+          enabled: false,
+        },
+  };
+}
+
+type UpsertAutoTopUpConfigurationRequest = ServerInferRequest<
+  typeof contracts.organizations.upsertAutoTopUpConfiguration
+>;
+
+type UpsertAutoTopUpConfigurationResponse = ServerInferResponses<
+  typeof contracts.organizations.upsertAutoTopUpConfiguration
+>;
+
+async function upsertAutoTopUpConfiguration(
+  req: UpsertAutoTopUpConfigurationRequest,
+): Promise<UpsertAutoTopUpConfigurationResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const { threshold, refillAmount, enabled } = req.body;
+
+  await db
+    .insert(autoTopUpCreditsConfiguration)
+    .values({
+      organizationId: activeOrganizationId,
+      threshold,
+      refillAmount,
+      enabled,
+    })
+    .onConflictDoUpdate({
+      target: autoTopUpCreditsConfiguration.organizationId,
+      set: {
+        threshold,
+        refillAmount,
+        enabled,
+      },
+    });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -1582,4 +1672,6 @@ export const organizationsRouter = {
   deleteInviteRule,
   getOrganizationBillingHistory,
   getFullOrganizationQuotas,
+  getAutoTopUpConfiguration,
+  upsertAutoTopUpConfiguration,
 };

@@ -1964,3 +1964,30 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
     references: [lettaTemplates.id],
   }),
 }));
+
+
+export const autoTopUpCreditsConfiguration = pgTable('auto_top_up_credits_configuration', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull().unique(),
+  /* in credits */
+  threshold: integer('threshold').notNull(),
+  /* in credits */
+  refillAmount: integer('refill_amount').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+// unique organizationId
+export const autoTopUpCreditsConfigurationRelations = relations(autoTopUpCreditsConfiguration, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [autoTopUpCreditsConfiguration.organizationId],
+    references: [organizations.id],
+  }),
+}));

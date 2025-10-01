@@ -182,6 +182,13 @@ const transactionLockDefinition = generateDefinitionSatisfies({
   output: z.object({ lockedAt: z.number() }),
 });
 
+const autoTopUpLockDefinition = generateDefinitionSatisfies({
+  baseKey: 'autoTopUpLock',
+  input: z.object({}),
+  getKey: () => 'autoTopUpLock:locks',
+  output: z.object({ lockedAt: z.number(), organizationId: z.string() }),
+});
+
 const coreOrganizationIdToOrganizationIdDefinition =
   generateDefinitionSatisfies({
     baseKey: 'coreOrganizationIdToOrganizationId',
@@ -450,6 +457,7 @@ export const redisDefinitions = {
   stepCostSchema: stepCostSchemaDefinition,
   modelNameAndEndpointToIdMap: modelNameAndEndpointToIdMapDefinition,
   transactionLock: transactionLockDefinition,
+  autoTopUpLock: autoTopUpLockDefinition,
   apiKeys: apiKeysDefinition,
   clientSideApiKeys: clientSideApiKeysDefinition,
   modelIdToModelTier: modelIdToModelTierDefinition,

@@ -22,6 +22,7 @@ import {
 } from '../recurringCreditsManager/recurringCreditsManager';
 import { eq } from 'drizzle-orm';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { handleAutoTopUp } from '../handleAutoTopUp/handleAutoTopUp';
 
 
 async function processStepWithLegacySubscription(step: Step, subscription: PaymentCustomerSubscription) {
@@ -239,6 +240,8 @@ export async function processStep(
   }
 
 
+  let result: ProcessStepResponse | null = null;
+
   if (step.provider_category === 'byok') {
     console.log('Processing BYOK step', step.id);
 
@@ -257,31 +260,49 @@ export async function processStep(
         id: organizationCreditTransactions.id,
       }).onConflictDoNothing()
 
-    return {
+    result = {
       transactionId: txn.id,
     };
-  }
+  } else {
+    const subscription = await getCustomerSubscription(org.organizationId);
 
-  const subscription = await getCustomerSubscription(org.organizationId);
+    if (subscription.tier === 'pro') {
+      console.log('Processing step with pro subscription', step.id);
+      result = await processStepWithSubscription(step, subscription);
+    } else if (subscription.tier === 'free') {
+      const newBilling = await getSingleFlag('BILLING_V3', org.organizationId);
 
-  if (subscription.tier === 'pro') {
-    console.log('Processing step with pro subscription', step.id);
-    return await processStepWithSubscription(step, subscription);
-  }
-
-  if (subscription.tier === 'free') {
-    const newBilling = await getSingleFlag('BILLING_V3', org.organizationId);
-
-    if (newBilling) {
-      console.log('Processing step with free subscription and new billing', step.id);
-      return await processStepWithSubscription(step, subscription);
+      if (newBilling) {
+        console.log('Processing step with free subscription and new billing', step.id);
+        result = await processStepWithSubscription(step, subscription);
+      } else {
+        console.log('Processing step with free subscription and legacy billing', step.id);
+        result = await processStepWithLegacySubscription(step, subscription);
+      }
     } else {
-      console.log('Processing step with free subscription and legacy billing', step.id);
-      return await processStepWithLegacySubscription(step, subscription);
+      console.log('Processing step with legacy subscription', step.id);
+      result = await processStepWithLegacySubscription(step, subscription);
     }
   }
 
+  // Always check for auto top-up after processing step
+  try {
+    const autoTopUpResult = await handleAutoTopUp({
+      organizationId: org.organizationId,
+    });
 
-  console.log('Processing step with legacy subscription', step.id);
-  return await processStepWithLegacySubscription(step, subscription);
+    if (autoTopUpResult.triggered) {
+      console.log(
+        `[ProcessStep] Auto top-up triggered for organization ${org.organizationId}, added ${autoTopUpResult.creditsAdded} credits`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[ProcessStep] Error checking auto top-up for organization ${org.organizationId}:`,
+      error,
+    );
+    // Don't throw - auto top-up is non-critical
+  }
+
+  return result;
 }

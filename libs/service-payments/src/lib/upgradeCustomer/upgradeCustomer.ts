@@ -49,6 +49,7 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
   } else if (tier === 'scale') {
     priceId = plans.data.find((price) => SCALE_PLAN_PRICE_IDS.includes(price.id))?.id;
   } else if (tier === 'pro') {
+    console.log('y', plans.data)
     priceId = plans.data.find((price) =>
       PRO_PLAN_PRICE_IDS.includes(price.id),
     )?.id;

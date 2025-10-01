@@ -167,3 +167,13 @@ export async function deleteRedisData<Type extends RedisTypes = RedisTypes>(
 
   await redis.del(redisDefinitions[type].getKey(args));
 }
+
+export async function deleteRedisHashField<Type extends RedisTypes = RedisTypes>(
+  type: Type,
+  args: z.infer<(typeof redisDefinitions)[Type]['input']>,
+  field: string,
+) {
+  const redis = createRedisInstance();
+
+  await redis.hdel(redisDefinitions[type].getKey(args), field);
+}

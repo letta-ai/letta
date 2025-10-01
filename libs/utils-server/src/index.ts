@@ -46,3 +46,4 @@ export * from './lib/setCurrentTemplateFromSnapshot/setCurrentTemplateFromSnapsh
 export * from './lib/updateTemplateFromAgentFile/updateTemplateFromAgentFile';
 export * from './lib/migrateClassicTemplateEntities/migrateClassicTemplateEntities';
 export * from './lib/recurringCreditsManager/recurringCreditsManager';
+export * from './lib/handleAutoTopUp/handleAutoTopUp';
