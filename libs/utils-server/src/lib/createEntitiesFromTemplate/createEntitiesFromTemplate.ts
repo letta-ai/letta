@@ -55,10 +55,22 @@ export const CreateEntitiesFromTemplateErrors = {
   TEMPLATE_TYPE_NOT_SUPPORTED: 'This template type is not supported',
   TEMPLATE_CORRUPTED: 'This template was corrupted, contact support',
   NO_ROOT_TEMPLATE: 'No root template found',
+  INVALID_LLM_CONFIG: 'The LLM configuration for this template is invalid, this usually means the model you set is no longer available in your organization, check your template settings.',
+  BLOCK_CREATION_ERROR: 'There was an error creating memory blocks for this agent, see details',
   CORE_ERROR: 'There was an critical error, contact support',
   FAILED_TO_CREATE_AGENT: 'Failed to create agent, see details',
   SEVERE_FAILED_TO_CREATE_AGENT: 'Failed to create agent, contact support',
 };
+
+export class BlockCreationError extends Error {
+  body?: unknown;
+
+  constructor(message: string, body?: unknown) {
+    super(message);
+    this.name = 'BlockCreationError';
+    this.body = body;
+  }
+}
 
 export class AgentCreationError extends Error {
   body?: unknown;
@@ -169,12 +181,13 @@ export async function createEntitiesFromTemplate(
             },
           ).catch((error) => {
             if (isAPIError(error)) {
-              Sentry.captureException(error, {
-                extra: {
-                  template: template.name,
-                  body: error.body,
-                },
-              });
+              const err = new BlockCreationError(
+                CreateEntitiesFromTemplateErrors.BLOCK_CREATION_ERROR,
+              );
+
+              err.body = error.body;
+
+              throw err;
             } else {
               Sentry.captureException(error, {
                 extra: {
@@ -183,7 +196,9 @@ export async function createEntitiesFromTemplate(
               });
             }
 
-            throw new Error(CreateEntitiesFromTemplateErrors.CORE_ERROR);
+            throw new Error(
+              CreateEntitiesFromTemplateErrors.CORE_ERROR,
+            );
           });
         if (createdBlock.id) {
           entityToIdBlockMap.set(inputBlock.entity_id, createdBlock.id);
@@ -213,7 +228,7 @@ export async function createEntitiesFromTemplate(
 
         if (!llmConfig) {
           if (process.env.NODE_ENV === 'production') {
-            throw new Error(CreateEntitiesFromTemplateErrors.CORE_ERROR);
+            throw new Error(CreateEntitiesFromTemplateErrors.INVALID_LLM_CONFIG);
           } else {
             const allModels = await llmRetriever.getAllCachedLLMConfigs();
 

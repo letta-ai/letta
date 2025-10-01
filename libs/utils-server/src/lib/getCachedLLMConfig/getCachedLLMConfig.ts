@@ -64,6 +64,11 @@ export function createCachedLLMConfigRetriever(lettaAgentsId: string) {
           (model) => model.handle === handle,
         );
 
+        // if no match, we can fetch from API again
+        if (!match) {
+          throw new Error('No match found, need to check source of truth');
+        }
+
         return match;
       } else {
         throw new Error('No cache available');
