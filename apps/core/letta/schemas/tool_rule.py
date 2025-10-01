@@ -209,6 +209,14 @@ class InitToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.run_first] = ToolRuleType.run_first
+    args: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Optional prefilled arguments for this tool. When present, these values will override any LLM-provided "
+            "arguments with the same keys during invocation. Keys must match the tool's parameter names and values "
+            "must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model."
+        ),
+    )
 
     @property
     def requires_force_tool_call(self) -> bool:

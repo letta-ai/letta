@@ -391,6 +391,36 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "args": {
+                                          "oneOf": [
+                                            {
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -879,6 +909,36 @@
                                                       "oneOf": [
                                                         {
                                                           "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              },
+                                              "args": {
+                                                "oneOf": [
+                                                  {
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "nullable": true
                                                         },
                                                         {
                                                           "type": "string",
@@ -6466,6 +6526,36 @@
                                             {}
                                           ],
                                           "nullable": true
+                                        },
+                                        "args": {
+                                          "oneOf": [
+                                            {
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name"]
@@ -6954,6 +7044,36 @@
                                                       "oneOf": [
                                                         {
                                                           "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              },
+                                              "args": {
+                                                "oneOf": [
+                                                  {
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "nullable": true
                                                         },
                                                         {
                                                           "type": "string",

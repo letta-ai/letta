@@ -282,6 +282,14 @@ export const InitToolRule = z.object({
       z.undefined(),
     ])
     .optional(),
+  args: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type TerminalToolRule = z.infer<typeof TerminalToolRule>;

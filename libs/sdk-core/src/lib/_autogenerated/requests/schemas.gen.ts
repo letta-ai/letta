@@ -6662,6 +6662,20 @@ export const $InitToolRule = {
       description:
         'Optional template string (ignored). Rendering uses fast built-in formatting for performance.',
     },
+    args: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args',
+      description:
+        "Optional prefilled arguments for this tool. When present, these values will override any LLM-provided arguments with the same keys during invocation. Keys must match the tool's parameter names and values must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model.",
+    },
   },
   additionalProperties: false,
   type: 'object',
