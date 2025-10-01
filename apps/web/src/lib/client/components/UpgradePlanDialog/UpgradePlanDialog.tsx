@@ -397,6 +397,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
 
       switch (selectedPlan) {
         case 'pro-legacy':
+        case 'pro':
           window.location.href = '/upgrade/pro';
           break;
         case 'scale':
