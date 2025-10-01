@@ -1,7 +1,7 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
-import { PRO_PLAN_PRICE_IDS, SCALE_PLAN_IDS } from '../constants';
+import { LEGACY_PRO_PLAN_PRODUCT_IDS, PRO_PLAN_PRICE_IDS, SCALE_PLAN_IDS } from '../constants';
 import type { BillingTiersType } from '@letta-cloud/types';
 
 interface UpgradeCustomerOptions {
@@ -40,7 +40,7 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
 
   if (tier === 'pro-legacy') {
     priceId = plans.data.find((price) =>
-      PRO_PLAN_PRICE_IDS.includes(price.id),
+      LEGACY_PRO_PLAN_PRODUCT_IDS.includes(price.id),
     )?.id;
   } else if (tier === 'scale') {
     priceId = plans.data.find((price) => SCALE_PLAN_IDS.includes(price.id))?.id;
