@@ -16,8 +16,8 @@ export function SharedAdvancedSettings() {
   }
 
   return (
-    <VStack gap="large">
-      <VStack>
+    <VStack>
+      <VStack gap="large">
         <AgentType />
         <MessageBufferAutoclearSwitch />
         {currentAgent.max_files_open && <MaxFilesInput defaultValue={currentAgent.max_files_open.toString() || ''}  />}

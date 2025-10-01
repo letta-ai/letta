@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Alert,
   brandKeyToLogo,
@@ -19,6 +21,7 @@ import type { AgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedValue } from '@mantine/hooks';
 import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
+import { ADEAccordionGroup } from '../../../shared/ADEAccordionGroup/ADEAccordionGroup';
 
 interface EmbeddingConfig {
   embeddingConfig: AgentState['embedding_config'];
@@ -107,6 +110,7 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
         hideIconsOnOptions
         size="small"
         fullWidth
+        infoTooltip={{ text: t('embeddingInput.description') }}
         onSelect={(value) => {
           if (isMultiValue(value)) {
             return;
@@ -141,7 +145,7 @@ function EmbeddingSelectorWrapper(props: EmbeddingSelectorWrapperProps) {
         size="small"
         label={t('embeddingInput.label')}
         placeholder={t('embeddingInput.loading')}
-        description={t('embeddingInput.description')}
+        infoTooltip={{ text: t('embeddingInput.description') }}
         disabled
       />
     )
@@ -151,13 +155,16 @@ function EmbeddingSelectorWrapper(props: EmbeddingSelectorWrapperProps) {
 
 }
 
-export function EmbeddingConfiguration() {
+interface EmbeddingConfigurationProps {
+  label?: string;
+}
+
+export function EmbeddingConfiguration(props: EmbeddingConfigurationProps) {
   const currentAgent = useCurrentAgent();
   const { isLocal } = useADEState();
   const t = useTranslations('ADE/EmbeddingConfiguration');
 
-
-  return (
+  const content = (
     <>
       {isLocal ? (
         <EmbeddingSelectorWrapper embeddingConfig={currentAgent.embedding_config} />
@@ -167,7 +174,7 @@ export function EmbeddingConfiguration() {
           size="small"
           label={t('embeddingInput.label')}
           value={DEFAULT_EMBEDDING_MODEL}
-          description={t('embeddingInput.description')}
+          infoTooltip={{ text: t('embeddingInput.description') }}
           disabled
         />
       )}
@@ -189,5 +196,18 @@ export function EmbeddingConfiguration() {
         disabled
       />
     </>
+  );
+
+  return (
+    <ADEAccordionGroup
+      panels={[
+        {
+          id: 'embedding-model',
+          label: props.label || t('embeddingInput.label'),
+          content,
+          defaultOpen: false,
+        },
+      ]}
+    />
   );
 }

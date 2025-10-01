@@ -36,7 +36,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
       /* if the last element, allow it to flex and fill the remaining space */
       className={cn(
         lastOpen ? 'flex-[min-content]' : '',
-        'flex flex-col  ade-accordion-item border-r',
+        'flex flex-col ade-accordion-item',
         open ? 'open' : 'close min-h-[32px]',
         // this is a hack because of some weird css deeper in the core memories panel, this allows the panel to flex properly
         open && id === 'core-memories' ? 'zero-height-open flex-1' : '',
@@ -49,7 +49,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         onClick={() => {
           onOpenChange(!open);
         }}
-        className="w-full h-[32px]  flex justify-between px-2.5 cursor-pointer py-2"
+        className="w-full h-[32px] flex justify-between px-0 cursor-pointer py-2"
       >
         <Typography
           uppercase
@@ -67,7 +67,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
           <ChevronDownIcon color="muted" className="rotate-180" />
         )}
       </button>
-      <div style={{ minHeight }} className={cn('flex flex-col h-full  w-full')}>
+      <div style={{ minHeight }} className={cn('flex flex-col h-full w-full gap-4 pt-2 pb-2')}>
         {content}
       </div>
     </div>

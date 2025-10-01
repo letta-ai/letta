@@ -1,19 +1,18 @@
-import { PanelMainContent, VStack } from '@letta-cloud/ui-component-library';
-import { AgentDescription } from '../../inputs/AgentDescription/AgentDescription';
-import { AgentTags } from '../../inputs/AgentTags/AgentTags';
+import { PanelMainContent, VStack, Typography } from '@letta-cloud/ui-component-library';
 import { SharedAdvancedSettings } from '../SharedAdvancedSettings/SharedAdvancedSettings';
+import { EmbeddingConfiguration } from '../../inputs/EmbeddingConfiguration/EmbeddingConfiguration';
+import { useTranslations } from '@letta-cloud/translations';
 
 function AgentAdvancedSettingsView() {
-
+  const tLayout = useTranslations('ADELayout');
+  const tAdvanced = useTranslations('ADE/AdvancedAgentTemplateSettingsPanel');
   return (
     <VStack gap="large">
-      {/* Metadata Section */}
-      <VStack>
-        <AgentTags />
-        <AgentDescription />
-      </VStack>
-
+      <Typography bold variant="body3">
+        {tAdvanced('advanced')}
+      </Typography>
       <SharedAdvancedSettings />
+      <EmbeddingConfiguration label={tLayout('embeddingConfig')} />
     </VStack>
   );
 }

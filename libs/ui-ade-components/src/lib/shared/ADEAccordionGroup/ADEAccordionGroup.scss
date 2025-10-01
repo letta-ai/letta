@@ -2,7 +2,8 @@
 
 .ade-accordion-item {
   transition-property: all;
-  transition-duration: 0.5s;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
   transition-behavior: allow-discrete;
   interpolate-size: allow-keywords;
   overflow: clip;

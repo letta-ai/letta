@@ -52,6 +52,7 @@ describe('letta', () => {
     );
 
     cy.clearPointerEventLock();
+    cy.wait(3000);
     cy.editMemoryBlock(
       'The users name is {{name}}. Please include the word DeploymentMan at the end of every message.',
     );
@@ -99,6 +100,7 @@ describe('letta', () => {
     // add identity
     // First open the Metadata accordion panel
     cy.findByTestId('ade-tab-header:settings').click();
+    cy.findByTestId('accordion-trigger:metadata').click();
 
     cy.findByTestId('update-identities').click();
 
@@ -156,6 +158,7 @@ describe('letta', () => {
 
     // Open Metadata accordion to access identity viewer
     cy.findByTestId('ade-tab-header:settings').click();
+    cy.findByTestId('accordion-trigger:metadata').click();
 
     cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
       'have.value',

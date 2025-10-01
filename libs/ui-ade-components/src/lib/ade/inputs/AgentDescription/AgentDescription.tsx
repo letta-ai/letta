@@ -81,7 +81,7 @@ export function AgentDescription() {
       variant="secondary"
       resize="none"
       autosize
-      maxRows={4}
+      maxRows={2}
       minRows={2}
       label={t('TemplateDescription.label')}
       infoTooltip={{
