@@ -8959,7 +8959,8 @@ export type ListRunsData = {
    */
   agentId?: string | null;
   /**
-   * (DEPRECATED) The unique identifiers of the agents associated with the run.
+   * The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.
+   * @deprecated
    */
   agentIds?: Array<string> | null;
   /**
