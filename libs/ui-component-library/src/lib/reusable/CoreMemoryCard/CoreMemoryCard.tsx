@@ -19,13 +19,13 @@ import './CoreMemoryCard.scss';
 const STATE_UPDATED_TIMEOUT = 5000;
 
 export interface CoreMemoryCardProps {
-  label: string;
+  label: string | null | undefined;
   value?: string;
   infoToolTipContent?: string;
   lastUpdatedAt?: string;
   sharedAgents?: SharedAgent[];
-  readOnly?: boolean;
-  preserveOnMigration?: boolean;
+  readOnly?: boolean | null | undefined;
+  preserveOnMigration?: boolean | null | undefined;
   openInAdvanced?: VoidFunction;
 }
 
@@ -120,12 +120,12 @@ function CoreMemoryCardInfoBar({
       paddingBottom="xxsmall"
     >
       {numChar > 0 && (
-        <Typography color="muted" variant="body2">
+        <Typography color="muted" variant="body3">
           {t('chars', { numChar })}
         </Typography>
       )}
       {lastUpdatedAt && (
-        <Typography color="muted" variant="body2">
+        <Typography color="muted" variant="body3">
           {t('updated', {
             relativeDate: formatRelativeDate(lastUpdatedAt),
           })}
@@ -133,10 +133,10 @@ function CoreMemoryCardInfoBar({
       )}
       {diffCount && (
         <>
-          <Typography color="muted" variant="body2">
+          <Typography color="muted" variant="body3">
             -{diffCount.minusLines}
           </Typography>
-          <Typography color="muted" variant="body2">
+          <Typography color="muted" variant="body3">
             +{diffCount.plusLines}
           </Typography>
         </>
@@ -160,7 +160,10 @@ function UpdatedCoreMemoryCard({
   const diffCount = getLineDiff(value, diffValue);
 
   return (
-    <Card className={cn('bg-background-grey h-[115px] overflow-hidden')}>
+    <Card
+      className={cn('bg-background-grey h-[110px] overflow-hidden border-b-4')}
+      onClick={openInAdvanced}
+    >
       <VStack gap={false}>
         <div className={cn('bg-background-grey z-20')}>
           <CoreMemoryCardHeader
@@ -174,49 +177,51 @@ function UpdatedCoreMemoryCard({
           />
         </div>
 
-        <HStack
-          className={cn('bg-background-grey z-20')}
-          paddingBottom="xxsmall"
-        >
-          <div
-            className={cn(
-              'w-1.5 h-1.5 bg-background-blue2 rounded-full relative top-1.5',
-            )}
-          />
-          <CoreMemoryCardInfoBar
-            numChar={numChar}
-            lastUpdatedAt={lastUpdatedAt}
-            diffCount={diffCount}
-          />
-        </HStack>
+        <div className={cn('h-[61px]')}>
+          <HStack
+            className={cn('bg-background-grey z-20')}
+            paddingBottom="xxsmall"
+          >
+            <div
+              className={cn(
+                'w-1.5 h-1.5 bg-background-blue2 rounded-full relative top-1.5',
+              )}
+            />
+            <CoreMemoryCardInfoBar
+              numChar={numChar}
+              lastUpdatedAt={lastUpdatedAt}
+              diffCount={diffCount}
+            />
+          </HStack>
 
-        <VStack className={cn('overflow-hidden')}>
-          <div className={cn('slide-up-animation-diff-values z-10')}>
-            {value ? (
-              <>
-                <VStack className={cn('h-[39px]')}>
-                  <Typography variant="body2" className={cn('line-clamp-2')}>
-                    {value}
+          <VStack className={cn('overflow-hidden')}>
+            <div className={cn('slide-up-animation-diff-values z-10')}>
+              {value ? (
+                <>
+                  <VStack className={cn('h-[39px]')}>
+                    <Typography variant="body3" className={cn('line-clamp-2')}>
+                      {value}
+                    </Typography>
+                  </VStack>
+                  <Typography variant="body3" className={cn('truncate')}>
+                    - {value}
                   </Typography>
-                </VStack>
-                <Typography variant="body2" className={cn('truncate')}>
-                  - {value}
+                </>
+              ) : (
+                <div className={cn('h-[41px]')}></div>
+              )}
+              {diffValue && (
+                <Typography
+                  color="positive"
+                  variant="body3"
+                  className={cn('truncate')}
+                >
+                  + {diffValue}
                 </Typography>
-              </>
-            ) : (
-              <div className={cn('h-[41px]')}></div>
-            )}
-            {diffValue && (
-              <Typography
-                color="positive"
-                variant="body2"
-                className={cn('truncate')}
-              >
-                + {diffValue}
-              </Typography>
-            )}
-          </div>
-        </VStack>
+              )}
+            </div>
+          </VStack>
+        </div>
       </VStack>
     </Card>
   );
@@ -233,8 +238,12 @@ function RegularCoreMemoryCard({
   preserveOnMigration,
   openInAdvanced,
 }: RegularCoreMemoryCardProps) {
+  const t = useTranslations('components/CoreMemoryCard');
   return (
-    <Card className={cn('bg-background-grey h-[115px]')}>
+    <Card
+      className={cn('bg-background-grey h-[110px] cursor-pointer border-b-4')}
+      onClick={openInAdvanced}
+    >
       <VStack gap={false}>
         <CoreMemoryCardHeader
           label={label}
@@ -246,18 +255,28 @@ function RegularCoreMemoryCard({
           isUpdated={false}
         />
 
-        <CoreMemoryCardInfoBar
-          numChar={numChar}
-          lastUpdatedAt={lastUpdatedAt}
-        />
+        <div className={cn('h-[61px]')}>
+          <CoreMemoryCardInfoBar
+            numChar={numChar}
+            lastUpdatedAt={lastUpdatedAt}
+          />
 
-        {value && (
           <VStack className={cn('h-[39px]')}>
-            <Typography variant="body2" className={cn('line-clamp-2')}>
-              {value}
-            </Typography>
+            {value ? (
+              <Typography variant="body3" className={cn('line-clamp-2')}>
+                {value}
+              </Typography>
+            ) : (
+              <Typography
+                variant="body3"
+                color="muted"
+                className={cn('line-clamp-2')}
+              >
+                {t('emptyValueText')}
+              </Typography>
+            )}
           </VStack>
-        )}
+        </div>
       </VStack>
     </Card>
   );

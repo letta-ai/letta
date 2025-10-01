@@ -107,27 +107,17 @@ export const EmptyState: Story = {
   },
 };
 
+export const EmptyStateNoAgents: Story = {
+  args: {
+    label: 'core memory label',
+    value: undefined,
+  },
+};
+
 export const EmptyToNewValues: Story = {
   render: (args) => <ChangeStateWrapper {...args} />,
   args: {
     label: 'core memory label',
-    value: undefined,
-    infoToolTipContent: 'info tooltip stuff here',
-    lastUpdatedAt: '2024-01-15T10:30:00.000Z',
-    sharedAgents: [
-      {
-        id: '1',
-        name: 'Agent 1',
-        agentType: 'memgpt_agent',
-        onClick: () => console.log('Clicked Agent 1'),
-      },
-      {
-        id: '2',
-        name: 'Agent 2',
-        agentType: 'memgpt_agent',
-        onClick: () => console.log('Clicked Agent 2'),
-      },
-    ],
   },
 };
 

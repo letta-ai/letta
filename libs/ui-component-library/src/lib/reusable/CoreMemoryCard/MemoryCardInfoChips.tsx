@@ -12,8 +12,8 @@ import { useTranslations } from '@letta-cloud/translations';
 
 interface MemoryCardInfoChipsInterface {
   sharedAgents?: SharedAgent[];
-  readOnly?: boolean;
-  preserveOnMigration?: boolean;
+  readOnly?: boolean | null | undefined;
+  preserveOnMigration?: boolean | null | undefined;
   openInAdvanced?: VoidFunction;
 }
 
