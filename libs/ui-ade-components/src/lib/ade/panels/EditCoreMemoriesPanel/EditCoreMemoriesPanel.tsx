@@ -2,7 +2,8 @@ import {
   Button,
   CoreMemoryEditor,
   EmptyBlockIcon,
-  LinkIcon, LoadingEmptyStatusComponent,
+  LinkIcon,
+  LoadingEmptyStatusComponent,
   MemoryBlocksIcon,
   type MemoryType,
   PlusIcon,
@@ -10,7 +11,8 @@ import {
   TabGroup,
   Typography,
   useVisibleMemoryTypeContext,
-  VisibleMemoryTypeProvider
+  VisibleMemoryTypeProvider,
+  CoreMemoryCard,
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../../OnboardingAsideFocus/OnboardingAsideFocus';
 
@@ -70,6 +72,10 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     disabled,
   } = props;
 
+  const { data: isMemoryBlockRedesignEnabled } = useFeatureFlag(
+    'MEMORY_BLOCK_REDESIGN',
+  );
+
   const { isTemplate } = useCurrentAgentMetaData();
 
   const sharedAgents = useSharedAgents(memory.id || '');
@@ -88,7 +94,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     templateId,
   });
 
-  return (
+  return !isMemoryBlockRedesignEnabled ? (
     <CoreMemoryEditor
       memoryBlock={{
         ...memory,
@@ -116,6 +122,21 @@ function EditMemoryForm(props: EditMemoryFormProps) {
         });
       }}
     />
+  ) : (
+    <CoreMemoryCard
+      label={memory.label}
+      sharedAgents={sharedAgents}
+      openInAdvanced={
+        memoryType === 'agent' && isTemplate
+          ? undefined
+          : () => {
+              open(label);
+            }
+      }
+      value={memory.value}
+      readOnly={memory.read_only}
+      preserveOnMigration={memory.preserve_on_migration}
+    />
   );
 }
 
@@ -129,12 +150,17 @@ function MemoryWrapper(props: MemoryWrapperProps) {
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
-  const {  memory } = useCurrentAgent();
+  const { memory } = useCurrentAgent();
 
   if (!memory) {
     return (
-      <LoadingEmptyStatusComponent isLoading loaderVariant="grower" emptyMessage="" hideText />
-    )
+      <LoadingEmptyStatusComponent
+        isLoading
+        loaderVariant="grower"
+        emptyMessage=""
+        hideText
+      />
+    );
   }
 
   if (memoryCount === 0) {
@@ -333,7 +359,6 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
 
             document.getElementById('ade-tab-header-tools')?.click();
 
-
             setStep('tools');
           }}
           label={t('next')}
@@ -496,89 +521,89 @@ export function EditMemory() {
           key={isTemplate ? 'templated' : 'agent'}
           defaultVisibleMemoryType={isTemplate ? 'templated' : 'agent'}
         >
-            <VStack
-              className="core-memory-panel"
-              overflow="auto"
-              fullHeight
-              gap={false}
-            >
-              <HStack align="end" gap={false} fullWidth paddingX="small">
-                {isTemplate && isSplitViewEnabled && (
-                  <HStack
-                    paddingTop="xxsmall"
-                    paddingBottom="xxsmall"
-                    paddingLeft={false}
-                    paddingRight="xsmall"
-                    className="h-[28px]"
-                  >
-                    <Button
-                      hideLabel
-                      size="3xsmall"
-                      onClick={() => {
-                        setVisualMode((prev) =>
-                          prev === 'page' ? 'aside' : 'page',
-                        );
-                      }}
-                      active={visualMode === 'aside'}
-                      color="tertiary"
-                      label={
-                        visualMode === 'page'
-                          ? t('VisualMode.viewAside')
-                          : t('VisualMode.viewPage')
-                      }
-                      preIcon={<SplitscreenRightIcon size="auto" />}
-                    />
-                  </HStack>
-                )}
+          <VStack
+            className="core-memory-panel"
+            overflow="auto"
+            fullHeight
+            gap={false}
+          >
+            <HStack align="end" gap={false} fullWidth paddingX="small">
+              {isTemplate && isSplitViewEnabled && (
+                <HStack
+                  paddingTop="xxsmall"
+                  paddingBottom="xxsmall"
+                  paddingLeft={false}
+                  paddingRight="xsmall"
+                  className="h-[28px]"
+                >
+                  <Button
+                    hideLabel
+                    size="3xsmall"
+                    onClick={() => {
+                      setVisualMode((prev) =>
+                        prev === 'page' ? 'aside' : 'page',
+                      );
+                    }}
+                    active={visualMode === 'aside'}
+                    color="tertiary"
+                    label={
+                      visualMode === 'page'
+                        ? t('VisualMode.viewAside')
+                        : t('VisualMode.viewPage')
+                    }
+                    preIcon={<SplitscreenRightIcon size="auto" />}
+                  />
+                </HStack>
+              )}
 
-                {visualMode === 'page' ? (
+              {visualMode === 'page' ? (
+                <HStack fullWidth>
+                  <MemoryTabs />
+                </HStack>
+              ) : (
+                <HStack
+                  gap={false}
+                  fullWidth
+                  className="h-[28px]"
+                  align="center"
+                >
                   <HStack fullWidth>
-                    <MemoryTabs />
+                    <Typography bold variant="body3">
+                      {t('toggleMemoryType.templated.label')}
+                    </Typography>
                   </HStack>
-                ) : (
-                  <HStack
-                    gap={false}
-                    fullWidth
-                    className="h-[28px]"
-                    align="center"
-                  >
-                    <HStack fullWidth>
-                      <Typography bold variant="body3">
-                        {t('toggleMemoryType.templated.label')}
-                      </Typography>
-                    </HStack>
-                    {/* this is a hack to allow the width to be correctly sized since advanced button adds extra space and is a dynamic button */}
-                    <div className="opacity-0 pointer-events-none">
-                      <AdvancedEditorButton />
-                    </div>
-                    <HStack fullWidth>
-                      <Typography bold variant="body3">
-                        {t('toggleMemoryType.simulated.label')}
-                      </Typography>
-                    </HStack>
+                  {/* this is a hack to allow the width to be correctly sized since advanced button adds extra space and is a dynamic button */}
+                  <div className="opacity-0 pointer-events-none">
+                    <AdvancedEditorButton />
+                  </div>
+                  <HStack fullWidth>
+                    <Typography bold variant="body3">
+                      {t('toggleMemoryType.simulated.label')}
+                    </Typography>
                   </HStack>
-                )}
-                <AdvancedEditorButton />
-              </HStack>
-              <VStack
-                fullWidth
-                collapseHeight
-                flex
-                overflow="auto"
-                paddingX="small"
-                paddingTop="xxsmall"
-                gap={false}
-                paddingBottom="small"
-              >
-                <AdvancedCoreMemoryEditor />
+                </HStack>
+              )}
+              <AdvancedEditorButton />
+            </HStack>
+            <VStack
+              fullWidth
+              collapseHeight
+              flex
+              overflow="auto"
+              paddingX="small"
+              paddingTop="xxsmall"
+              gap={false}
+              paddingBottom="small"
+            >
+              <AdvancedCoreMemoryEditor />
 
-                {visualMode === 'page' ? (
-                  <MemoryPageRenderer />
-                ) : (
-                  <MemoryAsideRender />
-                )}
-              </VStack>
+              {visualMode === 'page' ? (
+                <MemoryPageRenderer />
+              ) : (
+                <MemoryAsideRender />
+              )}
             </VStack>
+          </VStack>
         </VisibleMemoryTypeProvider>
       </QuickMemoryOnboarding>
     </PanelMainContent>
