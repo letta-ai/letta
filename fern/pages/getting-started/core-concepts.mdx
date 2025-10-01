@@ -4,15 +4,25 @@ subtitle: Understanding what makes Letta different
 slug: core-concepts
 ---
 
+## The Fundamental Limitation of LLMs
+
+Large language models are **stateless by design**. An LLM's knowledge comes from two sources:
+1. **Model weights** - Fixed after training
+2. **Context window** - Ephemeral input provided at inference time
+
+This means LLMs have no persistent memory between interactions. Each API call starts from scratch, with no ability to learn from past experiences or maintain state across sessions.
+
 ## What are Stateful Agents?
 
-**Stateful agents are AI agents that maintain persistent memory and context across all interactions.**
+**Stateful agents overcome this limitation by maintaining persistent memory and identity across all interactions.**
 
-Unlike traditional chatbots that treat each conversation as isolated, stateful agents:
-- **Remember** - Continuously learn from interactions and build long-term memory
-- **Persist** - Maintain state in a database, surviving application restarts
-- **Evolve** - Update their knowledge and preferences over time
-- **Exist independently** - Run as services, not ephemeral objects in your code
+A stateful agent has:
+- **Persistent identity** - Exists as a unique entity with continuity across sessions
+- **Active memory formation** - Autonomously decides what information to store and update
+- **Accumulated state** - Learns through experience rather than just model weights
+- **Long-term context** - Maintains knowledge beyond single conversation windows
+
+Unlike traditional LLM applications where your code manages state, stateful agents **actively manage their own memory** using built-in tools to read, write, and search their persistent storage.
 
 ### Why Statefulness Matters
 
@@ -221,6 +231,18 @@ The **LLM Operating System** is the infrastructure layer that manages agent exec
 - **Stateful layer** - Coordinates state across database, cache, and execution
 
 Letta's architecture is inspired by the [MemGPT research paper](https://arxiv.org/abs/2310.08560), which introduced these concepts.
+
+## Beyond Model Size
+
+The path to more capable AI systems isn't just about larger models or longer context windows. Stateful agents represent a fundamental shift: agents that learn through accumulated experience, build lasting relationships with users, and continuously improve without retraining.
+
+With stateful agents, you can build:
+- **Personalized assistants** that adapt to individual users over time
+- **Learning systems** that improve from feedback and interactions
+- **Long-term relationships** where agents develop deep context about users and tasks
+- **Autonomous services** that operate independently and maintain their own knowledge
+
+This architectural shift—from stateless function calls to stateful agent services—enables a new class of AI applications that weren't possible with traditional LLM APIs.
 
 ## Next Steps
 
