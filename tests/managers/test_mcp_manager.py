@@ -320,6 +320,189 @@ async def test_create_mcp_server_with_tools(mock_get_client, server, default_use
     assert len(remaining_mcp_tools) == 0, "Tools should be deleted when server is deleted"
 
 
+@pytest.mark.asyncio
+@patch("letta.services.mcp_manager.MCPManager.get_mcp_client")
+async def test_complex_schema_normalization(mock_get_client, server, default_user):
+    """Test that complex MCP schemas with nested objects are normalized and accepted."""
+    from letta.functions.mcp_client.types import MCPTool, MCPToolHealth
+    from letta.schemas.mcp import MCPServer, MCPServerType
+    from letta.settings import tool_settings
+
+    if tool_settings.mcp_read_from_config:
+        return
+
+    # Create mock tools with complex schemas that would normally be INVALID
+    # These schemas have: nested $defs, $ref references, missing additionalProperties
+    mock_tools = [
+        # 1. Nested object with $ref (like create_person)
+        MCPTool(
+            name="create_person",
+            description="Create a person with nested address",
+            inputSchema={
+                "$defs": {
+                    "Address": {
+                        "type": "object",
+                        "properties": {
+                            "street": {"type": "string"},
+                            "city": {"type": "string"},
+                            "zip_code": {"type": "string"},
+                        },
+                        "required": ["street", "city", "zip_code"],
+                    },
+                    "Person": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "age": {"type": "integer"},
+                            "address": {"$ref": "#/$defs/Address"},
+                        },
+                        "required": ["name", "age"],
+                    },
+                },
+                "type": "object",
+                "properties": {"person": {"$ref": "#/$defs/Person"}},
+                "required": ["person"],
+            },
+            health=MCPToolHealth(
+                status="INVALID",
+                reasons=["root: 'additionalProperties' not explicitly set", "root.properties.person: Missing 'type'"],
+            ),
+        ),
+        # 2. List of objects (like manage_tasks)
+        MCPTool(
+            name="manage_tasks",
+            description="Manage multiple tasks",
+            inputSchema={
+                "$defs": {
+                    "TaskItem": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "priority": {"type": "integer", "default": 1},
+                            "completed": {"type": "boolean", "default": False},
+                            "tags": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["title"],
+                    }
+                },
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/TaskItem"},
+                    }
+                },
+                "required": ["tasks"],
+            },
+            health=MCPToolHealth(
+                status="INVALID",
+                reasons=["root: 'additionalProperties' not explicitly set", "root.properties.tasks.items: Missing 'type'"],
+            ),
+        ),
+        # 3. Complex filter object with optional fields
+        MCPTool(
+            name="search_with_filters",
+            description="Search with complex filters",
+            inputSchema={
+                "$defs": {
+                    "SearchFilter": {
+                        "type": "object",
+                        "properties": {
+                            "keywords": {"type": "array", "items": {"type": "string"}},
+                            "min_score": {"type": "number"},
+                            "categories": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["keywords"],
+                    }
+                },
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "filters": {"$ref": "#/$defs/SearchFilter"},
+                },
+                "required": ["query", "filters"],
+            },
+            health=MCPToolHealth(
+                status="INVALID",
+                reasons=["root: 'additionalProperties' not explicitly set", "root.properties.filters: Missing 'type'"],
+            ),
+        ),
+    ]
+
+    # Create mock client
+    mock_client = AsyncMock()
+    mock_client.connect_to_server = AsyncMock()
+    mock_client.list_tools = AsyncMock(return_value=mock_tools)
+    mock_client.cleanup = AsyncMock()
+    mock_get_client.return_value = mock_client
+
+    # Create MCP server
+    server_name = f"test_complex_schema_{uuid.uuid4().hex[:8]}"
+    server_url = "https://test-complex.example.com/sse"
+    mcp_server = MCPServer(server_name=server_name, server_type=MCPServerType.SSE, server_url=server_url)
+
+    try:
+        # Create server (this will auto-sync tools)
+        created_server = await server.mcp_manager.create_mcp_server_with_tools(mcp_server, actor=default_user)
+
+        assert created_server.server_name == server_name
+
+        # Now attempt to add each tool - they should be normalized from INVALID to acceptable
+        # The normalization happens in add_tool_from_mcp_server
+
+        # Test 1: create_person should normalize successfully
+        person_tool = await server.mcp_manager.add_tool_from_mcp_server(server_name, "create_person", actor=default_user)
+        assert person_tool is not None
+        assert person_tool.name == "create_person"
+        # Verify the schema has additionalProperties set
+        assert person_tool.json_schema["parameters"]["additionalProperties"] == False
+        # Verify nested $defs have additionalProperties
+        if "$defs" in person_tool.json_schema["parameters"]:
+            for def_name, def_schema in person_tool.json_schema["parameters"]["$defs"].items():
+                if def_schema.get("type") == "object":
+                    assert "additionalProperties" in def_schema, f"$defs.{def_name} missing additionalProperties after normalization"
+
+        # Test 2: manage_tasks should normalize successfully
+        tasks_tool = await server.mcp_manager.add_tool_from_mcp_server(server_name, "manage_tasks", actor=default_user)
+        assert tasks_tool is not None
+        assert tasks_tool.name == "manage_tasks"
+        # Verify array items have explicit type
+        tasks_prop = tasks_tool.json_schema["parameters"]["properties"]["tasks"]
+        assert "items" in tasks_prop
+        assert "type" in tasks_prop["items"], "Array items should have explicit type after normalization"
+
+        # Test 3: search_with_filters should normalize successfully
+        search_tool = await server.mcp_manager.add_tool_from_mcp_server(server_name, "search_with_filters", actor=default_user)
+        assert search_tool is not None
+        assert search_tool.name == "search_with_filters"
+
+        # Verify all tools were persisted
+        all_tools = await server.tool_manager.list_tools_async(
+            actor=default_user, names=["create_person", "manage_tasks", "search_with_filters"]
+        )
+
+        # Filter to tools from our MCP server
+        mcp_tools = [
+            tool
+            for tool in all_tools
+            if tool.metadata_
+            and MCP_TOOL_TAG_NAME_PREFIX in tool.metadata_
+            and tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX].get("server_name") == server_name
+        ]
+
+        # All 3 complex schema tools should have been normalized and persisted
+        assert len(mcp_tools) == 3, f"Expected 3 normalized tools, got {len(mcp_tools)}"
+
+        # Verify they all have the correct MCP metadata
+        for tool in mcp_tools:
+            assert tool.tool_type == ToolType.EXTERNAL_MCP
+            assert f"mcp:{server_name}" in tool.tags
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+
 @patch("letta.services.mcp_manager.MCPManager.get_mcp_client")
 async def test_create_mcp_server_with_tools_connection_failure(mock_get_client, server, default_user):
     """Test that MCP server creation succeeds even when tool sync fails (optimistic approach)."""
