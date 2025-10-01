@@ -65,7 +65,7 @@ client.client_side_access_tokens.create(
     hostname="hostname",
 )
 ```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient } from "@letta-ai/letta-client";
 
 // Initialize the client
@@ -117,7 +117,7 @@ client_token = client.client_side_access_tokens.create(
     expires_at="2024-12-31T23:59:59Z",  # Optional, ISO 8601 format
 )
 ```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 const clientToken = await client.clientSideAccessTokens.create({
   policy: [/* ... */],
   hostname: "https://your-app.com",
@@ -139,7 +139,7 @@ You can delete client-side access tokens when they're no longer needed:
 client = Letta(token="YOUR_TOKEN", project="YOUR_PROJECT")
 client.client_side_access_tokens.delete("ck-let-token-value")
 ```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 await client.clientSideAccessTokens.delete("ck-let-token-value");
 ```
 </CodeGroup>
@@ -179,7 +179,7 @@ response = user_client.agents.messages.create(
     ],
 )
 ```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 // Server-side: Create user-specific tokens when users log in
 async function createUserToken(userId: string, agentId: string) {
   const clientToken = await client.clientSideAccessTokens.create({

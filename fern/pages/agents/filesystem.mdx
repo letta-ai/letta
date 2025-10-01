@@ -74,7 +74,7 @@ folder = client.folders.create(
     embedding_config=embedding_config
 )
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // get an available embedding_config
 const embeddingConfigs = await client.embeddingModels.list()
 const embeddingConfig = embeddingConfigs[0];
@@ -116,7 +116,7 @@ while True:
     print(f"Job status: {job.status}")
     time.sleep(1)
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // upload a file into the folder
 const uploadJob = await client.folders.files.upload(
     createReadStream("my_file.txt"),
@@ -148,7 +148,7 @@ print(f"Files in folder: {files}")
 passages = client.folders.passages.list(folder_id=folder.id)
 print(f"Passages in folder: {passages}")
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // list files in the folder
 const files = await client.folders.files.list(folder.id);
 console.log(`Files in folder: ${files}`);
@@ -166,7 +166,7 @@ You can view available folders by listing them:
 # list folders
 folders = client.folders.list()
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // list folders
 const folders = await client.folders.list();
 ```
@@ -191,7 +191,7 @@ You can attach a folder to an agent by specifying both the folder and agent IDs:
 ```python title="python"
 client.agents.folders.attach(agent_id=agent.id, folder_id=folder.id)
 ```
-```typescript title="node.js"
+```typescript TypeScript
 await client.agents.folders.attach(agent.id, folder.id);
 ```
 </CodeGroup>
@@ -210,7 +210,7 @@ Detaching a folder will remove the files from the agent's context window:
 ```python title="python"
 client.agents.folders.detach(agent_id=agent.id, folder_id=folder.id)
 ```
-```typescript title="node.js"
+```typescript TypeScript
 await client.agents.folders.detach(agent.id, folder.id);
 ```
 </CodeGroup>

@@ -79,7 +79,7 @@ agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/fi
 print(f"Imported agent: {agent_state.id}")
 ```
 
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 // Install SDK with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 import { readFileSync } from 'fs';
@@ -122,7 +122,7 @@ client = Letta(token="LETTA_API_KEY")
 schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
 ```
 
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 // Install SDK with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 

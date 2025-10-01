@@ -51,7 +51,7 @@ agent = client.agents.create(
 )
 ```
 
-```typescript title="node.js"
+```typescript TypeScript
 // assumes that you already instantiated a client
 const identity = await client.identities.create({
     identifierKey: "user_1",
@@ -80,7 +80,7 @@ user_agents = client.agents.list(
     identifier_keys=["user_1"]
 )
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // assumes that you already instantiated a client
 await client.agents.list({
     identifierKeys: ["user_1"]
@@ -110,7 +110,7 @@ identity = client.identities.create({
     agent_ids=["agent-00000000-0000-4000-8000-000000000000"]
 })
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // assumes that you already instantiated a client
 const identity = await client.identities.create({
     identifierKey: "user_1",

@@ -87,7 +87,7 @@ agent_state = client.agents.create(
     embedding="openai/text-embedding-3-small"
 )
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -159,7 +159,7 @@ shared_block_agent2 = client.agents.create(
     embedding="openai/text-embedding-3-small"
 )
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 // create a persisted block, which can be attached to agents
 const block = await client.blocks.create({
     label: "organization",

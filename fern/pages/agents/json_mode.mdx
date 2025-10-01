@@ -75,7 +75,7 @@ agent_state = client.agents.create(
 )
 ```
 
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
 // Create client (Letta Cloud)
@@ -149,7 +149,7 @@ for message in response.messages:
 # Reason: Sushi is a highly regarded cuisine known for its fresh ingredients...
 ```
 
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 // Send message and instruct agent to use the tool
 const response = await client.agents.messages.create(
     agentState.id, {
@@ -239,7 +239,7 @@ for message in response.messages:
     print(message)
 ```
 
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
 // Create client (Letta Cloud)
@@ -351,7 +351,7 @@ for message in response.messages:
     print(message)
 ```
 
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
 const client = new LettaClient({ token: "LETTA_API_KEY" });
@@ -454,7 +454,7 @@ client.agents.update(
 )
 ```
 
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 // Update agent to use JSON mode (OpenAI/compatible only)
 await client.agents.update(agentState.id, {
     responseFormat: { type: "json_object" }

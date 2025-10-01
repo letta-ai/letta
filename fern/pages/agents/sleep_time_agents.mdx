@@ -33,7 +33,7 @@ block = client.agents.blocks.retrieve(agent_id=agent_id, block_label="persona")
 # get a block by ID
 block = client.blocks.retrieve(block_id=block_id)
 ```
-```typescript title="node.js"
+```typescript TypeScript
 // get a block by label
 const block = await client.agents.blocks.retrieve(agentId, "persona");
 
@@ -88,7 +88,7 @@ group = client.groups.modify(
     ),
 )
 ```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient, SleeptimeManagerUpdate } from '@letta-ai/letta-client'
 
 const client = new LettaClient({ token: "LETTA_API_KEY" });

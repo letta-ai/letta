@@ -55,7 +55,7 @@ agent_state = client.agents.create(
 
 print(agent_state.id)
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client'
 
 const client = new LettaClient({ token: "LETTA_API_KEY" });
@@ -122,7 +122,7 @@ response = client.agents.messages.create(
 for message in response.messages:
     print(message)
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 const response = await client.agents.messages.create(
     agentState.id, {
         messages: [
