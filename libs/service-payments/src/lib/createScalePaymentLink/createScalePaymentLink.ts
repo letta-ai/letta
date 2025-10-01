@@ -1,7 +1,7 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
-import { SCALE_PLAN_IDS } from '../constants';
+import { SCALE_PLAN_PRICE_IDS } from '../constants';
 
 export async function createScalePaymentLink(organizationId: string) {
   const stripe = getStripeClient();
@@ -27,7 +27,7 @@ export async function createScalePaymentLink(organizationId: string) {
   });
 
   const scalePlan = response.data.find((price) => {
-    return SCALE_PLAN_IDS.includes(price.id);
+    return SCALE_PLAN_PRICE_IDS.includes(price.id);
   });
 
   if (!scalePlan) {

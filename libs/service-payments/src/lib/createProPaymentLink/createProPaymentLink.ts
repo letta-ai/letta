@@ -1,7 +1,7 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
-import { LEGACY_PRO_PLAN_PRODUCT_IDS, PRO_PLAN_PRICE_IDS } from '../constants';
+import { LEGACY_PRO_PLAN_PRICE_IDS, PRO_PLAN_PRICE_IDS } from '../constants';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 export async function createProPaymentLink(organizationId: string) {
@@ -34,7 +34,7 @@ export async function createProPaymentLink(organizationId: string) {
       return PRO_PLAN_PRICE_IDS.includes(price.id);
     }
 
-    return LEGACY_PRO_PLAN_PRODUCT_IDS.includes(price.id);
+    return LEGACY_PRO_PLAN_PRICE_IDS.includes(price.id);
   });
 
   if (!correctPriceId) {
