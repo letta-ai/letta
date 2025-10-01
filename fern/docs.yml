@@ -142,8 +142,6 @@ navigation:
             path: pages/agents/multiagent_custom.mdx
           - page: Multi-Agent Shared Memory
             path: pages/agents/multiagent_memory.mdx
-          - page: Groups
-            path: pages/agents/groups.mdx
 
       - section: Agent Capabilities
         contents:
@@ -153,17 +151,8 @@ navigation:
             path: pages/agents/long_running.mdx
           - page: JSON Mode & Structured Output
             path: pages/agents/json_mode.mdx
-          - page: Human-in-the-Loop
-            path: pages/agents/human_in_the_loop.mdx
           - page: Multi-Modal
             path: pages/agents/multimodal.mdx
-          - section: Voice Agents
-            path: pages/voice/voice.mdx
-            contents:
-              - page: Connecting to LiveKit Agents
-                path: pages/voice/voice_livekit.mdx
-              - page: Connecting to Vapi
-                path: pages/voice/voice_vapi.mdx
           - page: Filesystem
             path: pages/agents/filesystem.mdx
 
@@ -200,6 +189,20 @@ navigation:
             path: pages/agents/agentfile.mdx
           - page: Scheduling
             path: pages/agents/scheduling.mdx
+
+      - section: Experimental
+        contents:
+          - page: Human-in-the-Loop
+            path: pages/agents/human_in_the_loop.mdx
+          - section: Voice Agents
+            path: pages/voice/voice.mdx
+            contents:
+              - page: Connecting to LiveKit Agents
+                path: pages/voice/voice_livekit.mdx
+              - page: Connecting to Vapi
+                path: pages/voice/voice_vapi.mdx
+          - page: Groups
+            path: pages/agents/groups.mdx
 
       - section: Integrations
         contents:
