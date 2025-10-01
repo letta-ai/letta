@@ -1,0 +1,45 @@
+name: 🐍🧪 [Core] Send Message V2 SDK Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  send-message-tests:
+    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'send-message-v2'
+      changed-files-pattern: |
+        apps/core/**
+        .github/workflows/reusable-test-workflow.yml
+        .github/workflows/send-message-v2-integration-tests.yml
+      install-args: '--extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google --extra redis'
+      timeout-minutes: 15
+      runner: '["self-hosted", "medium"]'
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      use-redis: true
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "config_file": [
+              "openai-gpt-4o-mini.json",
+              "openai-o3.json",
+              "claude-3-5-sonnet.json",
+              "claude-3-7-sonnet-extended.json",
+              "gemini-2.5-flash.json"
+            ]
+          }
+        }
+    secrets: inherit

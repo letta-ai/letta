@@ -437,6 +437,8 @@ jobs:
             uv run --frozen pytest -svv ${{ inputs.test-path-prefix }}${{ matrix.test_suite }}
           elif [[ "${{ inputs.test-type }}" == "send-message" ]]; then
             uv run --frozen  pytest -s -vv tests/integration_test_send_message.py --maxfail=1 --durations=10
+          elif [[ "${{ inputs.test-type }}" == "send-message-v2" ]]; then
+            uv run --frozen  pytest -s -vv tests/integration_test_send_message_v2.py --maxfail=1 --durations=10
           elif [[ "${{ inputs.test-type }}" == "docker" ]]; then
             uv run --frozen pytest -s tests/test_client.py
           elif [[ "${{ inputs.test-type }}" == "sqlite" ]]; then
