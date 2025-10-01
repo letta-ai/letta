@@ -43,13 +43,6 @@ Agents have two primary tools for archival memory: `archival_memory_insert` and 
 Agents can insert memories during conversations:
 
 <CodeGroup>
-```python Python
-# Agent inserts after learning something
-archival_memory_insert(
-    content="Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
-    tags=["replicant", "history", "retirement"]
-)
-```
 ```typescript TypeScript
 // Agent inserts after learning something
 archival_memory_insert(
@@ -57,11 +50,24 @@ archival_memory_insert(
     tags: ["replicant", "history", "retirement"]
 )
 ```
+```python Python
+# Agent inserts after learning something
+archival_memory_insert(
+    content="Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
+    tags=["replicant", "history", "retirement"]
+)
+```
 </CodeGroup>
 
 Developers can also insert programmatically:
 
 <CodeGroup>
+```typescript TypeScript
+await client.agents.passages.insert(agent.id, {
+    content: "The Tyrell Corporation's motto: 'More human than human'",
+    tags: ["company", "motto", "tyrell"]
+});
+```
 ```python Python
 client.agents.passages.insert(
     agent_id=agent.id,
@@ -69,31 +75,25 @@ client.agents.passages.insert(
     tags=["company", "motto", "tyrell"]
 )
 ```
-```typescript TypeScript
-await client.agents.passages.insert(agent.id, {
-    content: "The Tyrell Corporation's motto: 'More human than human'",
-    tags: ["company", "motto", "tyrell"]
-});
-```
 </CodeGroup>
 
 ### Searching for information
 
 <CodeGroup>
-```python Python
-# Agent searches semantically
-results = archival_memory_search(
-    query="replicant lifespan",
-    tags=["technical"],  # Optional: filter by tags
-    page=0
-)
-```
 ```typescript TypeScript
 // Agent searches semantically
 const results = archival_memory_search(
     query: "replicant lifespan",
     tags: ["technical"],  // Optional: filter by tags
     page: 0
+)
+```
+```python Python
+# Agent searches semantically
+results = archival_memory_search(
+    query="replicant lifespan",
+    tags=["technical"],  # Optional: filter by tags
+    page=0
 )
 ```
 </CodeGroup>

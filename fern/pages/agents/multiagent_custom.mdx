@@ -13,26 +13,6 @@ Since Letta runs as a service, you can make request to the server from a custom 
 
 Here's a simple example of a tool that sends a message to a specific agent:
 <CodeGroup>
-```python Python
-def custom_send_message_to_agent(target_agent_id: str, message_contents: str):
-    """
-    Send a message to a specific Letta agent.
-
-    Args:
-        target_agent_id (str): The identifier of the target Letta agent.
-        message_contents (str): The message to be sent to the target Letta agent.
-    """
-    from letta_client import Letta
-
-    # TODO: point this to the server where the worker agents are running
-    client = Letta(base_url="http://127.0.0.1:8283")
-
-    # message all worker agents async
-    response = client.agents.send_message_async(
-        agent_id=target_agent_id,
-        message=message_contents,
-    )
-```
 ```typescript TypeScript
 async function customSendMessageToAgent(targetAgentId: string, messageContents: string) {
     /**
@@ -53,14 +33,14 @@ async function customSendMessageToAgent(targetAgentId: string, messageContents: 
     );
 }
 ```
-</CodeGroup>
-
-Below is an example of a tool that triggers agents tagged with `worker` to start their tasks:
-<CodeGroup>
 ```python Python
-def trigger_worker_agents():
+def custom_send_message_to_agent(target_agent_id: str, message_contents: str):
     """
-    Trigger worker agents to start their tasks, without waiting for a response.
+    Send a message to a specific Letta agent.
+
+    Args:
+        target_agent_id (str): The identifier of the target Letta agent.
+        message_contents (str): The message to be sent to the target Letta agent.
     """
     from letta_client import Letta
 
@@ -68,12 +48,15 @@ def trigger_worker_agents():
     client = Letta(base_url="http://127.0.0.1:8283")
 
     # message all worker agents async
-    for agent in client.agents.list(tags=["worker"]):
-        response = client.agents.send_message_async(
-            agent_id=agent.id,
-            message="Start my task",
-        )
+    response = client.agents.send_message_async(
+        agent_id=target_agent_id,
+        message=message_contents,
+    )
 ```
+</CodeGroup>
+
+Below is an example of a tool that triggers agents tagged with `worker` to start their tasks:
+<CodeGroup>
 ```typescript TypeScript
 async function triggerWorkerAgents() {
     /**
@@ -93,5 +76,22 @@ async function triggerWorkerAgents() {
         );
     }
 }
+```
+```python Python
+def trigger_worker_agents():
+    """
+    Trigger worker agents to start their tasks, without waiting for a response.
+    """
+    from letta_client import Letta
+
+    # TODO: point this to the server where the worker agents are running
+    client = Letta(base_url="http://127.0.0.1:8283")
+
+    # message all worker agents async
+    for agent in client.agents.list(tags=["worker"]):
+        response = client.agents.send_message_async(
+            agent_id=agent.id,
+            message="Start my task",
+        )
 ```
 </CodeGroup>

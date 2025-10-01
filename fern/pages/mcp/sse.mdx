@@ -29,39 +29,6 @@ Letta recognizes templated variables in the custom header and auth token fields 
 - This is supported in the ADE as well when configuring API key/access tokens and custom headers.
 
 <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta
-from letta_client.types import StreamableHttpServerConfig, McpServerType
-
-client = Letta(token="LETTA_API_KEY")
-
-# Connect a Streamable HTTP server with Bearer token auth
-streamable_config = StreamableHttpServerConfig(
-    server_name="my-server",
-    type=McpServerType.StreamableHttp,
-    server_url="https://mcp-server.example.com/mcp",
-    auth_header="Authorization",
-    auth_token="Bearer your-token",  # Include "Bearer " prefix
-    custom_headers={"X-API-Version": "v1"}  # Additional custom headers
-)
-
-client.tools.add_mcp_server(request=streamable_config)
-
-# Example with templated variables for agent-scoped authentication
-agent_scoped_config = StreamableHttpServerConfig(
-    server_name="user-specific-server",
-    type=McpServerType.StreamableHttp,
-    server_url="https://api.example.com/mcp",
-    auth_header="Authorization",
-    auth_token="Bearer {{AGENT_API_KEY | api_key}}",  # Agent-specific API key
-    custom_headers={
-        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  # Agent-specific user ID
-        "X-API-Version": "v2"
-    }
-)
-
-client.tools.add_mcp_server(request=agent_scoped_config)
-```
 ```typescript TypeScript maxLines=50
 import { LettaClient, Letta } from '@letta-ai/letta-client';
 
@@ -96,6 +63,39 @@ const agentScopedConfig: Letta.StreamableHttpServerConfig = {
 
 await client.tools.addMcpServer(agentScopedConfig);
 ```
+```python title="python" maxLines=50
+from letta_client import Letta
+from letta_client.types import StreamableHttpServerConfig, McpServerType
+
+client = Letta(token="LETTA_API_KEY")
+
+# Connect a Streamable HTTP server with Bearer token auth
+streamable_config = StreamableHttpServerConfig(
+    server_name="my-server",
+    type=McpServerType.StreamableHttp,
+    server_url="https://mcp-server.example.com/mcp",
+    auth_header="Authorization",
+    auth_token="Bearer your-token",  # Include "Bearer " prefix
+    custom_headers={"X-API-Version": "v1"}  # Additional custom headers
+)
+
+client.tools.add_mcp_server(request=streamable_config)
+
+# Example with templated variables for agent-scoped authentication
+agent_scoped_config = StreamableHttpServerConfig(
+    server_name="user-specific-server",
+    type=McpServerType.StreamableHttp,
+    server_url="https://api.example.com/mcp",
+    auth_header="Authorization",
+    auth_token="Bearer {{AGENT_API_KEY | api_key}}",  # Agent-specific API key
+    custom_headers={
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  # Agent-specific user ID
+        "X-API-Version": "v2"
+    }
+)
+
+client.tools.add_mcp_server(request=agent_scoped_config)
+```
 </CodeGroup>
 
 ## SSE (Deprecated)
@@ -124,6 +124,26 @@ Letta recognizes templated variables in the custom header and auth token fields 
 - This is supported in the ADE as well when configuring API key/access tokens and custom headers.
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient, Letta } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// Connect a SSE server (legacy)
+const sseConfig: Letta.SseServerConfig = {
+    serverName: "legacy-server",
+    type: Letta.McpServerType.Sse,
+    serverUrl: "https://legacy-mcp.example.com/sse",
+    authHeader: "Authorization",
+    authToken: "Bearer optional-token"  // Include "Bearer " prefix
+    customHeaders: {
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  // Agent-specific user ID
+        "X-API-Version": "v2"
+    }
+};
+
+await client.tools.addMcpServer(sseConfig);
+```
 ```python title="python" maxLines=50
 from letta_client import Letta
 from letta_client.types import SseServerConfig, McpServerType
@@ -145,26 +165,6 @@ sse_config = SseServerConfig(
 
 client.tools.add_mcp_server(request=sse_config)
 ```
-```typescript TypeScript maxLines=50
-import { LettaClient, Letta } from '@letta-ai/letta-client';
-
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// Connect a SSE server (legacy)
-const sseConfig: Letta.SseServerConfig = {
-    serverName: "legacy-server",
-    type: Letta.McpServerType.Sse,
-    serverUrl: "https://legacy-mcp.example.com/sse",
-    authHeader: "Authorization",
-    authToken: "Bearer optional-token"  // Include "Bearer " prefix
-    customHeaders: {
-        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  // Agent-specific user ID
-        "X-API-Version": "v2"
-    }
-};
-
-await client.tools.addMcpServer(sseConfig);
-```
 </CodeGroup>
 
 
@@ -173,6 +173,34 @@ await client.tools.addMcpServer(sseConfig);
 **ADE**: Agent → Tools → Select MCP tools
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// List tools from an MCP server
+const tools = await client.tools.listMcpToolsByServer("weather-server");
+
+// Add a specific tool from the MCP server
+const tool = await client.tools.addMcpTool("weather-server", "get_weather");
+
+// Create agent with MCP tool
+const agentState = await client.agents.create({
+    model: "openai/gpt-4o-mini",
+    embedding: "openai/text-embedding-3-small",
+    toolIds: [tool.id]
+});
+
+// Use the agent with MCP tools
+const response = await client.agents.messages.create(agentState.id, {
+    messages: [
+        {
+            role: "user",
+            content: "Use the weather tool to check the forecast"
+        }
+    ]
+});
+```
 ```python title="python" maxLines=50
 from letta_client import Letta
 
@@ -210,33 +238,5 @@ response = client.agents.messages.create(
         }
     ]
 )
-```
-```typescript TypeScript maxLines=50
-import { LettaClient } from '@letta-ai/letta-client'
-
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// List tools from an MCP server
-const tools = await client.tools.listMcpToolsByServer("weather-server");
-
-// Add a specific tool from the MCP server
-const tool = await client.tools.addMcpTool("weather-server", "get_weather");
-
-// Create agent with MCP tool
-const agentState = await client.agents.create({
-    model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
-    toolIds: [tool.id]
-});
-
-// Use the agent with MCP tools
-const response = await client.agents.messages.create(agentState.id, {
-    messages: [
-        {
-            role: "user",
-            content: "Use the weather tool to check the forecast"
-        }
-    ]
-});
 ```
 </CodeGroup>

@@ -428,29 +428,6 @@ The [Letta-Zapier integration](https://zapier.com/developer/public-invite/227319
 To create agents programmatically from your `customer-success-agent` template, use the Letta SDK:
 
 <CodeGroup>
-```python Python
-from letta_client import Letta
-
-client = Letta(token="your-api-token")
-
-# Create agent from template for new customer
-agent = client.templates.agents.create(
-    project="your-project",
-    template_version="customer-success-agent:latest",
-    memory_variables={
-        "customer_name": "John Smith",
-        "customer_email": "john@techparts.com",
-        "company_name": "TechParts Industries",
-        "job_title": "Manufacturing Director",
-        "industry_sector": "Industrial Equipment",
-        "professional_background": "15+ years in manufacturing operations",
-        "business_challenges": "Looking to reduce defects and optimize supply chain",
-        "communication_preferences": "Prefers data-driven discussions"
-    },
-    identity_ids=["customer_john_smith"]
-)
-```
-
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
@@ -472,6 +449,29 @@ const agent = await client.templates.agents.create({
     },
     identityIds: ["customer_john_smith"]
 });
+```
+
+```python Python
+from letta_client import Letta
+
+client = Letta(token="your-api-token")
+
+# Create agent from template for new customer
+agent = client.templates.agents.create(
+    project="your-project",
+    template_version="customer-success-agent:latest",
+    memory_variables={
+        "customer_name": "John Smith",
+        "customer_email": "john@techparts.com",
+        "company_name": "TechParts Industries",
+        "job_title": "Manufacturing Director",
+        "industry_sector": "Industrial Equipment",
+        "professional_background": "15+ years in manufacturing operations",
+        "business_challenges": "Looking to reduce defects and optimize supply chain",
+        "communication_preferences": "Prefers data-driven discussions"
+    },
+    identity_ids=["customer_john_smith"]
+)
 ```
 </CodeGroup>
 

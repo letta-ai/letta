@@ -84,29 +84,6 @@ The agent type `memgpt_v2_agent` implements the latest iteration of the MemGPT a
 ## Creating MemGPT Agents
 
 <CodeGroup>
-```python title="Python"
-from letta_client import Letta
-
-client = Letta(token="LETTA_API_KEY")
-
-agent_state = client.agents.create(
-    agent_type="memgpt_v2_agent",  # or "memgpt_agent" for v1
-    model="openai/gpt-4.1",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[
-        {
-          "label": "human",
-          "value": "The human's name is Chad. They like vibe coding."
-        },
-        {
-          "label": "persona",
-          "value": "My name is Sam, the all-knowing sentient AI."
-        }
-    ],
-    tools=["web_search", "run_code"]
-)
-```
-
 ```typescript title="TypeScript"
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -128,6 +105,29 @@ const agentState = await client.agents.create({
     ],
     tools: ["web_search", "run_code"]
 });
+```
+
+```python title="Python"
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+agent_state = client.agents.create(
+    agent_type="memgpt_v2_agent",  # or "memgpt_agent" for v1
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Chad. They like vibe coding."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    tools=["web_search", "run_code"]
+)
 ```
 
 ```bash title="cURL"

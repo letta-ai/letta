@@ -30,19 +30,19 @@ There are three built-in tools for cross-agent communication:
 
 ### Messaging another agent (async / no wait)
 <CodeGroup>
-```python Python
-# The function signature for the async multi-agent messaging tool
-def send_message_to_agent_async(
-    message: str,
-    other_agent_id: str,
-): -> str
-```
 ```typescript TypeScript
 // The function signature for the async multi-agent messaging tool
 function sendMessageToAgentAsync(
     message: string,
     otherAgentId: string
 ): string
+```
+```python Python
+# The function signature for the async multi-agent messaging tool
+def send_message_to_agent_async(
+    message: str,
+    other_agent_id: str,
+): -> str
 ```
 </CodeGroup>
 ```mermaid
@@ -61,19 +61,19 @@ The message that is sent to the target agent contains a "message receipt", indic
 
 ### Messaging another agent (wait for reply)
 <CodeGroup>
-```python Python
-# The function signature for the synchronous multi-agent messaging tool
-def send_message_to_agent_and_wait_for_reply(
-    message: str,
-    other_agent_id: str,
-): -> str
-```
 ```typescript TypeScript
 // The function signature for the synchronous multi-agent messaging tool
 function sendMessageToAgentAndWaitForReply(
     message: string,
     otherAgentId: string
 ): string
+```
+```python Python
+# The function signature for the synchronous multi-agent messaging tool
+def send_message_to_agent_and_wait_for_reply(
+    message: str,
+    other_agent_id: str,
+): -> str
 ```
 </CodeGroup>
 ```mermaid
@@ -90,19 +90,19 @@ The response of the target agent is returned in the tool output - if the target 
 
 ### Messaging a group of agents (supervisor-worker pattern)
 <CodeGroup>
-```python Python
-# The function signature for the group broadcast multi-agent messaging tool
-def send_message_to_agents_matching_all_tags(
-    message: str,
-    tags: List[str],
-) -> List[str]:
-```
 ```typescript TypeScript
 // The function signature for the group broadcast multi-agent messaging tool
 function sendMessageToAgentsMatchingAllTags(
     message: string,
     tags: string[]
 ): string[]
+```
+```python Python
+# The function signature for the group broadcast multi-agent messaging tool
+def send_message_to_agents_matching_all_tags(
+    message: str,
+    tags: List[str],
+) -> List[str]:
 ```
 </CodeGroup>
 ```mermaid

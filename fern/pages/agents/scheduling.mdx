@@ -25,6 +25,24 @@ This guide covers simple approaches to implement scheduled agent interactions.
 The most straightforward approach for development and testing:
 
 <CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+const agentId = "your_agent_id";
+
+while (true) {
+    const response = await client.agents.messages.create(agentId, {
+        messages: [{
+            role: "user",
+            content: `Scheduled check at ${new Date()}`
+        }]
+    });
+    console.log(`[${new Date()}] Agent responded`);
+    await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
+}
+```
+
 ```python title="python"
 import time
 from letta_client import Letta
@@ -44,24 +62,6 @@ while True:
     print(f"[{datetime.now()}] Agent responded")
     time.sleep(300)  # 5 minutes
 ```
-
-```typescript TypeScript
-import { LettaClient } from '@letta-ai/letta-client';
-
-const client = new LettaClient({ baseUrl: "http://localhost:8283" });
-const agentId = "your_agent_id";
-
-while (true) {
-    const response = await client.agents.messages.create(agentId, {
-        messages: [{
-            role: "user",
-            content: `Scheduled check at ${new Date()}`
-        }]
-    });
-    console.log(`[${new Date()}] Agent responded`);
-    await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
-}
-```
 </CodeGroup>
 
 **Pros:** Simple, easy to debug
@@ -72,25 +72,6 @@ while (true) {
 For production deployments, use cron for reliability:
 
 <CodeGroup>
-```python title="python"
-#!/usr/bin/env python3
-from letta_client import Letta
-from datetime import datetime
-
-try:
-    client = Letta(base_url="http://localhost:8283")
-    response = client.agents.messages.create(
-        agent_id="your_agent_id",
-        messages=[{
-            "role": "user",
-            "content": "Scheduled maintenance check"
-        }]
-    )
-    print(f"[{datetime.now()}] Success")
-except Exception as e:
-    print(f"[{datetime.now()}] Error: {e}")
-```
-
 ```typescript TypeScript
 #!/usr/bin/env node
 import { LettaClient } from '@letta-ai/letta-client';
@@ -111,6 +92,25 @@ async function sendMessage() {
 }
 
 sendMessage();
+```
+
+```python title="python"
+#!/usr/bin/env python3
+from letta_client import Letta
+from datetime import datetime
+
+try:
+    client = Letta(base_url="http://localhost:8283")
+    response = client.agents.messages.create(
+        agent_id="your_agent_id",
+        messages=[{
+            "role": "user",
+            "content": "Scheduled maintenance check"
+        }]
+    )
+    print(f"[{datetime.now()}] Success")
+except Exception as e:
+    print(f"[{datetime.now()}] Error: {e}")
 ```
 </CodeGroup>
 
@@ -136,6 +136,40 @@ Add to crontab with `crontab -e`:
 Complete example that performs periodic memory cleanup:
 
 <CodeGroup>
+```typescript TypeScript
+#!/usr/bin/env node
+import { LettaClient } from '@letta-ai/letta-client';
+
+async function runMaintenance() {
+    try {
+        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+        const agentId = "your_agent_id";
+
+        const response = await client.agents.messages.create(agentId, {
+            messages: [{
+                role: "user",
+                content: "Please review your memory blocks for outdated information and clean up as needed."
+            }]
+        });
+
+        // Print any assistant messages
+        for (const message of response.messages) {
+            if (message.messageType === "assistant_message") {
+                console.log(`Agent response: ${message.content?.substring(0, 100)}...`);
+            }
+        }
+
+    } catch (error) {
+        console.error("Maintenance failed:", error);
+    }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+    runMaintenance();
+}
+```
+
 ```python title="python"
 #!/usr/bin/env python3
 import logging
@@ -170,40 +204,6 @@ def run_maintenance():
 
 if __name__ == "__main__":
     run_maintenance()
-```
-
-```typescript TypeScript
-#!/usr/bin/env node
-import { LettaClient } from '@letta-ai/letta-client';
-
-async function runMaintenance() {
-    try {
-        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
-        const agentId = "your_agent_id";
-
-        const response = await client.agents.messages.create(agentId, {
-            messages: [{
-                role: "user",
-                content: "Please review your memory blocks for outdated information and clean up as needed."
-            }]
-        });
-
-        // Print any assistant messages
-        for (const message of response.messages) {
-            if (message.messageType === "assistant_message") {
-                console.log(`Agent response: ${message.content?.substring(0, 100)}...`);
-            }
-        }
-
-    } catch (error) {
-        console.error("Maintenance failed:", error);
-    }
-}
-
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-    runMaintenance();
-}
 ```
 </CodeGroup>
 

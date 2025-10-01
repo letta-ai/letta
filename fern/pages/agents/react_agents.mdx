@@ -26,20 +26,6 @@ To create a ReAct agent, simply use the `react_agent` agent type when creating y
 There is no need to pass any memory blocks to the agent, since ReAct agents do not have any long-term memory.
 
 <CodeGroup>
-```python title="python"
-from letta_client import Letta
-
-client = Letta(token="LETTA_API_KEY")
-
-# create the ReAct agent
-agent = client.agents.create(
-    agent_type="react_agent",
-    model="openai/gpt-4.1",
-    embedding="openai/text-embedding-3-small",
-    tools=["web_search", "run_code"]
-)
-```
-
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -52,6 +38,20 @@ const agent = await client.agents.create({
     embedding: "openai/text-embedding-3-small",
     tools: ["web_search", "run_code"]
 });
+```
+
+```python title="python"
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+# create the ReAct agent
+agent = client.agents.create(
+    agent_type="react_agent",
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    tools=["web_search", "run_code"]
+)
 ```
 
 ```bash title="curl"

@@ -35,46 +35,6 @@ Create a tool that defines your desired response format. The tool arguments beco
 ### Creating a Structured Generation Tool
 
 <CodeGroup>
-```python title="python" maxLines=100
-from letta_client import Letta
-
-# Create client (Letta Cloud)
-client = Letta(token="LETTA_API_KEY")
-
-# Or for self-hosted
-# client = Letta(base_url="http://localhost:8283")
-
-def generate_rank(rank: int, reason: str):
-    """Generate a ranking with explanation.
-
-    Args:
-        rank (int): The numerical rank from 1-10.
-        reason (str): The reasoning behind the rank.
-    """
-    print("Rank generated")
-    return
-
-# Create the tool
-tool = client.tools.create(func=generate_rank)
-
-# Create agent with the structured generation tool
-agent_state = client.agents.create(
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[
-        {
-            "label": "human",
-            "value": "The human's name is Chad. They are a food enthusiast who enjoys trying different cuisines."
-        },
-        {
-            "label": "persona",
-            "value": "I am a helpful food critic assistant. I provide detailed rankings and reviews of different foods and restaurants."
-        }
-    ],
-    tool_ids=[tool.id]
-)
-```
-
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -117,38 +77,51 @@ const agentState = await client.agents.create({
     toolIds: [tool.id]
 });
 ```
+
+```python title="python" maxLines=100
+from letta_client import Letta
+
+# Create client (Letta Cloud)
+client = Letta(token="LETTA_API_KEY")
+
+# Or for self-hosted
+# client = Letta(base_url="http://localhost:8283")
+
+def generate_rank(rank: int, reason: str):
+    """Generate a ranking with explanation.
+
+    Args:
+        rank (int): The numerical rank from 1-10.
+        reason (str): The reasoning behind the rank.
+    """
+    print("Rank generated")
+    return
+
+# Create the tool
+tool = client.tools.create(func=generate_rank)
+
+# Create agent with the structured generation tool
+agent_state = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "human",
+            "value": "The human's name is Chad. They are a food enthusiast who enjoys trying different cuisines."
+        },
+        {
+            "label": "persona",
+            "value": "I am a helpful food critic assistant. I provide detailed rankings and reviews of different foods and restaurants."
+        }
+    ],
+    tool_ids=[tool.id]
+)
+```
 </CodeGroup>
 
 ### Using the Structured Generation Tool
 
 <CodeGroup>
-```python title="python" maxLines=100
-# Send message and instruct agent to use the tool
-response = client.agents.messages.create(
-    agent_id=agent_state.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "How do you rank sushi as a food? Please use the generate_rank tool to provide your response."
-        }
-    ]
-)
-
-# Extract structured data from tool call
-for message in response.messages:
-    if message.message_type == "tool_call_message":
-        import json
-        args = json.loads(message.tool_call.arguments)
-        rank = args["rank"]
-        reason = args["reason"]
-        print(f"Rank: {rank}")
-        print(f"Reason: {reason}")
-
-# Example output:
-# Rank: 8
-# Reason: Sushi is a highly regarded cuisine known for its fresh ingredients...
-```
-
 ```typescript TypeScript maxLines=100
 // Send message and instruct agent to use the tool
 const response = await client.agents.messages.create(
@@ -174,6 +147,33 @@ for (const message of response.messages) {
 // Example output:
 // Rank: 8
 // Reason: Sushi is a highly regarded cuisine known for its fresh ingredients...
+```
+
+```python title="python" maxLines=100
+# Send message and instruct agent to use the tool
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "How do you rank sushi as a food? Please use the generate_rank tool to provide your response."
+        }
+    ]
+)
+
+# Extract structured data from tool call
+for message in response.messages:
+    if message.message_type == "tool_call_message":
+        import json
+        args = json.loads(message.tool_call.arguments)
+        rank = args["rank"]
+        reason = args["reason"]
+        print(f"Rank: {rank}")
+        print(f"Reason: {reason}")
+
+# Example output:
+# Rank: 8
+# Reason: Sushi is a highly regarded cuisine known for its fresh ingredients...
 ```
 </CodeGroup>
 
@@ -201,44 +201,6 @@ Under the hood, `response_format` overrides the schema for the `send_message` to
 ### Basic JSON Mode
 
 <CodeGroup>
-```python title="python" maxLines=100
-from letta_client import Letta
-
-# Create client (Letta Cloud)
-client = Letta(token="LETTA_API_KEY")
-
-# Create agent with basic JSON mode (OpenAI/compatible providers only)
-agent_state = client.agents.create(
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[
-        {
-            "label": "human",
-            "value": "The human's name is Chad. They work as a data analyst and prefer clear, organized information."
-        },
-        {
-            "label": "persona",
-            "value": "I am a helpful assistant who provides clear and well-organized responses."
-        }
-    ],
-    response_format={"type": "json_object"}
-)
-
-# Send message expecting JSON response
-response = client.agents.messages.create(
-    agent_id=agent_state.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "How do you rank sushi as a food? Please respond in JSON format with rank and reason fields."
-        }
-    ]
-)
-
-for message in response.messages:
-    print(message)
-```
-
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -278,6 +240,44 @@ for (const message of response.messages) {
     console.log(message);
 }
 ```
+
+```python title="python" maxLines=100
+from letta_client import Letta
+
+# Create client (Letta Cloud)
+client = Letta(token="LETTA_API_KEY")
+
+# Create agent with basic JSON mode (OpenAI/compatible providers only)
+agent_state = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "human",
+            "value": "The human's name is Chad. They work as a data analyst and prefer clear, organized information."
+        },
+        {
+            "label": "persona",
+            "value": "I am a helpful assistant who provides clear and well-organized responses."
+        }
+    ],
+    response_format={"type": "json_object"}
+)
+
+# Send message expecting JSON response
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "How do you rank sushi as a food? Please respond in JSON format with rank and reason fields."
+        }
+    ]
+)
+
+for message in response.messages:
+    print(message)
+```
 </CodeGroup>
 
 ### Advanced JSON Schema Mode
@@ -285,72 +285,6 @@ for (const message of response.messages) {
 For more precise control, you can use OpenAI's `json_schema` mode with strict validation:
 
 <CodeGroup>
-```python title="python" maxLines=100
-from letta_client import Letta
-
-client = Letta(token="LETTA_API_KEY")
-
-# Define structured schema (from OpenAI structured outputs guide)
-response_format = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "food_ranking",
-        "schema": {
-            "type": "object",
-            "properties": {
-                "rank": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": { "type": "string" },
-                            "score": { "type": "integer" }
-                        },
-                        "required": ["name", "score"],
-                        "additionalProperties": False
-                    }
-                }
-            },
-            "required": ["rank", "reason", "categories"],
-            "additionalProperties": False
-        },
-        "strict": True
-    }
-}
-
-# Create agent
-agent_state = client.agents.create(
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[]
-)
-
-# Update agent with response format
-agent_state = client.agents.update(
-    agent_id=agent_state.id,
-    response_format=response_format
-)
-
-# Send message
-response = client.agents.messages.create(
-    agent_id=agent_state.id,
-    messages=[
-        {"role": "user", "content": "How do you rank sushi? Include categories for taste, presentation, and value."}
-    ]
-)
-
-for message in response.messages:
-    print(message)
-```
-
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -418,6 +352,72 @@ for (const message of response.messages) {
     console.log(message);
 }
 ```
+
+```python title="python" maxLines=100
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+# Define structured schema (from OpenAI structured outputs guide)
+response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "food_ranking",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "rank": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "type": "string" },
+                            "score": { "type": "integer" }
+                        },
+                        "required": ["name", "score"],
+                        "additionalProperties": False
+                    }
+                }
+            },
+            "required": ["rank", "reason", "categories"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+}
+
+# Create agent
+agent_state = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[]
+)
+
+# Update agent with response format
+agent_state = client.agents.update(
+    agent_id=agent_state.id,
+    response_format=response_format
+)
+
+# Send message
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {"role": "user", "content": "How do you rank sushi? Include categories for taste, presentation, and value."}
+    ]
+)
+
+for message in response.messages:
+    print(message)
+```
 </CodeGroup>
 
 With structured JSON schema, the agent's response will be strictly validated:
@@ -440,6 +440,18 @@ With structured JSON schema, the agent's response will be strictly validated:
 You can update an existing agent's response format:
 
 <CodeGroup>
+```typescript TypeScript maxLines=100
+// Update agent to use JSON mode (OpenAI/compatible only)
+await client.agents.update(agentState.id, {
+    responseFormat: { type: "json_object" }
+});
+
+// Or remove JSON mode
+await client.agents.update(agentState.id, {
+    responseFormat: null
+});
+```
+
 ```python title="python" maxLines=100
 # Update agent to use JSON mode (OpenAI/compatible only)
 client.agents.update(
@@ -452,17 +464,5 @@ client.agents.update(
     agent_id=agent_state.id,
     response_format=None
 )
-```
-
-```typescript TypeScript maxLines=100
-// Update agent to use JSON mode (OpenAI/compatible only)
-await client.agents.update(agentState.id, {
-    responseFormat: { type: "json_object" }
-});
-
-// Or remove JSON mode
-await client.agents.update(agentState.id, {
-    responseFormat: null
-});
 ```
 </CodeGroup>

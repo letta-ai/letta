@@ -32,29 +32,6 @@ This guide will show you how to create a Letta agent with the Letta APIs or SDKs
 
   <Step title="Create an agent">
   <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta
-
-client = Letta(token="LETTA_API_KEY")
-
-agent_state = client.agents.create(
-    model="openai/gpt-4.1",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[
-        {
-          "label": "human",
-          "value": "The human's name is Chad. They like vibe coding."
-        },
-        {
-          "label": "persona",
-          "value": "My name is Sam, the all-knowing sentient AI."
-        }
-    ],
-    tools=["web_search", "run_code"]
-)
-
-print(agent_state.id)
-```
 ```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -77,6 +54,29 @@ const agentState = await client.agents.create({
 });
 
 console.log(agentState.id);
+```
+```python title="python" maxLines=50
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+agent_state = client.agents.create(
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Chad. They like vibe coding."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    tools=["web_search", "run_code"]
+)
+
+print(agent_state.id)
 ```
 ```curl curl
 curl -X POST https://api.letta.com/v1/agents \
@@ -108,20 +108,6 @@ For more information on streaming, see [our streaming guide](/guides/agents/stre
 
 Once the agent is created, we can send the agent a message using its `id` field:
 <CodeGroup>
-```python title="python" maxLines=50
-response = client.agents.messages.create(
-    agent_id=agent_state.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "hows it going????"
-        }
-    ]
-)
-
-for message in response.messages:
-    print(message)
-```
 ```typescript TypeScript maxLines=50
 const response = await client.agents.messages.create(
     agentState.id, {
@@ -137,6 +123,20 @@ const response = await client.agents.messages.create(
 for (const message of response.messages) {
     console.log(message);
 }
+```
+```python title="python" maxLines=50
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "hows it going????"
+        }
+    ]
+)
+
+for message in response.messages:
+    print(message)
 ```
 ```curl curl
 curl --request POST \

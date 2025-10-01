@@ -60,33 +60,6 @@ Read-only blocks are useful when you want to give an agent access to information
 ## Creating an agent with memory blocks
 When you create an agent, you can specify memory blocks to also be created with the agent. For most chat applications, we recommend create a `human` block (to represent memories about the user) and a `persona` block (to represent the agent's persona).
 <CodeGroup>
-```python title="python" maxLines=50
-# install letta_client with `pip install letta-client`
-from letta_client import Letta
-
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
-
-# create an agent with two basic self-editing memory blocks
-agent_state = client.agents.create(
-    memory_blocks=[
-        {
-          "label": "human",
-          "value": "The human's name is Bob the Builder.",
-          "limit": 5000
-        },
-        {
-          "label": "persona",
-          "value": "My name is Sam, the all-knowing sentient AI.",
-          "limit": 5000
-        }
-    ],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
-)
-```
 ```typescript TypeScript maxLines=50
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
@@ -114,6 +87,33 @@ const agentState = await client.agents.create({
     embedding: "openai/text-embedding-3-small"
 });
 ```
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create a client to connect to your local Letta server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# create an agent with two basic self-editing memory blocks
+agent_state = client.agents.create(
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Bob the Builder.",
+          "limit": 5000
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, the all-knowing sentient AI.",
+          "limit": 5000
+        }
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
+)
+```
 </CodeGroup>
 When the agent is created, the corresponding blocks are also created and attached to the agent, so that the block value will be in the context window.
 
@@ -122,43 +122,6 @@ You can also directly create blocks and attach them to an agent. This can be use
 
 Below is an example of creating a block directory, and attaching the block to two agents by specifying the `block_ids` field.
 <CodeGroup>
-```python title="python" maxLines=50
-# create a persisted block, which can be attached to agents
-block = client.blocks.create(
-    label="organization",
-    description="A block to store information about the organization",
-    value="Organization: Letta",
-    limit=4000,
-)
-
-# create an agent with both a shared block and its own blocks
-shared_block_agent1 = client.agents.create(
-    name="shared_block_agent1",
-    memory_blocks=[
-        {
-            "label": "persona",
-            "value": "I am agent 1"
-        },
-    ],
-    block_ids=[block.id],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
-)
-
-# create another agent sharing the block
-shared_block_agent2 = client.agents.create(
-    name="shared_block_agent2",
-    memory_blocks=[
-        {
-            "label": "persona",
-            "value": "I am agent 2"
-        },
-    ],
-    block_ids=[block.id],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
-)
-```
 ```typescript TypeScript maxLines=50
 // create a persisted block, which can be attached to agents
 const block = await client.blocks.create({
@@ -197,14 +160,51 @@ const sharedBlockAgent2 = await client.agents.create({
     embedding: "openai/text-embedding-3-small"
 });
 ```
+```python title="python" maxLines=50
+# create a persisted block, which can be attached to agents
+block = client.blocks.create(
+    label="organization",
+    description="A block to store information about the organization",
+    value="Organization: Letta",
+    limit=4000,
+)
+
+# create an agent with both a shared block and its own blocks
+shared_block_agent1 = client.agents.create(
+    name="shared_block_agent1",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am agent 1"
+        },
+    ],
+    block_ids=[block.id],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
+)
+
+# create another agent sharing the block
+shared_block_agent2 = client.agents.create(
+    name="shared_block_agent2",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am agent 2"
+        },
+    ],
+    block_ids=[block.id],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
+)
+```
 </CodeGroup>
 You can also attach blocks to existing agents:
 <CodeGroup>
-```python Python
-client.agents.blocks.attach(agent_id=agent.id, block_id=block.id)
-```
 ```typescript TypeScript
 await client.agents.blocks.attach(agent.id, block.id);
+```
+```python Python
+client.agents.blocks.attach(agent_id=agent.id, block_id=block.id)
 ```
 </CodeGroup>
 You can see all agents attached to a block by using the `block_id` field in the [blocks retrieve](/api-reference/blocks/retrieve) endpoint.

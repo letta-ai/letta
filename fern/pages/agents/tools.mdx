@@ -18,18 +18,6 @@ There are three main ways to connect tools to your agents:
 
 Once a tool has been created (if it's a custom tool) or connected (if it's a pre-built tool or MCP server), you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation:
 <CodeGroup>
-```python Python {9}
-# create a new agent
-agent = client.agents.create(
-    memory_blocks=[
-        {"label": "human", "limit": 2000, "value": "Name: Bob"},
-        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
-    ],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    tools=["my_custom_tool_name"]
-)
-```
 ```typescript TypeScript {9}
 // create a new agent
 const agent = await client.agents.create({
@@ -42,6 +30,18 @@ const agent = await client.agents.create({
     tools: ["my_custom_tool_name"]
 });
 ```
+```python Python {9}
+# create a new agent
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tools=["my_custom_tool_name"]
+)
+```
 </CodeGroup>
 
 ## Tool Execution
@@ -53,20 +53,6 @@ These environment variables will be accessible in the sandboxed environment that
 
 For example, if you define a custom tool that requires an API key to run (e.g. `EXAMPLE_TOOL_API_KEY`), you can set the variable at time of agent creation by using the `tool_exec_environment_variables` parameter:
 <CodeGroup>
-```python Python {9-11}
-# create an agent with no tools
-agent = client.agents.create(
-    memory_blocks=[
-        {"label": "human", "limit": 2000, "value": "Name: Bob"},
-        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
-    ],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    tool_exec_environment_variables={
-        "EXAMPLE_TOOL_API_KEY": "banana"
-    }
-)
-```
 ```typescript TypeScript {9-11}
 // create an agent with no tools
 const agent = await client.agents.create({
@@ -80,6 +66,20 @@ const agent = await client.agents.create({
         "EXAMPLE_TOOL_API_KEY": "banana"
     }
 });
+```
+```python Python {9-11}
+# create an agent with no tools
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_exec_environment_variables={
+        "EXAMPLE_TOOL_API_KEY": "banana"
+    }
+)
 ```
 </CodeGroup>
 

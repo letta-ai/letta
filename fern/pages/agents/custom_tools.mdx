@@ -63,20 +63,6 @@ tool_from_class = client.tools.add(
 To add this tool using the SDK:
 
 <CodeGroup>
-```python title="python"
-from letta_client import Letta
-
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
-
-# create the tool
-tool_from_class = client.tools.add(
-    tool=ManageInventoryTool(),
-)
-```
-
 ```typescript title="typescript"
 import { LettaClient } from '@letta-ai/letta-client';
 
@@ -90,12 +76,48 @@ const toolFromClass = await client.tools.add({
   tool: manageInventoryTool,
 });
 ```
+
+```python title="python"
+from letta_client import Letta
+
+# create a client to connect to your local Letta server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# create the tool
+tool_from_class = client.tools.add(
+    tool=ManageInventoryTool(),
+)
+```
 </CodeGroup>
 
 ### Specifying tools via function docstrings
 You can create a tool by passing in a function with a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) specifying the arguments and description of the tool:
 
 <CodeGroup>
+```typescript title="typescript"
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client';
+
+// create a client to connect to your local Letta server
+const client = new LettaClient({
+  baseUrl: "http://localhost:8283"
+});
+
+// define a function
+function rollDice(): string {
+    const diceRoleOutcome = Math.floor(Math.random() * 20) + 1;
+    const outputString = `You rolled a ${diceRoleOutcome}`;
+    return outputString;
+}
+
+// create the tool
+const tool = await client.tools.createFromFunction({
+  func: rollDice
+});
+```
+
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
@@ -126,28 +148,6 @@ def roll_dice() -> str:
 tool = client.tools.create_from_function(
     func=roll_dice
 )
-```
-
-```typescript title="typescript"
-// install letta-client with `npm install @letta-ai/letta-client`
-import { LettaClient } from '@letta-ai/letta-client';
-
-// create a client to connect to your local Letta server
-const client = new LettaClient({
-  baseUrl: "http://localhost:8283"
-});
-
-// define a function
-function rollDice(): string {
-    const diceRoleOutcome = Math.floor(Math.random() * 20) + 1;
-    const outputString = `You rolled a ${diceRoleOutcome}`;
-    return outputString;
-}
-
-// create the tool
-const tool = await client.tools.createFromFunction({
-  func: rollDice
-});
 ```
 </CodeGroup>
 
@@ -230,18 +230,18 @@ def check_order_status(
 Then, you can define the tool in Letta via the `source_code` parameter:
 
 <CodeGroup>
-```python title="python" maxLines=50
-tool = client.tools.create(
-    source_code = open("custom_tool.py", "r").read()
-)
-```
-
 ```typescript title="typescript"
 import * as fs from 'fs';
 
 const tool = await client.tools.create({
   sourceCode: fs.readFileSync("custom_tool.py", "utf-8")
 });
+```
+
+```python title="python" maxLines=50
+tool = client.tools.create(
+    source_code = open("custom_tool.py", "r").read()
+)
 ```
 </CodeGroup>
 

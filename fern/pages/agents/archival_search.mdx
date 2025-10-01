@@ -23,41 +23,41 @@ Letta uses OpenAI's `text-embedding-3-small` model, which handles natural langua
 **Natural language questions work best:**
 
 <CodeGroup>
-```python Python
-archival_memory_search(query="How does the test work?")
-# Returns: "The Voight-Kampff test measures involuntary emotional responses..."
-```
 ```typescript TypeScript
 await archivalMemorySearch({query: "How does the test work?"})
 // Returns: "The Voight-Kampff test measures involuntary emotional responses..."
+```
+```python Python
+archival_memory_search(query="How does the test work?")
+# Returns: "The Voight-Kampff test measures involuntary emotional responses..."
 ```
 </CodeGroup>
 
 **Keywords also work:**
 
 <CodeGroup>
-```python Python
-archival_memory_search(query="replicant lifespan")
-# Returns memories containing both keywords and semantically related concepts
-```
 ```typescript TypeScript
 await archivalMemorySearch({query: "replicant lifespan"})
 // Returns memories containing both keywords and semantically related concepts
+```
+```python Python
+archival_memory_search(query="replicant lifespan")
+# Returns memories containing both keywords and semantically related concepts
 ```
 </CodeGroup>
 
 **Concept-based queries leverage semantic understanding:**
 
 <CodeGroup>
-```python Python
-archival_memory_search(query="artificial memories")
-# Returns: "...experimental replicant with implanted memories..."
-# (semantic match despite different terminology)
-```
 ```typescript TypeScript
 await archivalMemorySearch({query: "artificial memories"})
 // Returns: "...experimental replicant with implanted memories..."
 // (semantic match despite different terminology)
+```
+```python Python
+archival_memory_search(query="artificial memories")
+# Returns: "...experimental replicant with implanted memories..."
+# (semantic match despite different terminology)
 ```
 </CodeGroup>
 
@@ -70,20 +70,6 @@ await archivalMemorySearch({query: "artificial memories"})
 Agents can search by date ranges:
 
 <CodeGroup>
-```python Python
-# Recent memories
-archival_memory_search(
-    query="test results",
-    start_datetime="2025-09-29T00:00:00"
-)
-
-# Specific time window
-archival_memory_search(
-    query="replicant cases",
-    start_datetime="2025-09-29T00:00:00",
-    end_datetime="2025-09-30T23:59:59"
-)
-```
 ```typescript TypeScript
 // Recent memories
 await archivalMemorySearch({
@@ -97,6 +83,20 @@ await archivalMemorySearch({
     startDatetime: "2025-09-29T00:00:00",
     endDatetime: "2025-09-30T23:59:59"
 })
+```
+```python Python
+# Recent memories
+archival_memory_search(
+    query="test results",
+    start_datetime="2025-09-29T00:00:00"
+)
+
+# Specific time window
+archival_memory_search(
+    query="replicant cases",
+    start_datetime="2025-09-29T00:00:00",
+    end_datetime="2025-09-30T23:59:59"
+)
 ```
 </CodeGroup>
 
@@ -127,19 +127,6 @@ Tags help agents organize and filter archival memories. **Agents always know wha
 Example of organized tagging:
 
 <CodeGroup>
-```python Python
-# Atomic memory with precise tags
-archival_memory_insert(
-    content="Nexus-6 replicants have a four-year lifespan",
-    tags=["technical", "replicant", "nexus-6"]
-)
-
-# Later, easy retrieval
-archival_memory_search(
-    query="how long do replicants live",
-    tags=["technical"]
-)
-```
 ```typescript TypeScript
 // Atomic memory with precise tags
 await archivalMemoryInsert({
@@ -152,6 +139,19 @@ await archivalMemorySearch({
     query: "how long do replicants live",
     tags: ["technical"]
 })
+```
+```python Python
+# Atomic memory with precise tags
+archival_memory_insert(
+    content="Nexus-6 replicants have a four-year lifespan",
+    tags=["technical", "replicant", "nexus-6"]
+)
+
+# Later, easy retrieval
+archival_memory_search(
+    query="how long do replicants live",
+    tags=["technical"]
+)
 ```
 </CodeGroup>
 
@@ -194,6 +194,28 @@ Changing embedding models is a destructive operation. Export your archival memor
 You can manage archival memory via the SDK:
 
 <CodeGroup>
+```typescript TypeScript
+// Insert a memory
+await client.agents.passages.insert(agent.id, {
+    content: "The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
+    tags: ["technical", "testing", "protocol"]
+});
+
+// Search memories
+const results = await client.agents.passages.search(agent.id, {
+    query: "testing procedures",
+    tags: ["protocol"],
+    page: 0
+});
+
+// List all memories
+const passages = await client.agents.passages.list(agent.id, {
+    limit: 100
+});
+
+// Get a specific memory
+const passage = await client.agents.passages.get(agent.id, passageId);
+```
 ```python Python
 # Insert a memory
 client.agents.passages.insert(
@@ -221,28 +243,6 @@ passage = client.agents.passages.get(
     agent_id=agent.id,
     passage_id=passage_id
 )
-```
-```typescript TypeScript
-// Insert a memory
-await client.agents.passages.insert(agent.id, {
-    content: "The Voight-Kampff test requires a minimum of 20 cross-referenced questions",
-    tags: ["technical", "testing", "protocol"]
-});
-
-// Search memories
-const results = await client.agents.passages.search(agent.id, {
-    query: "testing procedures",
-    tags: ["protocol"],
-    page: 0
-});
-
-// List all memories
-const passages = await client.agents.passages.list(agent.id, {
-    limit: 100
-});
-
-// Get a specific memory
-const passage = await client.agents.passages.get(agent.id, passageId);
 ```
 </CodeGroup>
 

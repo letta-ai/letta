@@ -33,33 +33,6 @@ You can pass images to your agents by drag-and-dropping them into the chat windo
 ### Sending an Image via URL
 
 <CodeGroup>
-```python title="python" maxLines=100
-from letta_client import Letta
-
-client = Letta(token="LETTA_API_KEY")
-
-response = client.agents.messages.create(
-    agent_id=agent_state.id,
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "url",
-                        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
-                    },
-                },
-                {
-                    "type": "text",
-                    "text": "Describe this image."
-                }
-            ],
-        }
-    ],
-)
-```
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client';
 
@@ -88,20 +61,10 @@ const response = await client.agents.messages.create(
     }
 );
 ```
-</CodeGroup>
-
-### Sending an Image via Base64
-
-<CodeGroup>
 ```python title="python" maxLines=100
-import base64
-import httpx
 from letta_client import Letta
 
 client = Letta(token="LETTA_API_KEY")
-
-image_url = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
-image_data = base64.standard_b64encode(httpx.get(image_url).content).decode("utf-8")
 
 response = client.agents.messages.create(
     agent_id=agent_state.id,
@@ -112,9 +75,8 @@ response = client.agents.messages.create(
                 {
                     "type": "image",
                     "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": image_data,
+                        "type": "url",
+                        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
                     },
                 },
                 {
@@ -126,6 +88,11 @@ response = client.agents.messages.create(
     ],
 )
 ```
+</CodeGroup>
+
+### Sending an Image via Base64
+
+<CodeGroup>
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client';
 
@@ -159,5 +126,38 @@ const response = await client.agents.messages.create(
         ],
     }
 );
+```
+```python title="python" maxLines=100
+import base64
+import httpx
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+image_url = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+image_data = base64.standard_b64encode(httpx.get(image_url).content).decode("utf-8")
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_data,
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": "Describe this image."
+                }
+            ],
+        }
+    ],
+)
 ```
 </CodeGroup>

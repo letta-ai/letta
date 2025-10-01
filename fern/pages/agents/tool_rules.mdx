@@ -60,22 +60,6 @@ Depending on your chosen [agent architecture](/guides/agents/architectures), the
 
 For example, you can ensure that the agent will stop execution if either the `send_message` or `roll_d20` tool is called by specifying tool rules in the agent creation:
 <CodeGroup>
-```python Python {6-11}
-# create a new agent
-agent_state = client.create_agent(
-    # create the agent with an additional tool
-    tools=[tool.name],
-    # add tool rules that terminate execution after specific tools
-    tool_rules=[
-        # exit after roll_d20 is called
-        TerminalToolRule(tool_name=tool.name, type="exit_loop"),
-        # exit after send_message is called (default behavior)
-        TerminalToolRule(tool_name="send_message", type="exit_loop"),
-    ],
-)
-
-print(f"Created agent with name {agent_state.name} with tools {agent_state.tools}")
-```
 ```typescript TypeScript {6-11}
 // create a new agent
 const agentState = await client.createAgent({
@@ -91,6 +75,22 @@ const agentState = await client.createAgent({
 });
 
 console.log(`Created agent with name ${agentState.name} with tools ${agentState.tools}`);
+```
+```python Python {6-11}
+# create a new agent
+agent_state = client.create_agent(
+    # create the agent with an additional tool
+    tools=[tool.name],
+    # add tool rules that terminate execution after specific tools
+    tool_rules=[
+        # exit after roll_d20 is called
+        TerminalToolRule(tool_name=tool.name, type="exit_loop"),
+        # exit after send_message is called (default behavior)
+        TerminalToolRule(tool_name="send_message", type="exit_loop"),
+    ],
+)
+
+print(f"Created agent with name {agent_state.name} with tools {agent_state.tools}")
 ```
 </CodeGroup>
 

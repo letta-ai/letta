@@ -126,28 +126,6 @@ It's also possible to utilize our agent tags feature to associate agents with sp
 This example assumes that you have a self-hosted Letta server running on localhost (for example, by running [`docker run ...`](/guides/server/docker)).
 <Accordion title="View example SDK code">
 <CodeGroup>
-```python Python
-from letta_client import Letta
-
-# in this example we'll connect to a self-hosted Letta server
-client = Letta(base_url="http://localhost:8283")
-user_id = "my_uuid"
-
-# create an agent with the user_id tag
-agent = client.agents.create(
-    memory_blocks=[],
-    model="anthropic/claude-3-5-sonnet-20241022",
-    context_window_limit=200000,
-    embedding="openai/text-embedding-3-small",
-    tags=[user_id]
-)
-print(f"Created agent with id {agent.id}, tags {agent.tags}")
-
-# list agents
-user_agents = client.agents.list(tags=[user_id])
-agent_ids = [agent.id for agent in user_agents]
-print(f"Found matching agents {agent_ids}")
-```
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
@@ -169,6 +147,28 @@ console.log(`Created agent with id ${agent.id}, tags ${agent.tags}`);
 const userAgents = await client.agents.list({tags: [userId]});
 const agentIds = userAgents.map(agent => agent.id);
 console.log(`Found matching agents ${agentIds}`);
+```
+```python Python
+from letta_client import Letta
+
+# in this example we'll connect to a self-hosted Letta server
+client = Letta(base_url="http://localhost:8283")
+user_id = "my_uuid"
+
+# create an agent with the user_id tag
+agent = client.agents.create(
+    memory_blocks=[],
+    model="anthropic/claude-3-5-sonnet-20241022",
+    context_window_limit=200000,
+    embedding="openai/text-embedding-3-small",
+    tags=[user_id]
+)
+print(f"Created agent with id {agent.id}, tags {agent.tags}")
+
+# list agents
+user_agents = client.agents.list(tags=[user_id])
+agent_ids = [agent.id for agent in user_agents]
+print(f"Found matching agents {agent_ids}")
 ```
 </CodeGroup>
 </Accordion>

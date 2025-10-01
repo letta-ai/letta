@@ -6,16 +6,6 @@ slug: guides/agents/messages
 ## Sending messages
 You can send message to agents from both the REST API and Python client:
 <CodeGroup>
-```python Python
-# message an agent as a user
-response = client.send_message(
-    agent_id=agent_state.id,
-    role="user",
-    message="hello"
-)
-print("Usage", response.usage)
-print("Agent messages", response.messages)
-```
 ```typescript TypeScript
 // message an agent as a user
 const response = await client.sendMessage(
@@ -26,19 +16,19 @@ const response = await client.sendMessage(
 console.log("Usage", response.usage);
 console.log("Agent messages", response.messages);
 ```
-</CodeGroup>
-You can also send messages with different roles, such as `system`, `assistant`, or `user`:
-<CodeGroup>
 ```python Python
-# message a system message (non-user)
+# message an agent as a user
 response = client.send_message(
     agent_id=agent_state.id,
-    role="system",
-    message="[system] user has logged in. send a friendly message."
+    role="user",
+    message="hello"
 )
 print("Usage", response.usage)
 print("Agent messages", response.messages)
 ```
+</CodeGroup>
+You can also send messages with different roles, such as `system`, `assistant`, or `user`:
+<CodeGroup>
 ```typescript TypeScript
 // message a system message (non-user)
 const response = await client.sendMessage(
@@ -48,6 +38,16 @@ const response = await client.sendMessage(
 );
 console.log("Usage", response.usage);
 console.log("Agent messages", response.messages);
+```
+```python Python
+# message a system message (non-user)
+response = client.send_message(
+    agent_id=agent_state.id,
+    role="system",
+    message="[system] user has logged in. send a friendly message."
+)
+print("Usage", response.usage)
+print("Agent messages", response.messages)
 ```
 </CodeGroup>
 The `response` object contains the following attributes:
@@ -69,13 +69,6 @@ The `LettaMessage` object is a simplified version of the `Message` object. Since
 #### `Message`
 The `Message` object is the raw MemGPT message representation that is persisted in the database. To have the full `Message` data returns, you can set `include_full_message=True`:
 <CodeGroup>
-```python Python
-response = client.user_message(
-    agent_id=agent_state.id,
-    message="hello!",
-    include_full_message=True
-)
-```
 ```typescript TypeScript
 const response = await client.userMessage(
     agent_state.id,
@@ -83,15 +76,22 @@ const response = await client.userMessage(
     true  // include_full_message
 );
 ```
+```python Python
+response = client.user_message(
+    agent_id=agent_state.id,
+    message="hello!",
+    include_full_message=True
+)
+```
 </CodeGroup>
 You can convert a raw `Message` object to a list of `LettaMessage` objects:
 <CodeGroup>
-```python Python
-# Convert a `Message` object to a `LettaMessage` object
-letta_messages = message.to_letta_message()
-```
 ```typescript TypeScript
 // Convert a `Message` object to a `LettaMessage` object
 const lettaMessages = message.toLettaMessage();
+```
+```python Python
+# Convert a `Message` object to a `LettaMessage` object
+letta_messages = message.to_letta_message()
 ```
 </CodeGroup>

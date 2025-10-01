@@ -16,6 +16,30 @@ Local (stdio) MCP servers can be useful for local development, testing, and situ
 **ADE**: Tool Manager → Add MCP Server → stdio → specify command and args
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+
+// Self-hosted only
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283"
+});
+
+// Connect a stdio server (npx example - works in Docker!)
+const stdioConfig = {
+    server_name: "github-server",
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-github"],
+    env: {"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
+};
+
+await client.tools.addMcpServer(stdioConfig);
+
+// List available tools
+const tools = await client.tools.listMcpToolsByServer("github-server");
+
+// Add a tool to use with agents
+const tool = await client.tools.addMcpTool("github-server", "create_repository");
+```
 ```python title="python" maxLines=50
 from letta_client import Letta
 from letta_client.types import StdioServerConfig
@@ -42,30 +66,6 @@ tool = client.tools.add_mcp_tool(
     mcp_server_name="github-server",
     mcp_tool_name="create_repository"
 )
-```
-```typescript TypeScript maxLines=50
-import { LettaClient } from '@letta-ai/letta-client'
-
-// Self-hosted only
-const client = new LettaClient({
-    baseUrl: "http://localhost:8283"
-});
-
-// Connect a stdio server (npx example - works in Docker!)
-const stdioConfig = {
-    server_name: "github-server",
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-github"],
-    env: {"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
-};
-
-await client.tools.addMcpServer(stdioConfig);
-
-// List available tools
-const tools = await client.tools.listMcpToolsByServer("github-server");
-
-// Add a tool to use with agents
-const tool = await client.tools.addMcpTool("github-server", "create_repository");
 ```
 </CodeGroup>
 
