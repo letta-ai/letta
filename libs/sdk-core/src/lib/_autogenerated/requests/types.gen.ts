@@ -1078,6 +1078,10 @@ export type ChildToolRule = {
    * The children tools that can be invoked.
    */
   children: Array<string>;
+  /**
+   * Optional list of typed child argument overrides. Each node must reference a child in 'children'.
+   */
+  child_arg_nodes?: Array<ToolCallNode> | null;
 };
 
 export type ChildToolRuleSchema = {
@@ -5245,6 +5249,25 @@ export type ToolCallMessage = {
   seq_id?: number | null;
   run_id?: string | null;
   tool_call: ToolCall | ToolCallDelta;
+};
+
+/**
+ * Typed child override for prefilled arguments.
+ *
+ * When used in a ChildToolRule, if this child is selected next, its `args` will be
+ * applied as prefilled arguments (overriding overlapping LLM-provided values).
+ */
+export type ToolCallNode = {
+  /**
+   * The name of the child tool to invoke next.
+   */
+  name: string;
+  /**
+   * Optional prefilled arguments for this child tool. Keys must match the tool's parameter names and values must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model.
+   */
+  args?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ToolCreate = {

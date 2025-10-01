@@ -2937,6 +2937,22 @@ export const $ChildToolRule = {
       title: 'Children',
       description: 'The children tools that can be invoked.',
     },
+    child_arg_nodes: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/ToolCallNode',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Child Arg Nodes',
+      description:
+        "Optional list of typed child argument overrides. Each node must reference a child in 'children'.",
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -13509,6 +13525,37 @@ Args:
     date (datetime): The date the message was created in ISO format
     name (Optional[str]): The name of the sender of the message
     tool_call (Union[ToolCall, ToolCallDelta]): The tool call`,
+} as const;
+
+export const $ToolCallNode = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the child tool to invoke next.',
+    },
+    args: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args',
+      description:
+        "Optional prefilled arguments for this child tool. Keys must match the tool's parameter names and values must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model.",
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'ToolCallNode',
+  description: `Typed child override for prefilled arguments.
+
+When used in a ChildToolRule, if this child is selected next, its \`args\` will be
+applied as prefilled arguments (overriding overlapping LLM-provided values).`,
 } as const;
 
 export const $ToolCreate = {
