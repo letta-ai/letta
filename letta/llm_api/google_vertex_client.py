@@ -280,6 +280,7 @@ class GoogleVertexClient(LLMClientBase):
         llm_config: LLMConfig,
         tools: List[dict],
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.

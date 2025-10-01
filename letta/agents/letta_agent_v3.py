@@ -51,6 +51,10 @@ class LettaAgentV3(LettaAgentV2):
     * Support Gemini / OpenAI client
     """
 
+    def _initialize_state(self):
+        super()._initialize_state()
+        self._require_tool_call = False
+
     @trace_method
     async def step(
         self,
@@ -279,6 +283,15 @@ class LettaAgentV3(LettaAgentV2):
         try:
             self.last_function_response = _load_last_function_response(messages)
             valid_tools = await self._get_valid_tools()
+            require_tool_call = self.tool_rules_solver.should_force_tool_call()
+
+            if self._require_tool_call != require_tool_call:
+                if require_tool_call:
+                    self.logger.info("switching to constrained mode (forcing tool call)")
+                else:
+                    self.logger.info("switching to unconstrained mode (allowing non-tool responses)")
+            self._require_tool_call = require_tool_call
+
             approval_request, approval_response = _maybe_get_approval_messages(messages)
             if approval_request and approval_response:
                 tool_call = approval_request.tool_calls[0]
@@ -307,6 +320,7 @@ class LettaAgentV3(LettaAgentV2):
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
+                            requires_subsequent_tool_call=self._require_tool_call,
                         )
                         if dry_run:
                             yield request_data
@@ -590,8 +604,7 @@ class LettaAgentV3(LettaAgentV2):
         elif tool_call is None:
             # TODO could just hardcode the line here instead of calling the function...
             continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
-                # agent_state=agent_state,
-                # request_heartbeat=False,
+                agent_state=agent_state,
                 tool_call_name=None,
                 tool_rule_violated=False,
                 tool_rules_solver=tool_rules_solver,
@@ -705,8 +718,7 @@ class LettaAgentV3(LettaAgentV2):
 
                 # 4.  Decide whether to keep stepping  (focal section simplified)
                 continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
-                    # agent_state=agent_state,
-                    # request_heartbeat=request_heartbeat,
+                    agent_state=agent_state,
                     tool_call_name=tool_call_name,
                     tool_rule_violated=tool_rule_violated,
                     tool_rules_solver=tool_rules_solver,
@@ -753,8 +765,7 @@ class LettaAgentV3(LettaAgentV2):
     @trace_method
     def _decide_continuation(
         self,
-        # agent_state: AgentState,
-        # request_heartbeat: bool,
+        agent_state: AgentState,
         tool_call_name: Optional[str],
         tool_rule_violated: bool,
         tool_rules_solver: ToolRulesSolver,
@@ -771,19 +782,14 @@ class LettaAgentV3(LettaAgentV2):
            2c. Called tool + tool rule violation (did not execute)
 
         """
+        continue_stepping = True  # Default continue
         continuation_reason: str | None = None
         stop_reason: LettaStopReason | None = None
 
         if tool_call_name is None:
             # No tool call? End loop
             return False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-
         else:
-            # If we have a tool call, we continue stepping
-            return True, None, None
-
-            # TODO support tool rules
-            # I think we can just uncomment the bellow?
             if tool_rule_violated:
                 continue_stepping = True
                 continuation_reason = f"{NON_USER_MSG_PREFIX}Continuing: tool rule violation."
@@ -791,8 +797,7 @@ class LettaAgentV3(LettaAgentV2):
                 tool_rules_solver.register_tool_call(tool_call_name)
 
                 if tool_rules_solver.is_terminal_tool(tool_call_name):
-                    if continue_stepping:
-                        stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
                     continue_stepping = False
 
                 elif tool_rules_solver.has_children_tools(tool_call_name):
@@ -809,7 +814,7 @@ class LettaAgentV3(LettaAgentV2):
                     stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
                 else:
                     uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
-                    if not continue_stepping and uncalled:
+                    if uncalled:
                         continue_stepping = True
                         continuation_reason = (
                             f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [{', '.join(uncalled)}] to be called still."
@@ -817,7 +822,7 @@ class LettaAgentV3(LettaAgentV2):
 
                         stop_reason = None  # reset – we’re still going
 
-                return continue_stepping, continuation_reason, stop_reason
+            return continue_stepping, continuation_reason, stop_reason
 
     @trace_method
     async def _get_valid_tools(self):
