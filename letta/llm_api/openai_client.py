@@ -206,6 +206,7 @@ class OpenAIClient(LLMClientBase):
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI Responses API.
@@ -224,14 +225,15 @@ class OpenAIClient(LLMClientBase):
             logger.warning(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
             model = None
 
-        # Default to auto, unless there's a forced tool call coming from above
+        # Default to auto, unless there's a forced tool call coming from above or requires_subsequent_tool_call is True
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
-            tool_choice = (
-                "auto"
-                if force_tool_call is None
-                else ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
-            )
+            if force_tool_call is not None:
+                tool_choice = {"type": "function", "name": force_tool_call}
+            elif requires_subsequent_tool_call:
+                tool_choice = "required"
+            else:
+                tool_choice = "auto"
 
         # Convert the tools from the ChatCompletions style to the Responses style
         if tools:
@@ -352,6 +354,7 @@ class OpenAIClient(LLMClientBase):
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
@@ -364,6 +367,7 @@ class OpenAIClient(LLMClientBase):
                 llm_config=llm_config,
                 tools=tools,
                 force_tool_call=force_tool_call,
+                requires_subsequent_tool_call=requires_subsequent_tool_call,
             )
 
         if agent_type == AgentType.letta_v1_agent:
@@ -407,14 +411,15 @@ class OpenAIClient(LLMClientBase):
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
-            if self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.letta_v1_agent:
+            if force_tool_call is not None:
+                tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+            elif requires_subsequent_tool_call:
+                tool_choice = "required"
+            elif self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.letta_v1_agent:
                 tool_choice = "auto"
             else:
                 # only set if tools is non-Null
                 tool_choice = "required"
-
-            if force_tool_call is not None:
-                tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
 
         data = ChatCompletionRequest(
             model=model,

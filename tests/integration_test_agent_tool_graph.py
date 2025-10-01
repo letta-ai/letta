@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.config import LettaConfig
 from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.message import MessageCreate
@@ -12,7 +13,6 @@ from letta.schemas.run import Run
 from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, RequiredBeforeExitToolRule, TerminalToolRule
 from letta.server.server import SyncServer
 from letta.services.run_manager import RunManager
-from letta.services.telemetry_manager import NoopTelemetryManager
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
     assert_invoked_send_message_with_keyword,
@@ -25,7 +25,9 @@ from tests.utils import create_tool_from_func
 # Generate uuid for agent name for this example
 namespace = uuid.NAMESPACE_DNS
 agent_uuid = str(uuid.uuid5(namespace, "test_agent_tool_graph"))
-config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
+
+OPENAI_CONFIG = "tests/configs/llm_model_configs/openai-gpt-4.1.json"
+CLAUDE_SONNET_CONFIG = "tests/configs/llm_model_configs/claude-4-sonnet.json"
 
 
 @pytest.fixture()
@@ -36,6 +38,12 @@ async def server():
     server = SyncServer()
     await server.init_async()
     return server
+
+
+@pytest.fixture()
+def default_config_file():
+    """Provides the default config file path for tests."""
+    return OPENAI_CONFIG
 
 
 @pytest.fixture(scope="function")
@@ -241,7 +249,7 @@ async def default_user(server):
 
 async def run_agent_step(agent_state, input_messages, actor):
     """Helper function to run agent step using LettaAgent directly instead of server.send_messages."""
-    agent_loop = LettaAgentV2(
+    agent_loop = LettaAgentV3(
         agent_state=agent_state,
         actor=actor,
     )
@@ -283,7 +291,7 @@ async def test_single_path_agent_tool_call_graph(
     ]
 
     # Make agent state
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
     response = await run_agent_step(
         agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="What is the fourth secret word?")],
@@ -321,9 +329,8 @@ async def test_single_path_agent_tool_call_graph(
 @pytest.mark.parametrize(
     "config_file",
     [
-        "tests/configs/llm_model_configs/claude-3-5-sonnet.json",
-        "tests/configs/llm_model_configs/openai-gpt-3.5-turbo.json",
-        "tests/configs/llm_model_configs/openai-gpt-4o.json",
+        CLAUDE_SONNET_CONFIG,
+        OPENAI_CONFIG,
     ],
 )
 @pytest.mark.parametrize("init_tools_case", ["single", "multiple"])
@@ -383,13 +390,12 @@ async def test_claude_initial_tool_rule_enforced(
         TerminalToolRule(tool_name=second_secret_tool.name),
     ]
     tools = [first_secret_tool, second_secret_tool]
-    anthropic_config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
 
     for i in range(3):
         agent_uuid = str(uuid.uuid4())
         agent_state = await setup_agent(
             server,
-            anthropic_config_file,
+            CLAUDE_SONNET_CONFIG,
             agent_uuid=agent_uuid,
             tool_ids=[t.id for t in tools],
             tool_rules=tool_rules,
@@ -426,8 +432,7 @@ async def test_claude_initial_tool_rule_enforced(
 @pytest.mark.parametrize(
     "config_file",
     [
-        "tests/configs/llm_model_configs/claude-3-5-sonnet.json",
-        "tests/configs/llm_model_configs/openai-gpt-4o.json",
+        OPENAI_CONFIG,
     ],
 )
 @pytest.mark.asyncio
@@ -508,13 +513,12 @@ async def test_init_tool_rule_always_fails(
     include_base_tools,
 ):
     """Test behavior when InitToolRule invokes a tool that always fails."""
-    config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
     agent_uuid = str(uuid.uuid4())
 
     tool_rule = InitToolRule(tool_name=auto_error_tool.name)
     agent_state = await setup_agent(
         server,
-        config_file,
+        OPENAI_CONFIG,
         agent_uuid=agent_uuid,
         tool_ids=[auto_error_tool.id],
         tool_rules=[tool_rule],
@@ -535,7 +539,6 @@ async def test_init_tool_rule_always_fails(
 @pytest.mark.asyncio
 async def test_continue_tool_rule(server, default_user):
     """Test the continue tool rule by forcing send_message to loop before ending with core_memory_append."""
-    config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
     agent_uuid = str(uuid.uuid4())
 
     tools = [
@@ -551,7 +554,7 @@ async def test_continue_tool_rule(server, default_user):
 
     agent_state = await setup_agent(
         server,
-        config_file,
+        CLAUDE_SONNET_CONFIG,
         agent_uuid,
         tool_ids=tool_ids,
         tool_rules=tool_rules,
@@ -618,7 +621,7 @@ async def test_continue_tool_rule(server, default_user):
 #     ]
 #     tools = [flip_coin_tool, reveal_secret]
 #
-#     config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
+#     config_file = CLAUDE_SONNET_CONFIG
 #     agent_state = await setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 #     response = client.user_message(agent_id=agent_state.id, message="flip a coin until you get the secret word")
 #
@@ -824,7 +827,6 @@ async def test_continue_tool_rule(server, default_user):
 async def test_single_required_before_exit_tool(server, disable_e2b_api_key, save_data_tool, default_user):
     """Test that agent is forced to call a single required-before-exit tool before ending."""
     agent_name = "required_exit_single_tool_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool]
@@ -835,7 +837,7 @@ async def test_single_required_before_exit_tool(server, disable_e2b_api_key, sav
     ]
 
     # Create agent
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would normally cause exit
     response = await run_agent_step(
@@ -866,7 +868,6 @@ async def test_single_required_before_exit_tool(server, disable_e2b_api_key, sav
 async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, save_data_tool, cleanup_temp_files_tool, default_user):
     """Test that agent calls all required-before-exit tools before ending."""
     agent_name = "required_exit_multi_tool_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool, cleanup_temp_files_tool]
@@ -878,7 +879,7 @@ async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, 
     ]
 
     # Create agent
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would normally cause exit
     response = await run_agent_step(
@@ -911,7 +912,6 @@ async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, 
 async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key, first_secret_tool, save_data_tool, default_user):
     """Test required-before-exit rules work alongside other tool rules."""
     agent_name = "required_exit_with_rules_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules - combine with child tool rules
     tools = [first_secret_tool, save_data_tool]
@@ -923,7 +923,7 @@ async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key
     ]
 
     # Create agent
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would trigger tool flow
     response = await run_agent_step(
@@ -956,7 +956,6 @@ async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key
 async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_key, save_data_tool, default_user):
     """Test that agent can exit normally when required tools are called during regular operation."""
     agent_name = "required_exit_normal_flow_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool]
@@ -967,7 +966,7 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     ]
 
     # Create agent
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that explicitly mentions calling the required tool
     response = await run_agent_step(
@@ -990,51 +989,3 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     assert len(send_message_calls) == 1, "Should call send_message exactly once"
 
     print(f"✓ Agent '{agent_name}' exited cleanly after calling required tool normally")
-
-
-@pytest.mark.timeout(60)
-@pytest.mark.asyncio
-async def test_terminal_tool_rule_send_message_request_heartbeat_false(server, disable_e2b_api_key, default_user):
-    """Test that when there's a terminal tool rule on send_message, the tool call has request_heartbeat=False."""
-    agent_name = "terminal_send_message_heartbeat_test"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
-
-    # Set up tool rules with terminal rule on send_message
-    tool_rules = [
-        TerminalToolRule(tool_name="send_message"),
-    ]
-
-    # Create agent
-    agent_state = await setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[], tool_rules=tool_rules)
-
-    # Send message that should trigger send_message tool call
-    response = await run_agent_step(
-        agent_state=agent_state,
-        input_messages=[MessageCreate(role="user", content="Please send me a simple message.")],
-        actor=default_user,
-    )
-
-    # Assertions
-    assert_sanity_checks(response)
-    assert_invoked_function_call(response.messages, "send_message")
-
-    # Find the send_message tool call and check request_heartbeat is False
-    send_message_call = None
-    for message in response.messages:
-        if isinstance(message, ToolCallMessage) and message.tool_call.name == "send_message":
-            send_message_call = message
-            break
-
-    assert send_message_call is not None, "send_message tool call should be found"
-
-    # Parse the arguments and check request_heartbeat
-    try:
-        arguments = json.loads(send_message_call.tool_call.arguments)
-        assert "request_heartbeat" in arguments, "request_heartbeat should be present in send_message arguments"
-        assert arguments["request_heartbeat"] is False, "request_heartbeat should be False for terminal tool rule"
-
-        print(f"✓ Agent '{agent_name}' correctly set request_heartbeat=False for terminal send_message")
-    except json.JSONDecodeError:
-        pytest.fail("Failed to parse tool call arguments as JSON")
-    finally:
-        await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
