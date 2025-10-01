@@ -110,7 +110,14 @@ function createContentFromChatInput(
       media_type: image.mediaType,
     },
   }));
-  return [{ type: 'text' as const, text }, ...imageContent];
+
+  // Only add text content if it's not empty
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    return [{ type: 'text' as const, text }, ...imageContent];
+  } else {
+    return imageContent;
+  }
 }
 
 export interface ChatInputProps {
