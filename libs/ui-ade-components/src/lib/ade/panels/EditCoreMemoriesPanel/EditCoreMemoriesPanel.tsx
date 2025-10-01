@@ -587,9 +587,5 @@ export function EditMemory() {
 
 export function useEditCoreMemoriesTitle() {
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
-  const { memory } = useCurrentAgent();
-
-  const memoryCount = (memory?.blocks || []).length;
-
-  return t('title', { count: memoryCount || '-' });
+  return t('mobileTitle');
 }
