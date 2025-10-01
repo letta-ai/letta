@@ -1,177 +1,82 @@
 'use client';
-import { useMonthCursor } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import type { GetUsageByModelItem } from '@letta-cloud/sdk-web';
-import type { ColumnDef } from '@tanstack/react-table';
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
-  brandKeyToLogo,
-  Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DataTable,
   HStack,
-  isBrandKey,
+  Section, Skeleton,
+  VStack
 } from '@letta-cloud/ui-component-library';
+import { RecurringCreditsView } from './RecurringCreditsView/RecurringCreditsView';
+import TransactionEvents from './TransactionEvents/TransactionEvents';
+import { CreditBalanceView } from './CreditBalanceView/CreditBalanceView';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { FreePlanUpsellDetails, OldUsageView } from './OldUsageView/OldUsageView';
 
-function getStartOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
+function UsageTopSection() {
 
-function getEndOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
-
-function UsageTable() {
-  const {
-    startOfMonth,
-    cursor: monthCursor,
-    moveToNextMonth,
-    moveToPrevMonth,
-    endOfMonth,
-  } = useMonthCursor();
-
-  const t = useTranslations('organization/usage');
-
-  const {
-    data: usageSummary,
-    isLoading,
-    isError,
-  } = webApi.usage.getUsageByModelSummary.useQuery({
-    queryKey: webApiQueryKeys.usage.getUsageByModelSummary({
-      startDate: startOfMonth.getTime(),
-      endDate: endOfMonth.getTime(),
-    }),
-    queryData: {
-      query: {
-        startDate: startOfMonth.getTime(),
-        endDate: endOfMonth.getTime(),
-      },
-    },
-  });
-
-  const columns: Array<ColumnDef<GetUsageByModelItem>> = useMemo(
-    () => [
-      {
-        header: t('UsageTable.model'),
-        accessorKey: 'modelName',
-        cell: ({ cell }) => {
-          const { brand, modelName } = cell.row.original;
-          return (
-            <HStack>
-              {isBrandKey(brand) ? brandKeyToLogo(brand) : ''}
-              {modelName}
-            </HStack>
-          );
-        },
-      },
-      {
-        header: t('UsageTable.totalTokens'),
-        accessorKey: 'totalTokens',
-      },
-
-      {
-        header: t('UsageTable.totalRequests'),
-        accessorKey: 'totalRequests',
-      },
-      {
-        header: t('UsageTable.totalCost'),
-        accessorKey: 'totalCost',
-        cell: ({ cell }) => {
-          return Intl.NumberFormat(undefined, {
-            currency: 'USD',
-            style: 'currency',
-          }).format(cell.row.original.totalCost);
-        },
-      },
-    ],
-    [t],
-  );
-
-  const [limit, setLimit] = React.useState(10);
-  const [offset, setOffset] = React.useState(0);
-  const [search, setSearch] = React.useState('');
-
-  const data = useMemo(() => {
-    if (!usageSummary) {
-      return [];
-    }
-
-    return usageSummary.body.slice(offset, offset + limit);
-  }, [usageSummary, limit, offset]);
-
-  const localeStringNiceStartDate = useMemo(() => {
-    return getStartOfMonth(monthCursor).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-      day: 'numeric',
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
     });
-  }, [monthCursor]);
+  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
-  const localeStringNiceEndDate = useMemo(() => {
-    return getEndOfMonth(monthCursor).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-      day: 'numeric',
-    });
-  }, [monthCursor]);
 
-  const isAtCurrentMonth = useMemo(() => {
-    const now = new Date();
+  if (!billingData) {
     return (
-      now.getFullYear() === monthCursor.getFullYear() &&
-      now.getMonth() === monthCursor.getMonth()
+      <HStack fullWidth wrap>
+        <Skeleton className="min-h-[178px] flex-1" />
+        <Skeleton className="min-h-[178px] flex-1" />
+      </HStack>
+    )
+  }
+
+  if ((isBillingV3Enabled && billingData.body.billingTier === 'free') || billingData.body.billingTier === 'pro') {
+    return (
+      <VStack>
+        {billingData.body.billingTier === 'free' && <FreePlanUpsellDetails />}
+
+        <HStack fullWidth wrap>
+
+          <RecurringCreditsView />
+          <CreditBalanceView />
+        </HStack>
+      </VStack>
     );
-  }, [monthCursor]);
+  }
 
   return (
-    <DashboardPageSection
-      fullHeight
-      title={t('UsageTable.title', {
-        startDate: localeStringNiceStartDate,
-        endDate: localeStringNiceEndDate,
-      })}
-      actions={
-        <HStack>
-          <Button
-            color="secondary"
-            label={t('UsageTable.previousMonth')}
-            onClick={moveToPrevMonth}
-          />
-          <Button
-            color="secondary"
-            label={t('UsageTable.nextMonth')}
-            onClick={moveToNextMonth}
-            disabled={isAtCurrentMonth}
-          />
-        </HStack>
-      }
-    >
-      <DataTable
-        searchValue={search}
-        showPagination
-        onSearch={setSearch}
-        columns={columns}
-        data={data}
-        limit={limit}
-        offset={offset}
-        isLoading={isLoading}
-        errorMessage={isError ? t('UsageTable.error') : undefined}
-        onSetOffset={setOffset}
-        onLimitChange={setLimit}
-        autofitHeight
-      />
-    </DashboardPageSection>
-  );
+    <OldUsageView />
+  )
+
 }
+
 
 function Usage() {
   const t = useTranslations('organization/usage');
 
+  const [canManageBilling] = useUserHasPermission(
+    ApplicationServices.MANAGE_BILLING,
+  );
+
   return (
-    <DashboardPageLayout encapsulatedFullHeight title={t('title')}>
-      <UsageTable />
+    <DashboardPageLayout
+      encapsulatedFullHeight
+      subtitle={t('description')}
+      title={t('title')}
+    >
+      <DashboardPageSection>
+
+        {canManageBilling && (
+          <UsageTopSection />
+        )}
+        <Section title={t('creditsHistory')}>
+          <TransactionEvents />
+        </Section>
+      </DashboardPageSection>
     </DashboardPageLayout>
   );
 }

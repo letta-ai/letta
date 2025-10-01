@@ -10,12 +10,12 @@ import { InfoTooltip } from '../InfoTooltip/InfoTooltip';
 interface QuotaBlockProps {
   max: number | 'infinite';
   value: number;
-  label: string;
+  label?: string;
   type?: 'progress';
   testId?: string;
   tooltip?: string;
   footer?: React.ReactNode;
-  badge?: React.ReactNode
+  badge?: React.ReactNode;
 }
 
 function QuotaContentRender(props: QuotaBlockProps) {
@@ -43,11 +43,13 @@ export function QuotaBlock(props: QuotaBlockProps) {
   const { formatNumber } = useFormatters();
   return (
     <VStack color="background-grey" padding>
-      <HStack gap="small" align="center">
-        <Typography bold>{label}</Typography>
-        {badge}
-        {tooltip && <InfoTooltip text={tooltip} />}
-      </HStack>
+      {label && (
+        <HStack gap="small" align="center">
+          <Typography bold>{label}</Typography>
+          {badge}
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </HStack>
+      )}
       <HStack align="center">
         <HStack border fullWidth padding="xxsmall">
           <QuotaContentRender {...props} type={type} />

@@ -142,7 +142,7 @@ export function AgentChatInput() {
             return t.rich('hasFailedToSendMessageText.agentLimitExceeded.pro', {
               link: (chunks) => {
                 return (
-                  <Link target="_blank" href="/settings/organization/billing">
+                  <Link target="_blank" href="/settings/organization/usage">
                     {chunks}
                   </Link>
                 );
@@ -156,7 +156,7 @@ export function AgentChatInput() {
               {
                 link: (chunks) => {
                   return (
-                    <Link target="_blank" href="/settings/organization/billing">
+                    <Link target="_blank" href="/settings/organization/usage">
                       {chunks}
                     </Link>
                   );
@@ -172,7 +172,7 @@ export function AgentChatInput() {
           return t.rich('hasFailedToSendMessageText.freeUsageExceeded.pro', {
             link: (chunks) => {
               return (
-                <Link target="_blank" href="/settings/organization/billing">
+                <Link target="_blank" href="/settings/organization/usage">
                   {chunks}
                 </Link>
               );
@@ -187,7 +187,7 @@ export function AgentChatInput() {
         return t.rich('hasFailedToSendMessageText.freeUsageExceeded.free', {
           link: (chunks) => {
             return (
-              <Link target="_blank" href="/settings/organization/billing">
+              <Link target="_blank" href="/settings/organization/usage">
                 {chunks}
               </Link>
             );
@@ -208,7 +208,7 @@ export function AgentChatInput() {
           return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.pro', {
             link: (chunks) => {
               return (
-                <Link target="_blank" href="/settings/organization/billing">
+                <Link target="_blank" href="/settings/organization/usage">
                   {chunks}
                 </Link>
               );
@@ -219,7 +219,7 @@ export function AgentChatInput() {
         return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.free', {
           link: (chunks) => {
             return (
-              <Link target="_blank" href="/settings/organization/billing">
+              <Link target="_blank" href="/settings/organization/usage">
                 {chunks}
               </Link>
             );
@@ -229,7 +229,7 @@ export function AgentChatInput() {
         return t.rich('hasFailedToSendMessageText.creditLimitExceeded', {
           link: (chunks) => {
             return (
-              <Link target="_blank" href="/settings/organization/billing">
+              <Link target="_blank" href="/settings/organization/usage">
                 {chunks}
               </Link>
             );

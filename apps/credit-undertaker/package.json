@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "dev": "ts-node --swc ./src/main.ts",
-    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:nanoid --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:posthog-node --external:unique-names-generator --external:@t3-oss/env-nextjs --external:axios --external:lodash --external:lodash-es --external:js-tiktoken --external:jsonrepair --external:stripe --external:@ts-rest/express --external:@ts-rest/core --external:@ts-rest/react-query --external:@tanstack/react-query --external:react --external:react-dom --external:@react-email/components --external:resend --external:path-to-regexp"
+    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:nanoid --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:posthog-node --external:unique-names-generator --external:@t3-oss/env-nextjs --external:axios --external:lodash --external:lodash-es --external:js-tiktoken --external:jsonrepair --external:stripe --external:@ts-rest/express --external:@ts-rest/core --external:@ts-rest/react-query --external:@tanstack/react-query --external:react --external:react-dom --external:@react-email/components --external:resend --external:@launchdarkly/node-server-sdk --external:path-to-regexp"
   },
   "author": "",
   "license": "ISC",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@clickhouse/client": "^1.11.1",
+    "@launchdarkly/node-server-sdk": "^9.10.2",
     "@react-email/components": "^0.0.33",
     "@sentry/node": "^10.17.0",
     "@t3-oss/env-nextjs": "^0.12.0",

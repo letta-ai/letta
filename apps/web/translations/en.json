@@ -55,7 +55,7 @@
       "projects": "Projects",
       "general": "General",
       "models": "Models",
-      "audit-logs": "Usage History",
+      "usage": "Usage",
       "rate-limits": "Rate limits",
       "user": "User settings",
       "members": "Members",
@@ -531,6 +531,7 @@
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {
+      "usage": "Usage",
       "account": "Account",
       "settings": "Settings",
       "signOut": "Sign out",
@@ -916,8 +917,25 @@
     "createNewOrganization": "Create a new organization",
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
+  "organization/usage/CreditBalanceView": {
+    "creditBalance": "<credits></credits><small>credit balance</small>",
+    "upgrade": "Upgrade your plan",
+    "purchase": "Purchase credits",
+    "cancel": "Cancel plan",
+    "manage": "Manage plan",
+    "label": "Purchased credits",
+    "description": "Pay for additional credits beyond your plan limits.",
+    "disabledOnFree": "Upgrade to Pro to buy credits"
+  },
+  "organization/usage/RecurringCreditsView": {
+    "stats": "<remaining></remaining> <small>of <total></total> remaining</small>",
+    "label": "Monthly credits",
+    "description": "{credits} credits included in your plan",
+    "resetTime": "Next reset on: {date}"
+  },
   "organization/usage": {
-    "title": "Organization usage",
+    "creditsHistory": "All events",
+    "title": "Usage",
     "description": "View and manage your organization's usage",
     "UsageTable": {
       "title": "Usage for {startDate} - {endDate}",
@@ -980,6 +998,8 @@
     "purchasing": "Upgrading your plan..."
   },
   "organization/billing": {
+    "lookingForUsage": "We've moved your usage details to a new page",
+    "goToUsage": "Visit usage page",
     "FreePlanUpsellDetails": {
       "title": "Get more agents and requests "
     },
@@ -1142,16 +1162,23 @@
   },
   "components/PlanBenefits": {
     "free": {
+      "credits": "<limit></limit> credits every month",
       "templates": "Create up to {limit} templates.",
       "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
       "storage": "{limit} GB of storage"
     },
-    "pro": {
+    "pro-legacy": {
       "templates": "Create up to {limit} templates.",
       "standardRequests": "Up to <limit></limit> <link>standard model</link> requests per month",
       "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
+      "agent": "Create up to {limit} agents",
+      "storage": "{limit} GB of storage"
+    },
+    "pro": {
+      "templates": "Create up to {limit} templates.",
+      "credits": "<limit></limit> credits every month",
       "agent": "Create up to {limit} agents",
       "storage": "{limit} GB of storage"
     },

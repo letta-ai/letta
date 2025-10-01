@@ -24,7 +24,7 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
     throw new Error('Customer not found');
   }
 
-  if (!['pro-legacy', 'scale'].includes(tier)) {
+  if (!['pro-legacy', 'pro', 'scale'].includes(tier)) {
     throw new Error('Unsupported tier');
   }
 
@@ -44,6 +44,10 @@ export async function upgradeCustomer(options: UpgradeCustomerOptions) {
     )?.id;
   } else if (tier === 'scale') {
     priceId = plans.data.find((price) => SCALE_PLAN_IDS.includes(price.id))?.id;
+  } else if (tier === 'pro') {
+    priceId = plans.data.find((price) =>
+      PRO_PLAN_PRICE_IDS.includes(price.id),
+    )?.id;
   }
 
   if (!priceId) {

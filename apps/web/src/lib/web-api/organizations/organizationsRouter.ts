@@ -45,6 +45,7 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import {
   addCreditsToOrganization,
   getOrganizationCredits,
+  getRemainingRecurrentCredits,
 } from '@letta-cloud/utils-server';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
@@ -736,6 +737,7 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
 
   // do not run in parallel as payment customer may not exist yet
   const subscription = await getCustomerSubscription(activeOrganizationId);
+  const recurrentCredits = await getRemainingRecurrentCredits(activeOrganizationId, subscription);
 
   return {
     status: 200,
@@ -745,6 +747,7 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
       billingPeriodEnd: subscription.billingPeriodEnd,
 
       totalCredits: parseInt(credits.credits, 10),
+      recurrentCredits,
     },
   };
 }

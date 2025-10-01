@@ -380,7 +380,7 @@ function NavigationFooter() {
         icon={<PersonIcon />}
       />
       <DashboardNavigationButton
-        href="/settings/organization/billing"
+        href="/settings/organization/usage"
         id="settings-billing"
         label={t('billing')}
         icon={<BarChartIcon />}
@@ -423,30 +423,32 @@ function SettingsMenu() {
         id="settings-members"
         label={t('members')}
       />
+
+      <DashboardNavigationButton
+        href={`${baseUrl}/organization/models`}
+        id="settings-models"
+        label={t('models')}
+      />
+
+      <DashboardNavigationButton
+        href={`${baseUrl}/organization/usage`}
+        id="usage"
+        label={t('usage')}
+      />
       <DashboardNavigationButton
         href={`${baseUrl}/organization/billing`}
         id="settings-billing"
         label={t('billing')}
       />
       <DashboardNavigationButton
-        href={`${baseUrl}/organization/models`}
-        id="settings-models"
-        label={t('models')}
+        href={`${baseUrl}/organization/rate-limits`}
+        id="rate-limits"
+        label={t('rate-limits')}
       />
       <DashboardNavigationButton
         href={`${baseUrl}/organization/environment-variables`}
         id="settings-environmentVariables"
         label={t('environmentVariables')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/audit-log`}
-        id="audit-logs"
-        label={t('audit-logs')}
-      />
-      <DashboardNavigationButton
-        href={`${baseUrl}/organization/rate-limits`}
-        id="rate-limits"
-        label={t('rate-limits')}
       />
     </NavigationSection>
   );

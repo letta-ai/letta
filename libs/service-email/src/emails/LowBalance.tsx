@@ -12,7 +12,7 @@ export interface LowBalanceProps {
 function LowBalance(props: LowBalanceProps) {
   const {
     threshold = '$5.00',
-    topUpUrl = 'https://app.letta.com/settings/organization/billing',
+    topUpUrl = 'https://app.letta.com/settings/organization/usage',
     locale = 'en',
     organizationName = 'default',
   } = props;

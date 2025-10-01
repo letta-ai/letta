@@ -20,7 +20,7 @@ export async function GET() {
 
   if (!paymentLink) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/billing`,
+      `${process.env.NEXT_PUBLIC_CURRENT_HOST}/settings/organization/usage`,
       302,
     );
   }

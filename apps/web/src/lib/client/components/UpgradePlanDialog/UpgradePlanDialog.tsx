@@ -12,7 +12,7 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { webApi } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi } from '@letta-cloud/sdk-web';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
 import { Blox } from '$web/client/components/UpgradePlanDialog/Blox';
@@ -40,6 +40,8 @@ function SelectedPlan(props: SelectedPlanProps) {
       case 'free':
         return t('PlanComparisonView.free.usage');
       case 'pro-legacy':
+        return t('PlanComparisonView.pro.usage');
+      case 'pro':
         return t('PlanComparisonView.pro.usage');
       case 'scale':
         return t('PlanComparisonView.scale.usage');
@@ -85,6 +87,8 @@ function SelectedPlan(props: SelectedPlanProps) {
         return t('PlanComparisonView.free.label');
       case 'pro-legacy':
         return t('PlanComparisonView.pro.label');
+      case 'pro':
+        return t('PlanComparisonView.pro.label');
       case 'scale':
         return t('PlanComparisonView.scale.label');
       case 'enterprise':
@@ -120,8 +124,15 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
 
   const billingTier = useOrganizationBillingTier();
 
+  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
+
+
   const [plan, setPlan] = useState<BillingTiersType>(() => {
     if (billingTier === 'free') {
+      if (isBillingV3Enabled) {
+        return 'pro';
+      }
+
       return 'pro-legacy';
     }
 
@@ -133,6 +144,23 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
   });
 
   const items = useMemo(() => {
+    if (isBillingV3Enabled) {
+      return [
+        {
+          label: t('PlanComparisonView.free.label'),
+          value: 'free',
+        },
+        {
+          label: t('PlanComparisonView.pro.label'),
+          value: 'pro',
+        },
+        {
+          label: t('PlanComparisonView.enterprise.label'),
+          value: 'enterprise',
+        },
+      ];
+    }
+
     return [
       {
         label: t('PlanComparisonView.free.label'),
@@ -151,7 +179,7 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
         value: 'enterprise',
       },
     ];
-  }, [t]);
+  }, [t, isBillingV3Enabled]);
 
   const cta = useMemo(() => {
     switch (plan) {
@@ -170,6 +198,18 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
           <Button
             onClick={() => {
               onSelectPlan('pro-legacy');
+            }}
+            bold
+            data-testid="choose-pro"
+            size="large"
+            label={t('PlanComparisonView.pro.cta')}
+          />
+        );
+      case 'pro':
+        return (
+          <Button
+            onClick={() => {
+              onSelectPlan('pro');
             }}
             bold
             data-testid="choose-pro"

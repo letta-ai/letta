@@ -76,7 +76,7 @@ export function OrganizationUsageBlock() {
       <HStack fullWidth align="center">
         <Link
           target="_blank"
-          href="/settings/organization/billing"
+          href="/settings/organization/usage"
           color="tertiary"
         >
           <HStack gap="small">
