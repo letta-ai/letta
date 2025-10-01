@@ -161,6 +161,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
     fullWidth,
     size,
     value,
+    disabled,
     onValueChange,
     color,
     className,
@@ -191,6 +192,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
             renderTooltip={!!item.hideLabel}
           >
             <ToggleGroupItem
+              disabled={disabled}
               hideLabel={item.hideLabel}
               size={size}
               className={cn(vertical ? 'min-h-biHeight' : '')}

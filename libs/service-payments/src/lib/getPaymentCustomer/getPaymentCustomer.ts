@@ -128,7 +128,29 @@ async function mainLogic(
 
 export async function getPaymentCustomer(
   organizationId: string,
+  noCache = false,
 ): Promise<PaymentCustomer | null> {
+  if (noCache) {
+    const response = await mainLogic(organizationId);
+
+    // set cache
+    if (response) {
+      await setRedisData(
+        'paymentCustomer',
+        {
+          organizationId,
+        },
+        {
+          data: response,
+          // 24 hours
+          expiresAt: Date.now() + 1000 * 60 * 60 * 24,
+        },
+      );
+    }
+
+    return response;
+  }
+
   const customerDetails = await getRedisData('paymentCustomer', {
     organizationId,
   });

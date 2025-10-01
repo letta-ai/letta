@@ -32,8 +32,8 @@ function UsageTopSection() {
   if (!billingData) {
     return (
       <HStack fullWidth wrap>
-        <Skeleton className="min-h-[178px] flex-1" />
-        <Skeleton className="min-h-[178px] flex-1" />
+        <Skeleton className="min-h-[225px] flex-1" />
+        <Skeleton className="min-h-[225px] flex-1" />
       </HStack>
     );
   }
