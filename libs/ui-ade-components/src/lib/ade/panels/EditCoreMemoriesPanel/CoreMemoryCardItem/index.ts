@@ -1,0 +1,1 @@
+export { CoreMemoryCardItem } from './CoreMemoryCardItem';

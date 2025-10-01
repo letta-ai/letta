@@ -12,7 +12,7 @@ import {
 import { cn } from '@letta-cloud/ui-styles';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
-import { getCharCount, getLineDiff } from './utils';
+import { getCharCount, getLineDiff, getChangedLine } from './utils';
 import { MemoryCardInfoChips } from './MemoryCardInfoChips';
 import './CoreMemoryCard.scss';
 
@@ -27,6 +27,7 @@ export interface CoreMemoryCardProps {
   readOnly?: boolean | null | undefined;
   preserveOnMigration?: boolean | null | undefined;
   openInAdvanced?: VoidFunction;
+  isSelected?: boolean;
 }
 
 interface MemoryDiffProps {
@@ -34,8 +35,8 @@ interface MemoryDiffProps {
 }
 
 interface MemoryDiffResult {
-  initialState: string;
-  currentValue: string;
+  oldLine: string | null;
+  newLine: string | null;
 }
 
 interface LineDiffCount {
@@ -54,6 +55,7 @@ interface WithNumChar {
 interface CoreMemoryCardInfoBarProps extends WithNumChar {
   lastUpdatedAt?: string;
   diffCount?: LineDiffCount;
+  backgroundClassName?: string;
 }
 
 interface UpdatedCoreMemoryCardProps extends CoreMemoryCardProps, WithNumChar {
@@ -76,7 +78,7 @@ function MemoryDiff(props: MemoryDiffProps): MemoryDiffResult {
     };
   }, [value]);
 
-  return { initialState: initialState.current, currentValue: value };
+  return getChangedLine(initialState.current, value);
 }
 
 function CoreMemoryCardHeader({
@@ -110,13 +112,21 @@ function CoreMemoryCardInfoBar({
   numChar,
   lastUpdatedAt,
   diffCount,
+  backgroundClassName,
 }: CoreMemoryCardInfoBarProps) {
   const { formatRelativeDate } = useFormatters();
   const t = useTranslations('components/CoreMemoryCard');
 
   return (
     <HStack
-      className={diffCount ? cn('bg-background-grey z-20') : undefined}
+      className={
+        diffCount
+          ? cn(
+              `bg-background-grey z-20 group-hover:bg-brand-light`,
+              backgroundClassName,
+            )
+          : undefined
+      }
       paddingBottom="xxsmall"
     >
       {numChar > 0 && (
@@ -156,16 +166,26 @@ function UpdatedCoreMemoryCard({
   readOnly,
   preserveOnMigration,
   openInAdvanced,
+  isSelected,
 }: UpdatedCoreMemoryCardProps) {
   const diffCount = getLineDiff(value, diffValue);
 
+  const cardColor = isSelected ? 'primary-light' : 'background-grey';
+  const backgroundClassName = cn(
+    isSelected ? 'bg-primary-light' : 'bg-background-grey',
+    'group-hover:bg-brand-light z-20',
+  );
+
   return (
     <Card
-      className={cn('bg-background-grey h-[110px] overflow-hidden border-b-4')}
+      className={cn(
+        'group h-[110px] cursor-pointer border-b-2 hover:bg-brand-light overflow-hidden',
+      )}
       onClick={openInAdvanced}
+      color={cardColor}
     >
       <VStack gap={false}>
-        <div className={cn('bg-background-grey z-20')}>
+        <div className={backgroundClassName}>
           <CoreMemoryCardHeader
             label={label}
             infoToolTipContent={infoToolTipContent}
@@ -177,11 +197,8 @@ function UpdatedCoreMemoryCard({
           />
         </div>
 
-        <div className={cn('h-[61px]')}>
-          <HStack
-            className={cn('bg-background-grey z-20')}
-            paddingBottom="xxsmall"
-          >
+        <div className={cn('h-[61px] relative')}>
+          <HStack className={backgroundClassName} paddingBottom="xxsmall">
             <div
               className={cn(
                 'w-1.5 h-1.5 bg-background-blue2 rounded-full relative top-1.5',
@@ -191,6 +208,7 @@ function UpdatedCoreMemoryCard({
               numChar={numChar}
               lastUpdatedAt={lastUpdatedAt}
               diffCount={diffCount}
+              backgroundClassName={isSelected ? 'bg-brand-light' : ''}
             />
           </HStack>
 
@@ -198,11 +216,7 @@ function UpdatedCoreMemoryCard({
             <div className={cn('slide-up-animation-diff-values z-10')}>
               {value ? (
                 <>
-                  <VStack className={cn('h-[39px]')}>
-                    <Typography variant="body3" className={cn('line-clamp-2')}>
-                      {value}
-                    </Typography>
-                  </VStack>
+                  <div className={cn('h-[39px]')} />
                   <Typography variant="body3" className={cn('truncate')}>
                     - {value}
                   </Typography>
@@ -237,12 +251,19 @@ function RegularCoreMemoryCard({
   readOnly,
   preserveOnMigration,
   openInAdvanced,
+  isSelected,
 }: RegularCoreMemoryCardProps) {
   const t = useTranslations('components/CoreMemoryCard');
+
+  const cardColor = isSelected ? 'primary-light' : 'background-grey';
+
   return (
     <Card
-      className={cn('bg-background-grey h-[110px] cursor-pointer border-b-4')}
+      className={cn(
+        'group h-[110px] cursor-pointer border-b-2 hover:bg-brand-light',
+      )}
       onClick={openInAdvanced}
+      color={cardColor}
     >
       <VStack gap={false}>
         <CoreMemoryCardHeader
@@ -292,31 +313,33 @@ export function CoreMemoryCard(props: CoreMemoryCardProps) {
     readOnly,
     preserveOnMigration,
     openInAdvanced,
+    isSelected,
   } = props;
 
-  const { initialState, currentValue } = MemoryDiff({
+  const { oldLine, newLine } = MemoryDiff({
     value: value || '',
   });
 
   const justUpdated = useMemo(() => {
-    return initialState !== currentValue;
-  }, [initialState, currentValue]);
+    return oldLine !== null || newLine !== null;
+  }, [oldLine, newLine]);
 
-  const calculatedNumChar = getCharCount(currentValue);
+  const calculatedNumChar = getCharCount(value);
 
   if (justUpdated) {
     return (
       <UpdatedCoreMemoryCard
         label={label}
-        value={initialState}
+        value={oldLine || undefined}
         infoToolTipContent={infoToolTipContent}
-        diffValue={justUpdated ? currentValue : undefined}
+        diffValue={newLine || undefined}
         numChar={calculatedNumChar}
         lastUpdatedAt={lastUpdatedAt}
         sharedAgents={sharedAgents}
         readOnly={readOnly}
         preserveOnMigration={preserveOnMigration}
         openInAdvanced={openInAdvanced}
+        isSelected={isSelected}
       />
     );
   }
@@ -324,7 +347,7 @@ export function CoreMemoryCard(props: CoreMemoryCardProps) {
   return (
     <RegularCoreMemoryCard
       label={label}
-      value={currentValue}
+      value={value}
       infoToolTipContent={infoToolTipContent}
       numChar={calculatedNumChar}
       lastUpdatedAt={lastUpdatedAt}
@@ -332,6 +355,7 @@ export function CoreMemoryCard(props: CoreMemoryCardProps) {
       readOnly={readOnly}
       preserveOnMigration={preserveOnMigration}
       openInAdvanced={openInAdvanced}
+      isSelected={isSelected}
     />
   );
 }
