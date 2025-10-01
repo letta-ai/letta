@@ -1,6 +1,9 @@
 import pytest
 
+from letta.agents.helpers import merge_and_validate_prefilled_args
 from letta.helpers import ToolRulesSolver
+from letta.schemas.enums import ToolType
+from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
@@ -722,3 +725,181 @@ def test_should_force_tool_call_mixed_rules():
 
     solver.register_tool_call(NEXT_TOOL)
     assert solver.should_force_tool_call() is False, "Should return False when no constraining rules are active"
+
+
+def make_tool(name: str, properties: dict) -> Tool:
+    """Helper to build a minimal custom Tool with a JSON schema."""
+    return Tool(
+        name=name,
+        tool_type=ToolType.CUSTOM,
+        json_schema={
+            "name": name,
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    )
+
+
+def test_init_rule_args_are_cached_in_solver():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha", args={"x": 1, "y": "s"})])
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+
+    assert set(allowed) == {"alpha"}
+    # Cached mappings
+    assert solver.last_prefilled_args_by_tool == {"alpha": {"x": 1, "y": "s"}}
+    assert solver.last_prefilled_args_provenance.get("alpha") == "InitToolRule(alpha)"
+
+
+def test_cached_provenance_format():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="tool_one", args={"a": 123})])
+    _ = solver.get_allowed_tool_names(available_tools={"tool_one"})
+    prov = solver.last_prefilled_args_provenance.get("tool_one")
+    assert prov.startswith("InitToolRule(") and prov.endswith(")") and "tool_one" in prov
+
+
+def test_cache_empty_when_no_args():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha")])
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+
+    assert set(allowed) == {"alpha"}
+    assert solver.last_prefilled_args_by_tool == {}
+    assert solver.last_prefilled_args_provenance == {}
+
+
+def test_cache_recomputed_on_next_call():
+    # First call caches args for init tool
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha", args={"p": 5})])
+    _ = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert solver.last_prefilled_args_by_tool == {"alpha": {"p": 5}}
+
+    # After a tool call, init rules no longer apply; next computation should clear caches
+    solver.register_tool_call("alpha")
+    _ = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert solver.last_prefilled_args_by_tool == {}
+    assert solver.last_prefilled_args_provenance == {}
+
+
+def test_merge_and_validate_prefilled_args_overrides_llm_values():
+    tool = make_tool("my_tool", properties={"a": {"type": "integer"}, "b": {"type": "string"}})
+    llm_args = {"a": 1, "b": "hello"}
+    prefilled = {"a": 42}
+
+    merged = merge_and_validate_prefilled_args(tool, llm_args, prefilled)
+    assert merged == {"a": 42, "b": "hello"}
+
+
+def test_merge_and_validate_prefilled_args_type_validation():
+    tool = make_tool("typed_tool", properties={"a": {"type": "integer"}})
+    llm_args = {"a": 1}
+    prefilled = {"a": "not-an-int"}
+
+    with pytest.raises(ValueError) as ei:
+        _ = merge_and_validate_prefilled_args(tool, llm_args, prefilled)
+    assert "Invalid value for 'a'" in str(ei.value)
+    assert "integer" in str(ei.value)
+
+
+def test_merge_and_validate_prefilled_args_unknown_key_fails():
+    tool = make_tool("limited_tool", properties={"a": {"type": "integer"}})
+    with pytest.raises(ValueError) as ei:
+        _ = merge_and_validate_prefilled_args(tool, llm_args={}, prefilled_args={"z": 3})
+    assert "Unknown argument 'z'" in str(ei.value)
+
+
+def test_merge_and_validate_prefilled_args_enum_const_anyof_oneof():
+    tool = make_tool(
+        "rich_tool",
+        properties={
+            "c": {"enum": ["x", "y"]},
+            "d": {"const": 5},
+            "e": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+            "f": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+            "g": {"type": "number"},
+        },
+    )
+
+    # Valid cases
+    merged = merge_and_validate_prefilled_args(tool, {}, {"c": "x"})
+    assert merged["c"] == "x"
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"d": 5})
+    assert merged["d"] == 5
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"e": 7})
+    assert merged["e"] == 7
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"f": "hello"})
+    assert merged["f"] == "hello"
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"g": 3.14})
+    assert merged["g"] == 3.14
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"g": 3})
+    assert merged["g"] == 3
+
+    # Invalid cases
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"c": "z"})  # enum fail
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"d": 6})  # const fail
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"e": []})  # anyOf none match
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"f": []})  # oneOf none match
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"g": True})  # bool not a number
+
+
+def test_merge_and_validate_prefilled_args_union_with_null():
+    tool = make_tool("union_tool", properties={"h": {"type": ["string", "null"]}})
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"h": None})
+    assert "h" in merged and merged["h"] is None
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"h": "ok"})
+    assert merged["h"] == "ok"
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"h": 5})
+
+
+def test_merge_and_validate_prefilled_args_object_and_array_types():
+    tool = make_tool(
+        "container_tool",
+        properties={
+            "obj": {"type": "object"},
+            "arr": {"type": "array"},
+        },
+    )
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"obj": {"k": 1}})
+    assert merged["obj"] == {"k": 1}
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"arr": [1, 2, 3]})
+    assert merged["arr"] == [1, 2, 3]
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"obj": "nope"})
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"arr": {}})
+
+
+def test_multiple_rules_args_last_write_wins_and_provenance():
+    # Two init rules for the same tool; the latter should overwrite overlapping keys and provenance
+    r1 = InitToolRule(tool_name="alpha", args={"x": 1, "y": "first"})
+    r2 = InitToolRule(tool_name="alpha", args={"y": "second", "z": True})
+    solver = ToolRulesSolver(tool_rules=[r1, r2])
+
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert set(allowed) == {"alpha"}
+
+    assert solver.last_prefilled_args_by_tool["alpha"] == {"x": 1, "y": "second", "z": True}
+    assert solver.last_prefilled_args_provenance.get("alpha") == "InitToolRule(alpha)"
