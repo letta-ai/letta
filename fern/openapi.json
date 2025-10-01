@@ -12347,6 +12347,114 @@
                                           "items": {
                                             "type": "string"
                                           }
+                                        },
+                                        "child_arg_nodes": {
+                                          "oneOf": [
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "name": {
+                                                    "type": "string"
+                                                  },
+                                                  "args": {
+                                                    "oneOf": [
+                                                      {
+                                                        "nullable": true
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "format": "null",
+                                                        "nullable": true
+                                                      },
+                                                      {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "oneOf": [
+                                                            {
+                                                              "nullable": true
+                                                            },
+                                                            {
+                                                              "type": "string",
+                                                              "format": "null",
+                                                              "nullable": true
+                                                            }
+                                                          ],
+                                                          "nullable": true
+                                                        }
+                                                      },
+                                                      {}
+                                                    ],
+                                                    "nullable": true
+                                                  }
+                                                },
+                                                "required": ["name"]
+                                              }
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "name": {
+                                                          "type": "string"
+                                                        },
+                                                        "args": {
+                                                          "oneOf": [
+                                                            {
+                                                              "nullable": true
+                                                            },
+                                                            {
+                                                              "type": "string",
+                                                              "format": "null",
+                                                              "nullable": true
+                                                            },
+                                                            {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "oneOf": [
+                                                                  {
+                                                                    "nullable": true
+                                                                  },
+                                                                  {
+                                                                    "type": "string",
+                                                                    "format": "null",
+                                                                    "nullable": true
+                                                                  }
+                                                                ],
+                                                                "nullable": true
+                                                              }
+                                                            },
+                                                            {}
+                                                          ],
+                                                          "nullable": true
+                                                        }
+                                                      },
+                                                      "required": ["name"]
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
                                         }
                                       },
                                       "required": ["tool_name", "children"]
@@ -12875,6 +12983,114 @@
                                                 "items": {
                                                   "type": "string"
                                                 }
+                                              },
+                                              "child_arg_nodes": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "name": {
+                                                          "type": "string"
+                                                        },
+                                                        "args": {
+                                                          "oneOf": [
+                                                            {
+                                                              "nullable": true
+                                                            },
+                                                            {
+                                                              "type": "string",
+                                                              "format": "null",
+                                                              "nullable": true
+                                                            },
+                                                            {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "oneOf": [
+                                                                  {
+                                                                    "nullable": true
+                                                                  },
+                                                                  {
+                                                                    "type": "string",
+                                                                    "format": "null",
+                                                                    "nullable": true
+                                                                  }
+                                                                ],
+                                                                "nullable": true
+                                                              }
+                                                            },
+                                                            {}
+                                                          ],
+                                                          "nullable": true
+                                                        }
+                                                      },
+                                                      "required": ["name"]
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "name": {
+                                                                "type": "string"
+                                                              },
+                                                              "args": {
+                                                                "oneOf": [
+                                                                  {
+                                                                    "nullable": true
+                                                                  },
+                                                                  {
+                                                                    "type": "string",
+                                                                    "format": "null",
+                                                                    "nullable": true
+                                                                  },
+                                                                  {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                      "oneOf": [
+                                                                        {
+                                                                          "nullable": true
+                                                                        },
+                                                                        {
+                                                                          "type": "string",
+                                                                          "format": "null",
+                                                                          "nullable": true
+                                                                        }
+                                                                      ],
+                                                                      "nullable": true
+                                                                    }
+                                                                  },
+                                                                  {}
+                                                                ],
+                                                                "nullable": true
+                                                              }
+                                                            },
+                                                            "required": ["name"]
+                                                          }
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
                                               }
                                             },
                                             "required": [
@@ -18922,6 +19138,24 @@
                                       "items": {
                                         "type": "string"
                                       }
+                                    },
+                                    "child_arg_nodes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "args": {
+                                            "type": "object",
+                                            "additionalProperties": {},
+                                            "nullable": true
+                                          }
+                                        },
+                                        "required": ["name"]
+                                      },
+                                      "nullable": true
                                     }
                                   },
                                   "required": ["tool_name", "children"]
@@ -18938,6 +19172,11 @@
                                     },
                                     "prompt_template": {
                                       "type": "string",
+                                      "nullable": true
+                                    },
+                                    "args": {
+                                      "type": "object",
+                                      "additionalProperties": {},
                                       "nullable": true
                                     }
                                   },
@@ -23468,6 +23707,21 @@
             "type": "array",
             "title": "Children",
             "description": "The children tools that can be invoked."
+          },
+          "child_arg_nodes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCallNode"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Child Arg Nodes",
+            "description": "Optional list of typed child argument overrides. Each node must reference a child in 'children'."
           }
         },
         "additionalProperties": false,
@@ -33434,6 +33688,32 @@
         "required": ["id", "date", "tool_call"],
         "title": "ToolCallMessage",
         "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call"
+      },
+      "ToolCallNode": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the child tool to invoke next."
+          },
+          "args": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args",
+            "description": "Optional prefilled arguments for this child tool. Keys must match the tool's parameter names and values must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model."
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "ToolCallNode",
+        "description": "Typed child override for prefilled arguments.\n\nWhen used in a ChildToolRule, if this child is selected next, its `args` will be\napplied as prefilled arguments (overriding overlapping LLM-provided values)."
       },
       "ToolCreate": {
         "properties": {
