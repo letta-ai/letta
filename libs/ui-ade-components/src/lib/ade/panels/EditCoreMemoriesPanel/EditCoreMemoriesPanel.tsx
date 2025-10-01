@@ -20,7 +20,6 @@ import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import { LettaLoaderPanel } from '@letta-cloud/ui-component-library';
 import { HStack } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
-import { PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../../hooks';
 import { useState } from 'react';
@@ -515,16 +514,18 @@ export function EditMemory() {
   );
 
   return (
-    <PanelMainContent variant="noPadding">
+    <VStack fullHeight >
       <QuickMemoryOnboarding>
         <VisibleMemoryTypeProvider
           key={isTemplate ? 'templated' : 'agent'}
           defaultVisibleMemoryType={isTemplate ? 'templated' : 'agent'}
         >
           <VStack
+            paddingBottom="small"
             className="core-memory-panel"
             overflow="auto"
             fullHeight
+
             gap={false}
           >
             <HStack align="end" gap={false} fullWidth paddingX="small">
@@ -606,7 +607,7 @@ export function EditMemory() {
           </VStack>
         </VisibleMemoryTypeProvider>
       </QuickMemoryOnboarding>
-    </PanelMainContent>
+    </VStack>
   );
 }
 
