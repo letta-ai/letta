@@ -4,34 +4,6 @@ subtitle: Patterns, pitfalls, and advanced usage
 slug: guides/agents/archival-best-practices
 ---
 
-## Atomic vs comprehensive memories
-
-There are two approaches to storing information in archival memory:
-
-### Atomic approach
-Store single, discrete facts:
-- "Roy Batty led the replicant group"
-- "Rachael is a Nexus-7 prototype with implanted memories"
-- "The Voight-Kampff test measures empathic responses"
-
-**Pros:** Precise retrieval, granular tagging
-**Cons:** Loses narrative context and relationships
-
-### Comprehensive approach
-Store complete narratives:
-- "Roy Batty's final monologue: After leading a group of escaped Nexus-6 replicants back to Earth, Roy confronted his creator Eldon Tyrell seeking more life. When Tyrell couldn't extend his lifespan, Roy killed him. In his final moments, Roy saved Deckard's life and delivered the 'Tears in Rain' speech before his four-year lifespan expired."
-
-**Pros:** Maintains context and causal relationships
-**Cons:** Harder to retrieve specific facts
-
-### Recommended: Hybrid approach
-Store both atomic facts AND comprehensive narratives:
-- Atomic memories for precise retrieval ("Roy Batty's lifespan: 4 years")
-- Comprehensive memories for context (full narrative of his final scenes)
-- Tag both appropriately
-
-This gives you precision when needed and context when relevant.
-
 ## Backfilling archives
 
 You can pre-load archival memory with existing knowledge:
@@ -115,19 +87,62 @@ for (const doc of docs) {
 
 ## Enforcing archival usage with tool rules
 
-If your agent forgets to use archival memory, you can enforce it with tool rules:
+If your agent forgets to use archival memory, you can enforce it with [tool rules](/guides/agents/tool-rules).
 
 **Force archival search at turn start:**
-```
-Tool Rule: Start Constraint
-Tool: archival_memory_search
-```
 
-**Require at least one insertion per turn:**
+<CodeGroup>
+```python Python
+from letta_client.types import InitToolRule
+
+client.agents.update(
+    agent_id=agent.id,
+    tool_rules=[
+        InitToolRule(tool_name="archival_memory_search")
+    ]
+)
 ```
-Tool Rule: Required Before Exit
-Tool: archival_memory_insert
+```typescript TypeScript
+await client.agents.update(agent.id, {
+    toolRules: [
+        { type: "init", toolName: "archival_memory_search" }
+    ]
+});
 ```
+</CodeGroup>
+
+**Require archival insertion before exit:**
+
+<CodeGroup>
+```python Python
+from letta_client.types import ChildToolRule
+
+client.agents.update(
+    agent_id=agent.id,
+    tool_rules=[
+        ChildToolRule(
+            tool_name="send_message",
+            children=["archival_memory_insert"]
+        )
+    ]
+)
+```
+```typescript TypeScript
+await client.agents.update(agent.id, {
+    toolRules: [
+        {
+            type: "child",
+            toolName: "send_message",
+            children: ["archival_memory_insert"]
+        }
+    ]
+});
+```
+</CodeGroup>
+
+<Info>
+**Using the ADE:** Tool rules can also be configured in the Agent Development Environment's Tool Manager interface.
+</Info>
 
 <Warning>
 **Note:** Anthropic models don't support strict structured output, so tool rules may not be enforced. Use OpenAI or Gemini models for guaranteed tool rule compliance.
@@ -140,28 +155,110 @@ Tool: archival_memory_insert
 
 **Latency considerations:** Forcing archival search adds a tool call at the start of every turn. For latency-sensitive applications (like customer support), consider making archival search optional.
 
+[Learn more about tool rules →](/guides/agents/tool-rules)
+
 ## Best practices
 
-<Warning>
 **1. Avoid over-insertion**
-The most common pitfall is inserting too many memories, creating clutter. Trust the agent to decide what's worth storing long-term.
-</Warning>
 
-**2. Track query effectiveness**
-If archival search quality matters, have the agent track its performance in a memory block:
-```python
-# Agent creates a memory block
-memory_insert(
-    block_label="archival_tracking",
-    content="""
-    Query patterns: Natural language questions work best
-    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
-    Success rate: ~85% of searches return relevant results
+The most common pitfall is inserting too many memories, creating clutter. Trust the agent to decide what's worth storing long-term.
+
+**2. Create an archival policies block**
+
+Help your agent learn how to use archival memory effectively by creating a dedicated memory block for archival usage policies:
+
+<CodeGroup>
+```python Python
+client.blocks.create(
+    label="archival_policies",
+    value="""
+    When to insert into archival:
+    - User preferences and important facts about the user
+    - Technical specifications and reference information
+    - Significant decisions or outcomes from conversations
+
+    When NOT to insert:
+    - Temporary conversational context
+    - Information already stored
+    - Trivial details or pleasantries
+
+    Search strategies:
+    - Use natural language questions for best results
+    - Include tags when filtering by category
+    - Try semantic variations if first search doesn't find what you need
     """
 )
 ```
+```typescript TypeScript
+await client.blocks.create({
+    label: "archival_policies",
+    value: `
+    When to insert into archival:
+    - User preferences and important facts about the user
+    - Technical specifications and reference information
+    - Significant decisions or outcomes from conversations
 
-**3. Let agents experiment**
+    When NOT to insert:
+    - Temporary conversational context
+    - Information already stored
+    - Trivial details or pleasantries
+
+    Search strategies:
+    - Use natural language questions for best results
+    - Include tags when filtering by category
+    - Try semantic variations if first search doesn't find what you need
+    `
+});
+```
+</CodeGroup>
+
+You can improve this block through conversation with your agent:
+
+> **You:** "I noticed you didn't store the fact that I prefer TypeScript for backend development. Update your archival policies block to ensure you capture language preferences in the future."
+
+> **Agent:** Updates the archival_policies block to include "Programming language preferences" under "When to insert into archival"
+
+This collaborative approach helps agents learn from mistakes and improve their archival memory usage over time.
+
+**3. Track query effectiveness**
+
+Build self-improving agents by having them track archival search effectiveness in a memory block. This allows agents to learn which query patterns work best and refine their search strategies over time.
+
+<CodeGroup>
+```python Python
+# Create a memory block for tracking
+client.blocks.create(
+    label="archival_tracking",
+    value="""
+    Query patterns: Natural language questions work best
+    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
+    Success rate: ~85% of searches return relevant results
+    Frequently searched topics: [technical specifications, protocols, case histories]
+    Common patterns: Queries about technical specs work better than vague questions
+    Improvements needed: Add more tags for better filtering
+    """
+)
+```
+```typescript TypeScript
+// Create a memory block for tracking
+await client.blocks.create({
+    label: "archival_tracking",
+    value: `
+    Query patterns: Natural language questions work best
+    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
+    Success rate: ~85% of searches return relevant results
+    Frequently searched topics: [technical specifications, protocols, case histories]
+    Common patterns: Queries about technical specs work better than vague questions
+    Improvements needed: Add more tags for better filtering
+    `
+});
+```
+</CodeGroup>
+
+The agent can update this block based on search results and continuously refine its archival strategy.
+
+**4. Let agents experiment**
+
 Agents can test different query styles to understand what works:
 ```python
 # Agent tries variations
@@ -170,58 +267,24 @@ archival_memory_search(query="Voight-Kampff procedure")
 archival_memory_search(query="replicant detection method")
 ```
 
-**Important:** Have the agent persist learnings from experimentation in a memory block, not in archival (avoid meta-clutter).
+**Important:** Have the agent persist learnings from experimentation in a memory block (like `archival_tracking` or `archival_policies`), not in archival itself (avoid meta-clutter).
 
-**4. Use tags consistently**
+**5. Use tags consistently**
+
 Establish a tag taxonomy and stick to it. Good language models typically handle tagging well.
 
-**5. Use the hybrid approach**
-Store both atomic facts and comprehensive narratives when dealing with complex information.
-
 **6. Add context to insertions**
+
 ❌ Don't: "Likes replicants"
 ✅ Do: "Deckard shows unusual empathy toward replicants, particularly Rachael, suggesting possible replicant identity"
 
 **7. Pre-load domain knowledge**
+
 For specialized agents, seed archival with relevant information upfront via backfilling.
 
 **8. Consider latency**
+
 Forced archival search adds overhead. For real-time applications, make it optional or use it selectively.
-
-## Advanced: Archival performance tracking
-
-Build self-improving agents by having them track archival effectiveness:
-
-<CodeGroup>
-```python Python
-# Create a memory block
-client.blocks.create(
-    label="archival_performance",
-    value="""
-    Frequently searched topics: [replicant specifications, test protocols, case histories]
-    Success rate: ~85% (queries return relevant results)
-    Common patterns: Queries about technical specs, protocol requirements, historical cases
-    Improvements needed: Better atomic granularity for technical specifications
-    Tag usage: technical (450), case_history (120), protocol (89)
-    """
-)
-```
-```typescript TypeScript
-// Create a memory block
-await client.blocks.create({
-    label: "archival_performance",
-    value: `
-    Frequently searched topics: [replicant specifications, test protocols, case histories]
-    Success rate: ~85% (queries return relevant results)
-    Common patterns: Queries about technical specs, protocol requirements, historical cases
-    Improvements needed: Better atomic granularity for technical specifications
-    Tag usage: technical (450), case_history (120), protocol (89)
-    `
-});
-```
-</CodeGroup>
-
-The agent can update this block based on search results and refine its archival strategy over time.
 
 ## Modifying archival memories (SDK only)
 
@@ -283,9 +346,9 @@ This allows you to:
     Learn about always-visible memory
   </Card>
   <Card
-    title="Context Engineering"
-    href="/guides/agents/context-engineering"
+    title="Tool Rules"
+    href="/guides/agents/tool-rules"
   >
-    Advanced memory management
+    Advanced tool execution constraints
   </Card>
 </CardGroup>
