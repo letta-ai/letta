@@ -30,7 +30,7 @@ export function useFormatters() {
     const { unit, ...rest } = options;
     switch (options.unit) {
       case 'GB':
-        return formatNumber(value / 1.25e8, {
+        return formatNumber(value / 1_073_741_824, {
           style: 'decimal',
           maximumFractionDigits: 2,
           ...rest,

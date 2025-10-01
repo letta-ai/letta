@@ -54,7 +54,8 @@ function FreePlanBenefits() {
             limit: () => formatNumber(limit),
           })}
         />
-        <Benefit label={t('free.agent', { limit: limits.agents })} />
+        <Benefit label={t('free.api')} />
+        <Benefit label={t('free.ade')} />
         <Benefit label={t('free.templates', { limit: limits.templates })} />
         <Benefit
           label={t('free.storage', {
@@ -151,9 +152,10 @@ function ProPlanBenefits() {
           limit: () => formatNumber(limit),
         })}
       />
-      <Benefit label={t('pro.agent', { limit: formatNumber(limits.agents) })} />
+      <Benefit label={t('pro.overage')} />
+      <Benefit label={t('pro.agent')} />
       <Benefit
-        label={t('pro.templates', { limit: formatNumber(limits.agents) })}
+        label={t('pro.templates', { limit: formatNumber(limits.templates) })}
       />
       <Benefit
         label={t('pro.storage', {
@@ -211,12 +213,11 @@ function EnterprisePlanBenefits() {
 
   return (
     <BenefitContainer>
-      <Benefit label={t('enterprise.agent')} />
-      <Benefit label={t('enterprise.storage')} />
-      <Benefit label={t('enterprise.enhanced')} />
-      <Benefit label={t('enterprise.customModelDeployments')} />
+      <Benefit label={t('enterprise.pricing')} />
+      <Benefit label={t('enterprise.byok')} />
       <Benefit label={t('enterprise.oidc')} />
       <Benefit label={t('enterprise.rbac')} />
+      <Benefit label={t('enterprise.support')} />
     </BenefitContainer>
   );
 }

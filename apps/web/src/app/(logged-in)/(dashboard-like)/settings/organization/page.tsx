@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 function OrganizationsPage() {
-  redirect('/settings/organization/account');
+  redirect('/settings/organization/settings');
 }
 
 export default OrganizationsPage;

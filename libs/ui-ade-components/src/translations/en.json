@@ -692,7 +692,7 @@
     "premium": {
       "label": "Premium"
     },
-    "letta": "Letta hosted",
+    "letta": "Letta Cloud",
     "byok": "Your models",
     "viewModels": "Configure"
   },
@@ -700,13 +700,13 @@
     "tooltip": "The model (LLM) backend for the agent",
     "label": "Model",
     "placeholder": "Loading model...",
-    "viewSupportedModels": "Configure and view all models",
+    "viewSupportedModels": "View models page",
     "invalidModelWarning": {
-      "message": "The selected model is not supported in letta cloud, please select a different model.",
+      "message": "The selected model is not supported, please select a different model.",
       "moreInfo": "Why am I seeing this?",
       "popover": {
         "title": "Why is this model invalid?",
-        "description": "The model you have selected is not supported in Letta cloud. This usually means that an invalid LLM config was set via the SDK."
+        "description": "The model you have selected is not supported in Letta Cloud. This usually means that an invalid LLM config was set via the SDK."
       }
     }
   },

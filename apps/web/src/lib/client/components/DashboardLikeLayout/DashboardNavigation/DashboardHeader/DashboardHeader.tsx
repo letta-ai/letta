@@ -1,26 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
   Breadcrumb,
   BetaTag,
   Button,
-  ChevronDownIcon,
+  ChevronDownIcon, Typography
 } from '@letta-cloud/ui-component-library';
-import {
-  Frame,
-  HStack,
-  Logo,
-} from '@letta-cloud/ui-component-library';
+import { Frame, HStack, Logo } from '@letta-cloud/ui-component-library';
 import { useCurrentProject } from '../../../../hooks/useCurrentProject/useCurrentProject';
 import { NavigationOverlay } from '../NavigationOverlay/NavigationOverlay';
 import { DashboardHeaderNavigation } from '../DashboardHeaderNavigation/DashboardHeaderNavigation';
 import { ProfilePopover } from '../ProfilePopover/ProfilePopover';
+import { CreditsPopover } from '../CreditsPopover/CreditsPopover';
 import { ProjectSelector } from '../../../ProjectSelector/ProjectSelector';
+import { usePathname } from 'next/navigation';
+import { useCurrentOrganization } from '$web/client/hooks';
+import { BillingTierBadge } from '$web/client/components/BillingTierBadge/BillingTierBadge';
 
 export function DashboardHeader() {
   const currentProject = useCurrentProject();
+
+  const pathname = usePathname();
+
+  const isInSettings = useMemo(() => {
+    return pathname.startsWith('/settings');
+  }, [pathname]);
+
+  const organization = useCurrentOrganization();
+
+  const showOrganizationView = useMemo(() => {
+    return organization && isInSettings;
+  }, [organization, isInSettings]);
 
   return (
     <>
@@ -90,11 +102,27 @@ export function DashboardHeader() {
                       : []),
                   ]}
                 />
+                {showOrganizationView && (
+                  <Link
+                    href="/settings/organization/settings"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <HStack
+                      className="rounded-sm py-1"
+                      paddingX="xsmall" border align="center" gap>
+                      <Typography variant="body3">
+                        {organization?.name || 'Organization'}
+                      </Typography>
+                      <BillingTierBadge size="small" />
+                    </HStack>
+                  </Link>
+                )}
               </HStack>
             </HStack>
           </HStack>
-          <HStack align="center">
+          <HStack align="center" gap="small">
             <DashboardHeaderNavigation />
+            <CreditsPopover />
             <ProfilePopover />
           </HStack>
         </HStack>

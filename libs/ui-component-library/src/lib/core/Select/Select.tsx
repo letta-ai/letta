@@ -196,27 +196,34 @@ function useSelectComponents(selectProps: BaseSelectProps) {
         );
       },
       // @ts-expect-error yest
-      GroupHeading: ({ children, ...props }) => (
-        // @ts-expect-error yest
-        <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
-          <HStack
-            align="center"
-            paddingX="medium"
-            className="h-[36px]"
-            borderTop
-          >
-            <HStack fullWidth>
-              {props.data.icon && (
-                <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-              )}
-              <Typography variant="body3" bold className="mt-[-1px]">
-                {children}
-              </Typography>
+      GroupHeading: ({ children, ...props }) => {
+        // Hide the "Letta Cloud" group header while keeping options grouped
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (props?.data?.value === 'letta') {
+          return null;
+        }
+        return (
+          // @ts-expect-error yest
+          <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
+            <HStack
+              align="center"
+              paddingX="medium"
+              className="h-[36px]"
+              borderTop
+            >
+              <HStack fullWidth>
+                {props.data.icon && (
+                  <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+                )}
+                <Typography variant="body3" bold className="mt-[-1px]">
+                  {children}
+                </Typography>
+              </HStack>
+              {props.data.badge}
             </HStack>
-            {props.data.badge}
-          </HStack>
-        </components.GroupHeading>
-      ),
+          </components.GroupHeading>
+        );
+      },
       LoadingMessage: ({ ...props }) => (
         // @ts-expect-error yest
         <components.LoadingMessage

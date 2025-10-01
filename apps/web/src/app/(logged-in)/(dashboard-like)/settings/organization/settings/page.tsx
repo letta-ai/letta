@@ -23,7 +23,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
 import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/contracts';
 import { useCurrentOrganization } from '$web/client/hooks';
-import { CurrentPlan } from './CurrentPlan/CurrentPlan';
 import { BYOKModels } from '../../../models/_components/BYOKModels/BYOKModels';
 
 const EditOrganizationSettingsSchema = z.object({
@@ -126,7 +125,7 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
             <Button
               busy={isPending}
               color="secondary"
-              label="Save"
+              label={t('EditOrganizationSettings.saveButton')}
               type="submit"
             />
           </FormActions>
@@ -182,9 +181,6 @@ function OrganizationSettingsPage() {
                 organizationId={organization.id}
                 name={organization.name}
               />
-              <HR />
-              <CurrentPlan />
-
               <MembershipRules />
 
               <HR />

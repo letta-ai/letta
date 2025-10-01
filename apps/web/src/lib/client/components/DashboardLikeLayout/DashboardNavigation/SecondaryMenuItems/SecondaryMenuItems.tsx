@@ -64,7 +64,7 @@ export function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           {!isMobile && (
             <DashboardNavigationButton
               id="settings"
-              href="/settings/organization/account"
+              href="/settings/organization/settings"
               label={t('secondaryNav.account')}
               icon={<AccountIcon />}
             />

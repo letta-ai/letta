@@ -31,43 +31,55 @@ export function RecurringCreditsView() {
   }
 
   return (
-    <VStack className="min-h-[178px]" color="background-grey2" border padding  flex>
+    <VStack
+      className="min-h-[178px]"
+      color="background-grey"
+      border
+      padding
+      gap="medium"
+      align="start"
+      flex
+    >
       <HStack align="center" gap="small">
         <LettaCoinIcon size="small" />
-        <HStack align="end" gap="small">
-          {t.rich('stats', {
-            remaining: () => (
-              <Typography bold variant="heading4">
-                {formatNumber(billingData?.body.recurrentCredits || 0)}
-              </Typography>
-            ),
-            small: (chunks) => (
-              <Typography className="pb-0.5" variant="body3">
-                {chunks}
-              </Typography>
-            ),
-            total: () => formatNumber(limit),
-          })}
-        </HStack>
+        <Typography noWrap>
+          <Typography
+            bold
+            variant="heading3"
+            overrideEl="span"
+            noWrap
+          >
+            {formatNumber(billingData?.body.recurrentCredits || 0)}
+          </Typography>
+          <Typography
+            overrideEl="span"
+            noWrap
+          >
+            {t('remainingSuffix', { limit: formatNumber(limit) })}
+          </Typography>
+        </Typography>
       </HStack>
-      <QuotaProgressBar
-        max={limit}
-        value={billingData.body.recurrentCredits}
-      />
-      <VStack gap={false}>
-        <Typography bold>{t('label')}</Typography>
-        <VStack>
-          <Typography variant="body3" muted>
-            {t('description', {
-              credits: formatNumber(limit),
-            })}
-          </Typography>
-          <Typography variant="body3" muted>
-            {t('resetTime', {
-              date: formatDate(billingData?.body.billingPeriodEnd || ''),
-            })}
-          </Typography>
-        </VStack>
+      <HStack border fullWidth padding="xxsmall">
+        <QuotaProgressBar
+          max={limit}
+          value={billingData.body.recurrentCredits}
+          inverseColors
+        />
+      </HStack>
+      <VStack gap="small" align="start">
+        <Typography variant="body" bold>
+          {t('label')}
+        </Typography>
+        <Typography variant="body3" color="lighter">
+          {t('description', {
+            credits: formatNumber(limit),
+          })}
+        </Typography>
+        <Typography variant="body3" color="lighter">
+          {t('resetTime', {
+            date: formatDate(billingData?.body.billingPeriodEnd || ''),
+          })}
+        </Typography>
       </VStack>
     </VStack>
   );

@@ -41,17 +41,31 @@
     },
     "resetDate": "Your limits will reset on {date}"
   },
+  "components/CreditsPopover": {
+    "title": "Credit Balance",
+    "monthlyCredits": "Monthly credits",
+    "purchasedCredits": "Purchased credits",
+    "upgradeToPro": "Upgrade to Pro",
+    "buyCredits": "Buy Credits"
+  },
+  "components/OrganizationUsageBlockV2": {
+    "title": "Credit Balance",
+    "monthlyCredits": "Monthly credits",
+    "purchasedCredits": "Purchased credits",
+    "upgradeToPro": "Upgrade to Pro",
+    "buyCredits": "Buy Credits"
+  },
   "DashboardNavigation": {
     "NavigationFooter": {
-      "profile": "Profile",
-      "billing": "Billing",
+      "profile": "Account",
+      "billing": "Usage",
       "settings": "Settings"
     },
     "SettingsMenu": {
-      "profile": "Profile",
+      "profile": "Account",
       "organization": "Organization",
       "allProjects": "All projects",
-      "account": "Account",
+      "account": "Organization",
       "projects": "Projects",
       "general": "General",
       "models": "Models",
@@ -85,9 +99,11 @@
       "mcpServers": "MCP servers"
     },
     "SectionHeader": {
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "project": "Project"
     },
     "ProjectSpecificNavigation": {
+      "project": "Project",
       "dashboard": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",
@@ -480,7 +496,8 @@
     "columns": {
       "name": "Model",
       "brand": "Provider",
-      "baseCost": "Price"
+      "baseCost": "Price",
+      "tier": "Tier"
     },
     "ModelDetailsOverlay": {
       "trigger": "Explore model details",
@@ -509,6 +526,22 @@
       "tooltip": "This model is only available via usage-based billing, you will be charged based on usage if you have credits in your account."
     },
     "infinite": "Infinite"
+  },
+  "pages/models/ModelPricingTable": {
+    "title": "Model pricing",
+    "description": "Letta Cloud allows you to pay for agent usage with credits. Each time an agent runs, it consumes credits.",
+    "columns": {
+      "modelTier": "Model tier",
+      "modelTierTooltip": "Models are categorized into Standard and Premium based on their underlying cost.",
+      "pricePerRequest": "Price per request",
+      "pricePerRequestTooltip": "Each time your agent takes an action (step), it costs this amount.",
+      "pricePerRequestMax": "Price per request (MAX Mode)",
+      "pricePerRequestMaxTooltip": "MAX Mode increases the context length of the model beyond 100k tokens."
+    },
+    "tierLabels": {
+      "standard": "Standard",
+      "premium": "Premium"
+    }
   },
   "components/ADEError": {
     "goBack": "Go home ",
@@ -737,7 +770,7 @@
     "organization": {
       "general": "Account",
       "members": "Members",
-      "root": "Organization settings",
+      "root": "Settings",
       "productSettings": "Reference",
       "utilities": "Global Configuration",
       "integrations": "Integrations",
@@ -923,6 +956,8 @@
     "purchase": "Purchase credits",
     "cancel": "Cancel plan",
     "manage": "Manage plan",
+    "creditBalanceSuffix": " credit balance",
+
     "label": "Purchased credits",
     "description": "Pay for additional credits beyond your plan limits.",
     "disabledOnFree": "Upgrade to Pro to buy credits"
@@ -931,12 +966,14 @@
     "stats": "<remaining></remaining> <small>of <total></total> remaining</small>",
     "label": "Monthly credits",
     "description": "{credits} credits included in your plan",
-    "resetTime": "Next reset on: {date}"
+    "resetTime": "Next reset on: {date}",
+    "remainingSuffix": " of {limit} remaining"
+
   },
   "organization/usage": {
     "creditsHistory": "All events",
     "title": "Usage",
-    "description": "View and manage your organization's usage",
+    "description": "View and manage your credit usage",
     "UsageTable": {
       "title": "Usage for {startDate} - {endDate}",
       "model": "Model",
@@ -971,12 +1008,12 @@
       "free": {
         "cta": "You are currently on the Free Plan",
         "label": "Free",
-        "usage": "For getting started."
+        "usage": "For getting started"
       },
       "pro": {
         "cta": "Upgrade to Pro",
         "label": "Pro",
-        "usage": "For developers shipping agents."
+        "usage": "For shipping agents in production"
       },
       "scale": {
         "cta": "Upgrade to Scale",
@@ -987,9 +1024,9 @@
         "cost": "Contact us",
         "cta": "Contact sales",
         "label": "Enterprise",
-        "usage": "For enterprises with particular deployment needs."
+        "usage": "For large organizations"
       },
-      "cost": "<cost></cost> per month"
+      "cost": "<cost></cost> / month"
     },
     "error": "There was an error upgrading your plan, please try again or contact support.",
     "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay {cost}/month. You can cancel at any time.",
@@ -1001,7 +1038,7 @@
     "lookingForUsage": "We've moved your usage details to a new page",
     "goToUsage": "Visit usage page",
     "FreePlanUpsellDetails": {
-      "title": "Get more agents and requests "
+      "title": "Get more credits"
     },
     "SubscribedView": {
       "manage": "Manage plan",
@@ -1162,8 +1199,10 @@
   },
   "components/PlanBenefits": {
     "free": {
-      "credits": "<limit></limit> credits every month",
-      "templates": "Create up to {limit} templates.",
+      "credits": "<limit></limit> monthly credits",
+      "api": "Access the Letta API",
+      "ade": "Edit agents visually in the ADE",
+      "templates": "{limit} agent templates",
       "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
@@ -1177,9 +1216,10 @@
       "storage": "{limit} GB of storage"
     },
     "pro": {
-      "templates": "Create up to {limit} templates.",
-      "credits": "<limit></limit> credits every month",
-      "agent": "Create up to {limit} agents",
+      "credits": "<limit></limit> monthly credits",
+      "overage": "Pay-as-you-go credit overage",
+      "agent": "Unlimited agents",
+      "templates": "{limit} agent templates",
       "storage": "{limit} GB of storage"
     },
     "scale": {
@@ -1190,19 +1230,14 @@
       "storage": "{limit} GB of storage"
     },
     "enterprise": {
-      "enhanced": "Enhanced rate limits",
-      "customModelDeployments": "Custom model deployments",
-      "oidc": "SAML/OIDC SSO authentication",
-      "rbac": "Role-based access control (RBAC)",
-      "agent": "Up to ∞ agents",
-      "storage": "Up to ∞ storage"
+      "pricing": "Volume-based pricing",
+      "byok": "BYOK support",
+      "oidc": "SAML/OIDC SSO",
+      "rbac": "Role-based access control",
+      "support": "Dedicated support"
     }
   },
-  "organization/settings/CurrentPlan": {
-    "UpgradeButton": {
-      "trigger": "Upgrade to Pro"
-    },
-    "title": "Current plan <plan></plan>",
+  "components/BillingTierBadge": {
     "tiers": {
       "free": {
         "title": "Free"
@@ -1218,23 +1253,31 @@
       }
     }
   },
+  "organization/settings/CurrentPlan": {
+    "UpgradeButton": {
+      "trigger": "Upgrade to Pro"
+    },
+    "title": "Current plan <plan></plan>"
+
+  },
   "organization/settings": {
-    "title": "Organization settings",
+    "title": "Settings",
     "MembershipRules": {
       "title": "Automatic organization membership",
       "description": "Automatically add new members to the organizations based on their email domain.",
       "actions": "Manage membership invite rules"
     },
     "EditOrganizationSettings": {
-      "title": "Profile",
+      "title": "Organization settings",
       "organizationId": {
         "label": "Organization ID",
         "description": "We may ask you for your organization id to help with debugging"
       },
       "name": {
-        "label": "Name"
+        "label": "Organization name"
       },
-      "error": "There was an error updating organization settings, please try again or contact support."
+      "error": "There was an error updating organization settings, please try again or contact support.",
+      "saveButton": "Save"
     },
     "DeleteOrganizationSettings": {
       "title": "Delete organization",
@@ -1419,7 +1462,10 @@
     }
   },
   "settings/profile/page": {
-    "title": "Profile settings",
+    "UpdateUserProfileForm": {
+      "title": "Profile settings"
+    },
+    "title": "Account overview",
     "form": {
       "nameInput": {
         "label": "Name"

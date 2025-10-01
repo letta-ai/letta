@@ -2,7 +2,6 @@ import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
 import {
-  Badge,
   Button,
   HR,
   HStack,
@@ -12,6 +11,7 @@ import {
 import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
+import { BillingTierBadge } from '$web/client/components/BillingTierBadge/BillingTierBadge';
 
 interface UpgradeButtonProps {
   billingTier: BillingTiersType;
@@ -50,20 +50,6 @@ export function CurrentPlan() {
     return data.body.billingTier;
   }, [data?.body.billingTier]);
 
-  const tier = useMemo(() => {
-    switch (billingTier) {
-      case 'free':
-        return t('tiers.free.title');
-      case 'pro-legacy':
-        return t('tiers.pro.title');
-      case 'scale':
-        return t('tiers.scale.title');
-      case 'enterprise':
-        return t('tiers.enterprise.title');
-      default:
-        return '';
-    }
-  }, [billingTier, t]);
 
   if (!billingTier) {
     return null;
@@ -76,12 +62,7 @@ export function CurrentPlan() {
           <HStack align="center" gap="medium" as="span">
             {t.rich('title', {
               plan: () => (
-                <Badge
-                  border
-                  variant={billingTier !== 'free' ? 'info' : 'default'}
-                  content={tier}
-                  size="large"
-                />
+                <BillingTierBadge size="large" />
               ),
             })}
           </HStack>
