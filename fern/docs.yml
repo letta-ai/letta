@@ -73,6 +73,8 @@ navigation:
             path: pages/getting-started/letta_platform.mdx
           - page: Quickstart
             path: pages/getting-started/quickstart.mdx
+          - page: Core Concepts
+            path: pages/getting-started/core-concepts.mdx
           - page: Prompts for Vibecoding
             path: pages/getting-started/prompts.mdx
           #- section: Supported Frameworks
@@ -92,7 +94,7 @@ navigation:
           #    - page: Mastra
           #      path: pages/frameworks/mastra.mdx
 
-      - section: Stateful Agents
+      - section: Agents
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
