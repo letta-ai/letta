@@ -13,6 +13,7 @@ from letta.agents.helpers import (
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
     generate_step_id,
+    merge_and_validate_prefilled_args,
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
@@ -678,6 +679,68 @@ class LettaAgentV3(LettaAgentV2):
                 if tool_rule_violated:
                     tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
                 else:
+                    # Prefill + validate args if a rule provided them
+                    prefill_args = self.tool_rules_solver.last_prefilled_args_by_tool.get(tool_call_name)
+                    if prefill_args:
+                        # Find tool object for schema validation
+                        target_tool = next((t for t in agent_state.tools if t.name == tool_call_name), None)
+                        provenance = self.tool_rules_solver.last_prefilled_args_provenance.get(tool_call_name)
+                        try:
+                            tool_args = merge_and_validate_prefilled_args(
+                                tool=target_tool,
+                                llm_args=tool_args,
+                                prefilled_args=prefill_args,
+                            )
+                        except ValueError as ve:
+                            # Treat invalid prefilled args as user error and end the step
+                            error_prefix = "Invalid prefilled tool arguments from tool rules"
+                            prov_suffix = f" (source={provenance})" if provenance else ""
+                            err_msg = f"{error_prefix}{prov_suffix}: {str(ve)}"
+                            tool_execution_result = ToolExecutionResult(status="error", func_return=err_msg)
+
+                            # Create messages and early return persistence path below
+                            continue_stepping, heartbeat_reason, stop_reason = (
+                                False,
+                                None,
+                                LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value),
+                            )
+                            tool_call_messages = create_letta_messages_from_llm_response(
+                                agent_id=agent_state.id,
+                                model=agent_state.llm_config.model,
+                                function_name=tool_call_name,
+                                function_arguments=tool_args,
+                                tool_execution_result=tool_execution_result,
+                                tool_call_id=tool_call_id,
+                                function_call_success=False,
+                                function_response=tool_execution_result.func_return,
+                                timezone=agent_state.timezone,
+                                actor=self.actor,
+                                continue_stepping=continue_stepping,
+                                heartbeat_reason=None,
+                                reasoning_content=content,
+                                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                                step_id=step_id,
+                                run_id=run_id,
+                                is_approval_response=is_approval or is_denial,
+                                force_set_request_heartbeat=False,
+                                add_heartbeat_on_continue=False,
+                            )
+                            messages_to_persist = (initial_messages or []) + tool_call_messages
+
+                            # Set run_id on all messages before persisting
+                            for message in messages_to_persist:
+                                if message.run_id is None:
+                                    message.run_id = run_id
+
+                            persisted_messages = await self.message_manager.create_many_messages_async(
+                                messages_to_persist,
+                                actor=self.actor,
+                                run_id=run_id,
+                                project_id=agent_state.project_id,
+                                template_id=agent_state.template_id,
+                            )
+                            return persisted_messages, continue_stepping, stop_reason
+
                     # Track tool execution time
                     tool_start_time = get_utc_timestamp_ns()
                     tool_execution_result = await self._execute_tool(
