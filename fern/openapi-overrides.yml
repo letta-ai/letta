@@ -1127,6 +1127,9 @@ paths:
   /v1/_internal_templates/blocks:
     post:
       x-fern-ignore: true
+  /v1/_internal_templates/blocks/batch:
+    post:
+      x-fern-ignore: true
   /v1/projects:
     get:
       x-fern-sdk-group-name:
