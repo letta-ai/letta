@@ -12,7 +12,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
 import Link from 'next/link';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
 import { useTranslations } from '@letta-cloud/translations';
@@ -42,6 +42,8 @@ export function CreditsPopover() {
   const t = useTranslations('components/CreditsPopover');
   const { formatNumber } = useFormatters();
 
+  const {  data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
+
   const { data: billingData } =
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
@@ -61,6 +63,10 @@ export function CreditsPopover() {
   const showPurchasedRow = purchasedCredits > 0 || tier === 'pro';
 
   const triggerLabel = formatNumber(availableCredits, { maximumFractionDigits: 2 });
+
+  if (!isBillingV3Enabled) {
+    return;
+  }
 
   return (
     <Popover
