@@ -9808,24 +9808,6 @@
             "description": "Filter runs by stop reason."
           },
           {
-            "name": "after",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Cursor for pagination",
-              "title": "After"
-            },
-            "description": "Cursor for pagination"
-          },
-          {
             "name": "before",
             "in": "query",
             "required": false,
@@ -9838,10 +9820,28 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Cursor for pagination"
+            "description": "Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -9857,10 +9857,36 @@
                 }
               ],
               "description": "Maximum number of runs to return",
-              "default": 50,
+              "default": 100,
               "title": "Limit"
             },
             "description": "Maximum number of runs to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "active",
@@ -9880,11 +9906,13 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+              "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
+              "deprecated": true,
               "default": false,
               "title": "Ascending"
             },
-            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)"
+            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
+            "deprecated": true
           }
         ],
         "responses": {
@@ -24486,12 +24514,12 @@
               }
             ],
             "title": "From Template",
-            "description": "The template id used to configure the agent"
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Whether the agent is a template",
+            "description": "Deprecated: Whether the agent is a template",
             "default": false
           },
           "project": {
@@ -27679,12 +27707,12 @@
               }
             ],
             "title": "From Template",
-            "description": "The template id used to configure the agent"
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Whether the agent is a template",
+            "description": "Deprecated: Whether the agent is a template",
             "default": false
           },
           "project": {
@@ -35857,12 +35885,12 @@
               }
             ],
             "title": "From Template",
-            "description": "The template id used to configure the agent"
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Whether the agent is a template",
+            "description": "Deprecated: Whether the agent is a template",
             "default": false
           },
           "project": {
