@@ -61,6 +61,27 @@ async def create_block(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/blocks/batch", response_model=List[Block], operation_id="create_internal_template_blocks_batch")
+async def create_blocks_batch(
+    blocks: List[InternalTemplateBlockCreate] = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Create multiple blocks with template-related fields.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        created_blocks = []
+        for block in blocks:
+            block_obj = Block(**block.model_dump())
+            created_block = await server.block_manager.create_or_update_block_async(block_obj, actor=actor)
+            created_blocks.append(created_block)
+        return created_blocks
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class DeploymentEntity(BaseModel):
     """A deployment entity."""
 
