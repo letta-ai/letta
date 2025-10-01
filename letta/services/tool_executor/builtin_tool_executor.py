@@ -219,10 +219,12 @@ class LettaBuiltinToolExecutor(ToolExecutor):
                 logger.info(f"[DEBUG] Starting Exa fetch content for url: '{url}'")
                 exa = Exa(api_key=exa_api_key)
 
-                results = exa.get_contents(
-                    [url],
-                    text=True,
-                ).results
+                results = await asyncio.to_thread(
+                    lambda: exa.get_contents(
+                        [url],
+                        text=True,
+                    ).results
+                )
 
                 if len(results) > 0:
                     result = results[0]
