@@ -60,8 +60,42 @@ tool_from_class = client.tools.add(
 )
 ```
 
+To add this tool using the SDK:
+
+<CodeGroup>
+```python title="python"
+from letta_client import Letta
+
+# create a client to connect to your local Letta server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# create the tool
+tool_from_class = client.tools.add(
+    tool=ManageInventoryTool(),
+)
+```
+
+```typescript title="typescript"
+import { LettaClient } from '@letta-ai/letta-client';
+
+// create a client to connect to your local Letta server
+const client = new LettaClient({
+  baseUrl: "http://localhost:8283"
+});
+
+// create the tool
+const toolFromClass = await client.tools.add({
+  tool: manageInventoryTool,
+});
+```
+</CodeGroup>
+
 ### Specifying tools via function docstrings
 You can create a tool by passing in a function with a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) specifying the arguments and description of the tool:
+
+<CodeGroup>
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
@@ -93,6 +127,30 @@ tool = client.tools.create_from_function(
     func=roll_dice
 )
 ```
+
+```typescript title="typescript"
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client';
+
+// create a client to connect to your local Letta server
+const client = new LettaClient({
+  baseUrl: "http://localhost:8283"
+});
+
+// define a function
+function rollDice(): string {
+    const diceRoleOutcome = Math.floor(Math.random() * 20) + 1;
+    const outputString = `You rolled a ${diceRoleOutcome}`;
+    return outputString;
+}
+
+// create the tool
+const tool = await client.tools.createFromFunction({
+  func: rollDice
+});
+```
+</CodeGroup>
+
 The tool creation will return a `Tool` object. You can update the tool with `client.tools.upsert_from_function(...)`.
 
 
@@ -170,12 +228,24 @@ def check_order_status(
 
 ```
 Then, you can define the tool in Letta via the `source_code` parameter:
+
+<CodeGroup>
 ```python title="python" maxLines=50
 tool = client.tools.create(
     source_code = open("custom_tool.py", "r").read()
 )
 ```
-Note that in this case, `check_order_status` will become the name of your tool, since it is the last Python function in the file. Make sure it includes a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) to define the tool’s arguments and description.
+
+```typescript title="typescript"
+import * as fs from 'fs';
+
+const tool = await client.tools.create({
+  sourceCode: fs.readFileSync("custom_tool.py", "utf-8")
+});
+```
+</CodeGroup>
+
+Note that in this case, `check_order_status` will become the name of your tool, since it is the last Python function in the file. Make sure it includes a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) to define the tool's arguments and description.
 
 # (Advanced) Accessing Agent State
 <Warning>
