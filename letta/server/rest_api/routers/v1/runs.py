@@ -40,13 +40,22 @@ async def list_runs(
     ),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
-    after: Optional[str] = Query(None, description="Cursor for pagination"),
-    before: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(50, description="Maximum number of runs to return"),
+    before: Optional[str] = Query(
+        None, description="Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of runs to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     active: bool = Query(False, description="Filter for active runs."),
     ascending: bool = Query(
         False,
-        description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+        description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
+        deprecated=True,
     ),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -63,6 +72,14 @@ async def list_runs(
         # NOTE: we are deprecating agent_ids so this will the primary path soon
         agent_ids = [agent_id]
 
+    # Handle backward compatibility: if ascending is explicitly set, use it; otherwise use order
+    if ascending is not False:
+        # ascending was explicitly set to True
+        sort_ascending = ascending
+    else:
+        # Use the new order parameter
+        sort_ascending = order == "asc"
+
     runs = await runs_manager.list_runs(
         actor=actor,
         agent_ids=agent_ids,
@@ -70,7 +87,7 @@ async def list_runs(
         limit=limit,
         before=before,
         after=after,
-        ascending=ascending,
+        ascending=sort_ascending,
         stop_reason=stop_reason,
         background=background,
     )
