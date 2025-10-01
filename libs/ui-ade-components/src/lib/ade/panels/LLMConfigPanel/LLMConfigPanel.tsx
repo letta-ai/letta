@@ -49,7 +49,7 @@ export function LLMConfigPanel() {
   }
 
   return (
-      <VStack>
+      <VStack gap="large">
         <ReasoningEffortDropdown />
         <VerbosityLevelDropdown />
         <TemperatureSlider

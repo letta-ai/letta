@@ -344,7 +344,7 @@ export function createTemplate(templateType: string, agentName: string) {
   );
 
   if (agentName) {
-    cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
+    cy.findByTestId('ade-tab-header:settings', { timeout: 50000 }).click();
 
 
     safeClick('[data-testid="update-template-name-button"]');
@@ -352,7 +352,7 @@ export function createTemplate(templateType: string, agentName: string) {
       '[data-testid="update-template-name-dialog-update-name"]',
       agentName,
     );
-    safeClick('[data-testid="update-name-dialog-confirm-button"]');
+    safeClick('[data-testid="update-template-name-dialog-confirm-button"]');
   }
 }
 

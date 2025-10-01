@@ -53,7 +53,7 @@ describe(
           });
 
           cy.testStep('Update template name', () => {
-            cy.findByTestId('ade-tab-header:template-settings', {
+            cy.findByTestId('ade-tab-header:settings', {
               timeout: 50000,
             }).click();
 
@@ -273,13 +273,28 @@ describe(
 
         cy.testStep('Phase 1: Update llm_config properties in template editor', () => {
 
+          // Open LLM Config accordion
+          cy.findByTestId('accordion-trigger:llm-config').click();
+
           // Update properties
-          cy.findByTestId('slider-input:context-window-slider').clear().type('16000').blur();
-          cy.findByTestId('slider-input:temperature-slider').clear().type('0.3').blur();
+          cy.findByTestId('slider-input:context-window-slider')
+            .scrollIntoView()
+            .clear({ force: true })
+            .type('16000', { force: true })
+            .blur();
+          cy.findByTestId('slider-input:temperature-slider')
+            .scrollIntoView()
+            .clear({ force: true })
+            .type('0.3', { force: true })
+            .blur();
 
           // Enable max tokens first (since it's null by default)
           cy.findByTestId('switch:enable-max-tokens').click();
-          cy.findByTestId('slider-input:max-tokens-slider').clear().type('2000').blur();
+          cy.findByTestId('slider-input:max-tokens-slider')
+            .scrollIntoView()
+            .clear({ force: true })
+            .type('2000', { force: true })
+            .blur();
 
           // should automatically update (but theres some lag)
           cy.wait(2000);

@@ -2,7 +2,6 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   AgentSimulator,
   AdvancedAgentTemplateSettingsPanel,
-  TemplateSettingsPanel,
   useADELayoutConfig,
   useADEState, adeKeyMap
 } from '@letta-cloud/ui-ade-components';
@@ -13,7 +12,6 @@ import {
   HStack,
   MemoryBlocksIcon,
   VStack,
-  TemplateIcon,
   ToolsIcon,
   FolderIcon,
   LettaInvaderOutlineIcon,
@@ -149,13 +147,6 @@ export function DesktopLayout() {
               tabs={[
                 ...(isTemplate
                   ? [
-                    {
-                      hotkey: adeKeyMap.OPEN_TEMPLATE_SETTINGS_PANEL.command,
-                      id: 'template-settings',
-                      title: t('templateSettings'),
-                      icon: <TemplateIcon />,
-                      content: <TemplateSettingsPanel />,
-                    },
                     {
                       hotkey: adeKeyMap.OPEN_AGENT_SETTINGS_PANEL.command,
                       id: 'settings',

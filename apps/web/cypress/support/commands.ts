@@ -231,15 +231,15 @@ Cypress.Commands.add(
 
 
 
-        cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
+        cy.findByTestId('ade-tab-header:settings', { timeout: 50000 }).click();
 
 
         cy.findByTestId('update-template-name-button', {
           timeout: 50000,
         }).click();
-        cy.findByTestId('update-template-dialog-update-name').invoke('val', '');
-        cy.findByTestId('update-template-dialog-update-name').type(agentName);
-        cy.findByTestId('update-template-dialog-confirm-button').click();
+        cy.findByTestId('update-template-name-dialog-update-name').invoke('val', '');
+        cy.findByTestId('update-template-name-dialog-update-name').type(agentName);
+        cy.findByTestId('update-template-name-dialog-confirm-button').click();
 
         cy.location('pathname', { timeout: 50000 })
           .should('match', new RegExp(`/projects/(.+)/templates/${agentName}`))
@@ -498,7 +498,7 @@ Cypress.Commands.add(
       'match',
       /\/projects\/(.+)\/templates\/(.+)/,
     );
-    cy.findByTestId('ade-tab-header:template-settings', { timeout: 50000 }).click();
+    cy.findByTestId('ade-tab-header:settings', { timeout: 50000 }).click();
 
     cy.findByTestId('update-template-name-button', {
       timeout: 50000,

@@ -22,8 +22,10 @@ import { ModelSelector } from '../../inputs/ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../../inputs/SystemPromptEditor/SystemPromptEditor';
 import { IdentityViewer } from '../../inputs/IdentityViewer/IdentityViewer';
 import { ReasoningSwitch } from '../../inputs/ReasoningSwitch/ReasoningSwitch';
-import { EmbeddingConfiguration } from '../../inputs/EmbeddingConfiguration/EmbeddingConfiguration';
 import { LLMConfigPanel } from '../LLMConfigPanel/LLMConfigPanel';
+import { ADEAccordionGroup } from '../../../shared/ADEAccordionGroup/ADEAccordionGroup';
+import { AgentDescription } from '../../inputs/AgentDescription/AgentDescription';
+import { AgentTags } from '../../inputs/AgentTags/AgentTags';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
@@ -68,6 +70,7 @@ export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
 
   const t = useTranslations('ADE/AgentSettingsPanel');
+  const tLayout = useTranslations('ADELayout');
 
   const { capitalized: baseName } = useAgentBaseTypeName();
 
@@ -100,22 +103,50 @@ export function AgentSettingsPanel() {
               }
             />
           </HStack>
+          {/* Agent description below name */}
           <AgentIdentifierToCopy />
         </VStack>
 
-        <ModelSelector llmConfig={currentAgent.llm_config} />
-
       </VStack>
       <VStack gap="large">
-        <ReasoningSwitch />
-        <IdentityViewer />
+        <AgentDescription />
+        <ModelSelector llmConfig={currentAgent.llm_config} />
         <SystemPromptEditor />
+        {/* Metadata (collapsible): identities + tags */}
+        <ADEAccordionGroup
+          panels={[
+            {
+              id: 'metadata',
+              label: tLayout('metadata'),
+              content: (
+                <VStack gap="large">
+                  <IdentityViewer />
+                  <AgentTags />
+                </VStack>
+              ),
+              defaultOpen: false,
+            },
+          ]}
+        />
 
-        {/* LLM Configuration */}
-        <LLMConfigPanel />
+        {/* LLM Configuration (collapsible) */}
+        <ADEAccordionGroup
+          panels={[
+            {
+              id: 'llm-config',
+              label: tLayout('llmConfig'),
+              content: (
+                <VStack gap="large">
+                  <ReasoningSwitch />
+                  <LLMConfigPanel />
+                </VStack>
+              ),
+              defaultOpen: false,
+            },
+          ]}
+        />
 
-        {/* Embedding Configuration */}
-        <EmbeddingConfiguration />
+        {/* Embedding config moved to Advanced Settings */}
       </VStack>
     </PanelMainContent>
   );

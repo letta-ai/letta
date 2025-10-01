@@ -727,7 +727,7 @@
       "error": "There was an error updating the identities, please try again or contact support.",
       "currentIdentities": "Current Identities",
       "manageIdentities": "Manage all identities",
-      "noIdentities": "This agent has no identities",
+      "noIdentities": "This agent has no identities associated with it",
       "identitySelector": {
         "label": "Search Identities",
         "placeholder": "Search by name",
@@ -762,7 +762,7 @@
       "label": "Tags",
       "tooltip": "Tags can be used to organize your agents",
       "placeholder": "Enter tags...",
-      "noOptions": "No existing tags found, you can create a new tag by typing it in and pressing enter"
+      "noOptions": "No existing tags found, create a new tag by typing and pressing enter"
     },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
@@ -920,7 +920,7 @@
     "embeddingInput": {
       "label": "Embedding model",
       "loading": "Loading...",
-      "description": "Letta cloud uses a standard embedding model to ensure consistent data embedding across all agents."
+      "description": "Letta Cloud uses a standard embedding model to ensure consistent data across all agents."
     }
   },
   "ADE/ArchivalMemories": {
