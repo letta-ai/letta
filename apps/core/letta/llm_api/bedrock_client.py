@@ -70,8 +70,9 @@ class BedrockClient(AnthropicClient):
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
+        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
         # remove disallowed fields
         if "tool_choice" in data:
             del data["tool_choice"]["disable_parallel_tool_use"]
