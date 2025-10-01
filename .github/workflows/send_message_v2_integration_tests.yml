@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  send-message-tests:
+  send-message-v2-tests:
     # Run on pull_request OR on pull_request_target only when labeled "safe to test"
     if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
     uses: ./.github/workflows/reusable-test-workflow.yml
@@ -36,9 +36,10 @@ jobs:
             "config_file": [
               "openai-gpt-4o-mini.json",
               "openai-o3.json",
+              "openai-gpt-5.json",
               "claude-3-5-sonnet.json",
               "claude-3-7-sonnet-extended.json",
-              "gemini-2.5-flash.json"
+              "gemini-2.5-flash.json",
             ]
           }
         }

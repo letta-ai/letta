@@ -402,7 +402,7 @@ jobs:
           fi
 
           # Set LLM_CONFIG_FILE only for send-message tests
-          if [[ "${{ inputs.test-type }}" == "send-message" ]]; then
+          if [[ "${{ inputs.test-type }}" == "send-message" || "${{ inputs.test-type }}" == "send-message-v2" ]]; then
             export LLM_CONFIG_FILE="${{ matrix.config_file }}"
           fi
 
