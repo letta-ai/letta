@@ -42,7 +42,14 @@ from letta.schemas.openai.chat_completion_request import (
     ToolFunctionChoice,
     cast_message_to_subtype,
 )
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.openai.chat_completion_response import (
+    ChatCompletionResponse,
+    Choice,
+    FunctionCall,
+    Message as ChoiceMessage,
+    ToolCall,
+    UsageStatistics,
+)
 from letta.schemas.openai.responses_request import ResponsesRequest
 from letta.settings import model_settings
 
@@ -124,7 +131,7 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
 
 def use_responses_api(llm_config: LLMConfig) -> bool:
     # TODO can opt in all reasoner models to use the Responses API
-    return is_openai_5_model(llm_config.model)
+    return is_openai_reasoning_model(llm_config.model)
 
 
 class OpenAIClient(LLMClientBase):
@@ -537,9 +544,83 @@ class OpenAIClient(LLMClientBase):
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
-
         if "object" in response_data and response_data["object"] == "response":
-            raise NotImplementedError("Responses API is not supported for non-streaming")
+            # Map Responses API shape to Chat Completions shape
+            # See example payload in tests/integration_test_send_message_v2.py
+            model = response_data.get("model")
+
+            # Extract usage
+            usage = response_data.get("usage", {}) or {}
+            prompt_tokens = usage.get("input_tokens") or 0
+            completion_tokens = usage.get("output_tokens") or 0
+            total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
+
+            # Extract assistant message text from the outputs list
+            outputs = response_data.get("output") or []
+            assistant_text_parts = []
+            reasoning_summary_parts = None
+            reasoning_content_signature = None
+            tool_calls = None
+            finish_reason = "stop" if (response_data.get("status") == "completed") else None
+
+            # Optionally capture reasoning presence
+            found_reasoning = False
+            for out in outputs:
+                out_type = (out or {}).get("type")
+                if out_type == "message":
+                    content_list = (out or {}).get("content") or []
+                    for part in content_list:
+                        if (part or {}).get("type") == "output_text":
+                            text_val = (part or {}).get("text")
+                            if text_val:
+                                assistant_text_parts.append(text_val)
+                elif out_type == "reasoning":
+                    found_reasoning = True
+                    reasoning_summary_parts = [part.get("text") for part in out.get("summary")]
+                    reasoning_content_signature = out.get("encrypted_content")
+                elif out_type == "function_call":
+                    tool_calls = [
+                        ToolCall(
+                            id=out.get("call_id"),
+                            type="function",
+                            function=FunctionCall(
+                                name=out.get("name"),
+                                arguments=out.get("arguments"),
+                            ),
+                        )
+                    ]
+
+            assistant_text = "\n".join(assistant_text_parts) if assistant_text_parts else None
+
+            # Build ChatCompletionResponse-compatible structure
+            # Imports for these Pydantic models are already present in this module
+            choice = Choice(
+                index=0,
+                finish_reason=finish_reason,
+                message=ChoiceMessage(
+                    role="assistant",
+                    content=assistant_text or "",
+                    reasoning_content="\n".join(reasoning_summary_parts) if reasoning_summary_parts else None,
+                    reasoning_content_signature=reasoning_content_signature if reasoning_summary_parts else None,
+                    redacted_reasoning_content=None,
+                    omitted_reasoning_content=False,
+                    tool_calls=tool_calls,
+                ),
+            )
+
+            chat_completion_response = ChatCompletionResponse(
+                id=response_data.get("id", ""),
+                choices=[choice],
+                created=int(response_data.get("created_at") or 0),
+                model=model or (llm_config.model if hasattr(llm_config, "model") else None),
+                usage=UsageStatistics(
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                ),
+            )
+
+            return chat_completion_response
 
         # OpenAI's response structure directly maps to ChatCompletionResponse
         # We just need to instantiate the Pydantic model for validation and type safety.

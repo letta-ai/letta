@@ -885,6 +885,8 @@ class SimpleOpenAIResponsesStreamingInterface:
                 # TODO change to summarize reasoning message, but we need to figure out the streaming indices of summary problem
                 concat_summary = "".join([s.text for s in summary])
                 if concat_summary != "":
+                    if prev_message_type and prev_message_type != "reasoning_message":
+                        message_index += 1
                     yield ReasoningMessage(
                         id=self.letta_message_id,
                         date=datetime.now(timezone.utc).isoformat(),
@@ -893,6 +895,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         reasoning=concat_summary,
                         run_id=self.run_id,
                     )
+                    prev_message_type = "reasoning_message"
                 else:
                     return
 
@@ -904,6 +907,8 @@ class SimpleOpenAIResponsesStreamingInterface:
                 # cache for approval if/elses
                 self.tool_call_name = name
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                    if prev_message_type and prev_message_type != "approval_request_message":
+                        message_index += 1
                     yield ApprovalRequestMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -915,7 +920,10 @@ class SimpleOpenAIResponsesStreamingInterface:
                         ),
                         run_id=self.run_id,
                     )
+                    prev_message_type = "tool_call_message"
                 else:
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     yield ToolCallMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -927,6 +935,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         ),
                         run_id=self.run_id,
                     )
+                    prev_message_type = "tool_call_message"
 
             elif isinstance(new_event_item, ResponseOutputMessage):
                 # Look for content (may be empty list []), or contain ResponseOutputText
@@ -934,6 +943,8 @@ class SimpleOpenAIResponsesStreamingInterface:
                     for content_item in new_event_item.content:
                         if isinstance(content_item, ResponseOutputText):
                             # Add this as a AssistantMessage part
+                            if prev_message_type and prev_message_type != "assistant_message":
+                                message_index += 1
                             yield AssistantMessage(
                                 id=self.letta_message_id,
                                 otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -941,6 +952,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                                 content=content_item.text,
                                 run_id=self.run_id,
                             )
+                            prev_message_type = "assistant_message"
                 else:
                     return
 
@@ -961,6 +973,8 @@ class SimpleOpenAIResponsesStreamingInterface:
             else:
                 summary_text = part.text
 
+            if prev_message_type and prev_message_type != "reasoning_message":
+                message_index += 1
             yield ReasoningMessage(
                 id=self.letta_message_id,
                 date=datetime.now(timezone.utc).isoformat(),
@@ -969,6 +983,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                 reasoning=summary_text,
                 run_id=self.run_id,
             )
+            prev_message_type = "reasoning_message"
 
         # Reasoning summary streaming
         elif isinstance(event, ResponseReasoningSummaryTextDeltaEvent):
@@ -980,6 +995,8 @@ class SimpleOpenAIResponsesStreamingInterface:
                 # Check if we need to instantiate a fresh new part
                 # NOTE: we can probably use the part added and part done events, but this is safer
                 # TODO / FIXME return a SummaryReasoning type
+                if prev_message_type and prev_message_type != "reasoning_message":
+                    message_index += 1
                 yield ReasoningMessage(
                     id=self.letta_message_id,
                     date=datetime.now(timezone.utc).isoformat(),
@@ -988,6 +1005,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     reasoning=delta,
                     run_id=self.run_id,
                 )
+                prev_message_type = "reasoning_message"
             else:
                 return
 
@@ -1021,6 +1039,8 @@ class SimpleOpenAIResponsesStreamingInterface:
             delta = event.delta
             if delta != "":
                 # Append to running
+                if prev_message_type and prev_message_type != "assistant_message":
+                    message_index += 1
                 yield AssistantMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -1028,6 +1048,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     content=delta,
                     run_id=self.run_id,
                 )
+                prev_message_type = "assistant_message"
             else:
                 return
 
@@ -1049,6 +1070,8 @@ class SimpleOpenAIResponsesStreamingInterface:
             delta = event.delta
 
             if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                if prev_message_type and prev_message_type != "approval_request_message":
+                    message_index += 1
                 yield ApprovalRequestMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -1060,7 +1083,10 @@ class SimpleOpenAIResponsesStreamingInterface:
                     ),
                     run_id=self.run_id,
                 )
+                prev_message_type = "approval_request_message"
             else:
+                if prev_message_type and prev_message_type != "tool_call_message":
+                    message_index += 1
                 yield ToolCallMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -1072,6 +1098,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     ),
                     run_id=self.run_id,
                 )
+                prev_message_type = "tool_call_message"
 
         # Function calls
         elif isinstance(event, ResponseFunctionCallArgumentsDoneEvent):
