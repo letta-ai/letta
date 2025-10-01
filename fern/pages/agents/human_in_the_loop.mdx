@@ -119,7 +119,7 @@ agent = client.agents.create(
     # ... other configuration
 )
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Create a tool that requires approval by default
 const approvalTool = await client.tools.upsert({
     name: "sensitive_operation",
@@ -181,7 +181,7 @@ agent = client.agents.create(
     # ... other configuration
 )
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Create a tool that requires approval by default
 const approvalTool = await client.tools.modify({
     tool_id=sensitive_operation.id,
@@ -228,7 +228,7 @@ tools = client.agents.tools.list(agent_id=agent.id)
 for tool in tools:
     print(f"{tool.name}: requires_approval={tool.requires_approval}")
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Modify approval requirement for a specific agent
 await client.agents.tools.modifyApproval({
     agentId: agent.id,
@@ -321,7 +321,7 @@ response = client.agents.messages.create(
   "stop_reason": "requires_approval"
 }
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 const response = await client.agents.messages.create({
     agentId: agent.id,
     requestBody: {
@@ -430,7 +430,7 @@ response = client.agents.messages.create(
   "stop_reason": "end_turn"
 }
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Approve the tool call
 const response = await client.agents.messages.create({
     agentId: agent.id,
@@ -541,7 +541,7 @@ response = client.agents.messages.create(
   "stop_reason": "requires_approval"
 }
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Deny with explanation
 const response = await client.agents.messages.create({
     agentId: agent.id,
@@ -629,7 +629,7 @@ if run_id:
     for chunk in client.runs.stream(run_id, starting_after=last_seq):
         print(chunk)
 ```
-```typescript node.js maxLines=70
+```typescript TypeScript maxLines=70
 // Receive an approval_request_message, then approve in background
 const approve = await client.agents.messages.createStream({
   agentId: agent.id,

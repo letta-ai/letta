@@ -79,7 +79,7 @@ for chunk in stream:
 for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
     print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 const stream = await client.agents.messages.createStream({
     agentId: agentState.id,
     requestBody: {
@@ -151,7 +151,7 @@ for chunk in approve:
 for chunk in client.runs.stream(run_id, starting_after=approve_seq):
     print(chunk)
 ```
-```typescript node.js maxLines=60
+```typescript TypeScript maxLines=60
 // 1) Start background stream and capture approval request
 const stream = await client.agents.messages.createStream(
     agent.id, {
@@ -291,7 +291,7 @@ for chunk in approve:
 for chunk in client.runs.stream(run_id, starting_after=approve_seq):
     print(chunk)
 ```
-```typescript node.js maxLines=70
+```typescript TypeScript maxLines=70
 // 1) Start background stream and capture approval request
 const stream = await client.agents.messages.createStream({
   agentId: agent.id,
@@ -394,7 +394,7 @@ if active_runs:
     for chunk in stream:
         print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Find and resume active background streams
 const activeRuns = await client.runs.active({
     agentIds: ["agent-123", "agent-456"],
@@ -467,7 +467,7 @@ while run.status != "completed":
 # Get the messages once complete
 messages = client.runs.messages.list(run_id=run.id)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Start async operation (returns immediately with run ID)
 const run = await client.agents.createAgentMessageAsync({
     agentId: agentState.id,
@@ -552,7 +552,7 @@ for chunk in stream:
         continue
     print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Configure client with extended timeout
 import { Letta } from '@letta/sdk';
 
