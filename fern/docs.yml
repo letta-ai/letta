@@ -92,7 +92,14 @@ navigation:
           #    - page: Mastra
           #      path: pages/frameworks/mastra.mdx
 
-      - section: Stateful Agents
+      - section: Key Concepts
+        contents:
+          - page: Letta concepts
+            path: pages/concepts/letta.mdx
+          - page: MemGPT concepts
+            path: pages/concepts/memgpt.mdx
+
+      - section: Agents
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
@@ -115,22 +122,34 @@ navigation:
             path: pages/agents/context_hierarchy.mdx
           - page: Heartbeats
             path: pages/agents/heartbeats.mdx
-          - section: Memory
-            path: pages/agents/memory.mdx
+
+      - section: Memory
+        path: pages/agents/memory.mdx
+        contents:
+          - page: Memory Blocks
+            path: pages/agents/memory_blocks.mdx
+          - section: Archival Memory
+            path: pages/agents/archival_memory_overview.mdx
             contents:
-              - page: Memory Blocks
-                path: pages/agents/memory_blocks.mdx
-              - section: Archival Memory
-                path: pages/agents/archival_memory_overview.mdx
-                contents:
-                  - page: Searching & Querying
-                    path: pages/agents/archival_search.mdx
-                  - page: Best Practices
-                    path: pages/agents/archival_best_practices.mdx
-              - page: Agentic Context Engineering
-                path: pages/agents/context_engineering.mdx
-          - page: Filesystem
-            path: pages/agents/filesystem.mdx
+              - page: Searching & Querying
+                path: pages/agents/archival_search.mdx
+              - page: Best Practices
+                path: pages/agents/archival_best_practices.mdx
+          - page: Agentic Context Engineering
+            path: pages/agents/context_engineering.mdx
+
+      - section: Multi-Agent
+        path: pages/agents/multiagent.mdx
+        contents:
+          - page: Custom Multi-Agent Tools
+            path: pages/agents/multiagent_custom.mdx
+          - page: Multi-Agent Shared Memory
+            path: pages/agents/multiagent_memory.mdx
+          - page: Groups
+            path: pages/agents/groups.mdx
+
+      - section: Agent Capabilities
+        contents:
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
           - page: Long-Running Executions
@@ -141,21 +160,6 @@ navigation:
             path: pages/agents/human_in_the_loop.mdx
           - page: Multi-Modal
             path: pages/agents/multimodal.mdx
-          - section: Multi-Agent
-            path: pages/agents/multiagent.mdx
-            contents:
-            - page: Custom Multi-Agent Tools
-              path: pages/agents/multiagent_custom.mdx
-            - page: Multi-Agent Shared Memory
-              path: pages/agents/multiagent_memory.mdx
-            - page: Groups
-              path: pages/agents/groups.mdx
-          - page: Multi-User (Identities)
-            path: pages/agents/multiuser.mdx
-          - page: Agent File (.af)
-            path: pages/agents/agentfile.mdx
-          - page: Scheduling
-            path: pages/agents/scheduling.mdx
           - section: Voice Agents
             path: pages/voice/voice.mdx
             contents:
@@ -163,6 +167,8 @@ navigation:
                 path: pages/voice/voice_livekit.mdx
               - page: Connecting to Vapi
                 path: pages/voice/voice_vapi.mdx
+          - page: Filesystem
+            path: pages/agents/filesystem.mdx
 
       - section: Tool Use
         contents:
@@ -188,6 +194,15 @@ navigation:
                 path: pages/mcp/sse.mdx
               - page: Local (stdio) Servers
                 path: pages/mcp/stdio.mdx
+
+      - section: Configuration
+        contents:
+          - page: Multi-User (Identities)
+            path: pages/agents/multiuser.mdx
+          - page: Agent File (.af)
+            path: pages/agents/agentfile.mdx
+          - page: Scheduling
+            path: pages/agents/scheduling.mdx
 
       - section: Integrations
         contents:
@@ -262,12 +277,6 @@ navigation:
       #      path: pages/cloud/variables.mdx
       #    - page: Versioning
       #      path: pages/cloud/versions.mdx
-      - section: Key Concepts
-        contents:
-          - page: Letta concepts
-            path: pages/concepts/letta.mdx
-          - page: MemGPT concepts
-            path: pages/concepts/memgpt.mdx
       - section: Additional Resources
         contents:
           - page: Letta Desktop Troubleshooting
