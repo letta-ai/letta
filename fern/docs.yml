@@ -92,14 +92,7 @@ navigation:
           #    - page: Mastra
           #      path: pages/frameworks/mastra.mdx
 
-      - section: Key Concepts
-        contents:
-          - page: Letta concepts
-            path: pages/concepts/letta.mdx
-          - page: MemGPT concepts
-            path: pages/concepts/memgpt.mdx
-
-      - section: Agents
+      - section: Stateful Agents
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
@@ -208,6 +201,13 @@ navigation:
         contents:
           - page: Telegram Bot
             path: pages/tutorials/telegram_bot.mdx
+
+      - section: Key Concepts
+        contents:
+          - page: Letta concepts
+            path: pages/concepts/letta.mdx
+          - page: MemGPT concepts
+            path: pages/concepts/memgpt.mdx
 
       #- section: Tool Execution
       #  contents:
