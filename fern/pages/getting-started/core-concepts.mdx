@@ -4,11 +4,33 @@ subtitle: Understanding what makes Letta different
 slug: core-concepts
 ---
 
+## What are Stateful Agents?
+
+**Stateful agents are AI agents that maintain persistent memory and context across all interactions.**
+
+Unlike traditional chatbots that treat each conversation as isolated, stateful agents:
+- **Remember** - Continuously learn from interactions and build long-term memory
+- **Persist** - Maintain state in a database, surviving application restarts
+- **Evolve** - Update their knowledge and preferences over time
+- **Exist independently** - Run as services, not ephemeral objects in your code
+
+### Why Statefulness Matters
+
+Traditional LLM applications are **stateless** - every interaction starts from scratch. Your application must:
+- Store all conversation history in your own database
+- Send the entire context with every API call
+- Implement memory and personalization logic yourself
+- Manually manage context window limits
+
+**With Letta's stateful agents, all of this is handled for you.** The agent maintains its own persistent state, intelligently manages its context window, and learns from every interaction without requiring you to build a complex state management layer.
+
 ## Stateful vs Stateless APIs
 
-Traditional LLM APIs like OpenAI and Anthropic are **stateless** - they have no memory of previous interactions. Your application must manage all state client-side and send the entire conversation history with every request.
+The difference between stateful agents and traditional LLM APIs is fundamental:
 
-**Letta is fundamentally different.** Letta provides **stateful agents** where state is managed server-side and persisted to a database. You only send new messages, and the server handles memory, context, and conversation history.
+**Traditional APIs (stateless):** No memory between requests. Your app manages everything.
+
+**Letta (stateful):** Agents maintain their own persistent state. You only send new messages.
 
 ### Traditional Stateless API
 
