@@ -337,11 +337,12 @@ class DeepseekClient(OpenAIClient):
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         # Override put_inner_thoughts_in_kwargs to False for DeepSeek
         llm_config.put_inner_thoughts_in_kwargs = False
 
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
+        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
 
         def add_functions_to_system_message(system_message: ChatMessage):
             system_message.content += f"<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>"
