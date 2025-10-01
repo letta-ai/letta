@@ -3,6 +3,8 @@ instances:
     custom-domain: https://docs.letta.com
 title: Letta
 
+default-language: typescript
+
 experimental:
   openapi-parser-v3: true
   dynamic-snippets: true
