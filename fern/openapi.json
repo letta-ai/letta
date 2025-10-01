@@ -9764,10 +9764,12 @@
                   "type": "null"
                 }
               ],
-              "description": "(DEPRECATED) The unique identifiers of the agents associated with the run.",
+              "description": "The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.",
+              "deprecated": true,
               "title": "Agent Ids"
             },
-            "description": "(DEPRECATED) The unique identifiers of the agents associated with the run."
+            "description": "The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.",
+            "deprecated": true
           },
           {
             "name": "background",

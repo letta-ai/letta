@@ -33,7 +33,11 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 async def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
-    agent_ids: Optional[List[str]] = Query(None, description="(DEPRECATED) The unique identifiers of the agents associated with the run."),
+    agent_ids: Optional[List[str]] = Query(
+        None,
+        description="The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.",
+        deprecated=True,
+    ),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
