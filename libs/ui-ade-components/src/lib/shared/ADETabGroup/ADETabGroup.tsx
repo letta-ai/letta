@@ -16,28 +16,23 @@ import { useQuickADETour } from '@letta-cloud/ui-ade-components';
 interface ADETabHeaderProps extends Omit<ADETabOptions, 'content'> {
   isSelected: boolean;
   onClick: () => void;
-  borderRight?: boolean;
   isShiftPressed?: boolean;
-  borderLeft?: boolean;
 }
 
 function ADETabHeader(props: ADETabHeaderProps) {
-  const { title, id, icon, hotkey, isShiftPressed, borderLeft, borderRight, onClick, isSelected } =
+  const { id, icon, hotkey, isShiftPressed, onClick, isSelected } =
     props;
 
   const { currentStep } = useQuickADETour();
 
   const widthClass = useMemo(() => {
-    if (isSelected) {
-      return 'min-w-fit w-auto';
-    }
-
     if (isShiftPressed) {
       return 'min-w-[50px] max-w-[50px] w-auto';
     }
 
+    // Keep fixed icon width to avoid header jitter; selected label is shown separately
     return 'max-w-[34px] w-[34px]';
-  }, [isSelected, isShiftPressed]);
+  }, [isShiftPressed]);
 
   return (
     <button
@@ -45,35 +40,21 @@ function ADETabHeader(props: ADETabHeaderProps) {
       id={`ade-tab-header-${id}`}
       data-testid={`ade-tab-header:${id}`}
       className={cn(
-        borderLeft ? 'border-l' : '',
-        borderRight ? 'border-r' : '',
-        !!currentStep ? '' : 'z-[1]',
-        isSelected
-          ? 'bg-background-grey  relative'
-          : 'bg-transparent  ',
+        // Always reserve border width to avoid jitter; reveal border color on selected
+        'border-x border-transparent',
+        currentStep ? '' : 'z-[1]',
+        isSelected ? 'bg-background-grey border-border relative' : 'bg-transparent',
         widthClass,
-        'transition-width h-full gap-1 overflow-hidden px-2.5 pr-3 flex justify-start items-center',
+        // Center icon; keep symmetric padding that fits 34px tab with 16px icon
+        'h-full overflow-hidden px-2 flex justify-center items-center',
       )}
     >
       <Slot className="min-w-[1rem] !h-[14px]">{icon}</Slot>
-      <HStack gap="small" align="center">
-        {isSelected && (
-          <Typography
-            className={cn(isSelected ? 'opacity-100' : 'opacity-0')}
-            noWrap
-            bold
-            uppercase
-            variant="body4"
-          >
-            {title}
-          </Typography>
-        )}
-        {hotkey && isShiftPressed ? (
-          <HStack className="text-[0.5rem] p-[0.2rem] rounded-sm" color="background-grey3">
-            { hotkey.replace('shift+', '')}
-          </HStack>
-        ) : ""}
-      </HStack>
+      {hotkey && isShiftPressed ? (
+        <HStack className="text-[0.5rem] p-[0.2rem] rounded-sm ml-1" color="background-grey3">
+          { hotkey.replace('shift+', '')}
+        </HStack>
+      ) : null}
     </button>
   );
 }
@@ -157,11 +138,16 @@ export function ADETabGroup(props: ADETabGroupProps) {
     return selected ? selected.content : null;
   }, [selectedTab, tabs]);
 
+  const selectedTabTitle = useMemo(() => {
+    const selected = tabs.find((tab) => tab.id === selectedTab);
+    return selected ? selected.title : '';
+  }, [selectedTab, tabs]);
+
   return (
     <VStack fullWidth fullHeight gap={false}>
-      <HStack position="relative" overflowY="auto" fullWidth>
-        <HStack color="background-grey2" gap={false} className="h-[34px]">
-          {tabs.map(({ content: _, ...tab }, index) => {
+      <HStack position="relative" align="center" fullWidth>
+        <HStack color="background-grey2" gap={false} className="h-[34px]" overflowX="auto">
+          {tabs.map(({ content: _, ...tab }) => {
             const isSelected = tab.id === selectedTab;
 
             return (
@@ -173,8 +159,6 @@ export function ADETabGroup(props: ADETabGroupProps) {
               >
                 <div className="w-auto h-full">
                   <ADETabHeader
-                    borderRight={isSelected}
-                    borderLeft={isSelected && index > 0}
                     key={tab.id}
                     {...tab}
                     isShiftPressed={isShiftPressed}
@@ -187,6 +171,15 @@ export function ADETabGroup(props: ADETabGroupProps) {
             );
           })}
         </HStack>
+        <Typography
+          variant="body4"
+          uppercase
+          bold
+          noWrap
+          className="ml-auto pr-2"
+        >
+          {selectedTabTitle}
+        </Typography>
         <div className="w-full absolute pointer-events-none  z-0 bottom-0 h-full left-0 tab-group-unfocused-area"></div>
       </HStack>
       <Frame overflowY="auto" collapseHeight flex color="background-grey">

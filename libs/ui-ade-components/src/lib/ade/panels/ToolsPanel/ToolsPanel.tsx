@@ -217,9 +217,5 @@ export function ToolsPanel() {
 
 export function useToolsPanelTitle() {
   const t = useTranslations('ADE/Tools');
-  const { tools } = useCurrentAgent();
-
-  return t('title', {
-    toolCount: tools?.length || '-',
-  });
+  return t('mobileTitle');
 }

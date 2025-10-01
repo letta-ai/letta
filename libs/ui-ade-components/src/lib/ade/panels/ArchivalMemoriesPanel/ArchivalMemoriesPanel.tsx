@@ -27,7 +27,6 @@ import type { ListPassagesResponse, Passage } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceCreatePassage,
   useAgentsServiceDeletePassage,
-  useAgentsServiceListPassages,
   UseAgentsServiceListPassagesKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -442,35 +441,5 @@ function CreateMemoryDialog() {
 
 export function useArchivalMemoriesTitle() {
   const t = useTranslations('ADE/ArchivalMemories');
-  const { simulatedAgentId } = useCurrentSimulatedAgent();
-  const { agentId: normalAgentId, isTemplate } = useCurrentAgentMetaData();
-
-  const agentId = isTemplate ? simulatedAgentId : normalAgentId;
-
-  const { data, isLoading } = useAgentsServiceListPassages(
-    {
-      agentId: agentId || '',
-      limit: 21,
-      ascending: false,
-    },
-    undefined,
-    {
-      refetchInterval: 10000,
-      enabled: !!agentId,
-    },
-  );
-
-  const count = useMemo(() => {
-    if (!data || isLoading) {
-      return '-';
-    }
-
-    if (data.length > 20) {
-      return '20+';
-    }
-
-    return data.length;
-  }, [data, isLoading]);
-
-  return t('title', { count });
+  return t('mobileTitle');
 }
