@@ -2929,11 +2929,6 @@ export const $ChildToolRule = {
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
     },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: true,
-    },
     children: {
       items: {
         type: 'string',
@@ -3024,11 +3019,6 @@ export const $ConditionalToolRule = {
       ],
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
-    },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: true,
     },
     default_child: {
       anyOf: [
@@ -3270,11 +3260,6 @@ export const $ContinueToolRule = {
       ],
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
-    },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: false,
     },
   },
   additionalProperties: false,
@@ -6677,11 +6662,6 @@ export const $InitToolRule = {
       description:
         'Optional template string (ignored). Rendering uses fast built-in formatting for performance.',
     },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: true,
-    },
   },
   additionalProperties: false,
   type: 'object',
@@ -8915,11 +8895,6 @@ export const $MaxCountPerStepToolRule = {
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
     },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: false,
-    },
     max_count_limit: {
       type: 'integer',
       title: 'Max Count Limit',
@@ -10005,11 +9980,6 @@ export const $ParentToolRule = {
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
     },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: true,
-    },
     children: {
       items: {
         type: 'string',
@@ -10911,11 +10881,6 @@ export const $RequiredBeforeExitToolRule = {
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
     },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: false,
-    },
   },
   additionalProperties: false,
   type: 'object',
@@ -10951,11 +10916,6 @@ export const $RequiresApprovalToolRule = {
       title: 'Prompt Template',
       description:
         'Optional template string (ignored). Rendering uses fast built-in formatting for performance.',
-    },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: false,
     },
   },
   additionalProperties: false,
@@ -13013,11 +12973,6 @@ export const $TerminalToolRule = {
       ],
       title: 'Prompt Template',
       description: 'Optional template string (ignored).',
-    },
-    requires_force_tool_call: {
-      type: 'boolean',
-      title: 'Requires Force Tool Call',
-      default: false,
     },
   },
   additionalProperties: false,
