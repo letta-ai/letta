@@ -7843,6 +7843,9 @@ export const post_Create_archive = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ArchiveCreateRequest,
   }),
@@ -7886,6 +7889,9 @@ export const get_List_archives = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Archive),
@@ -7911,6 +7917,9 @@ export const patch_Modify_archive = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -7941,6 +7950,9 @@ export const delete_Delete_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -7968,6 +7980,9 @@ export const get_Retrieve_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -7993,6 +8008,9 @@ export const patch_Modify_tool = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8068,6 +8086,9 @@ export const get_Count_tools = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8148,6 +8169,9 @@ export const get_List_tools = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Tool),
@@ -8170,6 +8194,9 @@ export const post_Create_tool = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8197,6 +8224,9 @@ export const put_Upsert_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ToolCreate,
   }),
@@ -8220,6 +8250,9 @@ export const post_Add_base_tools = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8246,6 +8279,9 @@ export const post_Run_tool_from_source = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ToolRunFromSource,
   }),
@@ -8269,6 +8305,9 @@ export const get_List_composio_apps = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8299,6 +8338,9 @@ export const get_List_composio_actions_by_app = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(ActionModel),
@@ -8326,6 +8368,9 @@ export const post_Add_composio_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -8350,6 +8395,9 @@ export const get_List_mcp_servers = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -8372,6 +8420,9 @@ export const put_Add_mcp_server = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8426,6 +8477,9 @@ export const get_List_mcp_tools_by_server = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(MCPTool),
@@ -8458,6 +8512,9 @@ export const post_Resync_mcp_server_tools = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -8486,6 +8543,9 @@ export const post_Add_mcp_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -8511,6 +8571,9 @@ export const patch_Update_mcp_server = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8559,6 +8622,9 @@ export const delete_Delete_mcp_server = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(
@@ -8594,6 +8660,9 @@ export const post_Test_mcp_server = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8632,6 +8701,9 @@ export const post_Connect_mcp_server = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: z.union([
       StdioServerConfig,
@@ -8668,6 +8740,9 @@ export const post_Generate_json_schema = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CodeInput,
   }),
@@ -8697,6 +8772,9 @@ export const post_Execute_mcp_tool = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8751,6 +8829,9 @@ export const post_Generate_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: GenerateToolInput,
   }),
@@ -8774,6 +8855,9 @@ export const get_Count_folders = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8803,6 +8887,9 @@ export const get_Retrieve_folder = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Folder,
@@ -8828,6 +8915,9 @@ export const patch_Modify_folder = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8858,6 +8948,9 @@ export const delete_Delete_folder = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -8883,6 +8976,9 @@ export const get_Retrieve_metadata = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8925,6 +9021,9 @@ export const get_List_folders = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Folder),
@@ -8947,6 +9046,9 @@ export const post_Create_folder = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -8990,6 +9092,9 @@ export const post_Upload_file_to_folder = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_upload_file_to_folder,
   }),
@@ -9031,6 +9136,9 @@ export const get_List_agents_for_folder = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(z.string()),
@@ -9069,6 +9177,9 @@ export const get_List_folder_passages = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9112,6 +9223,9 @@ export const get_List_folder_files = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(FileMetadata),
@@ -9139,6 +9253,9 @@ export const delete_Delete_file_from_folder = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9224,6 +9341,9 @@ export const get_List_agents = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(AgentState),
@@ -9251,6 +9371,9 @@ export const post_Create_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CreateAgentRequest,
   }),
@@ -9274,6 +9397,9 @@ export const get_Count_agents = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9307,6 +9433,9 @@ export const get_Export_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_export_agent,
   }),
@@ -9333,6 +9462,9 @@ export const post_Import_agent = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9364,6 +9496,9 @@ export const get_Retrieve_agent_context_window = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ContextWindowOverview,
@@ -9389,6 +9524,9 @@ export const patch_Modify_agent = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9428,6 +9566,9 @@ export const get_Retrieve_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9455,6 +9596,9 @@ export const delete_Delete_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -9480,6 +9624,9 @@ export const get_List_agent_tools = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9510,6 +9657,9 @@ export const patch_Attach_tool = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9536,6 +9686,9 @@ export const patch_Detach_tool = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9569,6 +9722,9 @@ export const patch_Modify_approval = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9597,6 +9753,9 @@ export const patch_Attach_source_to_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9623,6 +9782,9 @@ export const patch_Attach_folder_to_agent = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9654,6 +9816,9 @@ export const patch_Detach_source_from_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9683,6 +9848,9 @@ export const patch_Detach_folder_from_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -9708,6 +9876,9 @@ export const patch_Close_all_open_files = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9738,6 +9909,9 @@ export const patch_Open_file = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(z.string()),
@@ -9764,6 +9938,9 @@ export const patch_Close_file = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9793,6 +9970,9 @@ export const get_List_agent_sources = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Source),
@@ -9818,6 +9998,9 @@ export const get_List_agent_folders = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9860,6 +10043,9 @@ export const get_List_agent_files = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: PaginatedAgentFiles,
@@ -9885,6 +10071,9 @@ export const get_Retrieve_agent_memory = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9916,6 +10105,9 @@ export const get_Retrieve_core_memory_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Block,
@@ -9945,6 +10137,9 @@ export const patch_Modify_core_memory_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: BlockUpdate,
   }),
@@ -9971,6 +10166,9 @@ export const get_List_core_memory_blocks = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10002,6 +10200,9 @@ export const patch_Attach_core_memory_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10029,6 +10230,9 @@ export const patch_Detach_core_memory_block = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10079,6 +10283,9 @@ export const get_List_passages = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Passage),
@@ -10104,6 +10311,9 @@ export const post_Create_passage = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10166,6 +10376,9 @@ export const get_Search_archival_memory = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ArchivalMemorySearchResponse,
@@ -10192,6 +10405,9 @@ export const delete_Delete_passage = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10243,6 +10459,9 @@ export const get_List_messages = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -10268,6 +10487,9 @@ export const post_Send_message = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10297,6 +10519,9 @@ export const patch_Modify_message = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10351,6 +10576,9 @@ export const post_Create_agent_message_stream = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: LettaStreamingRequest,
   }),
@@ -10379,6 +10607,9 @@ export const post_Cancel_agent_run = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CancelAgentRunRequest,
   }),
@@ -10402,6 +10633,9 @@ export const post_Search_messages = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10433,6 +10667,9 @@ export const post_Create_agent_message_async = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: LettaAsyncRequest,
   }),
@@ -10462,6 +10699,9 @@ export const patch_Reset_messages = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10496,6 +10736,9 @@ export const get_List_agent_groups = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Group),
@@ -10521,6 +10764,9 @@ export const post_Preview_raw_payload = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10557,6 +10803,9 @@ export const post_Summarize_agent_conversation = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10606,6 +10855,9 @@ export const get_List_groups = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Group),
@@ -10633,6 +10885,9 @@ export const post_Create_group = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: GroupCreate,
   }),
@@ -10656,6 +10911,9 @@ export const get_Count_groups = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10683,6 +10941,9 @@ export const get_Retrieve_group = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10715,6 +10976,9 @@ export const patch_Modify_group = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: GroupUpdate,
   }),
@@ -10743,6 +11007,9 @@ export const delete_Delete_group = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -10768,6 +11035,9 @@ export const post_Send_group_message = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10814,6 +11084,9 @@ export const get_List_group_messages = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -10840,6 +11113,9 @@ export const post_Send_group_message_streaming = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10869,6 +11145,9 @@ export const patch_Modify_group_message = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10920,6 +11199,9 @@ export const patch_Reset_group_messages = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10975,6 +11257,9 @@ export const get_List_identities = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Identity),
@@ -11000,6 +11285,9 @@ export const post_Create_identity = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11030,6 +11318,9 @@ export const put_Upsert_identity = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: IdentityUpsert,
   }),
@@ -11053,6 +11344,9 @@ export const get_Count_identities = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11082,6 +11376,9 @@ export const get_Retrieve_identity = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Identity,
@@ -11107,6 +11404,9 @@ export const patch_Update_identity = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11137,6 +11437,9 @@ export const delete_Delete_identity = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -11163,6 +11466,9 @@ export const put_Upsert_identity_properties = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11206,6 +11512,9 @@ export const get_List_agents_for_identity = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(AgentState),
@@ -11246,6 +11555,9 @@ export const get_List_blocks_for_identity = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Block),
@@ -11269,6 +11581,9 @@ export const post_Create_internal_template_group = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11297,6 +11612,9 @@ export const post_Create_internal_template_agent = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: InternalTemplateAgentCreate,
   }),
@@ -11323,6 +11641,9 @@ export const post_Create_internal_template_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: InternalTemplateBlockCreate,
   }),
@@ -11347,6 +11668,9 @@ export const post_Create_internal_template_blocks_batch = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11386,6 +11710,9 @@ export const get_List_deployment_entities = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ListDeploymentEntitiesResponse,
@@ -11411,6 +11738,9 @@ export const delete_Delete_deployment = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11456,6 +11786,9 @@ export const get_List_models = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LLMConfig),
@@ -11478,6 +11811,9 @@ export const get_List_embedding_models = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11559,6 +11895,9 @@ export const get_List_blocks = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Block),
@@ -11581,6 +11920,9 @@ export const post_Create_block = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11608,6 +11950,9 @@ export const get_Count_blocks = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.number(),
@@ -11633,6 +11978,9 @@ export const patch_Modify_block = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11663,6 +12011,9 @@ export const delete_Delete_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -11688,6 +12039,9 @@ export const get_Retrieve_block = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11737,6 +12091,9 @@ export const get_List_agents_for_block = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(AgentState),
@@ -11777,6 +12134,9 @@ export const get_List_jobs = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Job),
@@ -11802,6 +12162,9 @@ export const get_Retrieve_job = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11831,6 +12194,9 @@ export const delete_Delete_job = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Job,
@@ -11856,6 +12222,9 @@ export const patch_Cancel_job = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11890,6 +12259,9 @@ export const post_Create_sandbox_config_v1_sandbox_config__post = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11931,6 +12303,9 @@ export const get_List_sandbox_configs_v1_sandbox_config__get = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(SandboxConfig),
@@ -11967,6 +12342,13 @@ export const post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_defaul
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12015,6 +12397,13 @@ export const post_Create_default_local_sandbox_config_v1_sandbox_config_local_de
             z.array(z.union([z.string(), z.null()])),
           ])
           .optional(),
+        'X-Experimental-Letta-V1-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
       }),
     }),
     response: SandboxConfig,
@@ -12051,6 +12440,13 @@ export const post_Create_custom_local_sandbox_config_v1_sandbox_config_local_pos
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12103,6 +12499,13 @@ export const patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__p
             z.array(z.union([z.string(), z.null()])),
           ])
           .optional(),
+        'X-Experimental-Letta-V1-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
       }),
       body: SandboxConfigUpdate,
     }),
@@ -12143,6 +12546,13 @@ export const delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12191,6 +12601,13 @@ export const post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recr
             z.array(z.union([z.string(), z.null()])),
           ])
           .optional(),
+        'X-Experimental-Letta-V1-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
       }),
     }),
     response: SandboxConfig,
@@ -12232,6 +12649,13 @@ export const post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__e
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12296,6 +12720,13 @@ export const get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__env
             z.array(z.union([z.string(), z.null()])),
           ])
           .optional(),
+        'X-Experimental-Letta-V1-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
       }),
     }),
     response: z.array(SandboxEnvironmentVariable),
@@ -12335,6 +12766,13 @@ export const patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12381,6 +12819,13 @@ export const delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variabl
           ])
           .optional(),
         'X-Experimental-Message-Async': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Experimental-Letta-V1-Agent': z
           .union([
             z.string(),
             z.null(),
@@ -12434,6 +12879,9 @@ export const get_List_providers = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Provider),
@@ -12456,6 +12904,9 @@ export const post_Create_provider = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12486,6 +12937,9 @@ export const get_Retrieve_provider = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Provider,
@@ -12511,6 +12965,9 @@ export const patch_Modify_provider = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12539,6 +12996,9 @@ export const delete_Delete_provider = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12613,6 +13073,9 @@ export const get_List_runs = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Run),
@@ -12640,6 +13103,9 @@ export const get_Retrieve_run = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Run,
@@ -12665,6 +13131,9 @@ export const delete_Delete_run = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12706,6 +13175,9 @@ export const get_List_run_messages = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -12731,6 +13203,9 @@ export const get_Retrieve_run_usage = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12772,6 +13247,9 @@ export const get_List_run_steps = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Step),
@@ -12797,6 +13275,9 @@ export const post_Retrieve_stream = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12886,6 +13367,9 @@ export const get_List_steps = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Step),
@@ -12911,6 +13395,9 @@ export const get_Retrieve_step = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12941,6 +13428,9 @@ export const get_Retrieve_metrics_for_step = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: StepMetrics,
@@ -12966,6 +13456,9 @@ export const get_Retrieve_trace_for_step = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12998,6 +13491,9 @@ export const patch_Modify_feedback_for_step = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13041,6 +13537,9 @@ export const get_List_messages_for_step = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(
@@ -13080,6 +13579,9 @@ export const patch_Update_step_transaction_id = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13125,6 +13627,9 @@ export const get_List_tags = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(z.string()),
@@ -13147,6 +13652,9 @@ export const post_Create_batch = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13187,6 +13695,9 @@ export const get_List_batches = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(BatchJob),
@@ -13212,6 +13723,9 @@ export const get_Retrieve_batch = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13257,6 +13771,9 @@ export const get_List_messages_for_batch = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: LettaBatchMessages,
@@ -13282,6 +13799,9 @@ export const patch_Cancel_batch = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13312,6 +13832,9 @@ export const post_Create_voice_chat_completions = {
       'X-Experimental-Message-Async': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'X-Experimental-Letta-V1-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: z.unknown(),
   }),
@@ -13338,6 +13861,9 @@ export const get_Get_total_storage_size = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       'X-Experimental-Message-Async': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Experimental-Letta-V1-Agent': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

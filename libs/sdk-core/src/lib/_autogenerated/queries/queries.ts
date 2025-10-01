@@ -117,6 +117,7 @@ import * as Common from './common';
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Archive Successful Response
  * @throws ApiError
  */
@@ -134,6 +135,7 @@ export const useArchivesServiceListArchives = <
     order,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -145,6 +147,7 @@ export const useArchivesServiceListArchives = <
     order?: 'asc' | 'desc';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -162,6 +165,7 @@ export const useArchivesServiceListArchives = <
         order,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -177,6 +181,7 @@ export const useArchivesServiceListArchives = <
         order,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -191,6 +196,7 @@ export const useArchivesServiceListArchives = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -203,12 +209,14 @@ export const useToolsServiceRetrieveTool = <
     toolId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     toolId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -217,7 +225,14 @@ export const useToolsServiceRetrieveTool = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceRetrieveToolKeyFn(
-      { toolId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        toolId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -225,6 +240,7 @@ export const useToolsServiceRetrieveTool = <
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -246,6 +262,7 @@ export const useToolsServiceRetrieveTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -265,6 +282,7 @@ export const useToolsServiceCountTools = <
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -278,6 +296,7 @@ export const useToolsServiceCountTools = <
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -297,6 +316,7 @@ export const useToolsServiceCountTools = <
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -314,6 +334,7 @@ export const useToolsServiceCountTools = <
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -339,6 +360,7 @@ export const useToolsServiceCountTools = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -362,6 +384,7 @@ export const useToolsServiceListTools = <
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -379,6 +402,7 @@ export const useToolsServiceListTools = <
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -402,6 +426,7 @@ export const useToolsServiceListTools = <
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -423,6 +448,7 @@ export const useToolsServiceListTools = <
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -436,6 +462,7 @@ export const useToolsServiceListTools = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AppModel Successful Response
  * @throws ApiError
  */
@@ -447,11 +474,13 @@ export const useToolsServiceListComposioApps = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -460,13 +489,20 @@ export const useToolsServiceListComposioApps = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListComposioAppsKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       ToolsService.listComposioApps({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -481,6 +517,7 @@ export const useToolsServiceListComposioApps = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ActionModel Successful Response
  * @throws ApiError
  */
@@ -493,12 +530,14 @@ export const useToolsServiceListComposioActionsByApp = <
     composioAppName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     composioAppName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -511,6 +550,7 @@ export const useToolsServiceListComposioActionsByApp = <
         composioAppName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -521,6 +561,7 @@ export const useToolsServiceListComposioActionsByApp = <
         composioAppName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -534,6 +575,7 @@ export const useToolsServiceListComposioActionsByApp = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -545,11 +587,13 @@ export const useToolsServiceListMcpServers = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -558,13 +602,20 @@ export const useToolsServiceListMcpServers = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListMcpServersKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       ToolsService.listMcpServers({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -579,6 +630,7 @@ export const useToolsServiceListMcpServers = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns MCPTool Successful Response
  * @throws ApiError
  */
@@ -591,12 +643,14 @@ export const useToolsServiceListMcpToolsByServer = <
     mcpServerName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     mcpServerName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -609,6 +663,7 @@ export const useToolsServiceListMcpToolsByServer = <
         mcpServerName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -619,6 +674,7 @@ export const useToolsServiceListMcpToolsByServer = <
         mcpServerName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -681,6 +737,7 @@ export const useToolsServiceMcpOauthCallback = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -692,11 +749,13 @@ export const useSourcesServiceCountSources = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -705,13 +764,20 @@ export const useSourcesServiceCountSources = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceCountSourcesKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.countSources({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -727,6 +793,7 @@ export const useSourcesServiceCountSources = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -739,12 +806,14 @@ export const useSourcesServiceRetrieveSource = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -753,7 +822,14 @@ export const useSourcesServiceRetrieveSource = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn(
-      { sourceId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        sourceId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -761,6 +837,7 @@ export const useSourcesServiceRetrieveSource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -776,6 +853,7 @@ export const useSourcesServiceRetrieveSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -788,12 +866,14 @@ export const useSourcesServiceGetSourceIdByName = <
     sourceName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -802,7 +882,14 @@ export const useSourcesServiceGetSourceIdByName = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
-      { sourceName, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        sourceName,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -810,6 +897,7 @@ export const useSourcesServiceGetSourceIdByName = <
         sourceName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -831,6 +919,7 @@ export const useSourcesServiceGetSourceIdByName = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -843,12 +932,14 @@ export const useSourcesServiceGetSourcesMetadata = <
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -861,6 +952,7 @@ export const useSourcesServiceGetSourcesMetadata = <
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -871,6 +963,7 @@ export const useSourcesServiceGetSourcesMetadata = <
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -885,6 +978,7 @@ export const useSourcesServiceGetSourcesMetadata = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -896,11 +990,13 @@ export const useSourcesServiceListSources = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -909,13 +1005,20 @@ export const useSourcesServiceListSources = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcesKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.listSources({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -931,6 +1034,7 @@ export const useSourcesServiceListSources = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -943,12 +1047,14 @@ export const useSourcesServiceGetAgentsForSource = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -957,7 +1063,14 @@ export const useSourcesServiceGetAgentsForSource = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn(
-      { sourceId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        sourceId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -965,6 +1078,7 @@ export const useSourcesServiceGetAgentsForSource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -983,6 +1097,7 @@ export const useSourcesServiceGetAgentsForSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -998,6 +1113,7 @@ export const useSourcesServiceListSourcePassages = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1007,6 +1123,7 @@ export const useSourcesServiceListSourcePassages = <
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1022,6 +1139,7 @@ export const useSourcesServiceListSourcePassages = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1035,6 +1153,7 @@ export const useSourcesServiceListSourcePassages = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1054,6 +1173,7 @@ export const useSourcesServiceListSourcePassages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1070,6 +1190,7 @@ export const useSourcesServiceListSourceFiles = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1080,6 +1201,7 @@ export const useSourcesServiceListSourceFiles = <
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1096,6 +1218,7 @@ export const useSourcesServiceListSourceFiles = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1110,6 +1233,7 @@ export const useSourcesServiceListSourceFiles = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1127,6 +1251,7 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1141,6 +1266,7 @@ export const useSourcesServiceGetFileMetadata = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1149,6 +1275,7 @@ export const useSourcesServiceGetFileMetadata = <
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1163,6 +1290,7 @@ export const useSourcesServiceGetFileMetadata = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1175,6 +1303,7 @@ export const useSourcesServiceGetFileMetadata = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1188,6 +1317,7 @@ export const useSourcesServiceGetFileMetadata = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1199,11 +1329,13 @@ export const useFoldersServiceCountFolders = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1212,13 +1344,20 @@ export const useFoldersServiceCountFolders = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceCountFoldersKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       FoldersService.countFolders({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1233,6 +1372,7 @@ export const useFoldersServiceCountFolders = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -1245,12 +1385,14 @@ export const useFoldersServiceRetrieveFolder = <
     folderId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1259,7 +1401,14 @@ export const useFoldersServiceRetrieveFolder = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn(
-      { folderId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        folderId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1267,6 +1416,7 @@ export const useFoldersServiceRetrieveFolder = <
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1285,6 +1435,7 @@ export const useFoldersServiceRetrieveFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -1297,12 +1448,14 @@ export const useFoldersServiceGetFolderByName = <
     folderName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1311,7 +1464,14 @@ export const useFoldersServiceGetFolderByName = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetFolderByNameKeyFn(
-      { folderName, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        folderName,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1319,6 +1479,7 @@ export const useFoldersServiceGetFolderByName = <
         folderName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1339,6 +1500,7 @@ export const useFoldersServiceGetFolderByName = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -1351,12 +1513,14 @@ export const useFoldersServiceRetrieveMetadata = <
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1369,6 +1533,7 @@ export const useFoldersServiceRetrieveMetadata = <
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1379,6 +1544,7 @@ export const useFoldersServiceRetrieveMetadata = <
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1398,6 +1564,7 @@ export const useFoldersServiceRetrieveMetadata = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -1415,6 +1582,7 @@ export const useFoldersServiceListFolders = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1426,6 +1594,7 @@ export const useFoldersServiceListFolders = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1443,6 +1612,7 @@ export const useFoldersServiceListFolders = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1458,6 +1628,7 @@ export const useFoldersServiceListFolders = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1477,6 +1648,7 @@ export const useFoldersServiceListFolders = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -1494,6 +1666,7 @@ export const useFoldersServiceListAgentsForFolder = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1505,6 +1678,7 @@ export const useFoldersServiceListAgentsForFolder = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1522,6 +1696,7 @@ export const useFoldersServiceListAgentsForFolder = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1537,6 +1712,7 @@ export const useFoldersServiceListAgentsForFolder = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1556,6 +1732,7 @@ export const useFoldersServiceListAgentsForFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1573,6 +1750,7 @@ export const useFoldersServiceListFolderPassages = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1584,6 +1762,7 @@ export const useFoldersServiceListFolderPassages = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1601,6 +1780,7 @@ export const useFoldersServiceListFolderPassages = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1616,6 +1796,7 @@ export const useFoldersServiceListFolderPassages = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1636,6 +1817,7 @@ export const useFoldersServiceListFolderPassages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1654,6 +1836,7 @@ export const useFoldersServiceListFolderFiles = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1666,6 +1849,7 @@ export const useFoldersServiceListFolderFiles = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1684,6 +1868,7 @@ export const useFoldersServiceListFolderFiles = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1700,6 +1885,7 @@ export const useFoldersServiceListFolderFiles = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1730,6 +1916,7 @@ export const useFoldersServiceListFolderFiles = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1758,6 +1945,7 @@ export const useAgentsServiceListAgents = <
     templateId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1780,6 +1968,7 @@ export const useAgentsServiceListAgents = <
     templateId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1808,6 +1997,7 @@ export const useAgentsServiceListAgents = <
         templateId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1834,6 +2024,7 @@ export const useAgentsServiceListAgents = <
         templateId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1847,6 +2038,7 @@ export const useAgentsServiceListAgents = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1858,11 +2050,13 @@ export const useAgentsServiceCountAgents = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1871,13 +2065,20 @@ export const useAgentsServiceCountAgents = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceCountAgentsKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.countAgents({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1898,6 +2099,7 @@ export const useAgentsServiceCountAgents = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @param data.requestBody
  * @returns string Successful Response
  * @throws ApiError
@@ -1914,6 +2116,7 @@ export const useAgentsServiceExportAgent = <
     useLegacyFormat,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1923,6 +2126,7 @@ export const useAgentsServiceExportAgent = <
     useLegacyFormat?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1938,6 +2142,7 @@ export const useAgentsServiceExportAgent = <
         useLegacyFormat,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -1951,6 +2156,7 @@ export const useAgentsServiceExportAgent = <
         useLegacyFormat,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -1965,6 +2171,7 @@ export const useAgentsServiceExportAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
@@ -1977,12 +2184,14 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1991,7 +2200,14 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1999,6 +2215,7 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2014,6 +2231,7 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2027,6 +2245,7 @@ export const useAgentsServiceRetrieveAgent = <
     includeRelationships,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2034,6 +2253,7 @@ export const useAgentsServiceRetrieveAgent = <
     includeRelationships?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2047,6 +2267,7 @@ export const useAgentsServiceRetrieveAgent = <
         includeRelationships,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2058,6 +2279,7 @@ export const useAgentsServiceRetrieveAgent = <
         includeRelationships,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2072,6 +2294,7 @@ export const useAgentsServiceRetrieveAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -2084,12 +2307,14 @@ export const useAgentsServiceListAgentTools = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2098,7 +2323,14 @@ export const useAgentsServiceListAgentTools = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentToolsKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2106,6 +2338,7 @@ export const useAgentsServiceListAgentTools = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2120,6 +2353,7 @@ export const useAgentsServiceListAgentTools = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -2132,12 +2366,14 @@ export const useAgentsServiceListAgentSources = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2146,7 +2382,14 @@ export const useAgentsServiceListAgentSources = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2154,6 +2397,7 @@ export const useAgentsServiceListAgentSources = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2168,6 +2412,7 @@ export const useAgentsServiceListAgentSources = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -2180,12 +2425,14 @@ export const useAgentsServiceListAgentFolders = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2194,7 +2441,14 @@ export const useAgentsServiceListAgentFolders = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2202,6 +2456,7 @@ export const useAgentsServiceListAgentFolders = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2219,6 +2474,7 @@ export const useAgentsServiceListAgentFolders = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns PaginatedAgentFiles Successful Response
  * @throws ApiError
  */
@@ -2234,6 +2490,7 @@ export const useAgentsServiceListAgentFiles = <
     limit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2243,6 +2500,7 @@ export const useAgentsServiceListAgentFiles = <
     limit?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2258,6 +2516,7 @@ export const useAgentsServiceListAgentFiles = <
         limit,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2271,6 +2530,7 @@ export const useAgentsServiceListAgentFiles = <
         limit,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2286,6 +2546,7 @@ export const useAgentsServiceListAgentFiles = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Memory Successful Response
  * @throws ApiError
  */
@@ -2298,12 +2559,14 @@ export const useAgentsServiceRetrieveAgentMemory = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2312,7 +2575,14 @@ export const useAgentsServiceRetrieveAgentMemory = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2320,6 +2590,7 @@ export const useAgentsServiceRetrieveAgentMemory = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2335,6 +2606,7 @@ export const useAgentsServiceRetrieveAgentMemory = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2348,6 +2620,7 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
     blockLabel,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2355,6 +2628,7 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
     blockLabel: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2368,6 +2642,7 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
         blockLabel,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2379,6 +2654,7 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
         blockLabel,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2393,6 +2669,7 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2405,12 +2682,14 @@ export const useAgentsServiceListCoreMemoryBlocks = <
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2419,7 +2698,14 @@ export const useAgentsServiceListCoreMemoryBlocks = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn(
-      { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        agentId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2427,6 +2713,7 @@ export const useAgentsServiceListCoreMemoryBlocks = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2446,6 +2733,7 @@ export const useAgentsServiceListCoreMemoryBlocks = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -2463,6 +2751,7 @@ export const useAgentsServiceListPassages = <
     search,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2474,6 +2763,7 @@ export const useAgentsServiceListPassages = <
     search?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2491,6 +2781,7 @@ export const useAgentsServiceListPassages = <
         search,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2506,6 +2797,7 @@ export const useAgentsServiceListPassages = <
         search,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2530,6 +2822,7 @@ export const useAgentsServiceListPassages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
  */
@@ -2548,6 +2841,7 @@ export const useAgentsServiceSearchArchivalMemory = <
     topK,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2560,6 +2854,7 @@ export const useAgentsServiceSearchArchivalMemory = <
     topK?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2578,6 +2873,7 @@ export const useAgentsServiceSearchArchivalMemory = <
         topK,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2594,6 +2890,7 @@ export const useAgentsServiceSearchArchivalMemory = <
         topK,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2616,6 +2913,7 @@ export const useAgentsServiceSearchArchivalMemory = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2636,6 +2934,7 @@ export const useAgentsServiceListMessages = <
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2650,6 +2949,7 @@ export const useAgentsServiceListMessages = <
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2670,6 +2970,7 @@ export const useAgentsServiceListMessages = <
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2688,6 +2989,7 @@ export const useAgentsServiceListMessages = <
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2703,6 +3005,7 @@ export const useAgentsServiceListMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2716,6 +3019,7 @@ export const useAgentsServiceListAgentGroups = <
     managerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2723,6 +3027,7 @@ export const useAgentsServiceListAgentGroups = <
     managerType?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2736,6 +3041,7 @@ export const useAgentsServiceListAgentGroups = <
         managerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2747,6 +3053,7 @@ export const useAgentsServiceListAgentGroups = <
         managerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2767,6 +3074,7 @@ export const useAgentsServiceListAgentGroups = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2785,6 +3093,7 @@ export const useGroupsServiceListGroups = <
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2797,6 +3106,7 @@ export const useGroupsServiceListGroups = <
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2815,6 +3125,7 @@ export const useGroupsServiceListGroups = <
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2831,6 +3142,7 @@ export const useGroupsServiceListGroups = <
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2844,6 +3156,7 @@ export const useGroupsServiceListGroups = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2855,11 +3168,13 @@ export const useGroupsServiceCountGroups = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2868,13 +3183,20 @@ export const useGroupsServiceCountGroups = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceCountGroupsKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       GroupsService.countGroups({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2889,6 +3211,7 @@ export const useGroupsServiceCountGroups = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2901,12 +3224,14 @@ export const useGroupsServiceRetrieveGroup = <
     groupId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     groupId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2915,7 +3240,14 @@ export const useGroupsServiceRetrieveGroup = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn(
-      { groupId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        groupId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2923,6 +3255,7 @@ export const useGroupsServiceRetrieveGroup = <
         groupId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -2945,6 +3278,7 @@ export const useGroupsServiceRetrieveGroup = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2965,6 +3299,7 @@ export const useGroupsServiceListGroupMessages = <
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2979,6 +3314,7 @@ export const useGroupsServiceListGroupMessages = <
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2999,6 +3335,7 @@ export const useGroupsServiceListGroupMessages = <
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3017,6 +3354,7 @@ export const useGroupsServiceListGroupMessages = <
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3039,6 +3377,7 @@ export const useGroupsServiceListGroupMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -3059,6 +3398,7 @@ export const useIdentitiesServiceListIdentities = <
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3073,6 +3413,7 @@ export const useIdentitiesServiceListIdentities = <
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3093,6 +3434,7 @@ export const useIdentitiesServiceListIdentities = <
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3111,6 +3453,7 @@ export const useIdentitiesServiceListIdentities = <
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3124,6 +3467,7 @@ export const useIdentitiesServiceListIdentities = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3135,11 +3479,13 @@ export const useIdentitiesServiceCountIdentities = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3148,13 +3494,20 @@ export const useIdentitiesServiceCountIdentities = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       IdentitiesService.countIdentities({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3168,6 +3521,7 @@ export const useIdentitiesServiceCountIdentities = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -3180,12 +3534,14 @@ export const useIdentitiesServiceRetrieveIdentity = <
     identityId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     identityId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3194,7 +3550,14 @@ export const useIdentitiesServiceRetrieveIdentity = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
-      { identityId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        identityId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3202,6 +3565,7 @@ export const useIdentitiesServiceRetrieveIdentity = <
         identityId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3221,6 +3585,7 @@ export const useIdentitiesServiceRetrieveIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -3238,6 +3603,7 @@ export const useIdentitiesServiceListAgentsForIdentity = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3249,6 +3615,7 @@ export const useIdentitiesServiceListAgentsForIdentity = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3266,6 +3633,7 @@ export const useIdentitiesServiceListAgentsForIdentity = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3281,6 +3649,7 @@ export const useIdentitiesServiceListAgentsForIdentity = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3300,6 +3669,7 @@ export const useIdentitiesServiceListAgentsForIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -3317,6 +3687,7 @@ export const useIdentitiesServiceListBlocksForIdentity = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3328,6 +3699,7 @@ export const useIdentitiesServiceListBlocksForIdentity = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3345,6 +3717,7 @@ export const useIdentitiesServiceListBlocksForIdentity = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3360,6 +3733,7 @@ export const useIdentitiesServiceListBlocksForIdentity = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3376,6 +3750,7 @@ export const useIdentitiesServiceListBlocksForIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ListDeploymentEntitiesResponse Successful Response
  * @throws ApiError
  */
@@ -3389,6 +3764,7 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
     entityTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3396,6 +3772,7 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
     entityTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3409,6 +3786,7 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
         entityTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3420,6 +3798,7 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
         entityTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3436,6 +3815,7 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -3450,6 +3830,7 @@ export const useModelsServiceListModels = <
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3458,6 +3839,7 @@ export const useModelsServiceListModels = <
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3472,6 +3854,7 @@ export const useModelsServiceListModels = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3484,6 +3867,7 @@ export const useModelsServiceListModels = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3497,6 +3881,7 @@ export const useModelsServiceListModels = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -3508,11 +3893,13 @@ export const useModelsServiceListEmbeddingModels = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3521,13 +3908,20 @@ export const useModelsServiceListEmbeddingModels = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       ModelsService.listEmbeddingModels({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3544,6 +3938,7 @@ export const useModelsServiceListEmbeddingModels = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -3558,6 +3953,7 @@ export const useLlmsServiceListModels = <
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3566,6 +3962,7 @@ export const useLlmsServiceListModels = <
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3580,6 +3977,7 @@ export const useLlmsServiceListModels = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3592,6 +3990,7 @@ export const useLlmsServiceListModels = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3605,6 +4004,7 @@ export const useLlmsServiceListModels = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -3616,11 +4016,13 @@ export const useLlmsServiceListEmbeddingModels = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3629,13 +4031,20 @@ export const useLlmsServiceListEmbeddingModels = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       LlmsService.listEmbeddingModels({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3665,6 +4074,7 @@ export const useLlmsServiceListEmbeddingModels = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -3693,6 +4103,7 @@ export const useBlocksServiceListBlocks = <
     userAgent,
     userId,
     valueSearch,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3715,6 +4126,7 @@ export const useBlocksServiceListBlocks = <
     userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3743,6 +4155,7 @@ export const useBlocksServiceListBlocks = <
         userAgent,
         userId,
         valueSearch,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3769,6 +4182,7 @@ export const useBlocksServiceListBlocks = <
         userAgent,
         userId,
         valueSearch,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3782,6 +4196,7 @@ export const useBlocksServiceListBlocks = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3793,11 +4208,13 @@ export const useBlocksServiceCountBlocks = <
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3806,13 +4223,20 @@ export const useBlocksServiceCountBlocks = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceCountBlocksKeyFn(
-      { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.countBlocks({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3826,6 +4250,7 @@ export const useBlocksServiceCountBlocks = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -3838,12 +4263,14 @@ export const useBlocksServiceRetrieveBlock = <
     blockId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     blockId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3852,7 +4279,14 @@ export const useBlocksServiceRetrieveBlock = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn(
-      { blockId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        blockId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3860,6 +4294,7 @@ export const useBlocksServiceRetrieveBlock = <
         blockId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3881,6 +4316,7 @@ export const useBlocksServiceRetrieveBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -3899,6 +4335,7 @@ export const useBlocksServiceListAgentsForBlock = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3911,6 +4348,7 @@ export const useBlocksServiceListAgentsForBlock = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3929,6 +4367,7 @@ export const useBlocksServiceListAgentsForBlock = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -3945,6 +4384,7 @@ export const useBlocksServiceListAgentsForBlock = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -3964,6 +4404,7 @@ export const useBlocksServiceListAgentsForBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -3981,6 +4422,7 @@ export const useJobsServiceListJobs = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3992,6 +4434,7 @@ export const useJobsServiceListJobs = <
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4009,6 +4452,7 @@ export const useJobsServiceListJobs = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4024,6 +4468,7 @@ export const useJobsServiceListJobs = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4043,6 +4488,7 @@ export const useJobsServiceListJobs = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -4059,6 +4505,7 @@ export const useJobsServiceListActiveJobs = <
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4069,6 +4516,7 @@ export const useJobsServiceListActiveJobs = <
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4085,6 +4533,7 @@ export const useJobsServiceListActiveJobs = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4099,6 +4548,7 @@ export const useJobsServiceListActiveJobs = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4113,6 +4563,7 @@ export const useJobsServiceListActiveJobs = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -4125,12 +4576,14 @@ export const useJobsServiceRetrieveJob = <
     jobId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     jobId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4139,7 +4592,14 @@ export const useJobsServiceRetrieveJob = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceRetrieveJobKeyFn(
-      { jobId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        jobId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -4147,6 +4607,7 @@ export const useJobsServiceRetrieveJob = <
         jobId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4180,6 +4641,7 @@ export const useHealthServiceCheckHealth = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -4194,6 +4656,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
     sandboxType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4202,6 +4665,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
     sandboxType?: SandboxType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4217,6 +4681,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
           sandboxType,
           userAgent,
           userId,
+          xExperimentalLettaV1Agent,
           xExperimentalMessageAsync,
           xProjectId,
         },
@@ -4229,6 +4694,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
         sandboxType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4244,6 +4710,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -4259,6 +4726,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       sandboxConfigId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }: {
@@ -4267,6 +4735,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       sandboxConfigId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -4282,6 +4751,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -4295,6 +4765,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -4316,6 +4787,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -4334,6 +4806,7 @@ export const useProvidersServiceListProviders = <
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4346,6 +4819,7 @@ export const useProvidersServiceListProviders = <
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4364,6 +4838,7 @@ export const useProvidersServiceListProviders = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4380,6 +4855,7 @@ export const useProvidersServiceListProviders = <
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4394,6 +4870,7 @@ export const useProvidersServiceListProviders = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -4406,12 +4883,14 @@ export const useProvidersServiceRetrieveProvider = <
     providerId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     providerId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4420,7 +4899,14 @@ export const useProvidersServiceRetrieveProvider = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceRetrieveProviderKeyFn(
-      { providerId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        providerId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -4428,6 +4914,7 @@ export const useProvidersServiceRetrieveProvider = <
         providerId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4450,6 +4937,7 @@ export const useProvidersServiceRetrieveProvider = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4470,6 +4958,7 @@ export const useRunsServiceListRuns = <
     stopReason,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4484,6 +4973,7 @@ export const useRunsServiceListRuns = <
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4504,6 +4994,7 @@ export const useRunsServiceListRuns = <
         stopReason,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4522,6 +5013,7 @@ export const useRunsServiceListRuns = <
         stopReason,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4538,6 +5030,7 @@ export const useRunsServiceListRuns = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4551,6 +5044,7 @@ export const useRunsServiceListActiveRuns = <
     background,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4558,6 +5052,7 @@ export const useRunsServiceListActiveRuns = <
     background?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4571,6 +5066,7 @@ export const useRunsServiceListActiveRuns = <
         background,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4582,6 +5078,7 @@ export const useRunsServiceListActiveRuns = <
         background,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4596,6 +5093,7 @@ export const useRunsServiceListActiveRuns = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4608,12 +5106,14 @@ export const useRunsServiceRetrieveRun = <
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4622,7 +5122,14 @@ export const useRunsServiceRetrieveRun = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunKeyFn(
-      { runId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        runId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -4630,6 +5137,7 @@ export const useRunsServiceRetrieveRun = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4648,6 +5156,7 @@ export const useRunsServiceRetrieveRun = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -4664,6 +5173,7 @@ export const useRunsServiceListRunMessages = <
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4674,6 +5184,7 @@ export const useRunsServiceListRunMessages = <
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4690,6 +5201,7 @@ export const useRunsServiceListRunMessages = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4704,6 +5216,7 @@ export const useRunsServiceListRunMessages = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4718,6 +5231,7 @@ export const useRunsServiceListRunMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
@@ -4730,12 +5244,14 @@ export const useRunsServiceRetrieveRunUsage = <
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4744,7 +5260,14 @@ export const useRunsServiceRetrieveRunUsage = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn(
-      { runId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        runId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -4752,6 +5275,7 @@ export const useRunsServiceRetrieveRunUsage = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4780,6 +5304,7 @@ export const useRunsServiceRetrieveRunUsage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4796,6 +5321,7 @@ export const useRunsServiceListRunSteps = <
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4806,6 +5332,7 @@ export const useRunsServiceListRunSteps = <
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4822,6 +5349,7 @@ export const useRunsServiceListRunSteps = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -4836,6 +5364,7 @@ export const useRunsServiceListRunSteps = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -4864,6 +5393,7 @@ export const useRunsServiceListRunSteps = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4889,6 +5419,7 @@ export const useStepsServiceListSteps = <
     traceIds,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProject,
     xProjectId,
@@ -4909,6 +5440,7 @@ export const useStepsServiceListSteps = <
     traceIds?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProject?: string;
     xProjectId?: string;
@@ -4935,6 +5467,7 @@ export const useStepsServiceListSteps = <
         traceIds,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -4959,6 +5492,7 @@ export const useStepsServiceListSteps = <
         traceIds,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -4974,6 +5508,7 @@ export const useStepsServiceListSteps = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4986,12 +5521,14 @@ export const useStepsServiceRetrieveStep = <
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5000,7 +5537,14 @@ export const useStepsServiceRetrieveStep = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseStepsServiceRetrieveStepKeyFn(
-      { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        stepId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5008,6 +5552,7 @@ export const useStepsServiceRetrieveStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5022,6 +5567,7 @@ export const useStepsServiceRetrieveStep = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns StepMetrics Successful Response
  * @throws ApiError
  */
@@ -5034,12 +5580,14 @@ export const useStepsServiceRetrieveMetricsForStep = <
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5048,7 +5596,14 @@ export const useStepsServiceRetrieveMetricsForStep = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseStepsServiceRetrieveMetricsForStepKeyFn(
-      { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        stepId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5056,6 +5611,7 @@ export const useStepsServiceRetrieveMetricsForStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5069,6 +5625,7 @@ export const useStepsServiceRetrieveMetricsForStep = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -5081,12 +5638,14 @@ export const useStepsServiceRetrieveTraceForStep = <
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5095,7 +5654,14 @@ export const useStepsServiceRetrieveTraceForStep = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseStepsServiceRetrieveTraceForStepKeyFn(
-      { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        stepId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5103,6 +5669,7 @@ export const useStepsServiceRetrieveTraceForStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5122,6 +5689,7 @@ export const useStepsServiceRetrieveTraceForStep = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -5139,6 +5707,7 @@ export const useStepsServiceListMessagesForStep = <
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5150,6 +5719,7 @@ export const useStepsServiceListMessagesForStep = <
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5167,6 +5737,7 @@ export const useStepsServiceListMessagesForStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -5182,6 +5753,7 @@ export const useStepsServiceListMessagesForStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5202,6 +5774,7 @@ export const useStepsServiceListMessagesForStep = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -5220,6 +5793,7 @@ export const useTagServiceListTags = <
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5232,6 +5806,7 @@ export const useTagServiceListTags = <
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -5250,6 +5825,7 @@ export const useTagServiceListTags = <
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -5266,6 +5842,7 @@ export const useTagServiceListTags = <
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5286,6 +5863,7 @@ export const useTagServiceListTags = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -5304,6 +5882,7 @@ export const useAdminServiceListTags = <
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5316,6 +5895,7 @@ export const useAdminServiceListTags = <
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -5334,6 +5914,7 @@ export const useAdminServiceListTags = <
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -5350,6 +5931,7 @@ export const useAdminServiceListTags = <
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5425,6 +6007,7 @@ export const useAdminServiceListOrgs = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -5437,12 +6020,14 @@ export const useTelemetryServiceRetrieveProviderTrace = <
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5451,7 +6036,14 @@ export const useTelemetryServiceRetrieveProviderTrace = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn(
-      { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        stepId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5459,6 +6051,7 @@ export const useTelemetryServiceRetrieveProviderTrace = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5477,6 +6070,7 @@ export const useTelemetryServiceRetrieveProviderTrace = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -5493,6 +6087,7 @@ export const useMessagesServiceListBatches = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5503,6 +6098,7 @@ export const useMessagesServiceListBatches = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -5519,6 +6115,7 @@ export const useMessagesServiceListBatches = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -5533,6 +6130,7 @@ export const useMessagesServiceListBatches = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5547,6 +6145,7 @@ export const useMessagesServiceListBatches = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -5559,12 +6158,14 @@ export const useMessagesServiceRetrieveBatch = <
     batchId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     batchId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5573,7 +6174,14 @@ export const useMessagesServiceRetrieveBatch = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn(
-      { batchId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        batchId,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5581,6 +6189,7 @@ export const useMessagesServiceRetrieveBatch = <
         batchId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5601,6 +6210,7 @@ export const useMessagesServiceRetrieveBatch = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaBatchMessages Successful Response
  * @throws ApiError
  */
@@ -5619,6 +6229,7 @@ export const useMessagesServiceListMessagesForBatch = <
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5631,6 +6242,7 @@ export const useMessagesServiceListMessagesForBatch = <
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5649,6 +6261,7 @@ export const useMessagesServiceListMessagesForBatch = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -5665,6 +6278,7 @@ export const useMessagesServiceListMessagesForBatch = <
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5679,6 +6293,7 @@ export const useMessagesServiceListMessagesForBatch = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -5691,12 +6306,14 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
     storageUnit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     storageUnit?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -5705,7 +6322,14 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn(
-      { storageUnit, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+      {
+        storageUnit,
+        userAgent,
+        userId,
+        xExperimentalLettaV1Agent,
+        xExperimentalMessageAsync,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -5713,6 +6337,7 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
         storageUnit,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as TData,
@@ -5788,6 +6413,7 @@ export const useOrganizationServiceListOrgs = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Archive Successful Response
  * @throws ApiError
  */
@@ -5804,6 +6430,7 @@ export const useArchivesServiceCreateArchive = <
         requestBody: ArchiveCreateRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -5819,6 +6446,7 @@ export const useArchivesServiceCreateArchive = <
       requestBody: ArchiveCreateRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -5828,6 +6456,7 @@ export const useArchivesServiceCreateArchive = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -5835,6 +6464,7 @@ export const useArchivesServiceCreateArchive = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -5849,6 +6479,7 @@ export const useArchivesServiceCreateArchive = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -5865,6 +6496,7 @@ export const useToolsServiceCreateTool = <
         requestBody: ToolCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -5880,6 +6512,7 @@ export const useToolsServiceCreateTool = <
       requestBody: ToolCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -5889,6 +6522,7 @@ export const useToolsServiceCreateTool = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -5896,6 +6530,7 @@ export const useToolsServiceCreateTool = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -5909,6 +6544,7 @@ export const useToolsServiceCreateTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -5924,6 +6560,7 @@ export const useToolsServiceAddBaseTools = <
       {
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -5938,6 +6575,7 @@ export const useToolsServiceAddBaseTools = <
     {
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -5946,12 +6584,14 @@ export const useToolsServiceAddBaseTools = <
     mutationFn: ({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
       ToolsService.addBaseTools({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -5966,6 +6606,7 @@ export const useToolsServiceAddBaseTools = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ToolReturnMessage Successful Response
  * @throws ApiError
  */
@@ -5982,6 +6623,7 @@ export const useToolsServiceRunToolFromSource = <
         requestBody: ToolRunFromSource;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -5997,6 +6639,7 @@ export const useToolsServiceRunToolFromSource = <
       requestBody: ToolRunFromSource;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6006,6 +6649,7 @@ export const useToolsServiceRunToolFromSource = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6013,6 +6657,7 @@ export const useToolsServiceRunToolFromSource = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6027,6 +6672,7 @@ export const useToolsServiceRunToolFromSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -6043,6 +6689,7 @@ export const useToolsServiceAddComposioTool = <
         composioActionName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6058,6 +6705,7 @@ export const useToolsServiceAddComposioTool = <
       composioActionName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6067,6 +6715,7 @@ export const useToolsServiceAddComposioTool = <
       composioActionName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6074,6 +6723,7 @@ export const useToolsServiceAddComposioTool = <
         composioActionName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6095,6 +6745,7 @@ export const useToolsServiceAddComposioTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6112,6 +6763,7 @@ export const useToolsServiceResyncMcpServerTools = <
         mcpServerName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6128,6 +6780,7 @@ export const useToolsServiceResyncMcpServerTools = <
       mcpServerName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6138,6 +6791,7 @@ export const useToolsServiceResyncMcpServerTools = <
       mcpServerName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6146,6 +6800,7 @@ export const useToolsServiceResyncMcpServerTools = <
         mcpServerName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6161,6 +6816,7 @@ export const useToolsServiceResyncMcpServerTools = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -6178,6 +6834,7 @@ export const useToolsServiceAddMcpTool = <
         mcpToolName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6194,6 +6851,7 @@ export const useToolsServiceAddMcpTool = <
       mcpToolName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6204,6 +6862,7 @@ export const useToolsServiceAddMcpTool = <
       mcpToolName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6212,6 +6871,7 @@ export const useToolsServiceAddMcpTool = <
         mcpToolName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6227,6 +6887,7 @@ export const useToolsServiceAddMcpTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6246,6 +6907,7 @@ export const useToolsServiceTestMcpServer = <
           | StreamableHTTPServerConfig;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6264,6 +6926,7 @@ export const useToolsServiceTestMcpServer = <
         | StreamableHTTPServerConfig;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6273,6 +6936,7 @@ export const useToolsServiceTestMcpServer = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6280,6 +6944,7 @@ export const useToolsServiceTestMcpServer = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6295,6 +6960,7 @@ export const useToolsServiceTestMcpServer = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -6314,6 +6980,7 @@ export const useToolsServiceConnectMcpServer = <
           | StreamableHTTPServerConfig;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6332,6 +6999,7 @@ export const useToolsServiceConnectMcpServer = <
         | StreamableHTTPServerConfig;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6341,6 +7009,7 @@ export const useToolsServiceConnectMcpServer = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6348,6 +7017,7 @@ export const useToolsServiceConnectMcpServer = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6363,6 +7033,7 @@ export const useToolsServiceConnectMcpServer = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6379,6 +7050,7 @@ export const useToolsServiceGenerateJsonSchema = <
         requestBody: CodeInput;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6394,6 +7066,7 @@ export const useToolsServiceGenerateJsonSchema = <
       requestBody: CodeInput;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6403,6 +7076,7 @@ export const useToolsServiceGenerateJsonSchema = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6410,6 +7084,7 @@ export const useToolsServiceGenerateJsonSchema = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6427,6 +7102,7 @@ export const useToolsServiceGenerateJsonSchema = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6445,6 +7121,7 @@ export const useToolsServiceExecuteMcpTool = <
         toolName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6462,6 +7139,7 @@ export const useToolsServiceExecuteMcpTool = <
       toolName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6473,6 +7151,7 @@ export const useToolsServiceExecuteMcpTool = <
       toolName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6482,6 +7161,7 @@ export const useToolsServiceExecuteMcpTool = <
         toolName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6496,6 +7176,7 @@ export const useToolsServiceExecuteMcpTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns GenerateToolOutput Successful Response
  * @throws ApiError
  */
@@ -6512,6 +7193,7 @@ export const useToolsServiceGenerateTool = <
         requestBody: GenerateToolInput;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6527,6 +7209,7 @@ export const useToolsServiceGenerateTool = <
       requestBody: GenerateToolInput;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6536,6 +7219,7 @@ export const useToolsServiceGenerateTool = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6543,6 +7227,7 @@ export const useToolsServiceGenerateTool = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6558,6 +7243,7 @@ export const useToolsServiceGenerateTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -6574,6 +7260,7 @@ export const useSourcesServiceCreateSource = <
         requestBody: SourceCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6589,6 +7276,7 @@ export const useSourcesServiceCreateSource = <
       requestBody: SourceCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6598,6 +7286,7 @@ export const useSourcesServiceCreateSource = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6605,6 +7294,7 @@ export const useSourcesServiceCreateSource = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6623,6 +7313,7 @@ export const useSourcesServiceCreateSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -6642,6 +7333,7 @@ export const useSourcesServiceUploadFileToSource = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6660,6 +7352,7 @@ export const useSourcesServiceUploadFileToSource = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6672,6 +7365,7 @@ export const useSourcesServiceUploadFileToSource = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6682,6 +7376,7 @@ export const useSourcesServiceUploadFileToSource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6696,6 +7391,7 @@ export const useSourcesServiceUploadFileToSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -6712,6 +7408,7 @@ export const useFoldersServiceCreateFolder = <
         requestBody: SourceCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6727,6 +7424,7 @@ export const useFoldersServiceCreateFolder = <
       requestBody: SourceCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6736,6 +7434,7 @@ export const useFoldersServiceCreateFolder = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6743,6 +7442,7 @@ export const useFoldersServiceCreateFolder = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6760,6 +7460,7 @@ export const useFoldersServiceCreateFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -6779,6 +7480,7 @@ export const useFoldersServiceUploadFileToFolder = <
         name?: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -6797,6 +7499,7 @@ export const useFoldersServiceUploadFileToFolder = <
       name?: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -6809,6 +7512,7 @@ export const useFoldersServiceUploadFileToFolder = <
       name,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -6819,6 +7523,7 @@ export const useFoldersServiceUploadFileToFolder = <
         name,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -6834,6 +7539,7 @@ export const useFoldersServiceUploadFileToFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6850,6 +7556,7 @@ export const useAgentsServiceCreateAgent = <
         requestBody: CreateAgentRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProject?: string;
         xProjectId?: string;
@@ -6866,6 +7573,7 @@ export const useAgentsServiceCreateAgent = <
       requestBody: CreateAgentRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProject?: string;
       xProjectId?: string;
@@ -6876,6 +7584,7 @@ export const useAgentsServiceCreateAgent = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -6884,6 +7593,7 @@ export const useAgentsServiceCreateAgent = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -6901,6 +7611,7 @@ export const useAgentsServiceCreateAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ImportedAgentsResponse Successful Response
  * @throws ApiError
  */
@@ -6917,6 +7628,7 @@ export const useAgentsServiceImportAgent = <
         formData: Body_import_agent;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xOverrideEmbeddingModel?: string;
         xProjectId?: string;
@@ -6933,6 +7645,7 @@ export const useAgentsServiceImportAgent = <
       formData: Body_import_agent;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xOverrideEmbeddingModel?: string;
       xProjectId?: string;
@@ -6943,6 +7656,7 @@ export const useAgentsServiceImportAgent = <
       formData,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xOverrideEmbeddingModel,
       xProjectId,
@@ -6951,6 +7665,7 @@ export const useAgentsServiceImportAgent = <
         formData,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xOverrideEmbeddingModel,
         xProjectId,
@@ -6967,6 +7682,7 @@ export const useAgentsServiceImportAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -6984,6 +7700,7 @@ export const useAgentsServiceCreatePassage = <
         requestBody: CreateArchivalMemory;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7000,6 +7717,7 @@ export const useAgentsServiceCreatePassage = <
       requestBody: CreateArchivalMemory;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7010,6 +7728,7 @@ export const useAgentsServiceCreatePassage = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7018,6 +7737,7 @@ export const useAgentsServiceCreatePassage = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7034,6 +7754,7 @@ export const useAgentsServiceCreatePassage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaResponse Successful Response
  * @throws ApiError
  */
@@ -7051,6 +7772,7 @@ export const useAgentsServiceSendMessage = <
         requestBody: LettaRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7067,6 +7789,7 @@ export const useAgentsServiceSendMessage = <
       requestBody: LettaRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7077,6 +7800,7 @@ export const useAgentsServiceSendMessage = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7085,6 +7809,7 @@ export const useAgentsServiceSendMessage = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7102,6 +7827,7 @@ export const useAgentsServiceSendMessage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -7119,6 +7845,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
         requestBody: LettaStreamingRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7135,6 +7862,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
       requestBody: LettaStreamingRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7145,6 +7873,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7153,6 +7882,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7169,6 +7899,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
@@ -7187,6 +7918,7 @@ export const useAgentsServiceCancelAgentRun = <
         requestBody?: CancelAgentRunRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7203,6 +7935,7 @@ export const useAgentsServiceCancelAgentRun = <
       requestBody?: CancelAgentRunRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7213,6 +7946,7 @@ export const useAgentsServiceCancelAgentRun = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7221,6 +7955,7 @@ export const useAgentsServiceCancelAgentRun = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7237,6 +7972,7 @@ export const useAgentsServiceCancelAgentRun = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns MessageSearchResult Successful Response
  * @throws ApiError
  */
@@ -7253,6 +7989,7 @@ export const useAgentsServiceSearchMessages = <
         requestBody: MessageSearchRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7268,6 +8005,7 @@ export const useAgentsServiceSearchMessages = <
       requestBody: MessageSearchRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7277,6 +8015,7 @@ export const useAgentsServiceSearchMessages = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7284,6 +8023,7 @@ export const useAgentsServiceSearchMessages = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7302,6 +8042,7 @@ export const useAgentsServiceSearchMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -7319,6 +8060,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
         requestBody: LettaAsyncRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7335,6 +8077,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
       requestBody: LettaAsyncRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7345,6 +8088,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7353,6 +8097,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7372,6 +8117,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7389,6 +8135,7 @@ export const useAgentsServicePreviewRawPayload = <
         requestBody: LettaRequest | LettaStreamingRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7405,6 +8152,7 @@ export const useAgentsServicePreviewRawPayload = <
       requestBody: LettaRequest | LettaStreamingRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7415,6 +8163,7 @@ export const useAgentsServicePreviewRawPayload = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7423,6 +8172,7 @@ export const useAgentsServicePreviewRawPayload = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7441,6 +8191,7 @@ export const useAgentsServicePreviewRawPayload = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -7458,6 +8209,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
         maxMessageLength: number;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7474,6 +8226,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
       maxMessageLength: number;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7484,6 +8237,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
       maxMessageLength,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7492,6 +8246,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
         maxMessageLength,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7507,6 +8262,7 @@ export const useAgentsServiceSummarizeAgentConversation = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -7523,6 +8279,7 @@ export const useGroupsServiceCreateGroup = <
         requestBody: GroupCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProject?: string;
         xProjectId?: string;
@@ -7539,6 +8296,7 @@ export const useGroupsServiceCreateGroup = <
       requestBody: GroupCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProject?: string;
       xProjectId?: string;
@@ -7549,6 +8307,7 @@ export const useGroupsServiceCreateGroup = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -7557,6 +8316,7 @@ export const useGroupsServiceCreateGroup = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -7574,6 +8334,7 @@ export const useGroupsServiceCreateGroup = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaResponse Successful Response
  * @throws ApiError
  */
@@ -7591,6 +8352,7 @@ export const useGroupsServiceSendGroupMessage = <
         requestBody: LettaRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7607,6 +8369,7 @@ export const useGroupsServiceSendGroupMessage = <
       requestBody: LettaRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7617,6 +8380,7 @@ export const useGroupsServiceSendGroupMessage = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7625,6 +8389,7 @@ export const useGroupsServiceSendGroupMessage = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7642,6 +8407,7 @@ export const useGroupsServiceSendGroupMessage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -7659,6 +8425,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
         requestBody: LettaStreamingRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7675,6 +8442,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
       requestBody: LettaStreamingRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7685,6 +8453,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7693,6 +8462,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7707,6 +8477,7 @@ export const useGroupsServiceSendGroupMessageStreaming = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -7723,6 +8494,7 @@ export const useIdentitiesServiceCreateIdentity = <
         requestBody: IdentityCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProject?: string;
         xProjectId?: string;
@@ -7739,6 +8511,7 @@ export const useIdentitiesServiceCreateIdentity = <
       requestBody: IdentityCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProject?: string;
       xProjectId?: string;
@@ -7749,6 +8522,7 @@ export const useIdentitiesServiceCreateIdentity = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -7757,6 +8531,7 @@ export const useIdentitiesServiceCreateIdentity = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -7772,6 +8547,7 @@ export const useIdentitiesServiceCreateIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -7788,6 +8564,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
         requestBody: InternalTemplateGroupCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7803,6 +8580,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
       requestBody: InternalTemplateGroupCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7812,6 +8590,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7819,6 +8598,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7833,6 +8613,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -7849,6 +8630,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
         requestBody: InternalTemplateAgentCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7864,6 +8646,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
       requestBody: InternalTemplateAgentCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7873,6 +8656,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7880,6 +8664,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7894,6 +8679,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -7910,6 +8696,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
         requestBody: InternalTemplateBlockCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7925,6 +8712,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
       requestBody: InternalTemplateBlockCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7934,6 +8722,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -7941,6 +8730,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -7955,6 +8745,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -7971,6 +8762,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
         requestBody: InternalTemplateBlockCreate[];
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -7986,6 +8778,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
       requestBody: InternalTemplateBlockCreate[];
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -7995,6 +8788,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8002,6 +8796,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8015,6 +8810,7 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlocksBatch = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -8031,6 +8827,7 @@ export const useBlocksServiceCreateBlock = <
         requestBody: CreateBlock;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8046,6 +8843,7 @@ export const useBlocksServiceCreateBlock = <
       requestBody: CreateBlock;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8055,6 +8853,7 @@ export const useBlocksServiceCreateBlock = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8062,6 +8861,7 @@ export const useBlocksServiceCreateBlock = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8075,6 +8875,7 @@ export const useBlocksServiceCreateBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -8091,6 +8892,7 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
         requestBody: SandboxConfigCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8106,6 +8908,7 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
       requestBody: SandboxConfigCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8115,6 +8918,7 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8122,6 +8926,7 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8134,6 +8939,7 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -8150,6 +8956,7 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
         {
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -8164,6 +8971,7 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
       {
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8172,11 +8980,18 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
       mutationFn: ({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
         SandboxConfigService.createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
-          { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+          {
+            userAgent,
+            userId,
+            xExperimentalLettaV1Agent,
+            xExperimentalMessageAsync,
+            xProjectId,
+          },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -8187,6 +9002,7 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -8203,6 +9019,7 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
         {
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -8217,6 +9034,7 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
       {
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8225,11 +9043,18 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
       mutationFn: ({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
         SandboxConfigService.createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
-          { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+          {
+            userAgent,
+            userId,
+            xExperimentalLettaV1Agent,
+            xExperimentalMessageAsync,
+            xProjectId,
+          },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -8242,6 +9067,7 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -8259,6 +9085,7 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
           requestBody: LocalSandboxConfig;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -8274,6 +9101,7 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
         requestBody: LocalSandboxConfig;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8283,6 +9111,7 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -8291,6 +9120,7 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
             requestBody,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -8306,6 +9136,7 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -8322,6 +9153,7 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
         {
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -8336,6 +9168,7 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
       {
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8344,11 +9177,18 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
       mutationFn: ({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
         SandboxConfigService.forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost(
-          { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+          {
+            userAgent,
+            userId,
+            xExperimentalLettaV1Agent,
+            xExperimentalMessageAsync,
+            xProjectId,
+          },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -8361,6 +9201,7 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -8379,6 +9220,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
           sandboxConfigId: string;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -8395,6 +9237,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
         sandboxConfigId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8405,6 +9248,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
         sandboxConfigId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -8414,6 +9258,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -8429,6 +9274,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -8445,6 +9291,7 @@ export const useProvidersServiceCreateProvider = <
         requestBody: ProviderCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8460,6 +9307,7 @@ export const useProvidersServiceCreateProvider = <
       requestBody: ProviderCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8469,6 +9317,7 @@ export const useProvidersServiceCreateProvider = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8476,6 +9325,7 @@ export const useProvidersServiceCreateProvider = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8528,6 +9378,7 @@ export const useProvidersServiceCheckProvider = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @param data.requestBody
  * @returns unknown Successful response
  * @throws ApiError
@@ -8546,6 +9397,7 @@ export const useRunsServiceRetrieveStream = <
         runId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8562,6 +9414,7 @@ export const useRunsServiceRetrieveStream = <
       runId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8572,6 +9425,7 @@ export const useRunsServiceRetrieveStream = <
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8580,6 +9434,7 @@ export const useRunsServiceRetrieveStream = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8673,6 +9528,7 @@ export const useAdminServiceCreateOrganization = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -8689,6 +9545,7 @@ export const useMessagesServiceCreateBatch = <
         requestBody: CreateBatch;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8704,6 +9561,7 @@ export const useMessagesServiceCreateBatch = <
       requestBody: CreateBatch;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8713,6 +9571,7 @@ export const useMessagesServiceCreateBatch = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8720,6 +9579,7 @@ export const useMessagesServiceCreateBatch = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8734,6 +9594,7 @@ export const useMessagesServiceCreateBatch = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -8751,6 +9612,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
         requestBody: { [key: string]: unknown };
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8767,6 +9629,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
       requestBody: { [key: string]: unknown };
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8777,6 +9640,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8785,6 +9649,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8916,6 +9781,7 @@ export const useAuthServiceAuthenticateUserV1AuthPost = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -8932,6 +9798,7 @@ export const useToolsServiceUpsertTool = <
         requestBody: ToolCreate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -8947,6 +9814,7 @@ export const useToolsServiceUpsertTool = <
       requestBody: ToolCreate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -8956,6 +9824,7 @@ export const useToolsServiceUpsertTool = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -8963,6 +9832,7 @@ export const useToolsServiceUpsertTool = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -8977,6 +9847,7 @@ export const useToolsServiceUpsertTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8996,6 +9867,7 @@ export const useToolsServiceAddMcpServer = <
           | StreamableHTTPServerConfig;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9014,6 +9886,7 @@ export const useToolsServiceAddMcpServer = <
         | StreamableHTTPServerConfig;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9023,6 +9896,7 @@ export const useToolsServiceAddMcpServer = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9030,6 +9904,7 @@ export const useToolsServiceAddMcpServer = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9044,6 +9919,7 @@ export const useToolsServiceAddMcpServer = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -9060,6 +9936,7 @@ export const useIdentitiesServiceUpsertIdentity = <
         requestBody: IdentityUpsert;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProject?: string;
         xProjectId?: string;
@@ -9076,6 +9953,7 @@ export const useIdentitiesServiceUpsertIdentity = <
       requestBody: IdentityUpsert;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProject?: string;
       xProjectId?: string;
@@ -9086,6 +9964,7 @@ export const useIdentitiesServiceUpsertIdentity = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -9094,6 +9973,7 @@ export const useIdentitiesServiceUpsertIdentity = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -9109,6 +9989,7 @@ export const useIdentitiesServiceUpsertIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -9126,6 +10007,7 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
         requestBody: IdentityProperty[];
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9142,6 +10024,7 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
       requestBody: IdentityProperty[];
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9152,6 +10035,7 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9160,6 +10044,7 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9249,6 +10134,7 @@ export const useUsersServiceUpdateUser = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Archive Successful Response
  * @throws ApiError
  */
@@ -9266,6 +10152,7 @@ export const useArchivesServiceModifyArchive = <
         requestBody: ArchiveUpdateRequest;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9282,6 +10169,7 @@ export const useArchivesServiceModifyArchive = <
       requestBody: ArchiveUpdateRequest;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9292,6 +10180,7 @@ export const useArchivesServiceModifyArchive = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9300,6 +10189,7 @@ export const useArchivesServiceModifyArchive = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9315,6 +10205,7 @@ export const useArchivesServiceModifyArchive = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -9332,6 +10223,7 @@ export const useToolsServiceModifyTool = <
         toolId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9348,6 +10240,7 @@ export const useToolsServiceModifyTool = <
       toolId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9358,6 +10251,7 @@ export const useToolsServiceModifyTool = <
       toolId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9366,6 +10260,7 @@ export const useToolsServiceModifyTool = <
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9381,6 +10276,7 @@ export const useToolsServiceModifyTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -9401,6 +10297,7 @@ export const useToolsServiceUpdateMcpServer = <
           | UpdateStreamableHTTPMCPServer;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9420,6 +10317,7 @@ export const useToolsServiceUpdateMcpServer = <
         | UpdateStreamableHTTPMCPServer;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9430,6 +10328,7 @@ export const useToolsServiceUpdateMcpServer = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9438,6 +10337,7 @@ export const useToolsServiceUpdateMcpServer = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9454,6 +10354,7 @@ export const useToolsServiceUpdateMcpServer = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -9471,6 +10372,7 @@ export const useSourcesServiceModifySource = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9487,6 +10389,7 @@ export const useSourcesServiceModifySource = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9497,6 +10400,7 @@ export const useSourcesServiceModifySource = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9505,6 +10409,7 @@ export const useSourcesServiceModifySource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9520,6 +10425,7 @@ export const useSourcesServiceModifySource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -9537,6 +10443,7 @@ export const useFoldersServiceModifyFolder = <
         requestBody: SourceUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9553,6 +10460,7 @@ export const useFoldersServiceModifyFolder = <
       requestBody: SourceUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9563,6 +10471,7 @@ export const useFoldersServiceModifyFolder = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9571,6 +10480,7 @@ export const useFoldersServiceModifyFolder = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9586,6 +10496,7 @@ export const useFoldersServiceModifyFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9603,6 +10514,7 @@ export const useAgentsServiceModifyAgent = <
         requestBody: UpdateAgent;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9619,6 +10531,7 @@ export const useAgentsServiceModifyAgent = <
       requestBody: UpdateAgent;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9629,6 +10542,7 @@ export const useAgentsServiceModifyAgent = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9637,6 +10551,7 @@ export const useAgentsServiceModifyAgent = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9652,6 +10567,7 @@ export const useAgentsServiceModifyAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9669,6 +10585,7 @@ export const useAgentsServiceAttachTool = <
         toolId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9685,6 +10602,7 @@ export const useAgentsServiceAttachTool = <
       toolId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9695,6 +10613,7 @@ export const useAgentsServiceAttachTool = <
       toolId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9703,6 +10622,7 @@ export const useAgentsServiceAttachTool = <
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9718,6 +10638,7 @@ export const useAgentsServiceAttachTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9735,6 +10656,7 @@ export const useAgentsServiceDetachTool = <
         toolId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9751,6 +10673,7 @@ export const useAgentsServiceDetachTool = <
       toolId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9761,6 +10684,7 @@ export const useAgentsServiceDetachTool = <
       toolId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9769,6 +10693,7 @@ export const useAgentsServiceDetachTool = <
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9785,6 +10710,7 @@ export const useAgentsServiceDetachTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9803,6 +10729,7 @@ export const useAgentsServiceModifyApproval = <
         toolName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9820,6 +10747,7 @@ export const useAgentsServiceModifyApproval = <
       toolName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9831,6 +10759,7 @@ export const useAgentsServiceModifyApproval = <
       toolName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9840,6 +10769,7 @@ export const useAgentsServiceModifyApproval = <
         toolName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9855,6 +10785,7 @@ export const useAgentsServiceModifyApproval = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9872,6 +10803,7 @@ export const useAgentsServiceAttachSourceToAgent = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9888,6 +10820,7 @@ export const useAgentsServiceAttachSourceToAgent = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9898,6 +10831,7 @@ export const useAgentsServiceAttachSourceToAgent = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9906,6 +10840,7 @@ export const useAgentsServiceAttachSourceToAgent = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9921,6 +10856,7 @@ export const useAgentsServiceAttachSourceToAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -9938,6 +10874,7 @@ export const useAgentsServiceAttachFolderToAgent = <
         folderId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -9954,6 +10891,7 @@ export const useAgentsServiceAttachFolderToAgent = <
       folderId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -9964,6 +10902,7 @@ export const useAgentsServiceAttachFolderToAgent = <
       folderId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -9972,6 +10911,7 @@ export const useAgentsServiceAttachFolderToAgent = <
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -9987,6 +10927,7 @@ export const useAgentsServiceAttachFolderToAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -10004,6 +10945,7 @@ export const useAgentsServiceDetachSourceFromAgent = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10020,6 +10962,7 @@ export const useAgentsServiceDetachSourceFromAgent = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10030,6 +10973,7 @@ export const useAgentsServiceDetachSourceFromAgent = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10038,6 +10982,7 @@ export const useAgentsServiceDetachSourceFromAgent = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10053,6 +10998,7 @@ export const useAgentsServiceDetachSourceFromAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -10070,6 +11016,7 @@ export const useAgentsServiceDetachFolderFromAgent = <
         folderId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10086,6 +11033,7 @@ export const useAgentsServiceDetachFolderFromAgent = <
       folderId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10096,6 +11044,7 @@ export const useAgentsServiceDetachFolderFromAgent = <
       folderId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10104,6 +11053,7 @@ export const useAgentsServiceDetachFolderFromAgent = <
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10121,6 +11071,7 @@ export const useAgentsServiceDetachFolderFromAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -10137,6 +11088,7 @@ export const useAgentsServiceCloseAllOpenFiles = <
         agentId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10152,6 +11104,7 @@ export const useAgentsServiceCloseAllOpenFiles = <
       agentId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10161,6 +11114,7 @@ export const useAgentsServiceCloseAllOpenFiles = <
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10168,6 +11122,7 @@ export const useAgentsServiceCloseAllOpenFiles = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10187,6 +11142,7 @@ export const useAgentsServiceCloseAllOpenFiles = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -10204,6 +11160,7 @@ export const useAgentsServiceOpenFile = <
         fileId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10220,6 +11177,7 @@ export const useAgentsServiceOpenFile = <
       fileId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10230,6 +11188,7 @@ export const useAgentsServiceOpenFile = <
       fileId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10238,6 +11197,7 @@ export const useAgentsServiceOpenFile = <
         fileId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10256,6 +11216,7 @@ export const useAgentsServiceOpenFile = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -10273,6 +11234,7 @@ export const useAgentsServiceCloseFile = <
         fileId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10289,6 +11251,7 @@ export const useAgentsServiceCloseFile = <
       fileId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10299,6 +11262,7 @@ export const useAgentsServiceCloseFile = <
       fileId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10307,6 +11271,7 @@ export const useAgentsServiceCloseFile = <
         fileId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10323,6 +11288,7 @@ export const useAgentsServiceCloseFile = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -10341,6 +11307,7 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
         requestBody: BlockUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10358,6 +11325,7 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
       requestBody: BlockUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10369,6 +11337,7 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10378,6 +11347,7 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10393,6 +11363,7 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -10410,6 +11381,7 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
         blockId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10426,6 +11398,7 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
       blockId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10436,6 +11409,7 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
       blockId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10444,6 +11418,7 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
         blockId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10459,6 +11434,7 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -10476,6 +11452,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
         blockId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10492,6 +11469,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
       blockId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10502,6 +11480,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
       blockId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10510,6 +11489,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
         blockId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10526,6 +11506,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -10548,6 +11529,7 @@ export const useAgentsServiceModifyMessage = <
           | UpdateAssistantMessage;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10569,6 +11551,7 @@ export const useAgentsServiceModifyMessage = <
         | UpdateAssistantMessage;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10580,6 +11563,7 @@ export const useAgentsServiceModifyMessage = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10589,6 +11573,7 @@ export const useAgentsServiceModifyMessage = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10604,6 +11589,7 @@ export const useAgentsServiceModifyMessage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -10621,6 +11607,7 @@ export const useAgentsServiceResetMessages = <
         agentId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10637,6 +11624,7 @@ export const useAgentsServiceResetMessages = <
       agentId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10647,6 +11635,7 @@ export const useAgentsServiceResetMessages = <
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10655,6 +11644,7 @@ export const useAgentsServiceResetMessages = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10671,6 +11661,7 @@ export const useAgentsServiceResetMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -10688,6 +11679,7 @@ export const useGroupsServiceModifyGroup = <
         requestBody: GroupUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProject?: string;
         xProjectId?: string;
@@ -10705,6 +11697,7 @@ export const useGroupsServiceModifyGroup = <
       requestBody: GroupUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProject?: string;
       xProjectId?: string;
@@ -10716,6 +11709,7 @@ export const useGroupsServiceModifyGroup = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -10725,6 +11719,7 @@ export const useGroupsServiceModifyGroup = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -10742,6 +11737,7 @@ export const useGroupsServiceModifyGroup = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -10764,6 +11760,7 @@ export const useGroupsServiceModifyGroupMessage = <
           | UpdateAssistantMessage;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10785,6 +11782,7 @@ export const useGroupsServiceModifyGroupMessage = <
         | UpdateAssistantMessage;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10796,6 +11794,7 @@ export const useGroupsServiceModifyGroupMessage = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10805,6 +11804,7 @@ export const useGroupsServiceModifyGroupMessage = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10819,6 +11819,7 @@ export const useGroupsServiceModifyGroupMessage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -10835,6 +11836,7 @@ export const useGroupsServiceResetGroupMessages = <
         groupId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10850,6 +11852,7 @@ export const useGroupsServiceResetGroupMessages = <
       groupId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10859,6 +11862,7 @@ export const useGroupsServiceResetGroupMessages = <
       groupId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10866,6 +11870,7 @@ export const useGroupsServiceResetGroupMessages = <
         groupId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10880,6 +11885,7 @@ export const useGroupsServiceResetGroupMessages = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -10897,6 +11903,7 @@ export const useIdentitiesServiceUpdateIdentity = <
         requestBody: IdentityUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10913,6 +11920,7 @@ export const useIdentitiesServiceUpdateIdentity = <
       requestBody: IdentityUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10923,6 +11931,7 @@ export const useIdentitiesServiceUpdateIdentity = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10931,6 +11940,7 @@ export const useIdentitiesServiceUpdateIdentity = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -10945,6 +11955,7 @@ export const useIdentitiesServiceUpdateIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -10962,6 +11973,7 @@ export const useBlocksServiceModifyBlock = <
         requestBody: BlockUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -10978,6 +11990,7 @@ export const useBlocksServiceModifyBlock = <
       requestBody: BlockUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -10988,6 +12001,7 @@ export const useBlocksServiceModifyBlock = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -10996,6 +12010,7 @@ export const useBlocksServiceModifyBlock = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11013,6 +12028,7 @@ export const useBlocksServiceModifyBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -11029,6 +12045,7 @@ export const useJobsServiceCancelJob = <
         jobId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11044,6 +12061,7 @@ export const useJobsServiceCancelJob = <
       jobId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11053,6 +12071,7 @@ export const useJobsServiceCancelJob = <
       jobId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11060,6 +12079,7 @@ export const useJobsServiceCancelJob = <
         jobId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11074,6 +12094,7 @@ export const useJobsServiceCancelJob = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -11092,6 +12113,7 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
           sandboxConfigId: string;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -11108,6 +12130,7 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
         sandboxConfigId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11118,6 +12141,7 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
         sandboxConfigId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -11127,6 +12151,7 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -11142,6 +12167,7 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -11160,6 +12186,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
           requestBody: SandboxEnvironmentVariableUpdate;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -11176,6 +12203,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
         requestBody: SandboxEnvironmentVariableUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11186,6 +12214,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -11195,6 +12224,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
             requestBody,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -11211,6 +12241,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -11228,6 +12259,7 @@ export const useProvidersServiceModifyProvider = <
         requestBody: ProviderUpdate;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11244,6 +12276,7 @@ export const useProvidersServiceModifyProvider = <
       requestBody: ProviderUpdate;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11254,6 +12287,7 @@ export const useProvidersServiceModifyProvider = <
       requestBody,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11262,6 +12296,7 @@ export const useProvidersServiceModifyProvider = <
         requestBody,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11277,6 +12312,7 @@ export const useProvidersServiceModifyProvider = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -11294,6 +12330,7 @@ export const useStepsServiceModifyFeedbackForStep = <
         stepId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11310,6 +12347,7 @@ export const useStepsServiceModifyFeedbackForStep = <
       stepId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11320,6 +12358,7 @@ export const useStepsServiceModifyFeedbackForStep = <
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11328,6 +12367,7 @@ export const useStepsServiceModifyFeedbackForStep = <
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11343,6 +12383,7 @@ export const useStepsServiceModifyFeedbackForStep = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -11360,6 +12401,7 @@ export const useStepsServiceUpdateStepTransactionId = <
         transactionId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11376,6 +12418,7 @@ export const useStepsServiceUpdateStepTransactionId = <
       transactionId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11386,6 +12429,7 @@ export const useStepsServiceUpdateStepTransactionId = <
       transactionId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11394,6 +12438,7 @@ export const useStepsServiceUpdateStepTransactionId = <
         transactionId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11450,6 +12495,7 @@ export const useAdminServiceUpdateOrganization = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11466,6 +12512,7 @@ export const useMessagesServiceCancelBatch = <
         batchId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11481,6 +12528,7 @@ export const useMessagesServiceCancelBatch = <
       batchId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11490,6 +12538,7 @@ export const useMessagesServiceCancelBatch = <
       batchId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11497,6 +12546,7 @@ export const useMessagesServiceCancelBatch = <
         batchId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11553,6 +12603,7 @@ export const useOrganizationServiceUpdateOrganization = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11569,6 +12620,7 @@ export const useToolsServiceDeleteTool = <
         toolId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11584,6 +12636,7 @@ export const useToolsServiceDeleteTool = <
       toolId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11593,6 +12646,7 @@ export const useToolsServiceDeleteTool = <
       toolId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11600,6 +12654,7 @@ export const useToolsServiceDeleteTool = <
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11614,6 +12669,7 @@ export const useToolsServiceDeleteTool = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11630,6 +12686,7 @@ export const useToolsServiceDeleteMcpServer = <
         mcpServerName: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11645,6 +12702,7 @@ export const useToolsServiceDeleteMcpServer = <
       mcpServerName: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11654,6 +12712,7 @@ export const useToolsServiceDeleteMcpServer = <
       mcpServerName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11661,6 +12720,7 @@ export const useToolsServiceDeleteMcpServer = <
         mcpServerName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11676,6 +12736,7 @@ export const useToolsServiceDeleteMcpServer = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11692,6 +12753,7 @@ export const useSourcesServiceDeleteSource = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11707,6 +12769,7 @@ export const useSourcesServiceDeleteSource = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11716,6 +12779,7 @@ export const useSourcesServiceDeleteSource = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11723,6 +12787,7 @@ export const useSourcesServiceDeleteSource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11739,6 +12804,7 @@ export const useSourcesServiceDeleteSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -11756,6 +12822,7 @@ export const useSourcesServiceDeleteFileFromSource = <
         sourceId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11772,6 +12839,7 @@ export const useSourcesServiceDeleteFileFromSource = <
       sourceId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11782,6 +12850,7 @@ export const useSourcesServiceDeleteFileFromSource = <
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11790,6 +12859,7 @@ export const useSourcesServiceDeleteFileFromSource = <
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11804,6 +12874,7 @@ export const useSourcesServiceDeleteFileFromSource = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11820,6 +12891,7 @@ export const useFoldersServiceDeleteFolder = <
         folderId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11835,6 +12907,7 @@ export const useFoldersServiceDeleteFolder = <
       folderId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11844,6 +12917,7 @@ export const useFoldersServiceDeleteFolder = <
       folderId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11851,6 +12925,7 @@ export const useFoldersServiceDeleteFolder = <
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11866,6 +12941,7 @@ export const useFoldersServiceDeleteFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -11883,6 +12959,7 @@ export const useFoldersServiceDeleteFileFromFolder = <
         folderId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11899,6 +12976,7 @@ export const useFoldersServiceDeleteFileFromFolder = <
       folderId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11909,6 +12987,7 @@ export const useFoldersServiceDeleteFileFromFolder = <
       folderId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11917,6 +12996,7 @@ export const useFoldersServiceDeleteFileFromFolder = <
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11931,6 +13011,7 @@ export const useFoldersServiceDeleteFileFromFolder = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -11947,6 +13028,7 @@ export const useAgentsServiceDeleteAgent = <
         agentId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -11962,6 +13044,7 @@ export const useAgentsServiceDeleteAgent = <
       agentId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -11971,6 +13054,7 @@ export const useAgentsServiceDeleteAgent = <
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -11978,6 +13062,7 @@ export const useAgentsServiceDeleteAgent = <
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -11993,6 +13078,7 @@ export const useAgentsServiceDeleteAgent = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -12010,6 +13096,7 @@ export const useAgentsServiceDeletePassage = <
         memoryId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12026,6 +13113,7 @@ export const useAgentsServiceDeletePassage = <
       memoryId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12036,6 +13124,7 @@ export const useAgentsServiceDeletePassage = <
       memoryId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12044,6 +13133,7 @@ export const useAgentsServiceDeletePassage = <
         memoryId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12058,6 +13148,7 @@ export const useAgentsServiceDeletePassage = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -12074,6 +13165,7 @@ export const useGroupsServiceDeleteGroup = <
         groupId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12089,6 +13181,7 @@ export const useGroupsServiceDeleteGroup = <
       groupId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12098,6 +13191,7 @@ export const useGroupsServiceDeleteGroup = <
       groupId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12105,6 +13199,7 @@ export const useGroupsServiceDeleteGroup = <
         groupId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12119,6 +13214,7 @@ export const useGroupsServiceDeleteGroup = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -12135,6 +13231,7 @@ export const useIdentitiesServiceDeleteIdentity = <
         identityId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12150,6 +13247,7 @@ export const useIdentitiesServiceDeleteIdentity = <
       identityId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12159,6 +13257,7 @@ export const useIdentitiesServiceDeleteIdentity = <
       identityId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12166,6 +13265,7 @@ export const useIdentitiesServiceDeleteIdentity = <
         identityId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12181,6 +13281,7 @@ export const useIdentitiesServiceDeleteIdentity = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns DeleteDeploymentResponse Successful Response
  * @throws ApiError
  */
@@ -12197,6 +13298,7 @@ export const useInternalTemplatesServiceDeleteDeployment = <
         deploymentId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12212,6 +13314,7 @@ export const useInternalTemplatesServiceDeleteDeployment = <
       deploymentId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12221,6 +13324,7 @@ export const useInternalTemplatesServiceDeleteDeployment = <
       deploymentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12228,6 +13332,7 @@ export const useInternalTemplatesServiceDeleteDeployment = <
         deploymentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12241,6 +13346,7 @@ export const useInternalTemplatesServiceDeleteDeployment = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -12257,6 +13363,7 @@ export const useBlocksServiceDeleteBlock = <
         blockId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12272,6 +13379,7 @@ export const useBlocksServiceDeleteBlock = <
       blockId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12281,6 +13389,7 @@ export const useBlocksServiceDeleteBlock = <
       blockId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12288,6 +13397,7 @@ export const useBlocksServiceDeleteBlock = <
         blockId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12302,6 +13412,7 @@ export const useBlocksServiceDeleteBlock = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -12318,6 +13429,7 @@ export const useJobsServiceDeleteJob = <
         jobId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12333,6 +13445,7 @@ export const useJobsServiceDeleteJob = <
       jobId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12342,6 +13455,7 @@ export const useJobsServiceDeleteJob = <
       jobId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12349,6 +13463,7 @@ export const useJobsServiceDeleteJob = <
         jobId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12362,6 +13477,7 @@ export const useJobsServiceDeleteJob = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -12379,6 +13495,7 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
           sandboxConfigId: string;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -12394,6 +13511,7 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
         sandboxConfigId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12403,6 +13521,7 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
         sandboxConfigId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -12411,6 +13530,7 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -12425,6 +13545,7 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -12442,6 +13563,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
           envVarId: string;
           userAgent?: string;
           userId?: string;
+          xExperimentalLettaV1Agent?: string;
           xExperimentalMessageAsync?: string;
           xProjectId?: string;
         },
@@ -12457,6 +13579,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
         envVarId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12466,6 +13589,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
         envVarId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) =>
@@ -12474,6 +13598,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
             envVarId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -12489,6 +13614,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -12505,6 +13631,7 @@ export const useProvidersServiceDeleteProvider = <
         providerId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12520,6 +13647,7 @@ export const useProvidersServiceDeleteProvider = <
       providerId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12529,6 +13657,7 @@ export const useProvidersServiceDeleteProvider = <
       providerId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12536,6 +13665,7 @@ export const useProvidersServiceDeleteProvider = <
         providerId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,
@@ -12550,6 +13680,7 @@ export const useProvidersServiceDeleteProvider = <
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -12566,6 +13697,7 @@ export const useRunsServiceDeleteRun = <
         runId: string;
         userAgent?: string;
         userId?: string;
+        xExperimentalLettaV1Agent?: string;
         xExperimentalMessageAsync?: string;
         xProjectId?: string;
       },
@@ -12581,6 +13713,7 @@ export const useRunsServiceDeleteRun = <
       runId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -12590,6 +13723,7 @@ export const useRunsServiceDeleteRun = <
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }) =>
@@ -12597,6 +13731,7 @@ export const useRunsServiceDeleteRun = <
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }) as unknown as Promise<TData>,

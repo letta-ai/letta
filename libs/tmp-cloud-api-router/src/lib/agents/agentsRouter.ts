@@ -20,6 +20,7 @@ import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import type { SDKContext } from '../types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { validateVersionString } from '@letta-cloud/utils-shared';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 type CreateAgentRequest = ServerInferRequest<
   typeof cloudContracts.agents.createAgent
@@ -123,6 +124,8 @@ async function createAgent(
     };
   }
 
+  const flag = await getSingleFlag('USE_LETTA_V1_AGENT', organizationId);
+
   if (!from_template) {
     try {
       // standard agent creation route, this should just pipe
@@ -136,6 +139,7 @@ async function createAgent(
         },
         {
           user_id: lettaAgentsUserId,
+          'x-experimental-letta-v1-agent': flag ? 'true' : 'false',
         },
       );
 
