@@ -8026,6 +8026,55 @@
         }
       }
     },
+    "/v1/_internal_templates/blocks/batch": {
+      "post": {
+        "tags": ["_internal_templates"],
+        "summary": "Create Blocks Batch",
+        "description": "Create multiple blocks with template-related fields.",
+        "operationId": "create_internal_template_blocks_batch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InternalTemplateBlockCreate"
+                },
+                "title": "Blocks"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "title": "Response Create Internal Template Blocks Batch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/_internal_templates/deployment/{deployment_id}": {
       "get": {
         "tags": ["_internal_templates"],
