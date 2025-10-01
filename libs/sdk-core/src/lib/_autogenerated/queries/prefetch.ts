@@ -4259,7 +4259,7 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
  * List all runs.
  * @param data The data for the request.
  * @param data.agentId The unique identifier of the agent associated with the run.
- * @param data.agentIds (DEPRECATED) The unique identifiers of the agents associated with the run.
+ * @param data.agentIds The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.stopReason Filter runs by stop reason.
  * @param data.after Cursor for pagination
