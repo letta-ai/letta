@@ -56,6 +56,7 @@ export const UseArchivesServiceListArchivesKeyFn = (
     order,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -67,6 +68,7 @@ export const UseArchivesServiceListArchivesKeyFn = (
     order?: 'asc' | 'desc';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -83,6 +85,7 @@ export const UseArchivesServiceListArchivesKeyFn = (
       order,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -101,12 +104,14 @@ export const UseToolsServiceRetrieveToolKeyFn = (
     toolId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     toolId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -114,7 +119,14 @@ export const UseToolsServiceRetrieveToolKeyFn = (
 ) => [
   useToolsServiceRetrieveToolKey,
   ...(queryKey ?? [
-    { toolId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      toolId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type ToolsServiceCountToolsDefaultResponse = Awaited<
@@ -137,6 +149,7 @@ export const UseToolsServiceCountToolsKeyFn = (
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -150,6 +163,7 @@ export const UseToolsServiceCountToolsKeyFn = (
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -168,6 +182,7 @@ export const UseToolsServiceCountToolsKeyFn = (
       toolTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -197,6 +212,7 @@ export const UseToolsServiceListToolsKeyFn = (
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -214,6 +230,7 @@ export const UseToolsServiceListToolsKeyFn = (
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -236,6 +253,7 @@ export const UseToolsServiceListToolsKeyFn = (
       toolTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -254,11 +272,13 @@ export const UseToolsServiceListComposioAppsKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -266,7 +286,13 @@ export const UseToolsServiceListComposioAppsKeyFn = (
 ) => [
   useToolsServiceListComposioAppsKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
@@ -283,12 +309,14 @@ export const UseToolsServiceListComposioActionsByAppKeyFn = (
     composioAppName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     composioAppName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -300,6 +328,7 @@ export const UseToolsServiceListComposioActionsByAppKeyFn = (
       composioAppName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -317,11 +346,13 @@ export const UseToolsServiceListMcpServersKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -329,7 +360,13 @@ export const UseToolsServiceListMcpServersKeyFn = (
 ) => [
   useToolsServiceListMcpServersKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type ToolsServiceListMcpToolsByServerDefaultResponse = Awaited<
@@ -346,12 +383,14 @@ export const UseToolsServiceListMcpToolsByServerKeyFn = (
     mcpServerName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     mcpServerName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -359,7 +398,14 @@ export const UseToolsServiceListMcpToolsByServerKeyFn = (
 ) => [
   useToolsServiceListMcpToolsByServerKey,
   ...(queryKey ?? [
-    { mcpServerName, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      mcpServerName,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type ToolsServiceMcpOauthCallbackDefaultResponse = Awaited<
@@ -402,11 +448,13 @@ export const UseSourcesServiceCountSourcesKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -414,7 +462,13 @@ export const UseSourcesServiceCountSourcesKeyFn = (
 ) => [
   useSourcesServiceCountSourcesKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceRetrieveSourceDefaultResponse = Awaited<
@@ -431,12 +485,14 @@ export const UseSourcesServiceRetrieveSourceKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -444,7 +500,14 @@ export const UseSourcesServiceRetrieveSourceKeyFn = (
 ) => [
   useSourcesServiceRetrieveSourceKey,
   ...(queryKey ?? [
-    { sourceId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      sourceId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceGetSourceIdByNameDefaultResponse = Awaited<
@@ -461,12 +524,14 @@ export const UseSourcesServiceGetSourceIdByNameKeyFn = (
     sourceName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -474,7 +539,14 @@ export const UseSourcesServiceGetSourceIdByNameKeyFn = (
 ) => [
   useSourcesServiceGetSourceIdByNameKey,
   ...(queryKey ?? [
-    { sourceName, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      sourceName,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceGetSourcesMetadataDefaultResponse = Awaited<
@@ -491,12 +563,14 @@ export const UseSourcesServiceGetSourcesMetadataKeyFn = (
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -508,6 +582,7 @@ export const UseSourcesServiceGetSourcesMetadataKeyFn = (
       includeDetailedPerSourceMetadata,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -525,11 +600,13 @@ export const UseSourcesServiceListSourcesKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -537,7 +614,13 @@ export const UseSourcesServiceListSourcesKeyFn = (
 ) => [
   useSourcesServiceListSourcesKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceGetAgentsForSourceDefaultResponse = Awaited<
@@ -554,12 +637,14 @@ export const UseSourcesServiceGetAgentsForSourceKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -567,7 +652,14 @@ export const UseSourcesServiceGetAgentsForSourceKeyFn = (
 ) => [
   useSourcesServiceGetAgentsForSourceKey,
   ...(queryKey ?? [
-    { sourceId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      sourceId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
@@ -587,6 +679,7 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -596,6 +689,7 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -610,6 +704,7 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -633,6 +728,7 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -643,6 +739,7 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -658,6 +755,7 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -679,6 +777,7 @@ export const UseSourcesServiceGetFileMetadataKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -687,6 +786,7 @@ export const UseSourcesServiceGetFileMetadataKeyFn = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -700,6 +800,7 @@ export const UseSourcesServiceGetFileMetadataKeyFn = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -717,11 +818,13 @@ export const UseFoldersServiceCountFoldersKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -729,7 +832,13 @@ export const UseFoldersServiceCountFoldersKeyFn = (
 ) => [
   useFoldersServiceCountFoldersKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type FoldersServiceRetrieveFolderDefaultResponse = Awaited<
@@ -746,12 +855,14 @@ export const UseFoldersServiceRetrieveFolderKeyFn = (
     folderId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -759,7 +870,14 @@ export const UseFoldersServiceRetrieveFolderKeyFn = (
 ) => [
   useFoldersServiceRetrieveFolderKey,
   ...(queryKey ?? [
-    { folderId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      folderId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type FoldersServiceGetFolderByNameDefaultResponse = Awaited<
@@ -776,12 +894,14 @@ export const UseFoldersServiceGetFolderByNameKeyFn = (
     folderName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -789,7 +909,14 @@ export const UseFoldersServiceGetFolderByNameKeyFn = (
 ) => [
   useFoldersServiceGetFolderByNameKey,
   ...(queryKey ?? [
-    { folderName, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      folderName,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type FoldersServiceRetrieveMetadataDefaultResponse = Awaited<
@@ -806,12 +933,14 @@ export const UseFoldersServiceRetrieveMetadataKeyFn = (
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -823,6 +952,7 @@ export const UseFoldersServiceRetrieveMetadataKeyFn = (
       includeDetailedPerSourceMetadata,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -846,6 +976,7 @@ export const UseFoldersServiceListFoldersKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -857,6 +988,7 @@ export const UseFoldersServiceListFoldersKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -873,6 +1005,7 @@ export const UseFoldersServiceListFoldersKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -897,6 +1030,7 @@ export const UseFoldersServiceListAgentsForFolderKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -908,6 +1042,7 @@ export const UseFoldersServiceListAgentsForFolderKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -924,6 +1059,7 @@ export const UseFoldersServiceListAgentsForFolderKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -948,6 +1084,7 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -959,6 +1096,7 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -975,6 +1113,7 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1000,6 +1139,7 @@ export const UseFoldersServiceListFolderFilesKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1012,6 +1152,7 @@ export const UseFoldersServiceListFolderFilesKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1029,6 +1170,7 @@ export const UseFoldersServiceListFolderFilesKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1063,6 +1205,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     templateId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1085,6 +1228,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     templateId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1112,6 +1256,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
       templateId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1129,11 +1274,13 @@ export const UseAgentsServiceCountAgentsKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1141,7 +1288,13 @@ export const UseAgentsServiceCountAgentsKeyFn = (
 ) => [
   useAgentsServiceCountAgentsKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceExportAgentDefaultResponse = Awaited<
@@ -1160,6 +1313,7 @@ export const UseAgentsServiceExportAgentKeyFn = (
     useLegacyFormat,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1169,6 +1323,7 @@ export const UseAgentsServiceExportAgentKeyFn = (
     useLegacyFormat?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1183,6 +1338,7 @@ export const UseAgentsServiceExportAgentKeyFn = (
       useLegacyFormat,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1202,12 +1358,14 @@ export const UseAgentsServiceRetrieveAgentContextWindowKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1215,7 +1373,14 @@ export const UseAgentsServiceRetrieveAgentContextWindowKeyFn = (
 ) => [
   useAgentsServiceRetrieveAgentContextWindowKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceRetrieveAgentDefaultResponse = Awaited<
@@ -1232,6 +1397,7 @@ export const UseAgentsServiceRetrieveAgentKeyFn = (
     includeRelationships,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1239,6 +1405,7 @@ export const UseAgentsServiceRetrieveAgentKeyFn = (
     includeRelationships?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1251,6 +1418,7 @@ export const UseAgentsServiceRetrieveAgentKeyFn = (
       includeRelationships,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1269,12 +1437,14 @@ export const UseAgentsServiceListAgentToolsKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1282,7 +1452,14 @@ export const UseAgentsServiceListAgentToolsKeyFn = (
 ) => [
   useAgentsServiceListAgentToolsKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceListAgentSourcesDefaultResponse = Awaited<
@@ -1299,12 +1476,14 @@ export const UseAgentsServiceListAgentSourcesKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1312,7 +1491,14 @@ export const UseAgentsServiceListAgentSourcesKeyFn = (
 ) => [
   useAgentsServiceListAgentSourcesKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceListAgentFoldersDefaultResponse = Awaited<
@@ -1329,12 +1515,14 @@ export const UseAgentsServiceListAgentFoldersKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1342,7 +1530,14 @@ export const UseAgentsServiceListAgentFoldersKeyFn = (
 ) => [
   useAgentsServiceListAgentFoldersKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceListAgentFilesDefaultResponse = Awaited<
@@ -1361,6 +1556,7 @@ export const UseAgentsServiceListAgentFilesKeyFn = (
     limit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1370,6 +1566,7 @@ export const UseAgentsServiceListAgentFilesKeyFn = (
     limit?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1384,6 +1581,7 @@ export const UseAgentsServiceListAgentFilesKeyFn = (
       limit,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1403,12 +1601,14 @@ export const UseAgentsServiceRetrieveAgentMemoryKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1416,7 +1616,14 @@ export const UseAgentsServiceRetrieveAgentMemoryKeyFn = (
 ) => [
   useAgentsServiceRetrieveAgentMemoryKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceRetrieveCoreMemoryBlockDefaultResponse = Awaited<
@@ -1434,6 +1641,7 @@ export const UseAgentsServiceRetrieveCoreMemoryBlockKeyFn = (
     blockLabel,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1441,6 +1649,7 @@ export const UseAgentsServiceRetrieveCoreMemoryBlockKeyFn = (
     blockLabel: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1453,6 +1662,7 @@ export const UseAgentsServiceRetrieveCoreMemoryBlockKeyFn = (
       blockLabel,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1472,12 +1682,14 @@ export const UseAgentsServiceListCoreMemoryBlocksKeyFn = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1485,7 +1697,14 @@ export const UseAgentsServiceListCoreMemoryBlocksKeyFn = (
 ) => [
   useAgentsServiceListCoreMemoryBlocksKey,
   ...(queryKey ?? [
-    { agentId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      agentId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceListPassagesDefaultResponse = Awaited<
@@ -1506,6 +1725,7 @@ export const UseAgentsServiceListPassagesKeyFn = (
     search,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1517,6 +1737,7 @@ export const UseAgentsServiceListPassagesKeyFn = (
     search?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1533,6 +1754,7 @@ export const UseAgentsServiceListPassagesKeyFn = (
       search,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1558,6 +1780,7 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
     topK,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1570,6 +1793,7 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
     topK?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1587,6 +1811,7 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
       topK,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1613,6 +1838,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1627,6 +1853,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1646,6 +1873,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
       useAssistantMessage,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1666,6 +1894,7 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
     managerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1673,6 +1902,7 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
     managerType?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1685,6 +1915,7 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
       managerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1709,6 +1940,7 @@ export const UseGroupsServiceListGroupsKeyFn = (
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1721,6 +1953,7 @@ export const UseGroupsServiceListGroupsKeyFn = (
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1738,6 +1971,7 @@ export const UseGroupsServiceListGroupsKeyFn = (
       projectId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1755,11 +1989,13 @@ export const UseGroupsServiceCountGroupsKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1767,7 +2003,13 @@ export const UseGroupsServiceCountGroupsKeyFn = (
 ) => [
   useGroupsServiceCountGroupsKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type GroupsServiceRetrieveGroupDefaultResponse = Awaited<
@@ -1783,12 +2025,14 @@ export const UseGroupsServiceRetrieveGroupKeyFn = (
     groupId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     groupId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1796,7 +2040,14 @@ export const UseGroupsServiceRetrieveGroupKeyFn = (
 ) => [
   useGroupsServiceRetrieveGroupKey,
   ...(queryKey ?? [
-    { groupId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      groupId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type GroupsServiceListGroupMessagesDefaultResponse = Awaited<
@@ -1821,6 +2072,7 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1835,6 +2087,7 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1854,6 +2107,7 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
       useAssistantMessage,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1881,6 +2135,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1895,6 +2150,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1914,6 +2170,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
       projectId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -1932,11 +2189,13 @@ export const UseIdentitiesServiceCountIdentitiesKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1944,7 +2203,13 @@ export const UseIdentitiesServiceCountIdentitiesKeyFn = (
 ) => [
   useIdentitiesServiceCountIdentitiesKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type IdentitiesServiceRetrieveIdentityDefaultResponse = Awaited<
@@ -1961,12 +2226,14 @@ export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
     identityId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     identityId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1974,7 +2241,14 @@ export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
 ) => [
   useIdentitiesServiceRetrieveIdentityKey,
   ...(queryKey ?? [
-    { identityId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      identityId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type IdentitiesServiceListAgentsForIdentityDefaultResponse = Awaited<
@@ -1996,6 +2270,7 @@ export const UseIdentitiesServiceListAgentsForIdentityKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2007,6 +2282,7 @@ export const UseIdentitiesServiceListAgentsForIdentityKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2023,6 +2299,7 @@ export const UseIdentitiesServiceListAgentsForIdentityKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2047,6 +2324,7 @@ export const UseIdentitiesServiceListBlocksForIdentityKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2058,6 +2336,7 @@ export const UseIdentitiesServiceListBlocksForIdentityKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2074,6 +2353,7 @@ export const UseIdentitiesServiceListBlocksForIdentityKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2093,6 +2373,7 @@ export const UseInternalTemplatesServiceListDeploymentEntitiesKeyFn = (
     entityTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2100,6 +2381,7 @@ export const UseInternalTemplatesServiceListDeploymentEntitiesKeyFn = (
     entityTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2112,6 +2394,7 @@ export const UseInternalTemplatesServiceListDeploymentEntitiesKeyFn = (
       entityTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2132,6 +2415,7 @@ export const UseModelsServiceListModelsKeyFn = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2140,6 +2424,7 @@ export const UseModelsServiceListModelsKeyFn = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2153,6 +2438,7 @@ export const UseModelsServiceListModelsKeyFn = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2171,11 +2457,13 @@ export const UseModelsServiceListEmbeddingModelsKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2183,7 +2471,13 @@ export const UseModelsServiceListEmbeddingModelsKeyFn = (
 ) => [
   useModelsServiceListEmbeddingModelsKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type LlmsServiceListModelsDefaultResponse = Awaited<
@@ -2201,6 +2495,7 @@ export const UseLlmsServiceListModelsKeyFn = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2209,6 +2504,7 @@ export const UseLlmsServiceListModelsKeyFn = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2222,6 +2518,7 @@ export const UseLlmsServiceListModelsKeyFn = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2240,11 +2537,13 @@ export const UseLlmsServiceListEmbeddingModelsKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2252,7 +2551,13 @@ export const UseLlmsServiceListEmbeddingModelsKeyFn = (
 ) => [
   useLlmsServiceListEmbeddingModelsKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type BlocksServiceListBlocksDefaultResponse = Awaited<
@@ -2284,6 +2589,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
     userAgent,
     userId,
     valueSearch,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2306,6 +2612,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
     userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2333,6 +2640,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
       userAgent,
       userId,
       valueSearch,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2350,11 +2658,13 @@ export const UseBlocksServiceCountBlocksKeyFn = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2362,7 +2672,13 @@ export const UseBlocksServiceCountBlocksKeyFn = (
 ) => [
   useBlocksServiceCountBlocksKey,
   ...(queryKey ?? [
-    { userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type BlocksServiceRetrieveBlockDefaultResponse = Awaited<
@@ -2378,12 +2694,14 @@ export const UseBlocksServiceRetrieveBlockKeyFn = (
     blockId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     blockId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2391,7 +2709,14 @@ export const UseBlocksServiceRetrieveBlockKeyFn = (
 ) => [
   useBlocksServiceRetrieveBlockKey,
   ...(queryKey ?? [
-    { blockId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      blockId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type BlocksServiceListAgentsForBlockDefaultResponse = Awaited<
@@ -2414,6 +2739,7 @@ export const UseBlocksServiceListAgentsForBlockKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2426,6 +2752,7 @@ export const UseBlocksServiceListAgentsForBlockKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2443,6 +2770,7 @@ export const UseBlocksServiceListAgentsForBlockKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2466,6 +2794,7 @@ export const UseJobsServiceListJobsKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2477,6 +2806,7 @@ export const UseJobsServiceListJobsKeyFn = (
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2493,6 +2823,7 @@ export const UseJobsServiceListJobsKeyFn = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2515,6 +2846,7 @@ export const UseJobsServiceListActiveJobsKeyFn = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2525,6 +2857,7 @@ export const UseJobsServiceListActiveJobsKeyFn = (
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2540,6 +2873,7 @@ export const UseJobsServiceListActiveJobsKeyFn = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2558,12 +2892,14 @@ export const UseJobsServiceRetrieveJobKeyFn = (
     jobId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     jobId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2571,7 +2907,14 @@ export const UseJobsServiceRetrieveJobKeyFn = (
 ) => [
   useJobsServiceRetrieveJobKey,
   ...(queryKey ?? [
-    { jobId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      jobId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type HealthServiceCheckHealthDefaultResponse = Awaited<
@@ -2604,6 +2947,7 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
       sandboxType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }: {
@@ -2612,6 +2956,7 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
       sandboxType?: SandboxType;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     } = {},
@@ -2625,6 +2970,7 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
         sandboxType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2650,6 +2996,7 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       sandboxConfigId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }: {
@@ -2658,6 +3005,7 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       sandboxConfigId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -2671,6 +3019,7 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
         sandboxConfigId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       },
@@ -2696,6 +3045,7 @@ export const UseProvidersServiceListProvidersKeyFn = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2708,6 +3058,7 @@ export const UseProvidersServiceListProvidersKeyFn = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2725,6 +3076,7 @@ export const UseProvidersServiceListProvidersKeyFn = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2744,12 +3096,14 @@ export const UseProvidersServiceRetrieveProviderKeyFn = (
     providerId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     providerId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2757,7 +3111,14 @@ export const UseProvidersServiceRetrieveProviderKeyFn = (
 ) => [
   useProvidersServiceRetrieveProviderKey,
   ...(queryKey ?? [
-    { providerId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      providerId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type RunsServiceListRunsDefaultResponse = Awaited<
@@ -2781,6 +3142,7 @@ export const UseRunsServiceListRunsKeyFn = (
     stopReason,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2795,6 +3157,7 @@ export const UseRunsServiceListRunsKeyFn = (
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2814,6 +3177,7 @@ export const UseRunsServiceListRunsKeyFn = (
       stopReason,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2833,6 +3197,7 @@ export const UseRunsServiceListActiveRunsKeyFn = (
     background,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2840,6 +3205,7 @@ export const UseRunsServiceListActiveRunsKeyFn = (
     background?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2852,6 +3218,7 @@ export const UseRunsServiceListActiveRunsKeyFn = (
       background,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2870,12 +3237,14 @@ export const UseRunsServiceRetrieveRunKeyFn = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2883,7 +3252,14 @@ export const UseRunsServiceRetrieveRunKeyFn = (
 ) => [
   useRunsServiceRetrieveRunKey,
   ...(queryKey ?? [
-    { runId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      runId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type RunsServiceListRunMessagesDefaultResponse = Awaited<
@@ -2903,6 +3279,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2913,6 +3290,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2928,6 +3306,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -2946,12 +3325,14 @@ export const UseRunsServiceRetrieveRunUsageKeyFn = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2959,7 +3340,14 @@ export const UseRunsServiceRetrieveRunUsageKeyFn = (
 ) => [
   useRunsServiceRetrieveRunUsageKey,
   ...(queryKey ?? [
-    { runId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      runId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type RunsServiceListRunStepsDefaultResponse = Awaited<
@@ -2979,6 +3367,7 @@ export const UseRunsServiceListRunStepsKeyFn = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2989,6 +3378,7 @@ export const UseRunsServiceListRunStepsKeyFn = (
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3004,6 +3394,7 @@ export const UseRunsServiceListRunStepsKeyFn = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3035,6 +3426,7 @@ export const UseStepsServiceListStepsKeyFn = (
     traceIds,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProject,
     xProjectId,
@@ -3055,6 +3447,7 @@ export const UseStepsServiceListStepsKeyFn = (
     traceIds?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProject?: string;
     xProjectId?: string;
@@ -3080,6 +3473,7 @@ export const UseStepsServiceListStepsKeyFn = (
       traceIds,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -3099,12 +3493,14 @@ export const UseStepsServiceRetrieveStepKeyFn = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3112,7 +3508,14 @@ export const UseStepsServiceRetrieveStepKeyFn = (
 ) => [
   useStepsServiceRetrieveStepKey,
   ...(queryKey ?? [
-    { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      stepId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type StepsServiceRetrieveMetricsForStepDefaultResponse = Awaited<
@@ -3129,12 +3532,14 @@ export const UseStepsServiceRetrieveMetricsForStepKeyFn = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3142,7 +3547,14 @@ export const UseStepsServiceRetrieveMetricsForStepKeyFn = (
 ) => [
   useStepsServiceRetrieveMetricsForStepKey,
   ...(queryKey ?? [
-    { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      stepId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type StepsServiceRetrieveTraceForStepDefaultResponse = Awaited<
@@ -3159,12 +3571,14 @@ export const UseStepsServiceRetrieveTraceForStepKeyFn = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3172,7 +3586,14 @@ export const UseStepsServiceRetrieveTraceForStepKeyFn = (
 ) => [
   useStepsServiceRetrieveTraceForStepKey,
   ...(queryKey ?? [
-    { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      stepId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type StepsServiceListMessagesForStepDefaultResponse = Awaited<
@@ -3194,6 +3615,7 @@ export const UseStepsServiceListMessagesForStepKeyFn = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3205,6 +3627,7 @@ export const UseStepsServiceListMessagesForStepKeyFn = (
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3221,6 +3644,7 @@ export const UseStepsServiceListMessagesForStepKeyFn = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3245,6 +3669,7 @@ export const UseTagServiceListTagsKeyFn = (
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3257,6 +3682,7 @@ export const UseTagServiceListTagsKeyFn = (
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3274,6 +3700,7 @@ export const UseTagServiceListTagsKeyFn = (
       queryText,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3298,6 +3725,7 @@ export const UseAdminServiceListTagsKeyFn = (
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3310,6 +3738,7 @@ export const UseAdminServiceListTagsKeyFn = (
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3327,6 +3756,7 @@ export const UseAdminServiceListTagsKeyFn = (
       queryText,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3382,12 +3812,14 @@ export const UseTelemetryServiceRetrieveProviderTraceKeyFn = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3395,7 +3827,14 @@ export const UseTelemetryServiceRetrieveProviderTraceKeyFn = (
 ) => [
   useTelemetryServiceRetrieveProviderTraceKey,
   ...(queryKey ?? [
-    { stepId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      stepId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type MessagesServiceListBatchesDefaultResponse = Awaited<
@@ -3415,6 +3854,7 @@ export const UseMessagesServiceListBatchesKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3425,6 +3865,7 @@ export const UseMessagesServiceListBatchesKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3440,6 +3881,7 @@ export const UseMessagesServiceListBatchesKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3459,12 +3901,14 @@ export const UseMessagesServiceRetrieveBatchKeyFn = (
     batchId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     batchId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3472,7 +3916,14 @@ export const UseMessagesServiceRetrieveBatchKeyFn = (
 ) => [
   useMessagesServiceRetrieveBatchKey,
   ...(queryKey ?? [
-    { batchId, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      batchId,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type MessagesServiceListMessagesForBatchDefaultResponse = Awaited<
@@ -3495,6 +3946,7 @@ export const UseMessagesServiceListMessagesForBatchKeyFn = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3507,6 +3959,7 @@ export const UseMessagesServiceListMessagesForBatchKeyFn = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3524,6 +3977,7 @@ export const UseMessagesServiceListMessagesForBatchKeyFn = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     },
@@ -3543,12 +3997,14 @@ export const UseEmbeddingsServiceGetTotalStorageSizeKeyFn = (
     storageUnit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     storageUnit?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3556,7 +4012,14 @@ export const UseEmbeddingsServiceGetTotalStorageSizeKeyFn = (
 ) => [
   useEmbeddingsServiceGetTotalStorageSizeKey,
   ...(queryKey ?? [
-    { storageUnit, userAgent, userId, xExperimentalMessageAsync, xProjectId },
+    {
+      storageUnit,
+      userAgent,
+      userId,
+      xExperimentalLettaV1Agent,
+      xExperimentalMessageAsync,
+      xProjectId,
+    },
   ]),
 ];
 export type UsersServiceListUsersDefaultResponse = Awaited<

@@ -399,12 +399,13 @@ export class ArchivesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Archive Successful Response
    * @throws ApiError
    */
   public static createArchive(
     data: CreateArchiveData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateArchiveResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -432,12 +433,13 @@ export class ArchivesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Archive Successful Response
    * @throws ApiError
    */
   public static listArchives(
     data: ListArchivesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListArchivesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -467,12 +469,13 @@ export class ArchivesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Archive Successful Response
    * @throws ApiError
    */
   public static modifyArchive(
     data: ModifyArchiveData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyArchiveResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -500,12 +503,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteTool(
     data: DeleteToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteToolResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -529,12 +533,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static retrieveTool(
     data: RetrieveToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveToolResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -559,12 +564,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static modifyTool(
     data: ModifyToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -597,12 +603,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countTools(
     data: CountToolsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -644,12 +651,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static listTools(
     data: ListToolsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -684,12 +692,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static createTool(
     data: CreateToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -712,12 +721,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static upsertTool(
     data: UpsertToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpsertToolResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -739,12 +749,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static addBaseTools(
     data: AddBaseToolsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AddBaseToolsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -765,12 +776,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ToolReturnMessage Successful Response
    * @throws ApiError
    */
   public static runToolFromSource(
     data: RunToolFromSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RunToolFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -792,12 +804,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AppModel Successful Response
    * @throws ApiError
    */
   public static listComposioApps(
     data: ListComposioAppsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListComposioAppsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -818,12 +831,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ActionModel Successful Response
    * @throws ApiError
    */
   public static listComposioActionsByApp(
     data: ListComposioActionsByAppData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListComposioActionsByAppResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -847,12 +861,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static addComposioTool(
     data: AddComposioToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AddComposioToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -875,12 +890,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static listMcpServers(
     data: ListMcpServersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListMcpServersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -901,12 +917,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static addMcpServer(
     data: AddMcpServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AddMcpServerResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -929,12 +946,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns MCPTool Successful Response
    * @throws ApiError
    */
   public static listMcpToolsByServer(
     data: ListMcpToolsByServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListMcpToolsByServerResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -965,12 +983,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static resyncMcpServerTools(
     data: ResyncMcpServerToolsData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ResyncMcpServerToolsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -998,12 +1017,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static addMcpTool(
     data: AddMcpToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AddMcpToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1029,12 +1049,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static updateMcpServer(
     data: UpdateMcpServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateMcpServerResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1060,12 +1081,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteMcpServer(
     data: DeleteMcpServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteMcpServerResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1090,12 +1112,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static testMcpServer(
     data: TestMcpServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<TestMcpServerResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1119,12 +1142,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful response
    * @throws ApiError
    */
   public static connectMcpServer(
     data: ConnectMcpServerData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ConnectMcpServerResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1148,12 +1172,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static generateJsonSchema(
     data: GenerateJsonSchemaData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GenerateJsonSchemaResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1179,12 +1204,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static executeMcpTool(
     data: ExecuteMcpToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ExecuteMcpToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1216,7 +1242,7 @@ export class ToolsService {
    */
   public static mcpOauthCallback(
     data: McpOauthCallbackData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<McpOauthCallbackResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1246,12 +1272,13 @@ export class ToolsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns GenerateToolOutput Successful Response
    * @throws ApiError
    */
   public static generateTool(
     data: GenerateToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GenerateToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1276,12 +1303,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countSources(
     data: CountSourcesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1303,12 +1331,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static retrieveSource(
     data: RetrieveSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1334,12 +1363,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static modifySource(
     data: ModifySourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifySourceResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1366,12 +1396,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteSource(
     data: DeleteSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteSourceResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1396,12 +1427,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static getSourceIdByName(
     data: GetSourceIdByNameData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetSourceIdByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1432,12 +1464,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
   public static getSourcesMetadata(
     data: GetSourcesMetadataData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetSourcesMetadataResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1462,12 +1495,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static listSources(
     data: ListSourcesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1489,12 +1523,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static createSource(
     data: CreateSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1521,12 +1556,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static uploadFileToSource(
     data: UploadFileToSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UploadFileToSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1557,12 +1593,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static getAgentsForSource(
     data: GetAgentsForSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetAgentsForSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1590,12 +1627,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Passage Successful Response
    * @throws ApiError
    */
   public static listSourcePassages(
     data: ListSourcePassagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListSourcePassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1629,12 +1667,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static listSourceFiles(
     data: ListSourceFilesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListSourceFilesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1667,12 +1706,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static getFileMetadata(
     data: GetFileMetadataData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetFileMetadataResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1702,12 +1742,13 @@ export class SourcesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns void Successful Response
    * @throws ApiError
    */
   public static deleteFileFromSource(
     data: DeleteFileFromSourceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteFileFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1733,12 +1774,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countFolders(
     data: CountFoldersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountFoldersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1759,12 +1801,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Folder Successful Response
    * @throws ApiError
    */
   public static retrieveFolder(
     data: RetrieveFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveFolderResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1789,12 +1832,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Folder Successful Response
    * @throws ApiError
    */
   public static modifyFolder(
     data: ModifyFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyFolderResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1820,12 +1864,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteFolder(
     data: DeleteFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteFolderResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1853,12 +1898,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static getFolderByName(
     data: GetFolderByNameData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetFolderByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1888,12 +1934,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
   public static retrieveMetadata(
     data: RetrieveMetadataData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveMetadataResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1923,12 +1970,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Folder Successful Response
    * @throws ApiError
    */
   public static listFolders(
     data: ListFoldersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListFoldersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1957,12 +2005,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Folder Successful Response
    * @throws ApiError
    */
   public static createFolder(
     data: CreateFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateFolderResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1988,12 +2037,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static uploadFileToFolder(
     data: UploadFileToFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UploadFileToFolderResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2028,12 +2078,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static listAgentsForFolder(
     data: ListAgentsForFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentsForFolderResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2069,12 +2120,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Passage Successful Response
    * @throws ApiError
    */
   public static listFolderPassages(
     data: ListFolderPassagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListFolderPassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2111,12 +2163,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
   public static listFolderFiles(
     data: ListFolderFilesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListFolderFilesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2149,12 +2202,13 @@ export class FoldersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns void Successful Response
    * @throws ApiError
    */
   public static deleteFileFromFolder(
     data: DeleteFileFromFolderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteFileFromFolderResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2197,12 +2251,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static listAgents(
     data: ListAgentsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2243,12 +2298,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static createAgent(
     data: CreateAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2270,12 +2326,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countAgents(
     data: CountAgentsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2302,13 +2359,14 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @param data.requestBody
    * @returns string Successful Response
    * @throws ApiError
    */
   public static exportAgent(
     data: ExportAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ExportAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2340,12 +2398,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ImportedAgentsResponse Successful Response
    * @throws ApiError
    */
   public static importAgent(
     data: ImportAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ImportAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2368,12 +2427,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ContextWindowOverview Successful Response
    * @throws ApiError
    */
   public static retrieveAgentContextWindow(
     data: RetrieveAgentContextWindowData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveAgentContextWindowResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2398,12 +2458,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static modifyAgent(
     data: ModifyAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2430,12 +2491,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static retrieveAgent(
     data: RetrieveAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2462,12 +2524,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteAgent(
     data: DeleteAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteAgentResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2491,12 +2554,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Tool Successful Response
    * @throws ApiError
    */
   public static listAgentTools(
     data: ListAgentToolsData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2521,12 +2585,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static attachTool(
     data: AttachToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AttachToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2552,12 +2617,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static detachTool(
     data: DetachToolData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DetachToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2584,12 +2650,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static modifyApproval(
     data: ModifyApprovalData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyApprovalResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2618,12 +2685,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static attachSourceToAgent(
     data: AttachSourceToAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AttachSourceToAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2649,12 +2717,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static attachFolderToAgent(
     data: AttachFolderToAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AttachFolderToAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2680,12 +2749,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static detachSourceFromAgent(
     data: DetachSourceFromAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DetachSourceFromAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2711,12 +2781,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static detachFolderFromAgent(
     data: DetachFolderFromAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DetachFolderFromAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2744,12 +2815,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static closeAllOpenFiles(
     data: CloseAllOpenFilesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CloseAllOpenFilesResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2778,12 +2850,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static openFile(
     data: OpenFileData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<OpenFileResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2812,12 +2885,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static closeFile(
     data: CloseFileData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CloseFileResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2842,12 +2916,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static listAgentSources(
     data: ListAgentSourcesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2871,12 +2946,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Source Successful Response
    * @throws ApiError
    */
   public static listAgentFolders(
     data: ListAgentFoldersData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentFoldersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2903,12 +2979,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns PaginatedAgentFiles Successful Response
    * @throws ApiError
    */
   public static listAgentFiles(
     data: ListAgentFilesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentFilesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2938,12 +3015,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Memory Successful Response
    * @throws ApiError
    */
   public static retrieveAgentMemory(
     data: RetrieveAgentMemoryData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2968,12 +3046,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static retrieveCoreMemoryBlock(
     data: RetrieveCoreMemoryBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3000,12 +3079,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static modifyCoreMemoryBlock(
     data: ModifyCoreMemoryBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3032,12 +3112,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static listCoreMemoryBlocks(
     data: ListCoreMemoryBlocksData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListCoreMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3062,12 +3143,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static attachCoreMemoryBlock(
     data: AttachCoreMemoryBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AttachCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3093,12 +3175,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static detachCoreMemoryBlock(
     data: DetachCoreMemoryBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DetachCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3128,12 +3211,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Passage Successful Response
    * @throws ApiError
    */
   public static listPassages(
     data: ListPassagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListPassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3165,12 +3249,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Passage Successful Response
    * @throws ApiError
    */
   public static createPassage(
     data: CreatePassageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreatePassageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3206,12 +3291,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ArchivalMemorySearchResponse Successful Response
    * @throws ApiError
    */
   public static searchArchivalMemory(
     data: SearchArchivalMemoryData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SearchArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3244,12 +3330,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deletePassage(
     data: DeletePassageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeletePassageResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -3282,12 +3369,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
   public static listMessages(
     data: ListMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3323,12 +3411,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
   public static sendMessage(
     data: SendMessageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SendMessageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3356,12 +3445,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static modifyMessage(
     data: ModifyMessageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyMessageResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3391,12 +3481,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful response
    * @throws ApiError
    */
   public static createAgentMessageStream(
     data: CreateAgentMessageStreamData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateAgentMessageStreamResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3424,13 +3515,14 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @param data.requestBody
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static cancelAgentRun(
     data: CancelAgentRunData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CancelAgentRunResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3458,12 +3550,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns MessageSearchResult Successful Response
    * @throws ApiError
    */
   public static searchMessages(
     data: SearchMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SearchMessagesResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3490,12 +3583,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Run Successful Response
    * @throws ApiError
    */
   public static createAgentMessageAsync(
     data: CreateAgentMessageAsyncData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateAgentMessageAsyncResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3522,12 +3616,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static resetMessages(
     data: ResetMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ResetMessagesResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3555,12 +3650,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static listAgentGroups(
     data: ListAgentGroupsData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentGroupsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3592,12 +3688,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static previewRawPayload(
     data: PreviewRawPayloadData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<PreviewRawPayloadResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3627,12 +3724,13 @@ export class AgentsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns void Successful Response
    * @throws ApiError
    */
   public static summarizeAgentConversation(
     data: SummarizeAgentConversationData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SummarizeAgentConversationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3667,12 +3765,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static listGroups(
     data: ListGroupsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListGroupsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3703,12 +3802,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static createGroup(
     data: CreateGroupData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateGroupResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3730,12 +3830,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countGroups(
     data: CountGroupsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountGroupsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3756,12 +3857,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static retrieveGroup(
     data: RetrieveGroupData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveGroupResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3787,12 +3889,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static modifyGroup(
     data: ModifyGroupData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyGroupResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3818,12 +3921,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteGroup(
     data: DeleteGroupData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteGroupResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -3849,12 +3953,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
   public static sendGroupMessage(
     data: SendGroupMessageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SendGroupMessageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3888,12 +3993,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
   public static listGroupMessages(
     data: ListGroupMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListGroupMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -3930,12 +4036,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful response
    * @throws ApiError
    */
   public static sendGroupMessageStreaming(
     data: SendGroupMessageStreamingData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<SendGroupMessageStreamingResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -3963,12 +4070,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static modifyGroupMessage(
     data: ModifyGroupMessageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyGroupMessageResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -3995,12 +4103,13 @@ export class GroupsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static resetGroupMessages(
     data: ResetGroupMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ResetGroupMessagesResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -4034,12 +4143,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Identity Successful Response
    * @throws ApiError
    */
   public static listIdentities(
     data: ListIdentitiesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListIdentitiesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4071,12 +4181,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Identity Successful Response
    * @throws ApiError
    */
   public static createIdentity(
     data: CreateIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateIdentityResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4099,12 +4210,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Identity Successful Response
    * @throws ApiError
    */
   public static upsertIdentity(
     data: UpsertIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpsertIdentityResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -4126,12 +4238,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countIdentities(
     data: CountIdentitiesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountIdentitiesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4151,12 +4264,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Identity Successful Response
    * @throws ApiError
    */
   public static retrieveIdentity(
     data: RetrieveIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveIdentityResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4180,12 +4294,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Identity Successful Response
    * @throws ApiError
    */
   public static updateIdentity(
     data: UpdateIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateIdentityResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -4211,12 +4326,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteIdentity(
     data: DeleteIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteIdentityResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -4240,12 +4356,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static upsertIdentityProperties(
     data: UpsertIdentityPropertiesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpsertIdentityPropertiesResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -4276,12 +4393,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static listAgentsForIdentity(
     data: ListAgentsForIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentsForIdentityResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4317,12 +4435,13 @@ export class IdentitiesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static listBlocksForIdentity(
     data: ListBlocksForIdentityData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListBlocksForIdentityResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4355,12 +4474,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Group Successful Response
    * @throws ApiError
    */
   public static createInternalTemplateGroup(
     data: CreateInternalTemplateGroupData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateInternalTemplateGroupResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4383,12 +4503,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static createInternalTemplateAgent(
     data: CreateInternalTemplateAgentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateInternalTemplateAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4411,12 +4532,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static createInternalTemplateBlock(
     data: CreateInternalTemplateBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateInternalTemplateBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4439,12 +4561,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static createInternalTemplateBlocksBatch(
     data: CreateInternalTemplateBlocksBatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateInternalTemplateBlocksBatchResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4469,12 +4592,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns ListDeploymentEntitiesResponse Successful Response
    * @throws ApiError
    */
   public static listDeploymentEntities(
     data: ListDeploymentEntitiesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListDeploymentEntitiesResponse2> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4502,12 +4626,13 @@ export class InternalTemplatesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns DeleteDeploymentResponse Successful Response
    * @throws ApiError
    */
   public static deleteDeployment(
     data: DeleteDeploymentData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteDeploymentResponse2> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -4535,12 +4660,13 @@ export class ModelsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
   public static listModels(
     data: ListModelsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4565,12 +4691,13 @@ export class ModelsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
   public static listEmbeddingModels(
     data: ListEmbeddingModelsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4595,12 +4722,13 @@ export class LlmsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
   public static listModels(
     data: ListModelsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4625,12 +4753,13 @@ export class LlmsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
   public static listEmbeddingModels(
     data: ListEmbeddingModelsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4668,12 +4797,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static listBlocks(
     data: ListBlocksData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4712,12 +4842,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static createBlock(
     data: CreateBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -4739,12 +4870,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static countBlocks(
     data: CountBlocksData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CountBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4765,12 +4897,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static modifyBlock(
     data: ModifyBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -4795,12 +4928,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteBlock(
     data: DeleteBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteBlockResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -4823,12 +4957,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Block Successful Response
    * @throws ApiError
    */
   public static retrieveBlock(
     data: RetrieveBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4859,12 +4994,13 @@ export class BlocksService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static listAgentsForBlock(
     data: ListAgentsForBlockData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListAgentsForBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4903,12 +5039,13 @@ export class JobsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Job Successful Response
    * @throws ApiError
    */
   public static listJobs(
     data: ListJobsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4942,12 +5079,13 @@ export class JobsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Job Successful Response
    * @throws ApiError
    */
   public static listActiveJobs(
     data: ListActiveJobsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListActiveJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -4975,12 +5113,13 @@ export class JobsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Job Successful Response
    * @throws ApiError
    */
   public static retrieveJob(
     data: RetrieveJobData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveJobResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5004,12 +5143,13 @@ export class JobsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Job Successful Response
    * @throws ApiError
    */
   public static deleteJob(
     data: DeleteJobData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteJobResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -5036,12 +5176,13 @@ export class JobsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Job Successful Response
    * @throws ApiError
    */
   public static cancelJob(
     data: CancelJobData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CancelJobResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -5065,6 +5206,7 @@ export class HealthService {
    */
   public static checkHealth(headers?: {
     user_id: string;
+    [x: string]: string;
   }): CancelablePromise<CheckHealthResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5083,12 +5225,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static createSandboxConfigV1SandboxConfigPost(
     data: CreateSandboxConfigV1SandboxConfigPostData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateSandboxConfigV1SandboxConfigPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5112,12 +5255,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static listSandboxConfigsV1SandboxConfigGet(
     data: ListSandboxConfigsV1SandboxConfigGetData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListSandboxConfigsV1SandboxConfigGetResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5141,12 +5285,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
     data: CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5165,12 +5310,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
     data: CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5191,12 +5337,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static createCustomLocalSandboxConfigV1SandboxConfigLocalPost(
     data: CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5219,12 +5366,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(
     data: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -5249,12 +5397,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns void Successful Response
    * @throws ApiError
    */
   public static deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(
     data: DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -5278,12 +5427,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
   public static forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost(
     data: ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5304,12 +5454,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
   public static createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
     data: CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5336,12 +5487,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
   public static listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
     data: ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5369,12 +5521,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
   public static updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(
     data: UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -5399,12 +5552,13 @@ export class SandboxConfigService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns void Successful Response
    * @throws ApiError
    */
   public static deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(
     data: DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -5436,12 +5590,13 @@ export class ProvidersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Provider Successful Response
    * @throws ApiError
    */
   public static listProviders(
     data: ListProvidersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListProvidersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5471,12 +5626,13 @@ export class ProvidersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Provider Successful Response
    * @throws ApiError
    */
   public static createProvider(
     data: CreateProviderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateProviderResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5499,12 +5655,13 @@ export class ProvidersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Provider Successful Response
    * @throws ApiError
    */
   public static retrieveProvider(
     data: RetrieveProviderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveProviderResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5529,12 +5686,13 @@ export class ProvidersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Provider Successful Response
    * @throws ApiError
    */
   public static modifyProvider(
     data: ModifyProviderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyProviderResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -5560,12 +5718,13 @@ export class ProvidersService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteProvider(
     data: DeleteProviderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteProviderResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -5590,7 +5749,7 @@ export class ProvidersService {
    */
   public static checkProvider(
     data: CheckProviderData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CheckProviderResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5623,12 +5782,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Run Successful Response
    * @throws ApiError
    */
   public static listRuns(
     data: ListRunsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListRunsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5662,12 +5822,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Run Successful Response
    * @throws ApiError
    */
   public static listActiveRuns(
     data: ListActiveRunsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListActiveRunsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5692,12 +5853,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Run Successful Response
    * @throws ApiError
    */
   public static retrieveRun(
     data: RetrieveRunData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveRunResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5721,12 +5883,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Run Successful Response
    * @throws ApiError
    */
   public static deleteRun(
     data: DeleteRunData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteRunResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -5754,12 +5917,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
   public static listRunMessages(
     data: ListRunMessagesData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListRunMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5789,12 +5953,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns UsageStatistics Successful Response
    * @throws ApiError
    */
   public static retrieveRunUsage(
     data: RetrieveRunUsageData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveRunUsageResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5832,12 +5997,13 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Step Successful Response
    * @throws ApiError
    */
   public static listRunSteps(
     data: ListRunStepsData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListRunStepsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5866,13 +6032,14 @@ export class RunsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @param data.requestBody
    * @returns unknown Successful response
    * @throws ApiError
    */
   public static retrieveStream(
     data: RetrieveStreamData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveStreamResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -5914,12 +6081,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Step Successful Response
    * @throws ApiError
    */
   public static listSteps(
     data: ListStepsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListStepsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5956,12 +6124,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Step Successful Response
    * @throws ApiError
    */
   public static retrieveStep(
     data: RetrieveStepData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -5985,12 +6154,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns StepMetrics Successful Response
    * @throws ApiError
    */
   public static retrieveMetricsForStep(
     data: RetrieveMetricsForStepData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveMetricsForStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6013,12 +6183,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static retrieveTraceForStep(
     data: RetrieveTraceForStepData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveTraceForStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6043,12 +6214,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Step Successful Response
    * @throws ApiError
    */
   public static modifyFeedbackForStep(
     data: ModifyFeedbackForStepData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ModifyFeedbackForStepResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -6079,12 +6251,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static listMessagesForStep(
     data: ListMessagesForStepData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListMessagesForStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6116,12 +6289,13 @@ export class StepsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns Step Successful Response
    * @throws ApiError
    */
   public static updateStepTransactionId(
     data: UpdateStepTransactionIdData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateStepTransactionIdResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -6154,12 +6328,13 @@ export class TagService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static listTags(
     data: ListTagsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListTagsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6197,12 +6372,13 @@ export class AdminService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns string Successful Response
    * @throws ApiError
    */
   public static listTags(
     data: ListTagsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListTagsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6234,7 +6410,7 @@ export class AdminService {
    */
   public static listUsers(
     data: ListUsersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6260,7 +6436,7 @@ export class AdminService {
    */
   public static createUser(
     data: CreateUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6284,7 +6460,7 @@ export class AdminService {
    */
   public static updateUser(
     data: UpdateUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateUserResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -6307,7 +6483,7 @@ export class AdminService {
    */
   public static deleteUser(
     data: DeleteUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -6333,7 +6509,7 @@ export class AdminService {
    */
   public static listOrgs(
     data: ListOrgsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6359,7 +6535,7 @@ export class AdminService {
    */
   public static createOrganization(
     data: CreateOrganizationData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6382,7 +6558,7 @@ export class AdminService {
    */
   public static deleteOrganizationById(
     data: DeleteOrganizationByIdData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -6407,7 +6583,7 @@ export class AdminService {
    */
   public static updateOrganization(
     data: UpdateOrganizationData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -6438,12 +6614,13 @@ export class TelemetryService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static retrieveProviderTrace(
     data: RetrieveProviderTraceData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveProviderTraceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6472,12 +6649,13 @@ export class MessagesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
   public static createBatch(
     data: CreateBatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateBatchResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6504,12 +6682,13 @@ export class MessagesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
   public static listBatches(
     data: ListBatchesData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListBatchesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6537,12 +6716,13 @@ export class MessagesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
   public static retrieveBatch(
     data: RetrieveBatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<RetrieveBatchResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6572,12 +6752,13 @@ export class MessagesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns LettaBatchMessages Successful Response
    * @throws ApiError
    */
   public static listMessagesForBatch(
     data: ListMessagesForBatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListMessagesForBatchResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6609,12 +6790,13 @@ export class MessagesService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful Response
    * @throws ApiError
    */
   public static cancelBatch(
     data: CancelBatchData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CancelBatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -6640,12 +6822,13 @@ export class VoiceService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns unknown Successful response
    * @throws ApiError
    */
   public static createVoiceChatCompletions(
     data: CreateVoiceChatCompletionsData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateVoiceChatCompletionsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6673,12 +6856,13 @@ export class EmbeddingsService {
    * @param data.userAgent
    * @param data.xProjectId
    * @param data.xExperimentalMessageAsync
+   * @param data.xExperimentalLettaV1Agent
    * @returns number Successful Response
    * @throws ApiError
    */
   public static getTotalStorageSize(
     data: GetTotalStorageSizeData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<GetTotalStorageSizeResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6703,7 +6887,7 @@ export class UsersService {
    */
   public static listUsers(
     data: ListUsersData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6729,7 +6913,7 @@ export class UsersService {
    */
   public static createUser(
     data: CreateUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6753,7 +6937,7 @@ export class UsersService {
    */
   public static updateUser(
     data: UpdateUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateUserResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -6776,7 +6960,7 @@ export class UsersService {
    */
   public static deleteUser(
     data: DeleteUserData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -6804,7 +6988,7 @@ export class OrganizationService {
    */
   public static listOrgs(
     data: ListOrgsData = {},
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -6830,7 +7014,7 @@ export class OrganizationService {
    */
   public static createOrganization(
     data: CreateOrganizationData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -6853,7 +7037,7 @@ export class OrganizationService {
    */
   public static deleteOrganizationById(
     data: DeleteOrganizationByIdData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -6878,7 +7062,7 @@ export class OrganizationService {
    */
   public static updateOrganization(
     data: UpdateOrganizationData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<UpdateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -6909,7 +7093,7 @@ export class AuthService {
    */
   public static authenticateUserV1AuthPost(
     data: AuthenticateUserV1AuthPostData,
-    headers?: { user_id: string },
+    headers?: { user_id: string; [x: string]: string },
   ): CancelablePromise<AuthenticateUserV1AuthPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',

@@ -62,7 +62,7 @@ async function job() {
       if (!hasHeaderParam) {
         method.addParameter({
           name: 'headers',
-          type: '{ user_id: string }',
+          type: '{ user_id: string, [x: string]: string }',
           hasQuestionToken: true,
         });
       }

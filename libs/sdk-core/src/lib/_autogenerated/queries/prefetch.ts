@@ -51,6 +51,7 @@ import * as Common from './common';
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Archive Successful Response
  * @throws ApiError
  */
@@ -65,6 +66,7 @@ export const prefetchUseArchivesServiceListArchives = (
     order,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -76,6 +78,7 @@ export const prefetchUseArchivesServiceListArchives = (
     order?: 'asc' | 'desc';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -90,6 +93,7 @@ export const prefetchUseArchivesServiceListArchives = (
       order,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -103,6 +107,7 @@ export const prefetchUseArchivesServiceListArchives = (
         order,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -116,6 +121,7 @@ export const prefetchUseArchivesServiceListArchives = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -125,12 +131,14 @@ export const prefetchUseToolsServiceRetrieveTool = (
     toolId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     toolId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -140,6 +148,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
       toolId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -148,6 +157,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
         toolId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -168,6 +178,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -184,6 +195,7 @@ export const prefetchUseToolsServiceCountTools = (
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -197,6 +209,7 @@ export const prefetchUseToolsServiceCountTools = (
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -213,6 +226,7 @@ export const prefetchUseToolsServiceCountTools = (
       toolTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -228,6 +242,7 @@ export const prefetchUseToolsServiceCountTools = (
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -252,6 +267,7 @@ export const prefetchUseToolsServiceCountTools = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -272,6 +288,7 @@ export const prefetchUseToolsServiceListTools = (
     toolTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -289,6 +306,7 @@ export const prefetchUseToolsServiceListTools = (
     toolTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -309,6 +327,7 @@ export const prefetchUseToolsServiceListTools = (
       toolTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -328,6 +347,7 @@ export const prefetchUseToolsServiceListTools = (
         toolTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -340,6 +360,7 @@ export const prefetchUseToolsServiceListTools = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AppModel Successful Response
  * @throws ApiError
  */
@@ -348,11 +369,13 @@ export const prefetchUseToolsServiceListComposioApps = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -361,6 +384,7 @@ export const prefetchUseToolsServiceListComposioApps = (
     queryKey: Common.UseToolsServiceListComposioAppsKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -368,6 +392,7 @@ export const prefetchUseToolsServiceListComposioApps = (
       ToolsService.listComposioApps({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -381,6 +406,7 @@ export const prefetchUseToolsServiceListComposioApps = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ActionModel Successful Response
  * @throws ApiError
  */
@@ -390,12 +416,14 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
     composioAppName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     composioAppName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -405,6 +433,7 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
       composioAppName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -413,6 +442,7 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
         composioAppName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -425,6 +455,7 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -433,11 +464,13 @@ export const prefetchUseToolsServiceListMcpServers = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -446,6 +479,7 @@ export const prefetchUseToolsServiceListMcpServers = (
     queryKey: Common.UseToolsServiceListMcpServersKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -453,6 +487,7 @@ export const prefetchUseToolsServiceListMcpServers = (
       ToolsService.listMcpServers({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -466,6 +501,7 @@ export const prefetchUseToolsServiceListMcpServers = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns MCPTool Successful Response
  * @throws ApiError
  */
@@ -475,12 +511,14 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
     mcpServerName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     mcpServerName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -490,6 +528,7 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
       mcpServerName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -498,6 +537,7 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
         mcpServerName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -556,6 +596,7 @@ export const prefetchUseToolsServiceMcpOauthCallback = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -564,11 +605,13 @@ export const prefetchUseSourcesServiceCountSources = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -577,6 +620,7 @@ export const prefetchUseSourcesServiceCountSources = (
     queryKey: Common.UseSourcesServiceCountSourcesKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -584,6 +628,7 @@ export const prefetchUseSourcesServiceCountSources = (
       SourcesService.countSources({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -598,6 +643,7 @@ export const prefetchUseSourcesServiceCountSources = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -607,12 +653,14 @@ export const prefetchUseSourcesServiceRetrieveSource = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -622,6 +670,7 @@ export const prefetchUseSourcesServiceRetrieveSource = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -630,6 +679,7 @@ export const prefetchUseSourcesServiceRetrieveSource = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -644,6 +694,7 @@ export const prefetchUseSourcesServiceRetrieveSource = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -653,12 +704,14 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
     sourceName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -668,6 +721,7 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
       sourceName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -676,6 +730,7 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
         sourceName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -696,6 +751,7 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -705,12 +761,14 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -720,6 +778,7 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
       includeDetailedPerSourceMetadata,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -728,6 +787,7 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -741,6 +801,7 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -749,11 +810,13 @@ export const prefetchUseSourcesServiceListSources = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -762,6 +825,7 @@ export const prefetchUseSourcesServiceListSources = (
     queryKey: Common.UseSourcesServiceListSourcesKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -769,6 +833,7 @@ export const prefetchUseSourcesServiceListSources = (
       SourcesService.listSources({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -783,6 +848,7 @@ export const prefetchUseSourcesServiceListSources = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -792,12 +858,14 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -807,6 +875,7 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -815,6 +884,7 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -832,6 +902,7 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -844,6 +915,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -853,6 +925,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -865,6 +938,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -876,6 +950,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -894,6 +969,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -907,6 +983,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -917,6 +994,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -930,6 +1008,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -942,6 +1021,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -958,6 +1038,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -969,6 +1050,7 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -977,6 +1059,7 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
     sourceId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -988,6 +1071,7 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -998,6 +1082,7 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1010,6 +1095,7 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1018,11 +1104,13 @@ export const prefetchUseFoldersServiceCountFolders = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1031,6 +1119,7 @@ export const prefetchUseFoldersServiceCountFolders = (
     queryKey: Common.UseFoldersServiceCountFoldersKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1038,6 +1127,7 @@ export const prefetchUseFoldersServiceCountFolders = (
       FoldersService.countFolders({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1051,6 +1141,7 @@ export const prefetchUseFoldersServiceCountFolders = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -1060,12 +1151,14 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
     folderId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1075,6 +1168,7 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
       folderId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1083,6 +1177,7 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
         folderId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1100,6 +1195,7 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -1109,12 +1205,14 @@ export const prefetchUseFoldersServiceGetFolderByName = (
     folderName,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     folderName: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1124,6 +1222,7 @@ export const prefetchUseFoldersServiceGetFolderByName = (
       folderName,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1132,6 +1231,7 @@ export const prefetchUseFoldersServiceGetFolderByName = (
         folderName,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1151,6 +1251,7 @@ export const prefetchUseFoldersServiceGetFolderByName = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -1160,12 +1261,14 @@ export const prefetchUseFoldersServiceRetrieveMetadata = (
     includeDetailedPerSourceMetadata,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1175,6 +1278,7 @@ export const prefetchUseFoldersServiceRetrieveMetadata = (
       includeDetailedPerSourceMetadata,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1183,6 +1287,7 @@ export const prefetchUseFoldersServiceRetrieveMetadata = (
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1201,6 +1306,7 @@ export const prefetchUseFoldersServiceRetrieveMetadata = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -1215,6 +1321,7 @@ export const prefetchUseFoldersServiceListFolders = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1226,6 +1333,7 @@ export const prefetchUseFoldersServiceListFolders = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1240,6 +1348,7 @@ export const prefetchUseFoldersServiceListFolders = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1253,6 +1362,7 @@ export const prefetchUseFoldersServiceListFolders = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1271,6 +1381,7 @@ export const prefetchUseFoldersServiceListFolders = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -1285,6 +1396,7 @@ export const prefetchUseFoldersServiceListAgentsForFolder = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1296,6 +1408,7 @@ export const prefetchUseFoldersServiceListAgentsForFolder = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1310,6 +1423,7 @@ export const prefetchUseFoldersServiceListAgentsForFolder = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1323,6 +1437,7 @@ export const prefetchUseFoldersServiceListAgentsForFolder = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1341,6 +1456,7 @@ export const prefetchUseFoldersServiceListAgentsForFolder = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1355,6 +1471,7 @@ export const prefetchUseFoldersServiceListFolderPassages = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1366,6 +1483,7 @@ export const prefetchUseFoldersServiceListFolderPassages = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1380,6 +1498,7 @@ export const prefetchUseFoldersServiceListFolderPassages = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1393,6 +1512,7 @@ export const prefetchUseFoldersServiceListFolderPassages = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1412,6 +1532,7 @@ export const prefetchUseFoldersServiceListFolderPassages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1427,6 +1548,7 @@ export const prefetchUseFoldersServiceListFolderFiles = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1439,6 +1561,7 @@ export const prefetchUseFoldersServiceListFolderFiles = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1454,6 +1577,7 @@ export const prefetchUseFoldersServiceListFolderFiles = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1468,6 +1592,7 @@ export const prefetchUseFoldersServiceListFolderFiles = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1497,6 +1622,7 @@ export const prefetchUseFoldersServiceListFolderFiles = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1522,6 +1648,7 @@ export const prefetchUseAgentsServiceListAgents = (
     templateId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1544,6 +1671,7 @@ export const prefetchUseAgentsServiceListAgents = (
     templateId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1569,6 +1697,7 @@ export const prefetchUseAgentsServiceListAgents = (
       templateId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1593,6 +1722,7 @@ export const prefetchUseAgentsServiceListAgents = (
         templateId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1605,6 +1735,7 @@ export const prefetchUseAgentsServiceListAgents = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1613,11 +1744,13 @@ export const prefetchUseAgentsServiceCountAgents = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -1626,6 +1759,7 @@ export const prefetchUseAgentsServiceCountAgents = (
     queryKey: Common.UseAgentsServiceCountAgentsKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1633,6 +1767,7 @@ export const prefetchUseAgentsServiceCountAgents = (
       AgentsService.countAgents({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1652,6 +1787,7 @@ export const prefetchUseAgentsServiceCountAgents = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @param data.requestBody
  * @returns string Successful Response
  * @throws ApiError
@@ -1665,6 +1801,7 @@ export const prefetchUseAgentsServiceExportAgent = (
     useLegacyFormat,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1674,6 +1811,7 @@ export const prefetchUseAgentsServiceExportAgent = (
     useLegacyFormat?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1686,6 +1824,7 @@ export const prefetchUseAgentsServiceExportAgent = (
       useLegacyFormat,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1697,6 +1836,7 @@ export const prefetchUseAgentsServiceExportAgent = (
         useLegacyFormat,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1710,6 +1850,7 @@ export const prefetchUseAgentsServiceExportAgent = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
@@ -1719,12 +1860,14 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1734,6 +1877,7 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1742,6 +1886,7 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1756,6 +1901,7 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1766,6 +1912,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
     includeRelationships,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1773,6 +1920,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
     includeRelationships?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1783,6 +1931,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
       includeRelationships,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1792,6 +1941,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
         includeRelationships,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1805,6 +1955,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -1814,12 +1965,14 @@ export const prefetchUseAgentsServiceListAgentTools = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1829,6 +1982,7 @@ export const prefetchUseAgentsServiceListAgentTools = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1837,6 +1991,7 @@ export const prefetchUseAgentsServiceListAgentTools = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1850,6 +2005,7 @@ export const prefetchUseAgentsServiceListAgentTools = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1859,12 +2015,14 @@ export const prefetchUseAgentsServiceListAgentSources = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1874,6 +2032,7 @@ export const prefetchUseAgentsServiceListAgentSources = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1882,6 +2041,7 @@ export const prefetchUseAgentsServiceListAgentSources = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1895,6 +2055,7 @@ export const prefetchUseAgentsServiceListAgentSources = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1904,12 +2065,14 @@ export const prefetchUseAgentsServiceListAgentFolders = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1919,6 +2082,7 @@ export const prefetchUseAgentsServiceListAgentFolders = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1927,6 +2091,7 @@ export const prefetchUseAgentsServiceListAgentFolders = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -1943,6 +2108,7 @@ export const prefetchUseAgentsServiceListAgentFolders = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns PaginatedAgentFiles Successful Response
  * @throws ApiError
  */
@@ -1955,6 +2121,7 @@ export const prefetchUseAgentsServiceListAgentFiles = (
     limit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -1964,6 +2131,7 @@ export const prefetchUseAgentsServiceListAgentFiles = (
     limit?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -1976,6 +2144,7 @@ export const prefetchUseAgentsServiceListAgentFiles = (
       limit,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -1987,6 +2156,7 @@ export const prefetchUseAgentsServiceListAgentFiles = (
         limit,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2001,6 +2171,7 @@ export const prefetchUseAgentsServiceListAgentFiles = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Memory Successful Response
  * @throws ApiError
  */
@@ -2010,12 +2181,14 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2025,6 +2198,7 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2033,6 +2207,7 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2047,6 +2222,7 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2057,6 +2233,7 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
     blockLabel,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2064,6 +2241,7 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
     blockLabel: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2074,6 +2252,7 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
       blockLabel,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2083,6 +2262,7 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
         blockLabel,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2096,6 +2276,7 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2105,12 +2286,14 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
     agentId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     agentId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2120,6 +2303,7 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
       agentId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2128,6 +2312,7 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
         agentId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2146,6 +2331,7 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -2160,6 +2346,7 @@ export const prefetchUseAgentsServiceListPassages = (
     search,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2171,6 +2358,7 @@ export const prefetchUseAgentsServiceListPassages = (
     search?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2185,6 +2373,7 @@ export const prefetchUseAgentsServiceListPassages = (
       search,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2198,6 +2387,7 @@ export const prefetchUseAgentsServiceListPassages = (
         search,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2221,6 +2411,7 @@ export const prefetchUseAgentsServiceListPassages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
  */
@@ -2236,6 +2427,7 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
     topK,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2248,6 +2440,7 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
     topK?: number;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2263,6 +2456,7 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
       topK,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2277,6 +2471,7 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
         topK,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2298,6 +2493,7 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2315,6 +2511,7 @@ export const prefetchUseAgentsServiceListMessages = (
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2329,6 +2526,7 @@ export const prefetchUseAgentsServiceListMessages = (
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2346,6 +2544,7 @@ export const prefetchUseAgentsServiceListMessages = (
       useAssistantMessage,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2362,6 +2561,7 @@ export const prefetchUseAgentsServiceListMessages = (
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2376,6 +2576,7 @@ export const prefetchUseAgentsServiceListMessages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2386,6 +2587,7 @@ export const prefetchUseAgentsServiceListAgentGroups = (
     managerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2393,6 +2595,7 @@ export const prefetchUseAgentsServiceListAgentGroups = (
     managerType?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2403,6 +2606,7 @@ export const prefetchUseAgentsServiceListAgentGroups = (
       managerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2412,6 +2616,7 @@ export const prefetchUseAgentsServiceListAgentGroups = (
         managerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2431,6 +2636,7 @@ export const prefetchUseAgentsServiceListAgentGroups = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2446,6 +2652,7 @@ export const prefetchUseGroupsServiceListGroups = (
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2458,6 +2665,7 @@ export const prefetchUseGroupsServiceListGroups = (
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2473,6 +2681,7 @@ export const prefetchUseGroupsServiceListGroups = (
       projectId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2487,6 +2696,7 @@ export const prefetchUseGroupsServiceListGroups = (
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2499,6 +2709,7 @@ export const prefetchUseGroupsServiceListGroups = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2507,11 +2718,13 @@ export const prefetchUseGroupsServiceCountGroups = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2520,6 +2733,7 @@ export const prefetchUseGroupsServiceCountGroups = (
     queryKey: Common.UseGroupsServiceCountGroupsKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2527,6 +2741,7 @@ export const prefetchUseGroupsServiceCountGroups = (
       GroupsService.countGroups({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2540,6 +2755,7 @@ export const prefetchUseGroupsServiceCountGroups = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -2549,12 +2765,14 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
     groupId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     groupId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2564,6 +2782,7 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
       groupId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2572,6 +2791,7 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
         groupId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2593,6 +2813,7 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2610,6 +2831,7 @@ export const prefetchUseGroupsServiceListGroupMessages = (
     useAssistantMessage,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2624,6 +2846,7 @@ export const prefetchUseGroupsServiceListGroupMessages = (
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2641,6 +2864,7 @@ export const prefetchUseGroupsServiceListGroupMessages = (
       useAssistantMessage,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2657,6 +2881,7 @@ export const prefetchUseGroupsServiceListGroupMessages = (
         useAssistantMessage,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2678,6 +2903,7 @@ export const prefetchUseGroupsServiceListGroupMessages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2695,6 +2921,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     projectId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2709,6 +2936,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     projectId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2726,6 +2954,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       projectId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2742,6 +2971,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
         projectId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2754,6 +2984,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2762,11 +2993,13 @@ export const prefetchUseIdentitiesServiceCountIdentities = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -2775,6 +3008,7 @@ export const prefetchUseIdentitiesServiceCountIdentities = (
     queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2782,6 +3016,7 @@ export const prefetchUseIdentitiesServiceCountIdentities = (
       IdentitiesService.countIdentities({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2794,6 +3029,7 @@ export const prefetchUseIdentitiesServiceCountIdentities = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2803,12 +3039,14 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
     identityId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     identityId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2818,6 +3056,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
       identityId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2826,6 +3065,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
         identityId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2844,6 +3084,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2858,6 +3099,7 @@ export const prefetchUseIdentitiesServiceListAgentsForIdentity = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2869,6 +3111,7 @@ export const prefetchUseIdentitiesServiceListAgentsForIdentity = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2883,6 +3126,7 @@ export const prefetchUseIdentitiesServiceListAgentsForIdentity = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2896,6 +3140,7 @@ export const prefetchUseIdentitiesServiceListAgentsForIdentity = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2914,6 +3159,7 @@ export const prefetchUseIdentitiesServiceListAgentsForIdentity = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2928,6 +3174,7 @@ export const prefetchUseIdentitiesServiceListBlocksForIdentity = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2939,6 +3186,7 @@ export const prefetchUseIdentitiesServiceListBlocksForIdentity = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -2953,6 +3201,7 @@ export const prefetchUseIdentitiesServiceListBlocksForIdentity = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -2966,6 +3215,7 @@ export const prefetchUseIdentitiesServiceListBlocksForIdentity = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -2981,6 +3231,7 @@ export const prefetchUseIdentitiesServiceListBlocksForIdentity = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns ListDeploymentEntitiesResponse Successful Response
  * @throws ApiError
  */
@@ -2991,6 +3242,7 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
     entityTypes,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -2998,6 +3250,7 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
     entityTypes?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3008,6 +3261,7 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
       entityTypes,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3017,6 +3271,7 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
         entityTypes,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3032,6 +3287,7 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -3043,6 +3299,7 @@ export const prefetchUseModelsServiceListModels = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3051,6 +3308,7 @@ export const prefetchUseModelsServiceListModels = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3062,6 +3320,7 @@ export const prefetchUseModelsServiceListModels = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3072,6 +3331,7 @@ export const prefetchUseModelsServiceListModels = (
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3084,6 +3344,7 @@ export const prefetchUseModelsServiceListModels = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -3092,11 +3353,13 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3105,6 +3368,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
     queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3112,6 +3376,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
       ModelsService.listEmbeddingModels({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3127,6 +3392,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -3138,6 +3404,7 @@ export const prefetchUseLlmsServiceListModels = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3146,6 +3413,7 @@ export const prefetchUseLlmsServiceListModels = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3157,6 +3425,7 @@ export const prefetchUseLlmsServiceListModels = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3167,6 +3436,7 @@ export const prefetchUseLlmsServiceListModels = (
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3179,6 +3449,7 @@ export const prefetchUseLlmsServiceListModels = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -3187,11 +3458,13 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3200,6 +3473,7 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
     queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3207,6 +3481,7 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
       LlmsService.listEmbeddingModels({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3235,6 +3510,7 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -3260,6 +3536,7 @@ export const prefetchUseBlocksServiceListBlocks = (
     userAgent,
     userId,
     valueSearch,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3282,6 +3559,7 @@ export const prefetchUseBlocksServiceListBlocks = (
     userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3307,6 +3585,7 @@ export const prefetchUseBlocksServiceListBlocks = (
       userAgent,
       userId,
       valueSearch,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3331,6 +3610,7 @@ export const prefetchUseBlocksServiceListBlocks = (
         userAgent,
         userId,
         valueSearch,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3343,6 +3623,7 @@ export const prefetchUseBlocksServiceListBlocks = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3351,11 +3632,13 @@ export const prefetchUseBlocksServiceCountBlocks = (
   {
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3364,6 +3647,7 @@ export const prefetchUseBlocksServiceCountBlocks = (
     queryKey: Common.UseBlocksServiceCountBlocksKeyFn({
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3371,6 +3655,7 @@ export const prefetchUseBlocksServiceCountBlocks = (
       BlocksService.countBlocks({
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3383,6 +3668,7 @@ export const prefetchUseBlocksServiceCountBlocks = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -3392,12 +3678,14 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
     blockId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     blockId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3407,6 +3695,7 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
       blockId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3415,6 +3704,7 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
         blockId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3435,6 +3725,7 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -3450,6 +3741,7 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3462,6 +3754,7 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3477,6 +3770,7 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3491,6 +3785,7 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3509,6 +3804,7 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -3523,6 +3819,7 @@ export const prefetchUseJobsServiceListJobs = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3534,6 +3831,7 @@ export const prefetchUseJobsServiceListJobs = (
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3548,6 +3846,7 @@ export const prefetchUseJobsServiceListJobs = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3561,6 +3860,7 @@ export const prefetchUseJobsServiceListJobs = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3579,6 +3879,7 @@ export const prefetchUseJobsServiceListJobs = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -3592,6 +3893,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
     sourceId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3602,6 +3904,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
     sourceId?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3615,6 +3918,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
       sourceId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3627,6 +3931,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
         sourceId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3640,6 +3945,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -3649,12 +3955,14 @@ export const prefetchUseJobsServiceRetrieveJob = (
     jobId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     jobId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3664,6 +3972,7 @@ export const prefetchUseJobsServiceRetrieveJob = (
       jobId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3672,6 +3981,7 @@ export const prefetchUseJobsServiceRetrieveJob = (
         jobId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3696,6 +4006,7 @@ export const prefetchUseHealthServiceCheckHealth = (queryClient: QueryClient) =>
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -3708,6 +4019,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
       sandboxType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }: {
@@ -3716,6 +4028,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
       sandboxType?: SandboxType;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     } = {},
@@ -3729,6 +4042,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
             sandboxType,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -3740,6 +4054,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
           sandboxType,
           userAgent,
           userId,
+          xExperimentalLettaV1Agent,
           xExperimentalMessageAsync,
           xProjectId,
         }),
@@ -3754,6 +4069,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -3766,6 +4082,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
       sandboxConfigId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }: {
@@ -3774,6 +4091,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
       sandboxConfigId: string;
       userAgent?: string;
       userId?: string;
+      xExperimentalLettaV1Agent?: string;
       xExperimentalMessageAsync?: string;
       xProjectId?: string;
     },
@@ -3787,6 +4105,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -3799,6 +4118,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
             sandboxConfigId,
             userAgent,
             userId,
+            xExperimentalLettaV1Agent,
             xExperimentalMessageAsync,
             xProjectId,
           },
@@ -3819,6 +4139,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -3834,6 +4155,7 @@ export const prefetchUseProvidersServiceListProviders = (
     providerType,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3846,6 +4168,7 @@ export const prefetchUseProvidersServiceListProviders = (
     providerType?: ProviderType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3861,6 +4184,7 @@ export const prefetchUseProvidersServiceListProviders = (
       providerType,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3875,6 +4199,7 @@ export const prefetchUseProvidersServiceListProviders = (
         providerType,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3888,6 +4213,7 @@ export const prefetchUseProvidersServiceListProviders = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -3897,12 +4223,14 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
     providerId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     providerId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -3912,6 +4240,7 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
       providerId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -3920,6 +4249,7 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
         providerId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -3941,6 +4271,7 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -3958,6 +4289,7 @@ export const prefetchUseRunsServiceListRuns = (
     stopReason,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -3972,6 +4304,7 @@ export const prefetchUseRunsServiceListRuns = (
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -3989,6 +4322,7 @@ export const prefetchUseRunsServiceListRuns = (
       stopReason,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4005,6 +4339,7 @@ export const prefetchUseRunsServiceListRuns = (
         stopReason,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4020,6 +4355,7 @@ export const prefetchUseRunsServiceListRuns = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4030,6 +4366,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
     background,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4037,6 +4374,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
     background?: boolean;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4047,6 +4385,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
       background,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4056,6 +4395,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
         background,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4069,6 +4409,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4078,12 +4419,14 @@ export const prefetchUseRunsServiceRetrieveRun = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4093,6 +4436,7 @@ export const prefetchUseRunsServiceRetrieveRun = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4101,6 +4445,7 @@ export const prefetchUseRunsServiceRetrieveRun = (
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4118,6 +4463,7 @@ export const prefetchUseRunsServiceRetrieveRun = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -4131,6 +4477,7 @@ export const prefetchUseRunsServiceListRunMessages = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4141,6 +4488,7 @@ export const prefetchUseRunsServiceListRunMessages = (
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4154,6 +4502,7 @@ export const prefetchUseRunsServiceListRunMessages = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4166,6 +4515,7 @@ export const prefetchUseRunsServiceListRunMessages = (
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4179,6 +4529,7 @@ export const prefetchUseRunsServiceListRunMessages = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
@@ -4188,12 +4539,14 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4203,6 +4556,7 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4211,6 +4565,7 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4238,6 +4593,7 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4251,6 +4607,7 @@ export const prefetchUseRunsServiceListRunSteps = (
     runId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4261,6 +4618,7 @@ export const prefetchUseRunsServiceListRunSteps = (
     runId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4274,6 +4632,7 @@ export const prefetchUseRunsServiceListRunSteps = (
       runId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4286,6 +4645,7 @@ export const prefetchUseRunsServiceListRunSteps = (
         runId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4313,6 +4673,7 @@ export const prefetchUseRunsServiceListRunSteps = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4335,6 +4696,7 @@ export const prefetchUseStepsServiceListSteps = (
     traceIds,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProject,
     xProjectId,
@@ -4355,6 +4717,7 @@ export const prefetchUseStepsServiceListSteps = (
     traceIds?: string[];
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProject?: string;
     xProjectId?: string;
@@ -4378,6 +4741,7 @@ export const prefetchUseStepsServiceListSteps = (
       traceIds,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProject,
       xProjectId,
@@ -4400,6 +4764,7 @@ export const prefetchUseStepsServiceListSteps = (
         traceIds,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProject,
         xProjectId,
@@ -4414,6 +4779,7 @@ export const prefetchUseStepsServiceListSteps = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -4423,12 +4789,14 @@ export const prefetchUseStepsServiceRetrieveStep = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4438,6 +4806,7 @@ export const prefetchUseStepsServiceRetrieveStep = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4446,6 +4815,7 @@ export const prefetchUseStepsServiceRetrieveStep = (
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4459,6 +4829,7 @@ export const prefetchUseStepsServiceRetrieveStep = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns StepMetrics Successful Response
  * @throws ApiError
  */
@@ -4468,12 +4839,14 @@ export const prefetchUseStepsServiceRetrieveMetricsForStep = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4483,6 +4856,7 @@ export const prefetchUseStepsServiceRetrieveMetricsForStep = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4491,6 +4865,7 @@ export const prefetchUseStepsServiceRetrieveMetricsForStep = (
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4503,6 +4878,7 @@ export const prefetchUseStepsServiceRetrieveMetricsForStep = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4512,12 +4888,14 @@ export const prefetchUseStepsServiceRetrieveTraceForStep = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4527,6 +4905,7 @@ export const prefetchUseStepsServiceRetrieveTraceForStep = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4535,6 +4914,7 @@ export const prefetchUseStepsServiceRetrieveTraceForStep = (
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4553,6 +4933,7 @@ export const prefetchUseStepsServiceRetrieveTraceForStep = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4567,6 +4948,7 @@ export const prefetchUseStepsServiceListMessagesForStep = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4578,6 +4960,7 @@ export const prefetchUseStepsServiceListMessagesForStep = (
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4592,6 +4975,7 @@ export const prefetchUseStepsServiceListMessagesForStep = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4605,6 +4989,7 @@ export const prefetchUseStepsServiceListMessagesForStep = (
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4624,6 +5009,7 @@ export const prefetchUseStepsServiceListMessagesForStep = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -4639,6 +5025,7 @@ export const prefetchUseTagServiceListTags = (
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4651,6 +5038,7 @@ export const prefetchUseTagServiceListTags = (
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4666,6 +5054,7 @@ export const prefetchUseTagServiceListTags = (
       queryText,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4680,6 +5069,7 @@ export const prefetchUseTagServiceListTags = (
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4699,6 +5089,7 @@ export const prefetchUseTagServiceListTags = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -4714,6 +5105,7 @@ export const prefetchUseAdminServiceListTags = (
     queryText,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4726,6 +5118,7 @@ export const prefetchUseAdminServiceListTags = (
     queryText?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4741,6 +5134,7 @@ export const prefetchUseAdminServiceListTags = (
       queryText,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4755,6 +5149,7 @@ export const prefetchUseAdminServiceListTags = (
         queryText,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4817,6 +5212,7 @@ export const prefetchUseAdminServiceListOrgs = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4826,12 +5222,14 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
     stepId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     stepId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4841,6 +5239,7 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
       stepId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4849,6 +5248,7 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
         stepId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4866,6 +5266,7 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -4879,6 +5280,7 @@ export const prefetchUseMessagesServiceListBatches = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -4889,6 +5291,7 @@ export const prefetchUseMessagesServiceListBatches = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -4902,6 +5305,7 @@ export const prefetchUseMessagesServiceListBatches = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4914,6 +5318,7 @@ export const prefetchUseMessagesServiceListBatches = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4927,6 +5332,7 @@ export const prefetchUseMessagesServiceListBatches = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -4936,12 +5342,14 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
     batchId,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     batchId: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -4951,6 +5359,7 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
       batchId,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -4959,6 +5368,7 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
         batchId,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -4978,6 +5388,7 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns LettaBatchMessages Successful Response
  * @throws ApiError
  */
@@ -4993,6 +5404,7 @@ export const prefetchUseMessagesServiceListMessagesForBatch = (
     orderBy,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
@@ -5005,6 +5417,7 @@ export const prefetchUseMessagesServiceListMessagesForBatch = (
     orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   },
@@ -5020,6 +5433,7 @@ export const prefetchUseMessagesServiceListMessagesForBatch = (
       orderBy,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -5034,6 +5448,7 @@ export const prefetchUseMessagesServiceListMessagesForBatch = (
         orderBy,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
@@ -5047,6 +5462,7 @@ export const prefetchUseMessagesServiceListMessagesForBatch = (
  * @param data.userAgent
  * @param data.xProjectId
  * @param data.xExperimentalMessageAsync
+ * @param data.xExperimentalLettaV1Agent
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -5056,12 +5472,14 @@ export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
     storageUnit,
     userAgent,
     userId,
+    xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
     storageUnit?: string;
     userAgent?: string;
     userId?: string;
+    xExperimentalLettaV1Agent?: string;
     xExperimentalMessageAsync?: string;
     xProjectId?: string;
   } = {},
@@ -5071,6 +5489,7 @@ export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
       storageUnit,
       userAgent,
       userId,
+      xExperimentalLettaV1Agent,
       xExperimentalMessageAsync,
       xProjectId,
     }),
@@ -5079,6 +5498,7 @@ export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
         storageUnit,
         userAgent,
         userId,
+        xExperimentalLettaV1Agent,
         xExperimentalMessageAsync,
         xProjectId,
       }),
