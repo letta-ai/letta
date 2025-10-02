@@ -7755,7 +7755,7 @@ export type DeletePassageResponse = unknown;
 
 export type ListMessagesData = {
   /**
-   * Message after which to retrieve the returned messages.
+   * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    */
   after?: string | null;
   agentId: string;
@@ -7768,7 +7768,7 @@ export type ListMessagesData = {
    */
   assistantMessageToolName?: string;
   /**
-   * Message before which to retrieve the returned messages.
+   * Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
    */
   before?: string | null;
   /**
@@ -7780,9 +7780,17 @@ export type ListMessagesData = {
    */
   includeErr?: boolean | null;
   /**
-   * Maximum number of messages to retrieve.
+   * Maximum number of messages to return
    */
-  limit?: number;
+  limit?: number | null;
+  /**
+   * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Whether to use assistant messages
    */

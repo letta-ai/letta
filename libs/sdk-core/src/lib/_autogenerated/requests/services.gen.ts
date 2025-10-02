@@ -3357,9 +3357,11 @@ export class AgentsService {
    * Retrieve message history for an agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @param data.after Message after which to retrieve the returned messages.
-   * @param data.before Message before which to retrieve the returned messages.
-   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+   * @param data.limit Maximum number of messages to return
+   * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.groupId Group ID to filter messages by.
    * @param data.useAssistantMessage Whether to use assistant messages
    * @param data.assistantMessageToolName The name of the designated message tool.
@@ -3384,9 +3386,11 @@ export class AgentsService {
         agent_id: data.agentId,
       },
       query: {
-        after: data.after,
         before: data.before,
+        after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         group_id: data.groupId,
         use_assistant_message: data.useAssistantMessage,
         assistant_message_tool_name: data.assistantMessageToolName,

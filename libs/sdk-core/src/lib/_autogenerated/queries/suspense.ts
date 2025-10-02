@@ -2835,9 +2835,11 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.agentId
- * @param data.after Message after which to retrieve the returned messages.
- * @param data.before Message before which to retrieve the returned messages.
- * @param data.limit Maximum number of messages to retrieve.
+ * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+ * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+ * @param data.limit Maximum number of messages to return
+ * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.groupId Group ID to filter messages by.
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
@@ -2865,6 +2867,8 @@ export const useAgentsServiceListMessagesSuspense = <
     groupId,
     includeErr,
     limit,
+    order,
+    orderBy,
     useAssistantMessage,
     userAgent,
     userId,
@@ -2880,6 +2884,8 @@ export const useAgentsServiceListMessagesSuspense = <
     groupId?: string;
     includeErr?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
@@ -2901,6 +2907,8 @@ export const useAgentsServiceListMessagesSuspense = <
         groupId,
         includeErr,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,
@@ -2920,6 +2928,8 @@ export const useAgentsServiceListMessagesSuspense = <
         groupId,
         includeErr,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,

@@ -1835,6 +1835,8 @@ export const UseAgentsServiceListMessagesKeyFn = (
     groupId,
     includeErr,
     limit,
+    order,
+    orderBy,
     useAssistantMessage,
     userAgent,
     userId,
@@ -1850,6 +1852,8 @@ export const UseAgentsServiceListMessagesKeyFn = (
     groupId?: string;
     includeErr?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
@@ -1870,6 +1874,8 @@ export const UseAgentsServiceListMessagesKeyFn = (
       groupId,
       includeErr,
       limit,
+      order,
+      orderBy,
       useAssistantMessage,
       userAgent,
       userId,
