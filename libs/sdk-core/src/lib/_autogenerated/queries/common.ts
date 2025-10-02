@@ -1434,14 +1434,24 @@ export type AgentsServiceListAgentToolsQueryResult<
 export const useAgentsServiceListAgentToolsKey = 'AgentsServiceListAgentTools';
 export const UseAgentsServiceListAgentToolsKeyFn = (
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1453,7 +1463,12 @@ export const UseAgentsServiceListAgentToolsKeyFn = (
   useAgentsServiceListAgentToolsKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,

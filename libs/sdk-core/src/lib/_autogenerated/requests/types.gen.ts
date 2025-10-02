@@ -7417,7 +7417,27 @@ export type DeleteAgentData = {
 export type DeleteAgentResponse = unknown;
 
 export type ListAgentToolsData = {
+  /**
+   * Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
+  /**
+   * Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of tools to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;

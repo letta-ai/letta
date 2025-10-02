@@ -1951,6 +1951,11 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
  * Get tools from an existing agent
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order
+ * @param data.after Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order
+ * @param data.limit Maximum number of tools to return
+ * @param data.order Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1962,14 +1967,24 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
 export const prefetchUseAgentsServiceListAgentTools = (
   queryClient: QueryClient,
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1979,7 +1994,12 @@ export const prefetchUseAgentsServiceListAgentTools = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentToolsKeyFn({
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,
@@ -1988,7 +2008,12 @@ export const prefetchUseAgentsServiceListAgentTools = (
     }),
     queryFn: () =>
       AgentsService.listAgentTools({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
