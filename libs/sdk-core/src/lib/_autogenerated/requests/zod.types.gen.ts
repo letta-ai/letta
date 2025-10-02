@@ -10757,6 +10757,17 @@ export const get_List_agent_groups = {
       manager_type: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
     }),
     path: z.object({
       agent_id: z.string(),

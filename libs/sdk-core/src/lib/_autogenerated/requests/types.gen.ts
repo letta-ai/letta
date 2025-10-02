@@ -7927,11 +7927,31 @@ export type ResetMessagesData = {
 export type ResetMessagesResponse = AgentState;
 
 export type ListAgentGroupsData = {
+  /**
+   * Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
+  /**
+   * Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of groups to return
+   */
+  limit?: number | null;
   /**
    * Manager type to filter groups by
    */
   managerType?: string | null;
+  /**
+   * Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;
