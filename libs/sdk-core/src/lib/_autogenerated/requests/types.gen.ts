@@ -1372,7 +1372,7 @@ export type CreateAgentRequest = {
    */
   from_template?: string | null;
   /**
-   * Deprecated: Whether the agent is a template
+   * Deprecated: No longer used
    */
   template?: boolean;
   /**
@@ -2587,7 +2587,7 @@ export type InternalTemplateAgentCreate = {
    */
   from_template?: string | null;
   /**
-   * Deprecated: Whether the agent is a template
+   * Deprecated: No longer used
    */
   template?: boolean;
   /**
@@ -6028,7 +6028,7 @@ export type letta__schemas__agent_file__AgentSchema = {
    */
   from_template?: string | null;
   /**
-   * Deprecated: Whether the agent is a template
+   * Deprecated: No longer used
    */
   template?: boolean;
   /**

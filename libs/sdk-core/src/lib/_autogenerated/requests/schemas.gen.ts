@@ -3750,7 +3750,7 @@ export const $CreateAgentRequest = {
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Deprecated: Whether the agent is a template',
+      description: 'Deprecated: No longer used',
       default: false,
     },
     project: {
@@ -7090,7 +7090,7 @@ export const $InternalTemplateAgentCreate = {
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Deprecated: Whether the agent is a template',
+      description: 'Deprecated: No longer used',
       default: false,
     },
     project: {
@@ -15829,7 +15829,7 @@ export const $letta__schemas__agent_file__AgentSchema = {
     template: {
       type: 'boolean',
       title: 'Template',
-      description: 'Deprecated: Whether the agent is a template',
+      description: 'Deprecated: No longer used',
       default: false,
     },
     project: {
