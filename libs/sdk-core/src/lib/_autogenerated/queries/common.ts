@@ -2791,6 +2791,8 @@ export const UseJobsServiceListJobsKeyFn = (
     ascending,
     before,
     limit,
+    order,
+    orderBy,
     sourceId,
     userAgent,
     userId,
@@ -2803,6 +2805,8 @@ export const UseJobsServiceListJobsKeyFn = (
     ascending?: boolean;
     before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     sourceId?: string;
     userAgent?: string;
     userId?: string;
@@ -2820,6 +2824,8 @@ export const UseJobsServiceListJobsKeyFn = (
       ascending,
       before,
       limit,
+      order,
+      orderBy,
       sourceId,
       userAgent,
       userId,

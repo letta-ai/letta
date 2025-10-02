@@ -8596,21 +8596,30 @@ export type ListJobsData = {
    */
   active?: boolean;
   /**
-   * Cursor for pagination
+   * Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
    */
   after?: string | null;
   /**
-   * Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
+   * Whether to sort jobs oldest to newest (True, default) or newest to oldest (False). Deprecated in favor of order field.
+   * @deprecated
    */
   ascending?: boolean;
   /**
-   * Cursor for pagination
+   * Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
    */
   before?: string | null;
   /**
-   * Limit for pagination
+   * Maximum number of jobs to return
    */
   limit?: number | null;
+  /**
+   * Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Only list jobs associated with the source.
    */

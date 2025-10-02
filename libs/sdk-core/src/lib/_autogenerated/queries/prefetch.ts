@@ -3795,11 +3795,13 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
  * List all jobs.
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
- * @param data.before Cursor for pagination
- * @param data.after Cursor for pagination
- * @param data.limit Limit for pagination
+ * @param data.before Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+ * @param data.after Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+ * @param data.limit Maximum number of jobs to return
+ * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.active Filter for active jobs.
- * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
+ * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False). Deprecated in favor of order field.
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -3816,6 +3818,8 @@ export const prefetchUseJobsServiceListJobs = (
     ascending,
     before,
     limit,
+    order,
+    orderBy,
     sourceId,
     userAgent,
     userId,
@@ -3828,6 +3832,8 @@ export const prefetchUseJobsServiceListJobs = (
     ascending?: boolean;
     before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     sourceId?: string;
     userAgent?: string;
     userId?: string;
@@ -3843,6 +3849,8 @@ export const prefetchUseJobsServiceListJobs = (
       ascending,
       before,
       limit,
+      order,
+      orderBy,
       sourceId,
       userAgent,
       userId,
@@ -3857,6 +3865,8 @@ export const prefetchUseJobsServiceListJobs = (
         ascending,
         before,
         limit,
+        order,
+        orderBy,
         sourceId,
         userAgent,
         userId,

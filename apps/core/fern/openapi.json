@@ -9009,10 +9009,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Cursor for pagination"
+            "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
           },
           {
             "name": "after",
@@ -9027,10 +9027,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order",
               "title": "After"
             },
-            "description": "Cursor for pagination"
+            "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -9045,11 +9045,37 @@
                   "type": "null"
                 }
               ],
-              "description": "Limit for pagination",
-              "default": 50,
+              "description": "Maximum number of jobs to return",
+              "default": 100,
               "title": "Limit"
             },
-            "description": "Limit for pagination"
+            "description": "Maximum number of jobs to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "active",
@@ -9069,11 +9095,13 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)",
+              "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False). Deprecated in favor of order field.",
+              "deprecated": true,
               "default": true,
               "title": "Ascending"
             },
-            "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)"
+            "description": "Whether to sort jobs oldest to newest (True, default) or newest to oldest (False). Deprecated in favor of order field.",
+            "deprecated": true
           }
         ],
         "responses": {

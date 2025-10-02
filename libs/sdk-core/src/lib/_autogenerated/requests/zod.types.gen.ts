@@ -12139,6 +12139,8 @@ export const get_List_jobs = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       active: z.boolean().optional(),
       ascending: z.boolean().optional(),
     }),
