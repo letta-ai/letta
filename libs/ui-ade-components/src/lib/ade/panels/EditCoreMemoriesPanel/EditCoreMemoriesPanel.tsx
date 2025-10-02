@@ -147,6 +147,10 @@ interface MemoryWrapperProps {
 function MemoryWrapper(props: MemoryWrapperProps) {
   const { children, memoryCount } = props;
 
+  const { data: isMemoryBlockRedesignEnabled } = useFeatureFlag(
+    'MEMORY_BLOCK_REDESIGN',
+  );
+
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
   const { memory } = useCurrentAgent();
@@ -206,7 +210,11 @@ function MemoryWrapper(props: MemoryWrapperProps) {
   }
 
   return (
-    <VStack paddingTop="xxsmall" fullHeight gap="medium">
+    <VStack
+      paddingTop="xxsmall"
+      fullHeight
+      gap={!isMemoryBlockRedesignEnabled ? 'medium' : 'small'}
+    >
       {children}
     </VStack>
   );
@@ -514,7 +522,7 @@ export function EditMemory() {
   );
 
   return (
-    <VStack fullHeight >
+    <VStack fullHeight>
       <QuickMemoryOnboarding>
         <VisibleMemoryTypeProvider
           key={isTemplate ? 'templated' : 'agent'}
@@ -525,7 +533,6 @@ export function EditMemory() {
             className="core-memory-panel"
             overflow="auto"
             fullHeight
-
             gap={false}
           >
             <HStack align="end" gap={false} fullWidth paddingX="small">
