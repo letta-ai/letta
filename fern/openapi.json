@@ -10295,7 +10295,7 @@
       "get": {
         "tags": ["runs"],
         "summary": "List Run Steps",
-        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.\n    after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.\n    limit: Maximum number of steps to return\n    order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.\n\nReturns:\n    A list of steps associated with the run.",
+        "description": "Get steps associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.\n    after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.\n    limit: Maximum number of steps to return\n    order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.\n\nReturns:\n    A list of steps associated with the run.",
         "operationId": "list_run_steps",
         "parameters": [
           {
@@ -10367,12 +10367,26 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": ["asc", "desc"],
               "type": "string",
-              "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.",
+              "description": "Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first",
               "default": "desc",
               "title": "Order"
             },
-            "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+            "description": "Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           }
         ],
         "responses": {
