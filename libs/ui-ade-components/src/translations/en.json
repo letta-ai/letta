@@ -1145,7 +1145,7 @@
   "ADE/AdvancedCoreMemoryEditor/DetachMemoryBlock": {
     "title": "Detach Memory Block",
     "trigger": "Detach",
-    "description": "Are you sure you want to detach this memory block? This will remove the memory block from this agent, but any other agents that use this memory block will still have it.",
+    "description": "This action will detach the memory block from this agent, but any other agents that use this memory block will still have it.",
     "confirm": "Detach",
     "error": "There was an error detaching this memory block, please try again or contact support."
   },
@@ -1161,7 +1161,7 @@
       "title": "Detach Memory Block",
       "trigger": "Detach",
       "confirm": "Detach",
-      "description": "Are you sure you want to detach this memory block? This will remove the memory block from this agent, but any other agents that use this memory block will still have it.",
+      "description": "This action will detach the memory block from this agent, but any other agents that use this memory block will still have it.",
       "error": "There was an error detaching this memory block, please try again or contact support."
     },
     "EditorContent": {
@@ -1171,8 +1171,10 @@
       "title": "Delete Memory Block",
       "trigger": "Delete",
       "confirm": "Delete",
-      "description": "Are you sure you want to delete this memory block? This is permanent and cannot be undone, this will delete the memory block, if this memory block is used in other agents, it will also be deleted from those agents.",
-      "error": "There was an error deleting this memory block, please try again or contact support."
+      "description": "Warning: This will permanently delete this memory block across all agents. This action cannot be undone.",
+      "error": "There was an error deleting this memory block, please try again or contact support.",
+      "confirmTextLabel": "Type in block name",
+      "nameError": "Block name must match exactly"
     },
     "MemoryWarning": {
       "title": "You may need to update your system instructions",
