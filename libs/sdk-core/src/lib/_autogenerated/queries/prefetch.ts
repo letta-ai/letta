@@ -4598,16 +4598,6 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
 /**
  * List Run Steps
  * Get steps associated with a run with filtering options.
- *
- * Args:
- * run_id: ID of the run
- * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
- * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
- * limit: Maximum number of steps to return
- * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
- *
- * Returns:
- * A list of steps associated with the run.
  * @param data The data for the request.
  * @param data.runId
  * @param data.before Cursor for pagination
