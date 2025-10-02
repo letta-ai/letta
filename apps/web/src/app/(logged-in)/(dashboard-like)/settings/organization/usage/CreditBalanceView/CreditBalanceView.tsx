@@ -11,24 +11,11 @@ import {
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import React, { useMemo } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
 import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
 import { AutoTopUpConfigurationDialog } from '$web/client/components/AutoTopUpConfigurationDialog';
 import { AutoTopUpPreview } from '../AutoTopUpPreview/AutoTopUpPreview';
 
-function ManagePlanButton() {
-  const t = useTranslations('organization/usage/CreditBalanceView');
-
-  return (
-    <Button
-      color="secondary"
-      size="small"
-      href="/upgrade/support"
-      label={t('manage')}
-    />
-  );
-}
 
 export function CreditBalanceView() {
   const t = useTranslations('organization/usage/CreditBalanceView');
@@ -50,9 +37,7 @@ export function CreditBalanceView() {
     <VStack
       className="min-h-[225px]"
       color="background-grey"
-      paddingX
-      paddingBottom
-      paddingTop="small"
+      padding
       border
       gap="medium"
       align="start"
@@ -84,9 +69,6 @@ export function CreditBalanceView() {
               </Typography>
             </Typography>
           </HStack>
-        </HStack>
-        <HStack>
-          <AutoTopUpPreview />
         </HStack>
       </VStack>
 
@@ -129,20 +111,12 @@ export function CreditBalanceView() {
         <Typography variant="body3" color="lighter">
           {t('description')}
         </Typography>
-        {tier === 'free' ? (
+        {tier === 'free' && (
           <Typography variant="body3" color="lighter">
             {t('disabledOnFree')}
           </Typography>
-        ) : (
-          <HStack>
-            <ManagePlanButton />
-            <CancelPlanDialog
-              trigger={
-                <Button size="xsmall" label={t('cancel')} color="tertiary" />
-              }
-            />
-          </HStack>
         )}
+        <AutoTopUpPreview />
       </VStack>
     </VStack>
   );

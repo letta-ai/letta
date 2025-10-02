@@ -12,12 +12,13 @@ import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
 import { BillingTierBadge } from '$web/client/components/BillingTierBadge/BillingTierBadge';
+import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
 
-interface UpgradeButtonProps {
+interface PlanActionsProps {
   billingTier: BillingTiersType;
 }
 
-function UpgradeButton(props: UpgradeButtonProps) {
+function PlanActions(props: PlanActionsProps) {
   const { billingTier } = props;
   const t = useTranslations('organization/settings/CurrentPlan');
 
@@ -28,6 +29,24 @@ function UpgradeButton(props: UpgradeButtonProps) {
           <Button bold color="secondary" label={t('UpgradeButton.trigger')} />
         }
       />
+    );
+  }
+
+  if (billingTier === 'pro' || billingTier === 'pro-legacy') {
+    return (
+      <>
+        <Button
+          color="secondary"
+          size="small"
+          href="/upgrade/support"
+          label={t('ManageButton.trigger')}
+        />
+        <CancelPlanDialog
+          trigger={
+            <Button size="small" label={t('CancelButton.trigger')} color="tertiary" />
+          }
+        />
+      </>
     );
   }
 
@@ -72,7 +91,7 @@ export function CurrentPlan() {
           <PlanBenefits billingTier={billingTier} />
         </VStack>
         <HStack>
-          <UpgradeButton billingTier={billingTier} />
+          <PlanActions billingTier={billingTier} />
         </HStack>
       </Section>
       <HR />

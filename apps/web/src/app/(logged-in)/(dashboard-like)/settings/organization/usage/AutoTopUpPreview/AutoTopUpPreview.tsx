@@ -21,7 +21,18 @@ export function AutoTopUpPreview() {
       queryKey: webApiQueryKeys.organizations.getAutoTopUpConfiguration,
     });
 
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
   const { formatNumber } = useFormatters();
+  const isFreePlan = billingData?.body.billingTier === 'free';
+
+  // Don't show anything for free plan users
+  if (isFreePlan) {
+    return null;
+  }
 
   if (!autoTopUpConfig?.body ) {
     return <Skeleton className="bg-background-grey3 h-[18px] w-[250px]"  />;
@@ -46,7 +57,7 @@ export function AutoTopUpPreview() {
 
   return (
     <HStack>
-      <Typography variant="body3" noWrap>
+      <Typography variant="body3" color="lighter" noWrap>
         <HStack as="span" gap="small">
           {t.rich('enabled', {
             refillAmount: () => (
