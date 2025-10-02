@@ -117,7 +117,6 @@ export function useUpdateAgentMemoryBlock(
               ...oldData.memory,
               blocks: oldData.memory.blocks.map((block) => {
                 if (block.label === label) {
-                  console.log(requestBody);
                   return {
                     ...block,
                     ...requestBody,
