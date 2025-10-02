@@ -28,7 +28,11 @@ export function MemoryCardInfoChips({
   return (
     <HStack align="center">
       <HStack align="center" className={cn('relative')}>
-        <HStack gap="small" className={cn('absolute right-0')}>
+        <HStack
+          gap="small"
+          className={cn('absolute right-0')}
+          onClick={(e) => e.stopPropagation()}
+        >
           {readOnly ? (
             <InfoChip
               onClick={openInAdvanced}
