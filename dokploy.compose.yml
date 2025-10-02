@@ -1,6 +1,5 @@
 # Simplified Compose file for Dokploy. No NGINX and no Postgres images as DokPloy handles those. 
 version: '3.8'
-
 services:
   letta_server:
     image: letta/letta:latest
@@ -8,6 +7,11 @@ services:
     environment:
       # PostgreSQL Connection
       - LETTA_PG_URI=postgresql://${LETTA_PG_USER}:${LETTA_PG_PASSWORD}@${LETTA_DB_HOST}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB}
+      
+      # Redis Connection
+      - LETTA_REDIS_HOST=${LETTA_REDIS_HOST}
+      - LETTA_REDIS_PORT=${LETTA_REDIS_PORT:-6379}
+      - LETTA_REDIS_PASSWORD=${LETTA_REDIS_PASSWORD}
       
       # Letta Configuration
       - LETTA_DEBUG=True
@@ -36,6 +40,5 @@ services:
     
     volumes:
       - letta_config:/root/.letta
-
 volumes:
   letta_config:
