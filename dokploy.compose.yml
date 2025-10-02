@@ -9,7 +9,7 @@ services:
       - "8283:8283"
     environment:
       # PostgreSQL Connection
-      - LETTA_PG_URI=postgresql://${LETTA_PG_USER}:${LETTA_PG_PASSWORD}@${LETTA_DB_HOST}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB}
+      - LETTA_PG_URI=${LETTA_PG_URI}
       
       # Redis Connection
       - LETTA_REDIS_HOST=${LETTA_REDIS_HOST}
