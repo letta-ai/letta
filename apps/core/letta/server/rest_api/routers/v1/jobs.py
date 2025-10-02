@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -16,11 +16,23 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 async def list_jobs(
     server: "SyncServer" = Depends(get_letta_server),
     source_id: Optional[str] = Query(None, description="Only list jobs associated with the source."),
-    before: Optional[str] = Query(None, description="Cursor for pagination"),
-    after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(50, description="Limit for pagination"),
+    before: Optional[str] = Query(
+        None, description="Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of jobs to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     active: bool = Query(False, description="Filter for active jobs."),
-    ascending: bool = Query(True, description="Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)"),
+    ascending: bool = Query(
+        True,
+        description="Whether to sort jobs oldest to newest (True, default) or newest to oldest (False). Deprecated in favor of order field.",
+        deprecated=True,
+    ),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -32,6 +44,11 @@ async def list_jobs(
     if active:
         statuses = [JobStatus.created, JobStatus.running]
 
+    if ascending is not True:
+        sort_ascending = ascending
+    else:
+        sort_ascending = order == "asc"
+
     # TODO: add filtering by status
     return await server.job_manager.list_jobs_async(
         actor=actor,
@@ -40,7 +57,7 @@ async def list_jobs(
         before=before,
         after=after,
         limit=limit,
-        ascending=ascending,
+        ascending=sort_ascending,
     )
 
 
