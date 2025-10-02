@@ -130,8 +130,6 @@ navigation:
                 path: pages/agents/archival_search.mdx
               - page: Best Practices
                 path: pages/agents/archival_best_practices.mdx
-          - page: Filesystem
-            path: pages/agents/filesystem.mdx
           - page: Agentic Context Engineering
             path: pages/agents/context_engineering.mdx
 
@@ -142,6 +140,8 @@ navigation:
             path: pages/agents/multiagent_custom.mdx
           - page: Multi-Agent Shared Memory
             path: pages/agents/multiagent_memory.mdx
+          - page: Groups
+            path: pages/agents/groups.mdx
 
       - section: Agent Capabilities
         contents:
@@ -153,6 +153,8 @@ navigation:
             path: pages/agents/json_mode.mdx
           - page: Multi-Modal
             path: pages/agents/multimodal.mdx
+          - page: Filesystem
+            path: pages/agents/filesystem.mdx
 
       - section: Tool Use
         contents:
@@ -201,8 +203,6 @@ navigation:
                 path: pages/voice/voice_livekit.mdx
               - page: Connecting to Vapi
                 path: pages/voice/voice_vapi.mdx
-          - page: Groups
-            path: pages/agents/groups.mdx
 
       - section: Integrations
         contents:
