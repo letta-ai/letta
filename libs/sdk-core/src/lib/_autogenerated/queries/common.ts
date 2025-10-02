@@ -3288,6 +3288,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     before,
     limit,
     order,
+    orderBy,
     runId,
     userAgent,
     userId,
@@ -3299,6 +3300,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     runId: string;
     userAgent?: string;
     userId?: string;
@@ -3315,6 +3317,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
       before,
       limit,
       order,
+      orderBy,
       runId,
       userAgent,
       userId,
