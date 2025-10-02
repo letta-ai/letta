@@ -14,7 +14,7 @@ services:
       - LETTA_REDIS_PASSWORD=${LETTA_REDIS_PASSWORD}
       
       # Letta Configuration
-      - LETTA_DEBUG=True
+      - LETTA_DEBUG=${LETTA_DEBUG}
       
       # AI Provider API Keys
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -40,5 +40,8 @@ services:
     
     volumes:
       - letta_config:/root/.letta
+      - letta_tools:/root/.letta/tool_execution_dir
+
 volumes:
   letta_config:
+  letta_tools:
