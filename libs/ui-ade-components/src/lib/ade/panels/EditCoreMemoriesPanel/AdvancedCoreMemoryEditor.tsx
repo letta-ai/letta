@@ -196,7 +196,10 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               blockId={memory.id || ''}
               currentLabel={memory.label || ''}
             />
-            <DeleteMemoryBlockDialog blockId={memory.id || ''} />
+            <DeleteMemoryBlockDialog
+              blockId={memory.id || ''}
+              blockName={memory.label || ''}
+            />
           </HStack>
         </HStack>
         <Form onSubmit={form.handleSubmit(handleFormUpdate)}>
@@ -309,16 +312,36 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
 interface DeleteMemoryBlockDialogProps {
   blockId: string;
+  blockName: string;
 }
 
 function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
   const { id: agentId } = useCurrentAgent();
   const { isTemplate, templateId } = useCurrentAgentMetaData();
-  const { blockId } = props;
+  const { blockId, blockName } = props;
   const setSelectMemoryBlockLabel = useSetAtom(currentAdvancedCoreMemoryAtom);
 
   const [isOpen, setIsOpen] = useState(false);
+
+  const nameErrorMessage = t('DeleteMemoryBlockDialog.nameError');
+
+  const DeleteMemoryBlockDialogFormSchema = useMemo(
+    () =>
+      z.object({
+        memoryBlockName: z.string().refine((val) => val === blockName, {
+          message: nameErrorMessage,
+        }),
+      }),
+    [blockName, nameErrorMessage],
+  );
+
+  const form = useForm({
+    resolver: zodResolver(DeleteMemoryBlockDialogFormSchema),
+    defaultValues: {
+      memoryBlockName: '',
+    },
+  });
 
   const agent = useCurrentAgent();
   const handleSelectNextBlock = useCallback(
@@ -366,6 +389,10 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
     handleDelete();
   }, [handleDelete, agentId]);
 
+  const handleSubmit = useCallback(() => {
+    handleDeleteBlock();
+  }, [handleDeleteBlock]);
+
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   if (!canUpdateAgent) {
@@ -373,31 +400,46 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   }
 
   return (
-    <Dialog
-      errorMessage={
-        deleteError ? t('DeleteMemoryBlockDialog.error') : undefined
-      }
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-      trigger={
-        <Button
-          hideLabel
-          data-testid="delete-memory-block"
-          preIcon={<TrashIcon />}
-          color="tertiary"
-          label={t('DeleteMemoryBlockDialog.trigger')}
-        />
-      }
-      testId="delete-memory-block-dialog"
-      title={t('DeleteMemoryBlockDialog.title')}
-      onConfirm={handleDeleteBlock}
-      confirmText={t('DeleteMemoryBlockDialog.confirm')}
-      isConfirmBusy={isDeletingBlock}
-    >
-      <VStack fullWidth gap="form">
-        <Typography>{t('DeleteMemoryBlockDialog.description')}</Typography>
-      </VStack>
-    </Dialog>
+    <FormProvider {...form}>
+      <Dialog
+        errorMessage={
+          deleteError ? t('DeleteMemoryBlockDialog.error') : undefined
+        }
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        trigger={
+          <Button
+            hideLabel
+            data-testid="delete-memory-block"
+            preIcon={<TrashIcon />}
+            color="tertiary"
+            label={t('DeleteMemoryBlockDialog.trigger')}
+          />
+        }
+        testId="delete-memory-block-dialog"
+        title={t('DeleteMemoryBlockDialog.title')}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        confirmText={t('DeleteMemoryBlockDialog.confirm')}
+        isConfirmBusy={isDeletingBlock}
+        confirmColor="destructive"
+      >
+        <VStack fullWidth gap="form">
+          <Typography>{t('DeleteMemoryBlockDialog.description')}</Typography>
+          <FormField
+            name="memoryBlockName"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                placeholder={blockName}
+                label={t('DeleteMemoryBlockDialog.confirmTextLabel')}
+                data-testid="delete-memory-block-confirm-input"
+                {...field}
+              />
+            )}
+          />
+        </VStack>
+      </Dialog>
+    </FormProvider>
   );
 }
 
