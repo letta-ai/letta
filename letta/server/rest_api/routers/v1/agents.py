@@ -1780,7 +1780,7 @@ async def list_agent_groups(
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     logger.info("in list agents with manager_type", manager_type)
-    return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
+    return await server.agent_manager.list_groups_async(agent_id=agent_id, manager_type=manager_type, actor=actor)
 
 
 @router.post(

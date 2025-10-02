@@ -2634,6 +2634,42 @@ class AgentManager:
             tools = result.scalars().all()
             return [tool.to_pydantic() for tool in tools]
 
+    @enforce_types
+    @trace_method
+    async def list_groups_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        manager_type: Optional[str] = None,
+    ) -> List[PydanticGroup]:
+        """
+        List all groups that contain the specified agent (async version).
+
+        Args:
+            agent_id: ID of the agent to find groups for.
+            actor: User performing the action.
+            manager_type: Optional manager type to filter by.
+
+        Returns:
+            List[PydanticGroup]: List of groups containing the agent.
+        """
+        async with db_registry.async_session() as session:
+            from letta.orm.group import Group as GroupModel
+            from letta.orm.sqlalchemy_base import GroupsAgents
+
+            query = (
+                select(GroupModel)
+                .join(GroupsAgents, GroupModel.id == GroupsAgents.group_id)
+                .where(GroupsAgents.agent_id == agent_id, GroupModel.organization_id == actor.organization_id)
+            )
+
+            if manager_type:
+                query = query.where(GroupModel.manager_type == manager_type)
+
+            result = await session.execute(query)
+            groups = result.scalars().all()
+            return [group.to_pydantic() for group in groups]
+
     # ======================================================================================================================
     # File Management
     # ======================================================================================================================
