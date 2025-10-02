@@ -225,12 +225,13 @@ async def list_run_steps(
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
-    order: str = Query(
-        "desc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
-    Get messages associated with a run with filtering options.
+    Get steps associated with a run with filtering options.
 
     Args:
         run_id: ID of the run
@@ -242,9 +243,6 @@ async def list_run_steps(
     Returns:
         A list of steps associated with the run.
     """
-    if order not in ["asc", "desc"]:
-        raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
-
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 

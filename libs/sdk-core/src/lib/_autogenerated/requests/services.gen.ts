@@ -5986,7 +5986,7 @@ export class RunsService {
 
   /**
    * List Run Steps
-   * Get messages associated with a run with filtering options.
+   * Get steps associated with a run with filtering options.
    *
    * Args:
    * run_id: ID of the run
@@ -6002,7 +6002,8 @@ export class RunsService {
    * @param data.before Cursor for pagination
    * @param data.after Cursor for pagination
    * @param data.limit Maximum number of messages to return
-   * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+   * @param data.order Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -6026,6 +6027,7 @@ export class RunsService {
         after: data.after,
         limit: data.limit,
         order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',

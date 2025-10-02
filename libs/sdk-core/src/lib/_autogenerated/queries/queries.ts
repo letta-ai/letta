@@ -5308,7 +5308,7 @@ export const useRunsServiceRetrieveRunUsage = <
   });
 /**
  * List Run Steps
- * Get messages associated with a run with filtering options.
+ * Get steps associated with a run with filtering options.
  *
  * Args:
  * run_id: ID of the run
@@ -5324,7 +5324,8 @@ export const useRunsServiceRetrieveRunUsage = <
  * @param data.before Cursor for pagination
  * @param data.after Cursor for pagination
  * @param data.limit Maximum number of messages to return
- * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+ * @param data.order Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -5343,6 +5344,7 @@ export const useRunsServiceListRunSteps = <
     before,
     limit,
     order,
+    orderBy,
     runId,
     userAgent,
     userId,
@@ -5353,7 +5355,8 @@ export const useRunsServiceListRunSteps = <
     after?: string;
     before?: string;
     limit?: number;
-    order?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     runId: string;
     userAgent?: string;
     userId?: string;
@@ -5371,6 +5374,7 @@ export const useRunsServiceListRunSteps = <
         before,
         limit,
         order,
+        orderBy,
         runId,
         userAgent,
         userId,
@@ -5386,6 +5390,7 @@ export const useRunsServiceListRunSteps = <
         before,
         limit,
         order,
+        orderBy,
         runId,
         userAgent,
         userId,
