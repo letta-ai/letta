@@ -187,6 +187,7 @@ async def list_run_messages(
     order: Literal["asc", "desc"] = Query(
         "asc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """Get response messages associated with a run."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
