@@ -9631,6 +9631,19 @@ export const get_List_agent_tools = {
   path: z.literal('/v1/agents/{agent_id}/tools'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
     path: z.object({
       agent_id: z.string(),
     }),
