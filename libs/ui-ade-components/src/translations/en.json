@@ -819,6 +819,10 @@
       "attachError": "There was an error attaching this memory block, please try again or contact support.",
       "memoryBlockAttached": "Attached"
     },
+    "DetachMemoryBlockButton": {
+      "detachMemoryBlock": "Detach",
+      "detachError": "There was an error detaching this memory block, please try again or contact support."
+    },
     "noDescription": "No description",
     "noValue": "No value"
   },

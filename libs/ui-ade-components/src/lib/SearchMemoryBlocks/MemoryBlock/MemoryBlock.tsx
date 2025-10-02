@@ -3,6 +3,7 @@ import {
   type Block,
   isAPIError,
   useAgentsServiceAttachCoreMemoryBlock,
+  useAgentsServiceDetachCoreMemoryBlock,
   UseAgentsServiceRetrieveAgentKeyFn,
   UseBlocksServiceListAgentsForBlockKeyFn,
 } from '@letta-cloud/sdk-core';
@@ -11,6 +12,7 @@ import {
   CopyButton,
   HStack,
   InvaderSharedAgentIcon,
+  LinkOffIcon,
   MemoryIcon,
   MiddleTruncate,
   PlusIcon,
@@ -22,7 +24,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent } from '../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
@@ -87,18 +89,6 @@ function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
     );
   }, [t, queryClient, agent, blockId, isMemoryBlockAttached, mutate]);
 
-  if (isMemoryBlockAttached) {
-    return (
-      <Button
-        disabled
-        size="xsmall"
-        preIcon={<PlusIcon />}
-        color="secondary"
-        label={t('memoryBlockAttached')}
-      ></Button>
-    );
-  }
-
   return (
     <Button
       preIcon={<PlusIcon />}
@@ -107,8 +97,99 @@ function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
       color="secondary"
       onClick={attachMemoryBlock}
       label={t('attachMemoryBlock')}
+      fullWidth
     />
   );
+}
+
+interface DetachMemoryBlockButtonProps {
+  blockId: string;
+}
+
+function DetachMemoryBlockButton(props: DetachMemoryBlockButtonProps) {
+  const agent = useCurrentAgent();
+  const { blockId } = props;
+  const t = useTranslations('ADE/MemoryBlock.DetachMemoryBlockButton');
+
+  const queryClient = useQueryClient();
+  const { isPending, isSuccess, mutate } =
+    useAgentsServiceDetachCoreMemoryBlock();
+
+  const detachMemoryBlock = useCallback(() => {
+    if (!agent) return;
+
+    trackClientSideEvent(AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY, {
+      agent_id: agent.id,
+    });
+
+    mutate(
+      {
+        agentId: agent.id,
+        blockId,
+      },
+      {
+        onSuccess: (nextAgentState) => {
+          void queryClient.invalidateQueries({
+            queryKey: UseBlocksServiceListAgentsForBlockKeyFn({
+              blockId: blockId,
+              includeRelationships: [],
+            }),
+            exact: false,
+          });
+
+          queryClient.setQueriesData<AgentState | undefined>(
+            {
+              queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                agentId: agent.id,
+              }),
+            },
+            () => {
+              return nextAgentState;
+            },
+          );
+        },
+        onError: (error) => {
+          if (isAPIError(error)) {
+            toast.error(t('detachError'));
+          }
+        },
+      },
+    );
+  }, [t, queryClient, agent, blockId, mutate]);
+
+  return (
+    <Button
+      preIcon={<LinkOffIcon />}
+      size="xsmall"
+      busy={isPending || isSuccess}
+      color="secondary"
+      onClick={detachMemoryBlock}
+      label={t('detachMemoryBlock')}
+      fullWidth
+    />
+  );
+}
+
+interface ToggleAttachDetachMemoryBlockProps {
+  blockId: string;
+}
+
+function ToggleAttachDetachMemoryBlock(
+  props: ToggleAttachDetachMemoryBlockProps,
+) {
+  const { blockId } = props;
+  const agent = useCurrentAgent();
+
+  const isMemoryBlockAttached = useMemo(() => {
+    if (!agent?.memory) return false;
+    return agent.memory.blocks.some((block) => block.id === blockId);
+  }, [agent, blockId]);
+
+  if (isMemoryBlockAttached) {
+    return <DetachMemoryBlockButton blockId={blockId} />;
+  }
+
+  return <AttachMemoryBlockButton blockId={blockId} />;
 }
 
 interface MemoryBlockProps {
@@ -193,7 +274,9 @@ export function MemoryBlock(props: MemoryBlockProps) {
               hideLabel
             />
           </HStack>
-          {agent?.id && <AttachMemoryBlockButton blockId={blockId || ''} />}
+          {agent?.id && (
+            <ToggleAttachDetachMemoryBlock blockId={blockId || ''} />
+          )}
         </HStack>
       </HStack>
       <VStack>
