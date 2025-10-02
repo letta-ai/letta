@@ -13,7 +13,7 @@ Agent memory solves this by adding persistent storage that agents can read from 
 
 The simplest form of memory is keeping conversation history in the context window. But context windows have limits, making this expensive and slow. The diagram below shows the difference between approaches: stateless agents require manual prompt engineering to manage an unstructured context window, while stateful agents use structured memory blocks. A memory system like Letta automatically compiles context from persistent state storage into these organized blocks.
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/stateful_agents_dark.webp" />
+<img src="/images/agent-memory-comparison/stateful_agents_dark.webp" />
 
 Agent memory typically involves two components:
 
@@ -81,7 +81,7 @@ Mem0 uses a two-phase approach to manage memory:
 
 **Update Phase**: After extraction, Mem0 intelligently updates its memory store. If new information contradicts existing memories, it updates them. If information is redundant, it consolidates. This prevents memory from growing unbounded with duplicate or outdated information.
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/02-mem0-architecture.svg" />
+<img src="/images/agent-memory-comparison/02-mem0-architecture.svg" />
 
 ### Multi-Level Memory: User, Session, and Agent State
 
@@ -174,7 +174,7 @@ What makes this temporal is that each edge in the graph includes validity metada
 
 For example, if a user says "I moved from Austin to Seattle," Zep creates two location relationships with different time periods. When you query "Where does the user live?" you get Seattle. But you can also query historical information like "Where did the user live in March 2024?" and get Austin.
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/03-zep-temporal-graph.svg" />
+<img src="/images/agent-memory-comparison/03-zep-temporal-graph.svg" />
 
 Zep uses hybrid search combining vector similarity (for semantic matching) and graph traversal (for relationship-based queries). This lets you ask questions like "What companies has the user worked for?" and get answers that understand the relationships between entities.
 
@@ -208,57 +208,71 @@ export NEO4J_PASSWORD=password
 Initialize Graphiti and build indices:
 
 ```python
+import os
+import asyncio
+from dotenv import load_dotenv
+from datetime import datetime, timezone
+
 from graphiti_core import Graphiti
 from graphiti_core.nodes import EpisodeType
 
+load_dotenv()
+
+neo4j_uri = os.environ.get('NEO4J_URI', 'bolt://localhost:7687')
+neo4j_user = os.environ.get('NEO4J_USER', 'neo4j')
+neo4j_password = os.environ.get('NEO4J_PASSWORD', 'password')
+
 # Initialize with Neo4j
 graphiti = Graphiti(
-    uri="bolt://localhost:7687",
-    user="neo4j",
-    password="password"
+    uri=neo4j_uri,
+    user=neo4j_user,
+    password=neo4j_password
 )
 
-# Build indices (one-time setup)
-await graphiti.build_indices_and_constraints()
+async def main():
+    # Build indices (one-time setup)
+    await graphiti.build_indices_and_constraints()
 ```
 
 Add conversation data as episodes:
 
 ```python
-# First conversation
-await graphiti.add_episode(
-    name="User location update",
-    episode_body="The user mentioned they live in Austin and work at TechCorp",
-    source=EpisodeType.message,
-    source_description="Chat message from user onboarding"
-)
+    # First conversation
+    await graphiti.add_episode(
+        name="User location update",
+        episode_body="The user mentioned they live in Austin and work at TechCorp",
+        source=EpisodeType.message,
+        source_description="Chat message from user onboarding",
+        reference_time=datetime.now(timezone.utc),
+    )
 
-# Later conversation with updated information
-await graphiti.add_episode(
-    name="User relocation",
-    episode_body="The user said they moved to Seattle and started at NewCompany",
-    source=EpisodeType.message,
-    source_description="Chat message from follow-up"
-)
+    # Later conversation with updated information
+    await graphiti.add_episode(
+        name="User relocation",
+        episode_body="The user said they moved to Seattle and started at NewCompany",
+        source=EpisodeType.message,
+        source_description="Chat message from follow-up",
+        reference_time=datetime.now(timezone.utc),
+    )
 ```
 
 Query with temporal awareness:
 
 ```python
-# Get current facts
-results = await graphiti.search(
-    query="Where does the user live and where do they work?",
-    num_results=5
-)
+    # Get current facts
+    results = await graphiti.search(
+        query="Where does the user live and where do they work?",
+        num_results=5
+    )
 
-for result in results:
-    print(f"Fact: {result.fact}")
-    print(f"Valid from: {result.valid_from}")
-    if result.valid_until:
-        print(f"Valid until: {result.valid_until}")
-    print("---")
+    for result in results:
+        print(f"Fact: {result.fact}")
+        print(f"Valid from: {result.valid_from}")
+        if result.valid_until:
+            print(f"Valid until: {result.valid_until}")
+        print("---")
 
-# Output includes both historical and current facts with validity periods
+    # Output includes both historical and current facts with validity periods
 ```
 
 Zep also offers a [cloud-hosted version](https://www.getzep.com) if you don't want to manage your own graph database infrastructure. The Graphiti library supports [Neo4j](https://neo4j.com), [Amazon Neptune](https://aws.amazon.com/neptune/), [FalkorDB](https://www.falkordb.com), and [Kuzu](https://kuzudb.com) as database backends.
@@ -276,7 +290,7 @@ Cognee takes a different approach. When you add data, it builds a knowledge grap
 
 For example, if your documents mention "Python," "machine learning," and "scikit-learn," Cognee doesn't just store these as separate chunks. It understands that Python is a programming language, machine learning is a field, and scikit-learn is a Python library for machine learning. These relationships enable smarter retrieval.
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/04-cognee-semantic-graph.svg" />
+<img src="/images/agent-memory-comparison/04-cognee-semantic-graph.svg" />
 
 ### Building Knowledge Graphs
 
@@ -376,7 +390,7 @@ The Letta Platform treats agents as persistent entities with continuous state, n
 
 This fundamentally changes how you think about agent development. Instead of fetching relevant memories before each LLM call, the agent continuously operates with its memory state. Memory isn't something you manage externally. It's part of the agent's core architecture.
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/05-letta-stateful-architecture.svg" />
+<img src="/images/agent-memory-comparison/05-letta-stateful-architecture.svg" />
 
 Letta was built by the researchers behind [MemGPT](https://research.memgpt.ai), which pioneered the concept of treating LLM context management like an operating system manages memory. The platform provides sophisticated memory management that lets agents learn how to use tools, evolve personalities, and improve their capabilities over time.
 
@@ -409,7 +423,7 @@ Memory blocks can also be shared between multiple agents. By attaching the same 
 Install [Letta](https://docs.letta.com/install):
 
 ```bash
-pip install letta-client
+pip install letta letta-client sqlite-vec
 ```
 
 Start the local server:
@@ -420,9 +434,10 @@ letta server
 
 Using the visual Agent Development Environment:
 
-<img src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/fern/images/agent-memory-comparison/agent-development-environment.png" />
+<img src="/images/agent-memory-comparison/agent-development-environment.png" />
 
 The Letta platform includes a visual ADE (Agent Development Environment) that lets you:
+
 - Create and configure agents through a UI
 - View agent memory blocks in real-time
 - Monitor the agent's decision-making process
