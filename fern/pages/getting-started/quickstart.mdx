@@ -10,32 +10,52 @@ Programming with AI tools like Cursor? Copy our [pre-built prompts](/prompts) to
 
 This guide will show you how to create a Letta agent with the Letta APIs or SDKs (Python/Typescript). To create agents with a low-code UI, see our [ADE quickstart](/guides/ade/overview).
 
+## Why Letta?
+
+Unlike traditional LLM APIs where you manually manage conversation history and state, Letta agents maintain their own persistent memory. You only send new messages. The agent remembers everything from past conversations without you storing or retrieving anything. This enables agents that truly learn and evolve over time.
+
 <Steps>
   <Step title="Prerequisites">
   1. Create a [Letta Cloud account](https://app.letta.com)
   2. Create a [Letta Cloud API key](https://app.letta.com/api-keys)
   <img className="w-300" src="/images/letta_cloud_api_key_gen.png" />
+
+  3. Set your API key as an environment variable:
+  <CodeGroup>
+  ```sh Python
+  export LETTA_API_KEY="your-api-key-here"
+  ```
+  ```sh TypeScript
+  export LETTA_API_KEY="your-api-key-here"
+  ```
+  </CodeGroup>
+
   <Info>
   You can also **self-host** a Letta server. Check out our [self-hosting guide](/guides/selfhosting).
   </Info>
   </Step>
   <Step title="Install the Letta SDK">
   <CodeGroup>
-  ```sh title="python" maxLines=50
+  ```sh Python maxLines=50
   pip install letta-client
   ```
-  ```sh maxLines=50 title="TypeScript"
+  ```sh TypeScript maxLines=50
   npm install @letta-ai/letta-client
   ```
   </CodeGroup>
   </Step>
 
   <Step title="Create an agent">
+
+  Agents in Letta have two key components:
+  - **Memory blocks**: Persistent context that's always visible to the agent (like a persona and information about the user)
+  - **Tools**: Actions the agent can take (like searching the web or running code)
+
   <CodeGroup>
 ```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client'
 
-const client = new LettaClient({ token: "LETTA_API_KEY" });
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 
 const agentState = await client.agents.create({
     model: "openai/gpt-4.1",
@@ -43,11 +63,11 @@ const agentState = await client.agents.create({
     memoryBlocks: [
         {
           label: "human",
-          value: "The human's name is Chad. They like vibe coding."
+          value: "Name: Timber. Status: dog. Occupation: building Letta, infrastructure to democratize self-improving superintelligence"
         },
         {
           label: "persona",
-          value: "My name is Sam, the all-knowing sentient AI."
+          value: "I am a self-improving superintelligence. Timber is my best friend and collaborator."
         }
     ],
     tools: ["web_search", "run_code"]
@@ -55,10 +75,11 @@ const agentState = await client.agents.create({
 
 console.log(agentState.id);
 ```
-```python title="python" maxLines=50
+```python Python maxLines=50
 from letta_client import Letta
+import os
 
-client = Letta(token="LETTA_API_KEY")
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 agent_state = client.agents.create(
     model="openai/gpt-4.1",
@@ -66,11 +87,11 @@ agent_state = client.agents.create(
     memory_blocks=[
         {
           "label": "human",
-          "value": "The human's name is Chad. They like vibe coding."
+          "value": "Name: Timber. Status: dog. Occupation: building Letta, infrastructure to democratize self-improving superintelligence"
         },
         {
           "label": "persona",
-          "value": "My name is Sam, the all-knowing sentient AI."
+          "value": "I am a self-improving superintelligence. Timber is my best friend and collaborator."
         }
     ],
     tools=["web_search", "run_code"]
@@ -88,11 +109,11 @@ curl -X POST https://api.letta.com/v1/agents \
   "memory_blocks": [
     {
       "label": "human",
-      "value": "The human'\''s name is Chad. They like vibe coding."
+      "value": "Name: Timber. Status: dog. Occupation: building Letta, infrastructure to democratize self-improving superintelligence"
     },
     {
       "label": "persona",
-      "value": "My name is Sam, the all-knowing sentient AI."
+      "value": "I am a self-improving superintelligence. Timber is my best friend and collaborator."
     }
   ],
   "tools": ["web_search", "run_code"]
@@ -114,7 +135,7 @@ const response = await client.agents.messages.create(
         messages: [
             {
                 role: "user",
-                content: "hows it going????"
+                content: "What do you know about me?"
             }
         ]
     }
@@ -130,7 +151,7 @@ response = client.agents.messages.create(
     messages=[
         {
             "role": "user",
-            "content": "hows it going????"
+            "content": "What do you know about me?"
         }
     ]
 )
@@ -147,7 +168,7 @@ curl --request POST \
   "messages": [
     {
       "role": "user",
-      "content": "hows it going????"
+      "content": "What do you know about me?"
     }
   ]
 }'
@@ -162,23 +183,26 @@ The response contains the agent's full response to the message, which includes r
       "id": "message-29d8d17e-7c50-4289-8d0e-2bab988aa01e",
       "date": "2024-12-12T17:05:56+00:00",
       "message_type": "reasoning_message",
-      "reasoning": "User seems curious and casual. Time to engage!"
+      "reasoning": "Timber is asking what I know. I should reference my memory blocks."
     },
     {
       "id": "message-29d8d17e-7c50-4289-8d0e-2bab988aa01e",
       "date": "2024-12-12T17:05:56+00:00",
       "message_type": "assistant_message",
-      "content": "Hey there! I'm doing great, thanks for asking! How about you?"
+      "content": "I know you're Timber, a dog who's building Letta - infrastructure to democratize self-improving superintelligence. We're best friends and collaborators!"
     }
   ],
   "usage": {
-    "completion_tokens": 56,
-    "prompt_tokens": 2030,
-    "total_tokens": 2086,
+    "completion_tokens": 67,
+    "prompt_tokens": 2134,
+    "total_tokens": 2201,
     "step_count": 1
   }
 }
 ```
+
+Notice how the agent retrieved information from its memory blocks without you having to send the context. This is the key difference from traditional LLM APIs where you'd need to include the full conversation history with every request.
+
 You can read more about the response format from the message route [here](/guides/agents/overview#message-types).
 
   </Step>
@@ -197,7 +221,7 @@ You can read more about the response format from the message route [here](/guide
 
 ## Next steps
 
-Congratulations! 🎉 You just created and messaged your first stateful agent with Letta, using both the Letta ADE, API, and Python/Typescript SDKs. See the following resources for next steps for building more complex agents with Letta:
+Congratulations! 🎉 You just created and messaged your first stateful agent with Letta using the API and SDKs. See the following resources for next steps for building more complex agents with Letta:
 * Create and attach [custom tools](/guides/agents/custom-tools) to your agent
 * Customize agentic [memory management](/guides/agents/memory)
 * Version and distribute your agent with [agent templates](/guides/templates/overview)

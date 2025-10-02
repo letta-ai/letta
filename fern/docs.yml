@@ -105,8 +105,6 @@ navigation:
             contents:
               - page: MemGPT Agents
                 path: pages/agents/memgpt_agents.mdx
-              - page: Sleep-time Agents
-                path: pages/agents/sleep_time_agents.mdx
               - page: Low-latency (voice) Agents
                 path: pages/agents/low_latency_agents.mdx
               - page: ReAct Agents
@@ -132,6 +130,8 @@ navigation:
                 path: pages/agents/archival_search.mdx
               - page: Best Practices
                 path: pages/agents/archival_best_practices.mdx
+          - page: Filesystem
+            path: pages/agents/filesystem.mdx
           - page: Agentic Context Engineering
             path: pages/agents/context_engineering.mdx
 
@@ -153,8 +153,6 @@ navigation:
             path: pages/agents/json_mode.mdx
           - page: Multi-Modal
             path: pages/agents/multimodal.mdx
-          - page: Filesystem
-            path: pages/agents/filesystem.mdx
 
       - section: Tool Use
         contents:
@@ -194,6 +192,8 @@ navigation:
         contents:
           - page: Human-in-the-Loop
             path: pages/agents/human_in_the_loop.mdx
+          - page: Sleep-time Agents
+            path: pages/agents/sleep_time_agents.mdx
           - section: Voice Agents
             path: pages/voice/voice.mdx
             contents:
