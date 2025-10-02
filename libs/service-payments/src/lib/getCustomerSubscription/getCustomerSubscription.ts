@@ -128,6 +128,7 @@ async function getCustomerSubscriptionMainLogic(
 export async function getCustomerSubscription(
   organizationId: string,
 ): Promise<PaymentCustomerSubscription> {
+
   const cachedSubscription = await getRedisData('customerSubscription', {
     organizationId,
   });

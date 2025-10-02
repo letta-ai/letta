@@ -52,12 +52,22 @@ function useAutoTopUpConfigurationSchema() {
   return useMemo(
     () =>
       z.object({
-        threshold: z.coerce.number().min(0, t('errors.thresholdMin')),
+        threshold: z.coerce.number().min(3000, t('errors.thresholdMin')),
         refillAmount: z.coerce
           .number()
           .min(1, t('errors.refillAmountRequired')),
         enabled: z.boolean(),
-      }),
+      }).refine(
+        (data) => {
+          // Only validate when enabled
+          if (!data.enabled) return true;
+          return data.threshold < data.refillAmount;
+        },
+        {
+          message: t('errors.thresholdExceedsRefill'),
+          path: ['threshold'],
+        }
+      ),
     [t],
   );
 }
@@ -132,12 +142,30 @@ function AutoTopUpConfigurationDialogEditable(
   const form = useForm<AutoTopUpConfigurationFormValues>({
     resolver: zodResolver(autoTopUpConfigurationSchema),
     defaultValues: initialValues,
+    mode: 'onChange',
   });
 
+  const isEnabled = form.watch('enabled');
+  const threshold = form.watch('threshold');
+  const refillAmount = form.watch('refillAmount');
+
+  const hasThresholdError = useMemo(() => {
+    if (!isEnabled) return false;
+    const thresholdNum = typeof threshold === 'string' ? parseInt(threshold, 10) : threshold;
+    const refillNum = typeof refillAmount === 'string' ? parseInt(refillAmount, 10) : refillAmount;
+    return thresholdNum >= refillNum;
+  }, [isEnabled, threshold, refillAmount]);
+
   const handleSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
+    async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Validate the form first
+      const isValid = await form.trigger();
+      if (!isValid || hasThresholdError) {
+        return;
+      }
 
       const values = form.getValues();
       mutate({
@@ -148,12 +176,8 @@ function AutoTopUpConfigurationDialogEditable(
         },
       });
     },
-    [form, mutate],
+    [form, mutate, hasThresholdError],
   );
-
-  const isEnabled = form.watch('enabled');
-  const threshold = form.watch('threshold');
-  const refillAmount = form.watch('refillAmount');
 
   const refillAmountOptions = useMemo(
     () =>
@@ -182,8 +206,8 @@ function AutoTopUpConfigurationDialogEditable(
     () =>
       refillAmount
         ? formatCurrency(creditsToDollars(refillAmount), {
-            maximumFractionDigits: 0,
-            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
             style: 'currency',
             currency: 'USD',
           })
@@ -203,9 +227,10 @@ function AutoTopUpConfigurationDialogEditable(
         confirmText={t('save')}
         cancelText={t('cancel')}
         isConfirmBusy={isPending}
+        disableSubmit={hasThresholdError || !hasDefaultPaymentMethod}
         errorMessage={error ?  t('errors.default') : ''}
       >
-        <VStack gap="form">
+        <VStack gap="xlarge">
           {!hasDefaultPaymentMethod && (
             <Alert
               title={t('noDefaultPaymentMethod.title')}
@@ -235,7 +260,7 @@ function AutoTopUpConfigurationDialogEditable(
             )}
           />
 
-          <VStack gap="form" className="relative">
+          <VStack gap="xlarge" className="relative">
             {!isEnabled && (
               <div className="absolute h-full w-full inset-0 bg-background/50 z-10 pointer-events-none" />
             )}
@@ -250,6 +275,7 @@ function AutoTopUpConfigurationDialogEditable(
                   description={t('form.threshold.description')}
                   placeholder={t('form.threshold.placeholder')}
                   disabled={!isEnabled}
+                  preIcon={<LettaCoinIcon size="small" />}
                   rightOfLabelContent={
                     thresholdDollarAmount ? (
                       <Typography variant="body3" color="lighter">
@@ -269,9 +295,11 @@ function AutoTopUpConfigurationDialogEditable(
                   description={t('form.refillAmount.description')}
                   items={refillAmountOptions}
                   value={String(field.value)}
-                  onValueChange={(value) => {
+                  onValueChange={async (value) => {
                     if (value) {
                       field.onChange(Number(value));
+                      // Re-validate the form to update error messages
+                      await form.trigger();
                     }
                   }}
                   disabled={!isEnabled}
@@ -315,14 +343,23 @@ export function AutoTopUpConfigurationDialog(
     );
   }
 
+  // Ensure refillAmount is greater than threshold to avoid validation error
+  const threshold = data.body.threshold || 5000;
+  let refillAmount = data.body.refillAmount || 25000;
+
+  // If they're equal or threshold is higher, default refillAmount to a valid value
+  if (threshold >= refillAmount) {
+    refillAmount = 25000; // Use second refill option as default
+  }
+
   return (
     <AutoTopUpConfigurationDialogEditable
       trigger={trigger}
       isOpened={isOpened}
       onOpenChange={setIsOpened}
       initialValues={{
-        threshold: data.body.threshold,
-        refillAmount: data.body.refillAmount,
+        threshold,
+        refillAmount,
         enabled: data.body.enabled,
       }}
     />

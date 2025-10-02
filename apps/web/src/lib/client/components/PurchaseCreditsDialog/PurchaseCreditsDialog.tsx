@@ -8,6 +8,7 @@ import {
   FormField,
   FormProvider,
   HStack,
+  LettaCoinIcon,
   LoadingEmptyStatusComponent,
   RadioGroup,
   Typography,
@@ -83,15 +84,15 @@ function ConfirmationText() {
           {t('confirmation.order')}
         </Typography>
         <VStack gap={false}>
+          <HStack gap="small" align="center">
+          <LettaCoinIcon size="small" />
           <Typography>
-            {t.rich('confirmation.credits', {
-              credits: () => (
-                <Typography overrideEl="span" variant="heading3">
-                  {formatCurrency(creditsToDollars(credits), options)}{' '}
-                </Typography>
-              ),
-            })}
+            <Typography overrideEl="span" variant="heading3">
+              {parseInt(credits).toLocaleString()}
+            </Typography>
+            {' '}credits ({formatCurrency(creditsToDollars(credits), options)})
           </Typography>
+          </HStack>
         </VStack>
       </VStack>
       <VStack>
@@ -153,26 +154,30 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
         onComplete();
       },
     });
-  const { formatCurrency } = useFormatters();
 
   const errorTranslation = useErrorMessages(error);
   const defaultCard = useGetDefaultOrFirstCard();
 
   const renderOption = useCallback(
     (credits: string) => {
+      const creditAmount = parseInt(credits, 10);
+
       return {
         value: credits.toString(),
-        label: t.rich('amount.option', {
-          label: (chunks) => <Typography color="lighter">{chunks}</Typography>,
-          credits: () => (
+        label: (
+          <HStack gap="small" align="center">
+            <LettaCoinIcon size="small" />
             <Typography variant="heading6">
-              {formatCurrency(creditsToDollars(parseInt(credits, 10)), options)}
+              {creditAmount.toLocaleString()}
             </Typography>
-          ),
-        }),
+            <Typography color="lighter">
+              credits
+            </Typography>
+          </HStack>
+        ),
       };
     },
-    [formatCurrency, t],
+    [],
   );
 
   const form = useForm<PurchaseCreditsFormValues>({
