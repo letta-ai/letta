@@ -2579,7 +2579,15 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_attached_tools_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
+    async def list_attached_tools_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+        ascending: bool = False,
+    ) -> List[PydanticTool]:
         """
         List all tools attached to an agent (async version with optimized performance).
         Uses direct SQL queries to avoid SqlAlchemyBase overhead.
@@ -2587,6 +2595,10 @@ class AgentManager:
         Args:
             agent_id: ID of the agent to list tools for.
             actor: User performing the action.
+            before: Tool ID cursor for pagination. Returns tools that come before this tool ID.
+            after: Tool ID cursor for pagination. Returns tools that come after this tool ID.
+            limit: Maximum number of tools to return.
+            ascending: Sort order by creation time.
 
         Returns:
             List[PydanticTool]: List of tools attached to the agent.
@@ -2601,6 +2613,22 @@ class AgentManager:
                 .join(ToolsAgents, ToolModel.id == ToolsAgents.tool_id)
                 .where(ToolsAgents.agent_id == agent_id, ToolModel.organization_id == actor.organization_id)
             )
+
+            # Apply cursor-based pagination
+            if before:
+                query = query.where(ToolModel.id < before)
+            if after:
+                query = query.where(ToolModel.id > after)
+
+            # Apply sorting
+            if ascending:
+                query = query.order_by(ToolModel.created_at.asc())
+            else:
+                query = query.order_by(ToolModel.created_at.desc())
+
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
 
             result = await session.execute(query)
             tools = result.scalars().all()
