@@ -9106,9 +9106,13 @@ export type ListRunStepsData = {
    */
   limit?: number | null;
   /**
-   * Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+   * Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
    */
-  order?: string;
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   runId: string;
   userAgent?: string | null;
   userId?: string | null;

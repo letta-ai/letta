@@ -3379,6 +3379,7 @@ export const UseRunsServiceListRunStepsKeyFn = (
     before,
     limit,
     order,
+    orderBy,
     runId,
     userAgent,
     userId,
@@ -3389,7 +3390,8 @@ export const UseRunsServiceListRunStepsKeyFn = (
     after?: string;
     before?: string;
     limit?: number;
-    order?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     runId: string;
     userAgent?: string;
     userId?: string;
@@ -3406,6 +3408,7 @@ export const UseRunsServiceListRunStepsKeyFn = (
       before,
       limit,
       order,
+      orderBy,
       runId,
       userAgent,
       userId,
