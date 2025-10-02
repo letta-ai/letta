@@ -119,7 +119,7 @@ function LettaSpinLoader3d(props: LettaLoaderBaseProps) {
         <Lottie
           options={{
             ...logoOptions,
-            animationData: darkLogo,
+            animationData: lightLogo,
           }}
           isClickToPauseDisabled={true}
         />
@@ -128,7 +128,7 @@ function LettaSpinLoader3d(props: LettaLoaderBaseProps) {
         <Lottie
           options={{
             ...logoOptions,
-            animationData: lightLogo,
+            animationData: darkLogo,
           }}
           isClickToPauseDisabled={true}
         />
