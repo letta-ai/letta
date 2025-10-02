@@ -1072,9 +1072,17 @@ AgentMessagesResponse = Annotated[
 async def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    after: str | None = Query(None, description="Message after which to retrieve the returned messages."),
-    before: str | None = Query(None, description="Message before which to retrieve the returned messages."),
-    limit: int = Query(10, description="Maximum number of messages to retrieve."),
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     group_id: str | None = Query(None, description="Group ID to filter messages by."),
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
@@ -1095,7 +1103,7 @@ async def list_messages(
         before=before,
         limit=limit,
         group_id=group_id,
-        reverse=True,
+        reverse=(order == "desc"),
         return_message_object=False,
         use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
