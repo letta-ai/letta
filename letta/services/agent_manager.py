@@ -2641,14 +2641,22 @@ class AgentManager:
         agent_id: str,
         actor: PydanticUser,
         manager_type: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+        ascending: bool = False,
     ) -> List[PydanticGroup]:
         """
-        List all groups that contain the specified agent (async version).
+        List all groups that contain the specified agent.
 
         Args:
             agent_id: ID of the agent to find groups for.
             actor: User performing the action.
             manager_type: Optional manager type to filter by.
+            before: Group ID cursor for pagination. Returns groups that come before this group ID.
+            after: Group ID cursor for pagination. Returns groups that come after this group ID.
+            limit: Maximum number of groups to return.
+            ascending: Sort order by creation time.
 
         Returns:
             List[PydanticGroup]: List of groups containing the agent.
@@ -2665,6 +2673,22 @@ class AgentManager:
 
             if manager_type:
                 query = query.where(GroupModel.manager_type == manager_type)
+
+            # Apply cursor-based pagination
+            if before:
+                query = query.where(GroupModel.id < before)
+            if after:
+                query = query.where(GroupModel.id > after)
+
+            # Apply sorting
+            if ascending:
+                query = query.order_by(GroupModel.created_at.asc())
+            else:
+                query = query.order_by(GroupModel.created_at.desc())
+
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
 
             result = await session.execute(query)
             groups = result.scalars().all()

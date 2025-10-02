@@ -1776,11 +1776,30 @@ async def list_agent_groups(
     manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of groups to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     logger.info("in list agents with manager_type", manager_type)
-    return await server.agent_manager.list_groups_async(agent_id=agent_id, manager_type=manager_type, actor=actor)
+    return await server.agent_manager.list_groups_async(
+        agent_id=agent_id,
+        manager_type=manager_type,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.post(
