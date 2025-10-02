@@ -3662,6 +3662,11 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.managerType Manager type to filter groups by
+   * @param data.before Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
+   * @param data.after Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
+   * @param data.limit Maximum number of groups to return
+   * @param data.order Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -3682,6 +3687,11 @@ export class AgentsService {
       },
       query: {
         manager_type: data.managerType,
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',

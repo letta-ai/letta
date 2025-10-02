@@ -1911,16 +1911,26 @@ export const useAgentsServiceListAgentGroupsKey =
   'AgentsServiceListAgentGroups';
 export const UseAgentsServiceListAgentGroupsKeyFn = (
   {
+    after,
     agentId,
+    before,
+    limit,
     managerType,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
     managerType?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1932,8 +1942,13 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
   useAgentsServiceListAgentGroupsKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
+      before,
+      limit,
       managerType,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,

@@ -2970,6 +2970,11 @@ export const useAgentsServiceListMessagesSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.managerType Manager type to filter groups by
+ * @param data.before Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
+ * @param data.after Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
+ * @param data.limit Maximum number of groups to return
+ * @param data.order Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -2984,16 +2989,26 @@ export const useAgentsServiceListAgentGroupsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentId,
+    before,
+    limit,
     managerType,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
     managerType?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -3006,8 +3021,13 @@ export const useAgentsServiceListAgentGroupsSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn(
       {
+        after,
         agentId,
+        before,
+        limit,
         managerType,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -3018,8 +3038,13 @@ export const useAgentsServiceListAgentGroupsSuspense = <
     ),
     queryFn: () =>
       AgentsService.listAgentGroups({
+        after,
         agentId,
+        before,
+        limit,
         managerType,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
