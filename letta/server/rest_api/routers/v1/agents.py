@@ -460,10 +460,28 @@ async def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(10, description="Maximum number of tools to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """Get tools from an existing agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_tools_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_tools_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
