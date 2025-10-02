@@ -9067,6 +9067,10 @@ export type ListRunMessagesData = {
    * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    */
   order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   runId: string;
   userAgent?: string | null;
   userId?: string | null;

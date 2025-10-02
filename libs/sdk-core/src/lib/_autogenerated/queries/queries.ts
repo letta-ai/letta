@@ -5172,6 +5172,7 @@ export const useRunsServiceRetrieveRun = <
  * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -5190,6 +5191,7 @@ export const useRunsServiceListRunMessages = <
     before,
     limit,
     order,
+    orderBy,
     runId,
     userAgent,
     userId,
@@ -5201,6 +5203,7 @@ export const useRunsServiceListRunMessages = <
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     runId: string;
     userAgent?: string;
     userId?: string;
@@ -5218,6 +5221,7 @@ export const useRunsServiceListRunMessages = <
         before,
         limit,
         order,
+        orderBy,
         runId,
         userAgent,
         userId,
@@ -5233,6 +5237,7 @@ export const useRunsServiceListRunMessages = <
         before,
         limit,
         order,
+        orderBy,
         runId,
         userAgent,
         userId,

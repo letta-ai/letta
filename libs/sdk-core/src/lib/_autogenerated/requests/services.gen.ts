@@ -5921,6 +5921,7 @@ export class RunsService {
    * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    * @param data.limit Maximum number of messages to return
    * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -5944,6 +5945,7 @@ export class RunsService {
         after: data.after,
         limit: data.limit,
         order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',
