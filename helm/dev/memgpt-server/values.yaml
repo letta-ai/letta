@@ -149,6 +149,7 @@ env:
   LETTA_TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
   LETTA_USE_TPUF: true
   LETTA_EMBED_ALL_MESSAGES: true
+  VLLM_API_BASE: ""
 
 secretsProvider:
   secrets:
@@ -171,3 +172,4 @@ secretsProvider:
     - COMPOSIO_API_KEY
     - LETTA_TEMPORAL_API_KEY
     - LETTA_MISTRAL_API_KEY
+    - VLLM_API_BASE
