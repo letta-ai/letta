@@ -7,7 +7,7 @@ from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInt
 from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
-from letta.schemas.letta_message_content import SummarizedReasoningContent, TextContent
+from letta.schemas.letta_message_content import LettaMessageContentUnion
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -113,8 +113,8 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
         # TODO this should probably just be called "content"?
         # self.reasoning_content = self.interface.get_reasoning_content()
 
-        # Extract non-reasoning content (eg text)
-        self.content: List[TextContent | SummarizedReasoningContent] = self.interface.get_content()
+        # Extract all content parts
+        self.content: List[LettaMessageContentUnion] = self.interface.get_content()
 
         # Extract usage statistics
         # Some providers don't provide usage in streaming, use fallback if needed
