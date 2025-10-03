@@ -13,6 +13,7 @@ def convert_message_creates_to_messages(
     message_creates: list[MessageCreate],
     agent_id: str,
     timezone: str,
+    run_id: str,
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
 ) -> list[Message]:
@@ -21,6 +22,7 @@ def convert_message_creates_to_messages(
             message_create=create,
             agent_id=agent_id,
             timezone=timezone,
+            run_id=run_id,
             wrap_user_message=wrap_user_message,
             wrap_system_message=wrap_system_message,
         )
@@ -32,6 +34,7 @@ def _convert_message_create_to_message(
     message_create: MessageCreate,
     agent_id: str,
     timezone: str,
+    run_id: str,
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
 ) -> Message:
@@ -81,4 +84,5 @@ def _convert_message_create_to_message(
         sender_id=message_create.sender_id,
         group_id=message_create.group_id,
         batch_item_id=message_create.batch_item_id,
+        run_id=run_id,
     )

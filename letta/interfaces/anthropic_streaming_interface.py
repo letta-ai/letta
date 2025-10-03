@@ -67,10 +67,12 @@ class AnthropicStreamingInterface:
         put_inner_thoughts_in_kwarg: bool = False,
         requires_approval_tools: list = [],
         run_id: str | None = None,
+        step_id: str | None = None,
     ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.use_assistant_message = use_assistant_message
         self.run_id = run_id
+        self.step_id = step_id
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -299,6 +301,7 @@ class AnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(hidden_reasoning_message)
                 prev_message_type = hidden_reasoning_message.message_type
@@ -345,6 +348,7 @@ class AnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(reasoning_message)
                 prev_message_type = reasoning_message.message_type
@@ -373,6 +377,7 @@ class AnthropicStreamingInterface:
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     self.reasoning_messages.append(reasoning_message)
                     prev_message_type = reasoning_message.message_type
@@ -495,6 +500,7 @@ class AnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(reasoning_message)
                 prev_message_type = reasoning_message.message_type
@@ -516,6 +522,7 @@ class AnthropicStreamingInterface:
                     signature=delta.signature,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(reasoning_message)
                 prev_message_type = reasoning_message.message_type
@@ -550,9 +557,11 @@ class SimpleAnthropicStreamingInterface:
         self,
         requires_approval_tools: list = [],
         run_id: str | None = None,
+        step_id: str | None = None,
     ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.run_id = run_id
+        self.step_id = step_id
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -764,6 +773,7 @@ class SimpleAnthropicStreamingInterface:
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
@@ -774,6 +784,7 @@ class SimpleAnthropicStreamingInterface:
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                 prev_message_type = tool_call_msg.message_type
                 yield tool_call_msg
@@ -795,6 +806,7 @@ class SimpleAnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
 
                 self.reasoning_messages.append(hidden_reasoning_message)
@@ -819,6 +831,7 @@ class SimpleAnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 # self.assistant_messages.append(assistant_msg)
                 self.reasoning_messages.append(assistant_msg)
@@ -842,6 +855,7 @@ class SimpleAnthropicStreamingInterface:
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
@@ -852,6 +866,7 @@ class SimpleAnthropicStreamingInterface:
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
 
                 yield tool_call_msg
@@ -872,6 +887,7 @@ class SimpleAnthropicStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(reasoning_message)
                 prev_message_type = reasoning_message.message_type
@@ -894,6 +910,7 @@ class SimpleAnthropicStreamingInterface:
                     signature=delta.signature,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.reasoning_messages.append(reasoning_message)
                 prev_message_type = reasoning_message.message_type

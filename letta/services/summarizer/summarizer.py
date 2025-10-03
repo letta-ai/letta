@@ -189,6 +189,7 @@ class Summarizer:
             # We already packed, don't pack again
             wrap_user_message=False,
             wrap_system_message=False,
+            run_id=None,  # TODO: add this
         )[0]
 
         # Create the message in the DB

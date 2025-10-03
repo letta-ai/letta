@@ -616,7 +616,7 @@ class LettaAgentBatch(BaseAgent):
         self, agent_state: AgentState, input_messages: List[MessageCreate]
     ) -> List[Message]:
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
-            input_messages, agent_state, self.message_manager, self.actor
+            input_messages, agent_state, self.message_manager, self.actor, run_id=None
         )
 
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)

@@ -56,6 +56,7 @@ def _prepare_in_context_messages(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: str,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -65,6 +66,7 @@ def _prepare_in_context_messages(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -81,7 +83,9 @@ def _prepare_in_context_messages(
 
     # Create a new user message from the input and store it
     new_in_context_messages = message_manager.create_many_messages(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+        ),
         actor=actor,
     )
 
@@ -93,6 +97,7 @@ async def _prepare_in_context_messages_async(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: str,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -103,6 +108,7 @@ async def _prepare_in_context_messages_async(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -119,7 +125,9 @@ async def _prepare_in_context_messages_async(
 
     # Create a new user message from the input and store it
     new_in_context_messages = await message_manager.create_many_messages_async(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+        ),
         actor=actor,
         project_id=agent_state.project_id,
     )
@@ -132,6 +140,7 @@ async def _prepare_in_context_messages_no_persist_async(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: Optional[str] = None,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -141,6 +150,7 @@ async def _prepare_in_context_messages_no_persist_async(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -176,7 +186,7 @@ async def _prepare_in_context_messages_no_persist_async(
 
         # Create a new user message from the input but dont store it yet
         new_in_context_messages = create_input_messages(
-            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
         )
 
     return current_in_context_messages, new_in_context_messages

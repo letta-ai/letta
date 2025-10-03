@@ -82,6 +82,7 @@ class EphemeralSummaryAgent(BaseAgent):
             message_creates=[system_message_create] + input_messages,
             agent_id=self.agent_id,
             timezone=agent_state.timezone,
+            run_id=None,  # TODO: add this
         )
 
         request_data = llm_client.build_request_data(agent_state.agent_type, messages, agent_state.llm_config, tools=[])

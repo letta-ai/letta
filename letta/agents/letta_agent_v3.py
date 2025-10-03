@@ -84,7 +84,7 @@ class LettaAgentV3(LettaAgentV2):
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
 
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-            input_messages, self.agent_state, self.message_manager, self.actor
+            input_messages, self.agent_state, self.message_manager, self.actor, run_id
         )
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
@@ -180,7 +180,7 @@ class LettaAgentV3(LettaAgentV2):
 
         try:
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-                input_messages, self.agent_state, self.message_manager, self.actor
+                input_messages, self.agent_state, self.message_manager, self.actor, run_id
             )
             in_context_messages = in_context_messages + input_messages_to_persist
             for i in range(max_steps):

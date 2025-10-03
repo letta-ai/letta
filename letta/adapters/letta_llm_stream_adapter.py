@@ -59,6 +59,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
+                step_id=step_id,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             # For non-v1 agents, always use Chat Completions streaming interface
@@ -70,6 +71,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 tools=tools,
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
+                step_id=step_id,
             )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
