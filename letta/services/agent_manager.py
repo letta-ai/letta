@@ -937,6 +937,9 @@ class AgentManager:
                     raise NoResultFound(f"Agent with ID {agent_id} not found")
 
                 return await agent.to_pydantic_async(include_relationships=include_relationships)
+            except NoResultFound:
+                # Re-raise NoResultFound without logging to preserve 404 handling
+                raise
             except Exception as e:
                 logger.error(f"Error fetching agent {agent_id}: {str(e)}")
                 raise
