@@ -93,9 +93,6 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
   const isPositiveFeedback = step?.feedback === 'positive';
   const isNegativeFeedback = step?.feedback === 'negative';
 
-  if (!step) {
-    return null;
-  }
 
   return (
     <HStack gap="small">

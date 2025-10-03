@@ -31,7 +31,7 @@ export function Markdown(props: MarkdownProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      className="text-sm"
+      className="text-base"
       components={{
         table: function Table({ children }) {
           return <table className="table-auto w-full">{children}</table>;
@@ -99,7 +99,7 @@ export function Markdown(props: MarkdownProps) {
         p({ children }) {
           return (
             <Typography
-              variant="body3"
+              variant="body2"
               className="block markdown-paragraph"
               preWrap
             >

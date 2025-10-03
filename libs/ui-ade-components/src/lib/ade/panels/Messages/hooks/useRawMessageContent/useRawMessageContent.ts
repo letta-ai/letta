@@ -13,7 +13,20 @@ export function useRawMessageContent(message: LettaMessageUnion) {
       }
 
       return null;
+    case 'assistant_message':
+      if (Array.isArray(message.content)) {
+        return message.content
+          .map((contentItem) => {
+            if (contentItem.type === 'text') {
+              return contentItem.text || '';
+            }
 
+            return '';
+          })
+          .join('');
+      }
+
+      return message.content || null;
     case 'reasoning_message':
       return message.reasoning || null;
     case 'user_message': {

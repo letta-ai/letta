@@ -15,3 +15,4 @@ export * from './useSyncUpdateCurrentGroup/useSyncUpdateCurrentGroup';
 export * from './useOrderedTraces/useOrderedTraces';
 export * from './useNetworkInspectorVisibility/useNetworkInspectorVisibility';
 export * from './useUpdateSimulatedMemoryBlocksOnVariableInjection/useUpdateSimulatedMemoryBlocksOnVariableInjection';
+export * from './useAgentRunMessages';

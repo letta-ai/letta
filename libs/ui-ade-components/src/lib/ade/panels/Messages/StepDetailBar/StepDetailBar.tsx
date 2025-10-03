@@ -13,7 +13,7 @@ import {
   VStack,
   WarningIcon
 } from '@letta-cloud/ui-component-library';
-import { FeedbackButtons } from '../../../FeedbackButtons/FeedbackButtons';
+import { FeedbackButtons } from '../FeedbackButtons/FeedbackButtons';
 import {
   type LettaMessageUnion,
   useStepsServiceRetrieveStep,
@@ -22,18 +22,18 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { useCurrentAgentMetaData } from '../../../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { useTraceStepDetails } from '../../../useTraceStepDetails/useTraceStepDetails';
+import { useCurrentAgentMetaData } from '../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useTraceStepDetails } from '../useTraceStepDetails/useTraceStepDetails';
 import { useStepDuration } from '@letta-cloud/utils-client';
 import {
   getLLMDurationFromTrace,
   getToolDurationFromTrace,
 } from '@letta-cloud/utils-shared';
-import { ModifyToolBehaviorPopover } from '../../../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
-import { CopyMessageContentButton } from '../../../CopyMessageContentButton/CopyMessageContentButton';
-import { ViewMessageTrace } from '../../../../../../ViewMessageTrace/ViewMessageTrace';
-import { useRawMessageContent } from '../../../hooks/useRawMessageContent/useRawMessageContent';
-import { useMessageGroupContext } from '../../../hooks/useMessageGroupContext/useMessageGroupContext';
+import { ModifyToolBehaviorPopover } from '../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
+import { CopyMessageContentButton } from '../CopyMessageContentButton/CopyMessageContentButton';
+import { ViewMessageTrace } from '../../../../ViewMessageTrace/ViewMessageTrace';
+import { useRawMessageContent } from '../hooks/useRawMessageContent/useRawMessageContent';
+import { useMessageGroupContext } from '../hooks/useMessageGroupContext/useMessageGroupContext';
 
 interface StepDetailBarProps {
   message: LettaMessageUnion;

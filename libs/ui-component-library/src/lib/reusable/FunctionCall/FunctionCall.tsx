@@ -7,7 +7,7 @@ import {
   ChevronRightIcon,
   ContextWindowIcon,
   HeartbeatIcon,
-  TerminalIcon,
+  ToolsIcon
 } from '../../icons';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { Typography } from '../../core/Typography/Typography';
@@ -60,6 +60,7 @@ type FunctionCallVariants = 'default' | 'inspector';
 
 interface FunctionCallProps {
   name: string;
+  noStatusBadge?: boolean;
   variant?: FunctionCallVariants;
   inputs: string;
   response?: ToolReturnMessage;
@@ -73,7 +74,16 @@ type ResponseViews = 'response' | 'stderr' | 'stdout';
 const FUNCTION_CALL_LIMIT = 10_000;
 
 export function FunctionCall(props: FunctionCallProps) {
-  const { id, name, inputs, response, actions, status, variant = 'default' } = props;
+  const {
+    id,
+    name,
+    inputs,
+    response,
+    noStatusBadge,
+    actions,
+    status,
+    variant = 'default',
+  } = props;
   const [openStates, setOpenStates] = useAtom(functionCallOpenStatusAtom);
 
   const open = useMemo(() => {
@@ -173,11 +183,11 @@ export function FunctionCall(props: FunctionCallProps) {
           gap="small"
         >
           <HStack
-            gap="large"
+            gap="medium"
             align="center"
             className={cn(
               variant === 'default'
-                ? 'px-2 pr-3 py-1 bg-background text-text-default cursor-pointer border border-grey3'
+                ? 'px-3 pr-3 py-1 bg-background-grey text-text-default cursor-pointer border border-grey3'
                 : '',
               variant === 'inspector'
                 ? 'px-2 pr-3 w-full py-2 border cursor-pointer'
@@ -185,19 +195,21 @@ export function FunctionCall(props: FunctionCallProps) {
             )}
           >
             <HStack className="max-w-[200px]" align="center" gap="small">
-              <div className="h-1 min-w-1 flex items-center justify-center">
-                {!open ? (
-                  <ChevronRightIcon size="xsmall" />
-                ) : (
-                  <ChevronDownIcon size="xsmall" />
-                )}
-              </div>
-              <TerminalIcon size="small" />
-              <Typography fullWidth overflow="ellipsis" noWrap bold variant="body3">
+              <ToolsIcon  />
+              <Typography fullWidth overflow="ellipsis" noWrap variant="body3">
                 {name}
               </Typography>
             </HStack>
-            <StatusBadge status={status} toolReturn={toolReturn} />
+            {!noStatusBadge && (
+              <StatusBadge status={status} toolReturn={toolReturn} />
+            )}
+            <div className="h-1 min-w-1 flex items-center justify-center">
+              {!open ? (
+                <ChevronRightIcon size="xsmall" />
+              ) : (
+                <ChevronDownIcon size="xsmall" />
+              )}
+            </div>
           </HStack>
           <HStack align="center" gap={false}>
             {actions}
@@ -205,16 +217,18 @@ export function FunctionCall(props: FunctionCallProps) {
             {typeof requestHeartbeatState === 'boolean' && (
               <Tooltip
                 asChild
-                content={requestHeartbeatState ? t('heartbeatTooltip.requested') : t('heartbeatTooltip.notRequested')}
+                content={
+                  requestHeartbeatState
+                    ? t('heartbeatTooltip.requested')
+                    : t('heartbeatTooltip.notRequested')
+                }
               >
-               <Button
+                <Button
                   size="xsmall"
                   color="tertiary"
                   preIcon={
                     <HeartbeatIcon
-                      color={
-                        requestHeartbeatState ? 'destructive' : 'lighter'
-                      }
+                      color={requestHeartbeatState ? 'destructive' : 'lighter'}
                       size="xsmall"
                     />
                   }
