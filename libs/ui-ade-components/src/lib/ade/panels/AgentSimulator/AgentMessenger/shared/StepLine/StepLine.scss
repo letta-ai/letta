@@ -1,0 +1,10 @@
+
+
+.step-line {
+  position: absolute;
+  height: 80%;
+  background: hsl(var(--background-grey));
+  width: 2px;
+  top: calc(14px + 10%);
+  left: 8px;
+}

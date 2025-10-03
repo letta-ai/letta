@@ -7,7 +7,7 @@ import { useMessagesContext } from '../../hooks/useMessagesContext/useMessagesCo
 import React, { useMemo, useState } from 'react';
 import { HStack, JSONViewer, VStack } from '@letta-cloud/ui-component-library';
 import { cn } from '@letta-cloud/ui-styles';
-import { StepDetailBar } from './StepDetailBar/StepDetailBar';
+import { StepDetailBar } from '../../StepDetailBar/StepDetailBar';
 import { EditMessage } from './EditMessage/EditMessage';
 import { useMessageContext, MessageContextProvider } from './MessageContext';
 import { useMessageGroupContext } from '../../hooks/useMessageGroupContext/useMessageGroupContext';

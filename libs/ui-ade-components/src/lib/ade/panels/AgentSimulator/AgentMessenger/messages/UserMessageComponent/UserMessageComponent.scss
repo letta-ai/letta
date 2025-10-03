@@ -1,0 +1,8 @@
+.user-message-container:hover .user-message-toolbar {
+  opacity: 1;
+}
+
+.user-message-toolbar {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}

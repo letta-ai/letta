@@ -1,0 +1,53 @@
+.step-indicator {
+  min-width: 18px;
+  display: flex;
+  justify-content: center;
+
+}
+
+.step-indicator__inner {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  margin-top: 6px;
+}
+
+.step-indicator__icon {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@keyframes pulse-and-scale {
+  0% {
+    transform: scale(1);
+    opacity: 0;
+
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.3;
+
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+
+.step-indicator__inner_pulser {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  margin-top: 6px;
+  animation: pulse-and-scale 2s infinite;
+}
+

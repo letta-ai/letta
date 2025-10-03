@@ -28,7 +28,7 @@ import { useRawMessageContent } from '../../../hooks/useRawMessageContent/useRaw
 
 interface EditMessageProps {
   message: LettaMessageUnion;
-  onSuccess: VoidFunction;
+  onSuccess: (updatedMessage: LettaMessageUnion) => void;
   onClose: VoidFunction;
 }
 
@@ -80,6 +80,17 @@ export function EditMessage(props: EditMessageProps) {
             },
             {
               onSuccess: () => {
+                const updatedMessage: LettaMessageUnion = {
+                  ...message,
+                  tool_call: {
+                    ...message.tool_call,
+                    arguments: JSON.stringify({
+                      message: submitData.text,
+                      request_heartbeat: false,
+                    }),
+                  },
+                };
+
                 queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
                   {
                     queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
@@ -99,16 +110,7 @@ export function EditMessage(props: EditMessageProps) {
                             m.message_type === 'tool_call_message' &&
                             m.tool_call.tool_call_id === message.tool_call.tool_call_id
                           ) {
-                            return {
-                              ...m,
-                              tool_call: {
-                                ...m.tool_call,
-                                arguments: JSON.stringify({
-                                  message: submitData.text,
-                                  request_heartbeat: false,
-                                }),
-                              },
-                            };
+                            return updatedMessage;
                           }
                           return m;
                         });
@@ -117,7 +119,7 @@ export function EditMessage(props: EditMessageProps) {
                   },
                 );
 
-                onSuccess();
+                onSuccess(updatedMessage);
               },
             },
           );
@@ -136,6 +138,11 @@ export function EditMessage(props: EditMessageProps) {
             },
             {
               onSuccess: () => {
+                const updatedMessage: LettaMessageUnion = {
+                  ...message,
+                  reasoning: submitData.text,
+                };
+
                 queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
                   {
                     queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
@@ -155,10 +162,7 @@ export function EditMessage(props: EditMessageProps) {
                             m.id === message.id &&
                             message.message_type === 'reasoning_message'
                           ) {
-                            return {
-                              ...m,
-                              reasoning: submitData.text,
-                            };
+                            return updatedMessage;
                           }
                           return m;
                         });
@@ -167,7 +171,7 @@ export function EditMessage(props: EditMessageProps) {
                   },
                 );
 
-                onSuccess();
+                onSuccess(updatedMessage);
               },
             },
           );
@@ -186,6 +190,11 @@ export function EditMessage(props: EditMessageProps) {
             },
             {
               onSuccess: () => {
+                const updatedMessage: LettaMessageUnion = {
+                  ...message,
+                  content: submitData.text,
+                };
+
                 queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
                   {
                     queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
@@ -205,10 +214,7 @@ export function EditMessage(props: EditMessageProps) {
                             m.id === message.id &&
                             message.message_type === 'user_message'
                           ) {
-                            return {
-                              ...m,
-                              content: submitData.text,
-                            };
+                            return updatedMessage;
                           }
                           return m;
                         });
@@ -217,7 +223,7 @@ export function EditMessage(props: EditMessageProps) {
                   },
                 );
 
-                onSuccess();
+                onSuccess(updatedMessage);
               },
             },
           );
@@ -247,7 +253,7 @@ export function EditMessage(props: EditMessageProps) {
         <FormField
           name="text"
           render={({ field }) => (
-            <VStack padding="small" fullWidth color="background">
+            <VStack border padding="small" fullWidth color="background">
               <TextareaAutosize
                 {...field}
                 onChange={(e) => {

@@ -61,9 +61,21 @@
   "components/StartEvent": {
     "title": "Agent loop initiated"
   },
+  "AgentMessenger/shared/EditMessageButton": {
+    "edit": "Edit message"
+  },
+  "AgentMessenger/MessageToolbar": {
+    "MessageToolbarActions": {
+      "actions": "Actions",
+      "viewStepDetails": "View step details",
+      "editMessage": "Edit message"
+    },
+    "viewStepDetails": "View step details"
+  },
   "ui-component-library/FunctionCall": {
     "isExecuting": "Executing",
     "error": "Error",
+    "toolExecuted": "Tool",
     "empty": "None",
     "success": "Success",
     "request": "Tool input",

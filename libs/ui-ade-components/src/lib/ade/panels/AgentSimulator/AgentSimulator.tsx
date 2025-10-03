@@ -26,6 +26,8 @@ import { AgentChatInput } from './AgentChatInput/AgentChatInput';
 import { RunDebugViewer } from './RunDebugViewer/RunDebugViewer';
 import { useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
 import { AgentSimulatorEmptyState } from './AgentSimulatorEmptyState';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { AgentMessenger } from './AgentMessenger/AgentMessenger';
 
 interface AgentSimulatorOnboardingProps {
   children: React.ReactNode;
@@ -95,9 +97,22 @@ export function AgentSimulator() {
     agentId,
   });
 
+  const { data: newMessenger } = useFeatureFlag('RUN_MESSAGE_VIEW');
+
   const [renderMode] = useAtom(chatroomRenderModeAtom);
   const [isPending] = useAtom(isSendingMessageAtom);
   const [showRunDebugger] = useAtom(showRunDebuggerAtom);
+
+  if (newMessenger) {
+    return (
+      <AgentSimulatorOnboarding>
+        <VStack position="relative" gap={false} fullHeight fullWidth>
+          <AgentSimulatorHeader />
+          <AgentMessenger />
+        </VStack>
+      </AgentSimulatorOnboarding>
+    )
+  }
 
   return (
     <AgentSimulatorOnboarding>

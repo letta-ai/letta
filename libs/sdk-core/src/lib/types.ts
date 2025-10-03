@@ -151,19 +151,9 @@ export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   SystemMessageSchema,
 ]);
 
-const ErrorCodeSchema = z.enum([
-  'INTERNAL_SERVER_ERROR',
-  'CONTEXT_WINDOW_EXCEEDED',
-  'RATE_LIMIT_EXCEEDED',
-  'AGENT_LIMIT_EXCEEDED',
-  'CREDIT_LIMIT_EXCEEDED',
-  'FREE_USAGE_EXCEEDED',
-  'PREMIUM_USAGE_EXCEEDED',
-]);
-
 export const ErrorMessageSchema = z.object({
   error: z.string(),
-  code: ErrorCodeSchema.optional(),
+  code: z.string().optional(),
 });
 
 export const AgentMessageTypeSchema = z.enum([

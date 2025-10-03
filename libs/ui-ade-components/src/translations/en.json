@@ -56,6 +56,20 @@
       "tooltip": "Add a description to help others understand what this template is for and how to use it"
     }
   },
+  "AgentMessenger/RoleAvatar": {
+    "user": "User",
+    "assistant": "Agent"
+  },
+  "AgentMessenger/AgentMessengerInput": {
+    "placeholder": "Type your message here...",
+    "send": "Send message"
+
+  },
+  "AgentMessenger/messages/ReasoningMessageComponent": {
+    "thought": "Reasoned for {duration} seconds",
+    "thinking": "Reasoning...",
+    "unknownThought": "Thought for less than 1 second..."
+  },
   "ADE/AdvancedAgentTemplateSettingsPanel": {
     "defaults": "Default agent values",
     "advanced": "Advanced agent configuration"
