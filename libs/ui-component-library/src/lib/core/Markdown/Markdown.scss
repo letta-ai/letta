@@ -1,7 +1,43 @@
-.markdown-paragraph:not(:last-child) {
-  margin-bottom: 1rem;
-}
+/* Scoped Markdown styles to avoid bleed into non-markdown content */
+.lc-markdown {
+  /* Paragraphs */
+  .markdown-paragraph {
+    margin: 0 0 0.75rem;
+  }
 
-.text-sm > pre:not(:last-child) {
-  margin-bottom: 1rem;
+  /* Lists */
+  ul,
+  ol {
+    margin: 0.5rem 0 0.75rem;
+    padding-left: 1.25rem;
+  }
+
+  li:not(:last-child) {
+    margin-bottom: 0.375rem;
+  }
+
+  /* Prevent double spacing when paragraphs appear inside list items */
+  li .markdown-paragraph {
+    margin: 0;
+  }
+
+  /* Tables */
+  table {
+    margin: 0.75rem 0;
+  }
+
+  /* Code blocks */
+  .lc-code-block {
+    margin: 0.75rem 0;
+  }
+
+  /* Headings rhythm */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0.75rem 0 0.375rem;
+  }
 }
