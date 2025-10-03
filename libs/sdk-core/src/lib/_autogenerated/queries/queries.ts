@@ -2690,6 +2690,11 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
  * Retrieve the core memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+ * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+ * @param data.limit Maximum number of blocks to return
+ * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -2704,14 +2709,24 @@ export const useAgentsServiceListCoreMemoryBlocks = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -2724,7 +2739,12 @@ export const useAgentsServiceListCoreMemoryBlocks = <
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn(
       {
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -2735,7 +2755,12 @@ export const useAgentsServiceListCoreMemoryBlocks = <
     ),
     queryFn: () =>
       AgentsService.listCoreMemoryBlocks({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
