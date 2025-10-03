@@ -302,12 +302,6 @@ class Message(BaseMessage):
         if self.role == MessageRole.assistant:
             if self.content:
                 messages.extend(self._convert_reasoning_messages(text_is_assistant_message=text_is_assistant_message))
-                for i in range(len(messages) - 1, -1, -1):
-                    if i > 0 and messages[i].message_type == messages[i - 1].message_type:
-                        if messages[i].message_type == MessageType.reasoning_message:
-                            messages[i - 1].reasoning = messages[i - 1].reasoning + messages.pop(i).reasoning
-                        elif messages[i].message_type == MessageType.assistant_message:
-                            messages[i - 1].content = messages[i - 1].content + messages.pop(i).content
 
             if self.tool_calls is not None:
                 messages.extend(
@@ -361,19 +355,22 @@ class Message(BaseMessage):
             if isinstance(content_part, TextContent):
                 if text_is_assistant_message:
                     # .content is assistant message
-                    messages.append(
-                        AssistantMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            content=content_part.text,
-                            name=self.name,
-                            otid=otid,
-                            sender_id=self.sender_id,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
-                            run_id=self.run_id,
+                    if messages and messages[-1].message_type == MessageType.assistant_message:
+                        messages[-1].content += content_part.text
+                    else:
+                        messages.append(
+                            AssistantMessage(
+                                id=self.id,
+                                date=self.created_at,
+                                content=content_part.text,
+                                name=self.name,
+                                otid=otid,
+                                sender_id=self.sender_id,
+                                step_id=self.step_id,
+                                is_err=self.is_err,
+                                run_id=self.run_id,
+                            )
                         )
-                    )
                 else:
                     # .content is COT
                     messages.append(
@@ -392,20 +389,23 @@ class Message(BaseMessage):
 
             elif isinstance(content_part, ReasoningContent):
                 # "native" COT
-                messages.append(
-                    ReasoningMessage(
-                        id=self.id,
-                        date=self.created_at,
-                        reasoning=content_part.reasoning,
-                        source="reasoner_model",  # TODO do we want to tag like this?
-                        signature=content_part.signature,
-                        name=self.name,
-                        otid=otid,
-                        step_id=self.step_id,
-                        is_err=self.is_err,
-                        run_id=self.run_id,
+                if messages and messages[-1].message_type == MessageType.reasoning_message:
+                    messages[-1].reasoning += content_part.reasoning
+                else:
+                    messages.append(
+                        ReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            reasoning=content_part.reasoning,
+                            source="reasoner_model",  # TODO do we want to tag like this?
+                            signature=content_part.signature,
+                            name=self.name,
+                            otid=otid,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                            run_id=self.run_id,
+                        )
                     )
-                )
 
             elif isinstance(content_part, SummarizedReasoningContent):
                 # TODO remove the cast and just return the native type
@@ -1409,7 +1409,7 @@ class Message(BaseMessage):
                                     "name": content.name,
                                     "args": content.input,
                                 },
-                                "thought_signature": content.signature,
+                                # "thought_signature": content.signature,
                             }
                         )
                     else:
