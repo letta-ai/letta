@@ -53,7 +53,7 @@ async def web_search(
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
 
 
-async def fetch_webpage(url: str) -> str:
+async def web_fetch(url: str) -> str:
     """
     Fetch a webpage and convert it to markdown/text format using Jina AI reader.
 
