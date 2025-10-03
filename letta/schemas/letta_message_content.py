@@ -39,6 +39,9 @@ class MessageContent(BaseModel):
 class TextContent(MessageContent):
     type: Literal[MessageContentType.text] = Field(default=MessageContentType.text, description="The type of the message.")
     text: str = Field(..., description="The text content of the message.")
+    signature: Optional[str] = Field(
+        default=None, description="Stores a unique identifier for any reasoning associated with this text content."
+    )
 
     def to_text(self) -> str:
         """Return the text content."""
@@ -188,6 +191,9 @@ class ToolCallContent(MessageContent):
     input: dict = Field(
         ..., description="The parameters being passed to the tool, structured as a dictionary of parameter names to values."
     )
+    signature: Optional[str] = Field(
+        default=None, description="Stores a unique identifier for any reasoning associated with this tool call."
+    )
 
     def to_text(self) -> str:
         """Return a text representation of the tool call."""
@@ -241,6 +247,7 @@ class OmittedReasoningContent(MessageContent):
     type: Literal[MessageContentType.omitted_reasoning] = Field(
         default=MessageContentType.omitted_reasoning, description="Indicates this is an omitted reasoning step."
     )
+    signature: Optional[str] = Field(default=None, description="A unique identifier for this reasoning step.")
     # NOTE: dropping because we don't track this kind of information for the other reasoning types
     # tokens: int = Field(..., description="The reasoning token count for intermediate reasoning content.")
 

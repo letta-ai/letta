@@ -72,10 +72,10 @@ class SimpleGeminiStreamingInterface:
 
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
-        # for content in self.content_parts:
-        #     if isinstance(content, ReasoningContent):
-        #         # This assumes there is only one signature per turn
-        #         content.signature = self.thinking_signature
+        for content in self.content_parts:
+            if isinstance(content, ReasoningContent):
+                # This assumes there is only one signature per turn
+                content.signature = self.thinking_signature
         return self.content_parts
 
     def get_tool_call_object(self) -> ToolCall:
@@ -181,7 +181,7 @@ class SimpleGeminiStreamingInterface:
             if part.thought_signature:
                 # NOTE: the thought_signature comes on the Part with the function_call
                 thought_signature = part.thought_signature
-                self.thinking_signature = thought_signature
+                self.thinking_signature = base64.b64encode(thought_signature).decode("utf-8")
                 if prev_message_type and prev_message_type != "reasoning_message":
                     message_index += 1
                 yield ReasoningMessage(
@@ -190,7 +190,7 @@ class SimpleGeminiStreamingInterface:
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     source="reasoner_model",
                     reasoning="",
-                    signature=base64.b64encode(thought_signature).decode("utf-8"),
+                    signature=self.thinking_signature,
                 )
                 prev_message_type = "reasoning_message"
 
@@ -235,6 +235,7 @@ class SimpleGeminiStreamingInterface:
                 self.content_parts.append(
                     TextContent(
                         text=content,
+                        signature=self.thinking_signature,
                     )
                 )
 

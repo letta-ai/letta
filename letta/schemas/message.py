@@ -1399,19 +1399,22 @@ class Message(BaseMessage):
                 native_google_content_parts = []
                 for content in self.content:
                     if isinstance(content, TextContent):
-                        native_google_content_parts.append({"text": content.text})
+                        native_part = {"text": content.text}
+                        if content.signature:
+                            native_part["thought_signature"] = content.signature
+                        native_google_content_parts.append(native_part)
                     elif isinstance(content, ReasoningContent):
                         native_google_content_parts.append({"text": content.reasoning, "thought": True})
                     elif isinstance(content, ToolCallContent):
-                        native_google_content_parts.append(
-                            {
-                                "function_call": {
-                                    "name": content.name,
-                                    "args": content.input,
-                                },
-                                # "thought_signature": content.signature,
-                            }
-                        )
+                        native_part = {
+                            "function_call": {
+                                "name": content.name,
+                                "args": content.input,
+                            },
+                        }
+                        if content.signature:
+                            native_part["thought_signature"] = content.signature
+                        native_google_content_parts.append(native_part)
                     else:
                         raise ValueError(f"Unsupported content type: {content.type}")
                 if native_google_content_parts:
