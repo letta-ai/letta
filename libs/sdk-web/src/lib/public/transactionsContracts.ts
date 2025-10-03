@@ -7,6 +7,7 @@ const c = initContract();
 const TransactionSchema = z.object({
   type: z.enum(['addition', 'subtraction']),
   amount: z.number(),
+  trueCost: z.number(),
   note: z.string().optional(),
   source: z.string().optional(),
   stepId: z.string().optional(),

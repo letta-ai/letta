@@ -1,13 +1,9 @@
 'use client';
 import {
-  ArrowUpIcon,
   DataTable,
   HStack,
   Typography,
-  SideOverlay,
-  SideOverlayHeader,
-  VStack,
-  LoadingEmptyStatusComponent,
+LettaCoinIcon
 } from '@letta-cloud/ui-component-library';
 import type { PublicCreditTransactionType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -15,76 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { Slot } from '@radix-ui/react-slot';
-import { Button } from '@letta-cloud/ui-component-library';
-import type { Step } from '@letta-cloud/sdk-core';
-import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
-import { creditsToDollars } from '@letta-cloud/utils-shared';
-import { ModelTierBadge } from '../../../../models/_components/ModelTierBadge/ModelTierBadge';
 
-interface InnerStepViewerProps {
-  step: Step;
-}
-
-function InnerStepViewer(props: InnerStepViewerProps) {
-  const { step } = props;
-  const t = useTranslations('settings/audit-log');
-
-  return (
-    <VStack fullWidth fullHeight padding="small">
-      <HStack padding="small" border>
-        <Typography variant="body2">{step.agent_id}</Typography>
-      </HStack>
-      <Typography>{t('moreSoon')}</Typography>
-    </VStack>
-  );
-}
-
-interface StepViewerProps {
-  trigger: React.ReactNode;
-  stepId: string;
-}
-
-function StepViewer(props: StepViewerProps) {
-  const { trigger, stepId } = props;
-  const [isStepViewerOpen, setIsStepViewerOpen] = useState(false);
-
-  const { data: step } = useStepsServiceRetrieveStep({
-    stepId,
-  });
-
-  return (
-    <>
-      <Slot
-        onClick={() => {
-          setIsStepViewerOpen(true);
-        }}
-      >
-        {trigger}
-      </Slot>
-      <SideOverlay
-        title={stepId}
-        isOpen={isStepViewerOpen}
-        onOpenChange={() => {
-          setIsStepViewerOpen(false);
-        }}
-      >
-        <SideOverlayHeader>
-          <Typography bold variant="body2">
-            {stepId}
-          </Typography>
-        </SideOverlayHeader>
-        <VStack collapseHeight flex overflow="auto">
-          {!step ? (
-            <LoadingEmptyStatusComponent isLoading />
-          ) : (
-            <InnerStepViewer step={step} />
-          )}
-        </VStack>
-      </SideOverlay>
-    </>
-  );
-}
 
 interface AmountBadgeProps {
   amount: number;
@@ -94,13 +21,16 @@ interface AmountBadgeProps {
 function AmountBadge(props: AmountBadgeProps) {
   const { amount, type } = props;
 
-  const { formatCurrency } = useFormatters();
+  const { formatNumber } = useFormatters();
 
   return (
     <HStack align="center" gap="small">
       {type === 'addition' ? '+' : '-'}
       <Typography variant="body2">
-        {formatCurrency(creditsToDollars(amount))}
+        <HStack gap="small" align="center">
+          <LettaCoinIcon />{' '}
+          {formatNumber(amount)}
+        </HStack>
       </Typography>
     </HStack>
   );
@@ -134,6 +64,11 @@ export default function TransactionEvents() {
         {
           accessorKey: 'createdAt',
           header: t('table.columns.date'),
+          meta: {
+            style: {
+              width: '100px',
+            }
+          },
           cell: ({ row }) => (
             <Typography variant="body2">
               {formatDateAndTime(row.original.createdAt)}
@@ -141,11 +76,16 @@ export default function TransactionEvents() {
           ),
         },
         {
-          accessorKey: 'amount',
-          header: t('table.columns.amount'),
+          accessorKey: 'trueCost',
+          meta: {
+            style: {
+              width: '50px',
+            }
+          },
+          header: t('table.columns.credits'),
           cell: ({ row }) => (
             <AmountBadge
-              amount={row.original.amount}
+              amount={row.original.trueCost}
               type={row.original.type}
             />
           ),
@@ -153,39 +93,6 @@ export default function TransactionEvents() {
         {
           accessorKey: 'note',
           header: t('table.columns.note'),
-        },
-        {
-          cell: ({ row }) => {
-            return (
-              <ModelTierBadge
-                tier={row.original.modelTier || 'per-inference'}
-              />
-            );
-          },
-          accessorKey: 'modelTier',
-          header: t('table.columns.modelTier'),
-        },
-        {
-          id: 'actions',
-          header: t('table.columns.actions'),
-          cell: ({ row }) => {
-            if (!row.original.stepId) {
-              return;
-            }
-
-            return (
-              <StepViewer
-                stepId={row.original.stepId}
-                trigger={
-                  <Button
-                    preIcon={<ArrowUpIcon />}
-                    color="tertiary"
-                    label={t('viewStep')}
-                  />
-                }
-              />
-            );
-          },
         },
       ];
     }, [formatDateAndTime, t]);
