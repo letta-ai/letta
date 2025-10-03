@@ -694,7 +694,6 @@ class ToolManager:
 
         # Fetch current tool early to allow conditional logic based on tool type
         current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
-
         # Do NOT derive schema from Python source. Trust provided JSON schema.
         # Prefer provided json_schema; fall back to current
         if "json_schema" in update_data:

@@ -1,35 +1,3 @@
-# from letta_client import Letta
-# from letta_client.types import StreamableHTTPServerConfig, MCPServerType
-
-# client = Letta(token="LETTA_API_KEY")
-
-# # Connect a Streamable HTTP server with Bearer token auth
-# streamable_config = StreamableHTTPServerConfig(
-#     server_name="my-server",
-#     type=MCPServerType.STREAMABLE_HTTP,
-#     server_url="https://mcp.deepwiki.com/mcp",
-#     auth_header="Authorization",
-#     auth_token="Bearer your-token",  # Include "Bearer " prefix
-#     custom_headers={"X-API-Version": "v1"}  # Additional custom headers
-# )
-
-# client.tools.add_mcp_server(request=streamable_config)
-
-# # Example with templated variables for agent-scoped authentication
-# agent_scoped_config = StreamableHTTPServerConfig(
-#     server_name="user-specific-server",
-#     type=MCPServerType.STREAMABLE_HTTP,
-#     server_url="https://api.example.com/mcp",
-#     auth_header="Authorization",
-#     auth_token="Bearer {{AGENT_API_KEY | api_key}}",  # Agent-specific API key
-#     custom_headers={
-#         "X-User-ID": "{{AGENT_API_KEY | user_id}}",  # Agent-specific user ID
-#         "X-API-Version": "v2"
-#     }
-# )
-
-# client.tools.add_mcp_server(request=agent_scoped_config)
-
 from letta_client import Letta
 from pprint import pprint
 from letta.agents.agent_loop import AgentLoop
@@ -40,13 +8,23 @@ from letta.schemas.letta_request import (
     LettaRequest,
     LettaStreamingRequest,
 )
-import asyncio
+from letta.functions.mcp_client.types import (
+    MCPTool,
+    SSEServerConfig,
+    StdioServerConfig,
+    StreamableHTTPServerConfig,
+)
+from letta.schemas.mcp import (
+    UpdateSSEMCPServer,
+    UpdateStdioMCPServer,
+    UpdateStreamableHTTPMCPServer,
+)
 
 client = Letta(base_url="http://localhost:8283")
-
-# List tools from an MCP server
+# # List tools from an MCP server
 tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
 
+#override schema with new input
 new_input_schema = {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "additionalProperties": False,
@@ -60,13 +38,24 @@ new_input_schema = {
     "type": "object",
 }
 
-# Add a specific tool from the MCP server
-tool = client.tools.add_mcp_tool(
-    mcp_server_name="deep_wiki_server",
-    mcp_tool_name="read_wiki_structure",
-    overridden_schema=new_input_schema,
-)
-pprint(tool.json_schema)
+# Add a specific tool from the MCP server but override schema with the user provided one
+# tool = client.tools.add_mcp_tool(
+#     mcp_server_name="deep_wiki_server",
+#     mcp_tool_name="read_wiki_structure",
+#     overridden_schema=new_input_schema,
+# )
+pprint(tools[0])
+
+# BE CAREFUL HERE db backend is updated and letta mcp toolset is updated but need to update the mcp tool itself 
+# response = client.tools.update_mcp_server(
+#     mcp_server_name="deep_wiki_server",
+#     request=UpdateStreamableHTTPMCPServer(
+#         server_url='https://mcp.deepwiki.com/mcp'
+#     ),
+# )
+#see tools in server now
+# updated_tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
+# pprint(updated_tools[0])
 
 # updated_tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
 # pprint(f"New Input Schema: {tools[0].input_schema}")
