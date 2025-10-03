@@ -28,7 +28,7 @@ jobs:
     with:
       test-type: "integration"
       is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
-      install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google"
+      install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox"
       test-command: "uv run --frozen pytest -svv tests/"
       timeout-minutes: 60
       runner: '["self-hosted", "gpu", "vllm"]'

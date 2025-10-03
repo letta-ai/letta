@@ -48,7 +48,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Migrate database
         working-directory: apps/core
         env:
