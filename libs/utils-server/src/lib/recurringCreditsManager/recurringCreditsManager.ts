@@ -63,6 +63,7 @@ export async function getRemainingRecurrentCredits(organizationId: string, subsc
 
   await createRedisEntryIfNotExists(organizationId, subscription);
 
+
   const key = getRecurringCreditUsageKey(organizationId, subscription);
   const data = await redis.get(key);
 

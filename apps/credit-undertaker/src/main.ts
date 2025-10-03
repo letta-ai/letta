@@ -101,24 +101,29 @@ END;$$;
 
     client.on('notification', async (msg) => {
       if (msg.payload) {
-        const parsedPayload = JSON.parse(msg.payload) as Step;
-        console.log('[Undertaker] Received new step', parsedPayload.id);
-        const transaction = await processStep(parsedPayload);
+        try {
+          const parsedPayload = JSON.parse(msg.payload) as Step;
+          console.log('[Undertaker] Received new step', parsedPayload.id);
+          const transaction = await processStep(parsedPayload);
 
-        if (!transaction) {
-          return;
+          if (!transaction) {
+            return;
+          }
+
+          console.log(
+            '[Undertaker] Deducted credits from step',
+            transaction.transactionId,
+          );
+
+          // set tid column of the step to the current transaction id
+          await client.query('UPDATE steps SET tid = $1 WHERE id = $2', [
+            transaction.transactionId,
+            parsedPayload.id,
+          ]);
+        } catch (e) {
+          Sentry.captureException(e);
+          console.error(e);
         }
-
-        console.log(
-          '[Undertaker] Deducted credits from step',
-          transaction.transactionId,
-        );
-
-        // set tid column of the step to the current transaction id
-        await client.query('UPDATE steps SET tid = $1 WHERE id = $2', [
-          transaction.transactionId,
-          parsedPayload.id,
-        ]);
       }
     });
   }

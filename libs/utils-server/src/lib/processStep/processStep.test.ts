@@ -73,6 +73,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         invalidStep as Step,
         mockSubscription,
+        'org-456',
       );
       expect(result).toBeNull();
     });
@@ -82,6 +83,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         invalidStep as Step,
         mockSubscription,
+        'org-456',
       );
       expect(result).toBeNull();
     });
@@ -91,6 +93,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         invalidStep as Step,
         mockSubscription,
+        'org-456',
       );
       expect(result).toBeNull();
     });
@@ -100,6 +103,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         invalidStep as Step,
         mockSubscription,
+        'org-456',
       );
       expect(result).toBeNull();
     });
@@ -112,13 +116,14 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(result).toBeNull();
     });
 
     it('should fetch credit cost with correct parameters', async () => {
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockGetCreditCostPerModel).toHaveBeenCalledWith({
         modelName: 'gpt-4',
@@ -128,7 +133,7 @@ describe('processStepWithSubscription', () => {
     });
 
     it('should fetch model data from redis', async () => {
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockGetRedisData).toHaveBeenCalledWith(
         'modelNameAndEndpointToIdMap',
@@ -145,7 +150,7 @@ describe('processStepWithSubscription', () => {
       mockGetCreditCostPerModel.mockResolvedValue(50);
       mockGetRemainingRecurrentCredits.mockResolvedValue(100);
 
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockIncrementRecurrentCreditUsage).toHaveBeenCalledWith(
         'org-456',
@@ -169,7 +174,7 @@ describe('processStepWithSubscription', () => {
       mockGetCreditCostPerModel.mockResolvedValue(100);
       mockGetRemainingRecurrentCredits.mockResolvedValue(30);
 
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockIncrementRecurrentCreditUsage).toHaveBeenCalledWith(
         'org-456',
@@ -193,7 +198,7 @@ describe('processStepWithSubscription', () => {
       mockGetCreditCostPerModel.mockResolvedValue(100);
       mockGetRemainingRecurrentCredits.mockResolvedValue(0);
 
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockIncrementRecurrentCreditUsage).not.toHaveBeenCalled();
 
@@ -213,7 +218,7 @@ describe('processStepWithSubscription', () => {
       mockGetCreditCostPerModel.mockResolvedValue(50);
       mockGetRemainingRecurrentCredits.mockResolvedValue(0);
 
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockIncrementRecurrentCreditUsage).not.toHaveBeenCalled();
     });
@@ -227,6 +232,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(mockRemoveCreditsFromOrganization).toHaveBeenCalledWith({
@@ -247,7 +253,7 @@ describe('processStepWithSubscription', () => {
     });
 
     it('should always set modelTier to per-inference', async () => {
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockRemoveCreditsFromOrganization).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -269,6 +275,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(result).toBeNull();
@@ -292,6 +299,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(result).toBeNull();
@@ -310,6 +318,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(mockRemoveCreditsFromOrganization).toHaveBeenCalledWith(
@@ -327,6 +336,7 @@ describe('processStepWithSubscription', () => {
       const result = await processStepWithSubscription(
         mockStep,
         mockSubscription,
+        'org-456',
       );
 
       expect(mockIncrementRecurrentCreditUsage).not.toHaveBeenCalled();
@@ -343,7 +353,7 @@ describe('processStepWithSubscription', () => {
       mockGetCreditCostPerModel.mockResolvedValue(100);
       mockGetRemainingRecurrentCredits.mockResolvedValue(100);
 
-      await processStepWithSubscription(mockStep, mockSubscription);
+      await processStepWithSubscription(mockStep, mockSubscription, 'org-456');
 
       expect(mockIncrementRecurrentCreditUsage).toHaveBeenCalledWith(
         'org-456',
