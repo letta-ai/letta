@@ -856,8 +856,8 @@ class Message(BaseMessage):
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
             text = [content for content in self.content if isinstance(content, TextContent)]
-            assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
-            text_content = text[0].text
+            # assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
+            text_content = "\n\n".join([t.text for t in text])
             parse_content_parts = True
         else:
             text_content = None
