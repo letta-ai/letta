@@ -18,14 +18,14 @@ export function ReasoningSwitch() {
   const isAnthropicReasoner =
     (modelEndpointType?.startsWith('anthropic') &&
       (model?.startsWith('claude-3-7-sonnet') || model?.startsWith('claude-sonnet-4') || model?.startsWith('claude-opus-4')));
-  // const isGoogleReasoner =
-  //   ((modelEndpointType?.startsWith('google_vertex') || modelEndpointType?.startsWith('google_ai')) &&
-  //     (model?.startsWith('gemini-2.5-flash') || model?.startsWith('gemini-2.5-pro')));
-  // // For letta_v1_agent, we treat Gemini as not supported (TODO native reasoning support later)
-  // const supportsReasoningInV1 = isOpenAIReasoner || isAnthropicReasoner;
+  const isGoogleReasoner =
+    ((modelEndpointType?.startsWith('google_vertex') || modelEndpointType?.startsWith('google_ai')) &&
+      model?.startsWith('gemini-2.5-flash'));
+  // For letta_v1_agent, we treat Gemini as not supported (TODO native reasoning support later)
+  const supportsReasoningInV1 = isOpenAIReasoner || isAnthropicReasoner || isGoogleReasoner;
 
   const disableSwitch = isLettaV1Agent
-    ? !isAnthropicReasoner // In v1, only Anthropic 3.7/4 is togglable
+    ? !supportsReasoningInV1
     : (
         (modelEndpointType?.startsWith('openai') &&
           (model?.startsWith('o1') || model?.startsWith('o3') || model?.startsWith('o4') || model?.startsWith('gpt-5')))
@@ -35,7 +35,7 @@ export function ReasoningSwitch() {
   const infoTooltipText = isLettaV1Agent
     ? (isOpenAIReasoner
         ? t('AdvancedSettingsPanel.reasoning.disabledTooltip') // cannot disable
-        : isAnthropicReasoner
+        : supportsReasoningInV1
           ? t('AdvancedSettingsPanel.reasoning.tooltip') // togglable
           : t('AdvancedSettingsPanel.reasoning.v1Unsupported'))
     : (disableSwitch
