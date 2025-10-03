@@ -900,16 +900,34 @@ async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of blocks to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Retrieve the core memory blocks of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
     try:
-        agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
-        return agent.memory.blocks
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        return await server.agent_manager.list_agent_blocks_async(
+            agent_id=agent_id,
+            actor=actor,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+        )
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Agent not found")
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")

@@ -2636,6 +2636,63 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def list_agent_blocks_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+        ascending: bool = False,
+    ) -> List[PydanticBlock]:
+        """
+        List all blocks for a specific agent with pagination.
+
+        Args:
+            agent_id: ID of the agent to find blocks for.
+            actor: User performing the action.
+            before: Block ID cursor for pagination. Returns blocks that come before this block ID.
+            after: Block ID cursor for pagination. Returns blocks that come after this block ID.
+            limit: Maximum number of blocks to return.
+            ascending: Sort order by creation time.
+
+        Returns:
+            List[PydanticBlock]: List of blocks for the agent.
+        """
+        async with db_registry.async_session() as session:
+            # First verify agent exists and user has access
+            await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Build query to get blocks for this agent with pagination
+            query = (
+                select(BlockModel)
+                .join(BlocksAgents, BlockModel.id == BlocksAgents.block_id)
+                .where(BlocksAgents.agent_id == agent_id, BlockModel.organization_id == actor.organization_id)
+            )
+
+            # Apply cursor-based pagination
+            if before:
+                query = query.where(BlockModel.id < before)
+            if after:
+                query = query.where(BlockModel.id > after)
+
+            # Apply sorting - use id instead of created_at for core memory blocks
+            if ascending:
+                query = query.order_by(BlockModel.id.asc())
+            else:
+                query = query.order_by(BlockModel.id.desc())
+
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
+
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+
+            return [block.to_pydantic() for block in blocks]
+
+    @enforce_types
+    @trace_method
     async def list_groups_async(
         self,
         agent_id: str,
@@ -2662,9 +2719,6 @@ class AgentManager:
             List[PydanticGroup]: List of groups containing the agent.
         """
         async with db_registry.async_session() as session:
-            from letta.orm.group import Group as GroupModel
-            from letta.orm.sqlalchemy_base import GroupsAgents
-
             query = (
                 select(GroupModel)
                 .join(GroupsAgents, GroupModel.id == GroupsAgents.group_id)
