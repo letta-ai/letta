@@ -90,7 +90,7 @@ function ConfirmationText() {
             <Typography overrideEl="span" variant="heading3">
               {parseInt(credits).toLocaleString()}
             </Typography>
-            {' '}credits ({formatCurrency(creditsToDollars(credits), options)})
+            {' '}{t('credits')} ({formatCurrency(creditsToDollars(credits), options)})
           </Typography>
           </HStack>
         </VStack>
@@ -171,13 +171,13 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
               {creditAmount.toLocaleString()}
             </Typography>
             <Typography color="lighter">
-              credits
+              {t('credits')}
             </Typography>
           </HStack>
         ),
       };
     },
-    [],
+    [t],
   );
 
   const form = useForm<PurchaseCreditsFormValues>({
