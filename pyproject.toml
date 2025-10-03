@@ -70,6 +70,7 @@ dependencies = [
     "ruff[dev]>=0.12.10",
     "trafilatura",
     "readability-lxml",
+    "google-genai>=1.15.0",
 ]
 
 [project.scripts]
@@ -101,7 +102,6 @@ bedrock = [
     "boto3>=1.36.24",
     "aioboto3>=14.3.0",
 ]
-google = ["google-genai>=1.15.0"]
 
 # ====== Development ======
 dev = [

@@ -1338,6 +1338,8 @@ async def send_message_streaming(
         "deepseek",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
+    if agent.agent_type == AgentType.letta_v1_agent and agent.llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+        model_compatible_token_streaming = True
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
