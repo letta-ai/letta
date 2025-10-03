@@ -3744,6 +3744,10 @@ export type OmittedReasoningContent = {
    * Indicates this is an omitted reasoning step.
    */
   type?: 'omitted_reasoning';
+  /**
+   * A unique identifier for this reasoning step.
+   */
+  signature?: string | null;
 };
 
 export type Organization = {
@@ -5078,6 +5082,10 @@ export type TextContent = {
    * The text content of the message.
    */
   text: string;
+  /**
+   * Stores a unique identifier for any reasoning associated with this text content.
+   */
+  signature?: string | null;
 };
 
 /**
@@ -5217,6 +5225,10 @@ export type ToolCallContent = {
   input: {
     [key: string]: unknown;
   };
+  /**
+   * Stores a unique identifier for any reasoning associated with this tool call.
+   */
+  signature?: string | null;
 };
 
 export type ToolCallDelta = {

@@ -9745,6 +9745,18 @@ export const $OmittedReasoningContent = {
       description: 'Indicates this is an omitted reasoning step.',
       default: 'omitted_reasoning',
     },
+    signature: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Signature',
+      description: 'A unique identifier for this reasoning step.',
+    },
   },
   type: 'object',
   title: 'OmittedReasoningContent',
@@ -13029,6 +13041,19 @@ export const $TextContent = {
       title: 'Text',
       description: 'The text content of the message.',
     },
+    signature: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Signature',
+      description:
+        'Stores a unique identifier for any reasoning associated with this text content.',
+    },
   },
   type: 'object',
   required: ['text'],
@@ -13363,6 +13388,19 @@ export const $ToolCallContent = {
       title: 'Input',
       description:
         'The parameters being passed to the tool, structured as a dictionary of parameter names to values.',
+    },
+    signature: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Signature',
+      description:
+        'Stores a unique identifier for any reasoning associated with this tool call.',
     },
   },
   type: 'object',
