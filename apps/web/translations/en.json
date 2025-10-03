@@ -1467,6 +1467,7 @@
   },
   "components/PurchaseCreditsDialog": {
     "title": "Purchase credits",
+    "credits": "credits",
     "noDefaultCard": "You have not set a default credit card yet, you can set one in the Payment Methods tab",
     "errors": {
       "default": "There was an unknown error purchasing credits, please try again or contact support.",
