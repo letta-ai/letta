@@ -154,7 +154,7 @@ def capture_sentry_exception(e: BaseException):
         sentry_sdk.capture_exception(e)
 
 
-def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, actor: User) -> List[Message]:
+def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, run_id: str, actor: User) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
 
@@ -162,7 +162,9 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     we should unify this when it's clear what message attributes we need.
     """
 
-    messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
+    messages = convert_message_creates_to_messages(
+        input_messages, agent_id, timezone, run_id, wrap_user_message=False, wrap_system_message=False
+    )
     return messages
 
 
@@ -348,6 +350,7 @@ def create_letta_messages_from_llm_response(
             actor=actor,
             timezone=timezone,
             heartbeat_reason=heartbeat_reason,
+            run_id=run_id,
         )
         messages.append(heartbeat_system_message)
 
@@ -365,6 +368,7 @@ def create_heartbeat_system_message(
     actor: User,
     llm_batch_item_id: Optional[str] = None,
     heartbeat_reason: Optional[str] = None,
+    run_id: Optional[str] = None,
 ) -> Message:
     if heartbeat_reason:
         text_content = heartbeat_reason
@@ -380,6 +384,7 @@ def create_heartbeat_system_message(
         tool_call_id=None,
         created_at=get_utc_time(),
         batch_item_id=llm_batch_item_id,
+        run_id=run_id,
     )
     return heartbeat_system_message
 
