@@ -1,0 +1,17 @@
+.avatar-container:hover .total-duration {
+  opacity: 1;
+}
+
+.total-duration {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.run-block:hover .run-block__details {
+  opacity: 1;
+}
+
+.run-block__details {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}

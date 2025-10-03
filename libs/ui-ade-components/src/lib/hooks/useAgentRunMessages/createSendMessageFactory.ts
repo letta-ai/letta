@@ -73,6 +73,7 @@ function isValidLettaMessage(message: any): message is RunResponseMessage {
     case 'ping':
       return true;
     case 'unknown':
+    case 'run_error_message':
     default:
       // If a new message type is added to LettaMessageUnion, TypeScript will error here
       // because messageType won't be exhaustively checked

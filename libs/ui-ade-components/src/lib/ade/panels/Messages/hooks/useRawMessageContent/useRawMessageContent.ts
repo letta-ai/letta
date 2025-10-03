@@ -1,7 +1,11 @@
 import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
 import { parseMessageFromPartialJson } from '@letta-cloud/utils-client';
 
-export function useRawMessageContent(message: LettaMessageUnion) {
+export function useRawMessageContent(message?: LettaMessageUnion) {
+  if (!message) {
+    return null;
+  }
+
   switch (message.message_type) {
     case 'tool_call_message':
       if (message.tool_call.name === 'send_message') {

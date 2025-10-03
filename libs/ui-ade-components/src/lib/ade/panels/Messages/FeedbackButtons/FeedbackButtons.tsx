@@ -17,16 +17,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
 
 interface FeedbackButtonsProps {
-  stepId: string;
+  stepId?: string;
 }
 
 export function FeedbackButtons(props: FeedbackButtonsProps) {
-  const { stepId } = props;
+  const { stepId = '' } = props;
 
   const t = useTranslations('ADE/AgentSimulator.FeedbackButtons');
 
   const { data: step } = useStepsServiceRetrieveStep({
-    stepId,
+    stepId: stepId || '',
+  }, undefined, {
+    enabled: !!stepId,
   });
 
   const queryClient = useQueryClient();
@@ -34,6 +36,12 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
 
   const handleAddFeedback = useCallback(
     (feedback: 'negative' | 'positive') => {
+      if (!stepId) {
+        toast.error(t('stepNotReady'));
+        return;
+      }
+
+
       let previousFeedback: Step['feedback'];
 
       queryClient.setQueriesData<Step>(

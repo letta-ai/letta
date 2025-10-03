@@ -56,14 +56,32 @@
       "tooltip": "Add a description to help others understand what this template is for and how to use it"
     }
   },
+  "AgentMessenger/RunDetails": {
+    "stopReason": "Stop reason: {reason}"
+  },
   "AgentMessenger/RoleAvatar": {
     "user": "User",
-    "assistant": "Agent"
+    "assistant": "Agent",
+    "thinking": "Agent is running..."
   },
   "AgentMessenger/AgentMessengerInput": {
     "placeholder": "Type your message here...",
-    "send": "Send message"
-
+    "send": "Send message",
+    "uploadImages": "Upload images",
+    "dropImagesHere": "Drop images here...",
+    "image": {
+      "fileTooLarge": "File too large (max 5MB)",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "AgentMessenger/AgentMessengerInput/CopySendMessageCode": {
+    "label": "Copy request code"
+  },
+  "AgentMessenger/AgentMessengerRoleSelector": {
+    "role": {
+      "user": "User",
+      "system": "System"
+    }
   },
   "AgentMessenger/messages/ReasoningMessageComponent": {
     "thought": "Reasoned for {duration} seconds",
@@ -1151,7 +1169,7 @@
     "inputPlaceholder": ""
   },
   "ui-component-library/CopyWithCodePreview": {
-    "description": "The code below will be copied to your clipboard:"
+    "description": "The code above will be copied to your clipboard"
   },
   "development-servers/hooks": {
     "localAgents": "Local agents"
@@ -1512,6 +1530,7 @@
       "copied": "Copied"
     },
     "FeedbackButtons": {
+      "stepNotReady": "This message cannot receive feedback until the agent has completed its run",
       "positive": "Give positive feedback",
       "negative": "Give negative feedback",
       "error": "There was an error processing your feedback, please check the network inspector to see the error details or contact support."

@@ -68,7 +68,8 @@
     "MessageToolbarActions": {
       "actions": "Actions",
       "viewStepDetails": "View step details",
-      "editMessage": "Edit message"
+      "editMessage": "Edit message",
+      "copyMessage": "Copy message"
     },
     "viewStepDetails": "View step details"
   },

@@ -10,6 +10,7 @@ import { VStack } from '@letta-cloud/ui-component-library';
 import { useMemo, useState } from 'react';
 import { MessageToolbar } from './MessageToolbar/MessageToolbar';
 import { AgentMessengerEditMessage } from '../AgentMessengerEditMessage/AgentMessengerEditMessage';
+import { RunErrorMessageComponent } from '../messages/RunErrorMessageComponent/RunErrorMessageComponent';
 
 interface MessageRendererProps {
   message: RunResponseMessage;
@@ -41,6 +42,8 @@ function MessageRendererInner(props: MessageRendererProps) {
       return (
         <ToolReturnMessageComponent message={message} metadata={metadata} />
       );
+    case 'run_error_message':
+      return <RunErrorMessageComponent message={message} />;
     // case 'approval_request_message':
     //   return <ApprovalRequestMessageComponent message={message} metadata={metadata} />;
     // case 'approval_response_message':
