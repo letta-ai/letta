@@ -1,7 +1,7 @@
 import './StepIndicatorProps.scss';
 import { cn } from '@letta-cloud/ui-styles';
 import { StepLine } from '../StepLine/StepLine';
-import { CheckIcon, CloseIcon } from '@letta-cloud/ui-component-library';
+import { CheckIcon, WarningIcon } from '@letta-cloud/ui-component-library';
 
 interface StepIndicatorProps {
   isLastStep?: boolean;
@@ -41,8 +41,8 @@ export function StepIndicator(props: StepIndicatorProps) {
         </div>
       )}
       {isError && (
-        <div className="absolute step-indicator__icon rounded-full bg-destructive ">
-          <CloseIcon color="white" />
+        <div className="absolute step-indicator__icon rounded-full text-destructive-content  pb-[1px] bg-destructive ">
+          <WarningIcon color="white" size="xxsmall" />
         </div>
       )}
       <div className={cn(isLastStep ? 'opacity-0' : 'opacity-100', 'transition-opacity')}>

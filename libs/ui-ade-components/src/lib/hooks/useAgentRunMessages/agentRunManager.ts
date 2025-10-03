@@ -719,6 +719,26 @@ class AgentRunManager {
       await sendMessageFn(payload);
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Find the run that was being sent and mark it as failed
+      // The run should have the localRunId from the sendMessageFn
+      const failedRunIndex = this.runResponses.findIndex(
+        (rr) => rr.run.status === 'running' && !rr.requestError
+      );
+
+      if (failedRunIndex !== -1) {
+        const failedRun = this.runResponses[failedRunIndex];
+        this.runResponses[failedRunIndex] = {
+          ...failedRun,
+          run: {
+            ...failedRun.run,
+            status: 'failed',
+          },
+          requestError: failedRun.requestError || { type: 'UNKNOWN' },
+        };
+        this.publishRunResponses();
+      }
+
       throw error;
     } finally {
       this.isSendingMessage = false;

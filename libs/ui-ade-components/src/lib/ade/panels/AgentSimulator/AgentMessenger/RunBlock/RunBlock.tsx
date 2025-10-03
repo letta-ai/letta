@@ -1,11 +1,14 @@
 import type { RunResponse, RunResponseMessage } from '../../../../../hooks';
-import { HStack, VStack } from '@letta-cloud/ui-component-library';
+import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
 import { Fragment, useMemo } from 'react';
 import { RoleAvatar } from '../shared/RoleAvatar/RoleAvatar';
 import type { MessageRole, ToolReturnMessage } from '@letta-cloud/sdk-core';
 import { MessageRenderer } from '../MessageRenderer/MessageRenderer';
 import type { MessageAdditionalMetadata } from '../messages/types';
 import { StepIndicator } from '../shared/StepIndicator/StepIndicator';
+import { useFormatters } from '@letta-cloud/utils-client';
+import './RunBlock.scss';
+import { RunDetails } from './RunDetails/RunDetails';
 
 interface MessageItemProps {
   message: RunResponseMessage;
@@ -14,6 +17,7 @@ interface MessageItemProps {
   toolReturnMessages: Record<string, ToolReturnMessage>;
   isRunComplete: boolean;
   currentRole: MessageRole;
+  totalRunTime?: number | null;
   lastRoleChanged: boolean;
 }
 
@@ -26,9 +30,8 @@ function MessageItem(props: MessageItemProps) {
     toolReturnMessages,
     isRunComplete,
     lastRoleChanged,
+    totalRunTime,
   } = props;
-
-
 
   // Generate metadata for this message
   const hasNextMessage = index < orderedMessages.length - 1;
@@ -66,28 +69,60 @@ function MessageItem(props: MessageItemProps) {
   const toolStatus = useMemo(() => {
     // if its a tool_call_message and has toolReturnMessage and the toolReturnMessage status is success
     if (message.message_type === 'tool_call_message' && toolReturnMessage) {
-      return toolReturnMessage.status
+      return toolReturnMessage.status;
     }
 
     return undefined;
   }, [message, toolReturnMessage]);
 
-  if (message.message_type === 'assistant_message' && message.id === 'thinking') {
-    return null;
-  }
-
   const isLastRunningStep = isLastStep && !isRunComplete;
+
+  const isThinkingSpecialMessage = useMemo(() => {
+    return (
+      message.message_type === 'assistant_message' &&
+      message.id === 'thinking' &&
+      !hasNextMessage
+    );
+  }, [message, hasNextMessage]);
+
+  const showStepError = useMemo(() => {
+    return (
+      message.message_type === 'run_error_message' ||
+      (message.message_type === 'tool_call_message' && toolStatus === 'error')
+    );
+  }, [message, toolStatus]);
+
+  const { formatSmallDuration } = useFormatters();
+
+  if (isThinkingSpecialMessage) {
+    return <RoleAvatar isRunning role={currentRole} />;
+  }
 
   return (
     <Fragment>
-      {lastRoleChanged && <RoleAvatar role={currentRole} />}
+      {lastRoleChanged && (
+        <>
+          {currentRole === 'assistant' ? (
+            <HStack  className="avatar-container" fullWidth justify="spaceBetween" align="center">
+              <RoleAvatar role={currentRole} />
+              {totalRunTime && (
+                <Typography className="total-duration" variant="body4" color="muted">
+                  {formatSmallDuration(totalRunTime * 1_000_000)}
+                </Typography>
+              )}
+            </HStack>
+          ) : (
+            <RoleAvatar role={currentRole} />
+          )}
+        </>
+      )}
       <HStack fullWidth position="relative">
         {currentRole !== 'user' && (
           <StepIndicator
             isLastStep={isLastStep}
             isRunning={isLastRunningStep}
             isSuccess={toolStatus === 'success'}
-            isError={toolStatus === 'error'}
+            isError={showStepError}
           />
         )}
         <MessageRenderer
@@ -118,24 +153,36 @@ export function RunBlock(props: RunBlockProps) {
         msg.message_type !== 'ping',
     );
 
-    // if the most recent message is an user_message, append an empty assistant_message to indicate the agent is thinking
-    if (
-      runResponse.run.status === 'running' && (runResponse.messages.length === 0 || runResponse.messages.every((m) => m.message_type === 'user_message') )
-    ) {
+    if (runResponse.requestError) {
       next.push({
-        id: 'thinking',
-        message_type: 'assistant_message',
-        content: [{
-          type: "text",
-          text: "",
-        }],
-        date: new Date().toISOString(),
-        step_id: null,
+        id: 'error',
+        message_type: 'run_error_message',
+        error: runResponse.requestError,
       });
+    } else {
+      // if the most recent message is an user_message, append an empty assistant_message to indicate the agent is thinking
+      if (
+        runResponse.run.status === 'running' &&
+        (runResponse.messages.length === 1 ||
+          runResponse.messages.every((m) => m.message_type === 'user_message'))
+      ) {
+        next.push({
+          id: 'thinking',
+          message_type: 'assistant_message',
+          content: [
+            {
+              type: 'text',
+              text: '',
+            },
+          ],
+          date: new Date().toISOString(),
+          step_id: null,
+        });
+      }
     }
 
     return next;
-  }, [runResponse.messages, runResponse.run.status]);
+  }, [runResponse.messages, runResponse.run.status, runResponse.requestError]);
 
   const toolReturnMessages = useMemo(
     () =>
@@ -161,9 +208,49 @@ export function RunBlock(props: RunBlockProps) {
 
   let lastRole: MessageRole = 'assistant';
 
+  const startTime = useMemo(() => {
+    if (runResponse.run.created_at) {
+      return new Date(runResponse.run.created_at).getTime();
+    }
+
+    return null;
+  }, [runResponse.run.created_at]);
+
+  const totalRunTime = useMemo(() => {
+    // look at when the first message with a date was sent and the last message with a date was sent
+    if (orderedMessages.length === 0) {
+      return null;
+    }
+
+    if (!startTime) {
+      return null;
+    }
+
+    if (!isRunComplete) {
+      return null;
+    }
+
+    const endMessage = orderedMessages[orderedMessages.length - 1];
+    if (!('date' in endMessage) || !endMessage.date) {
+      return null;
+    }
+
+    const endTime = new Date(endMessage.date).getTime();
+
+    return endTime - startTime;
+  }, [orderedMessages, startTime, isRunComplete]);
+
+  // if the only message is thinking, do not render anything
+  if (
+    orderedMessages.length === 1 &&
+    orderedMessages[0].message_type === 'assistant_message' &&
+    orderedMessages[0].id === 'thinking'
+  ) {
+    return null;
+  }
 
   return (
-    <VStack position="relative" paddingTop="small">
+    <VStack className="run-block" position="relative" paddingTop="small">
       {orderedMessages.map((message, index) => {
         const currentRole: MessageRole =
           message.message_type === 'user_message' ? 'user' : 'assistant';
@@ -177,6 +264,8 @@ export function RunBlock(props: RunBlockProps) {
             key={index}
             message={message}
             index={index}
+            // so we dont re-render, since totalRunTime is only rendered in the Avatar
+            totalRunTime={lastRoleChanged && totalRunTime ? totalRunTime : null}
             orderedMessages={orderedMessages}
             toolReturnMessages={toolReturnMessages}
             isRunComplete={isRunComplete}
@@ -185,6 +274,9 @@ export function RunBlock(props: RunBlockProps) {
           />
         );
       })}
+      <div className="absolute bottom-0 right-0 run-block__details">
+        <RunDetails run={runResponse.run} />
+      </div>
     </VStack>
   );
 }

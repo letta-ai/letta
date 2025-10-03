@@ -37,7 +37,7 @@ export function CopyWithCodePreview(props: CopyWithCodePreviewProps) {
       side={side}
       align={align}
       triggerAsChild
-      className="max-w-[500px] w-full"
+      className="max-w-[500px] shadow-sm w-full"
       trigger={
         <Button
           color="secondary"
@@ -60,21 +60,27 @@ export function CopyWithCodePreview(props: CopyWithCodePreviewProps) {
         />
       }
     >
-      <VStack color="background" gap={false} fullWidth>
-        <HStack padding="small" fullWidth borderBottom align="center">
+      <VStack padding="xsmall" color="background" gap="small" className="rounded-lg" fullWidth>
+
+        <VStack
+          color="background-grey"
+          border
+        >
+          <Code
+            variant="minimal"
+            fontSize="small"
+            color="background-grey"
+            language={language}
+            code={code}
+            showLineNumbers={false}
+          />
+        </VStack>
+        <HStack padding="small" fullWidth border align="center">
           <CodeIcon />
-          <Typography variant="body2" noWrap>
+          <Typography bold variant="body2" noWrap>
             {t('description')}
           </Typography>
         </HStack>
-        <Code
-          variant="minimal"
-          color="background"
-          fontSize="small"
-          language={language}
-          code={code}
-          showLineNumbers={false}
-        />
       </VStack>
     </Popover>
   );

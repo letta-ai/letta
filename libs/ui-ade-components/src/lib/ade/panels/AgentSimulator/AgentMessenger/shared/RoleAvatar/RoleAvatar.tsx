@@ -1,17 +1,18 @@
-import { HStack, LettaInvaderIcon, PersonIcon, Typography } from '@letta-cloud/ui-component-library';
+import { HStack, LettaInvaderIcon, PersonIcon, ThinkingIcon, Typography } from '@letta-cloud/ui-component-library';
 import { cn } from '@letta-cloud/ui-styles';
 import { Slot } from '@radix-ui/react-slot';
 import type { MessageRole } from '@letta-cloud/sdk-core';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { StepLine } from '../StepLine/StepLine';
 
 interface RoleAvatarProps {
   role: MessageRole;
   userName?: string;
+  isRunning?: boolean;
 }
 
-function useRoleInfo(role: MessageRole) {
+function useRoleInfo(role: MessageRole, isRunning?: boolean) {
   const t = useTranslations('AgentMessenger/RoleAvatar');
   return useMemo(() => {
     switch (role) {
@@ -24,21 +25,21 @@ function useRoleInfo(role: MessageRole) {
         };
       default:
         return {
-          name: t('assistant'),
-          icon: <LettaInvaderIcon color="white" />,
+          name: isRunning ? t('thinking') : t('assistant'),
+          icon: isRunning ? <ThinkingIcon color="white" /> : <LettaInvaderIcon color="white" />,
           backgroundColor: 'hsl(var(--primary))',
           textColor: 'hsl(var(--color-primary-content))',
           namePosition: 'left' as const,
         };
     }
-  }, [role, t]);
+  }, [role, isRunning, t]);
 }
 
 export function RoleAvatar(props: RoleAvatarProps) {
-  const { role, userName } = props;
+  const { role, userName, isRunning } = props;
 
 
-  const { name, icon, backgroundColor, namePosition, textColor } = useRoleInfo(role);
+  const { name, icon, backgroundColor, namePosition, textColor } = useRoleInfo(role, isRunning);
 
   return (
     <HStack position="relative" align="center" className={cn('justify-end', namePosition === 'left' ? 'flex-row-reverse ' : ' ')}>
