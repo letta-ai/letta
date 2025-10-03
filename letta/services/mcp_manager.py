@@ -18,6 +18,7 @@ from letta.functions.mcp_client.types import (
     StdioServerConfig,
     StreamableHTTPServerConfig,
 )
+from letta.functions.schema_generator import normalize_mcp_schema
 from letta.functions.schema_validator import validate_complete_json_schema
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -72,7 +73,9 @@ class MCPManager:
             tools = await mcp_client.list_tools()
             # Add health information to each tool
             for tool in tools:
+                # Try to normalize the schema and re-validate\
                 if tool.inputSchema:
+                    tool.inputSchema = normalize_mcp_schema(tool.inputSchema)
                     health_status, reasons = validate_complete_json_schema(tool.inputSchema)
                     tool.health = MCPToolHealth(status=health_status.value, reasons=reasons)
 
@@ -146,9 +149,6 @@ class MCPManager:
                     logger.info(f"Original health reasons: {mcp_tool.health.reasons}")
 
                     # Try to normalize the schema and re-validate
-                    from letta.functions.schema_generator import normalize_mcp_schema
-                    from letta.functions.schema_validator import validate_complete_json_schema
-
                     try:
                         # Normalize the schema to fix common issues
                         logger.debug(f"Normalizing schema for {mcp_tool_name}")
