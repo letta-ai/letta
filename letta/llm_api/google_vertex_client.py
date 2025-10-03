@@ -563,9 +563,9 @@ class GoogleVertexClient(LLMClientBase):
                                 )
                             else:
                                 openai_response_message.content = inner_thoughts
-                                if response_message.thought_signature:
-                                    thought_signature = base64.b64encode(response_message.thought_signature).decode("utf-8")
-                                    openai_response_message.reasoning_content_signature = thought_signature
+                            if response_message.thought_signature:
+                                thought_signature = base64.b64encode(response_message.thought_signature).decode("utf-8")
+                                openai_response_message.reasoning_content_signature = thought_signature
 
                     # Google AI API uses different finish reason strings than OpenAI
                     # OpenAI: 'stop', 'length', 'function_call', 'content_filter', null
