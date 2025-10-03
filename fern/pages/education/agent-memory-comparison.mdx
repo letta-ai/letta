@@ -423,7 +423,18 @@ Memory blocks can also be shared between multiple agents. By attaching the same 
 Install [Letta](https://docs.letta.com/install):
 
 ```bash
-pip install letta letta-client sqlite-vec
+# For local server development
+# The sqlite-vec extension is loaded automatically by the local server and may need installed if not already installed
+pip install letta
+
+# For client SDK only (connecting to Letta Cloud or existing server)
+pip install letta-client
+```
+
+Set up environment variables:
+
+```bash
+export OPENAI_API_KEY=your_openai_api_key
 ```
 
 Start the local server:
@@ -567,7 +578,7 @@ The [AI Memory SDK](https://github.com/letta-ai/ai-memory-sdk) is a separate sol
 
 ### What is Letta's AI Memory SDK?
 
-The AI Memory SDK uses Letta agents (subagents) under the hood for memory management. You get the benefits of Letta's memory handling in a lightweight package that integrates with your existing LLM setup, without needing to adopt the full stateful agent infrastructure.
+The AI Memory SDK uses Letta agents (subagents) running on Letta Cloud under the hood for memory management. You get the benefits of Letta's memory handling in a lightweight package that integrates with your existing LLM setup, without needing to adopt the full stateful agent infrastructure.
 
 ### How AI Memory SDK Works
 
@@ -665,21 +676,24 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 
 ### Mem0 vs Letta
 
-**Mem0:** Drop-in memory layer for stateless agents. Reduces tokens by 80%, production-ready with 22,000+ GitHub stars. Hybrid architecture (vector + key-value + graph).
+**Mem0:** Drop-in memory layer for stateless agents. Reduces tokens by 90%, production-ready with a hybrid architecture (vector + key-value + graph).
 
 **Letta Memory SDK:** Pluggable memory using background agents for intelligent processing. More sophisticated than simple extraction.
 
 **Letta Platform:** Stateful agents with self-modifying memory blocks. Memory lives in context window, shareable across agents.
 
-**Choose Mem0** for minimal code changes to existing apps. **Choose Letta Memory SDK** for agent-based processing without full stateful architecture. **Choose Letta Platform** for agents that evolve their own memory and collaborate through shared state.
+- **Choose Mem0** for minimal code changes to existing apps.
+- **Choose Letta Memory SDK** for agent-based processing without full stateful architecture.
+- **Choose Letta Platform** for agents that evolve their own memory and collaborate through shared state.
 
 ### Mem0 vs Zep
 
 **Mem0:** Simple memory extraction and consolidation. No temporal tracking—updates overwrite or merge memories.
 
-**Zep:** Temporal knowledge graphs with bi-temporal modeling. Tracks when facts were valid and when they changed. P95 latency 300ms.
+**Zep:** Temporal knowledge graphs with bi-temporal modeling. Tracks when facts were valid and when they changed.
 
-**Choose Mem0** for straightforward user/session/agent memory without history. **Choose Zep** when facts evolve (location changes, preference shifts) and you need both current state and historical context like "What did the user prefer in Q1 vs Q3?"
+- **Choose Mem0** for straightforward user/session/agent memory without history.
+- **Choose Zep** when facts evolve (location changes, preference shifts) and you need both current state and historical context like "What did the user prefer in Q1 vs Q3?"
 
 ### Mem0 vs Cognee
 
@@ -687,7 +701,8 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 
 **Cognee:** Semantic knowledge graphs with ontologies. Understands concept relationships (Python → programming language → ML libraries).
 
-**Choose Mem0** for user preference memory and conversation context. **Choose Cognee** when relationships between concepts matter as much as the facts—ideal for technical docs, research papers, or complex knowledge bases.
+- **Choose Mem0** for user preference memory and conversation context.
+- **Choose Cognee** when relationships between concepts matter as much as the facts—ideal for technical docs, research papers, or complex knowledge bases.
 
 ### Zep vs Cognee
 
@@ -695,7 +710,8 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 
 **Cognee:** Semantic knowledge graphs track *how* concepts relate. Ontology-based relationships for domain understanding.
 
-**Choose Zep** when data changes over time and temporal history matters. **Choose Cognee** when understanding concept relationships and dependencies is critical.
+- **Choose Zep** when data changes over time and temporal history matters.
+- **Choose Cognee** when understanding concept relationships and dependencies is critical.
 
 ### Zep vs Letta
 
@@ -705,7 +721,9 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 
 **Letta Platform:** Memory blocks in context window, directly editable by agents. Continuous state operation.
 
-**Choose Zep** for enterprise apps needing temporal history and fact evolution tracking. **Choose Letta Memory SDK** for drop-in memory with intelligent processing. **Choose Letta Platform** for stateful agents with shared memory blocks across multi-agent systems.
+- **Choose Zep** for enterprise apps needing temporal history and fact evolution tracking.
+- **Choose Letta Memory SDK** for drop-in memory with intelligent processing.
+- **Choose Letta Platform** for stateful agents with shared memory blocks across multi-agent systems.
 
 ### Cognee vs Letta
 
@@ -715,7 +733,20 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 
 **Letta Platform:** Self-modifying memory blocks that agents edit directly. Enables continuous state evolution.
 
-**Choose Cognee** for semantic understanding of concept relationships. **Choose Letta Memory SDK** for simpler integration without graph complexity. **Choose Letta Platform** for agents that modify their own memory structure. (Note: You can use Cognee within Letta agents via custom tools/MCP servers.)
+- **Choose Cognee** for semantic understanding of concept relationships.
+- **Choose Letta Memory SDK** for simpler integration without graph complexity.
+- **Choose Letta Platform** for agents that modify their own memory structure. (Note: You can use Cognee within Letta agents via custom tools/MCP servers.)
+
+
+### Quick Comparison
+
+| Solution           | Type             | Best For                            |
+|--------------------|------------------|-------------------------------------|
+| **Mem0**           | Drop-in layer    | Simple user/session memory          |
+| **Zep**            | Temporal graph   | Tracking changing facts over time   |
+| **Cognee**         | Semantic graph   | Understanding concept relationships |
+| **AI Memory SDK**  | Pluggable agents | Drop-in intelligent processing      |
+| **Letta Platform** | Stateful agents  | Self-modifying, persistent agents   |
 
 <Note>
 **Interoperability:** Letta Platform is fully interoperable with other memory systems. Letta agents can use Mem0, Zep, Cognee, or any other tool through custom Python tools or by connecting to MCP (Model Context Protocol) servers. You can combine Letta's stateful architecture with specialized memory systems for specific use cases.
@@ -726,9 +757,9 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 ### Official Documentation
 
 - **Letta**: [docs.letta.com](https://docs.letta.com/) - Platform documentation and SDK references
-- **Mem0**: [docs.mem0.ai](https://docs.mem0.ai/) - Complete API reference and integration guides
+- **Mem0**: [docs.mem0.ai](https://docs.mem0.ai/) - API reference and integration guides
 - **Zep**: [help.getzep.com](https://help.getzep.com/) - Platform docs and Graphiti library reference
-- **Cognee**: [cognee.ai](https://www.cognee.ai/) - Getting started guides and examples
+- **Cognee**: [docs.cognee.ai](https://docs.cognee.ai/) - Getting started guides and examples
 
 ### Source Code
 
