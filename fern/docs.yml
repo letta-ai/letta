@@ -115,6 +115,8 @@ navigation:
                 path: pages/agents/stateful_workflows.mdx
           - page: Context Hierarchy
             path: pages/agents/context_hierarchy.mdx
+          - page: Message Types
+            path: pages/agents/message_types.mdx
           - page: Heartbeats
             path: pages/agents/heartbeats.mdx
 
@@ -132,16 +134,6 @@ navigation:
                 path: pages/agents/archival_best_practices.mdx
           - page: Agentic Context Engineering
             path: pages/agents/context_engineering.mdx
-
-      - section: Multi-Agent
-        path: pages/agents/multiagent.mdx
-        contents:
-          - page: Custom Multi-Agent Tools
-            path: pages/agents/multiagent_custom.mdx
-          - page: Multi-Agent Shared Memory
-            path: pages/agents/multiagent_memory.mdx
-          - page: Groups
-            path: pages/agents/groups.mdx
 
       - section: Agent Capabilities
         contents:
@@ -190,8 +182,18 @@ navigation:
           - page: Scheduling
             path: pages/agents/scheduling.mdx
 
+      - section: Multi-Agent
+        path: pages/agents/multiagent.mdx
+        contents:
+          - page: Custom Multi-Agent Tools
+            path: pages/agents/multiagent_custom.mdx
+          - page: Multi-Agent Shared Memory
+            path: pages/agents/multiagent_memory.mdx
+
       - section: Experimental
         contents:
+          - page: Groups
+            path: pages/agents/groups.mdx
           - page: Human-in-the-Loop
             path: pages/agents/human_in_the_loop.mdx
           - page: Sleep-time Agents
