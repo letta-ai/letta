@@ -670,6 +670,14 @@ export type TextContent = z.infer<typeof TextContent>;
 export const TextContent = z.object({
   type: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type UrlImage = z.infer<typeof UrlImage>;
@@ -735,6 +743,14 @@ export const ToolCallContent = z.object({
   id: z.string(),
   name: z.string(),
   input: z.unknown(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
@@ -769,6 +785,9 @@ export const RedactedReasoningContent = z.object({
 export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
 export const OmittedReasoningContent = z.object({
   type: z.string().optional(),
+  signature: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
 });
 
 export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
@@ -3143,6 +3162,14 @@ export type LettaAssistantMessageContentUnion = z.infer<
 export const LettaAssistantMessageContentUnion = z.object({
   type: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AssistantMessage = z.infer<typeof AssistantMessage>;
