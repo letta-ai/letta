@@ -31,10 +31,52 @@ export function Markdown(props: MarkdownProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      className="text-base"
+      className="lc-markdown text-base"
       components={{
+        h1({ children }) {
+          return (
+            <Typography overrideEl="h1" variant="body" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h2({ children }) {
+          return (
+            <Typography overrideEl="h2" variant="body" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h3({ children }) {
+          return (
+            <Typography overrideEl="h3" variant="body2" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h4({ children }) {
+          return (
+            <Typography overrideEl="h4" variant="body2" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h5({ children }) {
+          return (
+            <Typography overrideEl="h5" variant="body2" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
+        h6({ children }) {
+          return (
+            <Typography overrideEl="h6" variant="body2" bold className="block">
+              {children}
+            </Typography>
+          );
+        },
         table: function Table({ children }) {
-          return <table className="table-auto w-full">{children}</table>;
+          return <table className="table-auto w-full my-3">{children}</table>;
         },
         thead: function Thead({ children }) {
           return <thead className="bg-background">{children}</thead>;
@@ -57,7 +99,7 @@ export function Markdown(props: MarkdownProps) {
         },
         blockquote: function Blockquote({ children }) {
           return (
-            <blockquote className="border-l-4 border-accent pl-4 my-4">
+            <blockquote className="border-l-4 border-accent pl-4 my-3">
               {children}
             </blockquote>
           );
@@ -88,13 +130,13 @@ export function Markdown(props: MarkdownProps) {
           );
         },
         ul: function Ul({ children }) {
-          return <ul className="list-disc pl-6">{children}</ul>;
+          return <ul className="list-disc pl-6 text-sm">{children}</ul>;
         },
         li: function Li({ children }) {
-          return <li className="mb-2">{children}</li>;
+          return <li>{children}</li>;
         },
         ol: function Ol({ children }) {
-          return <ol className="list-decimal pl-6">{children}</ol>;
+          return <ol className="list-decimal pl-6 text-sm">{children}</ol>;
         },
         p({ children }) {
           return (
@@ -121,27 +163,31 @@ export function Markdown(props: MarkdownProps) {
 
           if (!isSupportedLanguage(language || '')) {
             return (
-              <RawCodeEditor
-                fullWidth
-                label="Code"
-                hideLabel
-                language="text"
-                fontSize="small"
-                code={String(children).replace(/\n$/, '')}
-              />
+              <div className="lc-code-block">
+                <RawCodeEditor
+                  fullWidth
+                  label="Code"
+                  hideLabel
+                  language="text"
+                  fontSize="small"
+                  code={String(children).replace(/\n$/, '')}
+                />
+              </div>
             );
           }
 
           return (
-            <RawCodeEditor
-              label="Code"
-              toolbarPosition="bottom"
-              hideLabel
-              fullWidth
-              fontSize="small"
-              code={String(children).replace(/\n$/, '')}
-              language={language as SupportedLangauges}
-            />
+            <div className="lc-code-block">
+              <RawCodeEditor
+                label="Code"
+                toolbarPosition="bottom"
+                hideLabel
+                fullWidth
+                fontSize="small"
+                code={String(children).replace(/\n$/, '')}
+                language={language as SupportedLangauges}
+              />
+            </div>
           );
         },
       }}
