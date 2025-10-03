@@ -52,7 +52,7 @@ export function AgentResetMessagesDialog() {
   const form = useForm<AgentResetMessagesPayload>({
     resolver: zodResolver(AgentResetMessagesSchema),
     defaultValues: {
-      addDefaultInitialMessages: true,
+      addDefaultInitialMessages: false,
     },
   });
 
