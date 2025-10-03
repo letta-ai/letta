@@ -60,7 +60,6 @@ The `configurations/` directory contains environment-specific implementations of
   - **database**: Development database infra
   - **registry**: Dev environment's docker registry infra (pubsub to come 😉)
 
-NOTHING FROM PROD IS ACTUALLY MANAGED USING THIS TF YET
 
 ~~**prod**: Production environment configurations **cluster**: Production cluster configuration~~
 
