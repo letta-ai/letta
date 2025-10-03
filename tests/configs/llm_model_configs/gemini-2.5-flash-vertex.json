@@ -5,5 +5,5 @@
   "context_window": 1048576,
   "put_inner_thoughts_in_kwargs": true,
   "enable_reasoner": true,
-  "max_reasoning_tokens": 1
+  "max_reasoning_tokens": 20000
 }

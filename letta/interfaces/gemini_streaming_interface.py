@@ -182,20 +182,23 @@ class SimpleGeminiStreamingInterface:
                 # NOTE: the thought_signature comes on the Part with the function_call
                 thought_signature = part.thought_signature
                 self.thinking_signature = thought_signature
-                # TODO: support reasoning
-                # yield ReasoningMessage(
-                #     id=self.letta_message_id,
-                #     date=datetime.now(timezone.utc).isoformat(),
-                #     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                #     source="reasoner_model",
-                #     reasoning="",
-                #     signature=base64.b64encode(thought_signature).decode('utf-8'),
-                # )
+                if prev_message_type and prev_message_type != "reasoning_message":
+                    message_index += 1
+                yield ReasoningMessage(
+                    id=self.letta_message_id,
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    source="reasoner_model",
+                    reasoning="",
+                    signature=base64.b64encode(thought_signature).decode("utf-8"),
+                )
+                prev_message_type = "reasoning_message"
 
             # Thinking summary content part (bool means text is thought part)
             if part.thought:
                 reasoning_summary = part.text
-                self.thinking_summaries.append(reasoning_summary)
+                if prev_message_type and prev_message_type != "reasoning_message":
+                    message_index += 1
                 yield ReasoningMessage(
                     id=self.letta_message_id,
                     date=datetime.now(timezone.utc).isoformat(),
@@ -205,6 +208,7 @@ class SimpleGeminiStreamingInterface:
                     run_id=self.run_id,
                     step_id=self.step_id,
                 )
+                prev_message_type = "reasoning_message"
                 self.content_parts.append(
                     ReasoningContent(
                         is_native=True,
@@ -217,6 +221,8 @@ class SimpleGeminiStreamingInterface:
             elif part.text:
                 content = part.text
                 self.text_content = content if self.text_content is None else self.text_content + content
+                if prev_message_type and prev_message_type != "assistant_message":
+                    message_index += 1
                 yield AssistantMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -225,6 +231,7 @@ class SimpleGeminiStreamingInterface:
                     run_id=self.run_id,
                     step_id=self.step_id,
                 )
+                prev_message_type = "assistant_message"
                 self.content_parts.append(
                     TextContent(
                         text=content,
@@ -247,6 +254,8 @@ class SimpleGeminiStreamingInterface:
                 self.tool_call_args = arguments
 
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                    if prev_message_type and prev_message_type != "approval_request_message":
+                        message_index += 1
                     yield ApprovalRequestMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -259,7 +268,10 @@ class SimpleGeminiStreamingInterface:
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
+                    prev_message_type = "approval_request_message"
                 else:
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     yield ToolCallMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -272,6 +284,7 @@ class SimpleGeminiStreamingInterface:
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
+                    prev_message_type = "tool_call_message"
                 self.content_parts.append(
                     ToolCallContent(
                         id=call_id,
