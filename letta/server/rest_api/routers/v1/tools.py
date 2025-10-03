@@ -19,7 +19,12 @@ from starlette.responses import StreamingResponse
 from letta.errors import LettaToolCreateError, LettaToolNameConflictError
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
-from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
+from letta.functions.mcp_client.types import (
+    MCPTool,
+    SSEServerConfig,
+    StdioServerConfig,
+    StreamableHTTPServerConfig,
+)
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.decorators import deprecated
 from letta.llm_api.llm_client import LLMClient
@@ -30,14 +35,26 @@ from letta.prompts.gpt_system import get_system_text
 from letta.schemas.enums import MessageRole, ToolType
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
+from letta.schemas.mcp import (
+    UpdateSSEMCPServer,
+    UpdateStdioMCPServer,
+    UpdateStreamableHTTPMCPServer,
+)
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
-from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
+from letta.server.rest_api.dependencies import (
+    HeaderParams,
+    get_headers,
+    get_letta_server,
+)
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
-from letta.services.mcp.oauth_utils import MCPOAuthSession, drill_down_exception, oauth_stream_event
+from letta.services.mcp.oauth_utils import (
+    MCPOAuthSession,
+    drill_down_exception,
+    oauth_stream_event,
+)
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
 from letta.settings import tool_settings
@@ -65,12 +82,17 @@ async def count_tools(
     name: Optional[str] = None,
     names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
     tool_ids: Optional[List[str]] = Query(
-        None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
+        None,
+        description="Filter by specific tool IDs - accepts repeated params or comma-separated values",
     ),
     search: Optional[str] = Query(None, description="Search tool names (case-insensitive partial match)"),
-    tool_types: Optional[List[str]] = Query(None, description="Filter by tool type(s) - accepts repeated params or comma-separated values"),
+    tool_types: Optional[List[str]] = Query(
+        None,
+        description="Filter by tool type(s) - accepts repeated params or comma-separated values",
+    ),
     exclude_tool_types: Optional[List[str]] = Query(
-        None, description="Tool type(s) to exclude - accepts repeated params or comma-separated values"
+        None,
+        description="Tool type(s) to exclude - accepts repeated params or comma-separated values",
     ),
     return_only_letta_tools: Optional[bool] = Query(False, description="Count only tools with tool_type starting with 'letta_'"),
     exclude_letta_tools: Optional[bool] = Query(False, description="Exclude built-in Letta tools from the count"),
@@ -82,7 +104,9 @@ async def count_tools(
     """
     try:
         # Helper function to parse tool types - supports both repeated params and comma-separated values
-        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+        def parse_tool_types(
+            tool_types_input: Optional[List[str]],
+        ) -> Optional[List[str]]:
             if tool_types_input is None:
                 return None
 
@@ -100,7 +124,8 @@ async def count_tools(
             for tool_type in flattened_types:
                 if tool_type not in valid_values:
                     raise HTTPException(
-                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
+                        status_code=400,
+                        detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}",
                     )
                 valid_types.append(tool_type)
 
@@ -174,25 +199,33 @@ async def retrieve_tool(
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
 async def list_tools(
     before: Optional[str] = Query(
-        None, description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+        None,
+        description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order",
     ),
     after: Optional[str] = Query(
-        None, description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
+        None,
+        description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order",
     ),
     limit: Optional[int] = Query(50, description="Maximum number of tools to return"),
     order: Literal["asc", "desc"] = Query(
-        "desc", description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+        "desc",
+        description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first",
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     name: Optional[str] = Query(None, description="Filter by single tool name"),
     names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
     tool_ids: Optional[List[str]] = Query(
-        None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
+        None,
+        description="Filter by specific tool IDs - accepts repeated params or comma-separated values",
     ),
     search: Optional[str] = Query(None, description="Search tool names (case-insensitive partial match)"),
-    tool_types: Optional[List[str]] = Query(None, description="Filter by tool type(s) - accepts repeated params or comma-separated values"),
+    tool_types: Optional[List[str]] = Query(
+        None,
+        description="Filter by tool type(s) - accepts repeated params or comma-separated values",
+    ),
     exclude_tool_types: Optional[List[str]] = Query(
-        None, description="Tool type(s) to exclude - accepts repeated params or comma-separated values"
+        None,
+        description="Tool type(s) to exclude - accepts repeated params or comma-separated values",
     ),
     return_only_letta_tools: Optional[bool] = Query(False, description="Return only tools with tool_type starting with 'letta_'"),
     server: SyncServer = Depends(get_letta_server),
@@ -203,7 +236,9 @@ async def list_tools(
     """
     try:
         # Helper function to parse tool types - supports both repeated params and comma-separated values
-        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+        def parse_tool_types(
+            tool_types_input: Optional[List[str]],
+        ) -> Optional[List[str]]:
             if tool_types_input is None:
                 return None
 
@@ -221,7 +256,8 @@ async def list_tools(
             for tool_type in flattened_types:
                 if tool_type not in valid_values:
                     raise HTTPException(
-                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
+                        status_code=400,
+                        detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}",
                     )
                 valid_types.append(tool_type)
 
@@ -416,7 +452,11 @@ def list_composio_apps(
     return server.get_composio_apps(api_key=composio_api_key)
 
 
-@router.get("/composio/apps/{composio_app_name}/actions", response_model=List[ActionModel], operation_id="list_composio_actions_by_app")
+@router.get(
+    "/composio/apps/{composio_app_name}/actions",
+    response_model=List[ActionModel],
+    operation_id="list_composio_actions_by_app",
+)
 def list_composio_actions_by_app(
     composio_app_name: str,
     server: SyncServer = Depends(get_letta_server),
@@ -435,7 +475,11 @@ def list_composio_actions_by_app(
     return server.get_composio_actions_from_app_name(composio_app_name=composio_app_name, api_key=composio_api_key)
 
 
-@router.post("/composio/{composio_action_name}", response_model=Tool, operation_id="add_composio_tool")
+@router.post(
+    "/composio/{composio_action_name}",
+    response_model=Tool,
+    operation_id="add_composio_tool",
+)
 async def add_composio_tool(
     composio_action_name: str,
     server: SyncServer = Depends(get_letta_server),
@@ -546,7 +590,11 @@ async def list_mcp_servers(
 
 # NOTE: async because the MCP client/session calls are async
 # TODO: should we make the return type MCPTool, not Tool (since we don't have ID)?
-@router.get("/mcp/servers/{mcp_server_name}/tools", response_model=List[MCPTool], operation_id="list_mcp_tools_by_server")
+@router.get(
+    "/mcp/servers/{mcp_server_name}/tools",
+    response_model=List[MCPTool],
+    operation_id="list_mcp_tools_by_server",
+)
 async def list_mcp_tools_by_server(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
@@ -631,15 +679,20 @@ async def resync_mcp_server_tools(
         )
 
 
-@router.post("/mcp/servers/{mcp_server_name}/{mcp_tool_name}", response_model=Tool, operation_id="add_mcp_tool")
+@router.post(
+    "/mcp/servers/{mcp_server_name}/{mcp_tool_name}",
+    response_model=Tool,
+    operation_id="add_mcp_tool",
+)
 async def add_mcp_tool(
     mcp_server_name: str,
     mcp_tool_name: str,
+    overridden_schema: Optional[dict] = None,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Register a new MCP tool as a Letta server by MCP server + tool name
+    Register a new MCP tool as a Letta server by MCP server + tool name. It is also possible to overwrite the schema for the specific MCP tool.
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
@@ -695,16 +748,32 @@ async def add_mcp_tool(
                         "reasons": mcp_tool.health.reasons,
                     },
                 )
+        tool_create = (
+            ToolCreate.from_mcp(
+                mcp_server_name=mcp_server_name,
+                mcp_tool=mcp_tool,
+                overridden_schema=overridden_schema,
+            )
+            if overridden_schema is not None
+            else ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+        )
 
-        tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
         # For config-based servers, use the server name as ID since they don't have database IDs
         mcp_server_id = mcp_server_name
         return await server.tool_manager.create_mcp_tool_async(
-            tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+            tool_create=tool_create,
+            mcp_server_name=mcp_server_name,
+            mcp_server_id=mcp_server_id,
+            actor=actor,
         )
 
     else:
-        return await server.mcp_manager.add_tool_from_mcp_server(mcp_server_name=mcp_server_name, mcp_tool_name=mcp_tool_name, actor=actor)
+        return await server.mcp_manager.add_tool_from_mcp_server(
+            mcp_server_name=mcp_server_name,
+            mcp_tool_name=mcp_tool_name,
+            overridden_schema=overridden_schema,
+            actor=actor,
+        )
 
 
 @router.put(
@@ -774,7 +843,10 @@ async def update_mcp_server(
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         if tool_settings.mcp_read_from_config:
-            raise HTTPException(status_code=501, detail="Update not implemented for config file mode, config files to be deprecated.")
+            raise HTTPException(
+                status_code=501,
+                detail="Update not implemented for config file mode, config files to be deprecated.",
+            )
         else:
             updated_server = await server.mcp_manager.update_mcp_server_by_name(
                 mcp_server_name=mcp_server_name, mcp_server_update=request, actor=actor
@@ -968,7 +1040,11 @@ class CodeInput(BaseModel):
     source_type: Optional[str] = Field("python", description="The source type of the code (python or typescript)")
 
 
-@router.post("/generate-schema", response_model=Dict[str, Any], operation_id="generate_json_schema")
+@router.post(
+    "/generate-schema",
+    response_model=Dict[str, Any],
+    operation_id="generate_json_schema",
+)
 async def generate_json_schema(
     request: CodeInput = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -997,7 +1073,10 @@ class MCPToolExecuteRequest(BaseModel):
     args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
 
 
-@router.post("/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute", operation_id="execute_mcp_tool")
+@router.post(
+    "/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute",
+    operation_id="execute_mcp_tool",
+)
 async def execute_mcp_tool(
     mcp_server_name: str,
     tool_name: str,
@@ -1090,7 +1169,11 @@ async def mcp_oauth_callback(
             await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
             return {"status": "error", "message": "Invalid state parameter"}
 
-        return {"status": "success", "message": "Authorization successful", "server_url": success.server_url}
+        return {
+            "status": "success",
+            "message": "Authorization successful",
+            "server_url": success.server_url,
+        }
 
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
@@ -1140,8 +1223,14 @@ async def generate_tool_from_prompt(
         assistant_message_ack = "Understood, I will respond with generated python source code and sample arguments that can be used to test the functionality once I receive the user prompt. I'm ready."
 
         input_messages = [
-            Message(role=MessageRole.system, content=[TextContent(text=get_system_text("memgpt_generate_tool"))]),
-            Message(role=MessageRole.assistant, content=[TextContent(text=assistant_message_ack)]),
+            Message(
+                role=MessageRole.system,
+                content=[TextContent(text=get_system_text("memgpt_generate_tool"))],
+            ),
+            Message(
+                role=MessageRole.assistant,
+                content=[TextContent(text=assistant_message_ack)],
+            ),
             Message(role=MessageRole.user, content=[TextContent(text=formatted_prompt)]),
         ]
 
@@ -1151,7 +1240,10 @@ async def generate_tool_from_prompt(
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "raw_source_code": {"type": "string", "description": "The raw python source code of the custom tool."},
+                    "raw_source_code": {
+                        "type": "string",
+                        "description": "The raw python source code of the custom tool.",
+                    },
                     "sample_args_json": {
                         "type": "string",
                         "description": "The JSON dict that contains sample args for a test run of the python function. Key is the name of the function parameter and value is an example argument that is passed in.",
@@ -1161,7 +1253,11 @@ async def generate_tool_from_prompt(
                         "description": "Optional JSON dict that contains pip packages to be installed if needed by the source code. Key is the name of the pip package and value is the version number.",
                     },
                 },
-                "required": ["raw_source_code", "sample_args_json", "pip_requirements_json"],
+                "required": [
+                    "raw_source_code",
+                    "sample_args_json",
+                    "pip_requirements_json",
+                ],
             },
         }
         request_data = llm_client.build_request_data(
