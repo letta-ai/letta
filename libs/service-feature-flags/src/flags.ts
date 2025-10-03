@@ -107,11 +107,6 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
-  LLM_TOOL_SCHEMA_GENERATION: {
-    description: 'LLM tool schema generation',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
   BACKGROUND_MODE: {
     description: 'Continue running agent messages',
     expiryDate: '2025-12-31',

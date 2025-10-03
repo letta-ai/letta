@@ -5,7 +5,6 @@ import {
   type ToolJSONSchema,
   type ToolUpdate,
   useToolsServiceGenerateTool,
-  useToolsServiceGenerateJsonSchema,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
   UseToolsServiceRetrieveToolKeyFn
@@ -469,20 +468,11 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     };
   }, [setJsonSchemaString]);
 
-  const { data: useLLMGeneration } = useFeatureFlag('LLM_TOOL_SCHEMA_GENERATION');
-
-  const { mutate: mutateLLM, isPending: isPendingLLM, error: errorLLM } =
+  const { mutate: mutateLLM, isPending, error } =
     useToolsServiceGenerateTool();
 
-  const { mutate: mutateClassic, isPending: isPendingClassic, error: errorClassic } =
-    useToolsServiceGenerateJsonSchema();
-
-  const isPending = useLLMGeneration ? isPendingLLM : isPendingClassic;
-  const error = useLLMGeneration ? errorLLM : errorClassic;
-
   const alignJSONSchemaWithTool = useCallback(() => {
-    if (useLLMGeneration) {
-      const prompt = `You are updating ONLY the JSON schema for this tool. Do NOT modify the source code at all - return it exactly as provided.
+    const prompt = `You are updating ONLY the JSON schema for this tool. Do NOT modify the source code at all - return it exactly as provided.
 
 Your task is to generate a proper JSON schema that accurately describes the function's parameters and return type.
 
@@ -515,50 +505,30 @@ Important requirements:
 
 Remember: Return the source code EXACTLY as provided, only update the JSON schema.`;
 
-      mutateLLM(
-        {
-          requestBody: {
-            tool_name: tool.name || '',
-            starter_code: stagedTool.source_code || '',
-            validation_errors: [],
-            prompt: prompt.trim()
-          }
-        },
-        {
-          onSuccess: (response) => {
-            if (response.tool.json_schema) {
-              setStagedTool((prev) => ({
-                ...prev,
-                json_schema: response.tool.json_schema
-              }));
-
-              setJsonSchemaString(JSON.stringify(response.tool.json_schema, null, 2));
-              setParsingError(null);
-            }
-          }
+    mutateLLM(
+      {
+        requestBody: {
+          tool_name: tool.name || '',
+          starter_code: stagedTool.source_code || '',
+          validation_errors: [],
+          prompt: prompt.trim()
         }
-      );
-    } else {
-      mutateClassic(
-        {
-          requestBody: {
-            code: stagedTool.source_code || ''
-          }
-        },
-        {
-          onSuccess: (response) => {
+      },
+      {
+        onSuccess: (response) => {
+          if (response.tool.json_schema) {
             setStagedTool((prev) => ({
               ...prev,
-              json_schema: response
+              json_schema: response.tool.json_schema
             }));
 
-            setJsonSchemaString(JSON.stringify(response, null, 2));
+            setJsonSchemaString(JSON.stringify(response.tool.json_schema, null, 2));
             setParsingError(null);
           }
         }
-      );
-    }
-  }, [useLLMGeneration, mutateLLM, mutateClassic, stagedTool.source_code, setStagedTool, setJsonSchemaString, tool.name]);
+      }
+    );
+  }, [mutateLLM, stagedTool.source_code, setStagedTool, setJsonSchemaString, tool.name]);
 
   const errorMessage = useMemo(() => {
     if (parsingError) {
