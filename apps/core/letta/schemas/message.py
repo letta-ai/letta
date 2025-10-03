@@ -1344,7 +1344,7 @@ class Message(BaseMessage):
             }
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or text_content is not None
+            assert self.tool_calls is not None or text_content is not None or len(self.content) > 1
             google_ai_message = {
                 "role": "model",  # NOTE: different
             }
