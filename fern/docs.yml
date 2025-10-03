@@ -115,6 +115,8 @@ navigation:
                 path: pages/agents/stateful_workflows.mdx
           - page: Context Hierarchy
             path: pages/agents/context_hierarchy.mdx
+          - page: Message Types
+            path: pages/agents/message_types.mdx
           - page: Heartbeats
             path: pages/agents/heartbeats.mdx
 
