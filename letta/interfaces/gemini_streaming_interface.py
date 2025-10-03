@@ -173,6 +173,9 @@ class SimpleGeminiStreamingInterface:
             # NOTE: should always be len 1
             candidate = event.candidates[0]
 
+        if not candidate.content or not candidate.content.parts:
+            return
+
         for part in candidate.content.parts:
             # NOTE: the thought signature often comes after the thought text, eg with the tool call
             if part.thought_signature:
