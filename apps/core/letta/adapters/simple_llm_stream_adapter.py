@@ -3,6 +3,7 @@ from typing import AsyncGenerator, List
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import SimpleAnthropicStreamingInterface
+from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInterface
 from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
@@ -78,6 +79,12 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                     run_id=self.run_id,
                     step_id=step_id,
                 )
+        elif self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
+            self.interface = SimpleGeminiStreamingInterface(
+                requires_approval_tools=requires_approval_tools,
+                run_id=self.run_id,
+                step_id=step_id,
+            )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
 

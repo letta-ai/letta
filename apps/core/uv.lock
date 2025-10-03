@@ -2428,6 +2428,7 @@ dependencies = [
     { name = "docstring-parser" },
     { name = "exa-py" },
     { name = "faker" },
+    { name = "google-genai" },
     { name = "grpcio" },
     { name = "grpcio-tools" },
     { name = "html2text" },
@@ -2526,9 +2527,6 @@ external-tools = [
     { name = "turbopuffer" },
     { name = "wikipedia" },
 ]
-google = [
-    { name = "google-genai" },
-]
 modal = [
     { name = "modal" },
 ]
@@ -2584,7 +2582,7 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'desktop'", specifier = ">=0.115.6" },
     { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.115.6" },
     { name = "google-cloud-profiler", marker = "extra == 'experimental'", specifier = ">=4.1.0" },
-    { name = "google-genai", marker = "extra == 'google'", specifier = ">=1.15.0" },
+    { name = "google-genai", specifier = ">=1.15.0" },
     { name = "granian", extras = ["uvloop", "reload"], marker = "extra == 'experimental'", specifier = ">=2.3.2" },
     { name = "grpcio", specifier = ">=1.68.1" },
     { name = "grpcio-tools", specifier = ">=1.68.1" },
@@ -2669,7 +2667,7 @@ requires-dist = [
     { name = "wikipedia", marker = "extra == 'desktop'", specifier = ">=1.4.0" },
     { name = "wikipedia", marker = "extra == 'external-tools'", specifier = ">=1.4.0" },
 ]
-provides-extras = ["postgres", "redis", "pinecone", "sqlite", "experimental", "server", "bedrock", "google", "dev", "cloud-tool-sandbox", "modal", "external-tools", "desktop"]
+provides-extras = ["postgres", "redis", "pinecone", "sqlite", "experimental", "server", "bedrock", "dev", "cloud-tool-sandbox", "modal", "external-tools", "desktop"]
 
 [[package]]
 name = "letta-client"
