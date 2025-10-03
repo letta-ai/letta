@@ -18,7 +18,7 @@ import {
   getUserActiveOrganizationIdOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
-import { createOrganization as authCreateOrganization } from '@letta-cloud/service-auth';
+import { createOrganization as authCreateOrganization, generateServerSideAPIKey } from '@letta-cloud/service-auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, count, eq, gt, ilike } from 'drizzle-orm';
@@ -606,6 +606,11 @@ async function createOrganization(
   });
 
   await Promise.all([
+    generateServerSideAPIKey({
+      name: `Default API Key`,
+      organizationId: res.organizationId,
+      creatorUserId: id,
+    }),
     db
       .update(users)
       .set({
