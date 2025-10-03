@@ -26,6 +26,7 @@ from letta.schemas.letta_message import (
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
+    MessageType,
     ReasoningMessage,
     SystemMessage,
     ToolCall,
@@ -300,6 +301,13 @@ class Message(BaseMessage):
         if self.role == MessageRole.assistant:
             if self.content:
                 messages.extend(self._convert_reasoning_messages(text_is_assistant_message=text_is_assistant_message))
+                for i in range(len(messages) - 1, -1, -1):
+                    if i > 0 and messages[i].message_type == messages[i - 1].message_type:
+                        if messages[i].message_type == MessageType.reasoning_message:
+                            messages[i - 1].reasoning = messages[i - 1].reasoning + messages.pop(i).reasoning
+                        elif messages[i].message_type == MessageType.assistant_message:
+                            messages[i - 1].content = messages[i - 1].content + messages.pop(i).content
+
             if self.tool_calls is not None:
                 messages.extend(
                     self._convert_tool_call_messages(
