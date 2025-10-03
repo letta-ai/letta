@@ -120,7 +120,11 @@ def assert_greeting_response(
         assert len(messages) == expected_message_count
     except:
         # Reasoning summary in responses API when effort is high is still flaky, so don't throw if missing
-        if LLMConfig.is_openai_reasoning_model(llm_config):
+        if (
+            LLMConfig.is_openai_reasoning_model(llm_config)
+            or LLMConfig.is_google_vertex_reasoning_model(llm_config)
+            or LLMConfig.is_google_ai_reasoning_model(llm_config)
+        ):
             assert len(messages) == expected_message_count - 1
         else:
             raise
@@ -136,15 +140,22 @@ def assert_greeting_response(
     otid_suffix = 0
     try:
         if (
-            LLMConfig.is_openai_reasoning_model(llm_config) and llm_config.reasoning_effort == "high"
-        ) or LLMConfig.is_anthropic_reasoning_model(llm_config):
+            (LLMConfig.is_openai_reasoning_model(llm_config) and llm_config.reasoning_effort == "high")
+            or LLMConfig.is_anthropic_reasoning_model(llm_config)
+            or LLMConfig.is_google_vertex_reasoning_model(llm_config)
+            or LLMConfig.is_google_ai_reasoning_model(llm_config)
+        ):
             assert isinstance(messages[index], ReasoningMessage)
             assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
             index += 1
             otid_suffix += 1
     except:
         # Reasoning summary in responses API when effort is high is still flaky, so don't throw if missing
-        if LLMConfig.is_openai_reasoning_model(llm_config):
+        if (
+            LLMConfig.is_openai_reasoning_model(llm_config)
+            or LLMConfig.is_google_vertex_reasoning_model(llm_config)
+            or LLMConfig.is_google_ai_reasoning_model(llm_config)
+        ):
             pass
         else:
             raise
@@ -325,8 +336,11 @@ def get_expected_message_count(llm_config: LLMConfig, tool_call: bool = False, s
 
     """
     is_reasoner_model = (
-        LLMConfig.is_openai_reasoning_model(llm_config) and llm_config.reasoning_effort == "high"
-    ) or LLMConfig.is_anthropic_reasoning_model(llm_config)
+        (LLMConfig.is_openai_reasoning_model(llm_config) and llm_config.reasoning_effort == "high")
+        or LLMConfig.is_anthropic_reasoning_model(llm_config)
+        or LLMConfig.is_google_vertex_reasoning_model(llm_config)
+        or LLMConfig.is_google_ai_reasoning_model(llm_config)
+    )
 
     # assistant message
     expected_message_count = 1
