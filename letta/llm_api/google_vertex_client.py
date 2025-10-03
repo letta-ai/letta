@@ -1,3 +1,4 @@
+import base64
 import json
 import uuid
 from typing import AsyncIterator, List, Optional
@@ -379,6 +380,7 @@ class GoogleVertexClient(LLMClientBase):
                 )
             thinking_config = ThinkingConfig(
                 thinking_budget=(thinking_budget),
+                include_thoughts=(thinking_budget > 1),
             )
             request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
@@ -440,13 +442,15 @@ class GoogleVertexClient(LLMClientBase):
                 # NOTE(Apr 9, 2025): there's a very strange bug on 2.5 where the response has a part with broken text
                 # {'candidates': [{'content': {'parts': [{'functionCall': {'name': 'send_message', 'args': {'request_heartbeat': False, 'message': 'Hello! How can I make your day better?', 'inner_thoughts': 'User has initiated contact. Sending a greeting.'}}}], 'role': 'model'}, 'finishReason': 'STOP', 'avgLogprobs': -0.25891534213362066}], 'usageMetadata': {'promptTokenCount': 2493, 'candidatesTokenCount': 29, 'totalTokenCount': 2522, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 2493}], 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 29}]}, 'modelVersion': 'gemini-1.5-pro-002'}
                 # To patch this, if we have multiple parts we can take the last one
-                if len(parts) > 1:
+                if len(parts) > 1 and not llm_config.enable_reasoner:
                     logger.warning(f"Unexpected multiple parts in response from Google AI: {parts}")
+                    # only truncate if reasoning is off
                     parts = [parts[-1]]
 
                 # TODO support parts / multimodal
                 # TODO support parallel tool calling natively
                 # TODO Alternative here is to throw away everything else except for the first part
+                openai_response_message = None
                 for response_message in parts:
                     # Convert the actual message style to OpenAI style
                     if response_message.function_call:
@@ -472,22 +476,39 @@ class GoogleVertexClient(LLMClientBase):
                             # inner_thoughts = response_message.text
 
                         # Google AI API doesn't generate tool call IDs
-                        openai_response_message = Message(
-                            role="assistant",  # NOTE: "model" -> "assistant"
-                            content=inner_thoughts,
-                            tool_calls=[
-                                ToolCall(
-                                    id=get_tool_call_id(),
-                                    type="function",
-                                    function=FunctionCall(
-                                        name=function_name,
-                                        arguments=clean_json_string_extra_backslash(json_dumps(function_args)),
-                                    ),
-                                )
-                            ],
+                        tool_call = ToolCall(
+                            id=get_tool_call_id(),
+                            type="function",
+                            function=FunctionCall(
+                                name=function_name,
+                                arguments=clean_json_string_extra_backslash(json_dumps(function_args)),
+                            ),
                         )
 
+                        if openai_response_message is None:
+                            openai_response_message = Message(
+                                role="assistant",  # NOTE: "model" -> "assistant"
+                                content=inner_thoughts,
+                                tool_calls=[tool_call],
+                            )
+                        else:
+                            openai_response_message.content = inner_thoughts
+                            if openai_response_message.tool_calls is None:
+                                openai_response_message.tool_calls = []
+                            openai_response_message.tool_calls.append(tool_call)
+                            if response_message.thought_signature:
+                                thought_signature = base64.b64encode(response_message.thought_signature).decode("utf-8")
+                                openai_response_message.reasoning_content_signature = thought_signature
+
                     else:
+                        if response_message.thought:
+                            if openai_response_message is None:
+                                openai_response_message = Message(
+                                    role="assistant",  # NOTE: "model" -> "assistant"
+                                    reasoning_content=response_message.text,
+                                )
+                            else:
+                                openai_response_message.reasoning_content = response_message.text
                         try:
                             # Structured output tool call
                             function_call = json_loads(response_message.text)
@@ -508,20 +529,25 @@ class GoogleVertexClient(LLMClientBase):
                                 inner_thoughts = None
 
                             # Google AI API doesn't generate tool call IDs
-                            openai_response_message = Message(
-                                role="assistant",  # NOTE: "model" -> "assistant"
-                                content=inner_thoughts,
-                                tool_calls=[
-                                    ToolCall(
-                                        id=get_tool_call_id(),
-                                        type="function",
-                                        function=FunctionCall(
-                                            name=function_name,
-                                            arguments=clean_json_string_extra_backslash(json_dumps(function_args)),
-                                        ),
-                                    )
-                                ],
+                            tool_call = ToolCall(
+                                id=get_tool_call_id(),
+                                type="function",
+                                function=FunctionCall(
+                                    name=function_name,
+                                    arguments=clean_json_string_extra_backslash(json_dumps(function_args)),
+                                ),
                             )
+                            if openai_response_message is None:
+                                openai_response_message = Message(
+                                    role="assistant",  # NOTE: "model" -> "assistant"
+                                    content=inner_thoughts,
+                                    tool_calls=[tool_call],
+                                )
+                            else:
+                                openai_response_message.content = inner_thoughts
+                                if openai_response_message.tool_calls is None:
+                                    openai_response_message.tool_calls = []
+                                openai_response_message.tool_calls.append(tool_call)
 
                         except json.decoder.JSONDecodeError:
                             if candidate.finish_reason == "MAX_TOKENS":
@@ -530,10 +556,16 @@ class GoogleVertexClient(LLMClientBase):
                             inner_thoughts = response_message.text
 
                             # Google AI API doesn't generate tool call IDs
-                            openai_response_message = Message(
-                                role="assistant",  # NOTE: "model" -> "assistant"
-                                content=inner_thoughts,
-                            )
+                            if openai_response_message is None:
+                                openai_response_message = Message(
+                                    role="assistant",  # NOTE: "model" -> "assistant"
+                                    content=inner_thoughts,
+                                )
+                            else:
+                                openai_response_message.content = inner_thoughts
+                                if response_message.thought_signature:
+                                    thought_signature = base64.b64encode(response_message.thought_signature).decode("utf-8")
+                                    openai_response_message.reasoning_content_signature = thought_signature
 
                     # Google AI API uses different finish reason strings than OpenAI
                     # OpenAI: 'stop', 'length', 'function_call', 'content_filter', null
