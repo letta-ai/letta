@@ -350,6 +350,16 @@ variable "dev_lettuce_py_LETTA_PG_URI" {
   sensitive   = true
 }
 
+variable "dev_lettuce_py_LETTA_TEMPORAL_PRIVATE_KEY" {
+   description = "Temporal API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "dev_lettuce_py_LETTA_TEMPORAL_CLIENT_CERTIFICATE" {
+   description = "Temporal API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
 variable "dev_lettuce_py_LETTA_TEMPORAL_API_KEY" {
    description = "Temporal API key for lettuce-py service"
    type        = string

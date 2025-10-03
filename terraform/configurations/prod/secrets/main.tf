@@ -83,6 +83,8 @@ locals {
     # lettuce-py secrets
     "prod_lettuce-py_LETTA_PG_URI" = var.prod_lettuce_py_LETTA_PG_URI
     "prod_lettuce-py_LETTA_TEMPORAL_API_KEY" = var.prod_lettuce_py_LETTA_TEMPORAL_API_KEY
+    "prod_lettuce-py_LETTA_TEMPORAL_PRIVATE_KEY" = var.prod_lettuce_py_LETTA_TEMPORAL_PRIVATE_KEY
+    "prod_lettuce-py_LETTA_TEMPORAL_CLIENT_CERTIFICATE" = var.prod_lettuce_py_LETTA_TEMPORAL_CLIENT_CERTIFICATE
     "prod_lettuce-py_OPENAI_API_KEY" = var.prod_lettuce_py_OPENAI_API_KEY
     "prod_lettuce-py_ANTHROPIC_API_KEY" = var.prod_lettuce_py_ANTHROPIC_API_KEY
     "prod_lettuce-py_E2B_API_KEY" = var.prod_lettuce_py_E2B_API_KEY

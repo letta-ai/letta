@@ -1,0 +1,85 @@
+{{- if .Values.webhook.enabled -}}
+{{ fail "webhooks aren't supported yet" }}
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ .Release.Name }}-mutating-webhook-configuration
+  labels:
+    app.kubernetes.io/component: webhook
+    {{ include "temporal-worker-controller.labels" $ | indent 4 }}
+  annotations:
+    {{- if .Values.certmanager.enabled }}
+    {{ fail "certmanager isn't supported yet" }}
+    cert-manager.io/inject-ca-from: CERTIFICATE_NAMESPACE/CERTIFICATE_NAME # TODO (carlydf): what should these be?
+    {{- end }}
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Release.Name }}-webhook-service
+      namespace: system
+      path: /mutate-temporal-io-temporal-io-v1alpha1-temporalworkerdeployment
+  failurePolicy: Fail
+  name: mtemporalworker.kb.io
+  rules:
+    - apiGroups:
+        - temporal.io.temporal.io
+      apiVersions:
+        - v1alpha1
+      operations:
+        - CREATE
+        - UPDATE
+      resources:
+        - temporalworkers
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ .Release.Name }}-validating-webhook-configuration
+  labels:
+    app.kubernetes.io/component: webhook
+    {{ include "temporal-worker-controller.labels" $ | indent 4 }}
+  annotations:
+    {{- if .Values.certmanager.enabled }}
+    {{ fail "certmanager isn't supported yet" }}
+    cert-manager.io/inject-ca-from: CERTIFICATE_NAMESPACE/CERTIFICATE_NAME # TODO (carlydf): what should these be?
+    {{- end }}
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ .Release.Name }}-webhook-service
+      namespace: system
+      path: /mutate-temporal-io-temporal-io-v1alpha1-temporalworkerdeployment
+  failurePolicy: Fail
+  name: mtemporalworker.kb.io
+  rules:
+    - apiGroups:
+        - temporal.io.temporal.io
+      apiVersions:
+        - v1alpha1
+      operations:
+        - CREATE
+        - UPDATE
+      resources:
+        - temporalworkers
+  sideEffects: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-webhook-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: webhook
+    {{ include "temporal-worker-controller.labels" $ | indent 4 }}
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: {{ .Values.webhook.port }}
+  selector:
+    {{ include "temporal-worker-controller.selectorLabels" $ | indent 4 }}
+{{- end }}

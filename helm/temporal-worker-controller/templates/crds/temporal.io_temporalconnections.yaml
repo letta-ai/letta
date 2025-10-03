@@ -1,0 +1,60 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.2
+  name: temporalconnections.temporal.io
+spec:
+  group: temporal.io
+  names:
+    kind: TemporalConnection
+    listKind: TemporalConnectionList
+    plural: temporalconnections
+    shortNames:
+    - tconn
+    singular: temporalconnection
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Temporal server endpoint
+      jsonPath: .spec.hostPort
+      name: Host
+      type: string
+    - description: Age
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              hostPort:
+                pattern: ^[a-zA-Z0-9.-]+:[0-9]+$
+                type: string
+              mutualTLSSecretRef:
+                properties:
+                  name:
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - hostPort
+            type: object
+          status:
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
