@@ -584,10 +584,6 @@ function CoreMemorySidebar() {
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
-  if (blocks.length === 0) {
-    return null;
-  }
-
   return (
     <VStack
       overflow="hidden"
@@ -643,50 +639,56 @@ function CoreMemorySidebar() {
       </VStack>
       <VStack collapseHeight flex overflowY="auto">
         <VStack>
-          {!blocks.length && (
+          {!isMemoryBlockRedesignEnabled ? (
+            !blocks.length ? (
+              <HStack fullWidth justify="center" padding align="center">
+                <Typography color="muted">
+                  {t('CoreMemorySidebar.noResults')}
+                </Typography>
+              </HStack>
+            ) : (
+              blocks.map((block) => {
+                const isSelected = block.label === selectedMemoryBlockLabel;
+                return (
+                  <VStack
+                    aria-selected={isSelected}
+                    as="button"
+                    data-testid={`memory-block-${block.label}`}
+                    key={block.id}
+                    gap={false}
+                    onClick={() => {
+                      if (!block.label) return;
+
+                      handleBlockClick(block.label);
+                    }}
+                    paddingX
+                    overflowX="hidden"
+                    align="start"
+                    wrap={false}
+                    paddingY="small"
+                    color={isSelected ? 'background-grey3' : 'transparent'}
+                  >
+                    <Typography>{block.label}</Typography>
+                    <Typography
+                      overflow="ellipsis"
+                      noWrap
+                      align="left"
+                      color="muted"
+                      variant="body3"
+                      fullWidth
+                    >
+                      {block.id}
+                    </Typography>
+                  </VStack>
+                );
+              })
+            )
+          ) : !blocks.length ? (
             <HStack fullWidth justify="center" padding align="center">
               <Typography color="muted">
                 {t('CoreMemorySidebar.noResults')}
               </Typography>
             </HStack>
-          )}
-
-          {!isMemoryBlockRedesignEnabled ? (
-            blocks.map((block) => {
-              const isSelected = block.label === selectedMemoryBlockLabel;
-              return (
-                <VStack
-                  aria-selected={isSelected}
-                  as="button"
-                  data-testid={`memory-block-${block.label}`}
-                  key={block.id}
-                  gap={false}
-                  onClick={() => {
-                    if (!block.label) return;
-
-                    handleBlockClick(block.label);
-                  }}
-                  paddingX
-                  overflowX="hidden"
-                  align="start"
-                  wrap={false}
-                  paddingY="small"
-                  color={isSelected ? 'background-grey3' : 'transparent'}
-                >
-                  <Typography>{block.label}</Typography>
-                  <Typography
-                    overflow="ellipsis"
-                    noWrap
-                    align="left"
-                    color="muted"
-                    variant="body3"
-                    fullWidth
-                  >
-                    {block.id}
-                  </Typography>
-                </VStack>
-              );
-            })
           ) : (
             <VStack paddingX="small" gap="small">
               {blocks.map((block) => {
