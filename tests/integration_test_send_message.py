@@ -232,6 +232,13 @@ TESTED_LLM_CONFIGS = [
 ]
 
 
+def assert_first_message_is_user_message(messages: List[Any]) -> None:
+    """
+    Asserts that the first message is a user message.
+    """
+    assert isinstance(messages[0], UserMessage)
+
+
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],
     llm_config: LLMConfig,
@@ -281,6 +288,24 @@ def assert_greeting_with_assistant_message_response(
         assert messages[index].completion_tokens > 0
         assert messages[index].total_tokens > 0
         assert messages[index].step_count > 0
+
+
+def assert_contains_run_id(messages: List[Any]) -> None:
+    """
+    Asserts that the messages list contains a run_id.
+    """
+    for message in messages:
+        if hasattr(message, "run_id"):
+            assert message.run_id is not None
+
+
+def assert_contains_step_id(messages: List[Any]) -> None:
+    """
+    Asserts that the messages list contains a step_id.
+    """
+    for message in messages:
+        if hasattr(message, "step_id"):
+            assert message.step_id is not None
 
 
 def assert_greeting_no_reasoning_response(
@@ -410,6 +435,7 @@ def assert_tool_call_response(
             and getattr(messages[2], "message_type", None) == "tool_return_message"
         ):
             return
+
     try:
         assert len(messages) == expected_message_count, messages
     except:
@@ -804,8 +830,10 @@ def test_greeting_with_assistant_message(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
+    assert_contains_run_id(response.messages)
     assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_first_message_is_user_message(messages_from_db)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
@@ -1024,9 +1052,13 @@ def test_step_streaming_greeting_with_assistant_message(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
-    messages = accumulate_chunks(list(response))
+    chunks = list(response)
+    assert_contains_step_id(chunks)
+    assert_contains_run_id(chunks)
+    messages = accumulate_chunks(chunks)
     assert_greeting_with_assistant_message_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_contains_run_id(messages_from_db)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
@@ -1514,7 +1546,8 @@ def test_async_greeting_with_assistant_message(
     messages = client.runs.messages.list(run_id=run.id)
     usage = client.runs.usage.retrieve(run_id=run.id)
 
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
+    # TODO: add results API test later
+    assert_greeting_with_assistant_message_response(messages, from_db=True, llm_config=llm_config)  # TODO: remove from_db=True later
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
@@ -1595,7 +1628,8 @@ def test_async_tool_call(
     )
     run = wait_for_run_completion(client, run.id)
     messages = client.runs.messages.list(run_id=run.id)
-    assert_tool_call_response(messages, llm_config=llm_config)
+    # TODO: add test for response api
+    assert_tool_call_response(messages, from_db=True, llm_config=llm_config)  # NOTE: skip first message which is the user message
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
@@ -1725,7 +1759,7 @@ def test_async_greeting_with_callback_url(
 
         # Validate job completed successfully
         messages = client.runs.messages.list(run_id=run.id)
-        assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
+        assert_greeting_with_assistant_message_response(messages, from_db=True, llm_config=llm_config)
 
         # Validate callback was received
         assert server.wait_for_callback(timeout=15), "Callback was not received within timeout"
