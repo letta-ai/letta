@@ -1,0 +1,50 @@
+# Simplified Compose file for Dokploy. No NGINX and no Postgres images as DokPloy handles those. 
+version: '3.8'
+services:
+  letta_server:
+    image: letta/letta:latest
+    hostname: letta-server
+    ports:
+      - "8083:8083"
+      - "8283:8283"
+    environment:
+      # PostgreSQL Connection
+      - LETTA_PG_URI=${LETTA_PG_URI}
+      
+      # Redis Connection
+      - LETTA_REDIS_HOST=${LETTA_REDIS_HOST}
+      - LETTA_REDIS_PORT=${LETTA_REDIS_PORT:-6379}
+      - LETTA_REDIS_PASSWORD=${LETTA_REDIS_PASSWORD}
+      
+      # Letta Configuration
+      - LETTA_DEBUG=${LETTA_DEBUG:-false}
+      
+      # AI Provider API Keys
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      
+      # Optional Providers
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - AZURE_API_KEY=${AZURE_API_KEY}
+      - AZURE_BASE_URL=${AZURE_BASE_URL}
+      - AZURE_API_VERSION=${AZURE_API_VERSION}
+      - VLLM_API_BASE=${VLLM_API_BASE}
+      - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
+      - OPENLLM_API_KEY=${OPENLLM_API_KEY}
+      
+      # Observability (Optional)
+      - LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT}
+      - CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    
+    volumes:
+      - letta_config:/root/.letta
+      - letta_tools:/root/.letta/tool_execution_dir
+
+volumes:
+  letta_config:
+  letta_tools:

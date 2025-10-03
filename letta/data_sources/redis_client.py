@@ -448,6 +448,7 @@ async def get_redis_client() -> AsyncRedisClient:
                 _client_instance = AsyncRedisClient(
                     host=settings.redis_host,
                     port=settings.redis_port,
+                    password=getattr(settings, 'redis_password', None),  # Added password support from ENV
                 )
                 await _client_instance.wait_for_ready(timeout=5)
                 logger.info("Redis client initialized")
