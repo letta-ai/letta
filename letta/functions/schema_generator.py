@@ -372,7 +372,11 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
             items_schema = schema_part["items"]
             if "$ref" in items_schema:
                 items_schema = resolve_ref(items_schema["$ref"], full_schema)
-            return {"type": "array", "items": clean_schema(items_schema, full_schema), "description": schema_part.get("description", "")}
+            return {
+                "type": "array",
+                "items": clean_schema(items_schema, full_schema),
+                "description": schema_part.get("description", ""),
+            }
 
         # Handle object type
         if schema_part["type"] == "object":
@@ -408,7 +412,12 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
     return clean_schema(schema_part=schema, full_schema=schema)
 
 
-def generate_schema(function, name: Optional[str] = None, description: Optional[str] = None, tool_id: Optional[str] = None) -> dict:
+def generate_schema(
+    function,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    tool_id: Optional[str] = None,
+) -> dict:
     # Validate that the function has a Google Python style docstring
     try:
         validate_google_style_docstring(function)
@@ -561,7 +570,10 @@ def extract_examples_section(docstring: Optional[str]) -> Optional[str]:
 
 
 def generate_schema_from_args_schema_v2(
-    args_schema: Type[BaseModel], name: Optional[str] = None, description: Optional[str] = None, append_heartbeat: bool = True
+    args_schema: Type[BaseModel],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    append_heartbeat: bool = True,
 ) -> Dict[str, Any]:
     properties = {}
     required = []
@@ -575,7 +587,11 @@ def generate_schema_from_args_schema_v2(
     function_call_json = {
         "name": name,
         "description": description,
-        "parameters": {"type": "object", "properties": properties, "required": required},
+        "parameters": {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        },
     }
 
     if append_heartbeat:
@@ -592,10 +608,11 @@ def generate_tool_schema_for_mcp(
     mcp_tool: MCPTool,
     append_heartbeat: bool = True,
     strict: bool = False,
+    overridden_schema: Optional[dict] = None,
 ) -> Dict[str, Any]:
     # MCP tool.inputSchema is a JSON schema
     # https://github.com/modelcontextprotocol/python-sdk/blob/775f87981300660ee957b63c2a14b448ab9c3675/src/mcp/types.py#L678
-    parameters_schema = mcp_tool.inputSchema
+    parameters_schema = mcp_tool.inputSchema if overridden_schema is None else overridden_schema
     name = mcp_tool.name
     description = mcp_tool.description
 
