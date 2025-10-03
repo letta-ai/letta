@@ -85,7 +85,7 @@ agent_state = client.agents.create(
 # the AgentState object contains all the information about the agent
 print(agent_state)
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
@@ -167,7 +167,7 @@ print(response.usage)
 for message in response.messages:
     print(message)
 ```
-```typescript maxLines=50 title="node.js"
+```typescript TypeScript maxLines=50
 // send a message to the agent
 const response = await client.agents.messages.create(
     agentState.id, {

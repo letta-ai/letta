@@ -427,10 +427,34 @@ The [Letta-Zapier integration](https://zapier.com/developer/public-invite/227319
 <Accordion title="Scaling with the SDK">
 To create agents programmatically from your `customer-success-agent` template, use the Letta SDK:
 
-```python
-from letta import LettaClient
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
 
-client = LettaClient()
+const client = new LettaClient({ token: "your-api-token" });
+
+// Create agent from template for new customer
+const agent = await client.templates.agents.create({
+    project: "your-project",
+    templateVersion: "customer-success-agent:latest",
+    memoryVariables: {
+        customerName: "John Smith",
+        customerEmail: "john@techparts.com",
+        companyName: "TechParts Industries",
+        jobTitle: "Manufacturing Director",
+        industrySector: "Industrial Equipment",
+        professionalBackground: "15+ years in manufacturing operations",
+        businessChallenges: "Looking to reduce defects and optimize supply chain",
+        communicationPreferences: "Prefers data-driven discussions"
+    },
+    identityIds: ["customer_john_smith"]
+});
+```
+
+```python Python
+from letta_client import Letta
+
+client = Letta(token="your-api-token")
 
 # Create agent from template for new customer
 agent = client.templates.agents.create(
@@ -449,6 +473,7 @@ agent = client.templates.agents.create(
     identity_ids=["customer_john_smith"]
 )
 ```
+</CodeGroup>
 
 This approach integrates with CRM systems, sign-up workflows, and customer onboarding automation. See the [Letta SDK documentation](https://docs.letta.com/api-reference/templates/agents/create) for complete API reference.
 </Accordion>

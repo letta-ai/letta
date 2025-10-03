@@ -42,17 +42,32 @@ Agents have two primary tools for archival memory: `archival_memory_insert` and 
 
 Agents can insert memories during conversations:
 
-```python
+<CodeGroup>
+```typescript TypeScript
+// Agent inserts after learning something
+archival_memory_insert(
+    content: "Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
+    tags: ["replicant", "history", "retirement"]
+)
+```
+```python Python
 # Agent inserts after learning something
 archival_memory_insert(
     content="Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
     tags=["replicant", "history", "retirement"]
 )
 ```
+</CodeGroup>
 
 Developers can also insert programmatically:
 
 <CodeGroup>
+```typescript TypeScript
+await client.agents.passages.insert(agent.id, {
+    content: "The Tyrell Corporation's motto: 'More human than human'",
+    tags: ["company", "motto", "tyrell"]
+});
+```
 ```python Python
 client.agents.passages.insert(
     agent_id=agent.id,
@@ -60,17 +75,20 @@ client.agents.passages.insert(
     tags=["company", "motto", "tyrell"]
 )
 ```
-```typescript TypeScript
-await client.agents.passages.insert(agent.id, {
-    content: "The Tyrell Corporation's motto: 'More human than human'",
-    tags: ["company", "motto", "tyrell"]
-});
-```
 </CodeGroup>
 
 ### Searching for information
 
-```python
+<CodeGroup>
+```typescript TypeScript
+// Agent searches semantically
+const results = archival_memory_search(
+    query: "replicant lifespan",
+    tags: ["technical"],  // Optional: filter by tags
+    page: 0
+)
+```
+```python Python
 # Agent searches semantically
 results = archival_memory_search(
     query="replicant lifespan",
@@ -78,6 +96,7 @@ results = archival_memory_search(
     page=0
 )
 ```
+</CodeGroup>
 
 Results return **semantically relevant** information - meaning the search understands concepts and meaning, not just exact keywords. For example, searching for "artificial memories" will find "implanted memories" even though the exact words don't match.
 

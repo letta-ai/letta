@@ -17,7 +17,20 @@ There are three main ways to connect tools to your agents:
 - [**MCP servers**](/guides/mcp/overview): connect your agent to tools that run on external MCP servers.
 
 Once a tool has been created (if it's a custom tool) or connected (if it's a pre-built tool or MCP server), you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation:
-```python title="python" {9}
+<CodeGroup>
+```typescript TypeScript {9}
+// create a new agent
+const agent = await client.agents.create({
+    memoryBlocks: [
+        {label: "human", limit: 2000, value: "Name: Bob"},
+        {label: "persona", limit: 2000, value: "You are a friendly agent"}
+    ],
+    model: "openai/gpt-4o-mini",
+    embedding: "openai/text-embedding-3-small",
+    tools: ["my_custom_tool_name"]
+});
+```
+```python Python {9}
 # create a new agent
 agent = client.agents.create(
     memory_blocks=[
@@ -29,6 +42,7 @@ agent = client.agents.create(
     tools=["my_custom_tool_name"]
 )
 ```
+</CodeGroup>
 
 ## Tool Execution
 You can customize the environment that your tool runs in (the Python package dependencies and environment variables) by setting a tool execution environment. See more [here](/guides/agents/tool-variables).
@@ -38,7 +52,22 @@ You can set agent-scoped environment variables for your tools.
 These environment variables will be accessible in the sandboxed environment that any of the agent tools are run in.
 
 For example, if you define a custom tool that requires an API key to run (e.g. `EXAMPLE_TOOL_API_KEY`), you can set the variable at time of agent creation by using the `tool_exec_environment_variables` parameter:
-```python title="python" {9-11}
+<CodeGroup>
+```typescript TypeScript {9-11}
+// create an agent with no tools
+const agent = await client.agents.create({
+    memoryBlocks: [
+        {label: "human", limit: 2000, value: "Name: Bob"},
+        {label: "persona", limit: 2000, value: "You are a friendly agent"}
+    ],
+    model: "openai/gpt-4o-mini",
+    embedding: "openai/text-embedding-3-small",
+    toolExecEnvironmentVariables: {
+        "EXAMPLE_TOOL_API_KEY": "banana"
+    }
+});
+```
+```python Python {9-11}
 # create an agent with no tools
 agent = client.agents.create(
     memory_blocks=[
@@ -52,6 +81,7 @@ agent = client.agents.create(
     }
 )
 ```
+</CodeGroup>
 
 ## Tool Rules
 

@@ -47,25 +47,7 @@ flowchart TD
 ## Creating client-side access tokens
 
 <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta
-
-# Initialize the client
-client = Letta(token="YOUR_TOKEN", project="YOUR_PROJECT")
-
-# Create the token
-client.client_side_access_tokens.create(
-    policy=[
-        {
-            "type": "agent",
-            "id": "id",
-            "access": ["read_messages"],
-        }
-    ],
-    hostname="hostname",
-)
-```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient } from "@letta-ai/letta-client";
 
 // Initialize the client
@@ -85,6 +67,24 @@ await client.clientSideAccessTokens.create({
   ],
   hostname: "hostname",
 });
+```
+```python title="python" maxLines=50
+from letta_client import Letta
+
+# Initialize the client
+client = Letta(token="YOUR_TOKEN", project="YOUR_PROJECT")
+
+# Create the token
+client.client_side_access_tokens.create(
+    policy=[
+        {
+            "type": "agent",
+            "id": "id",
+            "access": ["read_messages"],
+        }
+    ],
+    hostname="hostname",
+)
 ```
 </CodeGroup>
 
@@ -109,6 +109,13 @@ Client-side access tokens automatically expire for enhanced security. The defaul
 You can specify a custom expiration time using the `expires_at` parameter:
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+const clientToken = await client.clientSideAccessTokens.create({
+  policy: [/* ... */],
+  hostname: "https://your-app.com",
+  expires_at: "2024-12-31T23:59:59Z", // Optional, ISO 8601 format
+});
+```
 ```python title="python" maxLines=50
 client = Letta(token="YOUR_TOKEN", project="YOUR_PROJECT")
 client_token = client.client_side_access_tokens.create(
@@ -116,13 +123,6 @@ client_token = client.client_side_access_tokens.create(
     hostname="https://your-app.com",
     expires_at="2024-12-31T23:59:59Z",  # Optional, ISO 8601 format
 )
-```
-```typescript title="node.js" maxLines=50
-const clientToken = await client.clientSideAccessTokens.create({
-  policy: [/* ... */],
-  hostname: "https://your-app.com",
-  expires_at: "2024-12-31T23:59:59Z", // Optional, ISO 8601 format
-});
 ```
 </CodeGroup>
 
@@ -135,12 +135,12 @@ When implementing client-side access tokens, it's important to follow security b
 You can delete client-side access tokens when they're no longer needed:
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+await client.clientSideAccessTokens.delete("ck-let-token-value");
+```
 ```python title="python" maxLines=50
 client = Letta(token="YOUR_TOKEN", project="YOUR_PROJECT")
 client.client_side_access_tokens.delete("ck-let-token-value")
-```
-```typescript title="node.js" maxLines=50
-await client.clientSideAccessTokens.delete("ck-let-token-value");
 ```
 </CodeGroup>
 
@@ -149,37 +149,7 @@ await client.clientSideAccessTokens.delete("ck-let-token-value");
 Here's how you might implement client-side access tokens in a multi-user chat application:
 
 <CodeGroup>
-```python title="python" maxLines=50
-# Server-side: Create user-specific tokens when users log in
-def create_user_token(user_id: str, agent_id: str):
-    client_token = client.client_side_access_tokens.create(
-        policy=[
-            {
-                "type": "agent",
-                "id": agent_id,
-                "access": ["read_messages", "write_messages"],
-            }
-        ],
-        hostname="https://chat.yourapp.com",
-        expires_at=(datetime.now() + timedelta(hours=24)).isoformat(),  # 24 hours
-    )
-    return client_token.token
-
-# Client-side: Use the token to communicate directly with the agent
-user_client = Letta(token=user_token, project="YOUR_PROJECT")  # Received from your backend
-
-# Send messages directly to the agent
-response = user_client.agents.messages.create(
-    agent_id=agent_id,
-    messages=[
-        {
-            "role": "user",
-            "content": "Hello, agent!",
-        }
-    ],
-)
-```
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 // Server-side: Create user-specific tokens when users log in
 async function createUserToken(userId: string, agentId: string) {
   const clientToken = await client.clientSideAccessTokens.create({
@@ -212,6 +182,36 @@ const response = await userClient.agents.messages.create(agentId, {
     },
   ],
 });
+```
+```python title="python" maxLines=50
+# Server-side: Create user-specific tokens when users log in
+def create_user_token(user_id: str, agent_id: str):
+    client_token = client.client_side_access_tokens.create(
+        policy=[
+            {
+                "type": "agent",
+                "id": agent_id,
+                "access": ["read_messages", "write_messages"],
+            }
+        ],
+        hostname="https://chat.yourapp.com",
+        expires_at=(datetime.now() + timedelta(hours=24)).isoformat(),  # 24 hours
+    )
+    return client_token.token
+
+# Client-side: Use the token to communicate directly with the agent
+user_client = Letta(token=user_token, project="YOUR_PROJECT")  # Received from your backend
+
+# Send messages directly to the agent
+response = user_client.agents.messages.create(
+    agent_id=agent_id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Hello, agent!",
+        }
+    ],
+)
 ```
 </CodeGroup>
 

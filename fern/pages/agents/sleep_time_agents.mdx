@@ -4,6 +4,10 @@ subtitle: Based on the new sleep-time compute research paper
 slug: guides/agents/architectures/sleeptime
 ---
 
+<Warning>
+Sleep-time agents are experimental and may be unstable. For more information, visit our [Discord](https://discord.gg/letta).
+</Warning>
+
 <Note>
 To learn more about sleep-time compute, check out our [blog](https://www.letta.com/blog/sleep-time-compute) and [research paper](https://arxiv.org/abs/2504.13171).
 </Note>
@@ -26,19 +30,19 @@ In Letta, the learned context is saved in a memory block. A memory block represe
 Memory blocks can be access directly through the API to be updated, retrieved, or deleted.
 
 <CodeGroup>
+```typescript TypeScript
+// get a block by label
+const block = await client.agents.blocks.retrieve(agentId, "persona");
+
+// get a block by ID
+const block = await client.blocks.retrieve(blockId);
+```
 ```python title="python"
 # get a block by label
 block = client.agents.blocks.retrieve(agent_id=agent_id, block_label="persona")
 
 # get a block by ID
 block = client.blocks.retrieve(block_id=block_id)
-```
-```typescript title="node.js"
-// get a block by label
-const block = await client.agents.blocks.retrieve(agentId, "persona");
-
-// get a block by ID
-const block = await client.blocks.retrieve(blockId);
 ```
 </CodeGroup>
 
@@ -57,6 +61,35 @@ When a `sleeptime_agent` is created, a primary agent and a sleep-time agent are 
 The sleep-time agent will be triggered every N-steps (default `5`) to update the memory blocks of the primary agent. You can configure the frequency of updates by setting the `sleeptime_agent_frequency` parameter when creating the agent.
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient, SleeptimeManagerUpdate } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create a sleep-time-enabled agent
+const agent = await client.agents.create({
+    memoryBlocks: [
+        { value: "", label: "human" },
+        { value: "You are a helpful assistant.", label: "persona" }
+    ],
+    model: "anthropic/claude-3-7-sonnet-20250219",
+    embedding: "openai/text-embedding-3-small",
+    enableSleeptime: true
+});
+console.log(`Created agent id ${agent.id}`);
+
+// get the multi-agent group
+const groupId = agent.multiAgentGroup.id;
+const currentFrequency = agent.multiAgentGroup.sleeptimeAgentFrequency;
+console.log(`Group id: ${groupId}, frequency: ${currentFrequency}`);
+
+// update the frequency to every 2 steps
+const group = await client.groups.modify(groupId, {
+    managerConfig: {
+        sleeptimeAgentFrequency: 2
+    } as SleeptimeManagerUpdate
+});
+```
 ```python title="python" maxLines=50
 from letta_client import Letta
 from letta_client.types import SleeptimeManagerUpdate
@@ -87,35 +120,6 @@ group = client.groups.modify(
         sleeptime_agent_frequency=2
     ),
 )
-```
-```typescript title="node.js" maxLines=50
-import { LettaClient, SleeptimeManagerUpdate } from '@letta-ai/letta-client'
-
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// create a sleep-time-enabled agent
-const agent = await client.agents.create({
-    memoryBlocks: [
-        { value: "", label: "human" },
-        { value: "You are a helpful assistant.", label: "persona" }
-    ],
-    model: "anthropic/claude-3-7-sonnet-20250219",
-    embedding: "openai/text-embedding-3-small",
-    enableSleeptime: true
-});
-console.log(`Created agent id ${agent.id}`);
-
-// get the multi-agent group
-const groupId = agent.multiAgentGroup.id;
-const currentFrequency = agent.multiAgentGroup.sleeptimeAgentFrequency;
-console.log(`Group id: ${groupId}, frequency: ${currentFrequency}`);
-
-// update the frequency to every 2 steps
-const group = await client.groups.modify(groupId, {
-    managerConfig: {
-        sleeptimeAgentFrequency: 2
-    } as SleeptimeManagerUpdate
-});
 ```
 </CodeGroup>
 We recommend keeping the frequency relatively high (e.g. 5 or 10) as triggering the sleep-time agent too often can be expensive (due to high token usage) and has diminishing returns.

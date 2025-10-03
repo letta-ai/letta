@@ -63,6 +63,17 @@ To create a folder click the "Filesystem" tab in the bottom-left of the ADE, the
 
 To create a folder, you will need to specify a unique `name` as well as an `EmbeddingConfig`:
 <CodeGroup>
+```typescript TypeScript
+// get an available embedding_config
+const embeddingConfigs = await client.embeddingModels.list()
+const embeddingConfig = embeddingConfigs[0];
+
+// create the folder
+const folder = await client.folders.create({
+    name: "my_folder",
+    embeddingConfig: embeddingConfig
+});
+```
 ```python title="python"
 # get an available embedding_config
 embedding_configs = client.embedding_models.list()
@@ -73,17 +84,6 @@ folder = client.folders.create(
     name="my_folder",
     embedding_config=embedding_config
 )
-```
-```typescript title="node.js"
-// get an available embedding_config
-const embeddingConfigs = await client.embeddingModels.list()
-const embeddingConfig = embeddingConfigs[0];
-
-// create the folder
-const folder = await client.folders.create({
-    name: "my_folder",
-    embeddingConfig: embeddingConfig
-});
 ```
 </CodeGroup>
 Now that you've created the folder, you can start loading data into the folder.
@@ -99,24 +99,7 @@ To upload a file, simply drag and drop the file into the folders tab, or click t
 
 Uploading a file to a folder will create an async job for processing the file, which will split the file into chunks and embed them.
 <CodeGroup>
-```python title="python"
-# upload a file into the folder
-job = client.folders.files.upload(
-    folder_id=folder.id,
-    file=open("my_file.txt", "rb")
-)
-
-# wait until the job is completed
-while True:
-    job = client.jobs.retrieve(job.id)
-    if job.status == "completed":
-        break
-    elif job.status == "failed":
-        raise ValueError(f"Job failed: {job.metadata}")
-    print(f"Job status: {job.status}")
-    time.sleep(1)
-```
-```typescript title="node.js"
+```typescript TypeScript
 // upload a file into the folder
 const uploadJob = await client.folders.files.upload(
     createReadStream("my_file.txt"),
@@ -136,9 +119,35 @@ while (true) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 }
 ```
+```python title="python"
+# upload a file into the folder
+job = client.folders.files.upload(
+    folder_id=folder.id,
+    file=open("my_file.txt", "rb")
+)
+
+# wait until the job is completed
+while True:
+    job = client.jobs.retrieve(job.id)
+    if job.status == "completed":
+        break
+    elif job.status == "failed":
+        raise ValueError(f"Job failed: {job.metadata}")
+    print(f"Job status: {job.status}")
+    time.sleep(1)
+```
 </CodeGroup>
 Once the job is completed, you can list the files and the generated passages in the folder:
 <CodeGroup>
+```typescript TypeScript
+// list files in the folder
+const files = await client.folders.files.list(folder.id);
+console.log(`Files in folder: ${files}`);
+
+// list passages in the folder
+const passages = await client.folders.passages.list(folder.id);
+console.log(`Passages in folder: ${passages}`);
+```
 ```python title="python"
 # list files in the folder
 files = client.folders.files.list(folder_id=folder.id)
@@ -148,27 +157,18 @@ print(f"Files in folder: {files}")
 passages = client.folders.passages.list(folder_id=folder.id)
 print(f"Passages in folder: {passages}")
 ```
-```typescript title="node.js"
-// list files in the folder
-const files = await client.folders.files.list(folder.id);
-console.log(`Files in folder: ${files}`);
-
-// list passages in the folder
-const passages = await client.folders.passages.list(folder.id);
-console.log(`Passages in folder: ${passages}`);
-```
 </CodeGroup>
 
 ## Listing available folders
 You can view available folders by listing them:
 <CodeGroup>
+```typescript TypeScript
+// list folders
+const folders = await client.folders.list();
+```
 ```python title="python"
 # list folders
 folders = client.folders.list()
-```
-```typescript title="node.js"
-// list folders
-const folders = await client.folders.list();
 ```
 </CodeGroup>
 
@@ -188,11 +188,11 @@ You can also attach existing folders by clicking the "attach existing" button in
 
 You can attach a folder to an agent by specifying both the folder and agent IDs:
 <CodeGroup>
+```typescript TypeScript
+await client.agents.folders.attach(agent.id, folder.id);
+```
 ```python title="python"
 client.agents.folders.attach(agent_id=agent.id, folder_id=folder.id)
-```
-```typescript title="node.js"
-await client.agents.folders.attach(agent.id, folder.id);
 ```
 </CodeGroup>
 Note that your agent and folder must be configured with the same embedding model, to ensure that the agent is able to search across a common embedding space for archival memory.
@@ -207,10 +207,10 @@ To detach a folder from an agent, click the "detach" button in the folders tab.
 
 Detaching a folder will remove the files from the agent's context window:
 <CodeGroup>
+```typescript TypeScript
+await client.agents.folders.detach(agent.id, folder.id);
+```
 ```python title="python"
 client.agents.folders.detach(agent_id=agent.id, folder_id=folder.id)
-```
-```typescript title="node.js"
-await client.agents.folders.detach(agent.id, folder.id);
 ```
 </CodeGroup>

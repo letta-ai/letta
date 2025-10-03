@@ -105,6 +105,16 @@ docker run \
 
 With password protection enabled, you will have to provide your password in the bearer token header in your API requests:
 <CodeGroup>
+```typescript TypeScript maxLines=50
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// create the client with the token set to your password
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283",
+    token: "yourpassword"
+});
+```
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
@@ -114,16 +124,6 @@ client = Letta(
   base_url="http://localhost:8283",
   token="yourpassword"
 )
-```
-```typescript maxLines=50 title="node.js"
-// install letta-client with `npm install @letta-ai/letta-client`
-import { LettaClient } from '@letta-ai/letta-client'
-
-// create the client with the token set to your password
-const client = new LettaClient({
-    baseUrl: "http://localhost:8283",
-    token: "yourpassword"
-});
 ```
 ```curl curl
 curl --request POST \

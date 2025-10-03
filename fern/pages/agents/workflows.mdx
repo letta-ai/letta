@@ -37,6 +37,39 @@ By default, there are no constraints on the sequence of tool calls that can be m
 For example, in the following code snippet, we are creating a workflow agent that can call the `web_search` tool, and then call either the `send_email` or `create_report` tool, based on the LLM's reasoning.
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create the workflow agent with tool rules
+const agent = await client.agents.create({
+    agentType: "workflow_agent",
+    model: "openai/gpt-4.1",
+    embedding: "openai/text-embedding-3-small",
+    tools: ["web_search", "send_email", "create_report"],
+    toolRules: [
+        {
+            toolName: "web_search",
+            type: "run_first"
+        },
+        {
+            toolName: "web_search",
+            type: "constrain_child_tools",
+            children: ["send_email", "create_report"]
+        },
+        {
+            toolName: "send_email",
+            type: "exit_loop"
+        },
+        {
+            toolName: "create_report",
+            type: "exit_loop"
+        }
+    ]
+});
+```
+
 ```python title="python" maxLines=50
 from letta_client import Letta
 
@@ -68,39 +101,6 @@ agent = client.agents.create(
         }
     ]
 )
-```
-
-```typescript title="node.js" maxLines=50
-import { LettaClient } from '@letta-ai/letta-client'
-
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// create the workflow agent with tool rules
-const agent = await client.agents.create({
-    agentType: "workflow_agent",
-    model: "openai/gpt-4.1",
-    embedding: "openai/text-embedding-3-small",
-    tools: ["web_search", "send_email", "create_report"],
-    toolRules: [
-        {
-            toolName: "web_search",
-            type: "run_first"
-        },
-        {
-            toolName: "web_search",
-            type: "constrain_child_tools",
-            children: ["send_email", "create_report"]
-        },
-        {
-            toolName: "send_email",
-            type: "exit_loop"
-        },
-        {
-            toolName: "create_report",
-            type: "exit_loop"
-        }
-    ]
-});
 ```
 
 ```bash title="curl" maxLines=50
