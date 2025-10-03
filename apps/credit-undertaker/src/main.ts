@@ -15,6 +15,9 @@ import { testRedisConnection } from '@letta-cloud/service-redis';
 
 const CORE_DATABASE_URL = `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`;
 
+let listenerClient: pg.Client | null = null;
+let endpointClient: pg.Client | null = null;
+
 async function serve() {
   const { Client } = pg;
 
@@ -25,10 +28,16 @@ async function serve() {
     ssl: CORE_DATABASE_URL.includes('psdb')
   });
 
+  const client2 = new Client({
+    connectionString: CORE_DATABASE_URL,
+    ssl: CORE_DATABASE_URL.includes('psdb')
+  });
+
   console.log('[Undertaker] Connected to core database');
 
   async function initDatabase() {
     await client.connect();
+    await client2.connect();
 
     await client.query(`CREATE OR REPLACE FUNCTION notify_step() RETURNS TRIGGER AS $$
   BEGIN
@@ -54,7 +63,7 @@ END;$$;
     console.log('[Undertaker] Backfilling steps');
     // check the last 24 hours of steps that have no tid
     const { rows } = await client.query(
-      "SELECT * FROM steps WHERE tid IS NULL AND provider_category = 'byok' AND created_at > NOW() - INTERVAL '24 hours'",
+      "SELECT * FROM steps WHERE tid IS NULL AND created_at > NOW() - INTERVAL '24 hours'",
     );
 
     const steps = rows as Step[];
@@ -116,12 +125,46 @@ END;$$;
 
   await initDatabase();
   await Promise.all([backfillSteps(), listenToDatabase()]);
+
+  listenerClient = client;
+  endpointClient = client2;
 }
 
 const app = express();
 
 app.get('/health', (_req, res) => {
   res.send('ok');
+});
+
+app.post('/charge/:step_id', async (req, res) => {
+  const { step_id } = req.params;
+
+  try {
+    if (!endpointClient) {
+      return res.status(503).json({ error: 'Database not ready' });
+    }
+
+    const { rows } = await endpointClient.query('SELECT * FROM steps WHERE id = $1', [step_id]);
+
+    if (rows.length === 0) {
+      // return 200 for security reasons, so people can't probe for valid step ids
+      return res.status(200).json({
+        success: true,
+      });
+    }
+
+    const step = rows[0] as Step;
+    console.log('[Undertaker] Manually processing step', step.id);
+    const transaction = await processStep(step);
+
+    return res.status(200).json({
+      success: true,
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error('[Undertaker] Error processing charge request:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 async function testClientDatabase() {
