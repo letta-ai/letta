@@ -40,6 +40,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         Index("ix_agents_created_at", "created_at", "id"),
         Index("ix_agents_organization_id", "organization_id"),
         Index("ix_agents_organization_id_deployment_id", "organization_id", "deployment_id"),
+        Index("ix_agents_project_id", "project_id"),
     )
 
     # agent generates its own id
