@@ -888,6 +888,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if not no_refresh:
                 await db_session.refresh(self)
+
+            # validating that object in db memory is same exact object as self and that the schemas match
+            # from letta.orm.tool import Tool 
+            # ob = await db_session.get(Tool, self.id)
+            # assert self is None, f"\nName: {self.name} \nTool ID: {self.id}\n New Schema: {'letta/letta' in self.json_schema["parameters"]['properties']['repoName']['description']} \n Is Overridden Tool the Same Object In DB: {self == ob} \n Does Tool In DB Have Overridden Schema: {'letta/letta' in ob.json_schema["parameters"]['properties']['repoName']['description']}"
             return self
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)

@@ -678,7 +678,81 @@ async def resync_mcp_server_tools(
             },
         )
 
+@router.post("/mcp/servers/{mcp_server_name}/{mcp_tool_name}", response_model=Tool, operation_id="add_mcp_tool")
+async def add_mcp_tool(
+    mcp_server_name: str,
+    mcp_tool_name: str,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Register a new MCP tool as a Letta server by MCP server + tool name
+    """
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
+    if tool_settings.mcp_read_from_config:
+        try:
+            available_tools = await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
+        except ValueError as e:
+            # ValueError means that the MCP server name doesn't exist
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail={
+                    "code": "MCPServerNotFoundError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        except MCPTimeoutError as e:
+            raise HTTPException(
+                status_code=408,  # Timeout
+                detail={
+                    "code": "MCPTimeoutError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+
+        # See if the tool is in the available list
+        mcp_tool = None
+        for tool in available_tools:
+            if tool.name == mcp_tool_name:
+                mcp_tool = tool
+                break
+        if not mcp_tool:
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail={
+                    "code": "MCPToolNotFoundError",
+                    "message": f"Tool {mcp_tool_name} not found in MCP server {mcp_server_name} - available tools: {', '.join([tool.name for tool in available_tools])}",
+                    "mcp_tool_name": mcp_tool_name,
+                },
+            )
+
+        # Check tool health - reject only INVALID tools
+        if mcp_tool.health:
+            if mcp_tool.health.status == "INVALID":
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "MCPToolSchemaInvalid",
+                        "message": f"Tool {mcp_tool_name} has an invalid schema and cannot be attached",
+                        "mcp_tool_name": mcp_tool_name,
+                        "health_status": mcp_tool.health.status,
+                        "reasons": mcp_tool.health.reasons,
+                    },
+                )
+
+        tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+        # For config-based servers, use the server name as ID since they don't have database IDs
+        mcp_server_id = mcp_server_name
+        return await server.tool_manager.create_mcp_tool_async(
+            tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+        )
+
+    else:
+        return await server.mcp_manager.add_tool_from_mcp_server(mcp_server_name=mcp_server_name, mcp_tool_name=mcp_tool_name, actor=actor)
+    
 @router.put(
     "/mcp/servers/{mcp_server_name}/{mcp_tool_name}",
     response_model=Tool,

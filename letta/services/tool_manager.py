@@ -78,6 +78,7 @@ class ToolManager:
     ) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         tool_id = await self.get_tool_id_by_name_async(tool_name=pydantic_tool.name, actor=actor)
+
         if tool_id:
             # Put to dict and remove fields that should not be reset
             update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
@@ -93,6 +94,10 @@ class ToolManager:
                 tool = await self.update_tool_by_id_async(
                     tool_id, ToolUpdate(**update_data), actor, updated_tool_type=updated_tool_type, bypass_name_check=bypass_name_check
                 )
+                # #get tool in db 
+                # tool = await self.get_tool_by_id_async(tool_id, actor=actor)
+                # assert tool is None, f"{tool.json_schema}"
+        
             else:
                 printd(
                     f"`create_or_update_tool` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_tool.name}, but found existing tool with nothing to update."
@@ -100,7 +105,7 @@ class ToolManager:
                 tool = await self.get_tool_by_id_async(tool_id, actor=actor)
         else:
             tool = await self.create_tool_async(pydantic_tool, actor=actor)
-
+        
         return tool
 
     @enforce_types

@@ -22,9 +22,13 @@ from letta.schemas.mcp import (
 
 client = Letta(base_url="http://localhost:8283")
 # # List tools from an MCP server
-tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
+# tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
+# print(tools[0])
 
-#override schema with new input
+list_tools= client.tools.list()
+# # CASE 1: Tool already exists in Letta server and we just update schema
+# # CASE 2: Tool doesn't exist in Letta server but exists in MCP server, BUT when we add from MCP to Letta, we want to override the schema of the MCP tool
+
 new_input_schema = {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "additionalProperties": False,
@@ -38,13 +42,38 @@ new_input_schema = {
     "type": "object",
 }
 
-# Add a specific tool from the MCP server but override schema with the user provided one
+# # Add a specific tool from the MCP server but override schema with the user provided one
+# # CASE 2: Tool doesn't exist in Letta server but exists in MCP server, BUT when we add from MCP to Letta, we want to override the schema of the MCP tool
+#override schema with new input
+
+#add tool with normal schema
 # tool = client.tools.add_mcp_tool(
 #     mcp_server_name="deep_wiki_server",
 #     mcp_tool_name="read_wiki_structure",
-#     overridden_schema=new_input_schema,
 # )
-pprint(tools[0])
+
+# tools = client.tools.list()
+# print(tools[0].json_schema)
+
+#does an upsert
+pprint(client.tools.list(name=))
+tool_overridden = client.tools.add_mcp_tool_override(
+    mcp_server_name="deep_wiki_server",
+    mcp_tool_name="read_wiki_structure",
+    overridden_schema=new_input_schema,
+)
+pprint(tool_overridden.json_schema)
+
+# tool is edited on letta's server side but not on mcp server side
+tools = client.tools.list()
+rtools = client.tools.retrieve(tool_overridden.id)
+pprint(tools[0].json_schema)
+pprint(tools[0].id) #'tool-c24b425b-e9b4-4a9b-bfbd-1b86e40ea340'
+pprint(rtools.json_schema)
+pprint(rtools.id) # 'tool-af73ea02-15ba-475b-b317-0ed82af60aa5'
+pprint(len(client.tools.list()))
+# updated_tools = client.tools.list_mcp_tools_by_server(mcp_server_name="deep_wiki_server")
+# pprint(updated_tools[0])
 
 # BE CAREFUL HERE db backend is updated and letta mcp toolset is updated but need to update the mcp tool itself 
 # response = client.tools.update_mcp_server(

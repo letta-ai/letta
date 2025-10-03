@@ -164,6 +164,9 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.EXTERNAL_COMPOSIO}:
             # Composio schemas handled separately
             pass
+        elif self.tool_type in {ToolType.EXTERNAL_MCP}:
+            # MCP schemas handled separately
+            pass
 
         # At this point, we need to validate that at least json_schema is populated
         if not self.json_schema:
