@@ -25,7 +25,7 @@ jobs:
         apps/core/**
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/core-unit-sqlite-test.yml
-      install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google --extra sqlite'
+      install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra sqlite'
       timeout-minutes: 15
       ref: ${{ github.event.pull_request.head.sha || github.sha }}
 

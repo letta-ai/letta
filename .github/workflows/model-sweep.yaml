@@ -61,7 +61,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google
+        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox
       - name: Migrate database
         env:
           LETTA_PG_PORT: 5432
