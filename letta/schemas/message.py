@@ -42,6 +42,7 @@ from letta.schemas.letta_message_content import (
     RedactedReasoningContent,
     SummarizedReasoningContent,
     TextContent,
+    ToolCallContent,
     ToolReturnContent,
     get_letta_message_content_union_str_json_schema,
 )
@@ -1393,6 +1394,29 @@ class Message(BaseMessage):
                 if not native_content:
                     assert text_content is not None
                     parts.append({"text": text_content})
+
+            if self.content and len(self.content) > 1:
+                native_google_content_parts = []
+                for content in self.content:
+                    if isinstance(content, TextContent):
+                        native_google_content_parts.append({"text": content.text})
+                    elif isinstance(content, ReasoningContent):
+                        native_google_content_parts.append({"text": content.reasoning, "thought": True})
+                    elif isinstance(content, ToolCallContent):
+                        native_google_content_parts.append(
+                            {
+                                "function_call": {
+                                    "name": content.name,
+                                    "args": content.input,
+                                },
+                                "thought_signature": content.signature,
+                            }
+                        )
+                    else:
+                        raise ValueError(f"Unsupported content type: {content.type}")
+                if native_google_content_parts:
+                    parts = native_google_content_parts
+
             google_ai_message["parts"] = parts
 
         elif self.role == "tool":
