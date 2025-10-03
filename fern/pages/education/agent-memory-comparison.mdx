@@ -482,7 +482,11 @@ response = client.agents.messages.create(
 )
 
 # Agent responds with context from its memory blocks
-print(response.messages[0].content)
+for message in response.messages:
+    if hasattr(message, 'reasoning'):
+        print(f"Reasoning: {message.reasoning}")
+    if hasattr(message, 'content'):
+        print(f"Content: {message.content}")
 ```
 
 Updating memory blocks programmatically:
@@ -537,7 +541,8 @@ agent1 = client.agents.create(
         {"label": "persona", "value": "I am a backend specialist."}
     ],
     block_ids=[shared_block.id],  # Attach shared block
-    model="openai/gpt-4o-mini"
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
 )
 
 agent2 = client.agents.create(
@@ -545,7 +550,8 @@ agent2 = client.agents.create(
         {"label": "persona", "value": "I am a frontend specialist."}
     ],
     block_ids=[shared_block.id],  # Both agents share this block
-    model="openai/gpt-4o-mini"
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small"
 )
 
 # Both agents can now access and modify the shared project context
