@@ -119,7 +119,7 @@ async function processStepWithLegacySubscription(step: Step, subscription: Payme
   }
 }
 
-export async function processStepWithSubscription(step: Step, subscription: PaymentCustomerSubscription) {
+export async function processStepWithSubscription(step: Step, subscription: PaymentCustomerSubscription, organizationId: string) {
   if (
     !step.model ||
     !step.model_endpoint ||
@@ -139,7 +139,7 @@ export async function processStepWithSubscription(step: Step, subscription: Paym
       modelName: step.model,
       modelEndpoint: step.model_endpoint,
     }),
-    getRemainingRecurrentCredits(step.organization_id, subscription),
+    getRemainingRecurrentCredits(organizationId, subscription),
   ]);
 
   try {
@@ -156,7 +156,7 @@ export async function processStepWithSubscription(step: Step, subscription: Paym
     const additionalCostToDeduct = creditCost - recurrentCostToDeduct;
 
     if (recurrentCostToDeduct > 0) {
-      await incrementRecurrentCreditUsage(step.organization_id, subscription, recurrentCostToDeduct);
+      await incrementRecurrentCreditUsage(organizationId, subscription, recurrentCostToDeduct);
     }
 
     return await removeCreditsFromOrganization({
@@ -268,13 +268,13 @@ export async function processStep(
 
     if (subscription.tier === 'pro') {
       console.log('Processing step with pro subscription', step.id);
-      result = await processStepWithSubscription(step, subscription);
+      result = await processStepWithSubscription(step, subscription, org.organizationId);
     } else if (subscription.tier === 'free') {
       const newBilling = await getSingleFlag('BILLING_V3', org.organizationId);
 
       if (newBilling) {
         console.log('Processing step with free subscription and new billing', step.id);
-        result = await processStepWithSubscription(step, subscription);
+        result = await processStepWithSubscription(step, subscription, org.organizationId);
       } else {
         console.log('Processing step with free subscription and legacy billing', step.id);
         result = await processStepWithLegacySubscription(step, subscription);
