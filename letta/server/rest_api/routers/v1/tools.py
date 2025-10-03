@@ -679,12 +679,12 @@ async def resync_mcp_server_tools(
         )
 
 
-@router.post(
+@router.put(
     "/mcp/servers/{mcp_server_name}/{mcp_tool_name}",
     response_model=Tool,
-    operation_id="add_mcp_tool",
+    operation_id="add_mcp_tool_override",
 )
-async def add_mcp_tool(
+async def add_mcp_tool_override(
     mcp_server_name: str,
     mcp_tool_name: str,
     overridden_schema: Optional[dict] = None,
