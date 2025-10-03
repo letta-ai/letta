@@ -404,3 +404,18 @@ WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE = "gpt-4.1-mini-2025-04-14"
 EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES = ["claude-4-sonnet", "claude-3-5-sonnet", "gpt-5", "gemini-2.5-pro"]
 # But include models with these keywords in base tool rules (overrides exclusion)
 INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES = ["mini"]
+
+
+# Deployment and versioning
+MODAL_DEFAULT_TOOL_NAME = "modal_tool_wrapper"  # NOTE: if this is changed by update the modal_tool_wrapper
+MODAL_DEFAULT_CONFIG_KEY = "default"
+MODAL_MODAL_DEPLOYMENTS_KEY = "modal_deployments"
+MODAL_VERSION_HASH_LENGTH = 12
+
+# Modal execution settings
+MODAL_DEFAULT_TIMEOUT = 60
+MODAL_DEFAULT_MAX_CONCURRENT_INPUTS = 1
+MODAL_DEFAULT_PYTHON_VERSION = "3.12"
+
+# Security settings
+MODAL_SAFE_IMPORT_MODULES = {"typing", "pydantic", "datetime", "enum", "uuid", "decimal"}
