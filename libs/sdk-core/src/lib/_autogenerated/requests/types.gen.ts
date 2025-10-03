@@ -7649,7 +7649,27 @@ export type ModifyCoreMemoryBlockData = {
 export type ModifyCoreMemoryBlockResponse = Block;
 
 export type ListCoreMemoryBlocksData = {
+  /**
+   * Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
+  /**
+   * Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of blocks to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;
