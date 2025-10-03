@@ -77,12 +77,14 @@ class OpenAIStreamingInterface:
         put_inner_thoughts_in_kwarg: bool = True,
         requires_approval_tools: list = [],
         run_id: str | None = None,
+        step_id: str | None = None,
     ):
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
         self.run_id = run_id
+        self.step_id = step_id
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
@@ -247,6 +249,7 @@ class OpenAIStreamingInterface:
                         hidden_reasoning=None,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     yield hidden_message
                     prev_message_type = hidden_message.message_type
@@ -287,6 +290,7 @@ class OpenAIStreamingInterface:
                             # name=name,
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             run_id=self.run_id,
+                            step_id=self.step_id,
                         )
                         prev_message_type = reasoning_message.message_type
                         yield reasoning_message
@@ -329,6 +333,7 @@ class OpenAIStreamingInterface:
                                         ),
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         run_id=self.run_id,
+                                        step_id=self.step_id,
                                     )
                                 else:
                                     tool_call_msg = ToolCallMessage(
@@ -341,6 +346,7 @@ class OpenAIStreamingInterface:
                                         ),
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         run_id=self.run_id,
+                                        step_id=self.step_id,
                                     )
                                 prev_message_type = tool_call_msg.message_type
                                 yield tool_call_msg
@@ -387,6 +393,7 @@ class OpenAIStreamingInterface:
                                         content=extracted,
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         run_id=self.run_id,
+                                        step_id=self.step_id,
                                     )
                                     prev_message_type = assistant_message.message_type
                                     yield assistant_message
@@ -413,6 +420,7 @@ class OpenAIStreamingInterface:
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
+                                            step_id=self.step_id,
                                         )
                                     else:
                                         tool_call_msg = ToolCallMessage(
@@ -426,6 +434,7 @@ class OpenAIStreamingInterface:
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
+                                            step_id=self.step_id,
                                         )
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
@@ -448,6 +457,7 @@ class OpenAIStreamingInterface:
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
+                                            step_id=self.step_id,
                                         )
                                     else:
                                         tool_call_msg = ToolCallMessage(
@@ -461,6 +471,7 @@ class OpenAIStreamingInterface:
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
+                                            step_id=self.step_id,
                                         )
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
@@ -482,8 +493,10 @@ class SimpleOpenAIStreamingInterface:
         requires_approval_tools: list = [],
         model: str = None,
         run_id: str | None = None,
+        step_id: str | None = None,
     ):
         self.run_id = run_id
+        self.step_id = step_id
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
 
@@ -579,6 +592,7 @@ class SimpleOpenAIStreamingInterface:
                         hidden_reasoning=None,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     self.content_messages.append(hidden_message)
                     prev_message_type = hidden_message.message_type
@@ -650,6 +664,7 @@ class SimpleOpenAIStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 self.content_messages.append(assistant_msg)
                 prev_message_type = assistant_msg.message_type
@@ -699,6 +714,7 @@ class SimpleOpenAIStreamingInterface:
                         # name=name,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                 else:
                     tool_call_msg = ToolCallMessage(
@@ -712,6 +728,7 @@ class SimpleOpenAIStreamingInterface:
                         # name=name,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                 prev_message_type = tool_call_msg.message_type
                 message_index += 1  # Increment for the next message
@@ -731,6 +748,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         requires_approval_tools: list = [],
         model: str = None,
         run_id: str | None = None,
+        step_id: str | None = None,
     ):
         self.is_openai_proxy = is_openai_proxy
         self.messages = messages
@@ -741,6 +759,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         # ID responses used
         self.message_id = None
         self.run_id = run_id
+        self.step_id = step_id
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -894,6 +913,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         source="reasoner_model",
                         reasoning=concat_summary,
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     prev_message_type = "reasoning_message"
                 else:
@@ -919,6 +939,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                             tool_call_id=call_id,
                         ),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     prev_message_type = "tool_call_message"
                 else:
@@ -934,6 +955,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                             tool_call_id=call_id,
                         ),
                         run_id=self.run_id,
+                        step_id=self.step_id,
                     )
                     prev_message_type = "tool_call_message"
 
@@ -951,6 +973,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                                 date=datetime.now(timezone.utc),
                                 content=content_item.text,
                                 run_id=self.run_id,
+                                step_id=self.step_id,
                             )
                             prev_message_type = "assistant_message"
                 else:
@@ -1004,6 +1027,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     source="reasoner_model",
                     reasoning=delta,
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 prev_message_type = "reasoning_message"
             else:
@@ -1047,6 +1071,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     date=datetime.now(timezone.utc),
                     content=delta,
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 prev_message_type = "assistant_message"
             else:
@@ -1082,6 +1107,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         tool_call_id=None,
                     ),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 prev_message_type = "approval_request_message"
             else:
@@ -1097,6 +1123,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                         tool_call_id=None,
                     ),
                     run_id=self.run_id,
+                    step_id=self.step_id,
                 )
                 prev_message_type = "tool_call_message"
 
