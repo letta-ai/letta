@@ -77,15 +77,22 @@ print("Did overridden schema persist:", retrieve_updated_mcp_tool.json_schema ==
 # Per Agent MCP Tool Schema Override
 ########################################
 
+agent1_id= 'agent-735f2d68-b0a7-4eed-a3bd-75abc911f571'
+agent2_id= 'agent-edfd4884-1c98-459a-abee-7996e0ae743c'
+
 #add an MCP tool to the Letta Server
 mcp_tool = client.tools.add_mcp_tool(
     mcp_server_name="deep_wiki_server",
     mcp_tool_name="read_wiki_structure",
 )
 
-#attach the MCP tool to the Agent
+#attach the MCP tool to each Agent (simulating a scenario. where multiple agents have access to the same tool)
 client.agents.tools.attach(
-    agent_id="agent-735f2d68-b0a7-4eed-a3bd-75abc911f571",
+    agent_id=agent1_id,
+    tool_id=f"{mcp_tool.id}"
+)
+client.agents.tools.attach(
+    agent_id=agent2_id,
     tool_id=f"{mcp_tool.id}"
 )
 
@@ -100,10 +107,16 @@ client.agents.tools.override_mcp_tool(
 )
 
 # grab the specific MCP tool who's schema was overridden
-for t in client.agents.tools.list(agent_id='agent-735f2d68-b0a7-4eed-a3bd-75abc911f571'):
+for t in client.agents.tools.list(agent_id=agent1_id):
     if t.id == mcp_tool.id:
-        inspect_tool = t
+        inspect_tool1 = t
         break
 
-print(f"Overridden Schema for {inspect_tool.name}: ")
-pprint(inspect_tool.json_schema)
+for t in client.agents.tools.list(agent_id=agent2_id):
+    if t.id == mcp_tool.id:
+        inspect_tool2 = t
+        break
+
+print(f"Overridden Schema for {inspect_tool1.name}: ")
+pprint(inspect_tool1.json_schema)
+print(f"Do Agent 1's Tool and Agent 2's Overridden Tool Match: {inspect_tool1.json_schema == inspect_tool2.json_schema} ")
