@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import List, Optional
+from typing import AsyncIterator, List, Optional
 
 from google import genai
 from google.genai import errors
@@ -137,6 +137,15 @@ class GoogleVertexClient(LLMClientBase):
         if response_data is None:
             raise RuntimeError("Failed to get response data after all retries")
         return response_data
+
+    @trace_method
+    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncIterator[GenerateContentResponse]:
+        client = self._get_client()
+        return await client.aio.models.generate_content_stream(
+            model=llm_config.model,
+            contents=request_data["contents"],
+            config=request_data["config"],
+        )
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
