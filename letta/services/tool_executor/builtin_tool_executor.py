@@ -29,7 +29,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search, "web_fetch": self.web_fetch}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -192,7 +192,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             logger.error(f"Exa search failed for query '{query}': {str(e)}")
             return json.dumps({"query": query, "error": f"Search failed: {str(e)}"})
 
-    async def web_fetch(self, agent_state: "AgentState", url: str) -> str:
+    async def fetch_webpage(self, agent_state: "AgentState", url: str) -> str:
         """
         Fetch a webpage and convert it to markdown/text format using trafilatura with readability fallback.
 
