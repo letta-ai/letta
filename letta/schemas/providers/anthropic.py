@@ -67,6 +67,11 @@ MODEL_LIST = [
         "name": "claude-sonnet-4-20250514",
         "context_window": 200000,
     },
+    # 4.5
+    {
+        "name": "claude-sonnet-4-5-20250929",
+        "context_window": 200000,
+    },
     ## Haiku
     # 3.0
     {
