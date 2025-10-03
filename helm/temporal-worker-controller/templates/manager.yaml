@@ -1,0 +1,127 @@
+{{- if .Values.namespace.create -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/component: manager
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: manager
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "temporal-worker-controller.selectorLabels" . | nindent 6 }}
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "temporal-worker-controller.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        {{- toYaml .Values.affinity.podAntiAffinity | nindent 8 }}
+        {{- toYaml .Values.affinity.nodeAffinity | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        {{- if .Values.securityContext.seccompProfile.enabled }}
+        seccompProfile:
+          type: RuntimeDefault
+        {{- end }}
+      containers:
+      - name: manager
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default (printf "v%s" .Chart.AppVersion)}}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: CONTROLLER_IDENTITY
+          value: "{{ .Release.Name }}/{{ .Release.Namespace }}"
+        - name: CONTROLLER_VERSION
+          value: "{{ .Values.image.tag | default .Chart.AppVersion }}"
+        args:
+        - --leader-elect
+        {{- if .Values.metrics.enabled }}
+        - --metrics-bind-address=127.0.0.1:{{ .Values.metrics.port }}
+        {{- end }}
+        - "--health-probe-bind-address=:8081"
+        {{- if .Values.webhook.enabled }}
+        {{ fail "webhooks aren't supported yet" }}
+        ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
+        volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
+        {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - "ALL"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+      {{- if not .Values.metrics.disableAuth }}
+      - name: kube-rbac-proxy
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - "ALL"
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
+        args:
+          - "--secure-listen-address=0.0.0.0:8443"
+          - --upstream=http://127.0.0.1:{{ .Values.metrics.port }}/
+          - "--logtostderr=true"
+          - "--v=0"
+        ports:
+          - containerPort: 8443
+            protocol: TCP
+            name: https
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+      {{- end }}
+      {{- if .Values.webhook.enabled }}
+      {{ fail "webhooks aren't supported yet" }}
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: webhook-server-cert
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default (printf "%s-service-account" .Release.Name) }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}

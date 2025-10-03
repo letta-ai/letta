@@ -5,6 +5,11 @@
 project_id: &project_id memgpt-428419
 lettaEnv: &lettaEnv dev
 
+temporal:
+  namespace: &temporalNamespace "lettuce-py-staging.tmhou"
+
+replicaCount: 5
+
 image:
   repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/lettuce-py
   pullPolicy: Always
@@ -47,8 +52,8 @@ env:
   REDIS_HOST: "10.219.146.68"
   REDIS_PORT: "6379"
   PORT: "8080"
-  LETTA_TEMPORAL_NAMESPACE: "lettuce-py-staging.tmhou"
-  LETTA_TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
+  LETTA_TEMPORAL_NAMESPACE: *temporalNamespace
+  LETTA_TEMPORAL_ENDPOINT: "lettuce-py-staging.tmhou.tmprl.cloud:7233"
   LETTA_TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
   LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: "true"
   LETTA_DISABLE_SQLALCHEMY_POOLING: "false"
@@ -58,6 +63,8 @@ secretsProvider:
   secrets:
     - LETTA_PG_URI
     - LETTA_TEMPORAL_API_KEY
+    - LETTA_TEMPORAL_PRIVATE_KEY
+    - LETTA_TEMPORAL_CLIENT_CERTIFICATE
     - OPENAI_API_KEY
     - ANTHROPIC_API_KEY
     - E2B_API_KEY
@@ -90,7 +97,7 @@ tolerations: []
 affinity: {}
 
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80

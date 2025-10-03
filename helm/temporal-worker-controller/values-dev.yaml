@@ -1,0 +1,119 @@
+lettaEnv: &lettaEnv dev
+temporalEndpoint: lettuce-py-staging.tmhou.tmprl.cloud:7233
+
+image:
+  repository: temporalio/temporal-worker-controller
+  tag: "" # Defaults to Chart.appVersion if not specified
+  pullPolicy: IfNotPresent
+
+podAnnotations: {}
+  # Additional pod annotations can be added here
+# example:
+#   custom.annotation: value
+
+podLabels: {}
+  # Additional pod labels can be added here
+  # example:
+  # custom.label: value
+
+# Configure the resources accordingly based on the project requirements.
+# More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+
+resources:
+  limits:
+    cpu: "1"
+    memory: "2048Mi"
+  requests:
+    cpu: "0.5"
+    memory: "1024Mi"
+
+terminationGracePeriodSeconds: 10
+
+# All RBAC will be applied under this service account in
+# the deployment namespace. You may disable creation of this resource
+# if your manager will use a service account that exists at
+# runtime. Be sure to update serviceAccount.name if changing
+# service account names.
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+
+serviceAccount:
+  # Specifies whether a ServiceAccount should be created
+  create: true
+  # The name of the ServiceAccount to use.
+  # If not set and create is true, a name is generated.
+  name:
+
+# For common cases that do not require escalating privileges it is recommended to ensure that
+#  all your Pods/Containers are restrictive.
+# More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+# Please enable the following if your project does NOT have to work on old Kubernetes versions < 1.19
+# or on vendors versions which do NOT support this field by default (i.e. Openshift < 4.11 ).
+securityContext:
+  seccompProfile:
+    enabled: false
+
+# Configure the nodeAffinity expression according to the platforms which are
+# supported by your solution. It is considered best practice to support multiple
+# architectures. You can build your manager image using the makefile target docker-buildx.
+affinity:
+  enabled: false
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: control-plane
+            operator: In
+            values:
+            - controller-manager
+        topologyKey: kubernetes.io/hostname
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/arch
+            operator: In
+            values:
+              - amd64
+              - arm64
+              - ppc64le
+              - s390x
+          - key: kubernetes.io/os
+            operator: In
+            values:
+              - linux
+
+# Opt out of these resources if you want to disable the
+# auth proxy (https://github.com/brancz/kube-rbac-proxy)
+# which protects your /metrics endpoint.
+authProxy:
+  enabled: true
+
+metrics:
+  enabled: true
+  port: 8080
+  # Set to true if you want your controller-manager to expose the /metrics
+  # endpoint w/o any authn/z. If false, creates an HTTP proxy sidecar container
+  # for the controller manager which performs RBAC authorization against the
+  # Kubernetes API using SubjectAccessReviews.
+  disableAuth: false
+
+namespace:
+  create: false
+
+# Not yet supported
+webhook:
+  enabled: false
+  port: 9443
+  certDir: /tmp/k8s-webhook-server/serving-certs
+
+# Not yet supported
+certmanager:
+  enabled: false
+
+# Not yet supported
+prometheus:
+  enabled: false

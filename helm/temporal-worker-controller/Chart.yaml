@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: A Helm chart for the Temporal Worker Controller
+name: temporal-worker-controller
+type: application
+version: 0.8.0

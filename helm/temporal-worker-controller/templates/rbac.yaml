@@ -1,0 +1,247 @@
+{{- if .Values.rbac.create }}
+# permissions to do leader election.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-leader-election-role
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-leader-election-rolebinding
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name | default (printf "%s-service-account" .Release.Name) }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-manager-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/scale
+    verbs:
+      - update
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalconnections
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name | default (printf "%s-service-account" .Release.Name) }}
+    namespace: {{ .Release.Namespace }}
+---
+# permissions for end users to edit temporalconnections.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-temporalconnection-editor-role
+rules:
+  - apiGroups:
+      - temporal.io.temporal.io
+    resources:
+      - temporalconnections
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - temporal.io.temporal.io
+    resources:
+      - temporalconnections/status
+    verbs:
+      - get
+---
+# permissions for end users to view temporalconnections.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-temporalconnection-viewer-role
+rules:
+  - apiGroups:
+      - temporal.io.temporal.io
+    resources:
+      - temporalconnections
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - temporal.io.temporal.io
+    resources:
+      - temporalconnections/status
+    verbs:
+      - get
+---
+# permissions for end users to edit temporalworkerdeployments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-temporalworkerdeployment-editor-role
+rules:
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments/status
+    verbs:
+      - get
+---
+# permissions for end users to view temporalworkerdeployments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    {{- include "temporal-worker-controller.labels" . | nindent 4 }}
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-temporalworkerdeployment-viewer-role
+rules:
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - temporal.io
+    resources:
+      - temporalworkerdeployments/status
+    verbs:
+      - get
+---
+{{- end }}

@@ -1,14 +1,27 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: temporal.io/v1alpha1
+kind: TemporalWorkerDeployment
 metadata:
   name: {{ include "lettuce-py.fullname" . }}
   labels:
     {{- include "lettuce-py.labels" . | nindent 4 }}
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      {{- include "lettuce-py.selectorLabels" . | nindent 6 }}
+  replicas: {{ .Values.replicaCount }}
+  workerOptions:
+    connectionRef:
+      name: {{ .Values.lettaEnv }}-temporal
+    temporalNamespace: {{ .Values.temporal.namespace }}
+  rollout:
+    strategy: Progressive
+    steps:
+      - rampPercentage: 1
+        pauseDuration: 10m
+      - rampPercentage: 5
+        pauseDuration: 15m
+      - rampPercentage: 25
+        pauseDuration: 20m
+  sunset:
+    scaledownDelay: 30m
+    deleteDelay: 2h
   template:
     metadata:
       {{- with .Values.podAnnotations }}

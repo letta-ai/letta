@@ -268,3 +268,15 @@ variable "prod_lettuce_py_E2B_API_KEY" {
    type        = string
    sensitive   = true
  }
+
+variable "prod_lettuce_py_LETTA_TEMPORAL_PRIVATE_KEY" {
+  description = "Temporal mTLS private key for lettuce-py service"
+  type        = string
+  sensitive   = true
+}
+
+variable "prod_lettuce_py_LETTA_TEMPORAL_CLIENT_CERTIFICATE" {
+  description = "Temporal mTLS client certificate for lettuce-py service"
+  type        = string
+  sensitive   = true
+}
