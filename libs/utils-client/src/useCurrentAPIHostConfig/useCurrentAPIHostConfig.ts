@@ -25,7 +25,7 @@ export function useCurrentAPIHostConfig(
         apiKeyId: 'first',
       },
     },
-    enabled: attachApiKey,
+    enabled: attachApiKey && !isLocal,
   });
 
   const config = useCurrentDevelopmentServerConfig();
