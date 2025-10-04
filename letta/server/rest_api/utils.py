@@ -193,10 +193,12 @@ def create_approval_request_message_from_llm_response(
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
     run_id: str = None,
+    append_request_heartbeat: bool = True,
 ) -> Message:
     # Construct the tool call with the assistant's message
-    # Force set request_heartbeat in tool_args to calculated continue_stepping
-    function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
+    # Optionally set request_heartbeat in tool args (v2 behavior only)
+    if append_request_heartbeat:
+        function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
     tool_call = OpenAIToolCall(
         id=tool_call_id,
         function=OpenAIFunction(
