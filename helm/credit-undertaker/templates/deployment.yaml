@@ -53,6 +53,16 @@ spec:
               value: {{ .Values.env.STRIPE_SECRET_KEY | quote }}
             - name: RESEND_API_KEY
               value: {{ .Values.env.RESEND_API_KEY | quote }}
+            - name: UNDERTAKER_SENTRY_DSN
+              value: {{ .Values.env.UNDERTAKER_SENTRY_DSN | quote }}
+            - name: LAUNCH_DARKLY_SDK_KEY
+              value: {{ .Values.env.LAUNCH_DARKLY_SDK_KEY | quote }}
+            - name: NEXT_PUBLIC_POSTHOG_HOST
+              value: {{ .Values.env.NEXT_PUBLIC_POSTHOG_HOST | quote }}
+            - name: NEXT_PUBLIC_POSTHOG_KEY
+              value: {{ .Values.env.NEXT_PUBLIC_POSTHOG_KEY | quote }}
+            - name: POSTHOG_KEY
+              value: {{ .Values.env.POSTHOG_KEY | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
