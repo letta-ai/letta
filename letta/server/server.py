@@ -278,6 +278,7 @@ class SyncServer(object):
                     name="vllm",
                     base_url=model_settings.vllm_api_base,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
+                    handle_base=model_settings.vllm_handle_base,
                 )
             )
 
@@ -306,6 +307,7 @@ class SyncServer(object):
                 OpenRouterProvider(
                     name="openrouter",
                     api_key=model_settings.openrouter_api_key,
+                    handle_base=model_settings.openrouter_handle_base,
                 )
             )
 

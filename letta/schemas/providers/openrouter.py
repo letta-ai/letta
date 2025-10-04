@@ -21,6 +21,7 @@ class OpenRouterProvider(OpenAIProvider):
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     api_key: str = Field(..., description="API key for the OpenRouter API.")
     base_url: str = Field("https://openrouter.ai/api/v1", description="Base URL for the OpenRouter API.")
+    handle_base: str | None = Field(None, description="Custom handle base name for model handles (e.g., 'custom' instead of 'openrouter').")
 
     def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:
         """
@@ -33,7 +34,7 @@ class OpenRouterProvider(OpenAIProvider):
                 continue
             model_name, context_window_size = check
 
-            handle = self.get_handle(model_name)
+            handle = self.get_handle(model_name, base_name=self.handle_base) if self.handle_base else self.get_handle(model_name)
 
             config = LLMConfig(
                 model=model_name,
