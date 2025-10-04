@@ -22,6 +22,8 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         Index("ix_messages_agent_sequence", "agent_id", "sequence_id"),
         Index("ix_messages_org_agent", "organization_id", "agent_id"),
         Index("ix_messages_run_id", "run_id"),
+        # Composite index for optimizing the frequently-run query:
+        Index("ix_messages_run_err_sequence", "run_id", "is_err", "sequence_id"),
     )
     __pydantic_model__ = PydanticMessage
 
