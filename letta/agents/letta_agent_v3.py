@@ -669,6 +669,7 @@ class LettaAgentV3(LettaAgentV2):
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
                     run_id=run_id,
+                    append_request_heartbeat=False,
                 )
                 messages_to_persist = (initial_messages or []) + [approval_message]
                 continue_stepping = False
