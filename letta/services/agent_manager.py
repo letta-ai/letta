@@ -23,6 +23,7 @@ from letta.constants import (
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
+    MCP_TOOL_TAG_NAME_PREFIX,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -64,7 +65,7 @@ from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
-from letta.schemas.tool import Tool as PydanticTool
+from letta.schemas.tool import Tool as PydanticTool, ToolUpdate
 from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, TerminalToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import MarshmallowAgentSchema
@@ -3424,6 +3425,48 @@ class AgentManager:
             result = await session.execute(query)
             tools = result.scalars().all()
             return [tool.to_pydantic() for tool in tools]
+        
+    async def list_attached_mcp_tools_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
+        """
+        List all tools attached to an agent (async version with optimized performance).
+        Uses direct SQL queries to avoid SqlAlchemyBase overhead.
+
+        Args:
+            agent_id: ID of the agent to list tools for.
+            actor: User performing the action.
+
+        Returns:
+            List[PydanticTool]: List of tools attached to the agent.
+        """
+        async with db_registry.async_session() as session:
+            # lightweight check for agent access
+            await validate_agent_exists_async(session, agent_id, actor)
+
+            # direct query for tools via join - much more performant
+            query = (
+                select(ToolModel)
+                .join(ToolsAgents, ToolModel.id == ToolsAgents.tool_id)
+                .where(ToolsAgents.agent_id == agent_id, ToolModel.organization_id == actor.organization_id)
+            )
+
+            result = await session.execute(query)
+            tools = result.scalars().all()
+            return [tool.to_pydantic() for tool in tools if tool.tool_type == ToolType.EXTERNAL_MCP]
+    
+    async def override_mcp_tool_async(self, agent_id: str, tool_id: str, actor:PydanticUser, overridden_schema: dict) -> PydanticTool:
+        mcp_tools = await self.list_attached_mcp_tools_async(agent_id=agent_id, actor=actor)
+    
+        for tool in mcp_tools:
+            if tool.id == tool_id:
+                    desired_mcp_tool = tool
+                    break
+        mcp_server_name=desired_mcp_tool.metadata_['mcp']['server_name']
+        mcp_server_id = mcp_server_name
+
+        return await self.tool_manager.update_tool_by_id_async(
+                    tool_id, ToolUpdate(json_schema=overridden_schema), actor, updated_tool_type=desired_mcp_tool.tool_type, bypass_name_check=False
+                )
+        
 
     # ======================================================================================================================
     # File Management

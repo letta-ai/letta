@@ -128,7 +128,7 @@ class MCPServer(BaseMCPServer):
             return self.stdio_config
         elif self.server_type == MCPServerType.STREAMABLE_HTTP:
             if self.server_url is None:
-                raise ValueError("server_url is required for STREAMABLE_HTTP server type")
+                raise ValueError(f"{self.server_name}")
 
             config = StreamableHTTPServerConfig(
                 server_name=self.server_name,

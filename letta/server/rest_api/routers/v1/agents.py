@@ -39,6 +39,8 @@ from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUni
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.enums import ToolSourceType, ToolType
+from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
     ArchivalMemorySearchResult,
@@ -482,6 +484,23 @@ async def attach_tool(
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
+
+@router.put("/{agent_id}/tools/override_mcp_tool/{tool_id}", response_model=AgentState, operation_id="override_mcp_tool")
+async def override_mcp_tool(
+    agent_id: str,
+    tool_id: str,
+    overridden_schema: dict,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Override mcp_schema for a tool_id.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    overridden_mcp_tool= await server.agent_manager.override_mcp_tool_async(agent_id=agent_id, tool_id=tool_id, overridden_schema=overridden_schema, actor=actor)
+    await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=overridden_mcp_tool.id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
 async def detach_tool(

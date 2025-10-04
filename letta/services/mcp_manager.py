@@ -129,7 +129,13 @@ class MCPManager:
                 await mcp_client.cleanup()
 
     @enforce_types
-    async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
+    async def add_tool_from_mcp_server(
+        self,
+        mcp_server_name: str,
+        mcp_tool_name: str,
+        actor: PydanticUser,
+        overridden_schema: Optional[dict] = None,
+    ) -> PydanticTool:
         """Add a tool from an MCP server to the Letta tool registry."""
         # get the MCP server ID, we should migrate to use the server_id instead of the name
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
@@ -147,9 +153,16 @@ class MCPManager:
                             f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid.Reasons: {', '.join(mcp_tool.health.reasons)}"
                         )
 
-                tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+                tool_create = ToolCreate.from_mcp(
+                    mcp_server_name=mcp_server_name,
+                    mcp_tool=mcp_tool,
+                    overridden_schema=overridden_schema,
+                )
                 return await self.tool_manager.create_mcp_tool_async(
-                    tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+                    tool_create=tool_create,
+                    mcp_server_name=mcp_server_name,
+                    mcp_server_id=mcp_server_id,
+                    actor=actor,
                 )
 
         # failed to add - handle error?
@@ -255,7 +268,10 @@ class MCPManager:
 
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=current_tool)
                 await self.tool_manager.create_mcp_tool_async(
-                    tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor
+                    tool_create=tool_create,
+                    mcp_server_name=mcp_server_name,
+                    mcp_server_id=mcp_server_id,
+                    actor=actor,
                 )
                 added_tools.append(tool_name)
                 logger.info(f"Added new MCP tool {tool_name} from server {mcp_server_name}")
@@ -288,12 +304,16 @@ class MCPManager:
             # If there's anything to update (can only update the configs, not the name)
             if update_data:
                 if pydantic_mcp_server.server_type == MCPServerType.SSE:
-                    update_request = UpdateSSEMCPServer(server_url=pydantic_mcp_server.server_url, token=pydantic_mcp_server.token)
+                    update_request = UpdateSSEMCPServer(
+                        server_url=pydantic_mcp_server.server_url,
+                        token=pydantic_mcp_server.token,
+                    )
                 elif pydantic_mcp_server.server_type == MCPServerType.STDIO:
                     update_request = UpdateStdioMCPServer(stdio_config=pydantic_mcp_server.stdio_config)
                 elif pydantic_mcp_server.server_type == MCPServerType.STREAMABLE_HTTP:
                     update_request = UpdateStreamableHTTPMCPServer(
-                        server_url=pydantic_mcp_server.server_url, token=pydantic_mcp_server.token
+                        server_url=pydantic_mcp_server.server_url,
+                        token=pydantic_mcp_server.token,
                     )
                 else:
                     raise ValueError(f"Unsupported server type: {pydantic_mcp_server.server_type}")
@@ -357,7 +377,9 @@ class MCPManager:
 
     @enforce_types
     async def create_mcp_server_from_config(
-        self, server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig], actor: PydanticUser
+        self,
+        server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
+        actor: PydanticUser,
     ) -> MCPServer:
         """
         Create an MCP server from a config object, handling encryption of sensitive fields.
@@ -367,7 +389,11 @@ class MCPManager:
         """
         # Create base MCPServer object
         if isinstance(server_config, StdioServerConfig):
-            mcp_server = MCPServer(server_name=server_config.server_name, server_type=server_config.type, stdio_config=server_config)
+            mcp_server = MCPServer(
+                server_name=server_config.server_name,
+                server_type=server_config.type,
+                stdio_config=server_config,
+            )
         elif isinstance(server_config, SSEServerConfig):
             mcp_server = MCPServer(
                 server_name=server_config.server_name,
@@ -404,7 +430,9 @@ class MCPManager:
 
     @enforce_types
     async def create_mcp_server_from_config_with_tools(
-        self, server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig], actor: PydanticUser
+        self,
+        server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
+        actor: PydanticUser,
     ) -> MCPServer:
         """
         Create an MCP server from a config object and optimistically sync its tools.
@@ -449,7 +477,10 @@ class MCPManager:
                 for mcp_tool in valid_tools:
                     tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
                     task = self.tool_manager.create_mcp_tool_async(
-                        tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
+                        tool_create=tool_create,
+                        mcp_server_name=created_server.server_name,
+                        mcp_server_id=created_server.id,
+                        actor=actor,
                     )
                     tool_tasks.append(task)
 
@@ -475,7 +506,12 @@ class MCPManager:
         return created_server
 
     @enforce_types
-    async def update_mcp_server_by_id(self, mcp_server_id: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
+    async def update_mcp_server_by_id(
+        self,
+        mcp_server_id: str,
+        mcp_server_update: UpdateMCPServer,
+        actor: PydanticUser,
+    ) -> MCPServer:
         """Update a tool by its ID with the given ToolUpdate object."""
         async with db_registry.async_session() as session:
             # Fetch the tool by ID
@@ -521,7 +557,12 @@ class MCPManager:
             return mcp_server.to_pydantic()
 
     @enforce_types
-    async def update_mcp_server_by_name(self, mcp_server_name: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
+    async def update_mcp_server_by_name(
+        self,
+        mcp_server_name: str,
+        mcp_server_update: UpdateMCPServer,
+        actor: PydanticUser,
+    ) -> MCPServer:
         """Update an MCP server by its name."""
         mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
         if not mcp_server_id:
@@ -646,7 +687,9 @@ class MCPManager:
                 logger.error(f"Failed to delete MCP server {mcp_server_id}: {e}")
                 raise
 
-    def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
+    def read_mcp_config(
+        self,
+    ) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
         mcp_server_list = {}
 
         # Attempt to read from ~/.letta/mcp_config.json
@@ -740,13 +783,25 @@ class MCPManager:
 
         if server_config.type == MCPServerType.SSE:
             server_config = SSEServerConfig(**server_config.model_dump())
-            return AsyncSSEMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncSSEMCPClient(
+                server_config=server_config,
+                oauth_provider=oauth_provider,
+                agent_id=agent_id,
+            )
         elif server_config.type == MCPServerType.STDIO:
             server_config = StdioServerConfig(**server_config.model_dump())
-            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncStdioMCPClient(
+                server_config=server_config,
+                oauth_provider=oauth_provider,
+                agent_id=agent_id,
+            )
         elif server_config.type == MCPServerType.STREAMABLE_HTTP:
             server_config = StreamableHTTPServerConfig(**server_config.model_dump())
-            return AsyncStreamableHTTPMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncStreamableHTTPMCPClient(
+                server_config=server_config,
+                oauth_provider=oauth_provider,
+                agent_id=agent_id,
+            )
         else:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 
@@ -865,7 +920,12 @@ class MCPManager:
             return self._oauth_orm_to_pydantic(oauth_session)
 
     @enforce_types
-    async def update_oauth_session(self, session_id: str, session_update: MCPOAuthSessionUpdate, actor: PydanticUser) -> MCPOAuthSession:
+    async def update_oauth_session(
+        self,
+        session_id: str,
+        session_update: MCPOAuthSessionUpdate,
+        actor: PydanticUser,
+    ) -> MCPOAuthSession:
         """Update an existing OAuth session."""
         async with db_registry.async_session() as session:
             oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
@@ -994,7 +1054,10 @@ class MCPManager:
         """
         import asyncio
 
-        from letta.services.mcp.oauth_utils import create_oauth_provider, oauth_stream_event
+        from letta.services.mcp.oauth_utils import (
+            create_oauth_provider,
+            oauth_stream_event,
+        )
         from letta.services.mcp.types import OauthStreamEvent
 
         # OAuth required, yield state to client to prepare to handle authorization URL
@@ -1054,10 +1117,17 @@ class MCPManager:
             # Fetch the authorization URL from database and yield state to client to proceed with handling authorization URL
             auth_session = await self.get_oauth_session_by_id(session_id, actor)
             if auth_session and auth_session.authorization_url:
-                yield oauth_stream_event(OauthStreamEvent.AUTHORIZATION_URL, url=auth_session.authorization_url, session_id=session_id)
+                yield oauth_stream_event(
+                    OauthStreamEvent.AUTHORIZATION_URL,
+                    url=auth_session.authorization_url,
+                    session_id=session_id,
+                )
 
             # Wait for user authorization (with timeout), client should render loading state until user completes the flow and /mcp/oauth/callback/{session_id} is hit
-            yield oauth_stream_event(OauthStreamEvent.WAITING_FOR_AUTH, message="Waiting for user authorization...")
+            yield oauth_stream_event(
+                OauthStreamEvent.WAITING_FOR_AUTH,
+                message="Waiting for user authorization...",
+            )
 
             # Callback handler will poll for authorization code and state and update the OAuth session
             await connect_task
