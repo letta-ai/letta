@@ -23,6 +23,7 @@ class VLLMProvider(Provider):
     default_prompt_formatter: str | None = Field(
         default=None, description="Default prompt formatter (aka model wrapper) to use on a /completions style API."
     )
+    handle_base: str | None = Field(None, description="Custom handle base name for model handles (e.g., 'custom' instead of 'vllm').")
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
@@ -43,7 +44,7 @@ class VLLMProvider(Provider):
                     model_endpoint=base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=model["max_model_len"],
-                    handle=self.get_handle(model_name),
+                    handle=self.get_handle(model_name, base_name=self.handle_base) if self.handle_base else self.get_handle(model_name),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )
