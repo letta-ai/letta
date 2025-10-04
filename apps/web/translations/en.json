@@ -1438,7 +1438,8 @@
       "default": "There was an error saving auto top-up configuration, please try again or contact support.",
       "thresholdMin": "Threshold must be at least 3,000 credits",
       "refillAmountRequired": "Please select a refill amount",
-      "thresholdExceedsRefill": "Threshold must be less than the recharge amount"
+      "thresholdExceedsRefill": "Threshold must be less than the recharge amount",
+      "maxMonthlySpendTooLow": "Maximum monthly spend must be equal to or greater than the recharge amount"
     },
     "save": "Save",
     "cancel": "Cancel",
@@ -1460,6 +1461,13 @@
       "refillAmount": {
         "label": "Recharge amount",
         "description": "The amount of credits to purchase when auto-recharge is triggered"
+      },
+      "maxMonthlySpend": {
+        "enabledLabel": "Set maximum monthly spend",
+        "enabledDescription": "Control how much you're willing to spend per month on auto-recharges",
+        "label": "Maximum monthly spend",
+        "description": "The maximum amount of credits you're willing to purchase per month",
+        "placeholder": "25000"
       }
     }
   },

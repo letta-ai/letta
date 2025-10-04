@@ -58,6 +58,16 @@ export async function incrementRecurrentCreditUsage(organizationId: string, subs
 }
 
 
+export async function decrementRecurrentCreditUsage(organizationId: string, subscription: PaymentCustomerSubscription, amount: number) {
+  const redis = createRedisInstance();
+
+  await createRedisEntryIfNotExists(organizationId, subscription);
+
+  const key = getRecurringCreditUsageKey(organizationId, subscription);
+
+  return redis.decrby(key, amount);
+}
+
 export async function getRemainingRecurrentCredits(organizationId: string, subscription: PaymentCustomerSubscription) {
   const redis = createRedisInstance();
 

@@ -600,6 +600,7 @@ const getOrganizationPaymentMethodsContract = c.query({
 const AutoTopUpConfigurationSchema = z.object({
   threshold: z.number(),
   refillAmount: z.number(),
+  maxMonthlySpend: z.number().nullable().optional(),
   enabled: z.boolean(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
@@ -618,6 +619,7 @@ const getAutoTopUpConfigurationContract = c.query({
 const UpsertAutoTopUpConfigurationPayload = z.object({
   threshold: z.number(),
   refillAmount: z.number(),
+  maxMonthlySpend: z.number().nullable().optional(),
   enabled: z.boolean(),
 });
 
