@@ -341,7 +341,7 @@ async def test_provider_llm_models_consistency():
         ("google_vertex/gemini-2.5-flash", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.5-pro", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
         ("google_vertex/gemini-2.5-pro", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
-        # assistant message agent loop
+        # letta_v1_agent loop
         ("openai/gpt-4o-mini", AgentType.letta_v1_agent, True, False, False, 0, None),
         ("openai/gpt-4o-mini", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("openai/o3-mini", AgentType.letta_v1_agent, True, True, False, 0, "medium"),
@@ -354,10 +354,10 @@ async def test_provider_llm_models_consistency():
         ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
-        ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, True, True, False, 1024, None),
         ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
-        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, True, False, False, 0, None),
-        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, True, False, False, 0, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, True, True, False, 1024, None),
+        ("google_vertex/gemini-2.5-pro", AgentType.letta_v1_agent, False, True, False, 1024, None),
     ],
 )
 def test_reasoning_toggle_by_provider(
