@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { addCreditsToOrganization } from '../addCreditsToOrganization/addCreditsToOrganization';
+import { canAutoTopUpWithinMonthlyLimit } from './handleMaxMonthlySpend/handleMaxMonthlySpend';
 
 const AUTO_TOP_UP_LOCK_EXPIRY_SECONDS = 15 * 60; // 15 minutes
 
@@ -56,6 +57,27 @@ export async function handleAutoTopUp(
 
     console.log(
       `[AutoTopUp] Organization ${organizationId} balance (${currentCredits}) is below threshold (${config.threshold})`,
+    );
+
+    // Check if auto top-up would exceed max monthly spend limit
+    const monthlySpendCheck = await canAutoTopUpWithinMonthlyLimit({
+      organizationId,
+      maxMonthlySpend: config.maxMonthlySpend,
+      refillAmount: config.refillAmount,
+    });
+
+    if (!monthlySpendCheck.canTopUp) {
+      console.log(
+        `[AutoTopUp] Auto top-up blocked for organization ${organizationId}: ${monthlySpendCheck.reason}`,
+      );
+      return {
+        triggered: false,
+        error: monthlySpendCheck.reason || 'Monthly spend limit exceeded',
+      };
+    }
+
+    console.log(
+      `[AutoTopUp] Monthly spend check passed for organization ${organizationId} (spent: ${monthlySpendCheck.currentMonthlySpend}, remaining: ${monthlySpendCheck.remainingBudget})`,
     );
 
     // Try to acquire Redis lock to prevent duplicate top-ups

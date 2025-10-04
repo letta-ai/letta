@@ -1977,6 +1977,8 @@ export const autoTopUpCreditsConfiguration = pgTable('auto_top_up_credits_config
   threshold: integer('threshold').notNull(),
   /* in credits */
   refillAmount: integer('refill_amount').notNull(),
+  /* in credits, null when disabled */
+  maxMonthlySpend: integer('max_monthly_spend'),
   enabled: boolean('enabled').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')

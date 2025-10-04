@@ -323,6 +323,14 @@ setup-cloud-api:
     @echo "🚧 Setting up the cloud API..."
     cd apps/cloud-api && {{JS_RUNTIME}} install
 
+setup-undertaker:
+    @echo "🚧 Setting up the undertaker..."
+    cd apps/credit-undertaker && {{JS_RUNTIME}} install
+
+build-undertaker-local:
+    @echo "🚧 Building the undertaker..."
+    cd apps/credit-undertaker && {{JS_RUNTIME}} run build
+
 cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
     cd apps/cloud-api && {{JS_RUNTIME}} run build && {{JS_RUNTIME}} run start
@@ -358,6 +366,10 @@ test-cloud-api:
 test-cloud-api-lite:
     @echo "🚧 Running tests for cloud API..."
     cd apps/cloud-api && npm run test:e2e
+
+test-cloud-api-messaging-lite:
+    @echo "🚧 Running messaging tests for cloud API..."
+    cd apps/cloud-api && npm run test:e2e:messaging
 
 migrate-core:
     @echo "🚧 Migrating the core database..."

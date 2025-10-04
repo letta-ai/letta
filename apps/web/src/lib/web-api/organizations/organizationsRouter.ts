@@ -1584,6 +1584,7 @@ async function getAutoTopUpConfiguration(): Promise<GetAutoTopUpConfigurationRes
       ? {
           threshold: config.threshold,
           refillAmount: config.refillAmount,
+          maxMonthlySpend: config.maxMonthlySpend,
           enabled: config.enabled,
           createdAt: config.createdAt.toISOString(),
           updatedAt: config.updatedAt.toISOString(),
@@ -1591,6 +1592,7 @@ async function getAutoTopUpConfiguration(): Promise<GetAutoTopUpConfigurationRes
       : {
           threshold: 5000,
           refillAmount: 5000,
+          maxMonthlySpend: null,
           enabled: false,
         },
   };
@@ -1619,7 +1621,17 @@ async function upsertAutoTopUpConfiguration(
     };
   }
 
-  const { threshold, refillAmount, enabled } = req.body;
+  const { threshold, refillAmount, maxMonthlySpend, enabled } = req.body;
+
+  // Validation: maxMonthlySpend must be >= refillAmount if both are set
+  if (maxMonthlySpend !== null && maxMonthlySpend !== undefined && maxMonthlySpend < refillAmount) {
+    return {
+      status: 400,
+      body: {
+        message: 'Maximum monthly spend must be equal to or greater than the recharge amount',
+      },
+    };
+  }
 
   await db
     .insert(autoTopUpCreditsConfiguration)
@@ -1627,6 +1639,7 @@ async function upsertAutoTopUpConfiguration(
       organizationId: activeOrganizationId,
       threshold,
       refillAmount,
+      maxMonthlySpend: maxMonthlySpend ?? null,
       enabled,
     })
     .onConflictDoUpdate({
@@ -1634,6 +1647,7 @@ async function upsertAutoTopUpConfiguration(
       set: {
         threshold,
         refillAmount,
+        maxMonthlySpend: maxMonthlySpend ?? null,
         enabled,
       },
     });

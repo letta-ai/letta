@@ -40,7 +40,9 @@ interface AutoTopUpConfigurationDialogEditableProps {
   initialValues: {
     threshold: number;
     refillAmount: number;
+    maxMonthlySpend: number | null;
     enabled: boolean;
+    maxMonthlySpendEnabled: boolean;
   };
 }
 
@@ -56,6 +58,8 @@ function useAutoTopUpConfigurationSchema() {
         refillAmount: z.coerce
           .number()
           .min(1, t('errors.refillAmountRequired')),
+        maxMonthlySpend: z.coerce.number().nullable().optional(),
+        maxMonthlySpendEnabled: z.boolean(),
         enabled: z.boolean(),
       }).refine(
         (data) => {
@@ -66,6 +70,16 @@ function useAutoTopUpConfigurationSchema() {
         {
           message: t('errors.thresholdExceedsRefill'),
           path: ['threshold'],
+        }
+      ).refine(
+        (data) => {
+          // Only validate when maxMonthlySpend is enabled and has a value
+          if (!data.enabled || !data.maxMonthlySpendEnabled || !data.maxMonthlySpend) return true;
+          return data.maxMonthlySpend >= data.refillAmount;
+        },
+        {
+          message: t('errors.maxMonthlySpendTooLow'),
+          path: ['maxMonthlySpend'],
         }
       ),
     [t],
@@ -129,6 +143,7 @@ function AutoTopUpConfigurationDialogEditable(
           body: {
             threshold: variables.body.threshold,
             refillAmount: variables.body.refillAmount,
+            maxMonthlySpend: variables.body.maxMonthlySpend ?? null,
             enabled: variables.body.enabled,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -148,6 +163,8 @@ function AutoTopUpConfigurationDialogEditable(
   const isEnabled = form.watch('enabled');
   const threshold = form.watch('threshold');
   const refillAmount = form.watch('refillAmount');
+  const maxMonthlySpend = form.watch('maxMonthlySpend');
+  const maxMonthlySpendEnabled = form.watch('maxMonthlySpendEnabled');
 
   const hasThresholdError = useMemo(() => {
     if (!isEnabled) return false;
@@ -156,6 +173,13 @@ function AutoTopUpConfigurationDialogEditable(
     return thresholdNum >= refillNum;
   }, [isEnabled, threshold, refillAmount]);
 
+  const hasMaxMonthlySpendError = useMemo(() => {
+    if (!isEnabled || !maxMonthlySpendEnabled || !maxMonthlySpend) return false;
+    const maxSpend = typeof maxMonthlySpend === 'string' ? parseInt(maxMonthlySpend, 10) : maxMonthlySpend;
+    const refillNum = typeof refillAmount === 'string' ? parseInt(refillAmount, 10) : refillAmount;
+    return maxSpend < refillNum;
+  }, [isEnabled, maxMonthlySpendEnabled, maxMonthlySpend, refillAmount]);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -163,7 +187,7 @@ function AutoTopUpConfigurationDialogEditable(
 
       // Validate the form first
       const isValid = await form.trigger();
-      if (!isValid || hasThresholdError) {
+      if (!isValid || hasThresholdError || hasMaxMonthlySpendError) {
         return;
       }
 
@@ -172,11 +196,14 @@ function AutoTopUpConfigurationDialogEditable(
         body: {
           threshold: parseInt(String(values.threshold), 10),
           refillAmount: parseInt(String(values.refillAmount), 10),
+          maxMonthlySpend: values.maxMonthlySpendEnabled && values.maxMonthlySpend
+            ? parseInt(String(values.maxMonthlySpend), 10)
+            : null,
           enabled: values.enabled,
         },
       });
     },
-    [form, mutate, hasThresholdError],
+    [form, mutate, hasThresholdError, hasMaxMonthlySpendError],
   );
 
   const refillAmountOptions = useMemo(
@@ -215,6 +242,19 @@ function AutoTopUpConfigurationDialogEditable(
     [refillAmount, formatCurrency],
   );
 
+  const maxMonthlySpendDollarAmount = useMemo(
+    () =>
+      maxMonthlySpend
+        ? formatCurrency(creditsToDollars(maxMonthlySpend), {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+            style: 'currency',
+            currency: 'USD',
+          })
+        : null,
+    [maxMonthlySpend, formatCurrency],
+  );
+
   return (
     <FormProvider {...form}>
       <Dialog
@@ -227,7 +267,7 @@ function AutoTopUpConfigurationDialogEditable(
         confirmText={t('save')}
         cancelText={t('cancel')}
         isConfirmBusy={isPending}
-        disableSubmit={hasThresholdError || !hasDefaultPaymentMethod}
+        disableSubmit={hasThresholdError || hasMaxMonthlySpendError || !hasDefaultPaymentMethod}
         errorMessage={error ?  t('errors.default') : ''}
       >
         <VStack gap="xlarge">
@@ -315,6 +355,45 @@ function AutoTopUpConfigurationDialogEditable(
                 />
               )}
             />
+
+            <FormField
+              name="maxMonthlySpendEnabled"
+              render={({ field }) => (
+                <Switch
+                  label={t('form.maxMonthlySpend.enabledLabel')}
+                  description={t('form.maxMonthlySpend.enabledDescription')}
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  disabled={!isEnabled}
+                />
+              )}
+            />
+
+            {maxMonthlySpendEnabled && (
+              <FormField
+                name="maxMonthlySpend"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    type="number"
+                    fullWidth
+                    label={t('form.maxMonthlySpend.label')}
+                    description={t('form.maxMonthlySpend.description')}
+                    placeholder={t('form.maxMonthlySpend.placeholder')}
+                    disabled={!isEnabled}
+                    preIcon={<LettaCoinIcon size="small" />}
+                    rightOfLabelContent={
+                      maxMonthlySpendDollarAmount ? (
+                        <Typography variant="body3" color="lighter">
+                          {maxMonthlySpendDollarAmount}
+                        </Typography>
+                      ) : null
+                    }
+                  />
+                )}
+              />
+            )}
           </VStack>
         </VStack>
       </Dialog>
@@ -352,6 +431,9 @@ export function AutoTopUpConfigurationDialog(
     refillAmount = 25000; // Use second refill option as default
   }
 
+  const maxMonthlySpend = data.body.maxMonthlySpend;
+  const maxMonthlySpendEnabled = maxMonthlySpend !== null && maxMonthlySpend !== undefined;
+
   return (
     <AutoTopUpConfigurationDialogEditable
       trigger={trigger}
@@ -360,6 +442,8 @@ export function AutoTopUpConfigurationDialog(
       initialValues={{
         threshold,
         refillAmount,
+        maxMonthlySpend: maxMonthlySpend ?? null,
+        maxMonthlySpendEnabled,
         enabled: data.body.enabled,
       }}
     />

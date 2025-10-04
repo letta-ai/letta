@@ -187,6 +187,21 @@ jobs:
       - name: Install deps
         working-directory: apps/cloud-api
         run: just setup-cloud-api
+      - name: Install undertaker dependencies
+        run: just setup-undertaker
+      - name: Build undertaker
+        run: just build-undertaker-local
+      - name: Run undertaker detached
+        run: node dist/apps/credit-undertaker/main.js > undertaker.log 2>&1 &
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
       - name: Migrate Cloud DB
         run:
           just migrate-cloud-db
