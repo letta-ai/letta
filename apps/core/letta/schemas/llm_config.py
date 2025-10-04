@@ -286,14 +286,21 @@ class LLMConfig(BaseModel):
                 return config
 
             # Anthropic 3.7/4 and Gemini: toggle honored
-            if (
-                cls.is_anthropic_reasoning_model(config)
-                or cls.is_google_vertex_reasoning_model(config)
-                or cls.is_google_ai_reasoning_model(config)
-            ):
+            is_google_reasoner_with_configurable_thinking = (
+                cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config)
+            ) and not config.model.startswith("gemini-2.5-pro")
+            if cls.is_anthropic_reasoning_model(config) or is_google_reasoner_with_configurable_thinking:
                 config.enable_reasoner = bool(reasoning)
                 config.put_inner_thoughts_in_kwargs = False
                 if config.enable_reasoner and config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+                return config
+
+            # Google Gemini 2.5 Pro: not possible to disable
+            if config.model.startswith("gemini-2.5-pro"):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
                 return config
 
