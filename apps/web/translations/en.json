@@ -490,9 +490,9 @@
     }
   },
   "pages/models/LettaManagedModels": {
-    "title": "Understanding requests",
+    "title": "Supported models",
     "manageModels": "Manage Model Visibility",
-    "description": "Standard and Premium models are applied towards your plan's request quota. Enable usage-based billing to use additional requests. Some models are only available via usage-based billing.",
+    "description": "Letta Cloud supports a wide range of frontier models from the major models providers.",
     "columns": {
       "name": "Model",
       "brand": "Provider",
