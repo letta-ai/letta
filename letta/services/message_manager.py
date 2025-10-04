@@ -745,8 +745,8 @@ class MessageManager:
             if run_id:
                 query = query.where(MessageModel.run_id == run_id)
 
-            if not include_err:
-                query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
+            # if not include_err:
+            #    query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
 
             # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
