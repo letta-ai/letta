@@ -10,5 +10,5 @@ export function getRedisModelTransactionsKey(
 }
 
 export function getRecurringCreditUsageKey(organizationId: string, subscription: { billingPeriodStart: string; billingPeriodEnd: string }) {
-  return `recurringCreditUsage:${organizationId}:${subscription.billingPeriodStart}:${subscription.billingPeriodEnd}`;
+  return `recurringCreditUsage_1:${organizationId}:${subscription.billingPeriodStart}:${subscription.billingPeriodEnd}`;
 }
