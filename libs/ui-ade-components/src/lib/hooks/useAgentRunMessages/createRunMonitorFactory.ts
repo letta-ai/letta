@@ -24,6 +24,7 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
 
   let timeoutId: NodeJS.Timeout | null = null;
   let isMonitoring = false;
+  let abortController: AbortController | null = null;
 
   /**
    * Fetches the last 20 runs for the agent from the API
@@ -46,6 +47,7 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
           'Content-Type': 'application/json',
           ...headers,
         },
+        signal: abortController?.signal,
       });
 
       if (!response.ok) {
@@ -56,6 +58,10 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
       const runs: Run[] = await response.json();
       return runs;
     } catch (error) {
+      // Don't log abort errors as they're expected when stopping
+      if (error instanceof Error && error.name === 'AbortError') {
+        return [];
+      }
       console.error('Error fetching recent runs:', error);
       return [];
     }
@@ -91,6 +97,7 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
     }
 
     isMonitoring = true;
+    abortController = new AbortController();
 
     // Start polling (first poll happens immediately, then schedules next)
     poll();
@@ -103,6 +110,10 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
+    }
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
     }
     isMonitoring = false;
   }
