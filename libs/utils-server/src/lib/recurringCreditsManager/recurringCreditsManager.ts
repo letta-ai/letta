@@ -9,7 +9,7 @@ async function buildRecurrantCreditUsage(organizationId: string, subscription: P
 
   const [result] = await db
     .select({
-      total: sql<string>`COALESCE(SUM(${organizationCreditTransactions.amount}), 0)`,
+      total: sql<string>`COALESCE(SUM(${organizationCreditTransactions.trueCost}), 0)`,
     })
     .from(organizationCreditTransactions)
     .where(
@@ -24,11 +24,13 @@ async function buildRecurrantCreditUsage(organizationId: string, subscription: P
 
   const key = getRecurringCreditUsageKey(organizationId, subscription);
 
+  const subscriptionLimit = getRecurrentSubscriptionLimits(subscription);
+
   await redis.setex(
     key,
     // should expire every day
     24 * 60 * 60,
-    totalAmount,
+    Math.min(totalAmount, subscriptionLimit).toString()
   )
 
   return totalAmount;
