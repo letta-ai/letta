@@ -117,6 +117,7 @@ class ModelSettings(BaseSettings):
     # See https://openrouter.ai/docs/quick-start for details
     openrouter_referer: Optional[str] = None  # e.g., your site URL
     openrouter_title: Optional[str] = None  # e.g., your app name
+    openrouter_handle_base: Optional[str] = None
 
     # deepseek
     deepseek_api_key: Optional[str] = None
@@ -163,6 +164,7 @@ class ModelSettings(BaseSettings):
 
     # vLLM
     vllm_api_base: Optional[str] = None
+    vllm_handle_base: Optional[str] = None
 
     # lmstudio
     lmstudio_base_url: Optional[str] = None
