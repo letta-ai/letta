@@ -22,7 +22,7 @@ interface RunMonitor {
 export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunMonitor {
   const { agentId, baseUrl, headers, onUpdate, pollingInterval = 2000 } = options;
 
-  let intervalId: NodeJS.Timeout | null = null;
+  let timeoutId: NodeJS.Timeout | null = null;
   let isMonitoring = false;
 
   /**
@@ -62,14 +62,23 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
   }
 
   /**
-   * Polling function that checks recent runs
+   * Polling function that checks recent runs and schedules the next poll
    */
   async function poll(): Promise<void> {
+    if (!isMonitoring) {
+      return;
+    }
+
     const runs = await fetchRecentRuns();
 
     if (runs.length > 0) {
       // Notify callback with all recent runs (including status transitions)
       onUpdate(runs);
+    }
+
+    // Schedule next poll after the current one completes
+    if (isMonitoring) {
+      timeoutId = setTimeout(poll, pollingInterval);
     }
   }
 
@@ -83,20 +92,17 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
 
     isMonitoring = true;
 
-    // Initial poll
+    // Start polling (first poll happens immediately, then schedules next)
     poll();
-
-    // Start interval polling
-    intervalId = setInterval(poll, pollingInterval);
   }
 
   /**
    * Stops the polling monitor
    */
   function stop(): void {
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
     }
     isMonitoring = false;
   }

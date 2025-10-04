@@ -75,9 +75,12 @@ export function useAgentRunMessages({
     }
   }, [hostConfig, isLocal]);
 
-  // Generate a unique ID for this hook instance
-  const instanceId = useMemo(() => `${agentId}-${Math.random().toString(36).slice(2)}`, [agentId]);
+  // Generate a unique ID for this hook instance (stable across re-renders)
+  const instanceIdRef = useRef(`${agentId}-${Math.random().toString(36).slice(2)}`);
+  const instanceId = instanceIdRef.current;
+
   const hasLockRef = useRef(false);
+  const isInitializingRef = useRef(false);
 
   useEffect(() => {
     // Don't initialize if agentId is empty
@@ -85,8 +88,15 @@ export function useAgentRunMessages({
       return;
     }
 
+    // Prevent multiple initializations from the same instance
+    if (isInitializingRef.current) {
+      return;
+    }
+    isInitializingRef.current = true;
+
     const worker = getWorker();
     if (!worker) {
+      isInitializingRef.current = false;
       return;
     }
     workerRef.current = worker;
@@ -154,26 +164,29 @@ export function useAgentRunMessages({
 
     // Function to initialize worker subscription (runs only for lock holder)
     const initializeWorkerSubscription = () => {
-      // Initialize manager for this agent
-      const initMessage: WorkerMessage = {
-        type: 'INIT',
-        agentId,
-      };
-      worker.postMessage(initMessage);
+      // Debounce initialization slightly to prevent race conditions
+      setTimeout(() => {
+        // Initialize manager for this agent
+        const initMessage: WorkerMessage = {
+          type: 'INIT',
+          agentId,
+        };
+        worker.postMessage(initMessage);
 
-      // Initialize run monitor (only lock holder does this)
-      const initRunMonitorMessage: WorkerMessage = {
-        type: 'INIT_RUN_MONITOR',
-        agentId,
-      };
-      worker.postMessage(initRunMonitorMessage);
+        // Initialize run monitor (only lock holder does this)
+        const initRunMonitorMessage: WorkerMessage = {
+          type: 'INIT_RUN_MONITOR',
+          agentId,
+        };
+        worker.postMessage(initRunMonitorMessage);
 
-      // Subscribe to updates
-      const subscribeMessage: WorkerMessage = {
-        type: 'SUBSCRIBE',
-        agentId,
-      };
-      worker.postMessage(subscribeMessage);
+        // Subscribe to updates
+        const subscribeMessage: WorkerMessage = {
+          type: 'SUBSCRIBE',
+          agentId,
+        };
+        worker.postMessage(subscribeMessage);
+      }, 50);
     };
 
     // Try to acquire the lock
@@ -215,8 +228,10 @@ export function useAgentRunMessages({
           worker.postMessage(flushMessage);
         }
       }
+
+      isInitializingRef.current = false;
     };
-  }, [agentId, instanceId, setState, baseUrl, headers]);
+  }, [agentId, setState, baseUrl, headers, instanceId]);
 
   const loadMoreRuns = useCallback(async () => {
     if (!agentId) return;
