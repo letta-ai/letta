@@ -694,6 +694,9 @@ class LettaAgentV2(BaseAgentV2):
 
         curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
+        # refresh files 
+        agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
+
         # generate just the memory string with current state for comparison
         curr_memory_str = agent_state.memory.compile(
             tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
