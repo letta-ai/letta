@@ -142,6 +142,7 @@ jobs:
           LETTA_TEMPORAL_NAMESPACE: ${{ secrets.LETTA_TEMPORAL_NAMESPACE }}
           LETTA_TEMPORAL_API_KEY: ${{ secrets.LETTA_TEMPORAL_API_KEY }}
           VLLM_API_BASE: ${{ vars.VLLM_API_BASE }}
+          VLLM_HANDLE_BASE: ${{ vars.VLLM_HANDLE_BASE }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 

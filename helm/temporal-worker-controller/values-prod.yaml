@@ -1,5 +1,5 @@
 lettaEnv: &lettaEnv prod
-temporalEndpoint: us-central1.gcp.api.temporal.io:7233
+temporalEndpoint: lettuce-py.tmhou.tmprl.cloud:7233
 
 image:
   repository: temporalio/temporal-worker-controller

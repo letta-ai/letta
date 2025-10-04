@@ -102,15 +102,21 @@ resource "google_compute_instance" "letta_model_server" {
   tags = ["vllm-server", "http-server"]
 }
 
-# resource "google_compute_firewall" "vllm_firewall" {
-#   name    = "allow-vllm-${var.env}-private"
-#   network = data.google_compute_network.vpc_network.name
-#
-#   allow {
-#     protocol = "tcp"
-#     ports    = ["8000", "22"]
-#   }
-#
-#   source_ranges = ["10.1.0.0/16"]
-#   target_tags   = ["vllm-server"]
-# }
+resource "google_compute_firewall" "vllm_firewall" {
+  name    = "allow-internal-to-vllm-${var.env}"
+  network = data.google_compute_network.vpc_network.name
+
+  allow {
+    protocol = "all"
+  }
+
+  source_ranges = [
+    "10.0.0.0/16",   # VPC subnet
+    "10.92.0.0/14"   # GKE pod CIDR
+  ]
+
+  target_tags = ["vllm-server"]
+  priority    = 900
+
+  description = "Allow all internal VPC and GKE pod traffic to vllm servers"
+}

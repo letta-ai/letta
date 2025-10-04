@@ -242,7 +242,8 @@ describe-web:
         --set secrets.LETTA_TEMPORAL_ENDPOINT=${LETTA_TEMPORAL_ENDPOINT} \
         --set secrets.LETTA_TEMPORAL_NAMESPACE=${LETTA_TEMPORAL_NAMESPACE} \
         --set secrets.LETTA_TEMPORAL_API_KEY=${LETTA_TEMPORAL_API_KEY} \
-        --set secrets.VLLM_API_BASE=${VLLM_API_BASE}
+        --set secrets.VLLM_API_BASE=${VLLM_API_BASE} \
+        --set secrets.VLLM_HANDLE_BASE=${VLLM_HANDLE_BASE}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
             --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
