@@ -55,6 +55,7 @@ class AgentRunManager {
   private headers: Record<string, string> = {};
   // Run monitor
   private runMonitor: ReturnType<typeof createRunMonitorFactory> | null = null;
+  private isInitializingRunMonitor: boolean = false;
 
   private constructor(agentId: string) {
     this.agentId = agentId;
@@ -86,8 +87,8 @@ class AgentRunManager {
    * Initialize the run monitor (should be called once by the lock holder)
    */
   initializeRunMonitor(): void {
-    if (this.runMonitor) {
-      return; // Already initialized
+    if (this.runMonitor || this.isInitializingRunMonitor) {
+      return; // Already initialized or currently initializing
     }
 
     if (!this.baseUrl || !this.headers) {
@@ -95,6 +96,7 @@ class AgentRunManager {
       return;
     }
 
+    this.isInitializingRunMonitor = true;
     this.isLoadingRuns = true;
     this.publishLoadingState();
 
@@ -792,6 +794,7 @@ class AgentRunManager {
       this.runMonitor.stop();
       this.runMonitor = null;
     }
+    this.isInitializingRunMonitor = false;
 
     // Abort all pending requests
     if (this.runsAbortController) {
@@ -818,6 +821,8 @@ class AgentRunManager {
     this.isLoadingRuns = false;
     this.isFetchingRuns = false;
     this.isInitialized = false;
+    this.isInitialLoad = true;
+    this.initialRunIds.clear();
     this.runMessageCursors.clear();
     this.fetchingMessagesMap.clear();
     this.runsError = null;
