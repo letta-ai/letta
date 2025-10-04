@@ -1416,7 +1416,8 @@ class Message(BaseMessage):
                             native_part["thought_signature"] = content.signature
                         native_google_content_parts.append(native_part)
                     else:
-                        raise ValueError(f"Unsupported content type: {content.type}")
+                        # silently drop other content types
+                        pass
                 if native_google_content_parts:
                     parts = native_google_content_parts
 
