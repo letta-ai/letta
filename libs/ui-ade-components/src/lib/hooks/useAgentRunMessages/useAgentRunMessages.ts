@@ -79,6 +79,8 @@ export function useAgentRunMessages({
   const instanceIdRef = useRef(`${agentId}-${Math.random().toString(36).slice(2)}`);
   const instanceId = instanceIdRef.current;
 
+
+
   const hasLockRef = useRef(false);
   const isInitializingRef = useRef(false);
 
@@ -165,45 +167,53 @@ export function useAgentRunMessages({
     // Function to initialize worker subscription (runs only for lock holder)
     const initializeWorkerSubscription = () => {
       // Debounce initialization slightly to prevent race conditions
-      setTimeout(() => {
-        // Initialize manager for this agent
-        const initMessage: WorkerMessage = {
-          type: 'INIT',
-          agentId,
-        };
-        worker.postMessage(initMessage);
+      if (!workerRef.current) return;
 
-        // Initialize run monitor (only lock holder does this)
-        const initRunMonitorMessage: WorkerMessage = {
-          type: 'INIT_RUN_MONITOR',
-          agentId,
-        };
-        worker.postMessage(initRunMonitorMessage);
+      // Initialize manager for this agent
+      const initMessage: WorkerMessage = {
+        type: 'INIT',
+        agentId,
+      };
+      worker.postMessage(initMessage);
 
-        // Subscribe to updates
-        const subscribeMessage: WorkerMessage = {
-          type: 'SUBSCRIBE',
-          agentId,
-        };
-        worker.postMessage(subscribeMessage);
-      }, 50);
+      // Initialize run monitor (only lock holder does this)
+      const initRunMonitorMessage: WorkerMessage = {
+        type: 'INIT_RUN_MONITOR',
+        agentId,
+      };
+      worker.postMessage(initRunMonitorMessage);
+
+      // Subscribe to updates
+      const subscribeMessage: WorkerMessage = {
+        type: 'SUBSCRIBE',
+        agentId,
+      };
+      worker.postMessage(subscribeMessage);
     };
 
     // Try to acquire the lock
-    if (tryAcquireLock(agentId, instanceId)) {
-      hasLockRef.current = true;
 
-      initializeWorkerSubscription();
-    } else {
-      // Lock is held by another instance, register to wait
-      waitForLock(agentId, () => {
-        // Lock transferred to us, acquire it
-        if (tryAcquireLock(agentId, instanceId)) {
-          hasLockRef.current = true;
-          initializeWorkerSubscription();
-        }
-      });
-    }
+    setTimeout(() => {
+      if (!workerRef.current) return;
+      if (hasLockRef.current) return; // Already have the lock
+
+      if (tryAcquireLock(agentId, instanceId)) {
+        hasLockRef.current = true;
+
+        initializeWorkerSubscription();
+      } else {
+        // Lock is held by another instance, register to wait
+        waitForLock(agentId, () => {
+          // Lock transferred to us, acquire it
+          if (tryAcquireLock(agentId, instanceId)) {
+            hasLockRef.current = true;
+            initializeWorkerSubscription();
+          }
+        });
+      }
+    }, 1000);
+
+
 
     // Cleanup on unmount
     return () => {

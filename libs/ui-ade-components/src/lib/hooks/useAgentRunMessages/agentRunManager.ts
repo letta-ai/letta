@@ -96,6 +96,7 @@ class AgentRunManager {
       return;
     }
 
+
     this.isInitializingRunMonitor = true;
     this.isLoadingRuns = true;
     this.publishLoadingState();
@@ -504,7 +505,7 @@ class AgentRunManager {
     this.publishLoadingState();
 
     try {
-      const requestedLimit = 20;
+      const requestedLimit = 5;
 
       // Fetch N+1 to determine if there are more runs
       const fetchedRuns = await fetchRuns({
