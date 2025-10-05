@@ -13,9 +13,6 @@ API_PREFIX = "/v1"
 OLLAMA_API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
 
-COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
-COMPOSIO_TOOL_TAG_NAME = "composio"
-
 MCP_CONFIG_NAME = "mcp_config.json"
 MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
 

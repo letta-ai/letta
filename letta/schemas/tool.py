@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional
 from pydantic import ConfigDict, Field, model_validator
 
 from letta.constants import (
-    COMPOSIO_TOOL_TAG_NAME,
     FUNCTION_RETURN_CHAR_LIMIT,
     LETTA_BUILTIN_TOOL_MODULE_NAME,
     LETTA_CORE_TOOL_MODULE_NAME,
@@ -16,13 +15,9 @@ from letta.constants import (
 # MCP Tool metadata constants for schema health status
 MCP_TOOL_METADATA_SCHEMA_STATUS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_STATUS"
 MCP_TOOL_METADATA_SCHEMA_WARNINGS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_WARNINGS"
-from letta.functions.composio_helpers import generate_composio_tool_wrapper
 from letta.functions.functions import get_json_schema_from_module
 from letta.functions.mcp_client.types import MCPTool
-from letta.functions.schema_generator import (
-    generate_tool_schema_for_composio,
-    generate_tool_schema_for_mcp,
-)
+from letta.functions.schema_generator import generate_tool_schema_for_mcp
 from letta.log import get_logger
 from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.letta_base import LettaBase
@@ -106,9 +101,6 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_FILES_CORE}:
             # If it's letta files tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_FILES_TOOL_MODULE_NAME, function_name=self.name)
-        elif self.tool_type in {ToolType.EXTERNAL_COMPOSIO}:
-            # Composio schemas handled separately
-            pass
 
         return self
 
@@ -144,45 +136,6 @@ class ToolCreate(LettaBase):
         source_type = "python"
         tags = [f"{MCP_TOOL_TAG_NAME_PREFIX}:{mcp_server_name}"]
         wrapper_func_name, wrapper_function_str = generate_mcp_tool_wrapper(mcp_tool.name)
-
-        return cls(
-            description=description,
-            source_type=source_type,
-            tags=tags,
-            source_code=wrapper_function_str,
-            json_schema=json_schema,
-        )
-
-    @classmethod
-    def from_composio(cls, action_name: str) -> "ToolCreate":
-        """
-        Class method to create an instance of Letta-compatible Composio Tool.
-        Check https://docs.composio.dev/introduction/intro/overview to look at options for from_composio
-
-        This function will error if we find more than one tool, or 0 tools.
-
-        Args:
-            action_name str: A action name to filter tools by.
-        Returns:
-            Tool: A Letta Tool initialized with attributes derived from the Composio tool.
-        """
-        from composio import ComposioToolSet, LogLevel
-
-        composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR, lock=False)
-        composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)
-
-        assert len(composio_action_schemas) > 0, "User supplied parameters do not match any Composio tools"
-        assert len(composio_action_schemas) == 1, (
-            f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
-        )
-
-        composio_action_schema = composio_action_schemas[0]
-
-        description = composio_action_schema.description
-        source_type = "python"
-        tags = [COMPOSIO_TOOL_TAG_NAME]
-        wrapper_func_name, wrapper_function_str = generate_composio_tool_wrapper(action_name)
-        json_schema = generate_tool_schema_for_composio(composio_action_schema.parameters, name=wrapper_func_name, description=description)
 
         return cls(
             description=description,

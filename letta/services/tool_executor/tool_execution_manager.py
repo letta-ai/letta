@@ -20,7 +20,6 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.run_manager import RunManager
 from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
-from letta.services.tool_executor.composio_tool_executor import ExternalComposioToolExecutor
 from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
 from letta.services.tool_executor.files_tool_executor import LettaFileToolExecutor
 from letta.services.tool_executor.mcp_tool_executor import ExternalMCPToolExecutor
@@ -40,7 +39,6 @@ class ToolExecutorFactory:
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
         ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
         ToolType.LETTA_FILES_CORE: LettaFileToolExecutor,
-        ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
 

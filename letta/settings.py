@@ -12,8 +12,6 @@ from letta.services.summarizer.enums import SummarizationMode
 
 
 class ToolSettings(BaseSettings):
-    composio_api_key: str | None = Field(default=None, description="API key for Composio")
-
     # Sandbox Configurations
     e2b_api_key: str | None = Field(default=None, description="API key for using E2B as a tool sandbox")
     e2b_sandbox_template_id: str | None = Field(default=None, description="Template ID for E2B Sandbox. Updated Manually.")

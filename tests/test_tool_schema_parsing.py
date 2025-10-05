@@ -236,47 +236,6 @@ def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
     print(f"Total execution time: {end_time - start_time:.2f} seconds")
 
 
-# Parallel implementation for Composio test
-def _run_composio_test(action_name, openai_model, structured_output):
-    """Run a single Composio test case in parallel"""
-    try:
-        tool_create = ToolCreate.from_composio(action_name=action_name)
-        assert tool_create.json_schema
-        schema = tool_create.json_schema
-
-        if structured_output:
-            tool_schema = convert_to_structured_output(schema)
-        else:
-            tool_schema = schema
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        assert api_key is not None, "OPENAI_API_KEY must be set"
-
-        system_prompt = "You job is to test the tool that you've been provided. Don't ask for any clarification on the args, just come up with some dummy data and try executing the tool."
-
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-        data = {
-            "model": openai_model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-            ],
-            "tools": [
-                {
-                    "type": "function",
-                    "function": tool_schema,
-                }
-            ],
-            "tool_choice": "auto",
-            "parallel_tool_calls": False,
-        }
-
-        make_post_request(url, headers, data)
-        return (action_name, True, None)  # Success
-    except Exception as e:
-        return (action_name, False, str(e))  # Failure with error message
-
-
 # Helper function for pydantic args schema test
 def _run_pydantic_args_test(filename, openai_model, structured_output):
     """Run a single pydantic args schema test case"""

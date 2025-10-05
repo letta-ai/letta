@@ -88,7 +88,6 @@ jobs:
           AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}

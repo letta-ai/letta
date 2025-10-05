@@ -2,15 +2,6 @@ import json
 from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from composio.client import ComposioClientError, HTTPError, NoItemsFound
-from composio.client.collections import ActionModel, AppModel
-from composio.exceptions import (
-    ApiKeyNotProvidedError,
-    ComposioSDKError,
-    ConnectedAccountNotFoundError,
-    EnumMetadataNotFound,
-    EnumStringNotFound,
-)
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
@@ -20,7 +11,6 @@ from letta.errors import LettaToolCreateError, LettaToolNameConflictError
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
-from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.decorators import deprecated
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -355,132 +345,6 @@ async def run_tool_from_source(
         pip_requirements=request.pip_requirements,
         actor=actor,
     )
-
-
-# Specific routes for Composio
-@router.get("/composio/apps", response_model=List[AppModel], operation_id="list_composio_apps")
-async def list_composio_apps(
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Get a list of all Composio apps
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    composio_api_key = get_composio_api_key(actor=actor, logger=logger)
-    if not composio_api_key:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
-        )
-    return server.get_composio_apps(api_key=composio_api_key)
-
-
-@router.get("/composio/apps/{composio_app_name}/actions", response_model=List[ActionModel], operation_id="list_composio_actions_by_app")
-async def list_composio_actions_by_app(
-    composio_app_name: str,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Get a list of all Composio actions for a specific app
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    composio_api_key = get_composio_api_key(actor=actor, logger=logger)
-    if not composio_api_key:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail="No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
-        )
-    return server.get_composio_actions_from_app_name(composio_app_name=composio_app_name, api_key=composio_api_key)
-
-
-@router.post("/composio/{composio_action_name}", response_model=Tool, operation_id="add_composio_tool")
-async def add_composio_tool(
-    composio_action_name: str,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    try:
-        tool_create = ToolCreate.from_composio(action_name=composio_action_name)
-        return await server.tool_manager.create_or_update_composio_tool_async(tool_create=tool_create, actor=actor)
-    except ConnectedAccountNotFoundError as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "ConnectedAccountNotFoundError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except EnumStringNotFound as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "EnumStringNotFound",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except EnumMetadataNotFound as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "EnumMetadataNotFound",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except HTTPError as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "HTTPError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except NoItemsFound as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "NoItemsFound",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except ApiKeyNotProvidedError as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "ApiKeyNotProvidedError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except ComposioClientError as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "ComposioClientError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except ComposioSDKError as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "ComposioSDKError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
 
 
 # Specific routes for MCP

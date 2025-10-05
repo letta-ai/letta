@@ -367,7 +367,6 @@ jobs:
           LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
 
           # External service API Keys (shared across all test types)
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
 

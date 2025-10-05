@@ -75,26 +75,6 @@ async def test_mcp_tools_get_health_status():
     assert any("type" in reason for reason in invalid_tool.health.reasons)
 
 
-def test_composio_like_schema_marked_non_strict():
-    """Test that Composio-like schemas are correctly marked as NON_STRICT_ONLY."""
-
-    # Example schema from Composio with free-form message object
-    composio_schema = {
-        "type": "object",
-        "properties": {
-            "message": {"type": "object", "additionalProperties": {}, "description": "Message to send"}  # Free-form, missing "type"
-        },
-        "required": ["message"],
-        "additionalProperties": False,
-    }
-
-    status, reasons = validate_complete_json_schema(composio_schema)
-
-    assert status == SchemaHealth.NON_STRICT_ONLY
-    assert len(reasons) > 0
-    assert any("additionalProperties" in reason for reason in reasons)
-
-
 def test_empty_object_in_required_marked_invalid():
     """Test that required properties allowing empty objects are marked INVALID."""
 
