@@ -120,6 +120,15 @@ class AgentRunManager {
     const isInitialLoad = this.runResponses.length === 0;
 
     if (isInitialLoad) {
+
+      if (runs.length === 0) {
+        this.isInitialized = true;
+        this.isLoadingRuns = false;
+        this.isInitialLoad = false;
+        this.publishLoadingState();
+        return;
+      }
+
       // Initial population from run monitor
       const newRunResponses: RunResponse[] = runs.map(run => ({
         run,
@@ -799,17 +808,17 @@ class AgentRunManager {
 
     // Abort all pending requests
     if (this.runsAbortController) {
-      this.runsAbortController.abort();
+      this.runsAbortController.abort('Manager flushed');
       this.runsAbortController = null;
     }
 
     if (this.activeStream) {
-      this.activeStream.controller.abort();
+      this.activeStream.controller.abort('Manager flushed');
       this.activeStream = null;
     }
 
     this.messageAbortControllers.forEach((controller) => {
-      controller.abort();
+      controller.abort('Manager flushed');
     });
     this.messageAbortControllers.clear();
 
