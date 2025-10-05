@@ -8,6 +8,8 @@ const subscriptions = new Map<string, () => void>();
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
 
+  console.log(message)
+
   try {
     switch (message.type) {
       case 'INIT': {
