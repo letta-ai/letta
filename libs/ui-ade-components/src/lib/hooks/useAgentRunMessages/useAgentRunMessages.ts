@@ -193,25 +193,23 @@ export function useAgentRunMessages({
 
     // Try to acquire the lock
 
-    setTimeout(() => {
-      if (!workerRef.current) return;
-      if (hasLockRef.current) return; // Already have the lock
+    if (!workerRef.current) return;
+    if (hasLockRef.current) return; // Already have the lock
 
-      if (tryAcquireLock(agentId, instanceId)) {
-        hasLockRef.current = true;
+    if (tryAcquireLock(agentId, instanceId)) {
+      hasLockRef.current = true;
 
-        initializeWorkerSubscription();
-      } else {
-        // Lock is held by another instance, register to wait
-        waitForLock(agentId, () => {
-          // Lock transferred to us, acquire it
-          if (tryAcquireLock(agentId, instanceId)) {
-            hasLockRef.current = true;
-            initializeWorkerSubscription();
-          }
-        });
-      }
-    }, 1000);
+      initializeWorkerSubscription();
+    } else {
+      // Lock is held by another instance, register to wait
+      waitForLock(agentId, () => {
+        // Lock transferred to us, acquire it
+        if (tryAcquireLock(agentId, instanceId)) {
+          hasLockRef.current = true;
+          initializeWorkerSubscription();
+        }
+      });
+    }
 
 
 
