@@ -26,12 +26,6 @@ variable "prod_ci_webhook_secret" {
 #   sensitive   = true
 # }
 
-# variable "prod_ci_COMPOSIO_API_KEY" {
-#   description = "Composio API Key for prod CI"
-#   type        = string
-#   sensitive   = true
-# }
-
 # variable "prod_ci_DEEPSEEK_API_KEY" {
 #   description = "DeepSeek API Key for prod CI"
 #   type        = string
@@ -100,12 +94,6 @@ variable "prod_cloud_api_voice_OPENAI_API_KEY" {
 
 variable "prod_cloud_api_voice_SENTRY_DSN" {
   description = "Sentry DSN for cloud-api service"
-  type        = string
-  sensitive   = true
-}
-
-variable "prod_cloud_api_voice_COMPOSIO_API_KEY" {
-  description = "Composio API Key for cloud-api service"
   type        = string
   sensitive   = true
 }
@@ -213,11 +201,6 @@ variable "prod_memgpt_server_voice_CLICKHOUSE_PASSWORD" {
   sensitive   = true
 }
 
-variable "prod_memgpt_server_voice_COMPOSIO_API_KEY" {
-  description = "Composio API Key for memgpt-server service"
-  type        = string
-  sensitive   = true
-}
 variable "prod_memgpt_server_voice_GEMINI_API_KEY" {
   description = "Gemini API Key for memgpt-server service"
   type        = string

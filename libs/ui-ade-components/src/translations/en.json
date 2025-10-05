@@ -2300,12 +2300,6 @@
         "description": "Zapier MCP gives your AI assistant direct access to over 7,000+ apps and 30,000+ actions without complex API integrations.",
         "instructions": "To connect Zapier to Letta, you need to set up your Zapier account to use the Model Context Protocol (MCP). Visit the <link>Zapier MCP website</link> to generate your Zapier API key, and paste it above."
       }
-    },
-    "connectComposio": {
-      "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
-      "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
-      "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
-      "connect": "Setup Composio"
     }
   },
   "ToolsEditor": {
@@ -2453,14 +2447,6 @@
       "title": "Viewing tool"
     },
     "ViewTool": {
-      "viewOnComposio": "View on Composio",
-      "viaComposioTool": "via",
-      "connectComposio": {
-        "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
-        "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
-        "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
-        "connect": "Setup Composio"
-      }
     },
     "AddToolToAgentButton": {
       "errors": {

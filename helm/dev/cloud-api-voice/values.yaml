@@ -125,7 +125,6 @@ env:
 secretsProvider:
   secrets:
     - OPENAI_API_KEY
-    - COMPOSIO_API_KEY
     # - TEMPORAL_LETTUCE_CA_PEM
     # - TEMPORAL_LETTUCE_CA_KEY
     - STRIPE_WEBHOOK_SECRET

@@ -111,7 +111,6 @@ configure-kubectl cluster-name="letta":
             --set env.REDIS_HOST="${REDIS_HOST}" \
             --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
             --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
-            --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
             --set env.E2B_API_KEY="${E2B_API_KEY}" \
             --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
             --set env.AUTH_GITHUB_CLIENT_ID="${AUTH_GITHUB_CLIENT_ID}" \
@@ -194,7 +193,6 @@ describe-web:
         --set image.tag={{TAG}} \
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --set secrets.OPENAI_API_KEY=${OPENAI_API_KEY} \
-        --set secrets.COMPOSIO_API_KEY=${COMPOSIO_API_KEY} \
         --set secrets.NEXT_PUBLIC_CURRENT_HOST=${NEXT_PUBLIC_CURRENT_HOST} \
         --set secrets.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
         --set secrets.LETTA_PG_USER=${LETTA_PG_USER} \
@@ -425,8 +423,7 @@ deploy-cloud-api: push-cloud-api
             --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
-            --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
-            --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
+            --set env.POSTHOG_KEY="${POSTHOG_KEY}"
     else
         helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
             --set image.tag={{TAG}} \

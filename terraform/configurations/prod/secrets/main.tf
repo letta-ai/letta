@@ -27,7 +27,6 @@ locals {
     # # Prod CI API Keys
     # "prod_ci_ANTHROPIC_API_KEY"   = var.prod_ci_ANTHROPIC_API_KEY
     # "prod_ci_AZURE_API_KEY"       = var.prod_ci_AZURE_API_KEY
-    # "prod_ci_COMPOSIO_API_KEY"    = var.prod_ci_COMPOSIO_API_KEY
     # "prod_ci_DEEPSEEK_API_KEY"    = var.prod_ci_DEEPSEEK_API_KEY
     # "prod_ci_E2B_ACCESS_TOKEN"    = var.prod_ci_E2B_ACCESS_TOKEN
     # "prod_ci_E2B_API_KEY"         = var.prod_ci_E2B_API_KEY
@@ -43,7 +42,6 @@ locals {
 
     # cloud-api secrets
     "prod_cloud-api-voice_OPENAI_API_KEY" = var.prod_cloud_api_voice_OPENAI_API_KEY
-    "prod_cloud-api-voice_COMPOSIO_API_KEY" = var.prod_cloud_api_voice_COMPOSIO_API_KEY
     "prod_cloud-api-voice_TEMPORAL_LETTUCE_CA_PEM" = var.prod_cloud_api_voice_TEMPORAL_LETTUCE_CA_PEM
     "prod_cloud-api-voice_TEMPORAL_LETTUCE_CA_KEY" = var.prod_cloud_api_voice_TEMPORAL_LETTUCE_CA_KEY
     "prod_cloud-api-voice_LAUNCH_DARKLY_SDK_KEY" = var.prod_cloud_api_voice_LAUNCH_DARKLY_SDK_KEY
@@ -71,7 +69,6 @@ locals {
     # "prod_letta-web_E2B_API_KEY" = var.prod_letta_web_E2B_API_KEY
     # "prod_letta-web_HUBSPOT_API_KEY" = var.prod_letta_web_HUBSPOT_API_KEY
     # "prod_letta-web_RESEND_API_KEY" = var.prod_letta_web_RESEND_API_KEY
-    # "prod_letta-web_COMPOSIO_API_KEY" = var.prod_letta_web_COMPOSIO_API_KEY
 
     # lettuce secrets (uncomment as needed)
     # "prod_lettuce_DATABASE_URL" = var.prod_lettuce_DATABASE_URL
@@ -99,7 +96,6 @@ locals {
     "prod_memgpt-server-voice_E2B_SANDBOX_TEMPLATE_ID" = var.prod_memgpt_server_voice_E2B_SANDBOX_TEMPLATE_ID
     "prod_memgpt-server-voice_SENTRY_DSN" = var.prod_memgpt_server_voice_SENTRY_DSN
     "prod_memgpt-server-voice_CLICKHOUSE_PASSWORD" = var.prod_memgpt_server_voice_CLICKHOUSE_PASSWORD
-    "prod_memgpt-server-voice_COMPOSIO_API_KEY" = var.prod_memgpt_server_voice_COMPOSIO_API_KEY
     "prod_memgpt-server-voice_GEMINI_API_KEY" = var.prod_memgpt_server_voice_GEMINI_API_KEY
     "prod_memgpt-server-voice_TAVILY_API_KEY" = var.prod_memgpt_server_voice_TAVILY_API_KEY
 

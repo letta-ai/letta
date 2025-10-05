@@ -1,81 +1,5 @@
 import { z } from 'zod';
 
-export type ActionParametersModel = z.infer<typeof ActionParametersModel>;
-export const ActionParametersModel = z.object({
-  properties: z.unknown(),
-  title: z.string(),
-  type: z.string(),
-  required: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  examples: z
-    .union([
-      z.array(z.unknown()),
-      z.null(),
-      z.array(z.union([z.array(z.unknown()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ActionResponseModel = z.infer<typeof ActionResponseModel>;
-export const ActionResponseModel = z.object({
-  properties: z.unknown(),
-  title: z.string(),
-  type: z.string(),
-  required: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  examples: z
-    .union([
-      z.array(z.unknown()),
-      z.null(),
-      z.array(z.union([z.array(z.unknown()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ActionModel = z.infer<typeof ActionModel>;
-export const ActionModel = z.object({
-  name: z.string(),
-  description: z.string(),
-  parameters: ActionParametersModel,
-  response: ActionResponseModel,
-  appName: z.string(),
-  appId: z.string(),
-  version: z.string(),
-  available_versions: z.array(z.string()),
-  tags: z.array(z.string()),
-  logo: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  display_name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  enabled: z.union([z.boolean(), z.undefined()]).optional(),
-});
-
 export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;
 export const AgentEnvironmentVariable = z.object({
   created_by_id: z
@@ -1793,8 +1717,8 @@ export const ToolType = z.union([
   z.literal('letta_voice_sleeptime_core'),
   z.literal('letta_builtin'),
   z.literal('letta_files_core'),
-  z.literal('external_composio'),
   z.literal('external_langchain'),
+  z.literal('external_composio'),
   z.literal('external_mcp'),
 ]);
 
@@ -2703,189 +2627,6 @@ export const AgentState = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
-export const AuthSchemeField = z.object({
-  name: z.string(),
-  display_name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  description: z.string(),
-  type: z.string(),
-  default: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  required: z.union([z.boolean(), z.undefined()]).optional(),
-  expected_from_customer: z.union([z.boolean(), z.undefined()]).optional(),
-  get_current_user_endpoint: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type AppAuthScheme = z.infer<typeof AppAuthScheme>;
-export const AppAuthScheme = z.object({
-  scheme_name: z.string(),
-  auth_mode: z.union([
-    z.literal('OAUTH2'),
-    z.literal('OAUTH1'),
-    z.literal('API_KEY'),
-    z.literal('BASIC'),
-    z.literal('BEARER_TOKEN'),
-    z.literal('BASIC_WITH_JWT'),
-    z.literal('GOOGLE_SERVICE_ACCOUNT'),
-    z.literal('GOOGLEADS_AUTH'),
-    z.literal('NO_AUTH'),
-    z.literal('CALCOM_AUTH'),
-  ]),
-  fields: z.array(AuthSchemeField),
-  proxy: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  authorization_url: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  token_url: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  default_scopes: z
-    .union([
-      z.array(z.unknown()),
-      z.null(),
-      z.array(z.union([z.array(z.unknown()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  token_response_metadata: z
-    .union([
-      z.array(z.unknown()),
-      z.null(),
-      z.array(z.union([z.array(z.unknown()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  client_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  client_secret: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type AppModel = z.infer<typeof AppModel>;
-export const AppModel = z.object({
-  name: z.string(),
-  key: z.string(),
-  appId: z.string(),
-  description: z.string(),
-  categories: z.array(z.string()),
-  meta: z.unknown(),
-  logo: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  docs: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  group: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  status: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  enabled: z.union([z.boolean(), z.undefined()]).optional(),
-  no_auth: z.union([z.boolean(), z.undefined()]).optional(),
-  auth_schemes: z
-    .union([
-      z.array(AppAuthScheme),
-      z.null(),
-      z.array(z.union([z.array(AppAuthScheme), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  testConnectors: z
-    .union([
-      z.array(z.unknown()),
-      z.null(),
-      z.array(z.union([z.array(z.unknown()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  documentation_doc_text: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  configuration_docs_text: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -8334,94 +8075,6 @@ export const post_Run_tool_from_source = {
     body: ToolRunFromSource,
   }),
   response: ToolReturnMessage,
-};
-
-export type get_List_composio_apps = typeof get_List_composio_apps;
-export const get_List_composio_apps = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/tools/composio/apps'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Message-Async': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Letta-V1-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(AppModel),
-};
-
-export type get_List_composio_actions_by_app =
-  typeof get_List_composio_actions_by_app;
-export const get_List_composio_actions_by_app = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/tools/composio/apps/{composio_app_name}/actions'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      composio_app_name: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Message-Async': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Letta-V1-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(ActionModel),
-};
-
-export type post_Add_composio_tool = typeof post_Add_composio_tool;
-export const post_Add_composio_tool = {
-  method: z.literal('POST'),
-  path: z.literal('/v1/tools/composio/{composio_action_name}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      composio_action_name: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Message-Async': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Experimental-Letta-V1-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: Tool,
 };
 
 export type get_List_mcp_servers = typeof get_List_mcp_servers;
@@ -14095,7 +13748,6 @@ export const EndpointByMethod = {
     '/v1/tools/': post_Create_tool,
     '/v1/tools/add-base-tools': post_Add_base_tools,
     '/v1/tools/run': post_Run_tool_from_source,
-    '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}/resync':
       post_Resync_mcp_server_tools,
     '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
@@ -14155,9 +13807,6 @@ export const EndpointByMethod = {
     '/v1/tools/{tool_id}': get_Retrieve_tool,
     '/v1/tools/count': get_Count_tools,
     '/v1/tools/': get_List_tools,
-    '/v1/tools/composio/apps': get_List_composio_apps,
-    '/v1/tools/composio/apps/{composio_app_name}/actions':
-      get_List_composio_actions_by_app,
     '/v1/tools/mcp/servers': get_List_mcp_servers,
     '/v1/tools/mcp/servers/{mcp_server_name}/tools':
       get_List_mcp_tools_by_server,
