@@ -12,14 +12,23 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import (
+    AgentExportIdMappingError,
+    AgentExportProcessingError,
+    AgentFileImportError,
+    AgentNotFoundForExportError,
     BedrockPermissionError,
     LettaAgentNotFoundError,
+    LettaInvalidArgumentError,
+    LettaMCPConnectionError,
+    LettaMCPTimeoutError,
     LettaToolCreateError,
     LettaToolNameConflictError,
     LettaUserNotFoundError,
@@ -234,16 +243,41 @@ def create_application() -> "FastAPI":
     _error_handler_404 = partial(error_handler_with_code, code=404)
     _error_handler_404_agent = partial(_error_handler_404, detail="Agent not found")
     _error_handler_404_user = partial(_error_handler_404, detail="User not found")
+    _error_handler_408 = partial(error_handler_with_code, code=408)
     _error_handler_409 = partial(error_handler_with_code, code=409)
+    _error_handler_422 = partial(error_handler_with_code, code=422)
+    _error_handler_500 = partial(error_handler_with_code, code=500)
+    _error_handler_503 = partial(error_handler_with_code, code=503)
 
-    app.add_exception_handler(ValueError, _error_handler_400)
+    # 400 Bad Request errors
+    app.add_exception_handler(LettaInvalidArgumentError, _error_handler_400)
+    app.add_exception_handler(LettaToolCreateError, _error_handler_400)
+    app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
+    app.add_exception_handler(AgentFileImportError, _error_handler_400)
+
+    # 404 Not Found errors
     app.add_exception_handler(NoResultFound, _error_handler_404)
     app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
+    app.add_exception_handler(AgentNotFoundForExportError, _error_handler_404)
+
+    # 408 Timeout errors
+    app.add_exception_handler(LettaMCPTimeoutError, _error_handler_408)
+
+    # 409 Conflict errors
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
-    app.add_exception_handler(LettaToolCreateError, _error_handler_400)
-    app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
+    app.add_exception_handler(IntegrityError, _error_handler_409)
+
+    # 422 Validation errors
+    app.add_exception_handler(ValidationError, _error_handler_422)
+
+    # 500 Internal Server errors
+    app.add_exception_handler(AgentExportIdMappingError, _error_handler_500)
+    app.add_exception_handler(AgentExportProcessingError, _error_handler_500)
+
+    # 503 Service Unavailable errors
+    app.add_exception_handler(OperationalError, _error_handler_503)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -322,6 +356,19 @@ def create_application() -> "FastAPI":
                 "error": {
                     "type": "llm_authentication",
                     "message": "Authentication failed with the LLM model provider.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LettaMCPConnectionError)
+    async def mcp_connection_error_handler(request: Request, exc: LettaMCPConnectionError):
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": {
+                    "type": "mcp_connection_error",
+                    "message": "Failed to connect to MCP server.",
                     "detail": str(exc),
                 }
             },

@@ -195,24 +195,12 @@ async def export_agent(
 
     if use_legacy_format:
         # Use the legacy serialization method
-        try:
-            agent = await server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
-            return agent.model_dump()
-        except NoResultFound:
-            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+        agent = await server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
+        return agent.model_dump()
     else:
         # Use the new multi-entity export format
-        try:
-            agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
-            return agent_file_schema.model_dump()
-        except AgentNotFoundForExportError:
-            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
-        except AgentExportIdMappingError as e:
-            raise HTTPException(
-                status_code=500, detail=f"Internal error during export: ID mapping failed for {e.entity_type} ID '{e.db_id}'"
-            )
-        except AgentExportProcessingError as e:
-            raise HTTPException(status_code=500, detail=f"Export processing failed: {str(e.original_error)}")
+        agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+        return agent_file_schema.model_dump()
 
 
 class ImportedAgentsResponse(BaseModel):
@@ -234,33 +222,19 @@ def import_agent_legacy(
     """
     Import an agent using the legacy AgentSchema format.
     """
-    try:
-        # Validate the JSON against AgentSchema before passing it to deserialize
-        agent_schema = AgentSchema.model_validate(agent_json)
+    # Validate the JSON against AgentSchema before passing it to deserialize
+    agent_schema = AgentSchema.model_validate(agent_json)
 
-        new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            project_id=project_id,
-            strip_messages=strip_messages,
-            env_vars=env_vars,
-        )
-        return [new_agent.id]
-
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e!s}")
-
-    except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
-
-    except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
-
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
+    new_agent = server.agent_manager.deserialize(
+        serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+        actor=actor,
+        append_copy_suffix=append_copy_suffix,
+        override_existing_tools=override_existing_tools,
+        project_id=project_id,
+        strip_messages=strip_messages,
+        env_vars=env_vars,
+    )
+    return [new_agent.id]
 
 
 async def _import_agent(
@@ -278,46 +252,29 @@ async def _import_agent(
     """
     Import an agent using the new AgentFileSchema format.
     """
-    try:
-        agent_schema = AgentFileSchema.model_validate(agent_file_json)
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
+    agent_schema = AgentFileSchema.model_validate(agent_file_json)
 
-    try:
-        if override_embedding_handle:
-            embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
-        else:
-            embedding_config_override = None
+    if override_embedding_handle:
+        embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+    else:
+        embedding_config_override = None
 
-        import_result = await server.agent_serialization_manager.import_file(
-            schema=agent_schema,
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            env_vars=env_vars,
-            override_embedding_config=embedding_config_override,
-            project_id=project_id,
-        )
+    import_result = await server.agent_serialization_manager.import_file(
+        schema=agent_schema,
+        actor=actor,
+        append_copy_suffix=append_copy_suffix,
+        override_existing_tools=override_existing_tools,
+        env_vars=env_vars,
+        override_embedding_config=embedding_config_override,
+        project_id=project_id,
+    )
 
-        if not import_result.success:
-            raise HTTPException(
-                status_code=500, detail=f"Import failed: {import_result.message}. Errors: {', '.join(import_result.errors)}"
-            )
+    if not import_result.success:
+        from letta.errors import AgentFileImportError
 
-        return import_result.imported_agent_ids
+        raise AgentFileImportError(f"Import failed: {import_result.message}. Errors: {', '.join(import_result.errors)}")
 
-    except AgentFileImportError as e:
-        raise HTTPException(status_code=400, detail=f"Agent file import error: {str(e)}")
-
-    except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
-
-    except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
-
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
+    return import_result.imported_agent_ids
 
 
 @router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
@@ -405,11 +362,7 @@ async def retrieve_agent_context_window(
     Retrieve the context window of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
-    except Exception as e:
-        traceback.print_exc()
-        raise e
+    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -433,14 +386,10 @@ async def create_agent(
     """
     Create an agent.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent:
-            agent.agent_type = AgentType.letta_v1_agent
-        return await server.create_agent_async(agent, actor=actor)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent:
+        agent.agent_type = AgentType.letta_v1_agent
+    return await server.create_agent_async(agent, actor=actor)
 
 
 @router.patch("/{agent_id}", response_model=AgentState, operation_id="modify_agent")
@@ -683,12 +632,9 @@ async def open_file(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Get the agent to access files configuration
-    try:
-        per_file_view_window_char_limit, max_files_open = await server.agent_manager.get_agent_files_config_async(
-            agent_id=agent_id, actor=actor
-        )
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found")
+    per_file_view_window_char_limit, max_files_open = await server.agent_manager.get_agent_files_config_async(
+        agent_id=agent_id, actor=actor
+    )
 
     # Get file metadata
     file_metadata = await server.file_manager.get_file_by_id(file_id=file_id, actor=actor, include_content=True)
@@ -734,16 +680,13 @@ async def close_file(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Use update_file_agent_by_id to close the file
-    try:
-        await server.file_agent_manager.update_file_agent_by_id(
-            agent_id=agent_id,
-            file_id=file_id,
-            actor=actor,
-            is_open=False,
-        )
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"File id={file_id} successfully closed"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"File association for file_id={file_id} and agent_id={agent_id} not found")
+    await server.file_agent_manager.update_file_agent_by_id(
+        agent_id=agent_id,
+        file_id=file_id,
+        actor=actor,
+        is_open=False,
+    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"File id={file_id} successfully closed"})
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
@@ -769,10 +712,7 @@ async def retrieve_agent(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
@@ -785,11 +725,8 @@ async def delete_agent(
     Delete an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
+    await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
 
 
 @router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources")
@@ -889,10 +826,7 @@ async def retrieve_block(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
@@ -917,17 +851,14 @@ async def list_blocks(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.agent_manager.list_agent_blocks_async(
-            agent_id=agent_id,
-            actor=actor,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-        )
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    return await server.agent_manager.list_agent_blocks_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
@@ -1050,34 +981,26 @@ async def search_archival_memory(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        # convert datetime to string in ISO 8601 format
-        start_datetime = start_datetime.isoformat() if start_datetime else None
-        end_datetime = end_datetime.isoformat() if end_datetime else None
+    # convert datetime to string in ISO 8601 format
+    start_datetime = start_datetime.isoformat() if start_datetime else None
+    end_datetime = end_datetime.isoformat() if end_datetime else None
 
-        # Use the shared agent manager method
-        formatted_results = await server.agent_manager.search_agent_archival_memory_async(
-            agent_id=agent_id,
-            actor=actor,
-            query=query,
-            tags=tags,
-            tag_match_mode=tag_match_mode,
-            top_k=top_k,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-        )
+    # Use the shared agent manager method
+    formatted_results = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=agent_id,
+        actor=actor,
+        query=query,
+        tags=tags,
+        tag_match_mode=tag_match_mode,
+        top_k=top_k,
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+    )
 
-        # Convert to proper response schema
-        search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
+    # Convert to proper response schema
+    search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
 
-        return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
-
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error during archival memory search: {str(e)}")
+    return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
 
 
 # TODO(ethan): query or path parameter for memory_id?
@@ -1572,21 +1495,18 @@ async def search_messages(
     if agent_count == 0:
         raise HTTPException(status_code=400, detail="No agents found in organization to derive embedding configuration from")
 
-    try:
-        results = await server.message_manager.search_messages_org_async(
-            actor=actor,
-            query_text=request.query,
-            search_mode=request.search_mode,
-            roles=request.roles,
-            project_id=request.project_id,
-            template_id=request.template_id,
-            limit=request.limit,
-            start_date=request.start_date,
-            end_date=request.end_date,
-        )
-        return results
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    results = await server.message_manager.search_messages_org_async(
+        actor=actor,
+        query_text=request.query,
+        search_mode=request.search_mode,
+        roles=request.roles,
+        project_id=request.project_id,
+        template_id=request.template_id,
+        limit=request.limit,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
+    return results
 
 
 async def _process_message_background(
