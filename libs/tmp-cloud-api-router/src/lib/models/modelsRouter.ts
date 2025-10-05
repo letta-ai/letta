@@ -105,12 +105,15 @@ async function listLLMModels(
         meta?.defaultContextWindow &&
         !isNaN(parseInt(meta.defaultContextWindow, 10))
           ? parseInt(meta.defaultContextWindow, 10)
-          : model.context_window;
+          : undefined;
 
       return {
         ...model,
         model: meta ? meta.name : model.model,
-        context_window: defaultContextWindow || model.context_window,
+        // Preserve the true maximum context window reported by the provider
+        context_window: model.context_window,
+        // Optionally surface the org-level default as a separate hint for UIs
+        default_context_window: defaultContextWindow,
         tier: meta?.tier,
       };
     });
