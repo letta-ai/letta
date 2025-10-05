@@ -10,6 +10,7 @@ import 'array.prototype.tosorted';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
 import { QueryClientProviders } from './_components/ClientSideProviders/QueryClientProviders/QueryClientProviders';
+import { getUser } from '$web/server/auth/lib/getUser/getUser';
 
 export const metadata = {
   title: 'Letta',
@@ -56,13 +57,16 @@ export default async function RootLayout({
 
   const messages = await getMessages();
 
-  const theme = (await cookies()).get(CookieNames.THEME);
+  const themeCookie = (await cookies()).get(CookieNames.THEME);
+  // Prefer the server user theme (DB) when available to avoid flicker when cookie is missing/stale
+  const user = await getUser();
+  const initialTheme = user?.theme || themeCookie?.value || 'auto';
 
   return (
     <html
       lang={locale}
-      data-mode={theme?.value || 'auto'}
-      className={cn(manrope.className, 'overflow-x-hidden', theme?.value)}
+      data-mode={initialTheme}
+      className={cn(manrope.className, 'overflow-x-hidden', initialTheme)}
     >
       <head>
         {PERFORMANCE_ANALYZER === 'true' && (

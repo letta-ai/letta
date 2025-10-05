@@ -23,12 +23,35 @@ export function ThemeSelector() {
   const theme = user?.theme || 'auto';
 
   useEffect(() => {
-    document.documentElement.className = theme || '';
-    document.documentElement.dataset['mode'] = theme || '';
+    const root = document.documentElement;
+    // Preserve existing classes (e.g., font and layout) and only manage theme classes/data-attr
+    root.dataset['mode'] = theme || 'auto';
+
+    // Toggle only the 'dark' class explicitly; Tailwind also respects [data-mode="dark"]
+    root.classList.remove('dark');
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    }
   }, [theme]);
 
   const handleThemeChange = useCallback(
     (nextTheme: string) => {
+      // Apply immediately on client and persist to localStorage for no-flash reloads
+      try {
+        localStorage.setItem('theme', nextTheme);
+        const root = document.documentElement;
+        root.dataset['mode'] = nextTheme || 'auto';
+        root.classList.remove('dark');
+        if (
+          nextTheme === 'dark' ||
+          (nextTheme === 'auto' &&
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+          root.classList.add('dark');
+        }
+      } catch (_e) {}
+
       queryClient.setQueriesData<
         | ServerInferResponses<typeof contracts.user.getCurrentUser, 200>
         | undefined
