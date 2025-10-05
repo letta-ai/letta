@@ -137,6 +137,15 @@ class ModelSettings(BaseSettings):
     # anthropic
     anthropic_api_key: Optional[str] = None
     anthropic_max_retries: int = 3
+    anthropic_sonnet_1m: bool = Field(
+        default=False,
+        description=(
+            "Enable 1M-token context window for Claude Sonnet 4/4.5. When true, adds the"
+            " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
+            " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
+            " to all orgs; once GA, this flag can be removed and behavior can default to on."
+        ),
+    )
 
     # ollama
     ollama_base_url: Optional[str] = None
