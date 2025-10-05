@@ -343,8 +343,7 @@ class VoiceAgent(BaseAgent):
             tools = [
                 t
                 for t in agent_state.tools
-                if t.tool_type
-                in {ToolType.EXTERNAL_COMPOSIO, ToolType.CUSTOM, ToolType.LETTA_FILES_CORE, ToolType.LETTA_BUILTIN, ToolType.EXTERNAL_MCP}
+                if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_FILES_CORE, ToolType.LETTA_BUILTIN, ToolType.EXTERNAL_MCP}
             ]
         else:
             tools = agent_state.tools

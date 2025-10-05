@@ -3432,8 +3432,8 @@
                                     "letta_voice_sleeptime_core",
                                     "letta_builtin",
                                     "letta_files_core",
-                                    "external_composio",
                                     "external_langchain",
+                                    "external_composio",
                                     "external_mcp"
                                   ]
                                 },
@@ -9783,8 +9783,8 @@
                                     "letta_voice_sleeptime_core",
                                     "letta_builtin",
                                     "letta_files_core",
-                                    "external_composio",
                                     "external_langchain",
+                                    "external_composio",
                                     "external_mcp"
                                   ]
                                 },

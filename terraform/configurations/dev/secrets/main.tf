@@ -27,7 +27,6 @@ locals {
     # Dev CI API Keys
     "dev_ci_ANTHROPIC_API_KEY"   = var.dev_ci_ANTHROPIC_API_KEY
     "dev_ci_AZURE_API_KEY"       = var.dev_ci_AZURE_API_KEY
-    "dev_ci_COMPOSIO_API_KEY"    = var.dev_ci_COMPOSIO_API_KEY
     "dev_ci_DEEPSEEK_API_KEY"    = var.dev_ci_DEEPSEEK_API_KEY
     "dev_ci_E2B_ACCESS_TOKEN"    = var.dev_ci_E2B_ACCESS_TOKEN
     "dev_ci_E2B_API_KEY"         = var.dev_ci_E2B_API_KEY
@@ -58,7 +57,6 @@ locals {
 
     # cloud-api secrets
     "dev_cloud-api_OPENAI_API_KEY" = var.dev_cloud_api_OPENAI_API_KEY
-    "dev_cloud-api_COMPOSIO_API_KEY" = var.dev_cloud_api_COMPOSIO_API_KEY
     "dev_cloud-api_TEMPORAL_LETTUCE_CA_PEM" = var.dev_cloud_api_TEMPORAL_LETTUCE_CA_PEM
     "dev_cloud-api_TEMPORAL_LETTUCE_CA_KEY" = var.dev_cloud_api_TEMPORAL_LETTUCE_CA_KEY
     "dev_cloud-api_LAUNCH_DARKLY_SDK_KEY" = var.dev_cloud_api_LAUNCH_DARKLY_SDK_KEY
@@ -86,7 +84,6 @@ locals {
     "dev_letta-web_E2B_API_KEY" = var.dev_letta_web_E2B_API_KEY
     # "dev_letta-web_HUBSPOT_API_KEY" = var.dev_letta_web_HUBSPOT_API_KEY
     # "dev_letta-web_RESEND_API_KEY" = var.dev_letta_web_RESEND_API_KEY
-    "dev_letta-web_COMPOSIO_API_KEY" = var.dev_letta_web_COMPOSIO_API_KEY
     "dev_letta-web_POSTHOG_KEY" = var.dev_letta_web_POSTHOG_KEY
     "dev_letta-web_POSTHOG_HOST" = var.dev_letta_web_POSTHOG_HOST
     "dev_letta-web_NEXT_PUBLIC_POSTHOG_KEY" = var.dev_letta_web_NEXT_PUBLIC_POSTHOG_KEY
@@ -121,7 +118,6 @@ locals {
     "dev_memgpt-server_LETTA_PINECONE_API_KEY" = var.dev_memgpt_server_LETTA_PINECONE_API_KEY
     "dev_memgpt-server_LETTA_TPUF_API_KEY" = var.dev_memgpt_server_LETTA_TPUF_API_KEY
     "dev_memgpt-server_LETTA_ENCRYPTION_KEY" = var.dev_memgpt_server_LETTA_ENCRYPTION_KEY
-    "dev_memgpt-server_COMPOSIO_API_KEY" = var.dev_memgpt_server_COMPOSIO_API_KEY
     "dev_memgpt-server_LETTA_TEMPORAL_API_KEY" = var.dev_memgpt_server_LETTA_TEMPORAL_API_KEY
     "dev_memgpt-server_LETTA_MISTRAL_API_KEY" = var.dev_memgpt_server_LETTA_MISTRAL_API_KEY
 

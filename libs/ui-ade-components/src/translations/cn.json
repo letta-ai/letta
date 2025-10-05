@@ -1336,12 +1336,6 @@
       "attach": "附加工具",
       "detach": "分离工具",
       "attached": "已附加"
-    },
-    "connectComposio": {
-      "title": "要将此工具和4000多个其他工具附加到您的智能体，请连接到Composio",
-      "descriptionLocal": "要向您的智能体启用Composio工具，请将<code>COMPOSIO_API_KEY</code>添加到您的服务器环境变量",
-      "descriptionRemote": "要向您的智能体启用Composio工具，请访问Composio集成页面",
-      "connect": "设置Composio"
     }
   },
   "ToolsEditor": {
@@ -1473,14 +1467,6 @@
       "title": "查看工具"
     },
     "ViewTool": {
-      "viewOnComposio": "在Composio上查看",
-      "viaComposioTool": "通过",
-      "connectComposio": {
-        "title": "要将此工具和4000多个其他工具附加到您的智能体，请连接到Composio",
-        "descriptionLocal": "要向您的智能体启用Composio工具，请将<code>COMPOSIO_API_KEY</code>添加到您的服务器环境变量",
-        "descriptionRemote": "要向您的智能体启用Composio工具，请访问Composio集成页面",
-        "connect": "设置Composio"
-      }
     },
     "AddToolToAgentButton": {
       "errors": {

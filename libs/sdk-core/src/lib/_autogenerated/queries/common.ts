@@ -259,81 +259,6 @@ export const UseToolsServiceListToolsKeyFn = (
     },
   ]),
 ];
-export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.listComposioApps>
->;
-export type ToolsServiceListComposioAppsQueryResult<
-  TData = ToolsServiceListComposioAppsDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceListComposioAppsKey =
-  'ToolsServiceListComposioApps';
-export const UseToolsServiceListComposioAppsKeyFn = (
-  {
-    userAgent,
-    userId,
-    xExperimentalLettaV1Agent,
-    xExperimentalMessageAsync,
-    xProjectId,
-  }: {
-    userAgent?: string;
-    userId?: string;
-    xExperimentalLettaV1Agent?: string;
-    xExperimentalMessageAsync?: string;
-    xProjectId?: string;
-  } = {},
-  queryKey?: Array<unknown>,
-) => [
-  useToolsServiceListComposioAppsKey,
-  ...(queryKey ?? [
-    {
-      userAgent,
-      userId,
-      xExperimentalLettaV1Agent,
-      xExperimentalMessageAsync,
-      xProjectId,
-    },
-  ]),
-];
-export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.listComposioActionsByApp>
->;
-export type ToolsServiceListComposioActionsByAppQueryResult<
-  TData = ToolsServiceListComposioActionsByAppDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceListComposioActionsByAppKey =
-  'ToolsServiceListComposioActionsByApp';
-export const UseToolsServiceListComposioActionsByAppKeyFn = (
-  {
-    composioAppName,
-    userAgent,
-    userId,
-    xExperimentalLettaV1Agent,
-    xExperimentalMessageAsync,
-    xProjectId,
-  }: {
-    composioAppName: string;
-    userAgent?: string;
-    userId?: string;
-    xExperimentalLettaV1Agent?: string;
-    xExperimentalMessageAsync?: string;
-    xProjectId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useToolsServiceListComposioActionsByAppKey,
-  ...(queryKey ?? [
-    {
-      composioAppName,
-      userAgent,
-      userId,
-      xExperimentalLettaV1Agent,
-      xExperimentalMessageAsync,
-      xProjectId,
-    },
-  ]),
-];
 export type ToolsServiceListMcpServersDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listMcpServers>
 >;
@@ -4138,9 +4063,6 @@ export type ToolsServiceAddBaseToolsMutationResult = Awaited<
 >;
 export type ToolsServiceRunToolFromSourceMutationResult = Awaited<
   ReturnType<typeof ToolsService.runToolFromSource>
->;
-export type ToolsServiceAddComposioToolMutationResult = Awaited<
-  ReturnType<typeof ToolsService.addComposioTool>
 >;
 export type ToolsServiceResyncMcpServerToolsMutationResult = Awaited<
   ReturnType<typeof ToolsService.resyncMcpServerTools>

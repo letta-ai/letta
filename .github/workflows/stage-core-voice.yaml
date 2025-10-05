@@ -113,7 +113,6 @@ jobs:
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
           TOGETHER_API_KEY: ${{ env.TOGETHER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
           GROK_API_KEY: ${{ env.GROK_API_KEY }}
           LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}

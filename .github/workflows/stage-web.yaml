@@ -207,7 +207,6 @@ jobs:
         id: deploy
         env:
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
         run: just deploy-web "${DEPLOY_MESSAGE}"
 

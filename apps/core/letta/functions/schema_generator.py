@@ -2,7 +2,6 @@ import inspect
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Type, Union, get_args, get_origin
 
-from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
 from pydantic import BaseModel
 from typing_extensions import Literal
@@ -791,74 +790,4 @@ def generate_tool_schema_for_mcp(
             "name": name,
             "description": description,
             "parameters": parameters_schema,
-        }
-
-
-def generate_tool_schema_for_composio(
-    parameters_model: ActionParametersModel,
-    name: str,
-    description: str,
-    append_heartbeat: bool = True,
-    strict: bool = False,
-) -> Dict[str, Any]:
-    properties_json = {}
-    required_fields = parameters_model.required or []
-
-    # Extract properties from the ActionParametersModel
-    for field_name, field_props in parameters_model.properties.items():
-        # Initialize the property structure
-        property_schema = {
-            "type": field_props["type"],
-            "description": field_props.get("description", ""),
-        }
-
-        # Handle optional default values
-        if "default" in field_props:
-            property_schema["default"] = field_props["default"]
-
-        # Handle enumerations
-        if "enum" in field_props:
-            property_schema["enum"] = field_props["enum"]
-
-        # Handle array item types
-        if field_props["type"] == "array":
-            if "items" in field_props:
-                property_schema["items"] = field_props["items"]
-            elif "anyOf" in field_props:
-                property_schema["items"] = [t for t in field_props["anyOf"] if "items" in t][0]["items"]
-
-        # Add the property to the schema
-        properties_json[field_name] = property_schema
-
-    # Add the optional heartbeat parameter
-    if append_heartbeat:
-        properties_json[REQUEST_HEARTBEAT_PARAM] = {
-            "type": "boolean",
-            "description": REQUEST_HEARTBEAT_DESCRIPTION,
-        }
-        required_fields.append(REQUEST_HEARTBEAT_PARAM)
-
-    # Return the final schema
-    if strict:
-        # https://platform.openai.com/docs/guides/function-calling#strict-mode
-        return {
-            "name": name,
-            "description": description,
-            "strict": True,  # NOTE
-            "parameters": {
-                "type": "object",
-                "properties": properties_json,
-                "additionalProperties": False,  # NOTE
-                "required": required_fields,
-            },
-        }
-    else:
-        return {
-            "name": name,
-            "description": description,
-            "parameters": {
-                "type": "object",
-                "properties": properties_json,
-                "required": required_fields,
-            },
         }

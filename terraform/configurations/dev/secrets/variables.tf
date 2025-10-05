@@ -26,12 +26,6 @@ variable "dev_ci_AZURE_API_KEY" {
   sensitive   = true
 }
 
-variable "dev_ci_COMPOSIO_API_KEY" {
-  description = "Composio API Key for dev CI"
-  type        = string
-  sensitive   = true
-}
-
 variable "dev_ci_DEEPSEEK_API_KEY" {
   description = "DeepSeek API Key for dev CI"
   type        = string
@@ -184,12 +178,6 @@ variable "dev_cloud_api_SENTRY_DSN" {
   sensitive   = true
 }
 
-variable "dev_cloud_api_COMPOSIO_API_KEY" {
-  description = "Composio API Key for cloud-api service"
-  type        = string
-  sensitive   = true
-}
-
 variable "dev_cloud_api_TEMPORAL_LETTUCE_CA_PEM" {
   description = "Temporal Lettuce CA PEM for cloud-api service"
   type        = string
@@ -337,12 +325,6 @@ variable "dev_letta_web_NEXT_PUBLIC_POSTHOG_KEY" {
 #   sensitive   = true
 # }
 
-variable "dev_letta_web_COMPOSIO_API_KEY" {
-  description = "Composio API Key for letta-web service"
-  type        = string
-  sensitive   = true
-}
-
 # lettuce-py secrets
 variable "dev_lettuce_py_LETTA_PG_URI" {
   description = "Database URI for lettuce-py service"
@@ -479,12 +461,6 @@ variable "dev_memgpt_server_LETTA_PINECONE_API_KEY" {
   sensitive   = true
 }
 
-variable "dev_memgpt_server_COMPOSIO_API_KEY" {
-  description = "Composio API Key for memgpt-server service"
-  type        = string
-  sensitive   = true
-}
-
 variable "dev_memgpt_server_LETTA_TEMPORAL_API_KEY" {
   description = "Temporal API Key for memgpt-server service"
   type        = string
@@ -501,12 +477,6 @@ variable "dev_memgpt_server_LETTA_MISTRAL_API_KEY" {
 
 variable "dev_memgpt_server_voice_OPENAI_API_KEY" {
   description = "OpenAI API Key for memgpt-server-voice service"
-  type        = string
-  sensitive   = true
-}
-
-variable "dev_memgpt_server_voice_COMPOSIO_API_KEY" {
-  description = "Composio API Key for memgpt-server-voice service"
   type        = string
   sensitive   = true
 }

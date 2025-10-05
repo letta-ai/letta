@@ -150,7 +150,6 @@ secretsProvider:
     - LETTA_PG_PASSWORD
     # api secrets
     - ANTHROPIC_API_KEY
-    - COMPOSIO_API_KEY
     - GEMINI_API_KEY
     - TAVILY_API_KEY
     - OPENAI_API_KEY
