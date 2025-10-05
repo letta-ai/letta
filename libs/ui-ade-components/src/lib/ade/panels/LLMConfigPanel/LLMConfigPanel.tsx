@@ -38,6 +38,14 @@ export function LLMConfigPanel() {
     );
   }, [currentAgent.llm_config, modelsList]);
 
+  // Cloud-only hint: admin-configured default context window
+  const defaultContextWindowFromCloud = useMemo(() => {
+    if (!currentBaseModel) return undefined;
+    const rec = currentBaseModel as Record<string, unknown>;
+    const val = rec['default_context_window'];
+    return typeof val === 'number' ? val : undefined;
+  }, [currentBaseModel]);
+
   if (!currentAgent.llm_config || !modelsList) {
     return (
       <LoadingEmptyStatusComponent
@@ -60,7 +68,11 @@ export function LLMConfigPanel() {
             key={currentBaseModel.context_window}
             maxContextWindow={currentBaseModel.context_window}
             defaultContextWindow={
-              currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
+              // Prefer org-configured default if provided by cloud models router
+              // otherwise fall back to current agent value
+              defaultContextWindowFromCloud ??
+              currentAgent.llm_config.context_window ??
+              MIN_CONTEXT_WINDOW
             }
           />
         )}
