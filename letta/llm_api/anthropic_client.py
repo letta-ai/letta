@@ -55,15 +55,46 @@ class AnthropicClient(LLMClientBase):
     @deprecated("Synchronous version of this is no longer valid. Will result in model_dump of coroutine")
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
-        response = client.beta.messages.create(**request_data)
+        betas: list[str] = []
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
+
+        if betas:
+            response = client.beta.messages.create(**request_data, betas=betas)
+        else:
+            response = client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
 
+        betas: list[str] = []
+        # interleaved thinking for reasoner
         if llm_config.enable_reasoner:
-            response = await client.beta.messages.create(**request_data, betas=["interleaved-thinking-2025-05-14"])
+            betas.append("interleaved-thinking-2025-05-14")
+
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
+
+        if betas:
+            response = await client.beta.messages.create(**request_data, betas=betas)
         else:
             response = await client.beta.messages.create(**request_data)
 
@@ -83,6 +114,17 @@ class AnthropicClient(LLMClientBase):
         # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#interleaved-thinking
         if llm_config.enable_reasoner:
             betas.append("interleaved-thinking-2025-05-14")
+
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
 
         return await client.beta.messages.create(**request_data, betas=betas)
 
