@@ -4,9 +4,6 @@ import typer
 
 from letta.cli.cli import server
 
-# disable composio print on exit
-os.environ["COMPOSIO_DISABLE_VERSION_CHECK"] = "true"
-
 app = typer.Typer(pretty_exceptions_enable=False)
 
 # Register server as both the default command and as a subcommand

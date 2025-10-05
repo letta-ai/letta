@@ -685,7 +685,6 @@ def test_agent_download_upload_flow(server, server_url, serialize_test_agent, de
 @pytest.mark.parametrize(
     "filename",
     [
-        "composio_github_star_agent.af",
         "outreach_workflow_agent.af",
         "customer_service.af",
         "deep_research_agent.af",

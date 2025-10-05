@@ -168,9 +168,6 @@ navigation:
             path: pages/agents/tool_rules.mdx
           - page: Tool Variables
             path: pages/agents/tool_variables.mdx
-          - page: Composio Integration
-            path: pages/agents/composio.mdx
-            hidden: true
           - section: Model Context Protocol
             path: pages/mcp/overview.mdx
             contents:
