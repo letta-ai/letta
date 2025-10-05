@@ -44,7 +44,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
+from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -451,7 +451,7 @@ async def test_update_block_limit(server: SyncServer, default_user):
     update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description")
 
     # Check that exceeding the block limit raises an exception
-    with pytest.raises(ValueError):
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.update_block_async(block_id=block.id, block_update=update_data, actor=default_user)
 
     # Ensure the update works when within limits
@@ -908,8 +908,8 @@ async def test_undo_checkpoint_block(server: SyncServer, default_user):
     assert undone_block.label == "undo_test", "Label should also revert if changed (or remain the same if unchanged)"
 
 
-#@pytest.mark.asyncio
-#async def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default_user):
+# @pytest.mark.asyncio
+# async def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default_user):
 #    """
 #    Verifies that once we've undone to an earlier checkpoint, creating a new
 #    checkpoint removes any leftover 'future' states that existed beyond that sequence.
@@ -980,7 +980,7 @@ async def test_undo_checkpoint_block(server: SyncServer, default_user):
 async def test_undo_no_history(server: SyncServer, default_user):
     """
     If a block has never been checkpointed (no current_history_entry_id),
-    undo_checkpoint_block should raise a ValueError.
+    undo_checkpoint_block should raise a LettaInvalidArgumentError.
     """
     block_manager = BlockManager()
 
@@ -988,7 +988,7 @@ async def test_undo_no_history(server: SyncServer, default_user):
     block = await block_manager.create_or_update_block_async(PydanticBlock(label="no_history_test", value="initial"), actor=default_user)
 
     # Attempt to undo
-    with pytest.raises(ValueError, match="has no history entry - cannot undo"):
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
 
 
@@ -1007,8 +1007,8 @@ async def test_undo_first_checkpoint(server: SyncServer, default_user):
     # 2) First checkpoint => seq=1
     await block_manager.checkpoint_block_async(block_id=block.id, actor=default_user)
 
-    # Attempt undo -> expect ValueError
-    with pytest.raises(ValueError, match="Cannot undo further"):
+    # Attempt undo -> expect LettaInvalidArgumentError
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
 
 
@@ -1048,7 +1048,7 @@ async def test_undo_multiple_checkpoints(server: SyncServer, default_user):
     assert undone_block.value == "v1"
 
     # Try once more -> fails because seq=1 is the earliest
-    with pytest.raises(ValueError, match="Cannot undo further"):
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
 
 
@@ -1145,15 +1145,15 @@ async def test_redo_checkpoint_block(server: SyncServer, default_user):
 async def test_redo_no_history(server: SyncServer, default_user):
     """
     If a block has no current_history_entry_id (never checkpointed),
-    then redo_checkpoint_block should raise ValueError.
+    then redo_checkpoint_block should raise LettaInvalidArgumentError.
     """
     block_manager = BlockManager()
 
     # Create block with no checkpoint
     block = await block_manager.create_or_update_block_async(PydanticBlock(label="redo_no_history", value="v0"), actor=default_user)
 
-    # Attempt to redo => expect ValueError
-    with pytest.raises(ValueError, match="no history entry - cannot redo"):
+    # Attempt to redo => expect LettaInvalidArgumentError
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.redo_checkpoint_block(block.id, actor=default_user)
 
 
@@ -1161,7 +1161,7 @@ async def test_redo_no_history(server: SyncServer, default_user):
 async def test_redo_at_highest_checkpoint(server: SyncServer, default_user):
     """
     If the block is at the maximum sequence number, there's no higher checkpoint to move to.
-    redo_checkpoint_block should raise ValueError.
+    redo_checkpoint_block should raise LettaInvalidArgumentError.
     """
     block_manager = BlockManager()
 
@@ -1177,7 +1177,7 @@ async def test_redo_at_highest_checkpoint(server: SyncServer, default_user):
 
     # We are at seq=2, which is the highest checkpoint.
     # Attempt redo => there's no seq=3
-    with pytest.raises(ValueError, match="Cannot redo further"):
+    with pytest.raises(LettaInvalidArgumentError):
         await block_manager.redo_checkpoint_block(b_init.id, actor=default_user)
 
 

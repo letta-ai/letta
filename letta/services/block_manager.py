@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
@@ -23,6 +24,62 @@ from letta.utils import enforce_types
 logger = get_logger(__name__)
 
 
+def validate_block_limit_constraint(update_data: dict, existing_block: BlockModel) -> None:
+    """
+    Validates that block limit constraints are satisfied when updating a block.
+
+    Rules:
+    - If limit is being updated, it must be >= the length of the value (existing or new)
+    - If value is being updated, its length must not exceed the limit (existing or new)
+
+    Args:
+        update_data: Dictionary of fields to update
+        existing_block: The current block being updated
+
+    Raises:
+        LettaInvalidArgumentError: If validation fails
+    """
+    # If limit is being updated, ensure it's >= current value length
+    if "limit" in update_data:
+        # Get the value that will be used (either from update_data or existing)
+        value_to_check = update_data.get("value", existing_block.value)
+        limit_to_check = update_data["limit"]
+        if value_to_check and limit_to_check < len(value_to_check):
+            raise LettaInvalidArgumentError(
+                f"Limit ({limit_to_check}) cannot be less than current value length ({len(value_to_check)} characters)",
+                argument_name="limit",
+            )
+    # If value is being updated and there's an existing limit, ensure value doesn't exceed limit
+    elif "value" in update_data and existing_block.limit:
+        if len(update_data["value"]) > existing_block.limit:
+            raise LettaInvalidArgumentError(
+                f"Value length ({len(update_data['value'])} characters) exceeds block limit ({existing_block.limit} characters)",
+                argument_name="value",
+            )
+
+
+def validate_block_creation(block_data: dict) -> None:
+    """
+    Validates that block limit constraints are satisfied when creating a block.
+
+    Rules:
+    - If both value and limit are provided, limit must be >= value length
+
+    Args:
+        block_data: Dictionary of block fields for creation
+
+    Raises:
+        LettaInvalidArgumentError: If validation fails
+    """
+    value = block_data.get("value")
+    limit = block_data.get("limit")
+
+    if value and limit and len(value) > limit:
+        raise LettaInvalidArgumentError(
+            f"Block limit ({limit}) must be greater than or equal to value length ({len(value)} characters)", argument_name="limit"
+        )
+
+
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
@@ -37,6 +94,8 @@ class BlockManager:
         else:
             async with db_registry.async_session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
+                # Validate block creation constraints
+                validate_block_creation(data)
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
                 pydantic_block = block.to_pydantic()
@@ -58,6 +117,11 @@ class BlockManager:
             return []
 
         async with db_registry.async_session() as session:
+            # Validate all blocks before creating any
+            for block in blocks:
+                block_data = block.model_dump(to_orm=True, exclude_none=True)
+                validate_block_creation(block_data)
+
             block_models = [
                 BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
             ]
@@ -77,6 +141,9 @@ class BlockManager:
         async with db_registry.async_session() as session:
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Validate limit constraints before updating
+            validate_block_limit_constraint(update_data, block)
 
             for key, value in update_data.items():
                 setattr(block, key, value)
@@ -653,7 +720,7 @@ class BlockManager:
             )
 
             if not block.current_history_entry_id:
-                raise ValueError(f"Block {block_id} has no history entry - cannot undo.")
+                raise LettaInvalidArgumentError(f"Block {block_id} has no history entry - cannot undo.", argument_name="block_id")
 
             current_entry = await session.get(BlockHistory, block.current_history_entry_id)
             if not current_entry:
@@ -672,7 +739,10 @@ class BlockManager:
             previous_entry = result.scalar_one_or_none()
             if not previous_entry:
                 # No earlier checkpoint available
-                raise ValueError(f"Block {block_id} is already at the earliest checkpoint (seq={current_seq}). Cannot undo further.")
+                raise LettaInvalidArgumentError(
+                    f"Block {block_id} is already at the earliest checkpoint (seq={current_seq}). Cannot undo further.",
+                    argument_name="block_id",
+                )
 
             # 3) Move to that sequence
             block = await self._move_block_to_sequence(session, block, previous_entry.sequence_number, actor)
@@ -699,11 +769,13 @@ class BlockManager:
             )
 
             if not block.current_history_entry_id:
-                raise ValueError(f"Block {block_id} has no history entry - cannot redo.")
+                raise LettaInvalidArgumentError(f"Block {block_id} has no history entry - cannot redo.", argument_name="block_id")
 
             current_entry = await session.get(BlockHistory, block.current_history_entry_id)
             if not current_entry:
-                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
+                raise LettaInvalidArgumentError(
+                    f"BlockHistory row not found for id={block.current_history_entry_id}", argument_name="block_id"
+                )
 
             current_seq = current_entry.sequence_number
 
@@ -717,7 +789,9 @@ class BlockManager:
             result = await session.execute(stmt)
             next_entry = result.scalar_one_or_none()
             if not next_entry:
-                raise ValueError(f"Block {block_id} is at the highest checkpoint (seq={current_seq}). Cannot redo further.")
+                raise LettaInvalidArgumentError(
+                    f"Block {block_id} is at the highest checkpoint (seq={current_seq}). Cannot redo further.", argument_name="block_id"
+                )
 
             block = await self._move_block_to_sequence(session, block, next_entry.sequence_number, actor)
 
