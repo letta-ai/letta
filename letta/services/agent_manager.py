@@ -74,7 +74,7 @@ from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
-from letta.services.block_manager import BlockManager
+from letta.services.block_manager import BlockManager, validate_block_limit_constraint
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
 from letta.services.file_processor.chunker.line_chunker import LineChunker
@@ -1660,6 +1660,9 @@ class AgentManager:
                 raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Validate limit constraints before updating
+            validate_block_limit_constraint(update_data, block)
 
             for key, value in update_data.items():
                 setattr(block, key, value)
