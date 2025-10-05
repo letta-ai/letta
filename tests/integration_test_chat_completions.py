@@ -12,9 +12,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage as OpenAIUserMessage
-from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
-from letta.services.tool_manager import ToolManager
 from tests.utils import wait_for_server
 
 # --- Server Management --- #
@@ -95,13 +93,6 @@ def weather_tool(client):
 
     tool = client.tools.upsert_from_function(func=get_weather)
     # Yield the created tool
-    yield tool
-
-
-@pytest.fixture(scope="function")
-def composio_gmail_get_profile_tool(default_user):
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
-    tool = ToolManager().create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
     yield tool
 
 

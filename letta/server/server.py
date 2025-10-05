@@ -10,8 +10,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import httpx
 from anthropic import AsyncAnthropic
-from composio.client import Composio
-from composio.client.collections import ActionModel, AppModel
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -318,19 +316,6 @@ class SyncServer(object):
             self.default_user = await self.user_manager.create_default_actor_async()
             print(f"Default user: {self.default_user} and org: {self.default_org}")
             await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
-
-            # Add composio keys to the tool sandbox env vars of the org
-            if tool_settings.composio_api_key:
-                manager = SandboxConfigManager()
-                sandbox_config = await manager.get_or_create_default_sandbox_config_async(
-                    sandbox_type=SandboxType.LOCAL, actor=self.default_user
-                )
-
-                await manager.create_sandbox_env_var_async(
-                    SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-                    sandbox_config_id=sandbox_config.id,
-                    actor=self.default_user,
-                )
 
             # For OSS users, create a local sandbox config
             oss_default_user = await self.user_manager.get_default_actor_async()
@@ -1258,33 +1243,6 @@ class SyncServer(object):
                 stdout=[],
                 stderr=[traceback.format_exc()],
             )
-
-    # Composio wrappers
-    @staticmethod
-    def get_composio_client(api_key: Optional[str] = None):
-        if api_key:
-            return Composio(api_key=api_key)
-        elif tool_settings.composio_api_key:
-            return Composio(api_key=tool_settings.composio_api_key)
-        else:
-            return Composio()
-
-    @staticmethod
-    def get_composio_apps(api_key: Optional[str] = None) -> List["AppModel"]:
-        """Get a list of all Composio apps with actions"""
-        apps = SyncServer.get_composio_client(api_key=api_key).apps.get()
-        apps_with_actions = []
-        for app in apps:
-            # A bit of hacky logic until composio patches this
-            if app.meta["actionsCount"] > 0 and not app.name.lower().endswith("_beta"):
-                apps_with_actions.append(app)
-
-        return apps_with_actions
-
-    def get_composio_actions_from_app_name(self, composio_app_name: str, api_key: Optional[str] = None) -> List["ActionModel"]:
-        actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
-        # Filter out deprecated composio actions
-        return [action for action in actions if "deprecated" not in action.description.lower()]
 
     # MCP wrappers
     # TODO support both command + SSE servers (via config)

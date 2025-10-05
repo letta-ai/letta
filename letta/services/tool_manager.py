@@ -52,7 +52,7 @@ class ToolManager:
             generated_schema = generate_schema_for_tool_creation(pydantic_tool)
             if generated_schema:
                 pydantic_tool.json_schema = generated_schema
-            else: 
+            else:
                 raise ValueError("Failed to generate schema for tool", pydantic_tool.source_code)
 
         print("SCHEMA", pydantic_tool.json_schema)
@@ -91,9 +91,8 @@ class ToolManager:
                 )
                 tool = await self.get_tool_by_id_async(current_tool.id, actor=actor)
             return tool
-        
-        return await self.create_tool_async(pydantic_tool, actor=actor)
 
+        return await self.create_tool_async(pydantic_tool, actor=actor)
 
     @enforce_types
     async def create_mcp_server(
@@ -124,13 +123,6 @@ class ToolManager:
                 tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
             ),
             actor,
-        )
-
-    @enforce_types
-    @trace_method
-    async def create_or_update_composio_tool_async(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
-        return await self.create_or_update_tool_async(
-            PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
         )
 
     @enforce_types
@@ -570,9 +562,9 @@ class ToolManager:
         elif new_schema and new_name != current_tool.name:
             # Schema provides a different name but name wasn't explicitly changed
             update_data["name"] = new_name
-            #raise ValueError(
+            # raise ValueError(
             #    f"JSON schema name '{new_name}' conflicts with current tool name '{current_tool.name}'. Update the name field explicitly if you want to rename the tool."
-            #)
+            # )
 
         # If name changes, enforce uniqueness
         if new_name != current_tool.name:
