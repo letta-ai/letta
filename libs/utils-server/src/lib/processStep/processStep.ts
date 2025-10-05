@@ -167,7 +167,7 @@ export async function processStepWithSubscription(step: Step, subscription: Paym
       stepId: step.id,
       modelTier: 'per-inference',
       modelId: modelData?.modelId,
-      note: `Deducted ${recurrentCostToDeduct} recurrent and ${additionalCostToDeduct} additional credits for model ${step.model}`,
+      note: `Deducted ${recurrentCostToDeduct} monthly and ${additionalCostToDeduct} purchased credits for model ${step.model}`,
     });
   } catch (e) {
     console.error(

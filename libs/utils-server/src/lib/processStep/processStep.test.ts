@@ -166,7 +166,7 @@ describe('processStepWithSubscription', () => {
         stepId: 'step-123',
         modelTier: 'per-inference',
         modelId: 'model-789',
-        note: 'Deducted 50 recurrent and 0 additional credits for model gpt-4',
+        note: 'Deducted 50 monthly and 0 purchased credits for model gpt-4',
       });
     });
 
@@ -190,7 +190,7 @@ describe('processStepWithSubscription', () => {
         stepId: 'step-123',
         modelTier: 'per-inference',
         modelId: 'model-789',
-        note: 'Deducted 30 recurrent and 70 additional credits for model gpt-4',
+        note: 'Deducted 30 monthly and 70 purchased credits for model gpt-4',
       });
     });
 
@@ -210,7 +210,7 @@ describe('processStepWithSubscription', () => {
         stepId: 'step-123',
         modelTier: 'per-inference',
         modelId: 'model-789',
-        note: 'Deducted 0 recurrent and 100 additional credits for model gpt-4',
+        note: 'Deducted 0 monthly and 100 purchased credits for model gpt-4',
       });
     });
 
@@ -243,7 +243,7 @@ describe('processStepWithSubscription', () => {
         stepId: 'step-123',
         modelTier: 'per-inference',
         modelId: 'model-789',
-        note: 'Deducted 40 recurrent and 60 additional credits for model gpt-4',
+        note: 'Deducted 40 monthly and 60 purchased credits for model gpt-4',
       });
 
       expect(result).toEqual({
