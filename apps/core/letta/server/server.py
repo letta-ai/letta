@@ -19,7 +19,7 @@ import letta.system as system
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
-from letta.errors import HandleNotFoundError
+from letta.errors import HandleNotFoundError, LettaInvalidArgumentError, LettaMCPConnectionError, LettaMCPTimeoutError
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, MCPToolHealth, SSEServerConfig, StdioServerConfig
 from letta.functions.schema_validator import validate_complete_json_schema
 from letta.groups.helpers import load_multi_agent
@@ -363,7 +363,7 @@ class SyncServer(object):
             elif server_config.type == MCPServerType.STDIO:
                 self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
             else:
-                raise ValueError(f"Invalid MCP server config: {server_config}")
+                raise LettaInvalidArgumentError(f"Invalid MCP server config: {server_config}", argument_name="server_config")
 
             try:
                 await self.mcp_clients[server_name].connect_to_server()
@@ -416,7 +416,7 @@ class SyncServer(object):
         if request.llm_config is None:
             if request.model is None:
                 if settings.default_llm_handle is None:
-                    raise ValueError("Must specify either model or llm_config in request")
+                    raise LettaInvalidArgumentError("Must specify either model or llm_config in request", argument_name="model")
                 else:
                     request.model = settings.default_llm_handle
             config_params = {
@@ -436,7 +436,9 @@ class SyncServer(object):
         if request.embedding_config is None:
             if request.embedding is None:
                 if settings.default_embedding_handle is None:
-                    raise ValueError("Must specify either embedding or embedding_config in request")
+                    raise LettaInvalidArgumentError(
+                        "Must specify either embedding or embedding_config in request", argument_name="embedding"
+                    )
                 else:
                     request.embedding = settings.default_embedding_handle
             embedding_config_params = {
@@ -760,7 +762,7 @@ class SyncServer(object):
         # TODO: move this into a thread
         source = await self.source_manager.get_source_by_id(source_id=source_id)
         if source is None:
-            raise ValueError(f"Source {source_id} does not exist")
+            raise NoResultFound(f"Source {source_id} does not exist")
         connector = DirectoryConnector(input_files=[file_path])
         num_passages, num_documents = await self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
 
@@ -894,7 +896,7 @@ class SyncServer(object):
         actor = await self.user_manager.get_actor_by_id_async(actor_id=user_id)
         source = await self.source_manager.get_source_by_name(source_name=source_name, actor=actor)
         if source is None:
-            raise ValueError(f"Data source {source_name} does not exist for user {user_id}")
+            raise NoResultFound(f"Data source {source_name} does not exist for user {user_id}")
 
         # load data into the document store
         passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
@@ -1042,13 +1044,18 @@ class SyncServer(object):
         if len(llm_configs) == 1:
             llm_config = llm_configs[0]
         elif len(llm_configs) > 1:
-            raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
+            raise LettaInvalidArgumentError(
+                f"Multiple LLM models with name {model_name} supported by {provider_name}", argument_name="model_name"
+            )
         else:
             llm_config = llm_configs[0]
 
         if context_window_limit is not None:
             if context_window_limit > llm_config.context_window:
-                raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
+                raise LettaInvalidArgumentError(
+                    f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})",
+                    argument_name="context_window_limit",
+                )
             llm_config.context_window = context_window_limit
         else:
             llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
@@ -1057,7 +1064,10 @@ class SyncServer(object):
             llm_config.max_tokens = max_tokens
         if max_reasoning_tokens is not None:
             if not max_tokens or max_reasoning_tokens > max_tokens:
-                raise ValueError(f"Max reasoning tokens ({max_reasoning_tokens}) must be less than max tokens ({max_tokens})")
+                raise LettaInvalidArgumentError(
+                    f"Max reasoning tokens ({max_reasoning_tokens}) must be less than max tokens ({max_tokens})",
+                    argument_name="max_reasoning_tokens",
+                )
             llm_config.max_reasoning_tokens = max_reasoning_tokens
         if enable_reasoner is not None:
             llm_config.enable_reasoner = enable_reasoner
@@ -1077,8 +1087,10 @@ class SyncServer(object):
             all_embedding_configs = await provider.list_embedding_models_async()
             embedding_configs = [config for config in all_embedding_configs if config.handle == handle]
             if not embedding_configs:
-                raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
-        except ValueError as e:
+                raise LettaInvalidArgumentError(
+                    f"Embedding model {model_name} is not supported by {provider_name}", argument_name="model_name"
+                )
+        except LettaInvalidArgumentError as e:
             # search local configs
             embedding_configs = [config for config in self.get_local_embedding_configs() if config.handle == handle]
             if not embedding_configs:
@@ -1087,7 +1099,9 @@ class SyncServer(object):
         if len(embedding_configs) == 1:
             embedding_config = embedding_configs[0]
         elif len(embedding_configs) > 1:
-            raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
+            raise LettaInvalidArgumentError(
+                f"Multiple embedding models with name {model_name} supported by {provider_name}", argument_name="model_name"
+            )
         else:
             embedding_config = embedding_configs[0]
 
@@ -1100,11 +1114,12 @@ class SyncServer(object):
         all_providers = await self.get_enabled_providers_async(actor)
         providers = [provider for provider in all_providers if provider.name == provider_name]
         if not providers:
-            raise ValueError(
-                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})"
+            raise LettaInvalidArgumentError(
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})",
+                argument_name="provider_name",
             )
         elif len(providers) > 1:
-            raise ValueError(f"Multiple providers with name {provider_name} supported")
+            raise LettaInvalidArgumentError(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
         else:
             provider = providers[0]
 
@@ -1173,7 +1188,9 @@ class SyncServer(object):
         from letta.services.tool_schema_generator import generate_schema_for_tool_creation, generate_schema_for_tool_update
 
         if tool_source_type not in (None, ToolSourceType.python, ToolSourceType.typescript):
-            raise ValueError("Tool source type is not supported at this time. Found {tool_source_type}")
+            raise LettaInvalidArgumentError(
+                f"Tool source type is not supported at this time. Found {tool_source_type}", argument_name="tool_source_type"
+            )
 
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
@@ -1307,7 +1324,7 @@ class SyncServer(object):
     async def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
         """List the tools in an MCP server. Requires a client to be created."""
         if mcp_server_name not in self.mcp_clients:
-            raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
+            raise LettaInvalidArgumentError(f"No client was created for MCP server: {mcp_server_name}", argument_name="mcp_server_name")
 
         tools = await self.mcp_clients[mcp_server_name].list_tools()
         # Add health information to each tool
@@ -1339,11 +1356,13 @@ class SyncServer(object):
         except Exception as e:
             # Raise an error telling the user to fix the config file
             logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
-            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+            raise LettaInvalidArgumentError(f"Failed to parse MCP config file {mcp_config_path}")
 
         # Check if the server name is already in the config
         if server_config.server_name in current_mcp_servers and not allow_upsert:
-            raise ValueError(f"Server name {server_config.server_name} is already in the config file")
+            raise LettaInvalidArgumentError(
+                f"Server name {server_config.server_name} is already in the config file", argument_name="server_name"
+            )
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
@@ -1351,7 +1370,7 @@ class SyncServer(object):
         elif server_config.type == MCPServerType.STDIO:
             new_mcp_client = AsyncStdioMCPClient(server_config)
         else:
-            raise ValueError(f"Invalid MCP server config: {server_config}")
+            raise LettaInvalidArgumentError(f"Invalid MCP server config: {server_config}", argument_name="server_config")
         try:
             await new_mcp_client.connect_to_server()
         except:
@@ -1376,7 +1395,7 @@ class SyncServer(object):
                 json.dump(new_mcp_file, f, indent=4)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
-            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+            raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")
 
         return list(current_mcp_servers.values())
 
@@ -1399,12 +1418,12 @@ class SyncServer(object):
         except Exception as e:
             # Raise an error telling the user to fix the config file
             logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
-            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+            raise LettaInvalidArgumentError(f"Failed to parse MCP config file {mcp_config_path}")
 
         # Check if the server name is already in the config
         # If it's not, throw an error
         if server_name not in current_mcp_servers:
-            raise ValueError(f"Server name {server_name} not found in MCP config file")
+            raise LettaInvalidArgumentError(f"Server name {server_name} not found in MCP config file", argument_name="server_name")
 
         # Remove from the server file
         del current_mcp_servers[server_name]
@@ -1416,7 +1435,7 @@ class SyncServer(object):
                 json.dump(new_mcp_file, f, indent=4)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
-            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+            raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")
 
         return list(current_mcp_servers.values())
 
@@ -1478,7 +1497,9 @@ class SyncServer(object):
             )
             streaming_interface = letta_agent.interface
             if not isinstance(streaming_interface, StreamingServerInterface):
-                raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+                raise LettaInvalidArgumentError(
+                    f"Agent has wrong type of interface: {type(streaming_interface)}", argument_name="interface"
+                )
 
             # Enable token-streaming within the request if desired
             streaming_interface.streaming_mode = stream_tokens
@@ -1583,7 +1604,7 @@ class SyncServer(object):
     ) -> Union[StreamingResponse, LettaResponse]:
         include_final_message = True
         if not stream_steps and stream_tokens:
-            raise ValueError("stream_steps must be 'true' if stream_tokens is 'true'")
+            raise LettaInvalidArgumentError("stream_steps must be 'true' if stream_tokens is 'true'", argument_name="stream_steps")
 
         group = await self.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
         agent_state_id = group.manager_agent_id or (group.agent_ids[0] if len(group.agent_ids) > 0 else None)
@@ -1609,7 +1630,7 @@ class SyncServer(object):
         )
         streaming_interface = letta_multi_agent.interface
         if not isinstance(streaming_interface, StreamingServerInterface):
-            raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+            raise LettaInvalidArgumentError(f"Agent has wrong type of interface: {type(streaming_interface)}", argument_name="interface")
         streaming_interface.streaming_mode = stream_tokens
         streaming_interface.streaming_chat_completion_mode = chat_completion_mode
         if metadata and hasattr(streaming_interface, "metadata"):
