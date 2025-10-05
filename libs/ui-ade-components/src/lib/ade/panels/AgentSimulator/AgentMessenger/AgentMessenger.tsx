@@ -11,7 +11,6 @@ export function AgentMessenger() {
     agentId,
   });
 
-
   const { scrollRef } = useManageAgentMessengerMessages({
     isSendingMessage: loadingState.isSendingMessage,
     runResponses,

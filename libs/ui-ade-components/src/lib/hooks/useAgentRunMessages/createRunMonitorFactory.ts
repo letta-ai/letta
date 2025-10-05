@@ -77,10 +77,7 @@ export function createRunMonitorFactory(options: RunMonitorFactoryOptions): RunM
 
     const runs = await fetchRecentRuns();
 
-    if (runs.length > 0) {
-      // Notify callback with all recent runs (including status transitions)
-      onUpdate(runs);
-    }
+    onUpdate(runs);
 
     // Schedule next poll after the current one completes
     if (isMonitoring) {

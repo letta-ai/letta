@@ -1,16 +1,12 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import type { LettaMessageUnion, SendMessageData } from '@letta-cloud/sdk-core';
 import { useCurrentAPIHostConfig } from '@letta-cloud/utils-client';
 import type { WorkerMessage, WorkerResponse, RunResponse } from './agentRunManager.types';
-import {
-  agentRunMessagesAtomFamily,
-  tryAcquireLock,
-  waitForLock,
-  releaseLock,
-  holdsLock,
-} from './agentRunMessagesStore';
+import { agentRunMessagesAtomFamily } from './agentRunMessagesStore';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import { workerSubscriptionManager } from './workerSubscriptionManager';
+import { deepEqual } from 'fast-equals';
 
 interface LoadingState {
   isLoadingRuns: boolean;
@@ -39,19 +35,6 @@ export interface UseAgentRunMessagesOptions {
   agentId: string;
 }
 
-// Singleton worker instance shared across all hook instances
-let workerInstance: Worker | null = null;
-
-function getWorker(): Worker | null {
-  if (!workerInstance && typeof Worker !== 'undefined') {
-    workerInstance = new Worker(
-      new URL('./agentRunManager.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
-  }
-  return workerInstance;
-}
-
 export function useAgentRunMessages({
   agentId,
 }: UseAgentRunMessagesOptions): UseAgentRunMessagesResponse {
@@ -65,24 +48,18 @@ export function useAgentRunMessages({
     attachApiKey: true,
   });
 
-  const { baseUrl, headers } = useMemo(() => {
-    return {
-      baseUrl: hostConfig.url,
-      headers: {
-        'X-SOURCE-CLIENT': window.location.pathname,
-        ...isLocal ? hostConfig.headers : {},
-      }
-    }
-  }, [hostConfig, isLocal]);
+  const baseUrl = hostConfig.url;
+  const baseUrlRef = useRef(baseUrl);
+  const headersRef = useRef<Record<string, string>>({});
 
-  // Generate a unique ID for this hook instance (stable across re-renders)
-  const instanceIdRef = useRef(`${agentId}-${Math.random().toString(36).slice(2)}`);
-  const instanceId = instanceIdRef.current;
-
-
-
-  const hasLockRef = useRef(false);
-  const isInitializingRef = useRef(false);
+  // Update refs when config changes but don't trigger re-subscription
+  useEffect(() => {
+    baseUrlRef.current = baseUrl;
+    headersRef.current = {
+      'X-SOURCE-CLIENT': window.location.pathname,
+      ...isLocal ? hostConfig.headers : {},
+    };
+  }, [baseUrl, hostConfig.headers, isLocal]);
 
   useEffect(() => {
     // Don't initialize if agentId is empty
@@ -90,17 +67,18 @@ export function useAgentRunMessages({
       return;
     }
 
-    // Prevent multiple initializations from the same instance
-    if (isInitializingRef.current) {
-      return;
-    }
-    isInitializingRef.current = true;
 
-    const worker = getWorker();
-    if (!worker) {
-      isInitializingRef.current = false;
+    // Subscribe through the singleton manager
+    const result = workerSubscriptionManager.subscribe(
+      agentId,
+      baseUrlRef.current,
+      headersRef.current
+    );
+    if (!result) {
       return;
     }
+
+    const { worker } = result;
     workerRef.current = worker;
 
     // Listen for messages from worker (all instances listen)
@@ -112,12 +90,21 @@ export function useAgentRunMessages({
         return;
       }
 
+
       switch (response.type) {
         case 'RUN_RESPONSES_UPDATED':
-          setState((prev) => ({
-            ...prev,
-            runResponses: response.runResponses,
-          }));
+
+
+          setState((prev) => {
+            if (deepEqual(prev.runResponses, response.runResponses)) {
+              return prev;
+            }
+
+            return ({
+              ...prev,
+              runResponses: response.runResponses,
+            })
+          });
           break;
         case 'LOADING_STATE_UPDATED':
           setState((prev) => ({
@@ -155,91 +142,12 @@ export function useAgentRunMessages({
 
     worker.addEventListener('message', handleWorkerMessage);
 
-    // Set API configuration (outside lock - all instances need this for sendMessage)
-    const setConfigMessage: WorkerMessage = {
-      type: 'SET_API_CONFIG',
-      agentId,
-      baseUrl,
-      headers,
-    };
-    worker.postMessage(setConfigMessage);
-
-    // Function to initialize worker subscription (runs only for lock holder)
-    const initializeWorkerSubscription = () => {
-      // Debounce initialization slightly to prevent race conditions
-      if (!workerRef.current) return;
-
-      // Initialize manager for this agent
-      const initMessage: WorkerMessage = {
-        type: 'INIT',
-        agentId,
-      };
-      worker.postMessage(initMessage);
-
-      // Initialize run monitor (only lock holder does this)
-      const initRunMonitorMessage: WorkerMessage = {
-        type: 'INIT_RUN_MONITOR',
-        agentId,
-      };
-      worker.postMessage(initRunMonitorMessage);
-
-      // Subscribe to updates
-      const subscribeMessage: WorkerMessage = {
-        type: 'SUBSCRIBE',
-        agentId,
-      };
-      worker.postMessage(subscribeMessage);
-    };
-
-    // Try to acquire the lock
-
-    if (!workerRef.current) return;
-    if (hasLockRef.current) return; // Already have the lock
-
-    if (tryAcquireLock(agentId, instanceId)) {
-      hasLockRef.current = true;
-
-      initializeWorkerSubscription();
-    } else {
-      // Lock is held by another instance, register to wait
-      waitForLock(agentId, () => {
-        // Lock transferred to us, acquire it
-        if (tryAcquireLock(agentId, instanceId)) {
-          hasLockRef.current = true;
-          initializeWorkerSubscription();
-        }
-      });
-    }
-
-
-
     // Cleanup on unmount
     return () => {
       worker.removeEventListener('message', handleWorkerMessage);
-
-      // If we hold the lock, release it
-      if (hasLockRef.current && holdsLock(agentId, instanceId)) {
-        const fullyReleased = releaseLock(agentId, instanceId);
-
-        if (fullyReleased) {
-          // No one waiting, clean up worker subscription
-          const unsubscribeMessage: WorkerMessage = {
-            type: 'UNSUBSCRIBE',
-            agentId,
-          };
-          worker.postMessage(unsubscribeMessage);
-
-          const flushMessage: WorkerMessage = {
-            type: 'FLUSH',
-            agentId,
-          };
-          worker.postMessage(flushMessage);
-        }
-      }
-
-      isInitializingRef.current = false;
+      workerSubscriptionManager.unsubscribe(agentId);
     };
-  }, [agentId, setState, baseUrl, headers, instanceId]);
+  }, [agentId, setState]);
 
   const loadMoreRuns = useCallback(async () => {
     if (!agentId) return;
