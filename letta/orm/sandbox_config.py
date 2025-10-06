@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from sqlalchemy import JSON, Enum as SqlEnum, Index, String, UniqueConstraint
+from sqlalchemy import JSON, Enum as SqlEnum, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import AgentMixin, OrganizationMixin, SandboxConfigMixin
@@ -49,6 +49,9 @@ class SandboxEnvironmentVariable(SqlalchemyBase, OrganizationMixin, SandboxConfi
     value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable.")
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="An optional description of the environment variable.")
 
+    # encrypted columns
+    value_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted value of the environment variable.")
+
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="sandbox_environment_variables")
     sandbox_config: Mapped["SandboxConfig"] = relationship("SandboxConfig", back_populates="sandbox_environment_variables")
@@ -70,6 +73,9 @@ class AgentEnvironmentVariable(SqlalchemyBase, OrganizationMixin, AgentMixin):
     key: Mapped[str] = mapped_column(String, nullable=False, doc="The name of the environment variable.")
     value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable.")
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="An optional description of the environment variable.")
+
+    # encrypted columns
+    value_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted value of the environment variable.")
 
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agent_environment_variables")
     agent: Mapped[List["Agent"]] = relationship("Agent", back_populates="tool_exec_environment_variables")
