@@ -15,7 +15,7 @@ import { testRedisConnection } from '@letta-cloud/service-redis';
 
 const CORE_DATABASE_URL = `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`;
 
-let listenerClient: pg.Client | null = null;
+let _listenerClient: pg.Client | null = null;
 let endpointClient: pg.Client | null = null;
 
 async function serve() {
@@ -131,7 +131,7 @@ END;$$;
   await initDatabase();
   await Promise.all([backfillSteps(), listenToDatabase()]);
 
-  listenerClient = client;
+  _listenerClient = client;
   endpointClient = client2;
 }
 
@@ -160,7 +160,7 @@ app.post('/charge/:step_id', async (req, res) => {
 
     const step = rows[0] as Step;
     console.log('[Undertaker] Manually processing step', step.id);
-    const transaction = await processStep(step);
+    await processStep(step);
 
     return res.status(200).json({
       success: true,

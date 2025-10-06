@@ -754,7 +754,9 @@
     "table": {
       "loading": "Loading audit log...",
       "noResults": "No transactions found",
+      "viewAgent": "View agent",
       "columns": {
+        "actions": "Actions",
         "date": "Date",
         "note": "Description",
         "credits": "Credits"

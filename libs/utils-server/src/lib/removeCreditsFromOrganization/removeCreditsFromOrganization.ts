@@ -15,7 +15,7 @@ import {
   getOrganizationCredits,
 } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { getRedisData } from '@letta-cloud/service-redis';
-import type { ModelTiersType } from '@letta-cloud/types';
+import type { ModelTiersType, OrganizationTransactionMetadata } from '@letta-cloud/types';
 
 interface RemoveCreditsFromOrganizationOptions {
   stepId?: string;
@@ -27,6 +27,7 @@ interface RemoveCreditsFromOrganizationOptions {
   modelId?: string;
   modelTier?: ModelTiersType;
   note?: string;
+  metadata?: OrganizationTransactionMetadata
 }
 
 interface CheckLowBalanceOptions {
@@ -53,6 +54,7 @@ async function checkLowBalance(options: CheckLowBalanceOptions) {
     const [lock] = await db
       .insert(organizationLowBalanceNotificationLock)
       .values({
+
         lowBalanceNotificationSentAt: lockDate,
         organizationId,
         lockId,
@@ -103,6 +105,7 @@ export async function removeCreditsFromOrganization(
     coreOrganizationId,
     modelId,
     modelTier,
+    metadata,
     note,
     source,
     stepId,
@@ -145,6 +148,7 @@ export async function removeCreditsFromOrganization(
         stepId,
         source,
         modelId,
+        metadata,
         modelTier,
         note,
         transactionType: 'subtraction',

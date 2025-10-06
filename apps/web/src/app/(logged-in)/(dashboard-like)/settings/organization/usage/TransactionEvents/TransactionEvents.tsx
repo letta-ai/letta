@@ -3,7 +3,7 @@ import {
   DataTable,
   HStack,
   Typography,
-LettaCoinIcon
+  LettaCoinIcon, Button
 } from '@letta-cloud/ui-component-library';
 import type { PublicCreditTransactionType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -94,6 +94,32 @@ export default function TransactionEvents() {
           accessorKey: 'note',
           header: t('table.columns.note'),
         },
+        {
+          id: 'actions',
+          meta: {
+            style: {
+              columnAlign: 'right'
+            }
+          },
+          header: t('table.columns.actions'),
+          cell: ({ row }) => {
+            const agentId = row.original.metadata?.agentId
+
+            if (!agentId) {
+              return null;
+            }
+
+            return (
+              <Button
+                label={t('table.viewAgent')}
+                href={`/agents/${agentId}`}
+                color="secondary"
+                size="small"
+              />
+            )
+
+          }
+        }
       ];
     }, [formatDateAndTime, t]);
 

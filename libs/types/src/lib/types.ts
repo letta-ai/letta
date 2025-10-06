@@ -421,3 +421,13 @@ export type ToolRule =
   | TerminalToolRule;
 
 export type ToolRulesArray = ToolRule[] | null;
+
+
+export const OrganizationTransactionMetadataSchema = z.object({
+  agentId: z.string().optional(),
+  runId: z.string().optional(),
+});
+
+export type OrganizationTransactionMetadata = z.infer<
+  typeof OrganizationTransactionMetadataSchema
+>;
