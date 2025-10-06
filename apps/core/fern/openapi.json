@@ -4962,6 +4962,87 @@
             }
           },
           {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "File ID cursor for pagination. Returns files that come after this file ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "File ID cursor for pagination. Returns files that come after this file ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of files to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of files to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -4974,24 +5055,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Pagination cursor from previous response",
+              "description": "Pagination cursor from previous response (deprecated, use before/after)",
+              "deprecated": true,
               "title": "Cursor"
             },
-            "description": "Pagination cursor from previous response"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "description": "Number of items to return (1-100)",
-              "default": 20,
-              "title": "Limit"
-            },
-            "description": "Number of items to return (1-100)"
+            "description": "Pagination cursor from previous response (deprecated, use before/after)",
+            "deprecated": true
           },
           {
             "name": "is_open",

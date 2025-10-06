@@ -1520,20 +1520,28 @@ export type AgentsServiceListAgentFilesQueryResult<
 export const useAgentsServiceListAgentFilesKey = 'AgentsServiceListAgentFiles';
 export const UseAgentsServiceListAgentFilesKeyFn = (
   {
+    after,
     agentId,
+    before,
     cursor,
     isOpen,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1545,10 +1553,14 @@ export const UseAgentsServiceListAgentFilesKeyFn = (
   useAgentsServiceListAgentFilesKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
+      before,
       cursor,
       isOpen,
       limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,

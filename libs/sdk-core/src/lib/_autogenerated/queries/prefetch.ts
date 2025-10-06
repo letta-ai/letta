@@ -2081,8 +2081,12 @@ export const prefetchUseAgentsServiceListAgentFolders = (
  * Get the files attached to an agent with their open/closed status (paginated).
  * @param data The data for the request.
  * @param data.agentId
- * @param data.cursor Pagination cursor from previous response
- * @param data.limit Number of items to return (1-100)
+ * @param data.before File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+ * @param data.after File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
+ * @param data.limit Maximum number of files to return
+ * @param data.order Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.cursor Pagination cursor from previous response (deprecated, use before/after)
  * @param data.isOpen Filter by open status (true for open files, false for closed files)
  * @param data.userId
  * @param data.userAgent
@@ -2095,20 +2099,28 @@ export const prefetchUseAgentsServiceListAgentFolders = (
 export const prefetchUseAgentsServiceListAgentFiles = (
   queryClient: QueryClient,
   {
+    after,
     agentId,
+    before,
     cursor,
     isOpen,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -2118,10 +2130,14 @@ export const prefetchUseAgentsServiceListAgentFiles = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentFilesKeyFn({
+      after,
       agentId,
+      before,
       cursor,
       isOpen,
       limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,
@@ -2130,10 +2146,14 @@ export const prefetchUseAgentsServiceListAgentFiles = (
     }),
     queryFn: () =>
       AgentsService.listAgentFiles({
+        after,
         agentId,
+        before,
         cursor,
         isOpen,
         limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
