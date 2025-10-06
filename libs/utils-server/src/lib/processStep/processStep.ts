@@ -165,6 +165,10 @@ export async function processStepWithSubscription(step: Step, subscription: Paym
       source: 'inference',
       trueCost: creditCost,
       stepId: step.id,
+      metadata: {
+        agentId:  step.agent_id || '',
+        runId: step.run_id || '',
+      },
       modelTier: 'per-inference',
       modelId: modelData?.modelId,
       note: `Deducted ${recurrentCostToDeduct} monthly and ${additionalCostToDeduct} purchased credits for model ${step.model}`,

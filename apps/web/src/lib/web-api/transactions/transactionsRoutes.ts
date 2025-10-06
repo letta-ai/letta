@@ -46,6 +46,7 @@ async function listTransactions(
         return {
           type: transaction.transactionType,
           amount: parseInt(transaction.amount, 10),
+          metadata: transaction.metadata || {},
           trueCost: parseInt(transaction.trueCost, 10),
           note: transaction.note || '',
           source: transaction.source || '',

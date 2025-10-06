@@ -19,7 +19,9 @@ import type {
   OnboardingStepsType,
   AccessPolicyVersionOneType,
   DatabaseBillingTiersType,
-  ToolRulesArray, VariableStoreVersionOneType
+  ToolRulesArray,
+  VariableStoreVersionOneType,
+  OrganizationTransactionMetadata
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
@@ -1270,6 +1272,7 @@ export const organizationCreditTransactions = pgTable(
     modelTier: modelTierEnum('model_tier_type'),
     amount: numeric('amount').notNull(),
     trueCost: numeric('true_cost').notNull(),
+    metadata: jsonb('metadata').$type<OrganizationTransactionMetadata>(),
     transactionType: transactionTypesEnum('transaction_type').notNull(),
     note: text('note'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
