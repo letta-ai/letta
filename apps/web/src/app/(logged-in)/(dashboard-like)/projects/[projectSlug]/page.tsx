@@ -672,6 +672,7 @@ function ProjectPage() {
             className="items-stretch recents-page"
             wrap
             fullWidth
+            overflow="hidden"
             align="start"
           >
             <div className="w-full overflow-hidden largerThanMobile:h-full largerThanMobile:flex-[3] largerThanMobile:min-w-[500px]">
