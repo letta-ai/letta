@@ -794,8 +794,20 @@ async def list_agent_folders(
 @router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
 async def list_agent_files(
     agent_id: str,
-    cursor: Optional[str] = Query(None, description="Pagination cursor from previous response"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items to return (1-100)"),
+    before: Optional[str] = Query(
+        None, description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="File ID cursor for pagination. Returns files that come after this file ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of files to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    cursor: Optional[str] = Query(
+        None, description="Pagination cursor from previous response (deprecated, use before/after)", deprecated=True
+    ),
     is_open: Optional[bool] = Query(None, description="Filter by open status (true for open files, false for closed files)"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -805,9 +817,18 @@ async def list_agent_files(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
+    effective_limit = limit or 20
+
     # get paginated file-agent relationships for this agent
     file_agents, next_cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
-        agent_id=agent_id, actor=actor, cursor=cursor, limit=limit, is_open=is_open
+        agent_id=agent_id,
+        actor=actor,
+        cursor=cursor,  # keep for backwards compatibility
+        limit=effective_limit,
+        is_open=is_open,
+        before=before,
+        after=after,
+        ascending=(order == "asc"),
     )
 
     # enrich with file and source metadata

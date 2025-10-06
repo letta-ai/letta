@@ -300,6 +300,9 @@ class FileAgentManager:
         cursor: Optional[str] = None,
         limit: int = 20,
         is_open: Optional[bool] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        ascending: bool = False,
     ) -> tuple[List[PydanticFileAgent], Optional[str], bool]:
         """
         Return paginated file associations for an agent.
@@ -307,9 +310,12 @@ class FileAgentManager:
         Args:
             agent_id: The agent ID to get files for
             actor: User performing the action
-            cursor: Pagination cursor (file-agent ID to start after)
+            cursor: Pagination cursor (file-agent ID to start after) - deprecated, use before/after
             limit: Maximum number of results to return
             is_open: Optional filter for open/closed status (None = all, True = open only, False = closed only)
+            before: File-agent ID cursor for pagination. Returns files that come before this ID in the specified sort order
+            after: File-agent ID cursor for pagination. Returns files that come after this ID in the specified sort order
+            ascending: Sort order (True = ascending by created_at/id, False = descending)
 
         Returns:
             Tuple of (file_agents, next_cursor, has_more)
@@ -325,14 +331,27 @@ class FileAgentManager:
             if is_open is not None:
                 conditions.append(FileAgentModel.is_open == is_open)
 
-            # apply cursor if provided (get records after this ID)
-            if cursor:
+            # handle pagination cursors (support both old and new style)
+            if before:
+                conditions.append(FileAgentModel.id < before)
+            elif after:
+                conditions.append(FileAgentModel.id > after)
+            elif cursor:
+                # fallback to old cursor behavior for backwards compatibility
                 conditions.append(FileAgentModel.id > cursor)
 
             query = select(FileAgentModel).where(and_(*conditions))
 
-            # order by ID for stable pagination
-            query = query.order_by(FileAgentModel.id)
+            # apply sorting based on pagination method
+            if before or after:
+                # For new cursor-based pagination, use created_at + id ordering
+                if ascending:
+                    query = query.order_by(FileAgentModel.created_at.asc(), FileAgentModel.id.asc())
+                else:
+                    query = query.order_by(FileAgentModel.created_at.desc(), FileAgentModel.id.desc())
+            else:
+                # For old cursor compatibility, maintain original behavior (ascending by ID)
+                query = query.order_by(FileAgentModel.id)
 
             # fetch limit + 1 to check if there are more results
             query = query.limit(limit + 1)
