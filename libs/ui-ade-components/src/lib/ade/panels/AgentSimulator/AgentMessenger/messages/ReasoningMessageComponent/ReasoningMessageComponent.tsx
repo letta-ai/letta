@@ -18,6 +18,10 @@ export function ReasoningMessageComponent(
 ) {
   const { message, metadata } = props;
 
+  if (!message.reasoning) {
+    return null;
+  }
+
   const [opened, setOpened] = useState(false);
 
   const t = useTranslations(
