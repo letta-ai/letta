@@ -55,6 +55,11 @@ class MessageSchema(MessageCreate):
     tool_returns: Optional[List[ToolReturn]] = Field(default=None, description="Tool execution return information for prior tool calls")
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
+    # optional approval fields for hitl
+    approve: Optional[bool] = Field(None, description="Whether the tool has been approved")
+    approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request")
+    denial_reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+
     # TODO: Should we also duplicate the steps here?
     # TODO: What about tool_return?
 
@@ -79,6 +84,9 @@ class MessageSchema(MessageCreate):
             tool_call_id=message.tool_call_id,
             tool_returns=message.tool_returns,
             created_at=message.created_at,
+            approve=message.approve,
+            approval_request_id=message.approval_request_id,
+            denial_reason=message.denial_reason,
         )
 
 
@@ -168,9 +176,7 @@ class AgentSchema(CreateAgent):
             per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
         )
 
-        messages = await message_manager.list_messages(
-            agent_id=agent_state.id, actor=actor, limit=50
-        )  # TODO: Expand to get more messages
+        messages = await message_manager.list_messages(agent_id=agent_state.id, actor=actor, limit=50)  # TODO: Expand to get more messages
 
         # Convert messages to MessageSchema objects
         message_schemas = [MessageSchema.from_message(msg) for msg in messages]
