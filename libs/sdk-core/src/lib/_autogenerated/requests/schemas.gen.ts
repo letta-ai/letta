@@ -15797,6 +15797,42 @@ export const $letta__schemas__agent_file__MessageSchema = {
       title: 'Created At',
       description: 'The timestamp when the object was created.',
     },
+    approve: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Approve',
+      description: 'Whether the tool has been approved',
+    },
+    approval_request_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Approval Request Id',
+      description: 'The message ID of the approval request',
+    },
+    denial_reason: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Denial Reason',
+      description: 'An optional explanation for the provided approval status',
+    },
   },
   type: 'object',
   required: ['role', 'content', 'id'],
