@@ -387,7 +387,7 @@ async def create_agent(
     Create an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent:
+    if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent and not agent.enable_sleeptime:
         agent.agent_type = AgentType.letta_v1_agent
     return await server.create_agent_async(agent, actor=actor)
 
