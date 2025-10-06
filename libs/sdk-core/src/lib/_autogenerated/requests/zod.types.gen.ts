@@ -961,6 +961,30 @@ export const letta__schemas__agent_file__MessageSchema = z.object({
     ])
     .optional(),
   created_at: z.union([z.string(), z.undefined()]).optional(),
+  approve: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  approval_request_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  denial_reason: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type FileAgentSchema = z.infer<typeof FileAgentSchema>;

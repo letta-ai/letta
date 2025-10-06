@@ -6076,6 +6076,18 @@ export type letta__schemas__agent_file__MessageSchema = {
    * The timestamp when the object was created.
    */
   created_at?: string;
+  /**
+   * Whether the tool has been approved
+   */
+  approve?: boolean | null;
+  /**
+   * The message ID of the approval request
+   */
+  approval_request_id?: string | null;
+  /**
+   * An optional explanation for the provided approval status
+   */
+  denial_reason?: string | null;
 };
 
 /**
