@@ -9779,10 +9779,20 @@ export const get_List_agent_files = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       cursor: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      limit: z.number().optional(),
       is_open: z
         .union([
           z.boolean(),

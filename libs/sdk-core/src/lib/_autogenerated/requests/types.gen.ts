@@ -7498,9 +7498,18 @@ export type ListAgentFoldersData = {
 export type ListAgentFoldersResponse = Array<Source>;
 
 export type ListAgentFilesData = {
+  /**
+   * File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
   /**
-   * Pagination cursor from previous response
+   * File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Pagination cursor from previous response (deprecated, use before/after)
+   * @deprecated
    */
   cursor?: string | null;
   /**
@@ -7508,9 +7517,17 @@ export type ListAgentFilesData = {
    */
   isOpen?: boolean | null;
   /**
-   * Number of items to return (1-100)
+   * Maximum number of files to return
    */
-  limit?: number;
+  limit?: number | null;
+  /**
+   * Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;
