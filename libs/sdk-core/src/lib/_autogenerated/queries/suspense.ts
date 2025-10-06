@@ -2195,6 +2195,11 @@ export const useAgentsServiceListAgentToolsSuspense = <
  * Get the sources associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+ * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+ * @param data.limit Maximum number of sources to return
+ * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -2209,14 +2214,24 @@ export const useAgentsServiceListAgentSourcesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -2229,7 +2244,12 @@ export const useAgentsServiceListAgentSourcesSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn(
       {
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -2240,7 +2260,12 @@ export const useAgentsServiceListAgentSourcesSuspense = <
     ),
     queryFn: () =>
       AgentsService.listAgentSources({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -2254,6 +2279,11 @@ export const useAgentsServiceListAgentSourcesSuspense = <
  * Get the folders associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+ * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+ * @param data.limit Maximum number of sources to return
+ * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -2268,14 +2298,24 @@ export const useAgentsServiceListAgentFoldersSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -2288,7 +2328,12 @@ export const useAgentsServiceListAgentFoldersSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
       {
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -2299,7 +2344,12 @@ export const useAgentsServiceListAgentFoldersSuspense = <
     ),
     queryFn: () =>
       AgentsService.listAgentFolders({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,

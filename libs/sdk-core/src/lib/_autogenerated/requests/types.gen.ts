@@ -7436,7 +7436,27 @@ export type CloseFileData = {
 export type CloseFileResponse = unknown;
 
 export type ListAgentSourcesData = {
+  /**
+   * Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
+  /**
+   * Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of sources to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;
@@ -7447,7 +7467,27 @@ export type ListAgentSourcesData = {
 export type ListAgentSourcesResponse = Array<Source>;
 
 export type ListAgentFoldersData = {
+  /**
+   * Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+   */
+  after?: string | null;
   agentId: string;
+  /**
+   * Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of sources to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xExperimentalLettaV1Agent?: string | null;

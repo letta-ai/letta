@@ -2832,6 +2832,11 @@ export class AgentsService {
    * Get the sources associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+   * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+   * @param data.limit Maximum number of sources to return
+   * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -2850,6 +2855,13 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
       },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -2862,6 +2874,11 @@ export class AgentsService {
    * Get the folders associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+   * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+   * @param data.limit Maximum number of sources to return
+   * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -2879,6 +2896,13 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/folders',
       path: {
         agent_id: data.agentId,
+      },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',
