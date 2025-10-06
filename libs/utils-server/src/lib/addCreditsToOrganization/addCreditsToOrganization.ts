@@ -6,18 +6,20 @@ import {
 } from '@letta-cloud/service-database';
 import { eq, sql } from 'drizzle-orm';
 import { incrementRedisOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
+import type { OrganizationTransactionMetadata } from '@letta-cloud/types';
 
 interface AddCreditsToOrganizationOptions {
   organizationId: string;
   amount: number;
   source: string;
   note?: string;
+  metadata?: OrganizationTransactionMetadata
 }
 
 export async function addCreditsToOrganization(
   options: AddCreditsToOrganizationOptions,
 ) {
-  const { organizationId, note, source, amount } = options;
+  const { organizationId, note, metadata, source, amount } = options;
 
   if (isNaN(amount)) {
     throw new Error('Amount must be a number');
@@ -49,6 +51,7 @@ export async function addCreditsToOrganization(
     source,
     organizationId,
     note,
+    metadata,
     trueCost: amount.toString(),
     transactionType: 'addition',
   });

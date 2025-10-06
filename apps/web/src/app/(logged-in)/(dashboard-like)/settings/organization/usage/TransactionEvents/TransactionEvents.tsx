@@ -27,7 +27,7 @@ function AmountBadge(props: AmountBadgeProps) {
     <HStack align="center" gap="small">
       {type === 'addition' ? '+' : '-'}
       <Typography variant="body2">
-        <HStack gap="small" align="center">
+        <HStack as="span" gap="small" align="center">
           <LettaCoinIcon />{' '}
           {formatNumber(amount)}
         </HStack>
@@ -104,6 +104,20 @@ export default function TransactionEvents() {
           header: t('table.columns.actions'),
           cell: ({ row }) => {
             const agentId = row.original.metadata?.agentId
+            const paymentId = row.original.metadata?.paymentId
+
+            if (paymentId) {
+              return (
+                <Button
+                  label={t('table.viewPayment')}
+                  href={`/receipts/${paymentId}`}
+                  color="secondary"
+                  size="small"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              )
+            }
 
             if (!agentId) {
               return null;

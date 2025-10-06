@@ -59,7 +59,7 @@ export function DashboardHeader() {
         >
           <HStack gap="large" align="center">
             <HStack fullWidth align="center">
-              <HStack justify="start" align="center">
+              <HStack className="min-w-[147px]" justify="start" align="center">
                 <Breadcrumb
                   size="small"
                   items={[
@@ -104,22 +104,23 @@ export function DashboardHeader() {
                       : []),
                   ]}
                 />
-                {showOrganizationView && (
-                  <Link
-                    href="/settings/organization/settings"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <HStack
-                      className="rounded-sm py-1"
-                      paddingX="xsmall" border align="center" gap>
-                      <Typography variant="body3">
-                        {organization?.name || 'Organization'}
-                      </Typography>
-                      <BillingTierBadge size="small" />
-                    </HStack>
-                  </Link>
-                )}
+
               </HStack>
+              {showOrganizationView && (
+                <Link
+                  href="/settings/organization/settings"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <HStack
+                    className="rounded-sm py-1"
+                    paddingX="xsmall" border align="center" gap>
+                    <Typography variant="body3">
+                      {organization?.name || 'Organization'}
+                    </Typography>
+                    <BillingTierBadge size="small" />
+                  </HStack>
+                </Link>
+              )}
             </HStack>
           </HStack>
           <HStack align="center" gap="small">

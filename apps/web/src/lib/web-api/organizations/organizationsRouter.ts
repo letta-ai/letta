@@ -904,6 +904,10 @@ export async function purchaseCredits(
   await addCreditsToOrganization({
     organizationId: activeOrganizationId,
     amount: credits,
+    metadata: {
+      paymentId: payment.id,
+    },
+    note: `Purchased ${credits} credits for $${creditsToDollars(credits)}`,
     source: 'Purchase',
   });
 

@@ -425,6 +425,7 @@ export type ToolRulesArray = ToolRule[] | null;
 
 export const OrganizationTransactionMetadataSchema = z.object({
   agentId: z.string().optional(),
+  paymentId: z.string().optional(),
   runId: z.string().optional(),
 });
 

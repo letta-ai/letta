@@ -145,6 +145,9 @@ export async function handleAutoTopUp(
         organizationId,
         amount: config.refillAmount,
         source: 'auto_top_up',
+        metadata: {
+          paymentId: payment.id,
+        },
         note: `Auto top-up: purchased ${config.refillAmount} credits for $${creditsToDollars(config.refillAmount)}`,
       });
 

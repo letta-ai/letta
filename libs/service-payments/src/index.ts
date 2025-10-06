@@ -9,6 +9,7 @@ export * from './lib/createPayment/createPayment';
 export * from './lib/getPaymentMethodDetails/getPaymentMethodDetails';
 export * from './lib/listPaymentIntents/listPaymentIntents';
 export * from './lib/getPaymentCharge/getPaymentCharge';
+export * from './lib/getReceiptUrl/getReceiptUrl';
 export * from './lib/getCustomerSubscription/getCustomerSubscription';
 export * from './lib/upgradeCustomer/upgradeCustomer';
 export * from './lib/cancelSubscription/cancelSubscription';
