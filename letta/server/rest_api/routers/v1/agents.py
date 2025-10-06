@@ -734,12 +734,30 @@ async def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of sources to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Get the sources associated with an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_sources_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_agent_folders")
@@ -747,12 +765,30 @@ async def list_agent_folders(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of sources to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Get the folders associated with an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_sources_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
