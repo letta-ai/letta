@@ -1,9 +1,11 @@
 .transition-box {
-  height: calc(100dvh - var(--header-height) - 8px);
-  width: calc(100cqw - 180px);
+  height: calc(100dvh - var(--header-height) - 0.75rem);
+  width: calc(100cqw - 180px - 0.25rem);
+  margin-top: 0.25rem;
   position: fixed;
   z-index: 0;
   background: transparent;
+
   pointer-events: none;
   user-select: none;
 }

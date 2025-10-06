@@ -40,18 +40,20 @@ export function DashboardHeader() {
       <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
         as="header"
-        color="background"
-        padding="xxsmall"
+        color="background-grey"
+        paddingY="xxsmall"
         position="fixed"
         zIndex="header"
         fullWidth
       >
         <HStack
-          color="background"
+          color="background-grey"
           fullWidth
           justify="spaceBetween"
           align="center"
-          paddingX="large"
+          paddingY="large"
+          paddingRight="small2"
+          paddingLeft="xlarge"
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-header min-h-header"
         >

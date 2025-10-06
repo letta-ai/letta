@@ -29,16 +29,16 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
       <IntercomSetup showLauncher={true} />
       <div className="pageFadeIn overflow-x-hidden">
         <div className="dashboard h-full fixed z-[-1]"></div>
-        <VStack gap="small" fullHeight fullWidth>
+        <VStack gap="small" className="dashboard h-[100dvh]" fullHeight fullWidth>
           <DashboardHeader />
-          <HStack gap={false} fullWidth>
+          <HStack  flex collapseHeight gap={false} fullWidth>
             {!hideSidebar && <NavigationSidebar />}
-
-            <Frame position="relative" overflow="hidden" fullWidth>
-              <DashboardTransition alwaysFullscreenBox={hideSidebar}>
+            <DashboardTransition>
+              <Frame border overflowX="hidden" id="main" overflowY="auto" className="dashboard-frame" fullHeight  position="relative" fullWidth>
                 {children}
-              </DashboardTransition>
-            </Frame>
+              </Frame>
+            </DashboardTransition>
+
           </HStack>
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />
         </VStack>
