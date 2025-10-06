@@ -21,6 +21,9 @@ export function InteractiveReasoningMessage(
   const t = useTranslations('components/Messages');
   const { message } = props;
   const { reasoning, source } = message;
+  if (!reasoning) {
+    return null;
+  }
   return (
     <BlockQuote fullWidth>
       <HStack fullWidth align="start">
