@@ -29,6 +29,7 @@ import { listMiddleware } from './libs/listMiddleware/listMiddleware';
 import { agentFileUploadMiddleware } from './libs/agentFileUploadMiddleware/agentFileUploadMiddleware';
 import { messageAsyncMiddleware } from './libs/messageAsyncMiddleware/messageAsyncMiddleware';
 import { experimentalFlagMiddleware } from './libs/experimentalFlagMiddleware/experimentalFlagMiddleware';
+import { enterpriseSubscriptionMiddleware } from './libs/enterpriseSubscriptionMiddleware/enterpriseSubscriptionMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -158,6 +159,7 @@ export function startServer() {
   app.use(listMiddleware);
   app.use(messageAsyncMiddleware);
   app.use(experimentalFlagMiddleware);
+  app.use(enterpriseSubscriptionMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();

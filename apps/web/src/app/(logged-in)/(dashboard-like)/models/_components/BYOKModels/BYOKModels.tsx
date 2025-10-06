@@ -13,7 +13,7 @@ import {
   ModelsIcon,
   PlusIcon,
   Typography,
-  VStack,
+  VStack, Tooltip
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { AddProviderModal } from '../AddProviderModal/AddProviderModal';
@@ -23,6 +23,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ProviderDetailsOverlay } from '../ProviderDetailsOverlay/ProviderDetailsOverlay';
 import { getUseProvidersServiceModelsStandardArgs } from '../utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 function NoProviders() {
   const t = useTranslations('pages/models/BYOKModels');
@@ -163,8 +164,66 @@ function ProvidersView() {
   return <ProviderTable isLoading={isLoading} providers={providers} />;
 }
 
+function AddProviderButton() {
+  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3')
+  const t = useTranslations('pages/models/BYOKModels');
+
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const providerState = useMemo(() => {
+    if (isBillingV3Enabled) {
+      if (!billingData) {
+        return 'loading'
+      }
+
+      if (billingData?.body.billingTier === 'enterprise') {
+        return 'show';
+      }
+
+      return 'hide';
+    }
+
+    return 'show'
+  }, [billingData, isBillingV3Enabled]);
+
+  if (providerState === 'loading') {
+    return null;
+  }
+
+  if (providerState === 'hide') {
+    return (
+      <Tooltip asChild content={t('upgradeTooltip')}>
+        <Button
+          disabled
+          preIcon={<PlusIcon />}
+          label={t('actions.addProvider')}
+          color="secondary"
+        />
+      </Tooltip>
+    )
+  }
+
+  return (
+    <AddProviderModal
+      trigger={
+        <Button
+          preIcon={<PlusIcon />}
+          label={t('actions.addProvider')}
+          color="secondary"
+        />
+      }
+    />
+  );
+}
+
+
 export function BYOKModels() {
   const t = useTranslations('pages/models/BYOKModels');
+
+
 
   return (
     <Section
@@ -174,15 +233,7 @@ export function BYOKModels() {
       <VStack gap="medium">
         <ProvidersView />
         <div>
-          <AddProviderModal
-            trigger={
-              <Button
-                preIcon={<PlusIcon />}
-                label={t('actions.addProvider')}
-                color="secondary"
-              />
-            }
-          />
+          <AddProviderButton />
         </div>
       </VStack>
     </Section>

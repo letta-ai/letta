@@ -466,6 +466,7 @@
     }
   },
   "pages/models/BYOKModels": {
+    "upgradeTooltip": "This feature is available on Enterprise, please contact support to learn more.",
     "ProviderTable": {
       "columns": {
         "name": "Name",
