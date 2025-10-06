@@ -42,7 +42,7 @@ jobs:
               "integration_test_turbopuffer.py",
               "integration_test_human_in_the_loop.py",
               "integration_test_message_create_async.py",
-              "integration_test_summarizer.py"
+              "integration_test_summarizer.py",
               "integration_test_mcp.py"
             ]
           }
