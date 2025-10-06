@@ -35,6 +35,7 @@ class MCPOAuth(SqlalchemyBase, OrganizationMixin, UserMixin):
     # OAuth flow data
     authorization_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth authorization URL")
     authorization_code: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth authorization code")
+    authorization_code_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted OAuth authorization code")
 
     # Token data
     access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth access token")
