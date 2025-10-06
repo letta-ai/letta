@@ -54,20 +54,15 @@ interface NavigationMenuSection {
 
 function NavigationSection(props: NavigationMenuSection) {
   return (
-    <VStack as="nav" gap={false}>
+    <VStack as="nav" gap={false} className="gap-[3px]">
       {props.children}
     </VStack>
   );
 }
 
-interface DividerProps {
-  withVerticalPadding?: boolean;
-}
-
-function Divider(props: DividerProps) {
-  const { withVerticalPadding = false } = props;
+function Divider() {
   return (
-    <HStack paddingX="large" paddingY={withVerticalPadding ? "xsmall" : undefined}>
+    <HStack >
       <HR />
     </HStack>
   );
@@ -85,8 +80,8 @@ function SectionHeader(props: SectionHeaderProps) {
     <HStack
       fullWidth
       overflow="hidden"
-      paddingX="large"
-      paddingTop="xsmall"
+      paddingX="small"
+      paddingY="medium"
       align="center"
       paddingBottom="xxsmall"
     >
@@ -218,66 +213,68 @@ function ToolsNavigationItems() {
   return (
     <>
       <Divider />
-      <DashboardNavigationButton
-        href="javascript:void(0)"
-        id="tools"
-        label={t('tools')}
-        postIcon={
-          isExpanded ? (
-            <ChevronDownIcon color="muted" size="xsmall" />
-          ) : (
-            <ChevronRightIcon color="muted" size="xsmall" />
-          )
-        }
-        icon={<ToolsIcon />}
-        onClick={handleToolsClick}
-      />
-      <div
-        className={cn(
-          'transition-all overflow-hidden duration-500',
-          isExpanded ? 'max-h-[500px]' : 'max-h-0',
-        )}
-      >
+      <VStack gap={false} fullWidth>
         <DashboardNavigationButton
-          href="/tools/custom"
-          id="tools-custom"
-          label={copy.customTools.title}
-          icon={copy.customTools.icon}
+          href="javascript:void(0)"
+          id="tools"
+          label={t('tools')}
+          postIcon={
+            isExpanded ? (
+              <ChevronDownIcon color="muted" size="xsmall" />
+            ) : (
+              <ChevronRightIcon color="muted" size="xsmall" />
+            )
+          }
+          icon={<ToolsIcon />}
+          onClick={handleToolsClick}
         />
-        <DashboardNavigationButton
-          href="/tools/multi-agent"
-          id="tools-multi-agent"
-          label={copy.multiAgentTools.title}
-          icon={copy.multiAgentTools.icon}
-        />
-        <DashboardNavigationButton
-          href="/tools/utility"
-          id="tools-utility"
-          label={copy.utilityTools.title}
-          icon={copy.utilityTools.icon}
-        />
-        <DashboardNavigationButton
-          href="/tools/base"
-          id="tools-base"
-          label={copy.lettaTools.title}
-          icon={copy.lettaTools.icon}
-        />
-        <HStack paddingX="large" paddingBottom="xsmall" paddingTop="xxsmall">
-          <CreateToolDialog
-            trigger={
-              <Button
-                align="left"
-                size="xsmall"
-                data-testid="start-create-tool"
-                preIcon={<PlusIcon />}
-                label={t('createTool')}
-                color="secondary"
-                bold
-              />
-            }
+        <div
+          className={cn(
+            'transition-all overflow-hidden duration-500',
+            isExpanded ? 'max-h-[500px]' : 'max-h-0',
+          )}
+        >
+          <DashboardNavigationButton
+            href="/tools/custom"
+            id="tools-custom"
+            label={copy.customTools.title}
+            icon={copy.customTools.icon}
           />
-        </HStack>
-      </div>
+          <DashboardNavigationButton
+            href="/tools/multi-agent"
+            id="tools-multi-agent"
+            label={copy.multiAgentTools.title}
+            icon={copy.multiAgentTools.icon}
+          />
+          <DashboardNavigationButton
+            href="/tools/utility"
+            id="tools-utility"
+            label={copy.utilityTools.title}
+            icon={copy.utilityTools.icon}
+          />
+          <DashboardNavigationButton
+            href="/tools/base"
+            id="tools-base"
+            label={copy.lettaTools.title}
+            icon={copy.lettaTools.icon}
+          />
+          <HStack paddingX="large" paddingBottom="xsmall" paddingTop="xxsmall">
+            <CreateToolDialog
+              trigger={
+                <Button
+                  align="left"
+                  size="xsmall"
+                  data-testid="start-create-tool"
+                  preIcon={<PlusIcon />}
+                  label={t('createTool')}
+                  color="secondary"
+                  bold
+                />
+              }
+            />
+          </HStack>
+        </div>
+      </VStack>
       <Divider />
     </>
   );
@@ -412,7 +409,7 @@ function SettingsMenu() {
 
   return (
     <NavigationSection>
-      <VStack gap={false} fullWidth paddingTop="large">
+      <VStack className="gap-[3px]" fullWidth paddingTop="small">
 
         <DashboardNavigationButton
           href={`${baseUrl}/account`}
@@ -445,7 +442,7 @@ function SettingsMenu() {
           label={t('environmentVariables')}
         />
 
-        <Divider withVerticalPadding />
+        <Divider />
 
         <DashboardNavigationButton
           href={`${baseUrl}/organization/usage`}
@@ -460,7 +457,7 @@ function SettingsMenu() {
           label={t('billing')}
         />
 
-        <Divider withVerticalPadding />
+        <Divider />
 
         <DashboardNavigationButton
           href={`${baseUrl}/organization/models`}
@@ -517,16 +514,15 @@ export function NavigationMenu(props: NavigationMenuProps) {
           <AppVersion />
         </VStack>
       </div>
-      <VStack gap={false}>
+      <VStack className="gap-[3px]">
         <div
           style={{
-            height: lastActiveProject ? '290px' : '0',
+            height: lastActiveProject ? '321px' : '0',
           }}
           className={cn('transition-[height] overflow-hidden duration-500')}
         >
           <ProjectSpecificNavigation />
         </div>
-        <Divider />
         {!developmentServerExists && <RootNavigationItems />}
         {developmentServerExists && <SelfHostedServerNavigation />}
       </VStack>

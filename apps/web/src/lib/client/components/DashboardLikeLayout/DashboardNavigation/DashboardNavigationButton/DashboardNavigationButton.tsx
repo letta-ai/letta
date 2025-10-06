@@ -38,8 +38,8 @@ export function DashboardNavigationButton(props: NavButtonProps) {
       data-testid={`nav-button-${id}`}
       className={cn(
         disabled ? '' : 'hover:bg-brand-light',
-        isActive ? 'bg-background-grey3' : '',
-        'flex flex-row w-full overflow-hidden  gap-1.5 justify-between min-h-[32px] max-h-[32px] items-center px-4',
+        isActive ? 'bg-background-grey3 text-brand' : '',
+        'flex flex-row w-full overflow-hidden rounded-sm  gap-1.5 justify-between min-h-[30px] max-h-[30px] items-center px-2',
       )}
       disabled={disabled}
       href={href}

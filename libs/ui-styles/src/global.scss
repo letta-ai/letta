@@ -446,21 +446,23 @@ html.dark {
 }
 
 body {
-  scrollbar-color: hsl(var(--primary)) transparent;
   scrollbar-width: thin;
+  scrollbar-color:  hsla(var(--ade-scrollbar), 0.16) transparent;
 }
 
-::-webkit-scrollbar-thumb {
-  border-radius: 0px;
+* {
+  scrollbar-width: thin;
+
 }
 
-*::-webkit-scrollbar {
+ *::-webkit-scrollbar {
   width: 5px;
-  background-color: transparent; /* or add it to the track */
+   height: 5px;
+  background-color: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary));
+  background-color: hsla(var(--ade-scrollbar), 0.16);
 }
 
 .shine {

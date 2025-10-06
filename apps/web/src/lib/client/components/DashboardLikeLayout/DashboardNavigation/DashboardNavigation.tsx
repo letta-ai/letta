@@ -13,22 +13,23 @@ export function NavigationSidebar() {
       {/* eslint-disable-next-line react/forbid-component-props */}
       <VStack className="min-w-[180px] h-full max-w-[180px] hidden visibleSidebar:block" />
       <VStack
-        overflowY="auto"
+        overflowY="hidden"
         position="fixed"
         justify="spaceBetween"
-        color="background"
+        color="background-grey"
         fullHeight
         zIndex="rightAboveZero"
         /* eslint-disable-next-line react/forbid-component-props */
-        className={`top-0 min-w-[180px] h-full max-w-[180px] invisible visibleSidebar:visible ${systemWarning ? 'system-warning-sidebar' : ''}`}
+        className={`top-0 min-w-[180px] h-[100dvh] max-w-[180px] invisible visibleSidebar:visible ${systemWarning ? 'system-warning-sidebar' : ''}`}
       >
-        <VStack fullHeight gap="small" paddingY="xxsmall" paddingLeft="xxsmall">
+        <VStack fullHeight gap={false}  paddingY="xsmall" >
           {/* eslint-disable-next-line react/forbid-component-props */}
           <HStack className="h-header min-h-header" />
           <VStack
             fullHeight
-            borderY
-            borderLeft
+            overflowY="auto"
+            paddingLeft="large"
+            paddingRight="small"
             /* eslint-disable-next-line react/forbid-component-props */
             className="main-sidebar border-background-grey3-border"
           >

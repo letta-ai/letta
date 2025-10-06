@@ -164,6 +164,7 @@ const frameVariants = cva('', {
       none: 'pr-0',
       xxsmall: 'pr-1',
       xsmall: 'pr-1.5',
+      small2: 'pr-2',
       small: 'pr-2.5',
       medium: 'pr-3',
       large: 'pr-4',

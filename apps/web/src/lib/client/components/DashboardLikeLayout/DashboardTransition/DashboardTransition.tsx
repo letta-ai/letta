@@ -53,7 +53,7 @@ export function DashboardTransition({
   >(undefined);
 
   return (
-    <Frame fullHeight fullWidth>
+    <Frame overflow="hidden" color="background" fullHeight fullWidth>
       <TransitionRouter
         auto={true}
         leave={(next, _from, to) => {
@@ -107,19 +107,18 @@ export function DashboardTransition({
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
             'transition-box z-[-1]',
+
             alwaysFullscreenBox ? 'always-fullscreen-transition-box' : '',
           )}
+          border
           paddingTop="xxsmall"
-          paddingRight="xxsmall"
-          color="background"
+          paddingRight="small2"
           position="fixed"
           gap={false}
         >
           {isTransitioning && <TransitionLoader />}
-          <VStack fullWidth fullHeight border></VStack>
         </VStack>
-        <div className="w-full bottom-0 z-[99] h-[4px] fixed bg-background"></div>
-        <HStack fullWidth id="main">
+        <HStack fullHeight fullWidth  >
           {children}
         </HStack>
       </TransitionRouter>
