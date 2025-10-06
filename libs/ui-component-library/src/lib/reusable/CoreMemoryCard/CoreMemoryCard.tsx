@@ -68,14 +68,21 @@ interface BaseCoreMemoryCardProps {
   isSelected?: boolean;
 }
 
+interface LineDiffCount {
+  minusLines: number;
+  plusLines: number;
+}
+
 interface UpdatedCoreMemoryCardProps extends BaseCoreMemoryCardProps {
   oldLine?: string;
   newLine?: string;
+  lineDiff?: LineDiffCount;
+  newValue?: string;
 }
 
 interface RegularCoreMemoryCardProps extends BaseCoreMemoryCardProps {}
 
-function MemoryDiff(props: MemoryDiffProps): MemoryDiffResult {
+function getMemoryDiff(props: MemoryDiffProps): MemoryDiffResult {
   const { value } = props;
   const initialState = useRef<string>(value);
 
@@ -163,15 +170,15 @@ function UpdatedCoreMemoryCard({
   label,
   infoToolTipContent,
   value,
+  newValue,
   oldLine,
   newLine,
   numChar,
   lastUpdatedAt,
   openInAdvanced,
   isSelected,
+  lineDiff,
 }: UpdatedCoreMemoryCardProps) {
-  const diffCount = getLineDiff(oldLine, newLine);
-
   const cardColor = isSelected ? 'primary-light' : 'background-grey';
   const backgroundClassName = cn(
     isSelected ? 'bg-primary-light' : 'bg-background-grey',
@@ -205,7 +212,7 @@ function UpdatedCoreMemoryCard({
             <CoreMemoryCardInfoBar
               numChar={numChar}
               lastUpdatedAt={lastUpdatedAt}
-              diffCount={diffCount}
+              diffCount={lineDiff}
               backgroundClassName={isSelected ? 'bg-brand-light' : ''}
             />
           </HStack>
@@ -219,8 +226,11 @@ function UpdatedCoreMemoryCard({
                       {value ? value : ''}
                     </Typography>
                   </div>
-                  <Typography variant="body3" className={cn('truncate')}>
-                    - {oldLine}
+                  <Typography
+                    variant="body3"
+                    className={cn(newLine ? 'truncate' : 'line-clamp-2')}
+                  >
+                    - {newLine ? oldLine : value}
                   </Typography>
                 </>
               ) : (
@@ -230,9 +240,9 @@ function UpdatedCoreMemoryCard({
                 <Typography
                   color="positive"
                   variant="body3"
-                  className={cn('truncate')}
+                  className={cn(oldLine ? 'truncate' : 'line-clamp-2')}
                 >
-                  + {newLine}
+                  + {oldLine ? newLine : newValue}
                 </Typography>
               )}
             </div>
@@ -311,9 +321,10 @@ export function CoreMemoryCard(props: CoreMemoryCardProps) {
     isSelected,
   } = props;
 
-  const { oldLine, newLine, oldValue } = MemoryDiff({
+  const { oldLine, newLine, oldValue } = getMemoryDiff({
     value: value || '',
   });
+  const lineDiff = getLineDiff(oldValue, value);
 
   const justUpdated = useMemo(() => {
     return oldLine !== null || newLine !== null;
@@ -327,8 +338,10 @@ export function CoreMemoryCard(props: CoreMemoryCardProps) {
         <UpdatedCoreMemoryCard
           label={label}
           value={oldValue || undefined}
+          newValue={value || undefined}
           oldLine={oldLine || undefined}
           newLine={newLine || undefined}
+          lineDiff={lineDiff || undefined}
           infoToolTipContent={infoToolTipContent}
           numChar={calculatedNumChar}
           lastUpdatedAt={lastUpdatedAt}
