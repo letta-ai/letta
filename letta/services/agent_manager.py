@@ -1549,16 +1549,28 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_attached_sources_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
+    async def list_attached_sources_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+        ascending: bool = False,
+    ) -> List[PydanticSource]:
         """
-        Lists all sources attached to an agent.
+        Lists all sources attached to an agent with pagination.
 
         Args:
             agent_id: ID of the agent to list sources for
             actor: User performing the action
+            before: Source ID cursor for pagination. Returns sources that come before this source ID.
+            after: Source ID cursor for pagination. Returns sources that come after this source ID.
+            limit: Maximum number of sources to return.
+            ascending: Sort order by creation time.
 
         Returns:
-            List[str]: List of source IDs attached to the agent
+            List[PydanticSource]: List of sources attached to the agent
 
         Raises:
             NoResultFound: If agent doesn't exist or user doesn't have access
@@ -1577,8 +1589,23 @@ class AgentManager:
                     SourceModel.organization_id == actor.organization_id,
                     SourceModel.is_deleted == False,
                 )
-                .order_by(SourceModel.created_at.desc(), SourceModel.id)
             )
+
+            # Apply cursor-based pagination
+            if before:
+                query = query.where(SourceModel.id < before)
+            if after:
+                query = query.where(SourceModel.id > after)
+
+            # Apply sorting
+            if ascending:
+                query = query.order_by(SourceModel.created_at.asc(), SourceModel.id.asc())
+            else:
+                query = query.order_by(SourceModel.created_at.desc(), SourceModel.id.desc())
+
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
 
             result = await session.execute(query)
             sources = result.scalars().all()
