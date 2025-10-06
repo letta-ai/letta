@@ -1153,32 +1153,37 @@ class LettaAgentV2(BaseAgentV2):
         force: bool = False,
     ) -> list[Message]:
         # always skip summarization if last message is an approval request message
+        skip_summarization = False
         latest_messages = in_context_messages + new_letta_messages
         if latest_messages[-1].role == "approval" and len(latest_messages[-1].tool_calls) > 0:
-            return in_context_messages
+            skip_summarization = True
 
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
         # TODO: `force` and `clear` seem to no longer be used, we should remove
-        if force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window):
-            self.logger.warning(
-                f"Total tokens {total_tokens} exceeds configured max tokens {self.agent_state.llm_config.context_window}, forcefully clearing message history."
-            )
-            new_in_context_messages, updated = await self.summarizer.summarize(
-                in_context_messages=in_context_messages,
-                new_letta_messages=new_letta_messages,
-                force=True,
-                clear=True,
-            )
+        if not skip_summarization:
+            if force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window):
+                self.logger.warning(
+                    f"Total tokens {total_tokens} exceeds configured max tokens {self.agent_state.llm_config.context_window}, forcefully clearing message history."
+                )
+                new_in_context_messages, updated = await self.summarizer.summarize(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=new_letta_messages,
+                    force=True,
+                    clear=True,
+                )
+            else:
+                # NOTE (Sarah): Seems like this is doing nothing?
+                self.logger.info(
+                    f"Total tokens {total_tokens} does not exceed configured max tokens {self.agent_state.llm_config.context_window}, passing summarizing w/o force."
+                )
+                new_in_context_messages, updated = await self.summarizer.summarize(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=new_letta_messages,
+                )
         else:
-            # NOTE (Sarah): Seems like this is doing nothing?
-            self.logger.info(
-                f"Total tokens {total_tokens} does not exceed configured max tokens {self.agent_state.llm_config.context_window}, passing summarizing w/o force."
-            )
-            new_in_context_messages, updated = await self.summarizer.summarize(
-                in_context_messages=in_context_messages,
-                new_letta_messages=new_letta_messages,
-            )
+            new_in_context_messages = in_context_messages + new_letta_messages
+
         message_ids = [m.id for m in new_in_context_messages]
         await self.agent_manager.update_message_ids_async(
             agent_id=self.agent_state.id,
