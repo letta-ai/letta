@@ -756,6 +756,7 @@
       "loading": "Loading audit log...",
       "noResults": "No transactions found",
       "viewAgent": "View agent",
+      "viewPayment": "View receipt",
       "columns": {
         "actions": "Actions",
         "date": "Date",
@@ -3546,5 +3547,9 @@
     "tools": "Tools",
     "useInLettaCloud": "Use in Letta Cloud",
     "downloadAgent": "Download agent"
+  },
+  "receipts": {
+    "noReceiptFound": "No receipt could be found matching this url",
+    "returnToLetta": "Return to billing"
   }
 }
