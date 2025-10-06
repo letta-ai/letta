@@ -67,11 +67,6 @@ export const featureFlags = {
     expiryDate: '2025-08-15',
     flagValue: z.boolean(),
   },
-  MEMORY_BLOCK_VIEWER: {
-    description: 'Memory block viewer',
-    expiryDate: '2025-08-15',
-    flagValue: z.boolean(),
-  },
   MCP_OAUTH: {
     description: 'Enable MCP OAuth flow using streaming endpoint',
     expiryDate: '2025-12-31',
