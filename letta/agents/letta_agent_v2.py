@@ -694,7 +694,7 @@ class LettaAgentV2(BaseAgentV2):
 
         curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
-        # refresh files 
+        # refresh files
         agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
 
         # generate just the memory string with current state for comparison
@@ -1152,6 +1152,11 @@ class LettaAgentV2(BaseAgentV2):
         total_tokens: int | None = None,
         force: bool = False,
     ) -> list[Message]:
+        # always skip summarization if last message is an approval request message
+        latest_messages = in_context_messages + new_letta_messages
+        if latest_messages[-1].role == "approval" and len(latest_messages[-1].tool_calls) > 0:
+            return in_context_messages
+
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
         # TODO: `force` and `clear` seem to no longer be used, we should remove
