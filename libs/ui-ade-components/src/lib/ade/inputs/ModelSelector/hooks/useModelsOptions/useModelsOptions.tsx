@@ -9,16 +9,28 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useModelsServiceListModels } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 function useLocalModelsOptions() {
   const { data: modelsList } = useModelsServiceListModels();
+  const { data: modelsNotAllowed } = useFeatureFlag('MODELS_NOT_ALLOWED');
 
   const options = useMemo(() => {
     if (!modelsList) {
       return [];
     }
 
-    return modelsList.map((model) => {
+    // Filter models based on feature flag
+    // Only apply filtering if flag is loaded and has values array
+    const filteredModels =
+      modelsNotAllowed?.values && Array.isArray(modelsNotAllowed.values)
+        ? modelsList.filter((model) => {
+            if (!model.handle) return false;
+            return !modelsNotAllowed.values.includes(model.handle);
+          })
+        : modelsList;
+
+    return filteredModels.map((model) => {
       const brand = getBrandFromModelName(model.handle || '') || 'ollama';
 
       return {
@@ -27,7 +39,7 @@ function useLocalModelsOptions() {
         icon: isBrandKey(brand) ? brandKeyToLogo(brand) : '',
       };
     });
-  }, [modelsList]);
+  }, [modelsList, modelsNotAllowed]);
 
   const getLLMConfigFromHandle = useCallback(
     (handle: string) => {
@@ -53,6 +65,7 @@ function useLocalModelsOptions() {
 
 function useHostedOptions() {
   const { data: modelsList } = useModelsServiceListModels();
+  const { data: modelsNotAllowed } = useFeatureFlag('MODELS_NOT_ALLOWED');
 
   const t = useTranslations('ADE/AgentSettingsPanel/useHostedOptions');
 
@@ -60,6 +73,16 @@ function useHostedOptions() {
     if (!modelsList) {
       return [];
     }
+
+    // Filter models based on feature flag
+    // Only apply filtering if flag is loaded and has values array
+    const filteredModels =
+      modelsNotAllowed?.values && Array.isArray(modelsNotAllowed.values)
+        ? modelsList.filter((model) => {
+            if (!model.handle) return false;
+            return !modelsNotAllowed.values.includes(model.handle);
+          })
+        : modelsList;
 
     const options: OptionType[] = [
       {
@@ -84,7 +107,7 @@ function useHostedOptions() {
       },
     ];
 
-    modelsList.forEach((model) => {
+    filteredModels.forEach((model) => {
       let brand = model?.provider_name || 'ollama';
 
       if (brand === 'anthropic') {
@@ -153,7 +176,7 @@ function useHostedOptions() {
     return options.filter(
       (option) => option.options && option.options.length > 0,
     );
-  }, [modelsList, t]);
+  }, [modelsList, modelsNotAllowed, t]);
 
   const getLLMConfigFromHandle = useCallback(
     (handle: string) => {

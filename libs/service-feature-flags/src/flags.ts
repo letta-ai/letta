@@ -11,6 +11,12 @@ interface FlagProperties {
 // Generate the flag values here:
 // https://app.launchdarkly.com/projects/default/flags?env=test&selected-env=test
 export const featureFlags = {
+  MODELS_NOT_ALLOWED: {
+    description: 'Disable models in agent creation',
+    flagValue: z.object({
+      values: z.array(z.string()),
+    }),
+  },
   ALLOW_MODEL_PROVIDER_CONFIGURATION: {
     description: 'Allow model provider configuration',
     expiryDate: '2024-01-31',
@@ -152,7 +158,7 @@ export const featureFlags = {
     description: 'Enable Run Message View',
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
-  }
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
