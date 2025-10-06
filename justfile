@@ -476,6 +476,7 @@ build-undertaker:
             --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
             --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
             --set env.REDIS_HOST="${REDIS_HOST}" \
+            --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
             --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
             --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \

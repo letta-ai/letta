@@ -49,6 +49,8 @@ spec:
               value: {{ .Values.env.REDIS_HOST | quote }}
             - name: DATABASE_URL
               value: {{ .Values.env.DATABASE_URL | quote }}
+            - name: NEXT_PUBLIC_CURRENT_HOST
+              value: {{ .Values.env.NEXT_PUBLIC_CURRENT_HOST | quote }}
             - name: STRIPE_SECRET_KEY
               value: {{ .Values.env.STRIPE_SECRET_KEY | quote }}
             - name: RESEND_API_KEY
