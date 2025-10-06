@@ -1413,14 +1413,24 @@ export const useAgentsServiceListAgentSourcesKey =
   'AgentsServiceListAgentSources';
 export const UseAgentsServiceListAgentSourcesKeyFn = (
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1432,7 +1442,12 @@ export const UseAgentsServiceListAgentSourcesKeyFn = (
   useAgentsServiceListAgentSourcesKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,
@@ -1452,14 +1467,24 @@ export const useAgentsServiceListAgentFoldersKey =
   'AgentsServiceListAgentFolders';
 export const UseAgentsServiceListAgentFoldersKeyFn = (
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1471,7 +1496,12 @@ export const UseAgentsServiceListAgentFoldersKeyFn = (
   useAgentsServiceListAgentFoldersKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,

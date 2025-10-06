@@ -1931,6 +1931,11 @@ export const prefetchUseAgentsServiceListAgentTools = (
  * Get the sources associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+ * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+ * @param data.limit Maximum number of sources to return
+ * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1942,14 +1947,24 @@ export const prefetchUseAgentsServiceListAgentTools = (
 export const prefetchUseAgentsServiceListAgentSources = (
   queryClient: QueryClient,
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -1959,7 +1974,12 @@ export const prefetchUseAgentsServiceListAgentSources = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn({
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,
@@ -1968,7 +1988,12 @@ export const prefetchUseAgentsServiceListAgentSources = (
     }),
     queryFn: () =>
       AgentsService.listAgentSources({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
@@ -1981,6 +2006,11 @@ export const prefetchUseAgentsServiceListAgentSources = (
  * Get the folders associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.before Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order
+ * @param data.after Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order
+ * @param data.limit Maximum number of sources to return
+ * @param data.order Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1992,14 +2022,24 @@ export const prefetchUseAgentsServiceListAgentSources = (
 export const prefetchUseAgentsServiceListAgentFolders = (
   queryClient: QueryClient,
   {
+    after,
     agentId,
+    before,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xExperimentalLettaV1Agent,
     xExperimentalMessageAsync,
     xProjectId,
   }: {
+    after?: string;
     agentId: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xExperimentalLettaV1Agent?: string;
@@ -2009,7 +2049,12 @@ export const prefetchUseAgentsServiceListAgentFolders = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn({
+      after,
       agentId,
+      before,
+      limit,
+      order,
+      orderBy,
       userAgent,
       userId,
       xExperimentalLettaV1Agent,
@@ -2018,7 +2063,12 @@ export const prefetchUseAgentsServiceListAgentFolders = (
     }),
     queryFn: () =>
       AgentsService.listAgentFolders({
+        after,
         agentId,
+        before,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xExperimentalLettaV1Agent,
