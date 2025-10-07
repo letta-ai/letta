@@ -1146,3 +1146,137 @@ async def test_get_run_request_config_nonexistent_run(server: SyncServer, defaul
 #    # Try to record response duration for non-existent job - should not raise exception but log warning
 #    await server.job_manager.record_response_duration("nonexistent_job_id", 2_000_000_000, default_user)
 #
+
+
+# ======================================================================================================================
+# convert_statuses_to_enum Tests
+# ======================================================================================================================
+
+
+def test_convert_statuses_to_enum_with_none():
+    """Test that convert_statuses_to_enum returns None when input is None."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    result = convert_statuses_to_enum(None)
+    assert result is None
+
+
+def test_convert_statuses_to_enum_with_single_status():
+    """Test converting a single status string to RunStatus enum."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    result = convert_statuses_to_enum(["completed"])
+    assert result == [RunStatus.completed]
+    assert len(result) == 1
+
+
+def test_convert_statuses_to_enum_with_multiple_statuses():
+    """Test converting multiple status strings to RunStatus enums."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    result = convert_statuses_to_enum(["created", "running", "completed"])
+    assert result == [RunStatus.created, RunStatus.running, RunStatus.completed]
+    assert len(result) == 3
+
+
+def test_convert_statuses_to_enum_with_all_statuses():
+    """Test converting all possible status strings."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    all_statuses = ["created", "running", "completed", "failed", "cancelled"]
+    result = convert_statuses_to_enum(all_statuses)
+    assert result == [RunStatus.created, RunStatus.running, RunStatus.completed, RunStatus.failed, RunStatus.cancelled]
+    assert len(result) == 5
+
+
+def test_convert_statuses_to_enum_with_empty_list():
+    """Test converting an empty list."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    result = convert_statuses_to_enum([])
+    assert result == []
+
+
+def test_convert_statuses_to_enum_with_invalid_status():
+    """Test that invalid status strings raise ValueError."""
+    from letta.server.rest_api.routers.v1.runs import convert_statuses_to_enum
+
+    with pytest.raises(ValueError):
+        convert_statuses_to_enum(["invalid_status"])
+
+
+@pytest.mark.asyncio
+async def test_list_runs_with_multiple_statuses(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs with multiple status filters."""
+    # Create runs with different statuses
+    run_created = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            status=RunStatus.created,
+            agent_id=sarah_agent.id,
+            metadata={"type": "created"},
+        ),
+        actor=default_user,
+    )
+    run_running = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            status=RunStatus.running,
+            agent_id=sarah_agent.id,
+            metadata={"type": "running"},
+        ),
+        actor=default_user,
+    )
+    run_completed = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            status=RunStatus.completed,
+            agent_id=sarah_agent.id,
+            metadata={"type": "completed"},
+        ),
+        actor=default_user,
+    )
+    run_failed = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            status=RunStatus.failed,
+            agent_id=sarah_agent.id,
+            metadata={"type": "failed"},
+        ),
+        actor=default_user,
+    )
+
+    # Test filtering by multiple statuses
+    active_runs = await server.run_manager.list_runs(
+        actor=default_user, statuses=[RunStatus.created, RunStatus.running], agent_id=sarah_agent.id
+    )
+    assert len(active_runs) == 2
+    assert all(run.status in [RunStatus.created, RunStatus.running] for run in active_runs)
+
+    # Test filtering by terminal statuses
+    terminal_runs = await server.run_manager.list_runs(
+        actor=default_user, statuses=[RunStatus.completed, RunStatus.failed], agent_id=sarah_agent.id
+    )
+    assert len(terminal_runs) == 2
+    assert all(run.status in [RunStatus.completed, RunStatus.failed] for run in terminal_runs)
+
+
+@pytest.mark.asyncio
+async def test_list_runs_with_no_status_filter_returns_all(server: SyncServer, sarah_agent, default_user):
+    """Test that not providing statuses parameter returns all runs."""
+    # Create runs with different statuses
+    await server.run_manager.create_run(pydantic_run=PydanticRun(status=RunStatus.created, agent_id=sarah_agent.id), actor=default_user)
+    await server.run_manager.create_run(pydantic_run=PydanticRun(status=RunStatus.running, agent_id=sarah_agent.id), actor=default_user)
+    await server.run_manager.create_run(pydantic_run=PydanticRun(status=RunStatus.completed, agent_id=sarah_agent.id), actor=default_user)
+    await server.run_manager.create_run(pydantic_run=PydanticRun(status=RunStatus.failed, agent_id=sarah_agent.id), actor=default_user)
+    await server.run_manager.create_run(pydantic_run=PydanticRun(status=RunStatus.cancelled, agent_id=sarah_agent.id), actor=default_user)
+
+    # List all runs without status filter
+    all_runs = await server.run_manager.list_runs(actor=default_user, agent_id=sarah_agent.id)
+
+    # Should return all 5 runs
+    assert len(all_runs) >= 5
+
+    # Verify we have all statuses represented
+    statuses_found = {run.status for run in all_runs}
+    assert RunStatus.created in statuses_found
+    assert RunStatus.running in statuses_found
+    assert RunStatus.completed in statuses_found
+    assert RunStatus.failed in statuses_found
+    assert RunStatus.cancelled in statuses_found
