@@ -865,6 +865,14 @@ export const ToolReturn = z.object({
       z.undefined(),
     ])
     .optional(),
+  func_response: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type letta__schemas__agent_file__MessageSchema = z.infer<

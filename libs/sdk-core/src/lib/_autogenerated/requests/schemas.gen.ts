@@ -13345,6 +13345,18 @@ export const $ToolReturn = {
       title: 'Stderr',
       description: 'Captured stderr from the tool invocation',
     },
+    func_response: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Func Response',
+      description: 'The function response string',
+    },
   },
   type: 'object',
   required: ['status'],

@@ -5238,6 +5238,10 @@ export type ToolReturn = {
    * Captured stderr from the tool invocation
    */
   stderr?: Array<string> | null;
+  /**
+   * The function response string
+   */
+  func_response?: string | null;
 };
 
 /**
