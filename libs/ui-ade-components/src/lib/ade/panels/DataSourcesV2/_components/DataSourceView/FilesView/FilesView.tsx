@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
-  useSourcesServiceListSourceFiles,
   isAPIError,
   type ListSourceFilesResponse,
-  useSourcesServiceUploadFileToSource,
-  UseSourcesServiceListSourceFilesKeyFn,
+  useFoldersServiceListFolderFiles,
+  useFoldersServiceUploadFileToFolder,
+  UseFoldersServiceListFolderFilesKeyFn,
 } from '@letta-cloud/sdk-core';
 import {
   Alert,
@@ -18,9 +18,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
 import { DataSourceFileUpload } from '../DataSourceFileUpload/DataSourceFileUpload';
-import {
-  DEFAULT_FILE_LIMIT,
-} from '../../../constants';
+import { DEFAULT_FILE_LIMIT } from '../../../constants';
 import { VirtualizedFilesContainer } from './VirtualizedFilesContainer';
 
 export interface FilesViewProps {
@@ -36,9 +34,9 @@ export function FilesView(props: FilesViewProps) {
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: allFiles, isError } = useSourcesServiceListSourceFiles(
+  const { data: allFiles, isError } = useFoldersServiceListFolderFiles(
     {
-      sourceId,
+      folderId: sourceId,
       limit: DEFAULT_FILE_LIMIT,
     },
     undefined,
@@ -59,12 +57,12 @@ export function FilesView(props: FilesViewProps) {
     });
   }, [allFiles, search]);
 
-  const { mutate, error, reset } = useSourcesServiceUploadFileToSource({
+  const { mutate, error, reset } = useFoldersServiceUploadFileToFolder({
     onSuccess: (uploadedFile) => {
       void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
         {
-          queryKey: UseSourcesServiceListSourceFilesKeyFn({
-            sourceId,
+          queryKey: UseFoldersServiceListFolderFilesKeyFn({
+            folderId: sourceId,
             limit: DEFAULT_FILE_LIMIT,
           }),
         },
@@ -123,7 +121,7 @@ export function FilesView(props: FilesViewProps) {
         const file = files[0];
         mutate({
           formData: { file },
-          sourceId: sourceId,
+          folderId: sourceId,
         });
       }
     },
@@ -184,9 +182,7 @@ export function FilesView(props: FilesViewProps) {
           className="relative h-full w-full"
           {...dragProps}
         >
-          <VirtualizedFilesContainer
-            files={files}
-          />
+          <VirtualizedFilesContainer files={files} />
         </div>
       ) : (
         <DataSourceFileUpload sourceId={sourceId} />

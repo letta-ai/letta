@@ -1,10 +1,10 @@
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import {
   isAPIError,
   type ListSourceFilesResponse,
-  useSourcesServiceUploadFileToSource,
-  UseSourcesServiceListSourceFilesKeyFn,
+  useFoldersServiceUploadFileToFolder,
+  UseFoldersServiceListFolderFilesKeyFn,
   ACCEPTABLE_FILETYPES,
 } from '@letta-cloud/sdk-core';
 import {
@@ -32,12 +32,12 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
   const dropZoneRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
 
-  const { mutate, error, isPending } = useSourcesServiceUploadFileToSource({
+  const { mutate, error, isPending } = useFoldersServiceUploadFileToFolder({
     onSuccess: (uploadedFile) => {
       void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
         {
-          queryKey: UseSourcesServiceListSourceFilesKeyFn({
-            sourceId,
+          queryKey: UseFoldersServiceListFolderFilesKeyFn({
+            folderId: sourceId,
             limit: DEFAULT_FILE_LIMIT,
           }),
         },
@@ -96,7 +96,7 @@ export function DataSourceFileUpload(props: NoFilesViewProps) {
         const file = files[0];
         mutate({
           formData: { file },
-          sourceId: sourceId,
+          folderId: sourceId,
         });
       }
     },
