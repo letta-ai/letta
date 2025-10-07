@@ -6,7 +6,6 @@ import {
   FolderOpenIcon,
   LinkIcon,
   LoadingEmptyStatusComponent,
-  PanelMainContent,
   PlusIcon,
   Typography,
   useDragAndDrop,
@@ -173,9 +172,7 @@ export function NoDatasourceView() {
 
   if (isCreatingFolder) {
     return (
-      <PanelMainContent>
         <VStack
-          className="min-h-[200px]"
           align="center"
           justify="center"
           fullWidth
@@ -188,15 +185,13 @@ export function NoDatasourceView() {
             emptyMessage={t('loading.creatingFolder')}
           />
         </VStack>
-      </PanelMainContent>
     );
   }
 
   return (
-    <PanelMainContent>
       <VStack
         ref={dropZoneRef}
-        className="min-h-[200px] relative"
+        className="relative"
         data-testid="no-datasources"
         align="center"
         justify="center"
@@ -277,6 +272,5 @@ export function NoDatasourceView() {
           )}
         </VStack>
       </VStack>
-    </PanelMainContent>
   );
 }

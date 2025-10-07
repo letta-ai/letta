@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
+import { LoadingEmptyStatusComponent, VStack } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../../hooks';
 import { NoDatasourceView } from './_components/NoDatasourceView/NoDatasourceView';
@@ -14,7 +14,11 @@ export function DataSourcesPanel() {
   }
 
   if (sources.length === 0) {
-    return <NoDatasourceView />;
+    return (
+      <VStack padding="xsmall" className="min-h-[200px]" fullHeight fullWidth>
+        <NoDatasourceView />
+      </VStack>
+    )
   }
 
   return (
