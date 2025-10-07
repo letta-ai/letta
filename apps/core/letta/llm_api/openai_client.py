@@ -134,6 +134,13 @@ def use_responses_api(llm_config: LLMConfig) -> bool:
     return is_openai_reasoning_model(llm_config.model)
 
 
+def supports_content_none(llm_config: LLMConfig) -> bool:
+    """Certain providers don't support the content None."""
+    if "gpt-oss" in llm_config.model:
+        return False
+    return True
+
+
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
@@ -427,6 +434,11 @@ class OpenAIClient(LLMClientBase):
             else:
                 # only set if tools is non-Null
                 tool_choice = "required"
+
+        if not supports_content_none(llm_config):
+            for message in openai_message_list:
+                if message.content is None:
+                    message.content = ""
 
         data = ChatCompletionRequest(
             model=model,
