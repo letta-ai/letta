@@ -22,7 +22,7 @@ from letta.server.rest_api.streaming_response import (
     cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
-from letta.services.lettuce.lettuce_client import LettuceClient
+from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 
