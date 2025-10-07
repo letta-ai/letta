@@ -547,7 +547,9 @@ class Message(BaseMessage):
                 "time": formatted_time,
             }
         """
-        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
+        if self.tool_returns and len(self.tool_returns) == 1:
+            text_content = self.tool_returns[0].func_response
+        elif self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             raise ValueError(f"Invalid tool return (no text object on message): {self.content}")
@@ -1506,7 +1508,7 @@ class ToolReturn(BaseModel):
     status: Literal["success", "error"] = Field(..., description="The status of the tool call")
     stdout: Optional[List[str]] = Field(default=None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
     stderr: Optional[List[str]] = Field(default=None, description="Captured stderr from the tool invocation")
-    # func_return: Optional[Any] = Field(None, description="The function return object")
+    func_response: Optional[str] = Field(None, description="The function response string")
 
 
 class MessageSearchRequest(BaseModel):
