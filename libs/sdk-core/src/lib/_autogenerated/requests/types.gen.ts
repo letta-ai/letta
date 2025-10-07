@@ -8999,6 +8999,10 @@ export type ListRunsData = {
    */
   orderBy?: 'created_at';
   /**
+   * Filter runs by status. Can specify multiple statuses.
+   */
+  statuses?: Array<string> | null;
+  /**
    * Filter runs by stop reason.
    */
   stopReason?: StopReasonType | null;

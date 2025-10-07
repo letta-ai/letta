@@ -12854,6 +12854,13 @@ export const get_List_runs = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      statuses: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
       background: z
         .union([
           z.boolean(),

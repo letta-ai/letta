@@ -4978,6 +4978,7 @@ export const useProvidersServiceRetrieveProvider = <
  * @param data The data for the request.
  * @param data.agentId The unique identifier of the agent associated with the run.
  * @param data.agentIds The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.
+ * @param data.statuses Filter runs by status. Can specify multiple statuses.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.stopReason Filter runs by stop reason.
  * @param data.before Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order
@@ -5011,6 +5012,7 @@ export const useRunsServiceListRuns = <
     limit,
     order,
     orderBy,
+    statuses,
     stopReason,
     userAgent,
     userId,
@@ -5028,6 +5030,7 @@ export const useRunsServiceListRuns = <
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    statuses?: string[];
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
@@ -5051,6 +5054,7 @@ export const useRunsServiceListRuns = <
         limit,
         order,
         orderBy,
+        statuses,
         stopReason,
         userAgent,
         userId,
@@ -5072,6 +5076,7 @@ export const useRunsServiceListRuns = <
         limit,
         order,
         orderBy,
+        statuses,
         stopReason,
         userAgent,
         userId,

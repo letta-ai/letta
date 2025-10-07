@@ -29,6 +29,20 @@ from letta.settings import settings
 router = APIRouter(prefix="/runs", tags=["runs"])
 
 
+def convert_statuses_to_enum(statuses: Optional[List[str]]) -> Optional[List[RunStatus]]:
+    """Convert a list of status strings to RunStatus enum values.
+
+    Args:
+        statuses: List of status strings or None
+
+    Returns:
+        List of RunStatus enum values or None if input is None
+    """
+    if statuses is None:
+        return None
+    return [RunStatus(status) for status in statuses]
+
+
 @router.get("/", response_model=List[Run], operation_id="list_runs")
 async def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
@@ -38,6 +52,7 @@ async def list_runs(
         description="The unique identifiers of the agents associated with the run. Deprecated in favor of agent_id field.",
         deprecated=True,
     ),
+    statuses: Optional[List[str]] = Query(None, description="Filter runs by status. Can specify multiple statuses."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     before: Optional[str] = Query(
@@ -65,9 +80,10 @@ async def list_runs(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 
-    statuses = None
-    if active:
+    # Handle backwards compatibility: if statuses not provided but active=True, filter by active statuses
+    if statuses is None and active:
         statuses = [RunStatus.created, RunStatus.running]
+
     if agent_id:
         # NOTE: we are deprecating agent_ids so this will the primary path soon
         agent_ids = [agent_id]
@@ -80,10 +96,13 @@ async def list_runs(
         # Use the new order parameter
         sort_ascending = order == "asc"
 
+    # Convert string statuses to RunStatus enum
+    parsed_statuses = convert_statuses_to_enum(statuses)
+
     runs = await runs_manager.list_runs(
         actor=actor,
         agent_ids=agent_ids,
-        statuses=statuses,
+        statuses=parsed_statuses,
         limit=limit,
         before=before,
         after=after,
