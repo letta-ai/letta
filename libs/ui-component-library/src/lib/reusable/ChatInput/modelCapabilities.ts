@@ -43,6 +43,7 @@ export const MODELS_WITH_IMAGE_SUPPORT = [
   'gemini-2.5-pro-preview-06-05',
   'gemini-2.0-flash-thinking-exp-01-21',
   'qwen/qwen2.5-vl-7b',
+  'gpt-5-codex',
   'gpt-5',
   'gpt-5-mini',
   'gpt-5-nano',
