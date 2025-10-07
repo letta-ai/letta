@@ -4,13 +4,11 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   CheckIcon,
   HStack,
-  Link,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { getRecurrentSubscriptionLimits, getUsageLimits } from '@letta-cloud/utils-shared';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface BenefitContainer {
   children: React.ReactNode;
@@ -40,90 +38,23 @@ function FreePlanBenefits() {
   const limit = getRecurrentSubscriptionLimits({
     tier: 'free'
   });
-  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
   const limits = getUsageLimits('free');
 
   const { formatFileSize, formatNumber } = useFormatters();
 
-  if (isBillingV3Enabled) {
-    return (
-      <BenefitContainer>
-        <Benefit
-          label={t.rich('free.credits', {
-            limit: () => formatNumber(limit),
-          })}
-        />
-        <Benefit label={t('free.api')} />
-        <Benefit label={t('free.ade')} />
-        <Benefit label={t('free.templates', { limit: limits.templates })} />
-        <Benefit
-          label={t('free.storage', {
-            limit: formatFileSize(limits.storage, {
-              unit: 'GB',
-              maximumFractionDigits: 0,
-            }),
-          })}
-        />
-      </BenefitContainer>
-    );
-  }
-
   return (
     <BenefitContainer>
       <Benefit
-        label={t.rich('free.premiumRequests', {
-          limit: () => formatNumber(limits.premiumInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
+        label={t.rich('free.credits', {
+          limit: () => formatNumber(limit),
         })}
       />
-      <Benefit
-        label={t.rich('free.standardRequests', {
-          limit: () => formatNumber(limits.freeInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit label={t('free.agent', { limit: limits.agents })} />
+      <Benefit label={t('free.api')} />
+      <Benefit label={t('free.ade')} />
       <Benefit label={t('free.templates', { limit: limits.templates })} />
       <Benefit
         label={t('free.storage', {
-          limit: formatFileSize(limits.storage, {
-            unit: 'GB',
-            maximumFractionDigits: 0,
-          }),
-        })}
-      />
-    </BenefitContainer>
-  );
-}
-
-function ProLegacyPlanBenefits() {
-  const t = useTranslations('components/PlanBenefits');
-
-  const limits = getUsageLimits('pro-legacy');
-
-  const { formatFileSize, formatNumber } = useFormatters();
-
-  return (
-    <BenefitContainer>
-      <Benefit
-        label={t.rich('pro-legacy.premiumModelUsage', {
-          limit: () => formatNumber(limits.premiumInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit
-        label={t.rich('pro-legacy.standardRequests', {
-          limit: () => formatNumber(limits.freeInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit label={t('pro-legacy.agent', { limit: formatNumber(limits.agents) })} />
-      <Benefit
-        label={t('pro-legacy.templates', { limit: formatNumber(limits.agents) })}
-      />
-      <Benefit
-        label={t('pro-legacy.storage', {
           limit: formatFileSize(limits.storage, {
             unit: 'GB',
             maximumFractionDigits: 0,
@@ -169,45 +100,6 @@ function ProPlanBenefits() {
   );
 }
 
-function ScalePlanBenefits() {
-  const t = useTranslations('components/PlanBenefits');
-
-  const limits = getUsageLimits('scale');
-
-  const { formatFileSize, formatNumber } = useFormatters();
-
-  return (
-    <BenefitContainer>
-      <Benefit
-        label={t.rich('scale.premiumModelUsage', {
-          limit: () => formatNumber(limits.premiumInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit
-        label={t.rich('scale.standardRequests', {
-          limit: () => formatNumber(limits.freeInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit
-        label={t('scale.agent', { limit: formatNumber(limits.agents) })}
-      />
-      <Benefit
-        label={t('scale.templates', { limit: formatNumber(limits.agents) })}
-      />
-      <Benefit
-        label={t('scale.storage', {
-          limit: formatFileSize(limits.storage, {
-            unit: 'GB',
-            maximumFractionDigits: 0,
-          }),
-        })}
-      />
-    </BenefitContainer>
-  );
-}
-
 function EnterprisePlanBenefits() {
   const t = useTranslations('components/PlanBenefits');
 
@@ -230,14 +122,10 @@ export function PlanBenefits(props: PlanBenefitsProps) {
   switch (props.billingTier) {
     case 'free':
       return <FreePlanBenefits />;
-    case 'pro-legacy':
-      return <ProLegacyPlanBenefits />;
     case 'pro':
       return <ProPlanBenefits />;
     case 'enterprise':
       return <EnterprisePlanBenefits />;
-    case 'scale':
-      return <ScalePlanBenefits />;
     default:
       return null;
   }

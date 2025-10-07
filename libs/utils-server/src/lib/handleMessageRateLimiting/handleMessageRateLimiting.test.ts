@@ -473,9 +473,9 @@ describe('handleMessageRateLimiting - Pro Subscriptions', () => {
     expect(result.reasons).toContain('requests');
   });
 
-  it('should use legacy rate limiting for non-pro tiers', async () => {
+  it('should use legacy rate limiting for legacy tiers', async () => {
     const mockSubscription = {
-      tier: 'free',
+      tier: 'scale',
       billingPeriodStart: Date.now(),
     };
 
@@ -516,7 +516,7 @@ describe('handleMessageRateLimiting - Pro Subscriptions', () => {
       lettaAgentsUserId: 'user-1',
     });
 
-    // Should not call pro-specific functions
+    // Should not call new billing functions for legacy tiers
     expect(mockGetRemainingRecurrentCredits).not.toHaveBeenCalled();
   });
 

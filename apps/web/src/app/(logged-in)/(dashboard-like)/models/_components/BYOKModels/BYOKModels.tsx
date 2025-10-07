@@ -23,7 +23,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ProviderDetailsOverlay } from '../ProviderDetailsOverlay/ProviderDetailsOverlay';
 import { getUseProvidersServiceModelsStandardArgs } from '../utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 function NoProviders() {
   const t = useTranslations('pages/models/BYOKModels');
@@ -165,7 +165,6 @@ function ProvidersView() {
 }
 
 function AddProviderButton() {
-  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3')
   const t = useTranslations('pages/models/BYOKModels');
 
   const { data: billingData } =
@@ -174,20 +173,16 @@ function AddProviderButton() {
     });
 
   const providerState = useMemo(() => {
-    if (isBillingV3Enabled) {
-      if (!billingData) {
-        return 'loading'
-      }
-
-      if (billingData?.body.billingTier === 'enterprise') {
-        return 'show';
-      }
-
-      return 'hide';
+    if (!billingData) {
+      return 'loading'
     }
 
-    return 'show'
-  }, [billingData, isBillingV3Enabled]);
+    if (billingData?.body.billingTier === 'enterprise') {
+      return 'show';
+    }
+
+    return 'hide';
+  }, [billingData]);
 
   if (providerState === 'loading') {
     return null;

@@ -21,7 +21,6 @@ import {
   incrementRecurrentCreditUsage
 } from '../recurringCreditsManager/recurringCreditsManager';
 import { eq } from 'drizzle-orm';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 import { handleAutoTopUp } from '../handleAutoTopUp/handleAutoTopUp';
 
 
@@ -270,19 +269,9 @@ export async function processStep(
   } else {
     const subscription = await getCustomerSubscription(org.organizationId);
 
-    if (subscription.tier === 'pro') {
-      console.log('Processing step with pro subscription', step.id);
+    if (subscription.tier === 'pro' || subscription.tier === 'free') {
+      console.log('Processing step with subscription', step.id);
       result = await processStepWithSubscription(step, subscription, org.organizationId);
-    } else if (subscription.tier === 'free') {
-      const newBilling = await getSingleFlag('BILLING_V3', org.organizationId);
-
-      if (newBilling) {
-        console.log('Processing step with free subscription and new billing', step.id);
-        result = await processStepWithSubscription(step, subscription, org.organizationId);
-      } else {
-        console.log('Processing step with free subscription and legacy billing', step.id);
-        result = await processStepWithLegacySubscription(step, subscription);
-      }
     } else {
       console.log('Processing step with legacy subscription', step.id);
       result = await processStepWithLegacySubscription(step, subscription);

@@ -4,10 +4,8 @@ import React from 'react';
 import { Avatar, Button, HStack, Popover, VStack } from '@letta-cloud/ui-component-library';
 import { useCurrentUser } from '$web/client/hooks';
 import { CurrentUserDetailsBlock } from '$web/client/components';
-import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { OrganizationUsageBlockV2 } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlockV2';
 import { SecondaryMenuItems } from '../SecondaryMenuItems/SecondaryMenuItems';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface ProfilePopoverProps {
   size?: 'large' | 'medium' | 'small';
@@ -16,8 +14,6 @@ interface ProfilePopoverProps {
 export function ProfilePopover(props: ProfilePopoverProps) {
   const user = useCurrentUser();
   const { size } = props;
-  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
-
 
   if (!user) {
     return null;
@@ -50,15 +46,9 @@ export function ProfilePopover(props: ProfilePopoverProps) {
         <HStack borderBottom>
           <CurrentUserDetailsBlock />
         </HStack>
-        {!isBillingV3Enabled ? (
-          <HStack borderBottom>
-            <OrganizationUsageBlock />
-          </HStack>
-        ) : (
-          <HStack borderBottom>
-            <OrganizationUsageBlockV2 />
-          </HStack>
-        )}
+        <HStack borderBottom>
+          <OrganizationUsageBlockV2 />
+        </HStack>
         <VStack paddingBottom="small">
           <SecondaryMenuItems />
         </VStack>

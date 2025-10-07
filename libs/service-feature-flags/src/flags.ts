@@ -144,11 +144,6 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
-  BILLING_V3: {
-    description: 'Enable Billing V3',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
   USE_LETTA_V1_AGENT: {
     description: 'Use Letta V1 agent as default for agent creation',
     expiryDate: '2025-12-31',

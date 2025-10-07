@@ -12,7 +12,7 @@ import {
 import { RecurringCreditsView } from './RecurringCreditsView/RecurringCreditsView';
 import TransactionEvents from './TransactionEvents/TransactionEvents';
 import { CreditBalanceView } from './CreditBalanceView/CreditBalanceView';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import {
@@ -27,7 +27,6 @@ function UsageTopSection() {
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
     });
-  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
   if (!billingData) {
     return (
@@ -39,7 +38,7 @@ function UsageTopSection() {
   }
 
   if (
-    (isBillingV3Enabled && billingData.body.billingTier === 'free') ||
+    billingData.body.billingTier === 'free' ||
     billingData.body.billingTier === 'pro'
   ) {
     return (
