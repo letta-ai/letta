@@ -502,7 +502,6 @@ class LettaAgentBatch(BaseAgent):
                 model=ctx.agent_state_map[agent_id].llm_config.model,
                 function_call_success=success_flag_map[agent_id],
                 timezone=ctx.agent_state_map[agent_id].timezone,
-                actor=self.actor,
             )
             batch_reqs.append(
                 LettaBatchRequest(
@@ -546,11 +545,9 @@ class LettaAgentBatch(BaseAgent):
             function_name=tool_call_name,
             function_arguments=tool_call_args,
             tool_call_id=tool_call_id,
-            function_call_success=success_flag,
             function_response=tool_exec_result,
             tool_execution_result=tool_exec_result_obj,
             timezone=agent_state.timezone,
-            actor=self.actor,
             continue_stepping=False,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=None,
