@@ -80,7 +80,7 @@ from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningM
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate, ToolReturn
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
@@ -760,21 +760,43 @@ async def test_get_run_messages(server: SyncServer, default_user: PydanticUser, 
     )
 
     # Add some messages
-    messages = [
-        PydanticMessage(
-            agent_id=sarah_agent.id,
-            role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
-            tool_calls=(
-                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
-                if i % 2 == 1
-                else None
-            ),
-            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
-            run_id=run.id,
-        )
-        for i in range(4)
-    ]
+    messages = []
+    for i in range(4):
+        if i % 2 == 0:
+            # tool return message
+            messages.append(
+                PydanticMessage(
+                    agent_id=sarah_agent.id,
+                    role=MessageRole.tool,
+                    content=[TextContent(text='{"status": "OK"}')],
+                    tool_call_id=f"call_{i // 2}",
+                    tool_returns=[
+                        ToolReturn(
+                            tool_call_id=f"call_{i // 2}",
+                            status="success",
+                            func_response='{"status": "OK", "message": "Tool executed successfully"}',
+                        )
+                    ],
+                    run_id=run.id,
+                )
+            )
+        else:
+            # assistant message with tool call
+            messages.append(
+                PydanticMessage(
+                    agent_id=sarah_agent.id,
+                    role=MessageRole.assistant,
+                    content=[TextContent(text=f"Test message {i}")],
+                    tool_calls=[
+                        {
+                            "type": "function",
+                            "id": f"call_{i // 2}",
+                            "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'},
+                        }
+                    ],
+                    run_id=run.id,
+                )
+            )
 
     created_msg = await server.message_manager.create_many_messages_async(messages, actor=default_user)
 
@@ -811,21 +833,43 @@ async def test_get_run_messages_with_assistant_message(server: SyncServer, defau
     )
 
     # Add some messages
-    messages = [
-        PydanticMessage(
-            agent_id=sarah_agent.id,
-            role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
-            tool_calls=(
-                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
-                if i % 2 == 1
-                else None
-            ),
-            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
-            run_id=run.id,
-        )
-        for i in range(4)
-    ]
+    messages = []
+    for i in range(4):
+        if i % 2 == 0:
+            # tool return message
+            messages.append(
+                PydanticMessage(
+                    agent_id=sarah_agent.id,
+                    role=MessageRole.tool,
+                    content=[TextContent(text='{"status": "OK"}')],
+                    tool_call_id=f"call_{i // 2}",
+                    tool_returns=[
+                        ToolReturn(
+                            tool_call_id=f"call_{i // 2}",
+                            status="success",
+                            func_response='{"status": "OK", "message": "Tool executed successfully"}',
+                        )
+                    ],
+                    run_id=run.id,
+                )
+            )
+        else:
+            # assistant message with tool call
+            messages.append(
+                PydanticMessage(
+                    agent_id=sarah_agent.id,
+                    role=MessageRole.assistant,
+                    content=[TextContent(text=f"Test message {i}")],
+                    tool_calls=[
+                        {
+                            "type": "function",
+                            "id": f"call_{i // 2}",
+                            "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'},
+                        }
+                    ],
+                    run_id=run.id,
+                )
+            )
 
     created_msg = await server.message_manager.create_many_messages_async(messages, actor=default_user)
 
