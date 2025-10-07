@@ -39,14 +39,14 @@ def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model
 # Test configurations - using a subset of models for summarization tests
 all_configs = [
     "openai-gpt-5-mini.json",
-    #"openai-gpt-4.1.json",
-    #"openai-o1.json",
-    #"openai-o3.json",
-    #"openai-o4-mini.json",
-    #"claude-4-sonnet.json",
-    #"claude-3-7-sonnet.json",
-    #"gemini-2.5-flash-vertex.json",
-    #"gemini-2.5-pro-vertex.json",
+    # "openai-gpt-4.1.json",
+    # "openai-o1.json",
+    # "openai-o3.json",
+    # "openai-o4-mini.json",
+    # "claude-4-sonnet.json",
+    # "claude-3-7-sonnet.json",
+    # "gemini-2.5-flash-vertex.json",
+    # "gemini-2.5-pro-vertex.json",
 ]
 
 requested = os.getenv("LLM_CONFIG_FILE")
@@ -65,13 +65,15 @@ TESTED_LLM_CONFIGS = [
 # ======================================================================================================================
 
 
-@pytest.fixture(scope="module")
-def server():
-    """Create a server instance for the test module."""
+@pytest.fixture
+async def server():
     config = LettaConfig.load()
     config.save()
-    server = SyncServer(init_with_default_org_and_user=False)
-    return server
+    server = SyncServer(init_with_default_org_and_user=True)
+    await server.init_async()
+    await server.tool_manager.upsert_base_tools_async(actor=server.default_user)
+
+    yield server
 
 
 @pytest.fixture
@@ -124,9 +126,7 @@ def create_large_tool_return(size_chars: int = 50000) -> str:
     return json.dumps(result)
 
 
-async def create_agent_with_messages(
-    server: SyncServer, actor, llm_config: LLMConfig, messages: List[PydanticMessage]
-) -> tuple:
+async def create_agent_with_messages(server: SyncServer, actor, llm_config: LLMConfig, messages: List[PydanticMessage]) -> tuple:
     """
     Create an agent and add messages to it.
     Returns (agent_state, in_context_messages).
@@ -144,13 +144,11 @@ async def create_agent_with_messages(
     # Set agent_id on all message objects
     message_objs = []
     for msg in messages:
-        msg_dict = msg.model_dump() if hasattr(msg, 'model_dump') else msg.dict()
-        msg_dict['agent_id'] = agent_state.id
+        msg_dict = msg.model_dump() if hasattr(msg, "model_dump") else msg.dict()
+        msg_dict["agent_id"] = agent_state.id
         message_objs.append(PydanticMessage(**msg_dict))
 
-    created_messages = await server.message_manager.create_many_messages_async(
-        message_objs, actor=actor
-    )
+    created_messages = await server.message_manager.create_many_messages_async(message_objs, actor=actor)
 
     # Update agent's message_ids
     message_ids = [m.id for m in created_messages]
@@ -213,9 +211,7 @@ async def test_summarize_empty_message_buffer(server: SyncServer, actor, llm_con
     agent_state = await server.agent_manager.create_agent_async(agent_create, actor=actor)
 
     # Get messages (should be empty or only contain system messages)
-    in_context_messages = await server.message_manager.get_messages_by_ids_async(
-        message_ids=agent_state.message_ids, actor=actor
-    )
+    in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     # Run summarization - this may fail with empty buffer, which is acceptable behavior
     try:
@@ -401,9 +397,7 @@ async def test_summarize_large_tool_calls(server: SyncServer, actor, llm_config:
     agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
 
     # Verify that we actually have large messages
-    total_content_size = sum(
-        len(str(content)) for msg in in_context_messages for content in msg.content
-    )
+    total_content_size = sum(len(str(content)) for msg in in_context_messages for content in msg.content)
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
@@ -414,9 +408,7 @@ async def test_summarize_large_tool_calls(server: SyncServer, actor, llm_config:
     assert len(result) >= 1
 
     # Verify that summarization reduced the context size
-    result_content_size = sum(
-        len(str(content)) for msg in result for content in msg.content
-    )
+    result_content_size = sum(len(str(content)) for msg in result for content in msg.content)
 
     # The summarized result should be smaller than the original
     # (unless summarization was skipped for some reason)
@@ -457,7 +449,7 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
                     id="call_1",
                     name="fetch_users",
                     input={"limit": 10000},
-                )
+                ),
             ],
         ),
         PydanticMessage(
@@ -485,7 +477,7 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
                     id="call_2",
                     name="fetch_products",
                     input={"category": "all"},
-                )
+                ),
             ],
         ),
         PydanticMessage(
@@ -509,9 +501,7 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
     agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
 
     # Verify that we have large messages
-    total_content_size = sum(
-        len(str(content)) for msg in in_context_messages for content in msg.content
-    )
+    total_content_size = sum(len(str(content)) for msg in in_context_messages for content in msg.content)
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
