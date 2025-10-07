@@ -313,7 +313,7 @@ class Message(BaseMessage):
                     ),
                 )
         elif self.role == MessageRole.tool:
-            messages.append(self._convert_tool_return_message())
+            messages.extend(self._convert_tool_return_message())
         elif self.role == MessageRole.user:
             messages.append(self._convert_user_message())
         elif self.role == MessageRole.system:
@@ -537,7 +537,7 @@ class Message(BaseMessage):
                 )
         return messages
 
-    def _convert_tool_return_message(self) -> ToolReturnMessage:
+    def _convert_tool_return_message(self) -> List[ToolReturnMessage]:
         """Convert tool role message to ToolReturnMessage
 
         the tool return is packaged as follows:
@@ -547,39 +547,42 @@ class Message(BaseMessage):
                 "time": formatted_time,
             }
         """
-        if self.tool_returns and len(self.tool_returns) == 1:
-            text_content = self.tool_returns[0].func_response
-        elif self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
-            text_content = self.content[0].text
-        else:
-            raise ValueError(f"Invalid tool return (no text object on message): {self.content}")
+        if self.role != MessageRole.tool:
+            raise ValueError(f"Attempted to convert message of type {self.role} to ToolReturnMessage")
 
-        try:
-            function_return = parse_json(text_content)
-            message_text = str(function_return.get("message", text_content))
-            status = self._parse_tool_status(function_return["status"])
-        except json.JSONDecodeError:
-            raise ValueError(f"Failed to decode function return: {text_content}")
+        if not self.tool_returns:
+            raise ValueError(f"No tool returns to convert to ToolReturnMessage: {self}")
 
-        # if self.tool_call_id is None:
-        #     import pdb;pdb.set_trace()
-        assert self.tool_call_id is not None
+        tool_returns = []
 
-        return ToolReturnMessage(
-            id=self.id,
-            date=self.created_at,
-            tool_return=message_text,
-            status=self.tool_returns[0].status if self.tool_returns else status,
-            tool_call_id=self.tool_call_id,
-            stdout=self.tool_returns[0].stdout if self.tool_returns else None,
-            stderr=self.tool_returns[0].stderr if self.tool_returns else None,
-            name=self.name,
-            otid=Message.generate_otid_from_id(self.id, 0),
-            sender_id=self.sender_id,
-            step_id=self.step_id,
-            is_err=self.is_err,
-            run_id=self.run_id,
-        )
+        for tr in self.tool_returns:
+            text_content = tr.func_response
+            try:
+                function_return = parse_json(text_content)
+                message_text = str(function_return.get("message", text_content))
+                status = self._parse_tool_status(function_return["status"])
+            except json.JSONDecodeError:
+                raise ValueError(f"Failed to decode function return: {text_content}")
+
+            tool_returns.append(
+                ToolReturnMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    tool_return=message_text,
+                    status=status,
+                    tool_call_id=tr.tool_call_id,
+                    stdout=tr.stdout,
+                    stderr=tr.stderr,
+                    name=self.name,
+                    otid=Message.generate_otid_from_id(self.id, 0),
+                    sender_id=self.sender_id,
+                    step_id=self.step_id,
+                    is_err=self.is_err,
+                    run_id=self.run_id,
+                )
+            )
+
+        return tool_returns
 
     @staticmethod
     def _parse_tool_status(status: str) -> Literal["success", "error"]:
