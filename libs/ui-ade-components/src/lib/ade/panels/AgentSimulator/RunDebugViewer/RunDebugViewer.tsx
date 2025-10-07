@@ -10,7 +10,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
-  Button, CancelIcon, ChevronDownIcon,
+  Button,
+  CancelIcon,
+  ChevronDownIcon,
   HStack,
   LettaLoader,
   Table,
@@ -20,7 +22,7 @@ import {
   TableHeader,
   TableRow,
   Typography,
-  VStack
+  VStack,
 } from '@letta-cloud/ui-component-library';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
@@ -94,7 +96,11 @@ function StatusCell(props: StatusCellProps) {
   };
 
   return (
-    <Badge size="small" content={status || 'unknown'} variant={getStatusVariant(status)} />
+    <Badge
+      size="small"
+      content={status || 'unknown'}
+      variant={getStatusVariant(status)}
+    />
   );
 }
 
@@ -162,10 +168,10 @@ function RunDebugViewerTable(props: RunDebugViewerTableProps) {
             <Typography variant="body4">{t('columns.duration')}</Typography>
           </TableHead>
           <TableHead>
-            <Typography variant="body4">{t('columns.completedAt')}</Typography>
+            <Typography variant="body4">{t('columns.createdAt')}</Typography>
           </TableHead>
           <TableHead>
-            <Typography variant="body4">{t('columns.createdAt')}</Typography>
+            <Typography variant="body4">{t('columns.completedAt')}</Typography>
           </TableHead>
           <TableHead>
             <Typography variant="body4">{t('columns.jobType')}</Typography>
@@ -180,7 +186,6 @@ function RunDebugViewerTable(props: RunDebugViewerTableProps) {
           <TableRow key={run.id || index}>
             <TableCell size="compact">
               <HStack align="center">
-
                 <StatusCell status={run.status} />
                 <CancelRunButton
                   runId={run.id || ''}
@@ -315,11 +320,19 @@ function RunDebugViewerWrapper() {
       ) : (
         <RunDebugViewerTable data={filteredData} agentId={agentId || ''} />
       )}
-      <HStack paddingX="xxsmall" paddingBottom="xxsmall" align="center" justify="spaceBetween" fullWidth>
-        <HStack align="center" padding="small" fullWidth justify="spaceBetween">
-
-
-        </HStack>
+      <HStack
+        paddingX="xxsmall"
+        paddingBottom="xxsmall"
+        align="center"
+        justify="spaceBetween"
+        fullWidth
+      >
+        <HStack
+          align="center"
+          padding="small"
+          fullWidth
+          justify="spaceBetween"
+        ></HStack>
         <HStack>
           <Button
             size="xsmall"
@@ -355,8 +368,7 @@ function RunDebugViewerWrapper() {
 export function RunDebugViewer() {
   return (
     <VStack paddingX="small">
-      <VStack  border gap={false}>
-
+      <VStack border gap={false}>
         <RunDebugViewerWrapper />
       </VStack>
     </VStack>
