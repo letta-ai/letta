@@ -173,7 +173,7 @@ function ViewAgentButton(props: ViewAgentButtonProps) {
   const { run } = props;
   const t = useTranslations('ListRuns');
 
-  const agentId = get(run.metadata, 'agent_id', '');
+  const agentId = get(run, 'agent_id', '');
 
   if (!agentId) {
     return null;
@@ -511,11 +511,13 @@ export function ListRuns(props: ListRunsProps) {
       {
         id: 'actions',
         header: t('columns.actions'),
-        cell: ({ row }) => (
-          <HStack align="center">
-            <ViewAgentButton run={row.original} />
-          </HStack>
-        ),
+        cell: ({ row }) => {
+          return (
+            <HStack align="center" fullHeight>
+              <ViewAgentButton run={row.original} />
+            </HStack>
+          );
+        },
       },
     ];
   }, [t]);
