@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.letta_message_content import MessageContent, TextContent as PydanticTextContent
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import MessageContent, TextContent, TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage, ToolReturn
 from letta.settings import DatabaseChoice, settings
 
@@ -89,6 +90,18 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         # If there are no tool calls, set tool_calls to None
         if self.tool_calls is None or len(self.tool_calls) == 0:
             model.tool_calls = None
+
+        # Handle legacy case of tool message with single tool return + single text content
+        if (
+            self.role == MessageRole.tool
+            and self.tool_returns
+            and len(self.tool_returns) == 1
+            and self.content
+            and len(self.content) == 1
+            and isinstance(self.content[0], TextContent)
+        ):
+            self.tool_returns[0].func_response = self.content[0].text
+
         return model
 
 
