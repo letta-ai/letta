@@ -752,22 +752,52 @@ push-core-to-oss name="":
     fi
     echo "🚀 Pushing core to OSS..."
 
-    # Create a temporary branch with filtered content
-    TEMP_BRANCH="temp-oss-$(date +%s)"
-    git checkout -b $TEMP_BRANCH
+    # Hardcoded common ancestor
+    START_COMMIT="899a313ec1c6d3fe14ff7e697714d1d615765f1d"
+    echo "OSS repo head is at: $START_COMMIT"
 
-    # Remove sensitive files
-    git rm --cached apps/core/letta/services/lettuce/lettuce_client.py
-    git rm --cached apps/core/tests/integration_test_message_create_async.py
-    git rm --cached -r apps/core/letta/agents/temporal
-    git commit -m "Temporary: remove lettuce service"
+    # Create temp directory for filtering
+    TEMP_DIR=$(mktemp -d)
 
-    # Push the subtree
-    git subtree push --prefix apps/core git@github.com:letta-ai/letta.git $BRANCH
+    # Clone the full repo (need full history to have OSS_HEAD commit)
+    git clone --shallow-since="2024-09-15" . $TEMP_DIR
+    cd $TEMP_DIR
 
-    # Clean up temp branch
-    git checkout $CURRENT_BRANCH
-    git branch -D $TEMP_BRANCH
+    # Create a new branch starting from OSS_HEAD with only new commits
+    git checkout -b filtered-branch $START_COMMIT
+    if ! git cherry-pick --allow-empty ${START_COMMIT}..origin/${CURRENT_BRANCH}; then
+        echo "❌ Cherry-pick failed - likely conflicts. Aborting."
+        cd -
+        rm -rf $TEMP_DIR
+        exit 1
+    fi
+
+    # Check if filter-repo is available, if not use Python directly
+    if ! command -v git-filter-repo &> /dev/null; then
+        echo "Installing git-filter-repo..."
+        pip install git-filter-repo
+    fi
+
+    # Filter out sensitive files from history
+    git filter-repo --force \
+        --path apps/core \
+        --path-rename apps/core/: \
+        --invert-paths \
+        --path apps/core/letta/services/lettuce/lettuce_client.py \
+        --path apps/core/tests/integration_test_message_create_async.py \
+        --path apps/core/letta/agents/temporal/
+
+    # Add OSS remote and push to a PR branch
+    git remote add oss git@github.com:letta-ai/letta.git
+    git push oss HEAD:$BRANCH --force
+
+    # Clean up
+    cd -
+    rm -rf $TEMP_DIR
+
+    echo "✅ Pushed to branch: $BRANCH"
+    echo "📝 Create a PR at: https://github.com/letta-ai/letta/compare/main...$BRANCH"
+
 
 pull-oss-to-core:
     @echo "🚀 Pulling OSS into core..."
