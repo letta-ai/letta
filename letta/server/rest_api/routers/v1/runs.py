@@ -134,13 +134,13 @@ async def retrieve_run(
     try:
         run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
 
-        use_lettuce = run.metadata and run.metadata.get("lettuce") and settings.temporal_endpoint
+        use_lettuce = run.metadata and run.metadata.get("lettuce")
         if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
             lettuce_client = await LettuceClient.create()
             status = await lettuce_client.get_status()
 
             # Map the status to our enum
-            run_status = RunStatus.created
+            run_status = run.status
             if status == "RUNNING":
                 run_status = RunStatus.running
             elif status == "COMPLETED":
