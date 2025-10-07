@@ -538,51 +538,130 @@ class Message(BaseMessage):
         return messages
 
     def _convert_tool_return_message(self) -> List[ToolReturnMessage]:
-        """Convert tool role message to ToolReturnMessage
+        """Convert tool role message to ToolReturnMessage.
 
-        the tool return is packaged as follows:
+        The tool return is packaged as follows:
             packaged_message = {
                 "status": "OK" if was_success else "Failed",
                 "message": response_string,
                 "time": formatted_time,
             }
+
+        Returns:
+            List[ToolReturnMessage]: Converted tool return messages
+
+        Raises:
+            ValueError: If message role is not 'tool', parsing fails, or no valid content exists
         """
         if self.role != MessageRole.tool:
-            raise ValueError(f"Attempted to convert message of type {self.role} to ToolReturnMessage")
+            raise ValueError(f"Cannot convert message of type {self.role} to ToolReturnMessage")
 
-        if not self.tool_returns:
-            raise ValueError(f"No tool returns to convert to ToolReturnMessage: {self}")
+        if self.tool_returns:
+            return self._convert_explicit_tool_returns()
 
+        return self._convert_legacy_tool_return()
+
+    def _convert_explicit_tool_returns(self) -> List[ToolReturnMessage]:
+        """Convert explicit tool returns to ToolReturnMessage list."""
         tool_returns = []
 
-        for tr in self.tool_returns:
-            text_content = tr.func_response
-            try:
-                function_return = parse_json(text_content)
-                message_text = str(function_return.get("message", text_content))
-                status = self._parse_tool_status(function_return["status"])
-            except json.JSONDecodeError:
-                raise ValueError(f"Failed to decode function return: {text_content}")
+        for index, tool_return in enumerate(self.tool_returns):
+            parsed_data = self._parse_tool_response(tool_return.func_response)
 
             tool_returns.append(
-                ToolReturnMessage(
-                    id=self.id,
-                    date=self.created_at,
-                    tool_return=message_text,
-                    status=status,
-                    tool_call_id=tr.tool_call_id,
-                    stdout=tr.stdout,
-                    stderr=tr.stderr,
-                    name=self.name,
-                    otid=Message.generate_otid_from_id(self.id, 0),
-                    sender_id=self.sender_id,
-                    step_id=self.step_id,
-                    is_err=self.is_err,
-                    run_id=self.run_id,
+                self._create_tool_return_message(
+                    message_text=parsed_data["message"],
+                    status=parsed_data["status"],
+                    tool_call_id=tool_return.tool_call_id,
+                    stdout=tool_return.stdout,
+                    stderr=tool_return.stderr,
+                    otid_index=index,
                 )
             )
 
         return tool_returns
+
+    def _convert_legacy_tool_return(self) -> List[ToolReturnMessage]:
+        """Convert legacy single text content to ToolReturnMessage."""
+        if not self._has_single_text_content():
+            raise ValueError(f"No valid tool returns to convert: {self}")
+
+        text_content = self.content[0].text
+        parsed_data = self._parse_tool_response(text_content)
+
+        return [
+            self._create_tool_return_message(
+                message_text=parsed_data["message"],
+                status=parsed_data["status"],
+                tool_call_id=self.tool_call_id,
+                stdout=None,
+                stderr=None,
+                otid_index=0,
+            )
+        ]
+
+    def _has_single_text_content(self) -> bool:
+        """Check if message has exactly one text content item."""
+        return self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent)
+
+    def _parse_tool_response(self, response_text: str) -> dict:
+        """Parse tool response JSON and extract message and status.
+
+        Args:
+            response_text: Raw JSON response text
+
+        Returns:
+            Dictionary with 'message' and 'status' keys
+
+        Raises:
+            ValueError: If JSON parsing fails
+        """
+        try:
+            function_return = parse_json(response_text)
+            return {
+                "message": str(function_return.get("message", response_text)),
+                "status": self._parse_tool_status(function_return.get("status", "OK")),
+            }
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to decode function return: {response_text}") from e
+
+    def _create_tool_return_message(
+        self,
+        message_text: str,
+        status: str,
+        tool_call_id: Optional[str],
+        stdout: Optional[str],
+        stderr: Optional[str],
+        otid_index: int,
+    ) -> ToolReturnMessage:
+        """Create a ToolReturnMessage with common attributes.
+
+        Args:
+            message_text: The tool return message text
+            status: Tool execution status
+            tool_call_id: Optional tool call identifier
+            stdout: Optional standard output
+            stderr: Optional standard error
+            otid_index: Index for OTID generation
+
+        Returns:
+            Configured ToolReturnMessage instance
+        """
+        return ToolReturnMessage(
+            id=self.id,
+            date=self.created_at,
+            tool_return=message_text,
+            status=status,
+            tool_call_id=tool_call_id,
+            stdout=stdout,
+            stderr=stderr,
+            name=self.name,
+            otid=Message.generate_otid_from_id(self.id, otid_index),
+            sender_id=self.sender_id,
+            step_id=self.step_id,
+            is_err=self.is_err,
+            run_id=self.run_id,
+        )
 
     @staticmethod
     def _parse_tool_status(status: str) -> Literal["success", "error"]:
