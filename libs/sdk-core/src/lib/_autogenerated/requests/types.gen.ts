@@ -5223,6 +5223,10 @@ export type ToolJSONSchema = {
 
 export type ToolReturn = {
   /**
+   * The ID for the tool call
+   */
+  tool_call_id?: unknown | null;
+  /**
    * The status of the tool call
    */
   status: 'success' | 'error';

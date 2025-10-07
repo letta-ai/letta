@@ -840,6 +840,14 @@ export const ChatCompletionMessageFunctionToolCall = z.intersection(
 
 export type ToolReturn = z.infer<typeof ToolReturn>;
 export const ToolReturn = z.object({
+  tool_call_id: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   status: z.union([z.literal('success'), z.literal('error')]),
   stdout: z
     .union([
