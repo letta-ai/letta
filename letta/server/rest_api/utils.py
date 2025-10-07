@@ -319,9 +319,10 @@ def create_letta_messages_from_llm_response(
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering
     if tool_execution_result is not None:
+        packaged_function_response = package_function_response(tool_execution_result.success_flag, function_response, timezone)
         tool_message = Message(
             role=MessageRole.tool,
-            content=[TextContent(text=package_function_response(tool_execution_result.success_flag, function_response, timezone))],
+            content=[TextContent(text=packaged_function_response)],
             agent_id=agent_id,
             model=model,
             tool_calls=[],
@@ -335,7 +336,7 @@ def create_letta_messages_from_llm_response(
                     status=tool_execution_result.status,
                     stderr=tool_execution_result.stderr,
                     stdout=tool_execution_result.stdout,
-                    # func_return=tool_execution_result.func_return,
+                    func_response=packaged_function_response,
                 )
             ],
             run_id=run_id,
