@@ -1515,7 +1515,7 @@ async def cancel_agent_run(
     results = {}
     for run_id in run_ids:
         run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
-        if run.metadata.get("lettuce") and settings.temporal_endpoint:
+        if run.metadata.get("lettuce"):
             lettuce_client = await LettuceClient.create()
             await lettuce_client.cancel(run_id)
         success = await server.run_manager.update_run_by_id_async(
@@ -1668,7 +1668,7 @@ async def send_message_async(
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     # Create a new run
-    use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint is not None
+    use_lettuce = headers.experimental_params.message_async
     run = PydanticRun(
         callback_url=request.callback_url,
         agent_id=agent_id,
