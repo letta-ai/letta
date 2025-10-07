@@ -744,8 +744,9 @@ trigger-sync branch="":
 
 push-core-to-oss name="":
     #!/usr/bin/env bash
+    CURRENT_BRANCH=$(git branch --show-current)
     if [ -z "{{name}}" ]; then
-        BRANCH=$(git branch --show-current)
+        BRANCH=$CURRENT_BRANCH
     else
         BRANCH="{{name}}"
     fi
@@ -765,7 +766,7 @@ push-core-to-oss name="":
     git subtree push --prefix apps/core git@github.com:letta-ai/letta.git $BRANCH
 
     # Clean up temp branch
-    git checkout $BRANCH
+    git checkout $CURRENT_BRANCH
     git branch -D $TEMP_BRANCH
 
 pull-oss-to-core:
