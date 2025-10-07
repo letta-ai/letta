@@ -333,6 +333,7 @@ def create_letta_messages_from_llm_response(
             batch_item_id=llm_batch_item_id,
             tool_returns=[
                 ToolReturn(
+                    tool_call_id=tool_call_id,
                     status=tool_execution_result.status,
                     stderr=tool_execution_result.stderr,
                     stdout=tool_execution_result.stdout,
