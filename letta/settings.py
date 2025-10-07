@@ -143,6 +143,7 @@ class ModelSettings(BaseSettings):
             " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
             " to all orgs; once GA, this flag can be removed and behavior can default to on."
         ),
+        alias="ANTHROPIC_SONNET_1M",
     )
 
     # ollama
