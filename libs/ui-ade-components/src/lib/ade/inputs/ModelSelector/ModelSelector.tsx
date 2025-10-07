@@ -71,7 +71,9 @@ export function ModelSelector(props: LocalModelSelectorProps) {
         return;
       }
 
-      const modelName = selectedLLMConfig?.handle ? selectedLLMConfig.handle.split('/')[1] : selectedLLMConfig.model;
+      const lastItemInHandle = llmConfig.handle?.split('/').pop();
+
+      const modelName = selectedLLMConfig?.handle ? lastItemInHandle : selectedLLMConfig.model;
 
       syncUpdateCurrentAgent((prev) => {
         return {
