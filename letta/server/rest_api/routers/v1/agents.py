@@ -11,11 +11,9 @@ from orjson import orjson
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
-from temporalio.client import Client
 
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.agents.temporal_agent import TemporalAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
@@ -58,6 +56,7 @@ from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.server import SyncServer
+from letta.services.lettuce.lettuce_client import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
@@ -1517,13 +1516,8 @@ async def cancel_agent_run(
     for run_id in run_ids:
         run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
         if run.metadata.get("lettuce") and settings.temporal_endpoint:
-            client = await Client.connect(
-                settings.temporal_endpoint,
-                namespace=settings.temporal_namespace,
-                api_key=settings.temporal_api_key,
-                tls=True,  # This should be false for local runs
-            )
-            await client.cancel_workflow(run_id)
+            lettuce_client = await LettuceClient.create()
+            await lettuce_client.cancel(run_id)
         success = await server.run_manager.update_run_by_id_async(
             run_id=run_id,
             update=RunUpdate(status=RunStatus.cancelled),
@@ -1695,15 +1689,18 @@ async def send_message_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
         if agent_state.multi_agent_group is None and agent_state.agent_type != AgentType.letta_v1_agent:
-            temporal_agent = TemporalAgent(agent_state=agent_state, actor=actor)
-            await temporal_agent.step(
+            lettuce_client = LettuceClient.create()
+            run_id_from_lettuce = await lettuce_client.step(
+                agent_state=agent_state,
+                actor=actor,
                 input_messages=request.messages,
                 max_steps=request.max_steps,
                 run_id=run.id,
                 use_assistant_message=request.use_assistant_message,
                 include_return_message_types=request.include_return_message_types,
             )
-            return run
+            if run_id_from_lettuce:
+                return run
 
     # Create asyncio task for background processing (shielded to prevent cancellation)
     task = safe_create_shielded_task(
