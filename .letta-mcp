@@ -1,0 +1,57 @@
+{
+  "serverName": "letta-code-mcp-29aea556c1656b98",
+  "toolsHash": "1163a8a38200dc72809cc6081ee9ea63ecd0dc5231017fd4c9d378f14e79438f",
+  "tools": [
+    {
+      "name": "bash",
+      "id": "tool-133b3f71-c52f-4283-8733-12c043cb7fed"
+    },
+    {
+      "name": "glob",
+      "id": "tool-d5f4104f-89a6-477c-96e5-79769d395a46"
+    },
+    {
+      "name": "grep",
+      "id": "tool-895a3091-966e-454b-8d61-0604a95a144a"
+    },
+    {
+      "name": "ls",
+      "id": "tool-1513a294-fd5c-41cd-ba3e-27eaf516b78a"
+    },
+    {
+      "name": "read",
+      "id": "tool-fb1ba8f5-c55a-41e7-b823-6c0b2fdfea3e"
+    },
+    {
+      "name": "edit",
+      "id": "tool-9edd5a17-a219-4640-ba6f-574b369e9d10"
+    },
+    {
+      "name": "multi_edit",
+      "id": "tool-0a369301-2320-45cd-9c27-0196a9c624a1"
+    },
+    {
+      "name": "write",
+      "id": "tool-cb2a3e62-92b5-47b6-bb7a-ff15216e6b40"
+    },
+    {
+      "name": "todo_write",
+      "id": "tool-ef052e96-e2bf-4ec9-9d9f-f4e2bc61982d"
+    },
+    {
+      "name": "exit_plan_mode",
+      "id": "tool-0b1c707e-603c-4fda-9330-c8eaba21f5dd"
+    },
+    {
+      "name": "bash_output",
+      "id": "tool-c5f4fc98-69ee-45a0-9a88-05335fdaeadd"
+    },
+    {
+      "name": "kill_bash",
+      "id": "tool-1feb5c6a-25a1-4a96-94f0-504d0c686391"
+    }
+  ],
+  "defaultsHash": "f052427ba628d481455aaaba5284293b0c5553df789bc902e5d9fba85fbacab9",
+  "createdAt": "2025-10-07T17:35:53.954Z",
+  "version": "1.0.0"
+}
