@@ -15,7 +15,13 @@ class BlocksAgents(Base):
             name="unique_label_per_agent",
         ),
         ForeignKeyConstraint(
-            ["block_id", "block_label"], ["block.id", "block.label"], name="fk_block_id_label", deferrable=True, initially="DEFERRED"
+            ["block_id", "block_label"],
+            ["block.id", "block.label"],
+            name="fk_block_id_label",
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+            deferrable=True,
+            initially="IMMEDIATE",
         ),
         UniqueConstraint("agent_id", "block_id", name="unique_agent_block"),
         Index("ix_blocks_agents_block_label_agent_id", "block_label", "agent_id"),
@@ -24,6 +30,6 @@ class BlocksAgents(Base):
     )
 
     # unique agent + block label
-    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id"), primary_key=True)
+    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), primary_key=True)
     block_id: Mapped[str] = mapped_column(String, primary_key=True)
     block_label: Mapped[str] = mapped_column(String, primary_key=True)
