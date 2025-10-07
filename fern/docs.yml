@@ -610,6 +610,8 @@ navigation:
         contents:
           - page: Building customer-specific relationship agents
             path: pages/tutorials/customer-specific-agents.mdx
+          - page: Building customer-specific relationship agents using Letta SDK
+            path: pages/tutorials/customer-specific-agents-api.mdx
 
   - tab: leaderboard
     layout:
