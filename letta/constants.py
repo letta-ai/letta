@@ -222,6 +222,7 @@ LLM_MAX_TOKENS = {
     "gpt-5-mini-2025-08-07": 272000,
     "gpt-5-nano": 272000,
     "gpt-5-nano-2025-08-07": 272000,
+    "gpt-5-codex": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
