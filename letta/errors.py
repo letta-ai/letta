@@ -109,6 +109,18 @@ class LettaMCPError(LettaError):
     """Base error for MCP-related issues."""
 
 
+class LettaInvalidMCPSchemaError(LettaMCPError):
+    """Error raised when an invalid MCP schema is provided."""
+
+    def __init__(self, server_name: str, mcp_tool_name: str, reasons: List[str]):
+        details = {"server_name": server_name, "mcp_tool_name": mcp_tool_name, "reasons": reasons}
+        super().__init__(
+            message=f"MCP tool {mcp_tool_name} has an invalid schema and cannot be attached - reasons: {reasons}",
+            code=ErrorCode.INVALID_ARGUMENT,
+            details=details,
+        )
+
+
 class LettaMCPConnectionError(LettaMCPError):
     """Error raised when unable to connect to MCP server."""
 

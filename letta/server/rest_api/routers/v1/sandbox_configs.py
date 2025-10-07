@@ -2,8 +2,9 @@ import os
 import shutil
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
+from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import SandboxType
 from letta.schemas.environment_variables import (
@@ -68,9 +69,8 @@ async def create_custom_local_sandbox_config(
     """
     # Ensure the incoming config is of type LOCAL
     if local_sandbox_config.type != SandboxType.LOCAL:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Provided config must be of type '{SandboxType.LOCAL.value}'.",
+        raise LettaInvalidArgumentError(
+            f"Provided config must be of type '{SandboxType.LOCAL.value}'.", argument_name="local_sandbox_config.type"
         )
 
     # Retrieve the user (actor)
@@ -138,25 +138,16 @@ async def force_recreate_local_sandbox_venv(
 
     # Check if venv exists, and delete if necessary
     if os.path.isdir(venv_path):
-        try:
-            shutil.rmtree(venv_path)
-            logger.info(f"Deleted existing virtual environment at: {venv_path}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to delete existing venv: {e}")
+        shutil.rmtree(venv_path)
+        logger.info(f"Deleted existing virtual environment at: {venv_path}")
 
     # Recreate the virtual environment
-    try:
-        create_venv_for_local_sandbox(sandbox_dir_path=sandbox_dir, venv_path=str(venv_path), env=os.environ.copy(), force_recreate=True)
-        logger.info(f"Successfully recreated virtual environment at: {venv_path}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to recreate venv: {e}")
+    create_venv_for_local_sandbox(sandbox_dir_path=sandbox_dir, venv_path=str(venv_path), env=os.environ.copy(), force_recreate=True)
+    logger.info(f"Successfully recreated virtual environment at: {venv_path}")
 
     # Install pip requirements
-    try:
-        install_pip_requirements_for_sandbox(local_configs=local_configs, env=os.environ.copy())
-        logger.info(f"Successfully installed pip requirements for venv at: {venv_path}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to install pip requirements: {e}")
+    install_pip_requirements_for_sandbox(local_configs=local_configs, env=os.environ.copy())
+    logger.info(f"Successfully installed pip requirements for venv at: {venv_path}")
 
     return sbx_config
 

@@ -27,6 +27,7 @@ from letta.errors import (
     BedrockPermissionError,
     LettaAgentNotFoundError,
     LettaInvalidArgumentError,
+    LettaInvalidMCPSchemaError,
     LettaMCPConnectionError,
     LettaMCPTimeoutError,
     LettaToolCreateError,
@@ -264,6 +265,7 @@ def create_application() -> "FastAPI":
 
     # 408 Timeout errors
     app.add_exception_handler(LettaMCPTimeoutError, _error_handler_408)
+    app.add_exception_handler(LettaInvalidMCPSchemaError, _error_handler_400)
 
     # 409 Conflict errors
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
