@@ -56,7 +56,7 @@ from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.server import SyncServer
-from letta.services.lettuce.lettuce_client import LettuceClient
+from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
