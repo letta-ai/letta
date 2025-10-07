@@ -218,7 +218,7 @@ export async function processStep(
   );
 
   if (!transactionLock) {
-    console.warn(`Transaction lock already exists for step ${step.id}`);
+    console.log(`Transaction lock already exists for step ${step.id}`);
     return null;
   }
 
