@@ -515,14 +515,9 @@ export function NavigationMenu(props: NavigationMenuProps) {
         </VStack>
       </div>
       <VStack className="gap-[3px]">
-        <div
-          style={{
-            height: lastActiveProject ? '321px' : '0',
-          }}
-          className={cn('transition-[height] overflow-hidden duration-500')}
-        >
+        {lastActiveProject && (
           <ProjectSpecificNavigation />
-        </div>
+        )}
         {!developmentServerExists && <RootNavigationItems />}
         {developmentServerExists && <SelfHostedServerNavigation />}
       </VStack>
