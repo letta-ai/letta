@@ -1502,6 +1502,7 @@ class Message(BaseMessage):
 
 
 class ToolReturn(BaseModel):
+    tool_call_id: Optional[Any] = Field(None, description="The ID for the tool call")
     status: Literal["success", "error"] = Field(..., description="The status of the tool call")
     stdout: Optional[List[str]] = Field(default=None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
     stderr: Optional[List[str]] = Field(default=None, description="Captured stderr from the tool invocation")
