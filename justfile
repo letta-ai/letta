@@ -750,7 +750,23 @@ push-core-to-oss name="":
         BRANCH="{{name}}"
     fi
     echo "🚀 Pushing core to OSS..."
+
+    # Create a temporary branch with filtered content
+    TEMP_BRANCH="temp-oss-$(date +%s)"
+    git checkout -b $TEMP_BRANCH
+
+    # Remove sensitive files
+    git rm --cached apps/core/letta/services/lettuce/lettuce_client.py
+    git rm --cached apps/core/tests/integration_test_message_create_async.py
+    git rm --cached -r apps/core/letta/agents/temporal
+    git commit -m "Temporary: remove lettuce service"
+
+    # Push the subtree
     git subtree push --prefix apps/core git@github.com:letta-ai/letta.git $BRANCH
+
+    # Clean up temp branch
+    git checkout $BRANCH
+    git branch -D $TEMP_BRANCH
 
 pull-oss-to-core:
     @echo "🚀 Pulling OSS into core..."
