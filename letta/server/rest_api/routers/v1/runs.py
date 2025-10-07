@@ -3,7 +3,6 @@ from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
-from temporalio.client import Client
 
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.helpers.datetime_helpers import get_utc_time
@@ -23,6 +22,7 @@ from letta.server.rest_api.streaming_response import (
     cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
+from letta.services.lettuce.lettuce_client import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 
@@ -136,26 +136,18 @@ async def retrieve_run(
 
         use_lettuce = run.metadata and run.metadata.get("lettuce") and settings.temporal_endpoint
         if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
-            client = await Client.connect(
-                settings.temporal_endpoint,
-                namespace=settings.temporal_namespace,
-                api_key=settings.temporal_api_key,
-                tls=settings.temporal_tls,  # This should be false for local runs
-            )
-            handle = client.get_workflow_handle(run_id)
-
-            # Fetch the workflow description
-            desc = await handle.describe()
+            lettuce_client = await LettuceClient.create()
+            status = await lettuce_client.get_status()
 
             # Map the status to our enum
             run_status = RunStatus.created
-            if desc.status.name == "RUNNING":
+            if status == "RUNNING":
                 run_status = RunStatus.running
-            elif desc.status.name == "COMPLETED":
+            elif status == "COMPLETED":
                 run_status = RunStatus.completed
-            elif desc.status.name == "FAILED":
+            elif status == "FAILED":
                 run_status = RunStatus.failed
-            elif desc.status.name == "CANCELED":
+            elif status == "CANCELLED":
                 run_status = RunStatus.cancelled
             run.status = run_status
         return run
