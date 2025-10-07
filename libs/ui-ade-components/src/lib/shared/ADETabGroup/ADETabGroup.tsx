@@ -10,7 +10,6 @@ import './ADETabGroup.scss';
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@letta-cloud/ui-styles';
 import { Slot } from '@radix-ui/react-slot';
-import { useLocalStorage } from '@mantine/hooks';
 import { useQuickADETour } from '@letta-cloud/ui-ade-components';
 
 interface ADETabHeaderProps extends Omit<ADETabOptions, 'content'> {
@@ -75,14 +74,7 @@ interface ADETabGroupProps {
 export function ADETabGroup(props: ADETabGroupProps) {
   const { tabs, defaultId } = props;
 
-  const idMap = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
-
-  const [selectedTab, setSelectedTab] = useLocalStorage<string>({
-    defaultValue: defaultId || tabs[0].id,
-    key: `${idMap.join('-')}-ade-tab-group-selected-tab`,
-  });
-
-
+  const [selectedTab, setSelectedTab] = useState<string>(defaultId || tabs[0].id);
 
   const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
 
