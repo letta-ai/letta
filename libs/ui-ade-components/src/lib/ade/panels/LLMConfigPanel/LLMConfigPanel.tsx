@@ -12,9 +12,9 @@ import {
 } from '../../inputs/ContextWindowSlider/ContextWindowSlider';
 import { MaxTokensSlider } from '../../inputs/MaxOutputTokensSlider/MaxOutputTokensSlider';
 import { EnableMaxTokensSwitch } from '../../inputs/EnableMaxTokensSwitch/EnableMaxTokensSwitch';
-import { MaxReasoningTokensSlider } from '../../inputs/MaxReasoningTokensSlider/MaxReasoningTokensSlider';
 import { ReasoningEffortDropdown } from '../../inputs/ReasoningEffortDropdown/ReasoningEffortDropdown';
 import { VerbosityLevelDropdown } from '../../inputs/VerbosityLevelDropdown/VerbosityLevelDropdown';
+import { MaxReasoningTokensSliderContainer } from '../../inputs/MaxReasoningTokensSlider/MaxReasoningTokensSliderContainer';
 
 export function LLMConfigPanel() {
   const { data: modelsList } = useModelsServiceListModels();
@@ -99,18 +99,7 @@ export function LLMConfigPanel() {
             }
           />
         </div>
-        {currentBaseModel?.max_tokens &&
-          currentBaseModel.model.startsWith('claude-3-7-sonnet') && (
-            <MaxReasoningTokensSlider
-              maxTokens={
-                currentAgent.llm_config.max_tokens ||
-                currentBaseModel.max_tokens
-              }
-              defaultMaxReasoningTokens={
-                currentAgent.llm_config.max_reasoning_tokens || 0
-              }
-            />
-          )}
+        <MaxReasoningTokensSliderContainer llmConfig={currentAgent.llm_config} maxTokens={currentBaseModel?.max_tokens} />
       </VStack>
   );
 }
