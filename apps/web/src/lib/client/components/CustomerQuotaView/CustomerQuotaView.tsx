@@ -1,5 +1,5 @@
 'use client';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   ChevronDownIcon,
   Button,
@@ -62,7 +62,6 @@ interface ViewAllQuotasProps {
 export function ViewAllQuotas(props: ViewAllQuotasProps) {
   const { limits, tier } = props;
   const [open, setIsOpen] = useState(false);
-  const { data: isBillingV3Enabled } = useFeatureFlag('BILLING_V3');
 
   const { formatFileSize } = useFormatters();
 
@@ -90,14 +89,14 @@ export function ViewAllQuotas(props: ViewAllQuotasProps) {
       onOpenChange={setIsOpen}
     >
       <VStack padding="small" gap="small" color="background-grey2">
-        {!(tier === 'pro' && isBillingV3Enabled) && (
+        {tier !== 'pro' && (
           <QuotaRow
             label={t('ViewAllQuotas.agents')}
             value={allQuotasData?.body.agents}
             max={limits.agents}
           />
         )}
-        {!(tier === 'pro' && isBillingV3Enabled) && (
+        {tier !== 'pro' && (
           <QuotaRow
             label={t('ViewAllQuotas.identities')}
             value={allQuotasData?.body.identities}
@@ -128,7 +127,7 @@ export function ViewAllQuotas(props: ViewAllQuotasProps) {
           value={allQuotasData?.body.projects}
           max={limits.projects}
         />
-        {!(tier === 'pro' && isBillingV3Enabled) && (
+        {tier !== 'pro' && (
           <QuotaRow
             label={t('ViewAllQuotas.memoryBlocks')}
             value={allQuotasData?.body.memoryBlocks}

@@ -1,8 +1,7 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
 import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
-import { LEGACY_PRO_PLAN_PRICE_IDS, PRO_PLAN_PRICE_IDS } from '../constants';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { PRO_PLAN_PRICE_IDS } from '../constants';
 
 export async function createProPaymentLink(organizationId: string) {
   const stripe = getStripeClient();
@@ -10,8 +9,6 @@ export async function createProPaymentLink(organizationId: string) {
   if (!stripe) {
     return null;
   }
-
-  const isBillingV3Enabled = await getSingleFlag('BILLING_V3', organizationId);
 
   const customer = await getPaymentCustomer(organizationId);
 
@@ -30,11 +27,7 @@ export async function createProPaymentLink(organizationId: string) {
   });
 
   const correctPriceId = response.data.find((price) => {
-    if (isBillingV3Enabled) {
-      return PRO_PLAN_PRICE_IDS.includes(price.id);
-    }
-
-    return LEGACY_PRO_PLAN_PRICE_IDS.includes(price.id);
+    return PRO_PLAN_PRICE_IDS.includes(price.id);
   });
 
   if (!correctPriceId) {

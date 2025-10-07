@@ -187,9 +187,9 @@ describe('credit usage', () => {
 
     cy.visit('/settings/organization/usage');
 
-    cy.findByTestId('total-credits', {
+    cy.findByTestId('monthly-credits', {
       timeout: 50000,
-    }).should('include.text', '0.16', { timeout: 50000 });
+    }).should('include.text', '5,000', { timeout: 50002 });
 
     // Navigate to projects list explicitly
     cy.visit('/projects');
@@ -242,14 +242,9 @@ describe('credit usage', () => {
 
     cy.visit('/settings/organization/usage');
 
-    // tmp disable
-    // cy.findByTestId('total-credits', {
-    //   timeout: 50000,
-    // }).should('not.include.text', '0.16', { timeout: 50000 });
-
-    cy.findByTestId('agent-usage-value', {
+    cy.findByTestId('monthly-credits', {
       timeout: 50000,
-    }).should('contain', '1');
+    }).should('not.include.text', '5,000', { timeout: 50000 });
   });
 
   it('should rate limit a user', () => {

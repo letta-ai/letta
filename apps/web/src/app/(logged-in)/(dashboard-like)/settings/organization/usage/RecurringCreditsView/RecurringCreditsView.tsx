@@ -48,6 +48,7 @@ export function RecurringCreditsView() {
             variant="heading3"
             overrideEl="span"
             noWrap
+            data-testid="monthly-credits"
           >
             {formatNumber(billingData?.body.recurrentCredits || 0)}
           </Typography>
