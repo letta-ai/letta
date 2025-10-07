@@ -124,7 +124,7 @@ export function DataSourceView() {
   return (
     <VStack
       overflowY="hidden"
-      className="max-h-[600px]"
+      className="min-h-[200px]"
       gap={false}
       fullWidth
       fullHeight
