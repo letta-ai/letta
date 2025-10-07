@@ -10186,6 +10186,27 @@
             "deprecated": true
           },
           {
+            "name": "statuses",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by status. Can specify multiple statuses.",
+              "title": "Statuses"
+            },
+            "description": "Filter runs by status. Can specify multiple statuses."
+          },
+          {
             "name": "background",
             "in": "query",
             "required": false,

@@ -3165,6 +3165,7 @@ export const UseRunsServiceListRunsKeyFn = (
     limit,
     order,
     orderBy,
+    statuses,
     stopReason,
     userAgent,
     userId,
@@ -3182,6 +3183,7 @@ export const UseRunsServiceListRunsKeyFn = (
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    statuses?: string[];
     stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
@@ -3204,6 +3206,7 @@ export const UseRunsServiceListRunsKeyFn = (
       limit,
       order,
       orderBy,
+      statuses,
       stopReason,
       userAgent,
       userId,
