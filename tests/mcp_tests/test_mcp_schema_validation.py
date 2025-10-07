@@ -163,12 +163,14 @@ async def test_add_mcp_tool_rejects_invalid_schemas():
 
             # Should raise HTTPException for invalid schema
             headers = HeaderParams(actor_id="test_user")
-            with pytest.raises(HTTPException) as exc_info:
+            from letta.errors import LettaInvalidMCPSchemaError
+
+            with pytest.raises(LettaInvalidMCPSchemaError) as exc_info:
                 await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, headers=headers)
 
-            assert exc_info.value.status_code == 400
-            assert "invalid schema" in exc_info.value.detail["message"].lower()
-            assert exc_info.value.detail["health_status"] == SchemaHealth.INVALID.value
+            assert "invalid schema" in exc_info.value.message.lower()
+            assert exc_info.value.details["mcp_tool_name"] == "test_tool"
+            assert exc_info.value.details["reasons"] == ["Missing 'type' at root level"]
 
 
 def test_mcp_schema_healing_for_optional_fields():
