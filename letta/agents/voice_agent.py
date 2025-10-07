@@ -214,7 +214,6 @@ class VoiceAgent(BaseAgent):
                 response_text=content,
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                actor=self.actor,
                 timezone=agent_state.timezone,
             )
             letta_message_db_queue.extend(assistant_msgs)
@@ -273,11 +272,9 @@ class VoiceAgent(BaseAgent):
                 function_name=tool_call_name,
                 function_arguments=tool_args,
                 tool_call_id=tool_call_id,
-                function_call_success=success_flag,
                 function_response=tool_result,
                 tool_execution_result=tool_execution_result,
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=True,
             )
             letta_message_db_queue.extend(tool_call_messages)

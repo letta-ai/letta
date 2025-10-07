@@ -232,10 +232,8 @@ def create_letta_messages_from_llm_response(
     function_arguments: Optional[Dict],
     tool_execution_result: Optional[ToolExecutionResult],
     tool_call_id: Optional[str],
-    function_call_success: Optional[bool],
     function_response: Optional[str],
     timezone: str,
-    actor: User,
     run_id: str | None = None,
     step_id: str = None,
     continue_stepping: bool = False,
@@ -323,7 +321,7 @@ def create_letta_messages_from_llm_response(
     if tool_execution_result is not None:
         tool_message = Message(
             role=MessageRole.tool,
-            content=[TextContent(text=package_function_response(function_call_success, function_response, timezone))],
+            content=[TextContent(text=package_function_response(tool_execution_result.success_flag, function_response, timezone))],
             agent_id=agent_id,
             model=model,
             tool_calls=[],
@@ -349,8 +347,7 @@ def create_letta_messages_from_llm_response(
         heartbeat_system_message = create_heartbeat_system_message(
             agent_id=agent_id,
             model=model,
-            function_call_success=function_call_success,
-            actor=actor,
+            function_call_success=(tool_execution_result.success_flag if tool_execution_result is not None else True),
             timezone=timezone,
             heartbeat_reason=heartbeat_reason,
             run_id=run_id,
@@ -368,7 +365,6 @@ def create_heartbeat_system_message(
     model: str,
     function_call_success: bool,
     timezone: str,
-    actor: User,
     llm_batch_item_id: Optional[str] = None,
     heartbeat_reason: Optional[str] = None,
     run_id: Optional[str] = None,
@@ -396,7 +392,6 @@ def create_assistant_messages_from_openai_response(
     response_text: str,
     agent_id: str,
     model: str,
-    actor: User,
     timezone: str,
 ) -> List[Message]:
     """
@@ -412,10 +407,8 @@ def create_assistant_messages_from_openai_response(
         function_arguments={DEFAULT_MESSAGE_TOOL_KWARG: response_text},  # Avoid raw string manipulation
         tool_execution_result=ToolExecutionResult(status="success"),
         tool_call_id=tool_call_id,
-        function_call_success=True,
         function_response=None,
         timezone=timezone,
-        actor=actor,
         continue_stepping=False,
     )
 
