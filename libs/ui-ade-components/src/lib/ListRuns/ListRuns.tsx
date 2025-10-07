@@ -194,7 +194,6 @@ interface UseQueryDefinitionResponse {
   initialQuery: QueryBuilderQuery;
 }
 
-
 function useQueryDefinition() {
   const t = useTranslations('ListRuns');
 
@@ -491,21 +490,23 @@ export function ListRuns(props: ListRunsProps) {
         accessorFn: (row) => row.stop_reason,
         cell: ({ row }) => (
           <HStack align="center">
-            {row.original.stop_reason && <StopReasonCell stopReason={row.original.stop_reason} />}
+            {row.original.stop_reason && (
+              <StopReasonCell stopReason={row.original.stop_reason} />
+            )}
           </HStack>
         ),
-      },
-      {
-        id: 'completedAt',
-        header: t('columns.completedAt'),
-        accessorFn: (row) => row.completed_at,
-        cell: ({ row }) => <DateCell date={row.original.completed_at} />,
       },
       {
         id: 'createdAt',
         header: t('columns.createdAt'),
         accessorFn: (row) => row.created_at,
         cell: ({ row }) => <DateCell date={row.original.created_at} />,
+      },
+      {
+        id: 'completedAt',
+        header: t('columns.completedAt'),
+        accessorFn: (row) => row.completed_at,
+        cell: ({ row }) => <DateCell date={row.original.completed_at} />,
       },
       {
         id: 'actions',
