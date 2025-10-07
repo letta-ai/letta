@@ -1,6 +1,6 @@
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageType
+from letta.schemas.letta_message import MessageType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 
