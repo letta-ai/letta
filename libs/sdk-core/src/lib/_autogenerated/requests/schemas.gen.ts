@@ -13298,6 +13298,16 @@ export const $ToolJSONSchema = {
 
 export const $ToolReturn = {
   properties: {
+    tool_call_id: {
+      anyOf: [
+        {},
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The ID for the tool call',
+    },
     status: {
       type: 'string',
       enum: ['success', 'error'],
