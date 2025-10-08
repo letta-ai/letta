@@ -2,14 +2,10 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import asc, desc, nulls_last, select
-from letta.settings import DatabaseChoice, settings
 
 from letta.orm.run import Run as RunModel
-from letta.settings import DatabaseChoice, settings
-from sqlalchemy import asc, desc
-from typing import Optional
-
 from letta.services.helpers.agent_manager_helper import _cursor_filter
+from letta.settings import DatabaseChoice, settings
 
 
 async def _apply_pagination_async(
@@ -29,17 +25,11 @@ async def _apply_pagination_async(
         sort_nulls_last = False
 
     if after:
-        result = (
-            await session.execute(
-                select(sort_column, RunModel.id).where(RunModel.id == after)
-            )
-        ).first()
+        result = (await session.execute(select(sort_column, RunModel.id).where(RunModel.id == after))).first()
         if result:
             after_sort_value, after_id = result
             # SQLite does not support as granular timestamping, so we need to round the timestamp
-            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(
-                after_sort_value, datetime
-            ):
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
                 after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(
@@ -53,17 +43,11 @@ async def _apply_pagination_async(
             )
 
     if before:
-        result = (
-            await session.execute(
-                select(sort_column, RunModel.id).where(RunModel.id == before)
-            )
-        ).first()
+        result = (await session.execute(select(sort_column, RunModel.id).where(RunModel.id == before))).first()
         if result:
             before_sort_value, before_id = result
             # SQLite does not support as granular timestamping, so we need to round the timestamp
-            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(
-                before_sort_value, datetime
-            ):
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
                 before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
             query = query.where(
                 _cursor_filter(
