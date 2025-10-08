@@ -8,9 +8,11 @@ from sqlalchemy.orm import Session
 
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
+from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.orm.run import Run as RunModel
+from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
@@ -21,6 +23,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
+from letta.schemas.run_metrics import RunMetrics as PydanticRunMetrics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
@@ -62,6 +65,23 @@ class RunManager:
             run = RunModel(**run_data)
             run.organization_id = organization_id
             run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+
+            # Create run metrics with start timestamp
+            import time
+
+            # Get the project_id from the agent
+            agent = await session.get(AgentModel, agent_id)
+            project_id = agent.project_id if agent else None
+
+            metrics = RunMetricsModel(
+                id=run.id,
+                organization_id=organization_id,
+                agent_id=agent_id,
+                project_id=project_id,
+                run_start_ns=int(time.time() * 1e9),  # Current time in nanoseconds
+                num_steps=0,  # Initialize to 0
+            )
+            await metrics.create_async(session)
             await session.commit()
 
         return run.to_pydantic()
@@ -178,6 +198,21 @@ class RunManager:
             await run.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             final_metadata = run.metadata_
             pydantic_run = run.to_pydantic()
+
+            await session.commit()
+
+        # update run metrics table
+        num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
+        async with db_registry.async_session() as session:
+            metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
+            # Calculate runtime if run is completing
+            if is_terminal_update and metrics.run_start_ns:
+                import time
+
+                current_ns = int(time.time() * 1e9)
+                metrics.run_ns = current_ns - metrics.run_start_ns
+            metrics.num_steps = num_steps
+            await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             await session.commit()
 
         # Dispatch callback outside of database session if needed
@@ -299,3 +334,31 @@ class RunManager:
                 raise NoResultFound(f"Run with id {run_id} not found")
             pydantic_run = run.to_pydantic()
             return pydantic_run.request_config
+
+    @enforce_types
+    async def get_run_metrics_async(self, run_id: str, actor: PydanticUser) -> PydanticRunMetrics:
+        """Get metrics for a run."""
+        async with db_registry.async_session() as session:
+            metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
+            return metrics.to_pydantic()
+
+    @enforce_types
+    async def get_run_steps(
+        self,
+        run_id: str,
+        actor: PydanticUser,
+        limit: Optional[int] = 100,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        ascending: bool = False,
+    ) -> List[PydanticStep]:
+        """Get steps for a run."""
+        async with db_registry.async_session() as session:
+            run = await RunModel.read_async(db_session=session, identifier=run_id, actor=actor, access_type=AccessType.ORGANIZATION)
+            if not run:
+                raise NoResultFound(f"Run with id {run_id} not found")
+
+        steps = await self.step_manager.list_steps_async(
+            actor=actor, run_id=run_id, limit=limit, before=before, after=after, order="asc" if ascending else "desc"
+        )
+        return steps

@@ -27,6 +27,7 @@ from letta.orm.prompt import Prompt
 from letta.orm.provider import Provider
 from letta.orm.provider_trace import ProviderTrace
 from letta.orm.run import Run
+from letta.orm.run_metrics import RunMetrics
 from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, SandboxEnvironmentVariable
 from letta.orm.source import Source
 from letta.orm.sources_agents import SourcesAgents

@@ -13,6 +13,7 @@ from letta.schemas.letta_request import RetrieveStreamRequest
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
+from letta.schemas.run_metrics import RunMetrics
 from letta.schemas.step import Step
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import redis_sse_stream_generator
@@ -224,6 +225,23 @@ async def retrieve_run_usage(
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
 
 
+@router.get("/{run_id}/metrics", response_model=RunMetrics, operation_id="retrieve_metrics_for_run")
+async def retrieve_metrics_for_run(
+    run_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    """
+    Get run metrics by run ID.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        runs_manager = RunManager()
+        return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Run metrics not found")
+
+
 @router.get(
     "/{run_id}/steps",
     response_model=List[Step],
@@ -247,18 +265,14 @@ async def list_run_steps(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 
-    try:
-        steps = await runs_manager.get_run_steps(
-            run_id=run_id,
-            actor=actor,
-            limit=limit,
-            before=before,
-            after=after,
-            ascending=(order == "asc"),
-        )
-        return steps
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await runs_manager.get_run_steps(
+        run_id=run_id,
+        actor=actor,
+        limit=limit,
+        before=before,
+        after=after,
+        ascending=(order == "asc"),
+    )
 
 
 @router.delete("/{run_id}", response_model=Run, operation_id="delete_run")
@@ -272,12 +286,7 @@ async def delete_run(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
-
-    try:
-        run = await runs_manager.delete_run_by_id(run_id=run_id, actor=actor)
-        return run
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Run not found")
+    return await runs_manager.delete_run_by_id(run_id=run_id, actor=actor)
 
 
 @router.post(
