@@ -15,8 +15,13 @@ letta_config = LettaConfig.load()
 config = context.config
 
 if settings.database_engine is DatabaseChoice.POSTGRES:
-    config.set_main_option("sqlalchemy.url", settings.letta_pg_uri)
-    print("Using database: ", settings.letta_pg_uri)
+    # Convert PostgreSQL URI to sync format for alembic using common utility
+    from letta.database_utils import get_database_uri_for_context
+
+    sync_pg_uri = get_database_uri_for_context(settings.letta_pg_uri, "alembic")
+
+    config.set_main_option("sqlalchemy.url", sync_pg_uri)
+    print("Using database: ", sync_pg_uri)
 else:
     config.set_main_option("sqlalchemy.url", "sqlite:///" + os.path.join(letta_config.recall_storage_path, "sqlite.db"))
 
