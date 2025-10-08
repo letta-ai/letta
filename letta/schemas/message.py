@@ -1656,7 +1656,7 @@ class Message(BaseMessage):
         strip_request_heartbeat: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
-        messages = Message.filter_messages_for_llm_api(messages)
+        messages = [m for m in messages if m is not None]
         result = [
             m.to_anthropic_dict(
                 current_model=current_model,
