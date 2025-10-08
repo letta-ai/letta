@@ -1376,6 +1376,7 @@ class Message(BaseMessage):
 
     def to_google_dict(
         self,
+        current_model: str,
         put_inner_thoughts_in_kwargs: bool = True,
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
@@ -1491,11 +1492,12 @@ class Message(BaseMessage):
                 for content in self.content:
                     if isinstance(content, TextContent):
                         native_part = {"text": content.text}
-                        if content.signature:
+                        if content.signature and current_model == self.model:
                             native_part["thought_signature"] = content.signature
                         native_google_content_parts.append(native_part)
                     elif isinstance(content, ReasoningContent):
-                        native_google_content_parts.append({"text": content.reasoning, "thought": True})
+                        if current_model == self.model:
+                            native_google_content_parts.append({"text": content.reasoning, "thought": True})
                     elif isinstance(content, ToolCallContent):
                         native_part = {
                             "function_call": {
@@ -1503,7 +1505,7 @@ class Message(BaseMessage):
                                 "args": content.input,
                             },
                         }
-                        if content.signature:
+                        if content.signature and current_model == self.model:
                             native_part["thought_signature"] = content.signature
                         native_google_content_parts.append(native_part)
                     else:
@@ -1561,11 +1563,13 @@ class Message(BaseMessage):
     @staticmethod
     def to_google_dicts_from_list(
         messages: List[Message],
+        current_model: str,
         put_inner_thoughts_in_kwargs: bool = True,
         native_content: bool = False,
     ):
         result = [
             m.to_google_dict(
+                current_model=current_model,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
             )
