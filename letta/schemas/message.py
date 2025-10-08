@@ -1156,6 +1156,7 @@ class Message(BaseMessage):
 
     def to_anthropic_dict(
         self,
+        current_model: str,
         inner_thoughts_xml_tag="thinking",
         put_inner_thoughts_in_kwargs: bool = False,
         # if true, then treat the content field as AssistantMessage
@@ -1242,20 +1243,22 @@ class Message(BaseMessage):
                     for content_part in self.content:
                         # TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
                         if isinstance(content_part, ReasoningContent):
-                            content.append(
-                                {
-                                    "type": "thinking",
-                                    "thinking": content_part.reasoning,
-                                    "signature": content_part.signature,
-                                }
-                            )
+                            if current_model == self.model:
+                                content.append(
+                                    {
+                                        "type": "thinking",
+                                        "thinking": content_part.reasoning,
+                                        "signature": content_part.signature,
+                                    }
+                                )
                         elif isinstance(content_part, RedactedReasoningContent):
-                            content.append(
-                                {
-                                    "type": "redacted_thinking",
-                                    "data": content_part.data,
-                                }
-                            )
+                            if current_model == self.model:
+                                content.append(
+                                    {
+                                        "type": "redacted_thinking",
+                                        "data": content_part.data,
+                                    }
+                                )
                         elif isinstance(content_part, TextContent):
                             content.append(
                                 {
@@ -1272,20 +1275,22 @@ class Message(BaseMessage):
                 if self.content is not None and len(self.content) >= 1:
                     for content_part in self.content:
                         if isinstance(content_part, ReasoningContent):
-                            content.append(
-                                {
-                                    "type": "thinking",
-                                    "thinking": content_part.reasoning,
-                                    "signature": content_part.signature,
-                                }
-                            )
+                            if current_model == self.model:
+                                content.append(
+                                    {
+                                        "type": "thinking",
+                                        "thinking": content_part.reasoning,
+                                        "signature": content_part.signature,
+                                    }
+                                )
                         if isinstance(content_part, RedactedReasoningContent):
-                            content.append(
-                                {
-                                    "type": "redacted_thinking",
-                                    "data": content_part.data,
-                                }
-                            )
+                            if current_model == self.model:
+                                content.append(
+                                    {
+                                        "type": "redacted_thinking",
+                                        "data": content_part.data,
+                                    }
+                                )
                         if isinstance(content_part, TextContent):
                             content.append(
                                 {
@@ -1349,6 +1354,7 @@ class Message(BaseMessage):
     @staticmethod
     def to_anthropic_dicts_from_list(
         messages: List[Message],
+        current_model: str,
         inner_thoughts_xml_tag: str = "thinking",
         put_inner_thoughts_in_kwargs: bool = False,
         # if true, then treat the content field as AssistantMessage
@@ -1357,6 +1363,7 @@ class Message(BaseMessage):
     ) -> List[dict]:
         result = [
             m.to_anthropic_dict(
+                current_model=current_model,
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
