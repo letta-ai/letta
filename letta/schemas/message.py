@@ -1157,14 +1157,8 @@ class Message(BaseMessage):
                 assert self.tool_calls is not None or text_content is not None, vars(self)
             except AssertionError as e:
                 # relax check if this message only contains reasoning content
-                if self.content is not None and len(self.content) > 0:
-                    # Check if all non-empty content is reasoning-related
-                    all_reasoning = all(
-                        isinstance(c, (ReasoningContent, SummarizedReasoningContent, OmittedReasoningContent, RedactedReasoningContent))
-                        for c in self.content
-                    )
-                    if all_reasoning:
-                        return None
+                if self.content is not None and len(self.content) > 0 and isinstance(self.content[0], ReasoningContent):
+                    return None
                 raise e
 
             # if native content, then put it directly inside the content
