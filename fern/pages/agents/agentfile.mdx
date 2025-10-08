@@ -66,20 +66,7 @@ Upload downloaded `.af` files directly through the ADE interface to easily re-cr
 </Frame>
 
 <CodeGroup>
-```python title="python" maxLines=50
-# Install SDK with `pip install letta-client`
-from letta_client import Letta
-
-# Create a client to connect to Letta
-client = Letta(token="LETTA_API_KEY")
-
-# Import your .af file from any location
-agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/file.af", "rb"))
-
-print(f"Imported agent: {agent_state.id}")
-```
-
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 // Install SDK with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 import { readFileSync } from 'fs';
@@ -93,6 +80,19 @@ const file = new Blob([readFileSync('/path/to/agent/file.af')])
 const agentState = await client.agents.importAgentSerialized(file, {})
 
 console.log(`Imported agent: ${agentState.id}`);
+```
+
+```python title="python" maxLines=50
+# Install SDK with `pip install letta-client`
+from letta_client import Letta
+
+# Create a client to connect to Letta
+client = Letta(token="LETTA_API_KEY")
+
+# Import your .af file from any location
+agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/file.af", "rb"))
+
+print(f"Imported agent: {agent_state.id}")
 ```
 
 ```curl curl
@@ -111,6 +111,17 @@ You can export your own `.af` files to share by selecting "Export Agent" in the 
 </Frame>
 
 <CodeGroup>
+```typescript TypeScript maxLines=50
+// Install SDK with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// Create a client to connect to Letta
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// Export your agent into a serialized schema object (which you can write to a file)
+const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
+```
+
 ```python title="python" maxLines=50
 # Install SDK with `pip install letta-client`
 from letta_client import Letta
@@ -120,17 +131,6 @@ client = Letta(token="LETTA_API_KEY")
 
 # Export your agent into a serialized schema object (which you can write to a file)
 schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
-```
-
-```typescript title="node.js" maxLines=50
-// Install SDK with `npm install @letta-ai/letta-client`
-import { LettaClient } from '@letta-ai/letta-client'
-
-// Create a client to connect to Letta
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// Export your agent into a serialized schema object (which you can write to a file)
-const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
 ```
 
 ```curl curl

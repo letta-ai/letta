@@ -79,7 +79,7 @@ for chunk in stream:
 for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
     print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 const stream = await client.agents.messages.createStream({
     agentId: agentState.id,
     requestBody: {
@@ -150,6 +150,57 @@ for chunk in approve:
 # 3) Resume that run to read follow-up tokens
 for chunk in client.runs.stream(run_id, starting_after=approve_seq):
     print(chunk)
+```
+```typescript TypeScript maxLines=60
+// 1) Start background stream and capture approval request
+const stream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{role: "user", content: "Do a sensitive operation"}],
+        streamTokens: true,
+        background: true,
+    }
+);
+
+let approvalRequestId = null;
+let origRunId = null;
+let lastSeqId = 0;
+for await (const chunk of stream) {
+    if (chunk.runId && chunk.seqId) {
+        origRunId = chunk.runId;
+        lastSeqId = chunk.seqId;
+    }
+    if (chunk.messageType === "approval_request_message") {
+        approvalRequestId = chunk.id;
+        break;
+    }
+}
+
+// 2) Approve in background; capture the approval stream cursor (this creates a new run)
+const approveStream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{type: "approval", approve: true, approvalRequestId}],
+        streamTokens: true,
+        background: true,
+    }
+);
+
+let runId = null;
+let approveSeq = 0;
+for await (const chunk of approveStream) {
+    if (chunk.runId && chunk.seqId) {
+        runId = chunk.runId;
+        approveSeq = chunk.seqId;
+    }
+    if (chunk.messageType === "tool_return_message") {
+        // Tool result arrives here on the approval stream
+        break;
+    }
+}
+
+// 3) Resume that run to read follow-up tokens
+for await (const chunk of client.runs.stream(runId, {startingAfter: approveSeq})) {
+    console.log(chunk);
+}
 ```
 </CodeGroup>
 
@@ -240,7 +291,7 @@ for chunk in approve:
 for chunk in client.runs.stream(run_id, starting_after=approve_seq):
     print(chunk)
 ```
-```typescript node.js maxLines=70
+```typescript TypeScript maxLines=70
 // 1) Start background stream and capture approval request
 const stream = await client.agents.messages.createStream({
   agentId: agent.id,
@@ -343,7 +394,7 @@ if active_runs:
     for chunk in stream:
         print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Find and resume active background streams
 const activeRuns = await client.runs.active({
     agentIds: ["agent-123", "agent-456"],
@@ -416,7 +467,7 @@ while run.status != "completed":
 # Get the messages once complete
 messages = client.runs.messages.list(run_id=run.id)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Start async operation (returns immediately with run ID)
 const run = await client.agents.createAgentMessageAsync({
     agentId: agentState.id,
@@ -501,7 +552,7 @@ for chunk in stream:
         continue
     print(chunk)
 ```
-```typescript node.js maxLines=50
+```typescript TypeScript maxLines=50
 // Configure client with extended timeout
 import { Letta } from '@letta/sdk';
 

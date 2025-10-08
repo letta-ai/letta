@@ -4,9 +4,9 @@ subtitle: Coordinate multiple agents with different communication patterns
 slug: guides/agents/groups
 ---
 
-<Callout type="info" emoji="🚀">
-Groups are a new feature in Letta and the specification is actively evolving. If you need support, please chat with us on [Discord](https://discord.gg/letta).
-</Callout>
+<Warning>
+Groups support is experimental and may be unstable. For more information, visit our [Discord](https://discord.gg/letta).
+</Warning>
 
 Groups enable sophisticated multi-agent coordination patterns in Letta. Each group type provides a different communication and execution pattern, allowing you to choose the right architecture for your multi-agent system.
 
@@ -80,54 +80,7 @@ sequenceDiagram
 ### Code Example
 
 <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta, SleeptimeManager
-
-client = Letta()
-
-# Create main conversation agent
-main_agent = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am the main conversation agent"}
-    ]
-)
-
-# Create sleeptime agents for background tasks
-monitor_agent = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I monitor conversation sentiment and key topics"}
-    ]
-)
-
-summary_agent = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I create periodic summaries of the conversation"}
-    ]
-)
-
-# Create a Sleeptime group
-group = client.groups.create(
-    agent_ids=[monitor_agent.id, summary_agent.id],
-    description="Background agents that process conversation periodically",
-    manager_config=SleeptimeManager(
-        manager_agent_id=main_agent.id,
-        sleeptime_agent_frequency=3  # Execute every 3 turns
-    )
-)
-
-# Send messages to the group
-response = client.groups.messages.create(
-    group_id=group.id,
-    messages=[
-        {"role": "user", "content": "Let's discuss our project roadmap"}
-    ]
-)
-```
-
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client';
 
 const client = new LettaClient();
@@ -174,6 +127,53 @@ const response = await client.groups.messages.create(
     }
 );
 ```
+
+```python title="python" maxLines=50
+from letta_client import Letta, SleeptimeManager
+
+client = Letta()
+
+# Create main conversation agent
+main_agent = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am the main conversation agent"}
+    ]
+)
+
+# Create sleeptime agents for background tasks
+monitor_agent = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I monitor conversation sentiment and key topics"}
+    ]
+)
+
+summary_agent = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I create periodic summaries of the conversation"}
+    ]
+)
+
+# Create a Sleeptime group
+group = client.groups.create(
+    agent_ids=[monitor_agent.id, summary_agent.id],
+    description="Background agents that process conversation periodically",
+    manager_config=SleeptimeManager(
+        manager_agent_id=main_agent.id,
+        sleeptime_agent_frequency=3  # Execute every 3 turns
+    )
+)
+
+# Send messages to the group
+response = client.groups.messages.create(
+    group_id=group.id,
+    messages=[
+        {"role": "user", "content": "Let's discuss our project roadmap"}
+    ]
+)
+```
 </CodeGroup>
 
 ## RoundRobin
@@ -212,52 +212,7 @@ sequenceDiagram
 ### Code Example
 
 <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta, RoundRobinManager
-
-client = Letta()
-
-# Create agents for the group
-agent1 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am the first agent in the group"}
-    ]
-)
-
-agent2 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am the second agent in the group"}
-    ]
-)
-
-agent3 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am the third agent in the group"}
-    ]
-)
-
-# Create a RoundRobin group
-group = client.groups.create(
-    agent_ids=[agent1.id, agent2.id, agent3.id],
-    description="A group that cycles through agents in order",
-    manager_config=RoundRobinManager(
-        max_turns=3  # Optional: defaults to number of agents
-    )
-)
-
-# Send a message to the group
-response = client.groups.messages.create(
-    group_id=group.id,
-    messages=[
-        {"role": "user", "content": "Hello group, what are your thoughts on this topic?"}
-    ]
-)
-```
-
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client';
 
 const client = new LettaClient();
@@ -302,6 +257,51 @@ const response = await client.groups.messages.create(
     }
 );
 ```
+
+```python title="python" maxLines=50
+from letta_client import Letta, RoundRobinManager
+
+client = Letta()
+
+# Create agents for the group
+agent1 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am the first agent in the group"}
+    ]
+)
+
+agent2 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am the second agent in the group"}
+    ]
+)
+
+agent3 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am the third agent in the group"}
+    ]
+)
+
+# Create a RoundRobin group
+group = client.groups.create(
+    agent_ids=[agent1.id, agent2.id, agent3.id],
+    description="A group that cycles through agents in order",
+    manager_config=RoundRobinManager(
+        max_turns=3  # Optional: defaults to number of agents
+    )
+)
+
+# Send a message to the group
+response = client.groups.messages.create(
+    group_id=group.id,
+    messages=[
+        {"role": "user", "content": "Hello group, what are your thoughts on this topic?"}
+    ]
+)
+```
 </CodeGroup>
 
 ## Supervisor
@@ -337,60 +337,7 @@ graph TB
 ### Code Example
 
 <CodeGroup>
-```python title="python" maxLines=50
-from letta_client import Letta, SupervisorManager
-
-client = Letta()
-
-# Create supervisor agent
-supervisor = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a supervisor managing multiple workers"}
-    ]
-)
-
-# Create worker agents
-worker1 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a data analysis specialist"}
-    ]
-)
-
-worker2 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a research specialist"}
-    ]
-)
-
-worker3 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a writing specialist"}
-    ]
-)
-
-# Create a Supervisor group
-group = client.groups.create(
-    agent_ids=[worker1.id, worker2.id, worker3.id],
-    description="A supervisor-worker group for parallel task execution",
-    manager_config=SupervisorManager(
-        manager_agent_id=supervisor.id
-    )
-)
-
-# Send a message to the group
-response = client.groups.messages.create(
-    group_id=group.id,
-    messages=[
-        {"role": "user", "content": "Analyze this data and prepare a report"}
-    ]
-)
-```
-
-```typescript title="node.js" maxLines=50
+```typescript TypeScript maxLines=50
 import { LettaClient } from '@letta-ai/letta-client';
 
 const client = new LettaClient();
@@ -443,6 +390,59 @@ const response = await client.groups.messages.create(
     }
 );
 ```
+
+```python title="python" maxLines=50
+from letta_client import Letta, SupervisorManager
+
+client = Letta()
+
+# Create supervisor agent
+supervisor = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a supervisor managing multiple workers"}
+    ]
+)
+
+# Create worker agents
+worker1 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a data analysis specialist"}
+    ]
+)
+
+worker2 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a research specialist"}
+    ]
+)
+
+worker3 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a writing specialist"}
+    ]
+)
+
+# Create a Supervisor group
+group = client.groups.create(
+    agent_ids=[worker1.id, worker2.id, worker3.id],
+    description="A supervisor-worker group for parallel task execution",
+    manager_config=SupervisorManager(
+        manager_agent_id=supervisor.id
+    )
+)
+
+# Send a message to the group
+response = client.groups.messages.create(
+    group_id=group.id,
+    messages=[
+        {"role": "user", "content": "Analyze this data and prepare a report"}
+    ]
+)
+```
 </CodeGroup>
 
 ## Dynamic
@@ -478,62 +478,7 @@ flowchart LR
 ### Code Example
 
 <CodeGroup>
-```python title="python" maxLines=100
-from letta_client import Letta, DynamicManager
-
-client = Letta()
-
-# Create orchestrator agent
-orchestrator = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am an orchestrator that decides who speaks next based on context"}
-    ]
-)
-
-# Create participant agents
-expert1 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a technical expert"}
-    ]
-)
-
-expert2 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a business strategist"}
-    ]
-)
-
-expert3 = client.agents.create(
-    model="openai/gpt-4.1",
-    memory_blocks=[
-        {"label": "persona", "value": "I am a creative designer"}
-    ]
-)
-
-# Create a Dynamic group
-group = client.groups.create(
-    agent_ids=[expert1.id, expert2.id, expert3.id],
-    description="A dynamic group where the orchestrator chooses speakers",
-    manager_config=DynamicManager(
-        manager_agent_id=orchestrator.id,
-        termination_token="DONE!",  # Optional: default is "DONE!"
-        max_turns=10  # Optional: prevent infinite loops
-    )
-)
-
-# Send a message to the group
-response = client.groups.messages.create(
-    group_id=group.id,
-    messages=[
-        {"role": "user", "content": "Let's design a new product. Who should start?"}
-    ]
-)
-```
-
-```typescript title="node.js" maxLines=100
+```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client';
 
 const client = new LettaClient();
@@ -587,6 +532,61 @@ const response = await client.groups.messages.create(
         messages: [{role: "user", content: "Let's design a new product. Who should start?"}]
     }
 );
+```
+
+```python title="python" maxLines=100
+from letta_client import Letta, DynamicManager
+
+client = Letta()
+
+# Create orchestrator agent
+orchestrator = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am an orchestrator that decides who speaks next based on context"}
+    ]
+)
+
+# Create participant agents
+expert1 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a technical expert"}
+    ]
+)
+
+expert2 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a business strategist"}
+    ]
+)
+
+expert3 = client.agents.create(
+    model="openai/gpt-4.1",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a creative designer"}
+    ]
+)
+
+# Create a Dynamic group
+group = client.groups.create(
+    agent_ids=[expert1.id, expert2.id, expert3.id],
+    description="A dynamic group where the orchestrator chooses speakers",
+    manager_config=DynamicManager(
+        manager_agent_id=orchestrator.id,
+        termination_token="DONE!",  # Optional: default is "DONE!"
+        max_turns=10  # Optional: prevent infinite loops
+    )
+)
+
+# Send a message to the group
+response = client.groups.messages.create(
+    group_id=group.id,
+    messages=[
+        {"role": "user", "content": "Let's design a new product. Who should start?"}
+    ]
+)
 ```
 </CodeGroup>
 

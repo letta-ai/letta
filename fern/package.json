@@ -6,6 +6,7 @@
     "prepare-openapi": "ts-node ./scripts/prepare-openapi.ts"
   },
   "dependencies": {
+    "fern-api": "^0.83.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }

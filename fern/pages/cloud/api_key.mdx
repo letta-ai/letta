@@ -28,13 +28,13 @@ API keys are sensitive and should be stored in a safe location.
 Once you've created an API key, you can use it with any of the Letta SDKs or framework integrations.
 For example, if you're using the Python or TypeScript (Node.js) SDK, you should set the `token` in the client to be your key (replace `LETTA_API_KEY` with your actual API key):
 <CodeGroup>
+```typescript TypeScript maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+```
 ```python title="python" maxLines=50
 from letta_client import Letta
 client = Letta(token="LETTA_API_KEY")
-```
-```typescript maxLines=50 title="node.js"
-import { LettaClient } from '@letta-ai/letta-client'
-const client = new LettaClient({ token: "LETTA_API_KEY" });
 ```
 </CodeGroup>
 

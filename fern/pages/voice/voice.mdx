@@ -3,6 +3,10 @@ title: Low Latency Voice Agents
 slug: guides/voice/overview
 ---
 
+<Warning>
+Voice agents support is experimental and may be unstable. For more information, visit our [Discord](https://discord.gg/letta).
+</Warning>
+
 All Letta agents can be connected to a voice provider by using the voice chat completion endpoint at `http://localhost:8283/v1/voice-beta/<AGENT_ID>`. However for voice applications, we recommend using the `voice_convo_agent` agent architecture, which is a low-latency architecture optimized for voice.
 
 ## Creating a latency-optimized voice agent

@@ -36,11 +36,11 @@ slug: /
       </div>
       <h1 className="text-7xl mb-6 text-left">Build with Letta</h1>
       <p className="text-3xl font-light mb-8 text-left">
-        Learn how to build and deploy stateful agents
+        A framework for building stateful AI agents with long-term memory
       </p>
-      <div className="mt-10">
-        <a href="/overview" className="text-xl text-left font-normal hover:opacity-90 transition-opacity">
-          Get started →
+      <div>
+        <a href="/quickstart" className="text-xl text-left font-normal hover:opacity-90 transition-opacity">
+          Start building →
         </a>
       </div>
     </div>
@@ -48,50 +48,71 @@ slug: /
 
   {/* Main Content */}
   <div className="landingbody max-w-4xl mx-auto px-8 py-12 mt-12">
-    <CardGroup cols={3}>
-      <Card
-        title="Letta Quickstart"
-        icon="fa-sharp fa-light fa-bolt"
-        href="/quickstart"
-      >
-    Create your first stateful agent in a few minutes
-      </Card>
-      <Card
-        title="Agent Development Environment"
-        icon="fa-sharp fa-light fa-browser"
-        href="/guides/ade/overview"
-      >
-        Learn how to use the Agent Development Environment (ADE)
-      </Card>
-      <Card
-        title="REST API and SDKs"
-        icon="fa-sharp fa-light fa-code"
-        href="/api-reference/overview"
-      >
-        Integrate Letta into your application with a few lines of code
-      </Card>
-      <Card
-        title="MCP Support"
-        icon="fa-brands fa-usb"
-        href="/guides/mcp/overview"
-      >
-        Connect Letta agents to tool libraries via Model Context Protocol (MCP)
-      </Card>
-      <Card
-        title="Cookbooks and Tutorials"
-        icon="fa-sharp fa-light fa-books"
-        href="/cookbooks"
-      >
-        Learn how to build with Letta using tutorials and pre-made apps
-      </Card>
-      <Card
-        title="DeepLearning.AI Course"
-        icon="fa-sharp fa-light fa-graduation-cap"
-        href="https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456"
-      >
-        Take our free DeepLearning.AI course on agent memory
-      </Card>
-    </CardGroup>
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold mb-6">Get Started</h2>
+      <CardGroup cols={1}>
+        <Card
+          title="Letta Quickstart"
+          icon="fa-sharp fa-light fa-bolt"
+          href="/quickstart"
+        >
+      Create your first stateful agent in a few minutes - the best place to start your Letta journey
+        </Card>
+      </CardGroup>
+    </div>
+
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold mb-6">Learn and Build</h2>
+      <CardGroup cols={2}>
+        <Card
+          title="Cookbooks and Tutorials"
+          icon="fa-sharp fa-light fa-books"
+          href="/cookbooks"
+        >
+          Learn how to build with Letta using tutorials and pre-made apps
+        </Card>
+        <Card
+          title="Agent Development Environment"
+          icon="fa-sharp fa-light fa-browser"
+          href="/guides/ade/overview"
+        >
+          Use the Agent Development Environment (ADE) to test and debug your agents
+        </Card>
+      </CardGroup>
+    </div>
+
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold mb-6">Integration</h2>
+      <CardGroup cols={2}>
+        <Card
+          title="REST API and SDKs"
+          icon="fa-sharp fa-light fa-code"
+          href="/api-reference/overview"
+        >
+          Integrate Letta into your application with a few lines of code
+        </Card>
+        <Card
+          title="MCP Support"
+          icon="fa-brands fa-usb"
+          href="/guides/mcp/overview"
+        >
+          Connect Letta agents to tool libraries via Model Context Protocol (MCP)
+        </Card>
+      </CardGroup>
+    </div>
+
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold mb-6">Deep Dive</h2>
+      <CardGroup cols={1}>
+        <Card
+          title="DeepLearning.AI Course"
+          icon="fa-sharp fa-light fa-graduation-cap"
+          href="https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456"
+        >
+          Take our free DeepLearning.AI course on agent memory
+        </Card>
+      </CardGroup>
+    </div>
 
   </div>
 </div>
