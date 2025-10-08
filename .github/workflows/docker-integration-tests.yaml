@@ -15,7 +15,7 @@ jobs:
       LETTA_PG_DB: letta
       LETTA_PG_USER: letta
       LETTA_PG_PASSWORD: letta
-      LETTA_PG_HOST: localhost  # Internal Docker service name
+      LETTA_PG_HOST: letta_db  # Internal Docker service name
       LETTA_PG_PORT: 5432
       # Server configuration for tests
       LETTA_SERVER_PASS: test_server_token
