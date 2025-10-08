@@ -595,9 +595,30 @@ class LettaAgentV3(LettaAgentV2):
         # -1. no tool call, no content
         if tool_call is None and (content is None or len(content) == 0):
             # Edge case is when there's also no content - basically, the LLM "no-op'd"
-            # In this case, we actually do not want to persist the no-op message
-            continue_stepping, heartbeat_reason, stop_reason = False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-            messages_to_persist = initial_messages or []
+            # If RequiredBeforeExitToolRule exists and not all required tools have been called,
+            # inject a rule-violation heartbeat to keep looping and inform the model.
+            uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
+            if uncalled:
+                # TODO: we may need to change this to not have a "heartbeat" prefix for v3?
+                heartbeat_reason = (
+                    f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
+                )
+                from letta.server.rest_api.utils import create_heartbeat_system_message
+
+                heartbeat_msg = create_heartbeat_system_message(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_call_success=True,
+                    timezone=agent_state.timezone,
+                    heartbeat_reason=heartbeat_reason,
+                    run_id=run_id,
+                )
+                messages_to_persist = (initial_messages or []) + [heartbeat_msg]
+                continue_stepping, stop_reason = True, None
+            else:
+                # In this case, we actually do not want to persist the no-op message
+                continue_stepping, heartbeat_reason, stop_reason = False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                messages_to_persist = initial_messages or []
 
         # 0. If there's no tool call, we can early exit
         elif tool_call is None:
@@ -627,7 +648,8 @@ class LettaAgentV3(LettaAgentV2):
                 run_id=run_id,
                 is_approval_response=is_approval or is_denial,
                 force_set_request_heartbeat=False,
-                add_heartbeat_on_continue=False,
+                # If we're continuing due to a required-before-exit rule, include a heartbeat to guide the model
+                add_heartbeat_on_continue=bool(heartbeat_reason),
             )
             messages_to_persist = (initial_messages or []) + assistant_message
 
@@ -843,7 +865,13 @@ class LettaAgentV3(LettaAgentV2):
         stop_reason: LettaStopReason | None = None
 
         if tool_call_name is None:
-            # No tool call? End loop
+            # No tool call – if there are required-before-exit tools uncalled, keep stepping
+            # and provide explicit feedback to the model; otherwise end the loop.
+            uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
+            if uncalled and not is_final_step:
+                reason = f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
+                return True, reason, None
+            # No required tools remaining → end turn
             return False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
         else:
             if tool_rule_violated:
