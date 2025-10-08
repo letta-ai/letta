@@ -10,6 +10,29 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Database configuration - these will be used by dev-compose.yaml
+      LETTA_PG_DB: letta
+      LETTA_PG_USER: letta
+      LETTA_PG_PASSWORD: letta
+      LETTA_PG_HOST: pgvector_db  # Internal Docker service name
+      LETTA_PG_PORT: 5432
+      # Server configuration for tests
+      LETTA_SERVER_PASS: test_server_token
+      LETTA_SERVER_URL: http://localhost:8283
+      # API keys
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Additional API keys that dev-compose.yaml expects (optional)
+      GROQ_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      OLLAMA_BASE_URL: ""
+      AZURE_API_KEY: ""
+      AZURE_BASE_URL: ""
+      AZURE_API_VERSION: ""
+      GEMINI_API_KEY: ""
+      VLLM_API_BASE: ""
+      OPENLLM_AUTH_TYPE: ""
+      OPENLLM_API_KEY: ""
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -32,14 +55,8 @@ jobs:
         chmod -R 755 /home/runner/.letta/logs
 
     - name: Build and run docker dev server
-      env:
-        LETTA_PG_DB:   letta
-        LETTA_PG_USER: letta
-        LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
       run: |
+        # dev-compose.yaml will use the environment variables we set above
         docker compose -f dev-compose.yaml up --build -d
 
     - name: Wait for service
@@ -47,13 +64,6 @@ jobs:
 
     - name: Run tests with pytest
       env:
-        LETTA_PG_DB:   letta
-        LETTA_PG_USER: letta
-        LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
-        LETTA_SERVER_PASS: test_server_token
-        LETTA_SERVER_URL: http://localhost:8283
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
         uv sync --extra dev --extra postgres --extra sqlite

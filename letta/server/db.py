@@ -10,18 +10,11 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from letta.database_utils import get_database_uri_for_context
 from letta.settings import settings
 
-# Convert PostgreSQL URI to async format
-pg_uri = settings.letta_pg_uri
-if pg_uri.startswith("postgresql://"):
-    async_pg_uri = pg_uri.replace("postgresql://", "postgresql+asyncpg://")
-else:
-    # Handle other URI formats (e.g., postgresql+pg8000://)
-    async_pg_uri = f"postgresql+asyncpg://{pg_uri.split('://', 1)[1]}" if "://" in pg_uri else pg_uri
-
-# Replace sslmode with ssl for asyncpg
-async_pg_uri = async_pg_uri.replace("sslmode=", "ssl=")
+# Convert PostgreSQL URI to async format using common utility
+async_pg_uri = get_database_uri_for_context(settings.letta_pg_uri, "async")
 
 # Build engine configuration based on settings
 engine_args = {
