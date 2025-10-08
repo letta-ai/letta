@@ -1074,6 +1074,243 @@ async def test_get_run_request_config_nonexistent_run(server: SyncServer, defaul
         await server.run_manager.get_run_request_config("nonexistent_run", actor=default_user)
 
 
+# ======================================================================================================================
+# RunManager Tests - Run Metrics
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_creation(server: SyncServer, sarah_agent, default_user):
+    """Test that run metrics are created when a run is created."""
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_metrics"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Get the run metrics
+    metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Assertions
+    assert metrics is not None
+    assert metrics.id == created_run.id
+    assert metrics.agent_id == sarah_agent.id
+    assert metrics.organization_id == default_user.organization_id
+    # project_id may be None or set from the agent
+    assert metrics.run_start_ns is not None
+    assert metrics.run_start_ns > 0
+    assert metrics.run_ns is None  # Should be None until run completes
+    assert metrics.num_steps is not None
+    assert metrics.num_steps == 0  # Should be 0 initially
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_timestamp_tracking(server: SyncServer, sarah_agent, default_user):
+    """Test that run_start_ns is properly tracked."""
+    import time
+
+    # Record time before creation
+    before_ns = int(time.time() * 1e9)
+
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_timestamp"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Record time after creation
+    after_ns = int(time.time() * 1e9)
+
+    # Get the run metrics
+    metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Verify timestamp is within expected range
+    assert metrics.run_start_ns is not None
+    assert before_ns <= metrics.run_start_ns <= after_ns, f"Expected {before_ns} <= {metrics.run_start_ns} <= {after_ns}"
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_duration_calculation(server: SyncServer, sarah_agent, default_user):
+    """Test that run duration (run_ns) is calculated when run completes."""
+    import asyncio
+
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_duration"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Get initial metrics
+    initial_metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+    assert initial_metrics.run_ns is None  # Should be None initially
+    assert initial_metrics.run_start_ns is not None
+
+    # Wait a bit to ensure there's measurable duration
+    await asyncio.sleep(0.1)  # Wait 100ms
+
+    # Update the run to completed
+    updated_run = await server.run_manager.update_run_by_id_async(
+        created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Get updated metrics
+    final_metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Assertions
+    assert final_metrics.run_ns is not None
+    assert final_metrics.run_ns > 0
+    # Duration should be at least 100ms (100_000_000 nanoseconds)
+    assert final_metrics.run_ns >= 100_000_000, f"Expected run_ns >= 100_000_000, got {final_metrics.run_ns}"
+    # Duration should be reasonable (less than 10 seconds)
+    assert final_metrics.run_ns < 10_000_000_000, f"Expected run_ns < 10_000_000_000, got {final_metrics.run_ns}"
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_num_steps_tracking(server: SyncServer, sarah_agent, default_user):
+    """Test that num_steps is properly tracked in run metrics."""
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_num_steps"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Initial metrics should have 0 steps
+    initial_metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+    assert initial_metrics.num_steps == 0
+
+    # Add some steps
+    for i in range(3):
+        await server.step_manager.log_step_async(
+            agent_id=sarah_agent.id,
+            provider_name="openai",
+            provider_category="base",
+            model="gpt-4o-mini",
+            model_endpoint="https://api.openai.com/v1",
+            context_window_limit=8192,
+            usage=UsageStatistics(
+                completion_tokens=100 + i * 10,
+                prompt_tokens=50 + i * 5,
+                total_tokens=150 + i * 15,
+            ),
+            run_id=created_run.id,
+            actor=default_user,
+            project_id=sarah_agent.project_id,
+        )
+
+    # Update the run to trigger metrics update
+    await server.run_manager.update_run_by_id_async(
+        created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Get updated metrics
+    final_metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Verify num_steps was updated
+    assert final_metrics.num_steps == 3
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_not_found(server: SyncServer, default_user):
+    """Test getting metrics for non-existent run."""
+    with pytest.raises(NoResultFound):
+        await server.run_manager.get_run_metrics_async(run_id="nonexistent_run", actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_partial_update(server: SyncServer, sarah_agent, default_user):
+    """Test that non-terminal updates don't calculate run_ns."""
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_partial"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Add a step
+    await server.step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        usage=UsageStatistics(
+            completion_tokens=100,
+            prompt_tokens=50,
+            total_tokens=150,
+        ),
+        run_id=created_run.id,
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+    )
+
+    # Update to running (non-terminal)
+    await server.run_manager.update_run_by_id_async(created_run.id, RunUpdate(status=RunStatus.running), actor=default_user)
+
+    # Get metrics
+    metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Verify run_ns is still None (not calculated for non-terminal updates)
+    assert metrics.run_ns is None
+    # But num_steps should be updated
+    assert metrics.num_steps == 1
+
+
+@pytest.mark.asyncio
+async def test_run_metrics_integration_with_run_steps(server: SyncServer, sarah_agent, default_user):
+    """Test integration between run metrics and run steps."""
+    # Create a run
+    run_data = PydanticRun(
+        metadata={"type": "test_integration"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Add multiple steps
+    step_ids = []
+    for i in range(5):
+        step = await server.step_manager.log_step_async(
+            agent_id=sarah_agent.id,
+            provider_name="openai",
+            provider_category="base",
+            model="gpt-4o-mini",
+            model_endpoint="https://api.openai.com/v1",
+            context_window_limit=8192,
+            usage=UsageStatistics(
+                completion_tokens=100,
+                prompt_tokens=50,
+                total_tokens=150,
+            ),
+            run_id=created_run.id,
+            actor=default_user,
+            project_id=sarah_agent.project_id,
+        )
+        step_ids.append(step.id)
+
+    # Get run steps
+    run_steps = await server.run_manager.get_run_steps(run_id=created_run.id, actor=default_user)
+
+    # Verify steps are returned correctly
+    assert len(run_steps) == 5
+    assert all(step.run_id == created_run.id for step in run_steps)
+
+    # Update run to completed
+    await server.run_manager.update_run_by_id_async(
+        created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Get final metrics
+    metrics = await server.run_manager.get_run_metrics_async(run_id=created_run.id, actor=default_user)
+
+    # Verify metrics reflect the steps
+    assert metrics.num_steps == 5
+    assert metrics.run_ns is not None
+
+
 # TODO: add back once metrics are added
 
 # @pytest.mark.asyncio

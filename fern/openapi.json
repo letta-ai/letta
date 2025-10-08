@@ -10698,6 +10698,47 @@
         }
       }
     },
+    "/v1/runs/{run_id}/metrics": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Retrieve Metrics For Run",
+        "description": "Get run metrics by run ID.",
+        "operationId": "retrieve_metrics_for_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunMetrics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/runs/{run_id}/steps": {
       "get": {
         "tags": ["runs"],
@@ -31575,6 +31616,103 @@
         "required": ["agent_id"],
         "title": "Run",
         "description": "Representation of a run - a conversation or processing session for an agent.\nRuns track when agents process messages and maintain the relationship between agents, steps, and messages.\n\nParameters:\n    id (str): The unique identifier of the run (prefixed with 'run-').\n    status (JobStatus): The current status of the run.\n    created_at (datetime): The timestamp when the run was created.\n    completed_at (datetime): The timestamp when the run was completed.\n    agent_id (str): The unique identifier of the agent associated with the run.\n    stop_reason (StopReasonType): The reason why the run was stopped.\n    background (bool): Whether the run was created in background mode.\n    metadata (dict): Additional metadata for the run.\n    request_config (LettaRequestConfig): The request configuration for the run."
+      },
+      "RunMetrics": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the run this metric belongs to (matches runs.id)."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project that the run belongs to (cloud only)."
+          },
+          "run_start_ns": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Start Ns",
+            "description": "The timestamp of the start of the run in nanoseconds."
+          },
+          "run_ns": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Ns",
+            "description": "Total time for the run in nanoseconds."
+          },
+          "num_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Steps",
+            "description": "The number of steps in the run."
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The template ID that the run belongs to (cloud only)."
+          },
+          "base_template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Template Id",
+            "description": "The base template ID that the run belongs to (cloud only)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "RunMetrics"
       },
       "RunStatus": {
         "type": "string",
