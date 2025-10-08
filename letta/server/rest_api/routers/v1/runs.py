@@ -212,6 +212,23 @@ async def retrieve_metrics_for_run(
     return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
 
 
+@router.get("/{run_id}/metrics", response_model=RunMetrics, operation_id="retrieve_metrics_for_run")
+async def retrieve_metrics_for_run(
+    run_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    """
+    Get run metrics by run ID.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        runs_manager = RunManager()
+        return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Run metrics not found")
+
+
 @router.get(
     "/{run_id}/steps",
     response_model=List[Step],

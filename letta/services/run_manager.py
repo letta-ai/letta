@@ -74,6 +74,10 @@ class RunManager:
             # Create run metrics with start timestamp
             import time
 
+            # Get the project_id from the agent
+            agent = await session.get(AgentModel, agent_id)
+            project_id = agent.project_id if agent else None
+
             metrics = RunMetricsModel(
                 id=run.id,
                 organization_id=organization_id,
@@ -343,54 +347,17 @@ class RunManager:
 
             await session.commit()
 
-        # Update agent's last_stop_reason when run completes
-        # Do this after run update is committed to database
-        if is_terminal_update and update.stop_reason:
-            try:
-                from letta.schemas.agent import UpdateAgent
-
-                await self.agent_manager.update_agent_async(
-                    agent_id=pydantic_run.agent_id,
-                    agent_update=UpdateAgent(last_stop_reason=update.stop_reason),
-                    actor=actor,
-                )
-            except Exception as e:
-                logger.error(f"Failed to update agent's last_stop_reason for run {run_id}: {e}")
-
         # update run metrics table
         num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
-
-        # Collect tools used from run messages
-        tools_used = set()
-        messages = await self.message_manager.list_messages(actor=actor, run_id=run_id)
-        for message in messages:
-            if message.tool_calls:
-                for tool_call in message.tool_calls:
-                    if hasattr(tool_call, "function") and hasattr(tool_call.function, "name"):
-                        # Get tool ID from tool name
-                        from letta.services.tool_manager import ToolManager
-
-                        tool_manager = ToolManager()
-                        tool_name = tool_call.function.name
-                        tool_id = await tool_manager.get_tool_id_by_name_async(tool_name, actor)
-                        if tool_id:
-                            tools_used.add(tool_id)
-
         async with db_registry.async_session() as session:
             metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
             # Calculate runtime if run is completing
-            if is_terminal_update:
-                # Use total_duration_ns from RunUpdate if provided
-                # Otherwise fall back to system time
-                if update.total_duration_ns is not None:
-                    metrics.run_ns = update.total_duration_ns
-                elif metrics.run_start_ns:
-                    import time
+            if is_terminal_update and metrics.run_start_ns:
+                import time
 
-                    current_ns = int(time.time() * 1e9)
-                    metrics.run_ns = current_ns - metrics.run_start_ns
+                current_ns = int(time.time() * 1e9)
+                metrics.run_ns = current_ns - metrics.run_start_ns
             metrics.num_steps = num_steps
-            metrics.tools_used = list(tools_used) if tools_used else None
             await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             await session.commit()
 
@@ -518,7 +485,6 @@ class RunManager:
             return pydantic_run.request_config
 
     @enforce_types
-    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_metrics_async(self, run_id: str, actor: PydanticUser) -> PydanticRunMetrics:
         """Get metrics for a run."""
         async with db_registry.async_session() as session:
@@ -526,7 +492,6 @@ class RunManager:
             return metrics.to_pydantic()
 
     @enforce_types
-    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_steps(
         self,
         run_id: str,

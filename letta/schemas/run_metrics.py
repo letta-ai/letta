@@ -1,13 +1,12 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 
-from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
 class RunMetricsBase(LettaBase):
-    __id_prefix__ = PrimitiveType.RUN.value
+    __id_prefix__ = "run"
 
 
 class RunMetrics(RunMetricsBase):
@@ -18,6 +17,5 @@ class RunMetrics(RunMetricsBase):
     run_start_ns: Optional[int] = Field(None, description="The timestamp of the start of the run in nanoseconds.")
     run_ns: Optional[int] = Field(None, description="Total time for the run in nanoseconds.")
     num_steps: Optional[int] = Field(None, description="The number of steps in the run.")
-    tools_used: Optional[List[str]] = Field(None, description="List of tool IDs that were used in this run.")
     template_id: Optional[str] = Field(None, description="The template ID that the run belongs to (cloud only).")
     base_template_id: Optional[str] = Field(None, description="The base template ID that the run belongs to (cloud only).")

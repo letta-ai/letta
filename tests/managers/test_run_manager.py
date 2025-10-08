@@ -1509,7 +1509,7 @@ async def test_run_metrics_num_steps_tracking(server: SyncServer, sarah_agent, d
 @pytest.mark.asyncio
 async def test_run_metrics_not_found(server: SyncServer, default_user):
     """Test getting metrics for non-existent run."""
-    with pytest.raises(LettaInvalidArgumentError):
+    with pytest.raises(NoResultFound):
         await server.run_manager.get_run_metrics_async(run_id="nonexistent_run", actor=default_user)
 
 
