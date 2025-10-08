@@ -528,7 +528,7 @@ class Message(BaseMessage):
                         id=self.id,
                         date=self.created_at,
                         tool_call=tool_call_obj,
-                        tool_calls=tool_call_obj,
+                        tool_calls=[tool_call_obj],
                         name=self.name,
                         otid=otid,
                         sender_id=self.sender_id,
