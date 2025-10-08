@@ -1361,6 +1361,7 @@ class Message(BaseMessage):
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
     ) -> List[dict]:
+        messages = [m for m in messages if m is not None]
         result = [
             m.to_anthropic_dict(
                 current_model=current_model,
