@@ -325,6 +325,7 @@ class AnthropicClient(LLMClientBase):
         data["system"] = self._add_cache_control_to_system_message(system_content)
         data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
             messages=messages[1:],
+            current_model=llm_config.model,
             inner_thoughts_xml_tag=inner_thoughts_xml_tag,
             put_inner_thoughts_in_kwargs=put_kwargs,
             # if react, use native content + strip heartbeats
