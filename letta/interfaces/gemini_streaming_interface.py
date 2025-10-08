@@ -273,15 +273,17 @@ class SimpleGeminiStreamingInterface:
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
+                    tool_call_delta = ToolCallDelta(
+                        name=name,
+                        arguments=arguments_str,
+                        tool_call_id=call_id,
+                    )
                     yield ToolCallMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         date=datetime.now(timezone.utc),
-                        tool_call=ToolCallDelta(
-                            name=name,
-                            arguments=arguments_str,
-                            tool_call_id=call_id,
-                        ),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )

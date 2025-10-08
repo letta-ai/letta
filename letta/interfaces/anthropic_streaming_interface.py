@@ -279,9 +279,11 @@ class AnthropicStreamingInterface:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
                     if self.tool_call_name not in self.requires_approval_tools:
+                        tool_call_delta = ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id)
                         tool_call_msg = ToolCallMessage(
                             id=self.letta_message_id,
-                            tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             date=datetime.now(timezone.utc).isoformat(),
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             run_id=self.run_id,
@@ -423,15 +425,17 @@ class AnthropicStreamingInterface:
                             tool_call_args += buffered_msg.tool_call.arguments if buffered_msg.tool_call.arguments else ""
                         tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
 
+                        tool_call_delta = ToolCallDelta(
+                            name=self.tool_call_name,
+                            tool_call_id=self.tool_call_id,
+                            arguments=tool_call_args,
+                        )
                         tool_call_msg = ToolCallMessage(
                             id=self.tool_call_buffer[0].id,
                             otid=Message.generate_otid_from_id(self.tool_call_buffer[0].id, message_index),
                             date=self.tool_call_buffer[0].date,
-                            tool_call=ToolCallDelta(
-                                name=self.tool_call_name,
-                                tool_call_id=self.tool_call_id,
-                                arguments=tool_call_args,
-                            ),
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             run_id=self.run_id,
                         )
                         prev_message_type = tool_call_msg.message_type
@@ -467,9 +471,13 @@ class AnthropicStreamingInterface:
                             run_id=self.run_id,
                         )
                     else:
+                        tool_call_delta = ToolCallDelta(
+                            name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json
+                        )
                         tool_call_msg = ToolCallMessage(
                             id=self.letta_message_id,
-                            tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             date=datetime.now(timezone.utc).isoformat(),
                             run_id=self.run_id,
                         )
@@ -778,9 +786,11 @@ class SimpleAnthropicStreamingInterface:
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
+                    tool_call_delta = ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id)
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
-                        tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
@@ -860,9 +870,11 @@ class SimpleAnthropicStreamingInterface:
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
+                    tool_call_delta = ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json)
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
-                        tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,

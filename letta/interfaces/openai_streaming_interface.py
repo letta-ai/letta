@@ -336,14 +336,16 @@ class OpenAIStreamingInterface:
                                         step_id=self.step_id,
                                     )
                                 else:
+                                    tool_call_delta = ToolCallDelta(
+                                        name=self.function_name_buffer,
+                                        arguments=None,
+                                        tool_call_id=self.function_id_buffer,
+                                    )
                                     tool_call_msg = ToolCallMessage(
                                         id=self.letta_message_id,
                                         date=datetime.now(timezone.utc),
-                                        tool_call=ToolCallDelta(
-                                            name=self.function_name_buffer,
-                                            arguments=None,
-                                            tool_call_id=self.function_id_buffer,
-                                        ),
+                                        tool_call=tool_call_delta,
+                                        tool_calls=tool_call_delta,
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                         run_id=self.run_id,
                                         step_id=self.step_id,
@@ -423,14 +425,16 @@ class OpenAIStreamingInterface:
                                             step_id=self.step_id,
                                         )
                                     else:
+                                        tool_call_delta = ToolCallDelta(
+                                            name=self.function_name_buffer,
+                                            arguments=combined_chunk,
+                                            tool_call_id=self.function_id_buffer,
+                                        )
                                         tool_call_msg = ToolCallMessage(
                                             id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
-                                            tool_call=ToolCallDelta(
-                                                name=self.function_name_buffer,
-                                                arguments=combined_chunk,
-                                                tool_call_id=self.function_id_buffer,
-                                            ),
+                                            tool_call=tool_call_delta,
+                                            tool_calls=tool_call_delta,
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
@@ -460,14 +464,16 @@ class OpenAIStreamingInterface:
                                             step_id=self.step_id,
                                         )
                                     else:
+                                        tool_call_delta = ToolCallDelta(
+                                            name=None,
+                                            arguments=updates_main_json,
+                                            tool_call_id=self.function_id_buffer,
+                                        )
                                         tool_call_msg = ToolCallMessage(
                                             id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
-                                            tool_call=ToolCallDelta(
-                                                name=None,
-                                                arguments=updates_main_json,
-                                                tool_call_id=self.function_id_buffer,
-                                            ),
+                                            tool_call=tool_call_delta,
+                                            tool_calls=tool_call_delta,
                                             # name=name,
                                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                             run_id=self.run_id,
@@ -717,14 +723,16 @@ class SimpleOpenAIStreamingInterface:
                         step_id=self.step_id,
                     )
                 else:
+                    tool_call_delta = ToolCallDelta(
+                        name=tool_call.function.name,
+                        arguments=tool_call.function.arguments,
+                        tool_call_id=tool_call.id,
+                    )
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
                         date=datetime.now(timezone.utc),
-                        tool_call=ToolCallDelta(
-                            name=tool_call.function.name,
-                            arguments=tool_call.function.arguments,
-                            tool_call_id=tool_call.id,
-                        ),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         # name=name,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
@@ -945,15 +953,17 @@ class SimpleOpenAIResponsesStreamingInterface:
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
+                    tool_call_delta = ToolCallDelta(
+                        name=name,
+                        arguments=arguments if arguments != "" else None,
+                        tool_call_id=call_id,
+                    )
                     yield ToolCallMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         date=datetime.now(timezone.utc),
-                        tool_call=ToolCallDelta(
-                            name=name,
-                            arguments=arguments if arguments != "" else None,
-                            tool_call_id=call_id,
-                        ),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
@@ -1113,15 +1123,17 @@ class SimpleOpenAIResponsesStreamingInterface:
             else:
                 if prev_message_type and prev_message_type != "tool_call_message":
                     message_index += 1
+                tool_call_delta = ToolCallDelta(
+                    name=None,
+                    arguments=delta,
+                    tool_call_id=None,
+                )
                 yield ToolCallMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     date=datetime.now(timezone.utc),
-                    tool_call=ToolCallDelta(
-                        name=None,
-                        arguments=delta,
-                        tool_call_id=None,
-                    ),
+                    tool_call=tool_call_delta,
+                    tool_calls=tool_call_delta,
                     run_id=self.run_id,
                     step_id=self.step_id,
                 )

@@ -518,15 +518,17 @@ class Message(BaseMessage):
                     )
                 )
             else:
+                tool_call_obj = ToolCall(
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments,
+                    tool_call_id=tool_call.id,
+                )
                 messages.append(
                     ToolCallMessage(
                         id=self.id,
                         date=self.created_at,
-                        tool_call=ToolCall(
-                            name=tool_call.function.name,
-                            arguments=tool_call.function.arguments,
-                            tool_call_id=tool_call.id,
-                        ),
+                        tool_call=tool_call_obj,
+                        tool_calls=tool_call_obj,
                         name=self.name,
                         otid=otid,
                         sender_id=self.sender_id,
