@@ -311,6 +311,7 @@ class GoogleVertexClient(LLMClientBase):
         contents = self.add_dummy_model_messages(
             PydanticMessage.to_google_dicts_from_list(
                 messages,
+                current_model=llm_config.model,
                 put_inner_thoughts_in_kwargs=False if agent_type == AgentType.letta_v1_agent else True,
                 native_content=True if agent_type == AgentType.letta_v1_agent else False,
             ),
