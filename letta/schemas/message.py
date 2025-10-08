@@ -965,7 +965,13 @@ class Message(BaseMessage):
             }
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or text_content is not None, vars(self)
+            try:
+                assert self.tool_calls is not None or text_content is not None, vars(self)
+            except AssertionError as e:
+                # relax check if this message only contains reasoning content
+                if self.content is not None and len(self.content) > 0 and isinstance(self.content[0], ReasoningContent):
+                    return None
+                raise e
 
             # if native content, then put it directly inside the content
             if native_content:
