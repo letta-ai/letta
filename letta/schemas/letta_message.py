@@ -190,7 +190,8 @@ class ToolCallMessage(LettaMessage):
     message_type: Literal[MessageType.tool_call_message] = Field(
         default=MessageType.tool_call_message, description="The type of the message."
     )
-    tool_call: Union[ToolCall, ToolCallDelta]
+    tool_call: Union[ToolCall, ToolCallDelta] = Field(..., deprecated=True)
+    tool_calls: Optional[Union[List[ToolCall], ToolCallDelta]] = None
 
     def model_dump(self, *args, **kwargs):
         """
@@ -198,8 +199,14 @@ class ToolCallMessage(LettaMessage):
         """
         kwargs["exclude_none"] = True
         data = super().model_dump(*args, **kwargs)
-        if isinstance(data["tool_call"], dict):
+        if isinstance(data.get("tool_call"), dict):
             data["tool_call"] = {k: v for k, v in data["tool_call"].items() if v is not None}
+        if isinstance(data.get("tool_calls"), dict):
+            data["tool_calls"] = {k: v for k, v in data["tool_calls"].items() if v is not None}
+        elif isinstance(data.get("tool_calls"), list):
+            data["tool_calls"] = [
+                {k: v for k, v in item.items() if v is not None} if isinstance(item, dict) else item for item in data["tool_calls"]
+            ]
         return data
 
     class Config:

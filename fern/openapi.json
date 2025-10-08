@@ -33842,7 +33842,25 @@
                 "$ref": "#/components/schemas/ToolCallDelta"
               }
             ],
-            "title": "Tool Call"
+            "title": "Tool Call",
+            "deprecated": true
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "$ref": "#/components/schemas/ToolCallDelta"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
           }
         },
         "type": "object",
