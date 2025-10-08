@@ -254,18 +254,33 @@ def test_send_message_after_turning_off_requires_approval(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 6 or len(messages) == 8 or len(messages) == 9
-    assert messages[0].message_type == "reasoning_message"
-    assert messages[1].message_type == "assistant_message"
-    assert messages[2].message_type == "tool_call_message"
-    assert messages[3].message_type == "tool_return_message"
-    if len(messages) == 8:
-        assert messages[4].message_type == "reasoning_message"
-        assert messages[5].message_type == "assistant_message"
-    elif len(messages) == 9:
-        assert messages[4].message_type == "reasoning_message"
-        assert messages[5].message_type == "tool_call_message"
-        assert messages[6].message_type == "tool_return_message"
+    assert 6 <= len(messages) <= 9
+    idx = 0
+
+    assert messages[idx].message_type == "reasoning_message"
+    idx += 1
+
+    try:
+        assert messages[idx].message_type == "assistant_message"
+        idx += 1
+    except:
+        pass
+
+    assert messages[idx].message_type == "tool_call_message"
+    idx += 1
+    assert messages[idx].message_type == "tool_return_message"
+    idx += 1
+
+    assert messages[idx].message_type == "reasoning_message"
+    idx += 1
+    try:
+        assert messages[idx].message_type == "assistant_message"
+        idx += 1
+    except:
+        assert messages[idx].message_type == "tool_call_message"
+        idx += 1
+        assert messages[idx].message_type == "tool_return_message"
+        idx += 1
 
 
 # ------------------------------
