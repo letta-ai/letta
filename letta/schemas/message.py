@@ -1256,27 +1256,8 @@ class Message(BaseMessage):
         tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
-        result: List[dict] = []
-
-        for m in messages:
-            # Special case: OpenAI Chat Completions requires a separate tool message per tool_call_id
-            # If we have multiple explicit tool_returns on a single Message, expand into one dict per return
-            if m.role == MessageRole.tool and m.tool_returns and len(m.tool_returns) > 0:
-                for tr in m.tool_returns:
-                    if not tr.tool_call_id:
-                        raise TypeError("ToolReturn came back without a tool_call_id.")
-                    # Ensure explicit tool_returns are truncated for Chat Completions
-                    func_response = truncate_tool_return(tr.func_response, tool_return_truncation_chars)
-                    result.append(
-                        {
-                            "content": func_response,
-                            "role": "tool",
-                            "tool_call_id": tr.tool_call_id[:max_tool_id_length] if max_tool_id_length else tr.tool_call_id,
-                        }
-                    )
-                continue
-
-            d = m.to_openai_dict(
+        result = [
+            m.to_openai_dict(
                 max_tool_id_length=max_tool_id_length,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
@@ -1656,7 +1637,7 @@ class Message(BaseMessage):
         strip_request_heartbeat: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
-        messages = [m for m in messages if m is not None]
+        messages = Message.filter_messages_for_llm_api(messages)
         result = [
             m.to_anthropic_dict(
                 current_model=current_model,
@@ -1970,161 +1951,7 @@ class Message(BaseMessage):
         # Filter last message if it is a lone approval request without a response - this only occurs for token counting
         if messages[-1].role == "approval" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
             messages.remove(messages[-1])
-            # Also filter pending tool call message if this turn invoked parallel tool calling
-            if messages and messages[-1].role == "assistant" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
-                messages.remove(messages[-1])
 
-        # Filter last message if it is a lone reasoning message without assistant message or tool call
-        if (
-            messages[-1].role == "assistant"
-            and messages[-1].tool_calls is None
-            and (not messages[-1].content or all(not isinstance(content_part, TextContent) for content_part in messages[-1].content))
-        ):
-            messages.remove(messages[-1])
-
-        # Collapse adjacent tool call and approval messages
-        messages = Message.collapse_tool_call_messages_for_llm_api(messages)
-
-        # Dedupe duplicate tool-return payloads across tool messages so downstream providers
-        # never see the same tool_call_id's result twice in a single request
-        messages = Message.dedupe_tool_messages_for_llm_api(messages)
-
-        # Dedupe duplicate tool calls within assistant messages so a single assistant message
-        # cannot emit multiple tool_use blocks with the same id (Anthropic requirement)
-        messages = Message.dedupe_tool_calls_for_llm_api(messages)
-
-        return messages
-
-    @staticmethod
-    def collapse_tool_call_messages_for_llm_api(
-        messages: List[Message],
-    ) -> List[Message]:
-        adjacent_tool_call_approval_messages = []
-        for i in range(len(messages) - 1):
-            if (
-                messages[i].role == MessageRole.assistant
-                and messages[i].tool_calls is not None
-                and messages[i + 1].role == MessageRole.approval
-                and messages[i + 1].tool_calls is not None
-            ):
-                adjacent_tool_call_approval_messages.append(i)
-        for i in reversed(adjacent_tool_call_approval_messages):
-            messages[i].content = messages[i].content + messages[i + 1].content
-            messages[i].tool_calls = messages[i].tool_calls + messages[i + 1].tool_calls
-            messages.remove(messages[i + 1])
-        return messages
-
-    @staticmethod
-    def dedupe_tool_messages_for_llm_api(messages: List[Message]) -> List[Message]:
-        """Dedupe duplicate tool returns across tool-role messages by tool_call_id.
-
-        - For explicit tool_returns arrays: keep the first occurrence of each tool_call_id,
-          drop subsequent duplicates within the request.
-        - For legacy single tool_call_id + content messages: keep the first, drop duplicates.
-        - If a tool message has neither unique tool_returns nor content, drop it.
-
-        This runs prior to provider-specific formatting to reduce duplicate tool_result blocks downstream.
-        """
-        if not messages:
-            return messages
-
-        from letta.log import get_logger
-
-        logger = get_logger(__name__)
-
-        seen_ids: set[str] = set()
-        removed_tool_msgs = 0
-        removed_tool_returns = 0
-        result: List[Message] = []
-
-        for m in messages:
-            if m.role != MessageRole.tool:
-                result.append(m)
-                continue
-
-            # Prefer explicit tool_returns when present
-            if m.tool_returns and len(m.tool_returns) > 0:
-                unique_returns = []
-                for tr in m.tool_returns:
-                    tcid = getattr(tr, "tool_call_id", None)
-                    if tcid and tcid in seen_ids:
-                        removed_tool_returns += 1
-                        continue
-                    if tcid:
-                        seen_ids.add(tcid)
-                    unique_returns.append(tr)
-
-                if unique_returns:
-                    # Replace with unique set; keep message
-                    m.tool_returns = unique_returns
-                    result.append(m)
-                else:
-                    # No unique returns left; if legacy content exists, fall back to legacy handling below
-                    if m.tool_call_id and m.content and len(m.content) > 0:
-                        tcid = m.tool_call_id
-                        if tcid in seen_ids:
-                            removed_tool_msgs += 1
-                            continue
-                        seen_ids.add(tcid)
-                        result.append(m)
-                    else:
-                        removed_tool_msgs += 1
-                        continue
-
-            else:
-                # Legacy single-response path
-                tcid = getattr(m, "tool_call_id", None)
-                if tcid:
-                    if tcid in seen_ids:
-                        removed_tool_msgs += 1
-                        continue
-                    seen_ids.add(tcid)
-                result.append(m)
-
-        if removed_tool_msgs or removed_tool_returns:
-            logger.error(
-                "[Message] Deduped duplicate tool messages for request: removed_messages=%d, removed_returns=%d",
-                removed_tool_msgs,
-                removed_tool_returns,
-            )
-
-        return result
-
-    @staticmethod
-    def dedupe_tool_calls_for_llm_api(messages: List[Message]) -> List[Message]:
-        """Ensure each assistant message contains unique tool_calls by id.
-
-        Anthropic requires tool_use ids to be unique within a single assistant message. When
-        collapsing adjacent assistant/approval messages, duplicates can sneak in. This pass keeps
-        the first occurrence per id and drops subsequent duplicates.
-        """
-        if not messages:
-            return messages
-
-        from letta.log import get_logger
-
-        logger = get_logger(__name__)
-
-        removed_counts_total = 0
-        for m in messages:
-            if m.role != MessageRole.assistant or not m.tool_calls:
-                continue
-            seen: set[str] = set()
-            unique_tool_calls = []
-            removed = 0
-            for tc in m.tool_calls:
-                tcid = getattr(tc, "id", None)
-                if tcid and tcid in seen:
-                    removed += 1
-                    continue
-                if tcid:
-                    seen.add(tcid)
-                unique_tool_calls.append(tc)
-            if removed:
-                m.tool_calls = unique_tool_calls
-                removed_counts_total += removed
-        if removed_counts_total:
-            logger.error("[Message] Deduped duplicate tool_calls in assistant messages: removed=%d", removed_counts_total)
         return messages
 
     @staticmethod
