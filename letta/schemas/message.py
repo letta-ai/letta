@@ -1040,6 +1040,7 @@ class Message(BaseMessage):
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
     ) -> List[dict]:
+        messages = Message.filter_messages_for_llm_api(messages)
         result = [
             m.to_openai_dict(
                 max_tool_id_length=max_tool_id_length,
@@ -1149,6 +1150,7 @@ class Message(BaseMessage):
         messages: List[Message],
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
     ) -> List[dict]:
+        messages = Message.filter_messages_for_llm_api(messages)
         result = []
         for message in messages:
             result.extend(message.to_openai_responses_dicts(max_tool_id_length=max_tool_id_length))
@@ -1361,7 +1363,7 @@ class Message(BaseMessage):
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
     ) -> List[dict]:
-        messages = [m for m in messages if m is not None]
+        messages = Message.filter_messages_for_llm_api(messages)
         result = [
             m.to_anthropic_dict(
                 current_model=current_model,
@@ -1568,6 +1570,7 @@ class Message(BaseMessage):
         put_inner_thoughts_in_kwargs: bool = True,
         native_content: bool = False,
     ):
+        messages = Message.filter_messages_for_llm_api(messages)
         result = [
             m.to_google_dict(
                 current_model=current_model,
@@ -1578,6 +1581,45 @@ class Message(BaseMessage):
         ]
         result = [m for m in result if m is not None]
         return result
+
+    def is_approval_request(self) -> bool:
+        return self.role == "approval" and self.tool_calls is not None and len(self.tool_calls) > 0
+
+    def is_approval_response(self) -> bool:
+        return self.role == "approval" and self.tool_calls is None and self.approve is not None
+
+    def is_summarization_message(self) -> bool:
+        return (
+            self.role == "user"
+            and self.content is not None
+            and len(self.content) == 1
+            and isinstance(self.content[0], TextContent)
+            and "system_alert" in self.content[0].text
+        )
+
+    @staticmethod
+    def filter_messages_for_llm_api(
+        messages: List[Message],
+    ) -> List[Message]:
+        messages = [m for m in messages if m is not None]
+        if len(messages) == 0:
+            return []
+        # Add special handling for legacy bug where summarization triggers in the middle of hitl
+        messages_to_filter = []
+        for i in range(len(messages) - 1):
+            first_message_is_approval = messages[i].is_approval_request()
+            second_message_is_summary = messages[i + 1].is_summarization_message()
+            third_message_is_optional_approval = i + 2 >= len(messages) or messages[i + 2].is_approval_response()
+            if first_message_is_approval and second_message_is_summary and third_message_is_optional_approval:
+                messages_to_filter.append(messages[i])
+        for idx in reversed(messages_to_filter):  # reverse to avoid index shift
+            messages.remove(idx)
+
+        # Filter last message if it is a lone approval request without a response - this only occurs for token counting
+        if messages[-1].role == "approval" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
+            messages.remove(messages[-1])
+
+        return messages
 
     @staticmethod
     def generate_otid_from_id(message_id: str, index: int) -> str:
