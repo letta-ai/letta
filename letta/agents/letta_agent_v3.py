@@ -788,15 +788,225 @@ class LettaAgentV3(LettaAgentV2):
 
         Unified approach: treats single and multi-tool calls uniformly to reduce code duplication.
         """
-        # 1. Handle no-tool cases (content-only or no-op)
-        if not tool_calls and not tool_call_denials and not tool_returns:
-            # Case 1a: No tool call, no content (LLM no-op)
-            if content is None or len(content) == 0:
-                # Check if there are required-before-exit tools that haven't been called
-                uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
-                if uncalled:
-                    heartbeat_reason = (
-                        f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
+        if tool_call is None:
+            # NOTE: in v3 loop, no tool call is OK
+            tool_call_id = None
+        else:
+            tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+
+        if is_denial:
+            continue_stepping = True
+            stop_reason = None
+            tool_call_messages = create_letta_messages_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=tool_call.function.name,
+                function_arguments={},
+                tool_execution_result=ToolExecutionResult(status="error"),
+                tool_call_id=tool_call_id,
+                function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
+                timezone=agent_state.timezone,
+                continue_stepping=continue_stepping,
+                # NOTE: we may need to change this to not have a "heartbeat" prefix for v3?
+                heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
+                reasoning_content=None,
+                pre_computed_assistant_message_id=None,
+                step_id=step_id,
+                run_id=run_id,
+                is_approval_response=True,
+                force_set_request_heartbeat=False,
+                add_heartbeat_on_continue=False,
+            )
+            messages_to_persist = (initial_messages or []) + tool_call_messages
+
+            # Set run_id on all messages before persisting
+            for message in messages_to_persist:
+                if message.run_id is None:
+                    message.run_id = run_id
+
+            persisted_messages = await self.message_manager.create_many_messages_async(
+                messages_to_persist,
+                actor=self.actor,
+                run_id=run_id,
+                project_id=agent_state.project_id,
+                template_id=agent_state.template_id,
+            )
+            return persisted_messages, continue_stepping, stop_reason
+
+        # -1. no tool call, no content
+        if tool_call is None and (content is None or len(content) == 0):
+            # Edge case is when there's also no content - basically, the LLM "no-op'd"
+            # If RequiredBeforeExitToolRule exists and not all required tools have been called,
+            # inject a rule-violation heartbeat to keep looping and inform the model.
+            uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
+            if uncalled:
+                # TODO: we may need to change this to not have a "heartbeat" prefix for v3?
+                heartbeat_reason = (
+                    f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
+                )
+                from letta.server.rest_api.utils import create_heartbeat_system_message
+
+                heartbeat_msg = create_heartbeat_system_message(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_call_success=True,
+                    timezone=agent_state.timezone,
+                    heartbeat_reason=heartbeat_reason,
+                    run_id=run_id,
+                )
+                messages_to_persist = (initial_messages or []) + [heartbeat_msg]
+                continue_stepping, stop_reason = True, None
+            else:
+                # In this case, we actually do not want to persist the no-op message
+                continue_stepping, heartbeat_reason, stop_reason = False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                messages_to_persist = initial_messages or []
+
+        # 0. If there's no tool call, we can early exit
+        elif tool_call is None:
+            # TODO could just hardcode the line here instead of calling the function...
+            continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
+                agent_state=agent_state,
+                tool_call_name=None,
+                tool_rule_violated=False,
+                tool_rules_solver=tool_rules_solver,
+                is_final_step=is_final_step,
+            )
+            assistant_message = create_letta_messages_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=None,
+                function_arguments=None,
+                tool_execution_result=None,
+                tool_call_id=None,
+                function_response=None,
+                timezone=agent_state.timezone,
+                continue_stepping=continue_stepping,
+                heartbeat_reason=heartbeat_reason,
+                # NOTE: should probably rename this to `content`?
+                reasoning_content=content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+                run_id=run_id,
+                is_approval_response=is_approval or is_denial,
+                force_set_request_heartbeat=False,
+                # If we're continuing due to a required-before-exit rule, include a heartbeat to guide the model
+                add_heartbeat_on_continue=bool(heartbeat_reason),
+            )
+            messages_to_persist = (initial_messages or []) + assistant_message
+
+        else:
+            # 1.  Parse and validate the tool-call envelope
+            tool_call_name: str = tool_call.function.name
+
+            tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
+            # NOTE: these are failsafes - for v3, we should eventually be able to remove these
+            # request_heartbeat: bool = _pop_heartbeat(tool_args)
+            tool_args.pop(REQUEST_HEARTBEAT_PARAM, None)
+            tool_args.pop(INNER_THOUGHTS_KWARG, None)
+
+            log_telemetry(
+                self.logger,
+                "_handle_ai_response execute tool start",
+                tool_name=tool_call_name,
+                tool_args=tool_args,
+                tool_call_id=tool_call_id,
+                # request_heartbeat=request_heartbeat,
+            )
+
+            if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
+                approval_message = create_approval_request_message_from_llm_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=tool_call_name,
+                    function_arguments=tool_args,
+                    tool_call_id=tool_call_id,
+                    actor=self.actor,
+                    # continue_stepping=request_heartbeat,
+                    continue_stepping=True,
+                    # reasoning_content=reasoning_content,
+                    reasoning_content=content,
+                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                    step_id=step_id,
+                    run_id=run_id,
+                    append_request_heartbeat=False,
+                )
+                messages_to_persist = (initial_messages or []) + [approval_message]
+                continue_stepping = False
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+            else:
+                # 2.  Execute the tool (or synthesize an error result if disallowed)
+                tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
+                if tool_rule_violated:
+                    tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
+                else:
+                    # Prefill + validate args if a rule provided them
+                    prefill_args = self.tool_rules_solver.last_prefilled_args_by_tool.get(tool_call_name)
+                    if prefill_args:
+                        # Find tool object for schema validation
+                        target_tool = next((t for t in agent_state.tools if t.name == tool_call_name), None)
+                        provenance = self.tool_rules_solver.last_prefilled_args_provenance.get(tool_call_name)
+                        try:
+                            tool_args = merge_and_validate_prefilled_args(
+                                tool=target_tool,
+                                llm_args=tool_args,
+                                prefilled_args=prefill_args,
+                            )
+                        except ValueError as ve:
+                            # Treat invalid prefilled args as user error and end the step
+                            error_prefix = "Invalid prefilled tool arguments from tool rules"
+                            prov_suffix = f" (source={provenance})" if provenance else ""
+                            err_msg = f"{error_prefix}{prov_suffix}: {str(ve)}"
+                            tool_execution_result = ToolExecutionResult(status="error", func_return=err_msg)
+
+                            # Create messages and early return persistence path below
+                            continue_stepping, heartbeat_reason, stop_reason = (
+                                False,
+                                None,
+                                LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value),
+                            )
+                            tool_call_messages = create_letta_messages_from_llm_response(
+                                agent_id=agent_state.id,
+                                model=agent_state.llm_config.model,
+                                function_name=tool_call_name,
+                                function_arguments=tool_args,
+                                tool_execution_result=tool_execution_result,
+                                tool_call_id=tool_call_id,
+                                function_response=tool_execution_result.func_return,
+                                timezone=agent_state.timezone,
+                                continue_stepping=continue_stepping,
+                                heartbeat_reason=None,
+                                reasoning_content=content,
+                                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                                step_id=step_id,
+                                run_id=run_id,
+                                is_approval_response=is_approval or is_denial,
+                                force_set_request_heartbeat=False,
+                                add_heartbeat_on_continue=False,
+                            )
+                            messages_to_persist = (initial_messages or []) + tool_call_messages
+
+                            # Set run_id on all messages before persisting
+                            for message in messages_to_persist:
+                                if message.run_id is None:
+                                    message.run_id = run_id
+
+                            persisted_messages = await self.message_manager.create_many_messages_async(
+                                messages_to_persist,
+                                actor=self.actor,
+                                run_id=run_id,
+                                project_id=agent_state.project_id,
+                                template_id=agent_state.template_id,
+                            )
+                            return persisted_messages, continue_stepping, stop_reason
+
+                    # Track tool execution time
+                    tool_start_time = get_utc_timestamp_ns()
+                    tool_execution_result = await self._execute_tool(
+                        tool_name=tool_call_name,
+                        tool_args=tool_args,
+                        agent_state=agent_state,
+                        agent_step_span=agent_step_span,
+                        step_id=step_id,
                     )
                     from letta.server.rest_api.utils import create_heartbeat_system_message
 
