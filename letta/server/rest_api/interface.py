@@ -1303,14 +1303,29 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 # Skip this tool call receipt
                 return
             else:
+                from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+                status = msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success"
+                stdout = msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else []
+                stderr = msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else []
+
+                tool_return_obj = ToolReturnSchema(
+                    tool_return=msg,
+                    status=status,
+                    tool_call_id=msg_obj.tool_call_id,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+
                 new_message = ToolReturnMessage(
                     id=msg_obj.id,
                     date=msg_obj.created_at,
                     tool_return=msg,
-                    status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success",
+                    status=status,
                     tool_call_id=msg_obj.tool_call_id,
-                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
-                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
+                    stdout=stdout,
+                    stderr=stderr,
+                    tool_returns=[tool_return_obj],
                     name=msg_obj.name,
                     otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                 )
@@ -1319,14 +1334,29 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             msg = msg.replace("Error: ", "", 1)
             # new_message = {"function_return": msg, "status": "error"}
             assert msg_obj.tool_call_id is not None
+            from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+            status = msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error"
+            stdout = msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else []
+            stderr = msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else []
+
+            tool_return_obj = ToolReturnSchema(
+                tool_return=msg,
+                status=status,
+                tool_call_id=msg_obj.tool_call_id,
+                stdout=stdout,
+                stderr=stderr,
+            )
+
             new_message = ToolReturnMessage(
                 id=msg_obj.id,
                 date=msg_obj.created_at,
                 tool_return=msg,
-                status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error",
+                status=status,
                 tool_call_id=msg_obj.tool_call_id,
-                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
-                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
+                stdout=stdout,
+                stderr=stderr,
+                tool_returns=[tool_return_obj],
                 name=msg_obj.name,
                 otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
             )

@@ -1239,6 +1239,16 @@ class SyncServer(object):
                 function_args=tool_args,
                 tool=tool,
             )
+            from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+            tool_return_obj = ToolReturnSchema(
+                tool_return=str(tool_execution_result.func_return),
+                status=tool_execution_result.status,
+                tool_call_id="null",
+                stdout=tool_execution_result.stdout,
+                stderr=tool_execution_result.stderr,
+            )
+
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",
@@ -1247,10 +1257,21 @@ class SyncServer(object):
                 tool_return=str(tool_execution_result.func_return),
                 stdout=tool_execution_result.stdout,
                 stderr=tool_execution_result.stderr,
+                tool_returns=[tool_return_obj],
             )
 
         except Exception as e:
             func_return = get_friendly_error_msg(function_name=tool.name, exception_name=type(e).__name__, exception_message=str(e))
+            from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+            tool_return_obj = ToolReturnSchema(
+                tool_return=func_return,
+                status="error",
+                tool_call_id="null",
+                stdout=[],
+                stderr=[traceback.format_exc()],
+            )
+
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",
@@ -1259,6 +1280,7 @@ class SyncServer(object):
                 tool_return=func_return,
                 stdout=[],
                 stderr=[traceback.format_exc()],
+                tool_returns=[tool_return_obj],
             )
 
     # MCP wrappers

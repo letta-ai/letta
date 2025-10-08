@@ -647,6 +647,16 @@ class Message(BaseMessage):
         Returns:
             Configured ToolReturnMessage instance
         """
+        from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+        tool_return_obj = ToolReturnSchema(
+            tool_return=message_text,
+            status=status,
+            tool_call_id=tool_call_id,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
         return ToolReturnMessage(
             id=self.id,
             date=self.created_at,
@@ -655,6 +665,7 @@ class Message(BaseMessage):
             tool_call_id=tool_call_id,
             stdout=stdout,
             stderr=stderr,
+            tool_returns=[tool_return_obj],
             name=self.name,
             otid=Message.generate_otid_from_id(self.id, otid_index),
             sender_id=self.sender_id,
