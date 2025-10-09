@@ -169,8 +169,8 @@ At the core of Zep is [Graphiti](https://github.com/getzep/graphiti), an open-so
 
 What makes this graph temporal is Zep's [bi-temporal model](https://arxiv.org/abs/2501.13956), which tracks two separate timelines:
 
-- **Event time**, which is when events actually happened in the real world 
-- **Transaction time**, which is when information was recorded in the system
+- **Event time** reflects when events actually happened in the real world.
+- **Transaction time** reflects when information was recorded in the system.
 
 Each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as having ended and creates a new fact with its own validity period.
 
