@@ -17232,6 +17232,46 @@
                                       ],
                                       "nullable": true
                                     },
+                                    "value_enc": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
                                     "agent_id": {
                                       "type": "string"
                                     }
@@ -17429,6 +17469,46 @@
                                             "oneOf": [
                                               {
                                                 "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "value_enc": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
                                               },
                                               {
                                                 "type": "string",
@@ -21560,6 +21640,20 @@
             ],
             "title": "Description",
             "description": "An optional description of the environment variable."
+          },
+          "value_enc": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Encrypted secret value (stored as encrypted string)",
+                "nullable": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Enc",
+            "description": "Encrypted value as Secret object"
           },
           "agent_id": {
             "type": "string",
@@ -30834,6 +30928,34 @@
             ],
             "title": "Updated At",
             "description": "The last update timestamp of the provider."
+          },
+          "api_key_enc": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Encrypted secret value (stored as encrypted string)",
+                "nullable": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Enc",
+            "description": "Encrypted API key as Secret object"
+          },
+          "access_key_enc": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Encrypted secret value (stored as encrypted string)",
+                "nullable": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key Enc",
+            "description": "Encrypted access key as Secret object"
           }
         },
         "additionalProperties": false,
@@ -32020,6 +32142,20 @@
             ],
             "title": "Description",
             "description": "An optional description of the environment variable."
+          },
+          "value_enc": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Encrypted secret value (stored as encrypted string)",
+                "nullable": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Enc",
+            "description": "Encrypted value as Secret object"
           },
           "sandbox_config_id": {
             "type": "string",
