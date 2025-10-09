@@ -11,11 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # Database configuration - these will be used by dev-compose.yaml
+      # Database configuration for docker-compose
+      # Note: LETTA_PG_HOST is intentionally NOT set here because:
+      # - Inside containers: uses 'letta_db' (from dev-compose.yaml defaults)
+      # - Host pytest tests: uses 'localhost' (to connect via port mapping)
       LETTA_PG_DB: letta
       LETTA_PG_USER: letta
       LETTA_PG_PASSWORD: letta
-      LETTA_PG_HOST: letta_db  # Internal Docker service name
       LETTA_PG_PORT: 5432
       # Server configuration for tests
       LETTA_SERVER_PASS: test_server_token
