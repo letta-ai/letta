@@ -286,7 +286,7 @@ async def delete_run(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
-    return await runs_manager.delete_run_by_id(run_id=run_id, actor=actor)
+    return await runs_manager.delete_run(run_id=run_id, actor=actor)
 
 
 @router.post(
