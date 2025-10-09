@@ -492,13 +492,60 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
     ) -> List[LettaMessage]:
         messages = []
-        # This is type FunctionCall
+
+        # If assistant mode is off, just create one ToolCallMessage with all tool calls
+        if not use_assistant_message:
+            all_tool_call_objs = [
+                ToolCall(
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments,
+                    tool_call_id=tool_call.id,
+                )
+                for tool_call in self.tool_calls
+            ]
+
+            if all_tool_call_objs:
+                otid = Message.generate_otid_from_id(self.id, current_message_count)
+                messages.append(
+                    ToolCallMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        # use first tool call for the deprecated field
+                        tool_call=all_tool_call_objs[0],
+                        tool_calls=all_tool_call_objs,
+                        name=self.name,
+                        otid=otid,
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                        run_id=self.run_id,
+                    )
+                )
+            return messages
+
+        collected_tool_calls = []
+
         for tool_call in self.tool_calls:
             otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
-            # If we're supporting using assistant message,
-            # then we want to treat certain function calls as a special case
-            if use_assistant_message and tool_call.function.name == assistant_message_tool_name:
-                # We need to unpack the actual message contents from the function call
+
+            if tool_call.function.name == assistant_message_tool_name:
+                if collected_tool_calls:
+                    tool_call_message = ToolCallMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        # use first tool call for the deprecated field
+                        tool_call=collected_tool_calls[0],
+                        tool_calls=collected_tool_calls.copy(),
+                        name=self.name,
+                        otid=Message.generate_otid_from_id(self.id, current_message_count + len(messages)),
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                        run_id=self.run_id,
+                    )
+                    messages.append(tool_call_message)
+                    collected_tool_calls = []  # reset the collection
+
                 try:
                     func_args = parse_json(tool_call.function.arguments)
                     message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
@@ -518,25 +565,31 @@ class Message(BaseMessage):
                     )
                 )
             else:
+                # non-assistant tool call, collect it
                 tool_call_obj = ToolCall(
                     name=tool_call.function.name,
                     arguments=tool_call.function.arguments,
                     tool_call_id=tool_call.id,
                 )
-                messages.append(
-                    ToolCallMessage(
-                        id=self.id,
-                        date=self.created_at,
-                        tool_call=tool_call_obj,
-                        tool_calls=[tool_call_obj],
-                        name=self.name,
-                        otid=otid,
-                        sender_id=self.sender_id,
-                        step_id=self.step_id,
-                        is_err=self.is_err,
-                        run_id=self.run_id,
-                    )
-                )
+                collected_tool_calls.append(tool_call_obj)
+
+        # flush any remaining collected tool calls
+        if collected_tool_calls:
+            tool_call_message = ToolCallMessage(
+                id=self.id,
+                date=self.created_at,
+                # use first tool call for the deprecated field
+                tool_call=collected_tool_calls[0],
+                tool_calls=collected_tool_calls,
+                name=self.name,
+                otid=Message.generate_otid_from_id(self.id, current_message_count + len(messages)),
+                sender_id=self.sender_id,
+                step_id=self.step_id,
+                is_err=self.is_err,
+                run_id=self.run_id,
+            )
+            messages.append(tool_call_message)
+
         return messages
 
     def _convert_tool_return_message(self) -> List[ToolReturnMessage]:
