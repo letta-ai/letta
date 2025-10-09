@@ -143,7 +143,7 @@ def agent(client: Letta, approval_tool_fixture) -> AgentState:
         agent_type=AgentType.letta_v1_agent,
         include_base_tools=False,
         tool_ids=[approval_tool_fixture.id],
-        model="anthropic/claude-sonnet-4-20250514",
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         tags=["approval_test"],
     )
@@ -597,6 +597,38 @@ def test_deny_and_follow_up(
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "stop_reason"
     assert messages[3].message_type == "usage_statistics"
+
+
+def test_deny_with_context_check(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(
+                approve=False,
+                approval_request_id=approval_request_id,
+                reason="Cancelled by user. Instead of responding, wait for next user input before replying.",
+            ),
+        ],
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    try:
+        client.agents.context.retrieve(agent_id=agent.id)
+    except Exception as e:
+        if len(messages) > 4:
+            raise ValueError("Model did not respond with only reasoning content, please rerun test to repro edge case.")
+        raise e
 
 
 def test_deny_and_follow_up_with_error(

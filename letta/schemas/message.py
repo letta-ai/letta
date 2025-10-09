@@ -1698,6 +1698,14 @@ class Message(BaseMessage):
         if messages[-1].role == "approval" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
             messages.remove(messages[-1])
 
+        # Filter last message if it is a lone reasoning message without assistant message or tool call
+        if (
+            messages[-1].role == "assistant"
+            and messages[-1].tool_calls is None
+            and (not messages[-1].content or all(not isinstance(content_part, TextContent) for content_part in messages[-1].content))
+        ):
+            messages.remove(messages[-1])
+
         return messages
 
     @staticmethod
