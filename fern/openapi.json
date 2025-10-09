@@ -10137,6 +10137,45 @@
         }
       }
     },
+    "/v1/providers/{provider_id}/check": {
+      "post": {
+        "tags": ["providers"],
+        "summary": "Check Existing Provider",
+        "description": "Verify the API key and additional parameters for an existing provider.",
+        "operationId": "check_existing_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/runs/": {
       "get": {
         "tags": ["runs"],
