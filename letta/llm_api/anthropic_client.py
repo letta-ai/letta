@@ -56,6 +56,9 @@ class AnthropicClient(LLMClientBase):
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
         betas: list[str] = []
+        # Interleaved thinking for reasoner (sync path parity)
+        if llm_config.enable_reasoner:
+            betas.append("interleaved-thinking-2025-05-14")
         # 1M context beta for Sonnet 4/4.5 when enabled
         try:
             from letta.settings import model_settings
@@ -371,6 +374,7 @@ class AnthropicClient(LLMClientBase):
     async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
         logging.getLogger("httpx").setLevel(logging.WARNING)
 
+        # Use the default client; token counting is lightweight and does not require BYOK overrides
         client = anthropic.AsyncAnthropic()
         if messages and len(messages) == 0:
             messages = None
@@ -379,23 +383,20 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
+        # Detect presence of reasoning blocks anywhere in the final assistant message.
+        # Interleaved thinking is not guaranteed to be the first content part.
         thinking_enabled = False
         if messages and len(messages) > 0:
-            # Check if the last assistant message starts with a thinking block
-            # Find the last assistant message
-            last_assistant_message = None
-            for message in reversed(messages):
-                if message.get("role") == "assistant":
-                    last_assistant_message = message
-                    break
-
-            if (
-                last_assistant_message
-                and isinstance(last_assistant_message.get("content"), list)
-                and len(last_assistant_message["content"]) > 0
-                and last_assistant_message["content"][0].get("type") == "thinking"
-            ):
-                thinking_enabled = True
+            last_assistant_message = next((m for m in reversed(messages) if m.get("role") == "assistant"), None)
+            if last_assistant_message:
+                content = last_assistant_message.get("content")
+                if isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"}:
+                            thinking_enabled = True
+                            break
+                elif isinstance(content, str) and "<thinking>" in content:
+                    thinking_enabled = True
 
         try:
             count_params = {
@@ -404,9 +405,27 @@ class AnthropicClient(LLMClientBase):
                 "tools": anthropic_tools or [],
             }
 
+            betas: list[str] = []
             if thinking_enabled:
+                # Match interleaved thinking behavior so token accounting is consistent
                 count_params["thinking"] = {"type": "enabled", "budget_tokens": 16000}
-            result = await client.beta.messages.count_tokens(**count_params)
+                betas.append("interleaved-thinking-2025-05-14")
+
+            # Opt-in to 1M context if enabled for this model in settings
+            try:
+                if (
+                    model
+                    and model_settings.anthropic_sonnet_1m
+                    and (model.startswith("claude-sonnet-4") or model.startswith("claude-sonnet-4-5"))
+                ):
+                    betas.append("context-1m-2025-08-07")
+            except Exception:
+                pass
+
+            if betas:
+                result = await client.beta.messages.count_tokens(**count_params, betas=betas)
+            else:
+                result = await client.beta.messages.count_tokens(**count_params)
         except:
             raise
 
