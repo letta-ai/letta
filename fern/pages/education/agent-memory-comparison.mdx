@@ -78,7 +78,7 @@ Mem0 uses a two-phase approach to manage memory.
 
 - **Extraction phase:** When you add messages to Mem0, it analyzes the conversation to identify important facts, preferences, and context. It uses an LLM (GPT-4 by default) to determine what's worth remembering. This isn't just storing raw messages. Mem0 distills conversations into structured memories like "User prefers vegetarian food" or "User works as a backend developer in Python."
 
-- **Update phase:** After extraction, Mem0 intelligently updates its memory store. If new information contradicts existing memories, it updates them. If information is redundant, it consolidates. This prevents memory from growing unbounded with duplicate or outdated information.
+- **Update phase:** After extraction, Mem0 intelligently updates its memory store using a [hybrid architecture](https://arxiv.org/abs/2504.19413) that combines vector databases (for semantic search), graph databases (for relationships), and key-value stores (for fast lookups). If new information contradicts existing memories, it updates them. If information is redundant, it consolidates. This prevents memory from growing unbounded with duplicate or outdated information. According to [research by the Mem0 team](https://arxiv.org/abs/2504.19413), this approach achieves over 90% reduction in token costs compared to full-context methods, along with 26% better accuracy and 91% lower latency.
 
 <img src="/images/agent-memory-comparison/02-mem0-architecture.svg" />
 
@@ -167,7 +167,7 @@ Mem0 works with [OpenAI](https://openai.com) by default, but supports other LLM 
 
 At the core of Zep is [Graphiti](https://github.com/getzep/graphiti), an open-source library for building temporal knowledge graphs. When you add conversation data to Zep, Graphiti extracts entities (for example, people, places, and concepts) and relationships (for example, works at, lives in, and prefers) and stores them as a graph.
 
-What makes this temporal is that each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as having ended and creates a new fact with its own validity period.
+What makes this temporal is Zep's [bi-temporal model](https://arxiv.org/abs/2501.13956), which tracks two separate timelines: when events actually happened in the real world (event time) and when information was recorded in the system (transaction time). Each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as having ended and creates a new fact with its own validity period.
 
 For example, if a user says, "I moved from Austin to Seattle," Zep creates two location relationships with different time periods. When you ask, "Where does the user live?" you get Seattle. But you can also query historical information like, "Where did the user live in March 2024?" and get Austin.
 
@@ -668,7 +668,7 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 |Drop-in memory layer for stateless agents | Pluggable memory using background agents for intelligent processing | Stateful agents with self-modifying memory blocks |
 | Reduces tokens by 90% <br> Production-ready with a hybrid architecture <br> (vector + key-value + graph) | More sophisticated than simple extraction | Memory lives in context window <br> Shareable across agents |
 
-**Mem0:** Drop-in memory layer for stateless agents. Reduces tokens by 90%, production-ready with a hybrid architecture (vector + key-value + graph).
+**Mem0:** Drop-in memory layer for stateless agents. [Reduces tokens by 90%](https://arxiv.org/abs/2504.19413), production-ready with a hybrid architecture (vector + key-value + graph).
 
 **The AI Memory SDK:** Pluggable memory using background agents for intelligent processing. More sophisticated than simple extraction.
 
