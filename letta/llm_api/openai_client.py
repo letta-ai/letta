@@ -420,6 +420,17 @@ class OpenAIClient(LLMClientBase):
             logger.warning(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
             model = None
 
+        # TODO: we may need to extend this to more models using proxy?
+        is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
+            llm_config.provider_name == "openrouter"
+        )
+        if is_openrouter:
+            try:
+                model = llm_config.handle.split("/", 1)[-1]
+            except:
+                # don't raise error since this isn't robust against edge cases
+                pass
+
         # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
