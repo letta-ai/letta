@@ -329,6 +329,9 @@ class Settings(BaseSettings):
     file_processing_timeout_minutes: int = 30
     file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
 
+    # enabling letta_agent_v1 architecture
+    use_letta_v1_agent: bool = False
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:

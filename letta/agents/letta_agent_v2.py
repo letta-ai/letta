@@ -99,16 +99,16 @@ class LettaAgentV2(BaseAgentV2):
         self.step_manager = StepManager()
         self.telemetry_manager = TelemetryManager()
 
-        # TODO: Expand to more
-        if summarizer_settings.enable_summarization and model_settings.openai_api_key:
-            self.summarization_agent = EphemeralSummaryAgent(
-                target_block_label="conversation_summary",
-                agent_id=self.agent_state.id,
-                block_manager=self.block_manager,
-                message_manager=self.message_manager,
-                agent_manager=self.agent_manager,
-                actor=self.actor,
-            )
+        ## TODO: Expand to more
+        # if summarizer_settings.enable_summarization and model_settings.openai_api_key:
+        #    self.summarization_agent = EphemeralSummaryAgent(
+        #        target_block_label="conversation_summary",
+        #        agent_id=self.agent_state.id,
+        #        block_manager=self.block_manager,
+        #        message_manager=self.message_manager,
+        #        agent_manager=self.agent_manager,
+        #        actor=self.actor,
+        #    )
 
         # Initialize summarizer for context window management
         self.summarizer = Summarizer(
@@ -117,7 +117,7 @@ class LettaAgentV2(BaseAgentV2):
                 if self.agent_state.agent_type == AgentType.voice_convo_agent
                 else summarizer_settings.mode
             ),
-            summarizer_agent=self.summarization_agent,
+            summarizer_agent=None,  # self.summarization_agent,
             message_buffer_limit=summarizer_settings.message_buffer_limit,
             message_buffer_min=summarizer_settings.message_buffer_min,
             partial_evict_summarizer_percentage=summarizer_settings.partial_evict_summarizer_percentage,
