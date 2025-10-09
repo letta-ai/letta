@@ -167,7 +167,12 @@ Mem0 works with [OpenAI](https://openai.com) by default, but supports other LLM 
 
 At the core of Zep is [Graphiti](https://github.com/getzep/graphiti), an open-source library for building temporal knowledge graphs. When you add conversation data to Zep, Graphiti extracts entities (for example, people, places, and concepts) and relationships (for example, works at, lives in, and prefers) and stores them as a graph.
 
-What makes this temporal is Zep's [bi-temporal model](https://arxiv.org/abs/2501.13956), which tracks two separate timelines: when events actually happened in the real world (event time) and when information was recorded in the system (transaction time). Each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as having ended and creates a new fact with its own validity period.
+What makes this graph temporal is Zep's [bi-temporal model](https://arxiv.org/abs/2501.13956), which tracks two separate timelines:
+
+- **Event time**, which is when events actually happened in the real world 
+- **Transaction time**, which is when information was recorded in the system
+
+Each edge in the graph includes validity metadata. When a fact changes, Zep doesn't overwrite the old information. Instead, it marks the old fact's validity period as having ended and creates a new fact with its own validity period.
 
 For example, if a user says, "I moved from Austin to Seattle," Zep creates two location relationships with different time periods. When you ask, "Where does the user live?" you get Seattle. But you can also query historical information like, "Where did the user live in March 2024?" and get Austin.
 
@@ -666,13 +671,7 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 | Mem0 | AI Memory SDK | Letta Platform |
 | --- | --- | --- |
 |Drop-in memory layer for stateless agents | Pluggable memory using background agents for intelligent processing | Stateful agents with self-modifying memory blocks |
-| Reduces tokens by 90% <br> Production-ready with a hybrid architecture <br> (vector + key-value + graph) | More sophisticated than simple extraction | Memory lives in context window <br> Shareable across agents |
-
-**Mem0:** Drop-in memory layer for stateless agents. [Reduces tokens by 90%](https://arxiv.org/abs/2504.19413), production-ready with a hybrid architecture (vector + key-value + graph).
-
-**The AI Memory SDK:** Pluggable memory using background agents for intelligent processing. More sophisticated than simple extraction.
-
-**Letta Platform:** Stateful agents with self-modifying memory blocks. Memory lives in context window, shareable across agents.
+| [Reduces tokens by 90%](https://arxiv.org/abs/2504.19413) <br> Production-ready with a hybrid architecture <br> (vector + key-value + graph) | More sophisticated than simple extraction | Memory lives in context window <br> Shareable across agents |
 
 - **Choose Mem0** for minimal code changes to existing apps.
 - **Choose the AI Memory SDK** for agent-based processing without a full stateful architecture.
@@ -685,10 +684,6 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 | Simple memory extraction and consolidation | Temporal knowledge graphs with bi-temporal modeling |
 | No temporal tracking <br> Updates overwrite or merge memories | Tracks when facts were valid and when they change |
 
-**Mem0:** Simple memory extraction and consolidation. No temporal tracking — updates overwrite or merge memories.
-
-**Zep:** Temporal knowledge graphs with bi-temporal modeling. Tracks when facts were valid and when they changed.
-
 - **Choose Mem0** for straightforward user, session, or agent memory without history.
 - **Choose Zep** when facts evolve (like when location changes or preference shifts) and you need both current state and historical context, for example, "What did the user prefer in Q1 vs Q3?"
 
@@ -698,11 +693,6 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 | --- | --- |
 | Memory extraction and retrieval | Semantic knowledge graphs with ontologies |
 | Organizes into user/session/agent levels but doesn't build relationship graphs | Understands concept relationships <br> (Python → programming language → ML libraries) |
-
-
-**Mem0:** Memory extraction and retrieval. Organizes into user/session/agent levels but doesn't build relationship graphs.
-
-**Cognee:** Semantic knowledge graphs with ontologies. Understands concept relationships (Python → programming language → ML libraries).
 
 - **Choose Mem0** for user preference memory and conversation context.
 - **Choose Cognee** when relationships between concepts matter as much as the facts (it's ideal for technical docs, research papers, or complex knowledge bases).
@@ -714,10 +704,6 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 |Temporal knowledge graphs track **when** facts are valid | Semantic knowledge graphs track **how** concepts relate |
 | Bi-temporal modeling for changing information | Ontology-based relationships for domain understanding |
 
-**Zep:** Temporal knowledge graphs track **when** facts are valid. Bi-temporal modeling for changing information.
-
-**Cognee:** Semantic knowledge graphs track **how** concepts relate. Ontology-based relationships for domain understanding.
-
 - **Choose Zep** when data changes over time and temporal history matters.
 - **Choose Cognee** when understanding concept relationships and dependencies is critical.
 
@@ -727,12 +713,6 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 | --- | --- | --- |
 | External temporal knowledge graph that agents query | Simple drop-in memory without temporal tracking | Memory blocks in context window, directly editable by agents |
 | Tracks validity periods for evolving facts | Agent-based processing | Continuous state operation |
-
-**Zep:** External temporal knowledge graph that agents query. Tracks validity periods for evolving facts.
-
-**The AI Memory SDK:** Simple drop-in memory without temporal tracking. Agent-based processing.
-
-**Letta Platform:** Memory blocks in context window, directly editable by agents. Continuous state operation.
 
 - **Choose Zep** for enterprise apps needing temporal history and fact evolution tracking.
 - **Choose the Letta AI Memory SDK** for drop-in memory with intelligent processing.
@@ -744,12 +724,6 @@ The SDK is experimental and actively developed. The roadmap includes TypeScript 
 | --- | --- | --- |
 | External semantic knowledge graph | Drop-in memory with agent-based processing | Self-modifying memory blocks that agents edit directly |
 | Retrieves information based on concept relationships | No knowledge graph construction | Enables continuous state evolution |
-
-**Cognee:** External semantic knowledge graph. Retrieves information based on concept relationships.
-
-**Letta AI Memory SDK:** Drop-in memory with agent-based processing. No knowledge graph construction.
-
-**Letta Platform:** Self-modifying memory blocks that agents edit directly. Enables continuous state evolution.
 
 - **Choose Cognee** for semantic understanding of concept relationships.
 - **Choose Letta Memory SDK** for simpler integration without graph complexity.
