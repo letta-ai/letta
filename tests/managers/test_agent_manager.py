@@ -853,3 +853,170 @@ async def test_list_agents_ordering_and_pagination(server: SyncServer, default_u
     before_alpha_desc = await server.agent_manager.list_agents_async(actor=default_user, before=agent_ids["alpha_agent"], ascending=False)
     before_names_desc = [a.name for a in before_alpha_desc]
     assert before_names_desc == ["gamma_agent", "beta_agent"]
+
+
+# ======================================================================================================================
+# AgentManager Tests - Environment Variable Encryption
+# ======================================================================================================================
+
+
+@pytest.fixture
+def encryption_key():
+    """Fixture to ensure encryption key is set for tests."""
+    original_key = settings.encryption_key
+    # Set a test encryption key if not already set
+    if not settings.encryption_key:
+        settings.encryption_key = "test-encryption-key-32-bytes!!"
+    yield settings.encryption_key
+    # Restore original
+    settings.encryption_key = original_key
+
+
+@pytest.mark.asyncio
+async def test_agent_environment_variables_encrypt_on_create(server: SyncServer, default_user, encryption_key):
+    """Test that creating an agent with secrets encrypts the values in the database."""
+    from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+    from letta.schemas.secret import Secret
+
+    # Create agent with secrets
+    agent_create = CreateAgent(
+        name="test-agent-with-secrets",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        include_base_tools=False,
+        secrets={
+            "API_KEY": "sk-test-secret-12345",
+            "DATABASE_URL": "postgres://user:pass@localhost/db",
+        },
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+
+    # Verify agent has secrets
+    assert created_agent.secrets is not None
+    assert len(created_agent.secrets) == 2
+
+    # Verify secrets are AgentEnvironmentVariable objects with Secret fields
+    for secret_obj in created_agent.secrets:
+        assert secret_obj.key in ["API_KEY", "DATABASE_URL"]
+        assert secret_obj.value_enc is not None
+        assert isinstance(secret_obj.value_enc, Secret)
+
+    # Verify values are encrypted in the database
+    async with db_registry.async_session() as session:
+        env_vars = await session.execute(
+            select(AgentEnvironmentVariableModel).where(AgentEnvironmentVariableModel.agent_id == created_agent.id)
+        )
+        env_var_list = list(env_vars.scalars().all())
+
+        assert len(env_var_list) == 2
+        for env_var in env_var_list:
+            # Check that value_enc is not None and is encrypted
+            assert env_var.value_enc is not None
+            assert isinstance(env_var.value_enc, str)
+
+            # Decrypt and verify
+            decrypted = Secret.from_encrypted(env_var.value_enc).get_plaintext()
+            if env_var.key == "API_KEY":
+                assert decrypted == "sk-test-secret-12345"
+            elif env_var.key == "DATABASE_URL":
+                assert decrypted == "postgres://user:pass@localhost/db"
+
+
+@pytest.mark.asyncio
+async def test_agent_environment_variables_decrypt_on_read(server: SyncServer, default_user, encryption_key):
+    """Test that reading an agent deserializes secrets correctly to AgentEnvironmentVariable objects."""
+    from letta.schemas.environment_variables import AgentEnvironmentVariable
+    from letta.schemas.secret import Secret
+
+    # Create agent with secrets
+    agent_create = CreateAgent(
+        name="test-agent-read-secrets",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        include_base_tools=False,
+        secrets={
+            "TEST_KEY": "test-value-67890",
+        },
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+    agent_id = created_agent.id
+
+    # Read the agent back
+    retrieved_agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=default_user)
+
+    # Verify secrets are properly deserialized
+    assert retrieved_agent.secrets is not None
+    assert len(retrieved_agent.secrets) == 1
+
+    secret_obj = retrieved_agent.secrets[0]
+    assert isinstance(secret_obj, AgentEnvironmentVariable)
+    assert secret_obj.key == "TEST_KEY"
+    assert secret_obj.value == "test-value-67890"
+
+    # Verify value_enc is a Secret object (not a string)
+    assert secret_obj.value_enc is not None
+    assert isinstance(secret_obj.value_enc, Secret)
+
+    # Verify we can decrypt through the Secret object
+    decrypted = secret_obj.value_enc.get_plaintext()
+    assert decrypted == "test-value-67890"
+
+    # Verify get_value_secret() method works
+    value_secret = secret_obj.get_value_secret()
+    assert isinstance(value_secret, Secret)
+    assert value_secret.get_plaintext() == "test-value-67890"
+
+
+@pytest.mark.asyncio
+async def test_agent_environment_variables_update_encryption(server: SyncServer, default_user, encryption_key):
+    """Test that updating agent secrets encrypts new values."""
+    from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+    from letta.schemas.secret import Secret
+
+    # Create agent with initial secrets
+    agent_create = CreateAgent(
+        name="test-agent-update-secrets",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        include_base_tools=False,
+        secrets={
+            "INITIAL_KEY": "initial-value",
+        },
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+    agent_id = created_agent.id
+
+    # Update with new secrets
+    agent_update = UpdateAgent(
+        secrets={
+            "UPDATED_KEY": "updated-value-abc",
+            "NEW_KEY": "new-value-xyz",
+        },
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(agent_id=agent_id, agent_update=agent_update, actor=default_user)
+
+    # Verify updated secrets
+    assert updated_agent.secrets is not None
+    assert len(updated_agent.secrets) == 2
+
+    # Verify in database
+    async with db_registry.async_session() as session:
+        env_vars = await session.execute(select(AgentEnvironmentVariableModel).where(AgentEnvironmentVariableModel.agent_id == agent_id))
+        env_var_list = list(env_vars.scalars().all())
+
+        assert len(env_var_list) == 2
+        for env_var in env_var_list:
+            assert env_var.value_enc is not None
+
+            # Decrypt and verify
+            decrypted = Secret.from_encrypted(env_var.value_enc).get_plaintext()
+            if env_var.key == "UPDATED_KEY":
+                assert decrypted == "updated-value-abc"
+            elif env_var.key == "NEW_KEY":
+                assert decrypted == "new-value-xyz"
+            else:
+                pytest.fail(f"Unexpected key: {env_var.key}")

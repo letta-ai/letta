@@ -1106,7 +1106,8 @@ class LettaAgentV2(BaseAgentV2):
             start_time = get_utc_timestamp_ns()
             agent_step_span.add_event(name="tool_execution_started")
 
-        sandbox_env_vars = {var.key: var.value for var in agent_state.secrets}
+        # Decrypt environment variable values
+        sandbox_env_vars = {var.key: var.get_value_secret().get_plaintext() for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

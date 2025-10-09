@@ -34,12 +34,21 @@ class DatabaseTokenStorage(TokenStorage):
     async def get_tokens(self) -> Optional[OAuthToken]:
         """Retrieve tokens from database."""
         oauth_session = await self.mcp_manager.get_oauth_session_by_id(self.session_id, self.actor)
-        if not oauth_session or not oauth_session.access_token:
+        if not oauth_session:
             return None
 
+        # Decrypt tokens using getter methods
+        access_token_secret = oauth_session.get_access_token_secret()
+        access_token = access_token_secret.get_plaintext()
+        if not access_token:
+            return None
+
+        refresh_token_secret = oauth_session.get_refresh_token_secret()
+        refresh_token = refresh_token_secret.get_plaintext()
+
         return OAuthToken(
-            access_token=oauth_session.access_token,
-            refresh_token=oauth_session.refresh_token,
+            access_token=access_token,
+            refresh_token=refresh_token,
             token_type=oauth_session.token_type,
             expires_in=int(oauth_session.expires_at.timestamp() - time.time()),
             scope=oauth_session.scope,
@@ -63,9 +72,13 @@ class DatabaseTokenStorage(TokenStorage):
         if not oauth_session or not oauth_session.client_id:
             return None
 
+        # Decrypt client secret using getter method
+        client_secret_secret = oauth_session.get_client_secret_secret()
+        client_secret = client_secret_secret.get_plaintext()
+
         return OAuthClientInformationFull(
             client_id=oauth_session.client_id,
-            client_secret=oauth_session.client_secret,
+            client_secret=client_secret,
             redirect_uris=[oauth_session.redirect_uri] if oauth_session.redirect_uri else [],
         )
 
@@ -134,13 +147,23 @@ class MCPOAuthSession:
 
     async def store_authorization_code(self, code: str, state: str) -> Optional[MCPOAuth]:
         """Store the authorization code from OAuth callback."""
+        # Use mcp_manager to ensure proper encryption
+        from letta.schemas.mcp import MCPOAuthSessionUpdate
+        from letta.schemas.secret import Secret
+
         async with db_registry.async_session() as session:
             try:
                 oauth_record = await MCPOAuth.read_async(db_session=session, identifier=self.session_id, actor=None)
-                oauth_record.authorization_code = code
-                oauth_record.state = state
+
+                # Encrypt the authorization_code before storing
+                if code is not None:
+                    oauth_record.authorization_code_enc = Secret.from_plaintext(code).get_encrypted()
+                    # Keep plaintext for dual-write during migration
+                    oauth_record.authorization_code = code
+
                 oauth_record.status = OAuthSessionStatus.AUTHORIZED
-                oauth_record.updated_at = datetime.now()
+                oauth_record.state = state
+
                 return await oauth_record.update_async(db_session=session, actor=None)
             except Exception:
                 return None
@@ -212,7 +235,9 @@ async def create_oauth_provider(
         while time.time() - start_time < timeout:
             oauth_session = await mcp_manager.get_oauth_session_by_id(session_id, actor)
             if oauth_session and oauth_session.authorization_code:
-                return oauth_session.authorization_code, oauth_session.state
+                # Decrypt the authorization code before returning
+                auth_code_secret = oauth_session.get_authorization_code_secret()
+                return auth_code_secret.get_plaintext(), oauth_session.state
             elif oauth_session and oauth_session.status == OAuthSessionStatus.ERROR:
                 raise Exception("OAuth authorization failed")
             await asyncio.sleep(1)

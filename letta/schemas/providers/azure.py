@@ -60,7 +60,8 @@ class AzureProvider(Provider):
     def azure_openai_get_deployed_model_list(self) -> list:
         """https://learn.microsoft.com/en-us/rest/api/azureopenai/models/list?view=rest-azureopenai-2023-05-15&tabs=HTTP"""
 
-        client = AzureOpenAI(api_key=self.api_key, api_version=self.api_version, azure_endpoint=self.base_url)
+        api_key = self.get_api_key_secret().get_plaintext()
+        client = AzureOpenAI(api_key=api_key, api_version=self.api_version, azure_endpoint=self.base_url)
 
         try:
             models_list = client.models.list()
@@ -71,8 +72,8 @@ class AzureProvider(Provider):
 
         # https://xxx.openai.azure.com/openai/models?api-version=xxx
         headers = {"Content-Type": "application/json"}
-        if self.api_key is not None:
-            headers["api-key"] = f"{self.api_key}"
+        if api_key is not None:
+            headers["api-key"] = f"{api_key}"
 
         # 2. Get all the deployed models
         url = self.get_azure_deployment_list_endpoint()
@@ -165,7 +166,8 @@ class AzureProvider(Provider):
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
 
     async def check_api_key(self):
-        if not self.api_key:
+        api_key = self.get_api_key_secret().get_plaintext()
+        if not api_key:
             raise ValueError("No API key provided")
 
         try:

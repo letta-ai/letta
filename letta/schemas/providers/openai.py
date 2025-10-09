@@ -25,7 +25,9 @@ class OpenAIProvider(Provider):
     async def check_api_key(self):
         from letta.llm_api.openai import openai_check_valid_api_key  # TODO: DO NOT USE THIS - old code path
 
-        openai_check_valid_api_key(self.base_url, self.api_key)
+        # Decrypt API key before using
+        api_key = self.get_api_key_secret().get_plaintext()
+        openai_check_valid_api_key(self.base_url, api_key)
 
     async def _get_models_async(self) -> list[dict]:
         from letta.llm_api.openai import openai_get_model_list_async
@@ -37,9 +39,12 @@ class OpenAIProvider(Provider):
         # Similar to Nebius
         extra_params = {"verbose": True} if "nebius.com" in self.base_url else None
 
+        # Decrypt API key before using
+        api_key = self.get_api_key_secret().get_plaintext()
+
         response = await openai_get_model_list_async(
             self.base_url,
-            api_key=self.api_key,
+            api_key=api_key,
             extra_params=extra_params,
             # fix_url=True,  # NOTE: make sure together ends with /v1
         )

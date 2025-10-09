@@ -901,3 +901,237 @@ async def test_mcp_server_resync_tools(server, default_user, default_organizatio
     finally:
         # Clean up
         await server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=default_user)
+
+
+# ======================================================================================================================
+# MCPManager Tests - Encryption
+# ======================================================================================================================
+
+
+@pytest.fixture
+def encryption_key():
+    """Fixture to ensure encryption key is set for tests."""
+    original_key = settings.encryption_key
+    # Set a test encryption key if not already set
+    if not settings.encryption_key:
+        settings.encryption_key = "test-encryption-key-32-bytes!!"
+    yield settings.encryption_key
+    # Restore original
+    settings.encryption_key = original_key
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_token_encryption_on_create(server, default_user, encryption_key):
+    """Test that creating an MCP server encrypts the token in the database."""
+    from letta.functions.mcp_client.types import MCPServerType
+    from letta.orm.mcp_server import MCPServer as MCPServerModel
+    from letta.schemas.mcp import MCPServer
+    from letta.schemas.secret import Secret
+
+    # Create MCP server with token
+    mcp_server = MCPServer(
+        server_name="test-encrypted-server",
+        server_type=MCPServerType.STREAMABLE_HTTP,
+        server_url="https://api.example.com/mcp",
+        token="sk-test-secret-token-12345",
+    )
+
+    created_server = await server.mcp_manager.create_mcp_server(mcp_server, actor=default_user)
+
+    try:
+        # Verify server was created
+        assert created_server is not None
+        assert created_server.server_name == "test-encrypted-server"
+
+        # Verify plaintext token is accessible (dual-write during migration)
+        assert created_server.token == "sk-test-secret-token-12345"
+
+        # Verify token_enc is a Secret object
+        assert created_server.token_enc is not None
+        assert isinstance(created_server.token_enc, Secret)
+
+        # Read directly from database to verify encryption
+        async with db_registry.async_session() as session:
+            server_orm = await MCPServerModel.read_async(
+                db_session=session,
+                identifier=created_server.id,
+                actor=default_user,
+            )
+
+            # Verify plaintext column has the value (dual-write)
+            assert server_orm.token == "sk-test-secret-token-12345"
+
+            # Verify encrypted column is populated and different from plaintext
+            assert server_orm.token_enc is not None
+            assert server_orm.token_enc != "sk-test-secret-token-12345"
+            # Encrypted value should be longer
+            assert len(server_orm.token_enc) > len("sk-test-secret-token-12345")
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_token_decryption_on_read(server, default_user, encryption_key):
+    """Test that reading an MCP server decrypts the token correctly."""
+    from letta.functions.mcp_client.types import MCPServerType
+    from letta.schemas.mcp import MCPServer
+    from letta.schemas.secret import Secret
+
+    # Create MCP server
+    mcp_server = MCPServer(
+        server_name="test-decrypt-server",
+        server_type=MCPServerType.STREAMABLE_HTTP,
+        server_url="https://api.example.com/mcp",
+        token="sk-test-decrypt-token-67890",
+    )
+
+    created_server = await server.mcp_manager.create_mcp_server(mcp_server, actor=default_user)
+    server_id = created_server.id
+
+    try:
+        # Read the server back
+        retrieved_server = await server.mcp_manager.get_mcp_server_by_id_async(server_id, actor=default_user)
+
+        # Verify the token is decrypted correctly
+        assert retrieved_server.token == "sk-test-decrypt-token-67890"
+
+        # Verify we can get the decrypted token through the secret getter
+        token_secret = retrieved_server.get_token_secret()
+        assert isinstance(token_secret, Secret)
+        decrypted_token = token_secret.get_plaintext()
+        assert decrypted_token == "sk-test-decrypt-token-67890"
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_mcp_server_by_id(server_id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_custom_headers_encryption(server, default_user, encryption_key):
+    """Test that custom headers are encrypted as JSON strings."""
+    from letta.functions.mcp_client.types import MCPServerType
+    from letta.orm.mcp_server import MCPServer as MCPServerModel
+    from letta.schemas.mcp import MCPServer
+    from letta.schemas.secret import Secret
+
+    # Create MCP server with custom headers
+    custom_headers = {"Authorization": "Bearer token123", "X-API-Key": "secret-key-456"}
+    mcp_server = MCPServer(
+        server_name="test-headers-server",
+        server_type=MCPServerType.STREAMABLE_HTTP,
+        server_url="https://api.example.com/mcp",
+        custom_headers=custom_headers,
+    )
+
+    created_server = await server.mcp_manager.create_mcp_server(mcp_server, actor=default_user)
+
+    try:
+        # Verify custom_headers are accessible
+        assert created_server.custom_headers == custom_headers
+
+        # Verify custom_headers_enc is a Secret object (stores JSON string)
+        assert created_server.custom_headers_enc is not None
+        assert isinstance(created_server.custom_headers_enc, Secret)
+
+        # Verify the getter method returns a Secret (JSON string)
+        headers_secret = created_server.get_custom_headers_secret()
+        assert isinstance(headers_secret, Secret)
+        # Verify the Secret contains JSON string
+        json_str = headers_secret.get_plaintext()
+        assert json_str is not None
+        import json
+
+        assert json.loads(json_str) == custom_headers
+
+        # Verify the convenience method returns dict directly
+        headers_dict = created_server.get_custom_headers_dict()
+        assert headers_dict == custom_headers
+
+        # Read from DB to verify encryption
+        async with db_registry.async_session() as session:
+            server_orm = await MCPServerModel.read_async(
+                db_session=session,
+                identifier=created_server.id,
+                actor=default_user,
+            )
+
+            # Verify encrypted column contains encrypted JSON string
+            assert server_orm.custom_headers_enc is not None
+            # Decrypt and verify it's valid JSON matching original headers
+            decrypted_json = Secret.from_encrypted(server_orm.custom_headers_enc).get_plaintext()
+            import json
+
+            decrypted_headers = json.loads(decrypted_json)
+            assert decrypted_headers == custom_headers
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_oauth_session_tokens_encryption(server, default_user, encryption_key):
+    """Test that OAuth session tokens are encrypted in the database."""
+    from letta.orm.mcp_oauth import MCPOAuth as MCPOAuthModel
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPOAuthSessionUpdate
+    from letta.schemas.secret import Secret
+
+    # Create OAuth session
+    session_create = MCPOAuthSessionCreate(
+        server_url="https://oauth.example.com",
+        server_name="test-oauth-server",
+        organization_id=default_user.organization_id,
+        user_id=default_user.id,
+    )
+
+    created_session = await server.mcp_manager.create_oauth_session(session_create, actor=default_user)
+    session_id = created_session.id
+
+    try:
+        # Update with OAuth tokens
+        session_update = MCPOAuthSessionUpdate(
+            access_token="access-token-abc123",
+            refresh_token="refresh-token-xyz789",
+            client_secret="client-secret-def456",
+            authorization_code="auth-code-ghi012",
+        )
+
+        updated_session = await server.mcp_manager.update_oauth_session(session_id, session_update, actor=default_user)
+
+        # Verify tokens are accessible
+        assert updated_session.access_token == "access-token-abc123"
+        assert updated_session.refresh_token == "refresh-token-xyz789"
+        assert updated_session.client_secret == "client-secret-def456"
+        assert updated_session.authorization_code == "auth-code-ghi012"
+
+        # Verify encrypted fields are Secret objects
+        assert isinstance(updated_session.access_token_enc, Secret)
+        assert isinstance(updated_session.refresh_token_enc, Secret)
+        assert isinstance(updated_session.client_secret_enc, Secret)
+        assert isinstance(updated_session.authorization_code_enc, Secret)
+
+        # Read from DB to verify all tokens are encrypted
+        async with db_registry.async_session() as session:
+            oauth_orm = await MCPOAuthModel.read_async(
+                db_session=session,
+                identifier=session_id,
+                actor=default_user,
+            )
+
+            # Verify all encrypted columns are populated and encrypted
+            assert oauth_orm.access_token_enc is not None
+            assert oauth_orm.refresh_token_enc is not None
+            assert oauth_orm.client_secret_enc is not None
+            assert oauth_orm.authorization_code_enc is not None
+
+            # Decrypt and verify
+            assert Secret.from_encrypted(oauth_orm.access_token_enc).get_plaintext() == "access-token-abc123"
+            assert Secret.from_encrypted(oauth_orm.refresh_token_enc).get_plaintext() == "refresh-token-xyz789"
+            assert Secret.from_encrypted(oauth_orm.client_secret_enc).get_plaintext() == "client-secret-def456"
+            assert Secret.from_encrypted(oauth_orm.authorization_code_enc).get_plaintext() == "auth-code-ghi012"
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_oauth_session(session_id, actor=default_user)

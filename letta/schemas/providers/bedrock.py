@@ -25,11 +25,15 @@ class BedrockProvider(Provider):
         from aioboto3.session import Session
 
         try:
+            # Decrypt credentials before using
+            access_key = self.get_access_key_secret().get_plaintext()
+            secret_key = self.get_api_key_secret().get_plaintext()
+
             session = Session()
             async with session.client(
                 "bedrock",
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.api_key,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
                 region_name=self.region,
             ) as bedrock:
                 response = await bedrock.list_inference_profiles()

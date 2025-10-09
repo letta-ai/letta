@@ -23,7 +23,7 @@ from letta.schemas.mcp import (
     SSEServerConfig,
     StdioServerConfig,
 )
-from letta.schemas.secret import Secret, SecretDict
+from letta.schemas.secret import Secret
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.mcp_manager import MCPManager

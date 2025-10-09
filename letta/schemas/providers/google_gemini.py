@@ -19,13 +19,15 @@ class GoogleAIProvider(Provider):
     async def check_api_key(self):
         from letta.llm_api.google_ai_client import google_ai_check_valid_api_key
 
-        google_ai_check_valid_api_key(self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        google_ai_check_valid_api_key(api_key)
 
     async def list_llm_models_async(self):
         from letta.llm_api.google_ai_client import google_ai_get_model_list_async
 
         # Get and filter the model list
-        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=api_key)
         model_options = [mo for mo in model_options if "generateContent" in mo["supportedGenerationMethods"]]
         model_options = [str(m["name"]) for m in model_options]
 
@@ -58,7 +60,8 @@ class GoogleAIProvider(Provider):
         from letta.llm_api.google_ai_client import google_ai_get_model_list_async
 
         # TODO: use base_url instead
-        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        model_options = await google_ai_get_model_list_async(base_url=self.base_url, api_key=api_key)
         return self._list_embedding_models(model_options)
 
     def _list_embedding_models(self, model_options):
@@ -91,7 +94,8 @@ class GoogleAIProvider(Provider):
         if model_name in LLM_MAX_TOKENS:
             return LLM_MAX_TOKENS[model_name]
         else:
-            return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
+            api_key = self.get_api_key_secret().get_plaintext()
+            return google_ai_get_model_context_window(self.base_url, api_key, model_name)
 
     async def get_model_context_window_async(self, model_name: str) -> int | None:
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window_async
@@ -99,4 +103,5 @@ class GoogleAIProvider(Provider):
         if model_name in LLM_MAX_TOKENS:
             return LLM_MAX_TOKENS[model_name]
         else:
-            return await google_ai_get_model_context_window_async(self.base_url, self.api_key, model_name)
+            api_key = self.get_api_key_secret().get_plaintext()
+            return await google_ai_get_model_context_window_async(self.base_url, api_key, model_name)

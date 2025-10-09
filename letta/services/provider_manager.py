@@ -4,6 +4,7 @@ from letta.orm.provider import Provider as ProviderModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.providers import Provider as PydanticProvider, ProviderCheck, ProviderCreate, ProviderUpdate
+from letta.schemas.secret import Secret
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
@@ -27,6 +28,12 @@ class ProviderManager:
             # Lazily create the provider id prior to persistence
             provider.resolve_identifier()
 
+            # Explicitly populate encrypted fields from plaintext
+            if provider.api_key is not None:
+                provider.api_key_enc = Secret.from_plaintext(provider.api_key)
+            if provider.access_key is not None:
+                provider.access_key_enc = Secret.from_plaintext(provider.access_key)
+
             new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
             await new_provider.create_async(session, actor=actor)
             return new_provider.to_pydantic()
@@ -43,6 +50,50 @@ class ProviderManager:
 
             # Update only the fields that are provided in ProviderUpdate
             update_data = provider_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Handle encryption for api_key if provided
+            # Only re-encrypt if the value has actually changed
+            if "api_key" in update_data and update_data["api_key"] is not None:
+                # Check if value changed
+                existing_api_key = None
+                if existing_provider.api_key_enc:
+                    existing_secret = Secret.from_encrypted(existing_provider.api_key_enc)
+                    existing_api_key = existing_secret.get_plaintext()
+                elif existing_provider.api_key:
+                    existing_api_key = existing_provider.api_key
+
+                # Only re-encrypt if different
+                if existing_api_key != update_data["api_key"]:
+                    existing_provider.api_key_enc = Secret.from_plaintext(update_data["api_key"]).get_encrypted()
+                    # Keep plaintext for dual-write during migration
+                    existing_provider.api_key = update_data["api_key"]
+
+                # Remove from update_data since we set directly on existing_provider
+                update_data.pop("api_key", None)
+                update_data.pop("api_key_enc", None)
+
+            # Handle encryption for access_key if provided
+            # Only re-encrypt if the value has actually changed
+            if "access_key" in update_data and update_data["access_key"] is not None:
+                # Check if value changed
+                existing_access_key = None
+                if existing_provider.access_key_enc:
+                    existing_secret = Secret.from_encrypted(existing_provider.access_key_enc)
+                    existing_access_key = existing_secret.get_plaintext()
+                elif existing_provider.access_key:
+                    existing_access_key = existing_provider.access_key
+
+                # Only re-encrypt if different
+                if existing_access_key != update_data["access_key"]:
+                    existing_provider.access_key_enc = Secret.from_plaintext(update_data["access_key"]).get_encrypted()
+                    # Keep plaintext for dual-write during migration
+                    existing_provider.access_key = update_data["access_key"]
+
+                # Remove from update_data since we set directly on existing_provider
+                update_data.pop("access_key", None)
+                update_data.pop("access_key_enc", None)
+
+            # Apply remaining updates
             for key, value in update_data.items():
                 setattr(existing_provider, key, value)
 
@@ -117,13 +168,21 @@ class ProviderManager:
     @trace_method
     def get_override_key(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
-        return providers[0].api_key if providers else None
+        if providers:
+            # Decrypt the API key before returning
+            api_key_secret = providers[0].get_api_key_secret()
+            return api_key_secret.get_plaintext()
+        return None
 
     @enforce_types
     @trace_method
     async def get_override_key_async(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
-        return providers[0].api_key if providers else None
+        if providers:
+            # Decrypt the API key before returning
+            api_key_secret = providers[0].get_api_key_secret()
+            return api_key_secret.get_plaintext()
+        return None
 
     @enforce_types
     @trace_method
@@ -131,10 +190,15 @@ class ProviderManager:
         self, provider_name: Union[str, None], actor: PydanticUser
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
-        access_key = providers[0].access_key if providers else None
-        secret_key = providers[0].api_key if providers else None
-        region = providers[0].region if providers else None
-        return access_key, secret_key, region
+        if providers:
+            # Decrypt the credentials before returning
+            access_key_secret = providers[0].get_access_key_secret()
+            api_key_secret = providers[0].get_api_key_secret()
+            access_key = access_key_secret.get_plaintext()
+            secret_key = api_key_secret.get_plaintext()
+            region = providers[0].region
+            return access_key, secret_key, region
+        return None, None, None
 
     @enforce_types
     @trace_method
@@ -142,10 +206,14 @@ class ProviderManager:
         self, provider_name: Union[str, None], actor: PydanticUser
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         providers = self.list_providers(name=provider_name, actor=actor)
-        api_key = providers[0].api_key if providers else None
-        base_url = providers[0].base_url if providers else None
-        api_version = providers[0].api_version if providers else None
-        return api_key, base_url, api_version
+        if providers:
+            # Decrypt the API key before returning
+            api_key_secret = providers[0].get_api_key_secret()
+            api_key = api_key_secret.get_plaintext()
+            base_url = providers[0].base_url
+            api_version = providers[0].api_version
+            return api_key, base_url, api_version
+        return None, None, None
 
     @enforce_types
     @trace_method
@@ -153,10 +221,14 @@ class ProviderManager:
         self, provider_name: Union[str, None], actor: PydanticUser
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
-        api_key = providers[0].api_key if providers else None
-        base_url = providers[0].base_url if providers else None
-        api_version = providers[0].api_version if providers else None
-        return api_key, base_url, api_version
+        if providers:
+            # Decrypt the API key before returning
+            api_key_secret = providers[0].get_api_key_secret()
+            api_key = api_key_secret.get_plaintext()
+            base_url = providers[0].base_url
+            api_version = providers[0].api_version
+            return api_key, base_url, api_version
+        return None, None, None
 
     @enforce_types
     @trace_method

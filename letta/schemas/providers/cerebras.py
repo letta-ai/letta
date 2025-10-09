@@ -38,7 +38,8 @@ class CerebrasProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        response = await openai_get_model_list_async(self.base_url, api_key=self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        response = await openai_get_model_list_async(self.base_url, api_key=api_key)
 
         if "data" in response:
             data = response["data"]

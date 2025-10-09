@@ -64,6 +64,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.secret import Secret
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, TerminalToolRule
@@ -521,16 +522,22 @@ class AgentManager:
 
                 env_rows = []
                 agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
+
                 if agent_secrets:
-                    env_rows = [
-                        {
+                    # Encrypt environment variable values
+                    env_rows = []
+                    for key, val in agent_secrets.items():
+                        row = {
                             "agent_id": aid,
                             "key": key,
                             "value": val,
                             "organization_id": actor.organization_id,
                         }
-                        for key, val in agent_secrets.items()
-                    ]
+                        # Encrypt value (Secret.from_plaintext handles missing encryption key internally)
+                        value_secret = Secret.from_plaintext(val)
+                        row["value_enc"] = value_secret.get_encrypted()
+                        env_rows.append(row)
+
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
                     env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
 
@@ -742,16 +749,44 @@ class AgentManager:
 
             agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
             if agent_secrets is not None:
+                # Fetch existing environment variables to check if values changed
+                result = await session.execute(select(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
+                existing_env_vars = {env.key: env for env in result.scalars().all()}
+
+                # TODO: do we need to delete each time or can we just upsert?
                 await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
-                env_rows = [
-                    {
+                # Encrypt environment variable values
+                # Only re-encrypt if the value has actually changed
+                env_rows = []
+                for k, v in agent_secrets.items():
+                    row = {
                         "agent_id": aid,
                         "key": k,
                         "value": v,
                         "organization_id": agent.organization_id,
                     }
-                    for k, v in agent_secrets.items()
-                ]
+
+                    # Check if value changed to avoid unnecessary re-encryption
+                    existing_env = existing_env_vars.get(k)
+                    existing_value = None
+                    if existing_env:
+                        if existing_env.value_enc:
+                            existing_secret = Secret.from_encrypted(existing_env.value_enc)
+                            existing_value = existing_secret.get_plaintext()
+                        elif existing_env.value:
+                            existing_value = existing_env.value
+
+                    # Encrypt value (reuse existing encrypted value if unchanged)
+                    if existing_value == v and existing_env and existing_env.value_enc:
+                        # Value unchanged, reuse existing encrypted value
+                        row["value_enc"] = existing_env.value_enc
+                    else:
+                        # Value changed or new, encrypt
+                        value_secret = Secret.from_plaintext(v)
+                        row["value_enc"] = value_secret.get_encrypted()
+
+                    env_rows.append(row)
+
                 if env_rows:
                     await self._bulk_insert_pivot_async(session, AgentEnvironmentVariable.__table__, env_rows)
                 session.expire(agent, ["tool_exec_environment_variables"])

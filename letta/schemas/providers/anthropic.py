@@ -4,9 +4,11 @@ from typing import Literal
 import anthropic
 from pydantic import Field
 
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers.base import Provider
+from letta.settings import model_settings
 
 # https://docs.anthropic.com/claude/docs/models-overview
 # Sadly hardcoded
@@ -98,8 +100,9 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        if self.api_key:
-            anthropic_client = anthropic.Anthropic(api_key=self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        if api_key:
+            anthropic_client = anthropic.Anthropic(api_key=api_key)
             try:
                 # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
                 anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
@@ -116,8 +119,9 @@ class AnthropicProvider(Provider):
 
         NOTE: currently there is no GET /models, so we need to hardcode
         """
-        if self.api_key:
-            anthropic_client = anthropic.AsyncAnthropic(api_key=self.api_key)
+        api_key = self.get_api_key_secret().get_plaintext()
+        if api_key:
+            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
         elif model_settings.anthropic_api_key:
             anthropic_client = anthropic.AsyncAnthropic()
         else:

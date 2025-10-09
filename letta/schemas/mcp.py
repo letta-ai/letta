@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
@@ -13,7 +14,7 @@ from letta.functions.mcp_client.types import (
 )
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.letta_base import LettaBase
-from letta.schemas.secret import Secret, SecretDict
+from letta.schemas.secret import Secret
 from letta.settings import settings
 
 
@@ -31,8 +32,8 @@ class MCPServer(BaseMCPServer):
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for authentication)")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
-    token_enc: Optional[str] = Field(None, description="Encrypted token")
-    custom_headers_enc: Optional[str] = Field(None, description="Encrypted custom headers")
+    token_enc: Secret | None = Field(None, description="Encrypted token as Secret object")
+    custom_headers_enc: Secret | None = Field(None, description="Encrypted custom headers as Secret object")
 
     # stdio config
     stdio_config: Optional[StdioServerConfig] = Field(
@@ -48,54 +49,54 @@ class MCPServer(BaseMCPServer):
 
     def get_token_secret(self) -> Secret:
         """Get the token as a Secret object, preferring encrypted over plaintext."""
-        return Secret.from_db(self.token_enc, self.token)
+        if self.token_enc is not None:
+            return self.token_enc
+        return Secret.from_db(None, self.token)
 
-    def get_custom_headers_secret(self) -> SecretDict:
-        """Get custom headers as a SecretDict object, preferring encrypted over plaintext."""
-        return SecretDict.from_db(self.custom_headers_enc, self.custom_headers)
+    def get_custom_headers_secret(self) -> Secret:
+        """Get custom headers as a Secret object (stores JSON string), preferring encrypted over plaintext."""
+        if self.custom_headers_enc is not None:
+            return self.custom_headers_enc
+        # Fallback: convert plaintext dict to JSON string and wrap in Secret
+        if self.custom_headers is not None:
+            json_str = json.dumps(self.custom_headers)
+            return Secret.from_plaintext(json_str)
+        return Secret.from_plaintext(None)
+
+    def get_custom_headers_dict(self) -> Optional[Dict[str, str]]:
+        """Get custom headers as a plaintext dictionary."""
+        secret = self.get_custom_headers_secret()
+        json_str = secret.get_plaintext()
+        if json_str:
+            try:
+                return json.loads(json_str)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return None
 
     def set_token_secret(self, secret: Secret) -> None:
         """Set token from a Secret object, updating both encrypted and plaintext fields."""
+        self.token_enc = secret
         secret_dict = secret.to_dict()
-        self.token_enc = secret_dict["encrypted"]
         # Only set plaintext during migration phase
-        if not secret._was_encrypted:
+        if not secret.was_encrypted:
             self.token = secret_dict["plaintext"]
         else:
             self.token = None
 
-    def set_custom_headers_secret(self, secret: SecretDict) -> None:
-        """Set custom headers from a SecretDict object, updating both fields."""
+    def set_custom_headers_secret(self, secret: Secret) -> None:
+        """Set custom headers from a Secret object (containing JSON string), updating both fields."""
+        self.custom_headers_enc = secret
         secret_dict = secret.to_dict()
-        self.custom_headers_enc = secret_dict["encrypted"]
-        # Only set plaintext during migration phase
-        if not secret._was_encrypted:
-            self.custom_headers = secret_dict["plaintext"]
+        # Parse JSON string to dict for plaintext field
+        json_str = secret_dict.get("plaintext")
+        if json_str and not secret.was_encrypted:
+            try:
+                self.custom_headers = json.loads(json_str)
+            except (json.JSONDecodeError, TypeError):
+                self.custom_headers = None
         else:
             self.custom_headers = None
-
-    def model_dump(self, to_orm: bool = False, **kwargs):
-        """Override model_dump to handle encryption when saving to database."""
-        data = super().model_dump(to_orm=to_orm, **kwargs)
-
-        if to_orm and settings.encryption_key:
-            # Encrypt token if present
-            if self.token is not None:
-                token_secret = Secret.from_plaintext(self.token)
-                secret_dict = token_secret.to_dict()
-                data["token_enc"] = secret_dict["encrypted"]
-                # Keep plaintext for dual-write during migration
-                data["token"] = secret_dict["plaintext"]
-
-            # Encrypt custom headers if present
-            if self.custom_headers is not None:
-                headers_secret = SecretDict.from_plaintext(self.custom_headers)
-                secret_dict = headers_secret.to_dict()
-                data["custom_headers_enc"] = secret_dict["encrypted"]
-                # Keep plaintext for dual-write during migration
-                data["custom_headers"] = secret_dict["plaintext"]
-
-        return data
 
     def to_config(
         self,
@@ -106,8 +107,8 @@ class MCPServer(BaseMCPServer):
         token_secret = self.get_token_secret()
         token_plaintext = token_secret.get_plaintext()
 
-        headers_secret = self.get_custom_headers_secret()
-        headers_plaintext = headers_secret.get_plaintext()
+        # Get custom headers as dict
+        headers_plaintext = self.get_custom_headers_dict()
 
         if self.server_type == MCPServerType.SSE:
             config = SSEServerConfig(
@@ -194,6 +195,9 @@ class MCPOAuthSession(BaseMCPOAuth):
     authorization_url: Optional[str] = Field(None, description="OAuth authorization URL")
     authorization_code: Optional[str] = Field(None, description="OAuth authorization code")
 
+    # Encrypted authorization code (for internal use)
+    authorization_code_enc: Secret | None = Field(None, description="Encrypted OAuth authorization code as Secret object")
+
     # Token data
     access_token: Optional[str] = Field(None, description="OAuth access token")
     refresh_token: Optional[str] = Field(None, description="OAuth refresh token")
@@ -202,8 +206,8 @@ class MCPOAuthSession(BaseMCPOAuth):
     scope: Optional[str] = Field(None, description="OAuth scope")
 
     # Encrypted token fields (for internal use)
-    access_token_enc: Optional[str] = Field(None, description="Encrypted OAuth access token")
-    refresh_token_enc: Optional[str] = Field(None, description="Encrypted OAuth refresh token")
+    access_token_enc: Secret | None = Field(None, description="Encrypted OAuth access token as Secret object")
+    refresh_token_enc: Secret | None = Field(None, description="Encrypted OAuth refresh token as Secret object")
 
     # Client configuration
     client_id: Optional[str] = Field(None, description="OAuth client ID")
@@ -211,7 +215,7 @@ class MCPOAuthSession(BaseMCPOAuth):
     redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI")
 
     # Encrypted client secret (for internal use)
-    client_secret_enc: Optional[str] = Field(None, description="Encrypted OAuth client secret")
+    client_secret_enc: Secret | None = Field(None, description="Encrypted OAuth client secret as Secret object")
 
     # Session state
     status: OAuthSessionStatus = Field(default=OAuthSessionStatus.PENDING, description="Session status")
@@ -222,73 +226,63 @@ class MCPOAuthSession(BaseMCPOAuth):
 
     def get_access_token_secret(self) -> Secret:
         """Get the access token as a Secret object, preferring encrypted over plaintext."""
-        return Secret.from_db(self.access_token_enc, self.access_token)
+        if self.access_token_enc is not None:
+            return self.access_token_enc
+        return Secret.from_db(None, self.access_token)
 
     def get_refresh_token_secret(self) -> Secret:
         """Get the refresh token as a Secret object, preferring encrypted over plaintext."""
-        return Secret.from_db(self.refresh_token_enc, self.refresh_token)
+        if self.refresh_token_enc is not None:
+            return self.refresh_token_enc
+        return Secret.from_db(None, self.refresh_token)
 
     def get_client_secret_secret(self) -> Secret:
         """Get the client secret as a Secret object, preferring encrypted over plaintext."""
-        return Secret.from_db(self.client_secret_enc, self.client_secret)
+        if self.client_secret_enc is not None:
+            return self.client_secret_enc
+        return Secret.from_db(None, self.client_secret)
+
+    def get_authorization_code_secret(self) -> Secret:
+        """Get the authorization code as a Secret object, preferring encrypted over plaintext."""
+        if self.authorization_code_enc is not None:
+            return self.authorization_code_enc
+        return Secret.from_db(None, self.authorization_code)
 
     def set_access_token_secret(self, secret: Secret) -> None:
         """Set access token from a Secret object."""
+        self.access_token_enc = secret
         secret_dict = secret.to_dict()
-        self.access_token_enc = secret_dict["encrypted"]
-        if not secret._was_encrypted:
+        if not secret.was_encrypted:
             self.access_token = secret_dict["plaintext"]
         else:
             self.access_token = None
 
     def set_refresh_token_secret(self, secret: Secret) -> None:
         """Set refresh token from a Secret object."""
+        self.refresh_token_enc = secret
         secret_dict = secret.to_dict()
-        self.refresh_token_enc = secret_dict["encrypted"]
-        if not secret._was_encrypted:
+        if not secret.was_encrypted:
             self.refresh_token = secret_dict["plaintext"]
         else:
             self.refresh_token = None
 
     def set_client_secret_secret(self, secret: Secret) -> None:
         """Set client secret from a Secret object."""
+        self.client_secret_enc = secret
         secret_dict = secret.to_dict()
-        self.client_secret_enc = secret_dict["encrypted"]
-        if not secret._was_encrypted:
+        if not secret.was_encrypted:
             self.client_secret = secret_dict["plaintext"]
         else:
             self.client_secret = None
 
-    def model_dump(self, to_orm: bool = False, **kwargs):
-        """Override model_dump to handle encryption when saving to database."""
-        data = super().model_dump(to_orm=to_orm, **kwargs)
-
-        if to_orm and settings.encryption_key:
-            # Encrypt access token if present
-            if self.access_token is not None:
-                token_secret = Secret.from_plaintext(self.access_token)
-                secret_dict = token_secret.to_dict()
-                data["access_token_enc"] = secret_dict["encrypted"]
-                # Keep plaintext for dual-write during migration
-                data["access_token"] = secret_dict["plaintext"]
-
-            # Encrypt refresh token if present
-            if self.refresh_token is not None:
-                token_secret = Secret.from_plaintext(self.refresh_token)
-                secret_dict = token_secret.to_dict()
-                data["refresh_token_enc"] = secret_dict["encrypted"]
-                # Keep plaintext for dual-write during migration
-                data["refresh_token"] = secret_dict["plaintext"]
-
-            # Encrypt client secret if present
-            if self.client_secret is not None:
-                secret = Secret.from_plaintext(self.client_secret)
-                secret_dict = secret.to_dict()
-                data["client_secret_enc"] = secret_dict["encrypted"]
-                # Keep plaintext for dual-write during migration
-                data["client_secret"] = secret_dict["plaintext"]
-
-        return data
+    def set_authorization_code_secret(self, secret: Secret) -> None:
+        """Set authorization code from a Secret object."""
+        self.authorization_code_enc = secret
+        secret_dict = secret.to_dict()
+        if not secret.was_encrypted:
+            self.authorization_code = secret_dict["plaintext"]
+        else:
+            self.authorization_code = None
 
 
 class MCPOAuthSessionCreate(BaseMCPOAuth):
