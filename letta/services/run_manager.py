@@ -67,21 +67,27 @@ class RunManager:
             run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
 
             # Create run metrics with start timestamp
-            import time
+            # TODO: temporary patch - make runmetrics operations best-effort, remove by oct 13th
+            try:
+                import time
 
-            # Get the project_id from the agent
-            agent = await session.get(AgentModel, agent_id)
-            project_id = agent.project_id if agent else None
+                # Get the project_id from the agent
+                agent = await session.get(AgentModel, agent_id)
+                project_id = agent.project_id if agent else None
 
-            metrics = RunMetricsModel(
-                id=run.id,
-                organization_id=organization_id,
-                agent_id=agent_id,
-                project_id=project_id,
-                run_start_ns=int(time.time() * 1e9),  # Current time in nanoseconds
-                num_steps=0,  # Initialize to 0
-            )
-            await metrics.create_async(session)
+                metrics = RunMetricsModel(
+                    id=run.id,
+                    organization_id=organization_id,
+                    agent_id=agent_id,
+                    project_id=project_id,
+                    run_start_ns=int(time.time() * 1e9),  # Current time in nanoseconds
+                    num_steps=0,  # Initialize to 0
+                )
+                await metrics.create_async(session)
+            except Exception as e:
+                # TODO: temporary patch - log but continue if metrics creation fails, remove by oct 13th
+                logger.warning(f"Failed to create run metrics for run {run.id}: {e!s}")
+
             await session.commit()
 
         return run.to_pydantic()
@@ -202,18 +208,23 @@ class RunManager:
             await session.commit()
 
         # update run metrics table
-        num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
-        async with db_registry.async_session() as session:
-            metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
-            # Calculate runtime if run is completing
-            if is_terminal_update and metrics.run_start_ns:
-                import time
+        # TODO: temporary patch - make runmetrics operations best-effort, remove by oct 13th
+        try:
+            num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
+            async with db_registry.async_session() as session:
+                metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
+                # Calculate runtime if run is completing
+                if is_terminal_update and metrics.run_start_ns:
+                    import time
 
-                current_ns = int(time.time() * 1e9)
-                metrics.run_ns = current_ns - metrics.run_start_ns
-            metrics.num_steps = num_steps
-            await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-            await session.commit()
+                    current_ns = int(time.time() * 1e9)
+                    metrics.run_ns = current_ns - metrics.run_start_ns
+                metrics.num_steps = num_steps
+                await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+                await session.commit()
+        except Exception as e:
+            # TODO: temporary patch - log but continue if metrics update fails, remove by oct 13th
+            logger.warning(f"Failed to update run metrics for run {run_id}: {e!s}")
 
         # Dispatch callback outside of database session if needed
         if needs_callback:
@@ -336,11 +347,17 @@ class RunManager:
             return pydantic_run.request_config
 
     @enforce_types
-    async def get_run_metrics_async(self, run_id: str, actor: PydanticUser) -> PydanticRunMetrics:
+    async def get_run_metrics_async(self, run_id: str, actor: PydanticUser) -> Optional[PydanticRunMetrics]:
         """Get metrics for a run."""
-        async with db_registry.async_session() as session:
-            metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
-            return metrics.to_pydantic()
+        # TODO: temporary patch - make runmetrics operations best-effort, remove by oct 13th
+        try:
+            async with db_registry.async_session() as session:
+                metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
+                return metrics.to_pydantic()
+        except Exception as e:
+            # TODO: temporary patch - log but return none if metrics read fails, remove by oct 13th
+            logger.warning(f"Failed to get run metrics for run {run_id}: {e!s}")
+            return None
 
     @enforce_types
     async def get_run_steps(
