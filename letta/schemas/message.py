@@ -611,6 +611,13 @@ class Message(BaseMessage):
         if self.role != MessageRole.tool:
             raise ValueError(f"Cannot convert message of type {self.role} to ToolReturnMessage")
 
+        # This is a very special buggy case during the double writing period
+        # where there is no tool call id on the tool return object, but it exists top level
+        # This is meant to be a short term patch - this can happen when people are using old agent files that were exported
+        # during a specific migration state
+        if len(self.tool_returns) == 1 and self.tool_call_id and not self.tool_returns[0].tool_call_id:
+            self.tool_returns[0].tool_call_id = self.tool_call_id
+
         if self.tool_returns:
             return self._convert_explicit_tool_returns()
 
