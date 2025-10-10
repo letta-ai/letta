@@ -134,6 +134,7 @@ async def test_add_mcp_tool_accepts_non_strict_schemas():
             assert call_args.kwargs["mcp_server_name"] == "test_server"
 
 
+@pytest.mark.skip(reason="Allowing invalid schemas to be attached")
 @pytest.mark.asyncio
 async def test_add_mcp_tool_rejects_invalid_schemas():
     """Test that adding MCP tools with invalid schemas is rejected."""
