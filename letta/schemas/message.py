@@ -224,6 +224,7 @@ class Message(BaseMessage):
     )
     approve: Optional[bool] = Field(default=None, description="Whether tool call is approved.")
     denial_reason: Optional[str] = Field(default=None, description="The reason the tool call request was denied.")
+    approvals: Optional[List[ApprovalReturn | ToolReturn]] = Field(default=None, description="The list of approvals for this message.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -341,23 +342,37 @@ class Message(BaseMessage):
                 approval_request_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
                 messages.append(approval_request_message)
             else:
-                approval_response_message = ApprovalResponseMessage(
-                    id=self.id,
-                    date=self.created_at,
-                    otid=self.otid,
-                    approve=self.approve,
-                    approval_request_id=self.approval_request_id,
-                    reason=self.denial_reason,
-                    approvals=[
-                        # TODO: temporary workaround to populate from legacy fields
-                        ApprovalReturn(
-                            tool_call_id=self.approval_request_id,
-                            approve=self.approve,
-                            reason=self.denial_reason,
-                        )
-                    ],
-                    run_id=self.run_id,
-                )
+                if self.approvals:
+                    first_approval = [a for a in self.approvals if isinstance(a, ApprovalReturn)][0]
+                    approval_response_message = ApprovalResponseMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        otid=self.otid,
+                        approvals=self.approvals,
+                        run_id=self.run_id,
+                        # TODO: temporary populate these fields for backwards compatibility
+                        approve=first_approval.approve,
+                        approval_request_id=first_approval.tool_call_id,
+                        reason=first_approval.reason,
+                    )
+                else:
+                    approval_response_message = ApprovalResponseMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        otid=self.otid,
+                        approve=self.approve,
+                        approval_request_id=self.approval_request_id,
+                        reason=self.denial_reason,
+                        approvals=[
+                            # TODO: temporary workaround to populate from legacy fields
+                            ApprovalReturn(
+                                tool_call_id=self.approval_request_id,
+                                approve=self.approve,
+                                reason=self.denial_reason,
+                            )
+                        ],
+                        run_id=self.run_id,
+                    )
                 messages.append(approval_response_message)
         else:
             raise ValueError(f"Unknown role: {self.role}")

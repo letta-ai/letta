@@ -3,6 +3,7 @@ from sqlalchemy.types import BINARY, TypeDecorator
 
 from letta.helpers.converters import (
     deserialize_agent_step_state,
+    deserialize_approvals,
     deserialize_batch_request_result,
     deserialize_create_batch_response,
     deserialize_embedding_config,
@@ -16,6 +17,7 @@ from letta.helpers.converters import (
     deserialize_tool_rules,
     deserialize_vector,
     serialize_agent_step_state,
+    serialize_approvals,
     serialize_batch_request_result,
     serialize_create_batch_response,
     serialize_embedding_config,
@@ -94,6 +96,19 @@ class ToolReturnColumn(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return deserialize_tool_returns(value)
+
+
+class ApprovalsColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing the approval responses of a tool call request as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_approvals(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_approvals(value)
 
 
 class MessageContentColumn(TypeDecorator):

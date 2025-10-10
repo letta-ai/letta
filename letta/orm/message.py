@@ -4,10 +4,11 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from sqlalchemy import BigInteger, FetchedValue, ForeignKey, Index, event, text
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
-from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
+from letta.orm.custom_columns import ApprovalsColumn, MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import ApprovalReturn
 from letta.schemas.letta_message_content import MessageContent, TextContent, TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage, ToolReturn
 from letta.settings import DatabaseChoice, settings
@@ -63,6 +64,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     )
     approve: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="Whether tool call is approved.")
     denial_reason: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The reason the tool call request was denied.")
+    approvals: Mapped[Optional[List[ApprovalReturn | ToolReturn]]] = mapped_column(
+        ApprovalsColumn, nullable=True, doc="Approval responses for tool call requests"
+    )
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(

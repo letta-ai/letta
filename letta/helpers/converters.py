@@ -8,6 +8,7 @@ from sqlalchemy import Dialect
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
+from letta.schemas.letta_message import ApprovalReturn
 from letta.schemas.letta_message_content import (
     ImageContent,
     ImageSourceType,
@@ -220,6 +221,49 @@ def deserialize_tool_returns(data: Optional[List[Dict]]) -> List[ToolReturn]:
         tool_returns.append(tool_return)
 
     return tool_returns
+
+
+# --------------------------
+# Approvals Serialization
+# --------------------------
+
+
+def serialize_approvals(approvals: Optional[List[Union[ApprovalReturn, ToolReturn, dict]]]) -> List[Dict]:
+    """Convert a list of ToolReturn objects into JSON-serializable format."""
+    if not approvals:
+        return []
+
+    serialized_approvals = []
+    for approval in approvals:
+        if isinstance(approval, ToolReturn):
+            serialized_approvals.append(approval.model_dump(mode="json"))
+        elif isinstance(approval, ApprovalReturn):
+            serialized_approvals.append(approval.model_dump(mode="json"))
+        elif isinstance(approval, dict):
+            serialized_approvals.append(approval)  # Already a dictionary, leave it as-is
+        else:
+            raise TypeError(f"Unexpected approval type: {type(approval)}")
+
+    return serialized_tool_returns
+
+
+def deserialize_approvals(data: Optional[List[Dict]]) -> List[Union[ApprovalReturn, ToolReturn]]:
+    """Convert a JSON list back into ApprovalReturn and ToolReturn objects."""
+    if not data:
+        return []
+
+    approvals = []
+    for item in data:
+        if "approve" in item:
+            approval_return = ApprovalReturn(**item)
+            approvals.append(approval_return)
+        elif "status" in item:
+            tool_return = ToolReturn(**item)
+            approvals.append(tool_return)
+        else:
+            raise TypeError(f"Unexpected approval type: {type(item)}")
+
+    return approvals
 
 
 # ----------------------------
