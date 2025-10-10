@@ -6,9 +6,12 @@ import traceback
 import websockets
 
 import letta.server.ws_api.protocol as protocol
+from letta.log import get_logger
 from letta.server.constants import WS_DEFAULT_PORT
 from letta.server.server import SyncServer
 from letta.server.ws_api.interface import SyncWebSocketInterface
+
+logger = get_logger(__name__)
 
 
 class WebSocketServer:
@@ -68,8 +71,7 @@ class WebSocketServer:
                             await websocket.send(protocol.server_command_response("OK: Agent initialized"))
                         except Exception as e:
                             self.agent = None
-                            print(f"[server] self.create_new_agent failed with:\n{e}")
-                            print(f"{traceback.format_exc()}")
+                            logger.exception(f"[server] self.create_new_agent failed with: {e}")
                             await websocket.send(protocol.server_command_response(f"Error: Failed to init agent - {str(e)}"))
 
                     else:
@@ -88,8 +90,7 @@ class WebSocketServer:
                         # self.run_step(user_message)
                         self.server.user_message(user_id="NULL", agent_id=data["agent_id"], message=user_message)
                     except Exception as e:
-                        print(f"[server] self.server.user_message failed with:\n{e}")
-                        print(f"{traceback.format_exc()}")
+                        logger.exception(f"[server] self.server.user_message failed with: {e}")
                         await websocket.send(protocol.server_agent_response_error(f"server.user_message failed with: {e}"))
                     await asyncio.sleep(1)  # pause before sending the terminating message, w/o this messages may be missed
                     await websocket.send(protocol.server_agent_response_end())

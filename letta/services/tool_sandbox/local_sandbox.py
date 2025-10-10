@@ -235,9 +235,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             if isinstance(e, TimeoutError):
                 raise e
 
-            logger.error(f"Subprocess execution for tool {self.tool_name} encountered an error: {e}")
-            logger.error(e.__class__.__name__)
-            logger.error(e.__traceback__)
+            logger.exception(f"Subprocess execution for tool {self.tool_name} encountered an error: {e}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name,
                 exception_name=type(e).__name__,

@@ -203,7 +203,7 @@ class OpenAIStreamingInterface:
         except Exception as e:
             import traceback
 
-            logger.error("Error processing stream: %s\n%s", e, traceback.format_exc())
+            logger.exception("Error processing stream: %s", e)
             if ttft_span:
                 ttft_span.add_event(
                     name="stop_reason",
@@ -632,7 +632,7 @@ class SimpleOpenAIStreamingInterface:
         except Exception as e:
             import traceback
 
-            logger.error("Error processing stream: %s\n%s", e, traceback.format_exc())
+            logger.exception("Error processing stream: %s", e)
             if ttft_span:
                 ttft_span.add_event(
                     name="stop_reason",
@@ -873,7 +873,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         except Exception as e:
             import traceback
 
-            logger.error("Error processing stream: %s\n%s", e, traceback.format_exc())
+            logger.exception("Error processing stream: %s", e)
             if ttft_span:
                 ttft_span.add_event(
                     name="stop_reason",

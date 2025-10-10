@@ -106,7 +106,7 @@ class Summarizer:
             try:
                 t.result()  # This re-raises exceptions from the task
             except Exception:
-                logger.error("Background task failed: %s", traceback.format_exc())
+                logger.exception("Background task failed")
 
         task.add_done_callback(callback)
         return task

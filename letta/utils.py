@@ -1367,7 +1367,7 @@ def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optio
             t.result()  # this re-raises exceptions from the task
         except Exception as e:
             task_desc = f"Background task {task_name}" if task_name else "Background task"
-            logger.error(f"{task_desc} failed: {str(e)}\n{traceback.format_exc()}")
+            logger.exception(f"{task_desc} failed: {str(e)}")
 
             if error_callback:
                 try:

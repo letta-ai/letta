@@ -445,9 +445,7 @@ class LettaAgentV3(LettaAgentV2):
         except Exception as e:
             import traceback
 
-            self.logger.error(f"Error during step processing: {e}")
-            self.logger.error(f"Error traceback: {traceback.format_exc()}")
-            # self.logger.error(f"Error during step processing: {e}")
+            self.logger.exception(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
 
             # This indicates we failed after we decided to stop stepping, which indicates a bug with our flow.
