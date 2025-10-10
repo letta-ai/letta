@@ -244,7 +244,7 @@ def serialize_approvals(approvals: Optional[List[Union[ApprovalReturn, ToolRetur
         else:
             raise TypeError(f"Unexpected approval type: {type(approval)}")
 
-    return serialized_tool_returns
+    return serialized_approvals
 
 
 def deserialize_approvals(data: Optional[List[Dict]]) -> List[Union[ApprovalReturn, ToolReturn]]:
