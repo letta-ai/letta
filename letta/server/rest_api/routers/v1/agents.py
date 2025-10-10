@@ -46,7 +46,7 @@ from letta.schemas.memory import (
     CreateArchivalMemory,
     Memory,
 )
-from letta.schemas.message import MessageCreate, MessageSearchRequest, MessageSearchResult
+from letta.schemas.message import MessageCreate, MessageCreateType, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.source import Source
@@ -1667,8 +1667,14 @@ async def send_message_async(
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    try:
+        is_message_input = request.messages[0].type == MessageCreateType.message
+    except:
+        is_message_input = True
+    use_lettuce = headers.experimental_params.message_async and is_message_input
+
     # Create a new run
-    use_lettuce = headers.experimental_params.message_async
     run = PydanticRun(
         callback_url=request.callback_url,
         agent_id=agent_id,
