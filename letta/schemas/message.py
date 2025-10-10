@@ -33,6 +33,7 @@ from letta.schemas.letta_message import (
     SystemMessage,
     ToolCall,
     ToolCallMessage,
+    ToolReturn as LettaToolReturn,
     ToolReturnMessage,
     UserMessage,
 )
@@ -344,17 +345,29 @@ class Message(BaseMessage):
                 messages.append(approval_request_message)
             else:
                 if self.approvals:
-                    first_approval = [a for a in self.approvals if isinstance(a, ApprovalReturn)][0]
+                    first_approval = [a for a in self.approvals if isinstance(a, ApprovalReturn)]
+
+                    def maybe_convert_tool_return_message(maybe_tool_return: ToolReturn):
+                        if isinstance(maybe_tool_return, LettaToolReturn):
+                            return LettaToolReturn(
+                                tool_call_id=maybe_tool_return.tool_call_id,
+                                status=maybe_tool_return.status,
+                                tool_return=maybe_tool_return.tool_return,
+                                stdout=maybe_tool_return.stdout,
+                                stderr=maybe_tool_return.stderr,
+                            )
+                        return maybe_tool_return
+
                     approval_response_message = ApprovalResponseMessage(
                         id=self.id,
                         date=self.created_at,
                         otid=self.otid,
-                        approvals=self.approvals,
+                        approvals=[maybe_convert_tool_return_message(approval) for approval in self.approvals],
                         run_id=self.run_id,
                         # TODO: temporary populate these fields for backwards compatibility
-                        approve=first_approval.approve,
-                        approval_request_id=first_approval.tool_call_id,
-                        reason=first_approval.reason,
+                        approve=first_approval[0].approve if first_approval else None,
+                        approval_request_id=first_approval[0].tool_call_id if first_approval else None,
+                        reason=first_approval[0].reason if first_approval else None,
                     )
                 else:
                     approval_response_message = ApprovalResponseMessage(

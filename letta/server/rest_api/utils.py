@@ -27,6 +27,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import ToolReturn as LettaToolReturn
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
     ReasoningContent,
@@ -169,6 +170,20 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
 
 
 def create_approval_response_message_from_input(agent_state: AgentState, input_message: ApprovalCreate) -> List[Message]:
+    def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
+        if isinstance(maybe_tool_return, LettaToolReturn):
+            packaged_function_response = package_function_response(
+                maybe_tool_return.status == "success", maybe_tool_return.tool_return, agent_state.timezone
+            )
+            return ToolReturn(
+                tool_call_id=maybe_tool_return.tool_call_id,
+                status=maybe_tool_return.status,
+                func_response=packaged_function_response,
+                stdout=maybe_tool_return.stdout,
+                stderr=maybe_tool_return.stderr,
+            )
+        return maybe_tool_return
+
     return [
         Message(
             role=MessageRole.approval,
@@ -177,6 +192,7 @@ def create_approval_response_message_from_input(agent_state: AgentState, input_m
             approval_request_id=input_message.approval_request_id,
             approve=input_message.approve,
             denial_reason=input_message.reason,
+            approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
         )
     ]
 

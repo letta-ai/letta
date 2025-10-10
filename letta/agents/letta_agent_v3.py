@@ -19,16 +19,17 @@ from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
 from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
@@ -397,6 +398,9 @@ class LettaAgentV3(LettaAgentV2):
                 is_approval=approval_response.approve if approval_response is not None else False,
                 is_denial=(approval_response.approve == False) if approval_response is not None else False,
                 denial_reason=approval_response.denial_reason if approval_response is not None else None,
+                tool_return=approval_response.approvals[0]
+                if approval_response and approval_response.approvals and isinstance(approval_response.approvals[0], ToolReturn)
+                else None,
             )
             # NOTE: there is an edge case where persisted_messages is empty (the LLM did a "no-op")
 
@@ -542,6 +546,7 @@ class LettaAgentV3(LettaAgentV2):
         is_approval: bool | None = None,
         is_denial: bool | None = None,
         denial_reason: str | None = None,
+        tool_return: ToolReturn | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate the
@@ -553,29 +558,45 @@ class LettaAgentV3(LettaAgentV2):
         else:
             tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
 
-        if is_denial:
+        if is_denial or tool_return is not None:
             continue_stepping = True
             stop_reason = None
-            tool_call_messages = create_letta_messages_from_llm_response(
-                agent_id=agent_state.id,
-                model=agent_state.llm_config.model,
-                function_name=tool_call.function.name,
-                function_arguments={},
-                tool_execution_result=ToolExecutionResult(status="error"),
-                tool_call_id=tool_call_id,
-                function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
-                timezone=agent_state.timezone,
-                continue_stepping=continue_stepping,
-                # NOTE: we may need to change this to not have a "heartbeat" prefix for v3?
-                heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
-                reasoning_content=None,
-                pre_computed_assistant_message_id=None,
-                step_id=step_id,
-                run_id=run_id,
-                is_approval_response=True,
-                force_set_request_heartbeat=False,
-                add_heartbeat_on_continue=False,
-            )
+            if tool_return is not None:
+                tool_call_messages = [
+                    Message(
+                        role=MessageRole.tool,
+                        content=[TextContent(text=tool_return.func_response)],
+                        agent_id=agent_state.id,
+                        model=agent_state.llm_config.model,
+                        tool_calls=[],
+                        tool_call_id=tool_return.tool_call_id,
+                        created_at=get_utc_time(),
+                        tool_returns=[tool_return],
+                        run_id=run_id,
+                        step_id=step_id,
+                    )
+                ]
+            else:
+                tool_call_messages = create_letta_messages_from_llm_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=tool_call.function.name,
+                    function_arguments={},
+                    tool_execution_result=ToolExecutionResult(status="error"),
+                    tool_call_id=tool_call_id,
+                    function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
+                    timezone=agent_state.timezone,
+                    continue_stepping=continue_stepping,
+                    # NOTE: we may need to change this to not have a "heartbeat" prefix for v3?
+                    heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
+                    reasoning_content=None,
+                    pre_computed_assistant_message_id=None,
+                    step_id=step_id,
+                    run_id=run_id,
+                    is_approval_response=True,
+                    force_set_request_heartbeat=False,
+                    add_heartbeat_on_continue=False,
+                )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
             # Set run_id on all messages before persisting

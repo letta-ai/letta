@@ -168,15 +168,19 @@ async def _prepare_in_context_messages_no_persist_async(
     # Check for approval-related message validation
     if len(input_messages) == 1 and input_messages[0].type == "approval":
         # User is trying to send an approval response
+        approval_message = input_messages[0].approvals[0]
         if current_in_context_messages[-1].role != "approval":
             raise ValueError(
                 "Cannot process approval response: No tool call is currently awaiting approval. "
                 "Please send a regular message to interact with the agent."
             )
-        if input_messages[0].approval_request_id != current_in_context_messages[-1].id:
+        if (
+            approval_message.tool_call_id != current_in_context_messages[-1].id
+            and approval_message.tool_call_id != current_in_context_messages[-1].tool_calls[0].id
+        ):
             raise ValueError(
-                f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
-                f"but received '{input_messages[0].approval_request_id}'."
+                f"Invalid tool call ID. Expected '{current_in_context_messages[-1].tool_calls[0].id}' "
+                f"but received '{approval_message.tool_call_id}'."
             )
         new_in_context_messages = create_approval_response_message_from_input(agent_state=agent_state, input_message=input_messages[0])
     else:
