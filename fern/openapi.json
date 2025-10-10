@@ -36797,6 +36797,28 @@
             ],
             "title": "Denial Reason",
             "description": "An optional explanation for the provided approval status"
+          },
+          "approvals": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApprovalReturn"
+                    },
+                    {
+                      "$ref": "#/components/schemas/letta__schemas__message__ToolReturn"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvals",
+            "description": "Approval returns for the message"
           }
         },
         "type": "object",

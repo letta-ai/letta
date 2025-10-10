@@ -10,6 +10,7 @@ from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
 from letta.schemas.group import Group, GroupCreate
+from letta.schemas.letta_message import ApprovalReturn
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.source import Source, SourceCreate
@@ -59,6 +60,7 @@ class MessageSchema(MessageCreate):
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved")
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request")
     denial_reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+    approvals: Optional[List[ApprovalReturn | ToolReturn]] = Field(None, description="Approval returns for the message")
 
     # TODO: Should we also duplicate the steps here?
     # TODO: What about tool_return?
@@ -87,6 +89,7 @@ class MessageSchema(MessageCreate):
             approve=message.approve,
             approval_request_id=message.approval_request_id,
             denial_reason=message.denial_reason,
+            approvals=message.approvals,
         )
 
 
