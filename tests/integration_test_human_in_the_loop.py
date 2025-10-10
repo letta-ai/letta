@@ -184,7 +184,7 @@ def test_send_approval_message_with_incorrect_request_id(client, agent):
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
 
-    with pytest.raises(ApiError, match="Invalid tool call ID"):
+    with pytest.raises(ApiError, match="Invalid tool call IDs"):
         client.agents.messages.create(
             agent_id=agent.id,
             messages=[ApprovalCreate(approve=True, approval_request_id=FAKE_REQUEST_ID)],
