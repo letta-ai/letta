@@ -157,7 +157,7 @@ async def retrieve_run(
         use_lettuce = run.metadata and run.metadata.get("lettuce")
         if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
             lettuce_client = await LettuceClient.create()
-            status = await lettuce_client.get_status()
+            status = await lettuce_client.get_status(run_id=run_id)
 
             # Map the status to our enum
             run_status = run.status
