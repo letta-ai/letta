@@ -107,7 +107,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
-from letta.settings import DatabaseChoice, settings
+from letta.settings import DatabaseChoice, model_settings, settings
 from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -3088,7 +3088,14 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        if settings.environment == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
+        # Use Anthropic token counter if:
+        # 1. The model endpoint type is anthropic, OR
+        # 2. We're in PRODUCTION and anthropic_api_key is available
+        use_anthropic = agent_state.llm_config.model_endpoint_type == "anthropic" or (
+            settings.environment == "PRODUCTION" and model_settings.anthropic_api_key is not None
+        )
+
+        if use_anthropic:
             anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
