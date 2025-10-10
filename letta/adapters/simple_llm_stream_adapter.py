@@ -25,6 +25,24 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
     specific streaming formats.
     """
 
+    def _extract_tool_calls(self) -> list:
+        """extract tool calls from interface, trying parallel API first then single API"""
+        # try multi-call api if available
+        if hasattr(self.interface, "get_tool_call_objects"):
+            try:
+                calls = self.interface.get_tool_call_objects()
+                if calls:
+                    return calls
+            except Exception:
+                pass
+
+        # fallback to single-call api
+        try:
+            single = self.interface.get_tool_call_object()
+            return [single] if single else []
+        except Exception:
+            return []
+
     async def invoke_llm(
         self,
         request_data: dict,
@@ -102,12 +120,10 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
         # After streaming completes, extract the accumulated data
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
-        # Extract tool call from the interface
-        try:
-            self.tool_call = self.interface.get_tool_call_object()
-        except ValueError as e:
-            # No tool call, handle upstream
-            self.tool_call = None
+        # extract tool calls from interface (supports both single and parallel calls)
+        self.tool_calls = self._extract_tool_calls()
+        # preserve legacy single-call field for existing consumers
+        self.tool_call = self.tool_calls[-1] if self.tool_calls else None
 
         # Extract reasoning content from the interface
         # TODO this should probably just be called "content"?

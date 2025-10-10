@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "name": "test_export_import_57426498-f708-4228-a331-5efc0087b895",
+      "name": "test_export_import_42fbdcec-58ce-4e27-b6e5-938b3bcd57aa",
       "memory_blocks": [],
       "tools": [],
       "tool_ids": [
@@ -21,22 +21,22 @@
       ],
       "tool_rules": [
         {
-          "tool_name": "send_message",
-          "type": "exit_loop",
-          "prompt_template": null
-        },
-        {
           "tool_name": "memory_insert",
           "type": "continue_loop",
           "prompt_template": null
         },
         {
-          "tool_name": "memory_replace",
-          "type": "continue_loop",
+          "tool_name": "send_message",
+          "type": "exit_loop",
           "prompt_template": null
         },
         {
           "tool_name": "conversation_search",
+          "type": "continue_loop",
+          "prompt_template": null
+        },
+        {
+          "tool_name": "memory_replace",
           "type": "continue_loop",
           "prompt_template": null
         }
@@ -129,7 +129,7 @@
           "content": [
             {
               "type": "text",
-              "text": "You are a helpful assistant specializing in data analysis and mathematical computations.\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<project_context>\n<description>\n\n</description>\n<metadata>\n- chars_current=210\n- chars_limit=6000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: Current project: Building predictive models for financial markets. Sarah is working on sequence analysis and pattern recognition. Recently interested in mathematical sequences like Fibonacci for trend analysis.\n</value>\n</project_context>\n\n<human>\n<description>\nThe human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n</description>\n<metadata>\n- chars_current=175\n- chars_limit=4000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: username: sarah_researcher\nLine 2: occupation: data scientist\nLine 3: interests: machine learning, statistics, fibonacci sequences\nLine 4: preferred_communication: detailed explanations with examples\n</value>\n</human>\n\n<persona>\n<description>\nThe persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n</description>\n<metadata>\n- chars_current=195\n- chars_limit=8000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: You are Alex, a data analyst and mathematician who helps users with calculations and insights. You have extensive experience in statistical analysis and prefer to provide clear, accurate results.\n</value>\n</persona>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\nmemory_insert requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_replace requires continuing your response when called\n</tool_rule>\n<tool_rule>\nconversation_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n<memory_metadata>\n- The current system date is: October 10, 2025\n- Memory blocks were last modified: 2025-10-10 12:21:30 AM UTC+0000\n- -1 previous messages between you and the user are stored in recall memory (use tools to access them)\n- 2 total memories you created are stored in archival memory (use tools to access them)\n</memory_metadata>",
+              "text": "You are a helpful assistant specializing in data analysis and mathematical computations.\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<project_context>\n<description>\n\n</description>\n<metadata>\n- chars_current=210\n- chars_limit=6000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: Current project: Building predictive models for financial markets. Sarah is working on sequence analysis and pattern recognition. Recently interested in mathematical sequences like Fibonacci for trend analysis.\n</value>\n</project_context>\n\n<human>\n<description>\nThe human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n</description>\n<metadata>\n- chars_current=175\n- chars_limit=4000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: username: sarah_researcher\nLine 2: occupation: data scientist\nLine 3: interests: machine learning, statistics, fibonacci sequences\nLine 4: preferred_communication: detailed explanations with examples\n</value>\n</human>\n\n<persona>\n<description>\nThe persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n</description>\n<metadata>\n- chars_current=195\n- chars_limit=8000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: You are Alex, a data analyst and mathematician who helps users with calculations and insights. You have extensive experience in statistical analysis and prefer to provide clear, accurate results.\n</value>\n</persona>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\nmemory_insert requires continuing your response when called\n</tool_rule>\n<tool_rule>\nconversation_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_replace requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n<memory_metadata>\n- The current system date is: October 10, 2025\n- Memory blocks were last modified: 2025-10-10 07:14:31 AM UTC+0000\n- -1 previous messages between you and the user are stored in recall memory (use tools to access them)\n- 2 total memories you created are stored in archival memory (use tools to access them)\n</memory_metadata>",
               "signature": null
             }
           ],
@@ -144,7 +144,7 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:29.139951+00:00",
+          "created_at": "2025-10-10T07:14:29.912336+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -169,7 +169,7 @@
           "agent_id": "agent-0",
           "tool_calls": [
             {
-              "id": "9b3e8290-a336-4e3b-851e-2472ccd6fe91",
+              "id": "f9a9765f-9285-4056-9916-d5bafb729bef",
               "function": {
                 "arguments": "{\n  \"message\": \"More human than human is our motto.\"\n}",
                 "name": "send_message"
@@ -179,7 +179,7 @@
           ],
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:29.139990+00:00",
+          "created_at": "2025-10-10T07:14:29.912379+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -190,7 +190,7 @@
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-10-10 12:21:29 AM UTC+0000\"\n}",
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-10-10 07:14:29 AM UTC+0000\"\n}",
               "signature": null
             }
           ],
@@ -203,9 +203,9 @@
           "model": "gpt-4.1-mini",
           "agent_id": "agent-0",
           "tool_calls": null,
-          "tool_call_id": "9b3e8290-a336-4e3b-851e-2472ccd6fe91",
+          "tool_call_id": "f9a9765f-9285-4056-9916-d5bafb729bef",
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:29.140013+00:00",
+          "created_at": "2025-10-10T07:14:29.912403+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -216,7 +216,7 @@
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-10-10 12:21:29 AM UTC+0000\"\n}",
+              "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-10-10 07:14:29 AM UTC+0000\"\n}",
               "signature": null
             }
           ],
@@ -231,7 +231,7 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:29.140024+00:00",
+          "created_at": "2025-10-10T07:14:29.912415+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -257,7 +257,7 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:30.360611+00:00",
+          "created_at": "2025-10-10T07:14:31.639749+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -268,7 +268,7 @@
           "content": [
             {
               "type": "text",
-              "text": "Responding to test message for export.",
+              "text": "Responding to test message for export with confirmation.",
               "signature": null
             }
           ],
@@ -282,17 +282,17 @@
           "agent_id": "agent-0",
           "tool_calls": [
             {
-              "id": "call_mNAOnZ212k0eehF005T5s6Wn",
+              "id": "call_tB2kJPFgSD5Ldk8VaUYwkMCF",
               "function": {
-                "arguments": "{\"message\": \"Received your test message for export. Everything is working fine on my end. How can I assist you further today?\", \"request_heartbeat\": false}",
+                "arguments": "{\"message\": \"Test message received successfully. Ready for further instructions or queries.\", \"request_heartbeat\": false}",
                 "name": "send_message"
               },
               "type": "function"
             }
           ],
-          "tool_call_id": "call_mNAOnZ212k0eehF005T5s6Wn",
+          "tool_call_id": "call_tB2kJPFgSD5Ldk8VaUYwkMCF",
           "tool_returns": [],
-          "created_at": "2025-10-10T00:21:31.900813+00:00",
+          "created_at": "2025-10-10T07:14:33.049314+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -303,7 +303,7 @@
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-10-10 12:21:31 AM UTC+0000\"\n}",
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-10-10 07:14:33 AM UTC+0000\"\n}",
               "signature": null
             }
           ],
@@ -316,17 +316,17 @@
           "model": "gpt-4.1-mini",
           "agent_id": "agent-0",
           "tool_calls": null,
-          "tool_call_id": "call_mNAOnZ212k0eehF005T5s6Wn",
+          "tool_call_id": "call_tB2kJPFgSD5Ldk8VaUYwkMCF",
           "tool_returns": [
             {
-              "tool_call_id": "call_mNAOnZ212k0eehF005T5s6Wn",
+              "tool_call_id": "call_tB2kJPFgSD5Ldk8VaUYwkMCF",
               "status": "success",
               "stdout": null,
               "stderr": null,
-              "func_response": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-10-10 12:21:31 AM UTC+0000\"\n}"
+              "func_response": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-10-10 07:14:33 AM UTC+0000\"\n}"
             }
           ],
-          "created_at": "2025-10-10T00:21:31.900994+00:00",
+          "created_at": "2025-10-10T07:14:33.049503+00:00",
           "approve": null,
           "approval_request_id": null,
           "denial_reason": null
@@ -477,7 +477,7 @@
       "metadata_": {}
     },
     {
-      "id": "tool-4",
+      "id": "tool-5",
       "tool_type": "letta_core",
       "description": "Search prior conversation history using hybrid search (text + semantic similarity).\n\nExamples:\n        # Search all messages\n        conversation_search(query=\"project updates\")\n\n        # Search only assistant messages\n        conversation_search(query=\"error handling\", roles=[\"assistant\"])\n\n        # Search with date range (inclusive of both dates)\n        conversation_search(query=\"meetings\", start_date=\"2024-01-15\", end_date=\"2024-01-20\")\n        # This includes all messages from Jan 15 00:00:00 through Jan 20 23:59:59\n\n        # Search messages from a specific day (inclusive)\n        conversation_search(query=\"bug reports\", start_date=\"2024-09-04\", end_date=\"2024-09-04\")\n        # This includes ALL messages from September 4, 2024\n\n        # Search with specific time boundaries\n        conversation_search(query=\"deployment\", start_date=\"2024-01-15T09:00\", end_date=\"2024-01-15T17:30\")\n        # This includes messages from 9 AM to 5:30 PM on Jan 15\n\n        # Search with limit\n        conversation_search(query=\"debugging\", limit=10)\n\n    Returns:\n        str: Query result string containing matching messages with timestamps and content.",
       "source_type": "python",
@@ -536,7 +536,7 @@
       "metadata_": {}
     },
     {
-      "id": "tool-1",
+      "id": "tool-0",
       "tool_type": "custom",
       "description": "Get user preferences for a specific category.",
       "source_type": "json",
@@ -572,7 +572,7 @@
       "metadata_": {}
     },
     {
-      "id": "tool-0",
+      "id": "tool-6",
       "tool_type": "letta_sleeptime_core",
       "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
       "source_type": "python",
@@ -616,7 +616,7 @@
       "metadata_": {}
     },
     {
-      "id": "tool-5",
+      "id": "tool-1",
       "tool_type": "letta_sleeptime_core",
       "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_str=\"- [ ] Step 5: Search the web\", new_str=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_str=\"Line 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_str=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
       "source_type": "python",
@@ -661,7 +661,7 @@
       "metadata_": {}
     },
     {
-      "id": "tool-6",
+      "id": "tool-4",
       "tool_type": "letta_core",
       "description": "Sends a message to the human user.",
       "source_type": "python",
@@ -698,7 +698,7 @@
   ],
   "mcp_servers": [],
   "metadata": {
-    "revision_id": "c734cfc0d595"
+    "revision_id": "066857381578"
   },
-  "created_at": "2025-10-10T00:21:32.284067+00:00"
+  "created_at": "2025-10-10T07:14:33.457962+00:00"
 }

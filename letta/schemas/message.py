@@ -1514,6 +1514,7 @@ class Message(BaseMessage):
                         }
                     ],
                 }
+
         else:
             raise ValueError(self.role)
 

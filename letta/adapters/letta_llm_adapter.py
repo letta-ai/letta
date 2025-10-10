@@ -30,6 +30,7 @@ class LettaLLMAdapter(ABC):
         self.reasoning_content: list[TextContent | ReasoningContent | RedactedReasoningContent] | None = None
         self.content: list[TextContent | ReasoningContent | RedactedReasoningContent] | None = None
         self.tool_call: ToolCall | None = None
+        self.tool_calls: list[ToolCall] = []
         self.usage: LettaUsageStatistics = LettaUsageStatistics()
         self.telemetry_manager: TelemetryManager = TelemetryManager()
         self.llm_request_finish_timestamp_ns: int | None = None
