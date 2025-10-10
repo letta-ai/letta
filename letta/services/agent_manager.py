@@ -379,6 +379,9 @@ class AgentManager:
                 # NOTE: also overwrite initial message sequence to empty by default
                 if agent_create.initial_message_sequence is None:
                     agent_create.initial_message_sequence = []
+                # NOTE: default to no base tool rules unless explicitly provided
+                if not agent_create.tool_rules and agent_create.include_base_tool_rules is None:
+                    agent_create.include_base_tool_rules = False
             elif agent_create.agent_type == AgentType.workflow_agent:
                 pass  # no default tools
             else:
