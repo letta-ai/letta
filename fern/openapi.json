@@ -20216,7 +20216,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The template name with :current version (e.g., my-template:current)"
+            "description": "The template name with :dev version (e.g., my-template:dev)"
           }
         ],
         "operationId": "templates.setCurrentTemplateFromSnapshot",
