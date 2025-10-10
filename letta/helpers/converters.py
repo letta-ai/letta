@@ -8,7 +8,7 @@ from sqlalchemy import Dialect
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
-from letta.schemas.letta_message import ApprovalReturn
+from letta.schemas.letta_message import ApprovalReturn, MessageReturnType
 from letta.schemas.letta_message_content import (
     ImageContent,
     ImageSourceType,
@@ -235,9 +235,9 @@ def serialize_approvals(approvals: Optional[List[Union[ApprovalReturn, ToolRetur
 
     serialized_approvals = []
     for approval in approvals:
-        if isinstance(approval, ToolReturn):
+        if isinstance(approval, ApprovalReturn):
             serialized_approvals.append(approval.model_dump(mode="json"))
-        elif isinstance(approval, ApprovalReturn):
+        elif isinstance(approval, ToolReturn):
             serialized_approvals.append(approval.model_dump(mode="json"))
         elif isinstance(approval, dict):
             serialized_approvals.append(approval)  # Already a dictionary, leave it as-is
@@ -254,14 +254,14 @@ def deserialize_approvals(data: Optional[List[Dict]]) -> List[Union[ApprovalRetu
 
     approvals = []
     for item in data:
-        if "approve" in item:
+        if "type" in item and item.get("type") == MessageReturnType.approval:
             approval_return = ApprovalReturn(**item)
             approvals.append(approval_return)
         elif "status" in item:
             tool_return = ToolReturn(**item)
             approvals.append(tool_return)
         else:
-            raise TypeError(f"Unexpected approval type: {type(item)}")
+            continue
 
     return approvals
 

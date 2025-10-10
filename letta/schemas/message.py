@@ -27,6 +27,7 @@ from letta.schemas.letta_message import (
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
+    LettaMessageReturnUnion,
     MessageType,
     ReasoningMessage,
     SystemMessage,
@@ -117,7 +118,7 @@ class ApprovalCreate(MessageCreateBase):
     """Input to approve or deny a tool call request"""
 
     type: Literal[MessageCreateType.approval] = Field(default=MessageCreateType.approval, description="The message type to be created.")
-    approvals: Optional[List[ApprovalReturn]] = Field(default=None, description="The list of approval responses")
+    approvals: Optional[List[LettaMessageReturnUnion]] = Field(default=None, description="The list of approval responses")
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
@@ -224,7 +225,7 @@ class Message(BaseMessage):
     )
     approve: Optional[bool] = Field(default=None, description="Whether tool call is approved.")
     denial_reason: Optional[str] = Field(default=None, description="The reason the tool call request was denied.")
-    approvals: Optional[List[ApprovalReturn | ToolReturn]] = Field(default=None, description="The list of approvals for this message.")
+    approvals: Optional[List[LettaMessageReturnUnion]] = Field(default=None, description="The list of approvals for this message.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
