@@ -12,14 +12,26 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import (
+    AgentExportIdMappingError,
+    AgentExportProcessingError,
+    AgentFileImportError,
+    AgentNotFoundForExportError,
     BedrockPermissionError,
     LettaAgentNotFoundError,
+    LettaInvalidArgumentError,
+    LettaInvalidMCPSchemaError,
+    LettaMCPConnectionError,
+    LettaMCPTimeoutError,
+    LettaToolCreateError,
+    LettaToolNameConflictError,
     LettaUserNotFoundError,
     LLMAuthenticationError,
     LLMError,
@@ -44,7 +56,6 @@ from letta.server.db import db_registry
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.middleware import CheckPasswordMiddleware, ProfilerContextMiddleware
-from letta.server.rest_api.routers.openai.chat_completions.chat_completions import router as openai_chat_completions_router
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -122,11 +133,10 @@ async def lifespan(app_: FastAPI):
         except Exception as exc:
             logger.info("Profiler not enabled: %", exc)
 
-    logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
-    logger.info(f"[Worker {worker_id}] Initializing database connections")
-    db_registry.initialize_sync()
-    db_registry.initialize_async()
-    logger.info(f"[Worker {worker_id}] Database connections initialized")
+    # logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
+    # logger.info(f"[Worker {worker_id}] Initializing database connections")
+    # db_registry.initialize_async()
+    # logger.info(f"[Worker {worker_id}] Database connections initialized")
 
     if should_use_pinecone():
         if settings.upsert_pinecone_indices:
@@ -140,6 +150,7 @@ async def lifespan(app_: FastAPI):
 
     logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
     global server
+    await server.init_async()
     try:
         await start_scheduler_with_leader_election(server)
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
@@ -180,6 +191,7 @@ def create_application() -> "FastAPI":
     if SENTRY_ENABLED:
         sentry_sdk.init(
             dsn=os.getenv("SENTRY_DSN"),
+            environment=os.getenv("LETTA_ENVIRONMENT", "undefined"),
             traces_sample_rate=1.0,
             _experiments={
                 "continuous_profiling_auto_start": True,
@@ -232,14 +244,43 @@ def create_application() -> "FastAPI":
     _error_handler_404 = partial(error_handler_with_code, code=404)
     _error_handler_404_agent = partial(_error_handler_404, detail="Agent not found")
     _error_handler_404_user = partial(_error_handler_404, detail="User not found")
+    _error_handler_408 = partial(error_handler_with_code, code=408)
     _error_handler_409 = partial(error_handler_with_code, code=409)
+    _error_handler_422 = partial(error_handler_with_code, code=422)
+    _error_handler_500 = partial(error_handler_with_code, code=500)
+    _error_handler_503 = partial(error_handler_with_code, code=503)
 
+    # 400 Bad Request errors
+    app.add_exception_handler(LettaInvalidArgumentError, _error_handler_400)
+    app.add_exception_handler(LettaToolCreateError, _error_handler_400)
+    app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
+    app.add_exception_handler(AgentFileImportError, _error_handler_400)
     app.add_exception_handler(ValueError, _error_handler_400)
+
+    # 404 Not Found errors
     app.add_exception_handler(NoResultFound, _error_handler_404)
     app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
+    app.add_exception_handler(AgentNotFoundForExportError, _error_handler_404)
+
+    # 408 Timeout errors
+    app.add_exception_handler(LettaMCPTimeoutError, _error_handler_408)
+    app.add_exception_handler(LettaInvalidMCPSchemaError, _error_handler_400)
+
+    # 409 Conflict errors
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
+    app.add_exception_handler(IntegrityError, _error_handler_409)
+
+    # 422 Validation errors
+    app.add_exception_handler(ValidationError, _error_handler_422)
+
+    # 500 Internal Server errors
+    app.add_exception_handler(AgentExportIdMappingError, _error_handler_500)
+    app.add_exception_handler(AgentExportProcessingError, _error_handler_500)
+
+    # 503 Service Unavailable errors
+    app.add_exception_handler(OperationalError, _error_handler_503)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -323,6 +364,19 @@ def create_application() -> "FastAPI":
             },
         )
 
+    @app.exception_handler(LettaMCPConnectionError)
+    async def mcp_connection_error_handler(request: Request, exc: LettaMCPConnectionError):
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": {
+                    "type": "mcp_connection_error",
+                    "message": "Failed to connect to MCP server.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
     @app.exception_handler(LLMError)
     async def llm_error_handler(request: Request, exc: LLMError):
         return JSONResponse(
@@ -399,9 +453,6 @@ def create_application() -> "FastAPI":
     # admin/users
     app.include_router(users_router, prefix=ADMIN_PREFIX)
     app.include_router(organizations_router, prefix=ADMIN_PREFIX)
-
-    # openai
-    app.include_router(openai_chat_completions_router, prefix=OPENAI_API_PREFIX)
 
     # /api/auth endpoints
     app.include_router(setup_auth_router(server, interface, random_password), prefix=API_PREFIX)

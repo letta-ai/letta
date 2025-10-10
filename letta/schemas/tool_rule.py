@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.letta_base import LettaBase
@@ -36,6 +36,30 @@ class BaseToolRule(LettaBase):
         """Default implementation returns None. Subclasses provide optimized strings."""
         return None
 
+    @property
+    def requires_force_tool_call(self) -> bool:
+        """Whether this tool rule requires forcing a tool call in the LLM request when active.
+        When True, the LLM must use a tool; when False, tool use is optional.
+        Default is False for most rules."""
+        return False
+
+
+class ToolCallNode(BaseModel):
+    """Typed child override for prefilled arguments.
+
+    When used in a ChildToolRule, if this child is selected next, its `args` will be
+    applied as prefilled arguments (overriding overlapping LLM-provided values).
+    """
+
+    name: str = Field(..., description="The name of the child tool to invoke next.")
+    args: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Optional prefilled arguments for this child tool. Keys must match the tool's parameter names and values "
+            "must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model."
+        ),
+    )
+
 
 class ChildToolRule(BaseToolRule):
     """
@@ -43,29 +67,65 @@ class ChildToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.constrain_child_tools] = ToolRuleType.constrain_child_tools
+
     children: List[str] = Field(..., description="The children tools that can be invoked.")
+    child_arg_nodes: Optional[List[ToolCallNode]] = Field(
+        default=None,
+        description=("Optional list of typed child argument overrides. Each node must reference a child in 'children'."),
+    )
     prompt_template: Optional[str] = Field(
         default=None,
         description="Optional template string (ignored).",
     )
 
+    @property
+    def requires_force_tool_call(self) -> bool:
+        """Child tool rules require forcing tool calls."""
+        return True
+
     def __hash__(self):
         """Hash including children list (sorted for consistency)."""
-        return hash((self.tool_name, self.type, tuple(sorted(self.children))))
+        # Hash on child names only for stability
+        child_names = tuple(sorted(self.children))
+        return hash((self.tool_name, self.type, child_names))
 
     def __eq__(self, other):
         """Equality including children list."""
         if not isinstance(other, ChildToolRule):
             return False
-        return self.tool_name == other.tool_name and self.type == other.type and sorted(self.children) == sorted(other.children)
+        self_names = sorted(self.children)
+        other_names = sorted(other.children)
+        return self.tool_name == other.tool_name and self.type == other.type and self_names == other_names
+
+    def get_child_names(self) -> List[str]:
+        return list(self.children)
+
+    def get_child_args_map(self) -> Dict[str, Dict[str, Any]]:
+        mapping: Dict[str, Dict[str, Any]] = {}
+        if self.child_arg_nodes:
+            for node in self.child_arg_nodes:
+                if node.args:
+                    mapping[node.name] = dict(node.args)
+        return mapping
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
-        return set(self.children) if last_tool == self.tool_name else available_tools
+        return set(self.get_child_names()) if last_tool == self.tool_name else available_tools
 
     def render_prompt(self) -> str | None:
-        children_str = ", ".join(self.children)
+        children_str = ", ".join(self.get_child_names())
         return f"<tool_rule>\nAfter using {self.tool_name}, you must use one of these tools: {children_str}\n</tool_rule>"
+
+    @model_validator(mode="after")
+    def validate_child_arg_nodes(self):
+        if self.child_arg_nodes:
+            child_set = set(self.children)
+            for node in self.child_arg_nodes:
+                if node.name not in child_set:
+                    raise ValueError(
+                        f"ChildToolRule child_arg_nodes contains a node for '{node.name}' which is not in children {self.children}."
+                    )
+        return self
 
 
 class ParentToolRule(BaseToolRule):
@@ -76,6 +136,11 @@ class ParentToolRule(BaseToolRule):
     type: Literal[ToolRuleType.parent_last_tool] = ToolRuleType.parent_last_tool
     children: List[str] = Field(..., description="The children tools that can be invoked.")
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+
+    @property
+    def requires_force_tool_call(self) -> bool:
+        """Parent tool rules require forcing tool calls."""
+        return True
 
     def __hash__(self):
         """Hash including children list (sorted for consistency)."""
@@ -106,6 +171,11 @@ class ConditionalToolRule(BaseToolRule):
     child_output_mapping: Dict[Any, str] = Field(..., description="The output case to check for mapping")
     require_output_mapping: bool = Field(default=False, description="Whether to throw an error when output doesn't match any case")
     prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+
+    @property
+    def requires_force_tool_call(self) -> bool:
+        """Conditional tool rules require forcing tool calls."""
+        return True
 
     def __hash__(self):
         """Hash including all configuration fields."""
@@ -187,6 +257,19 @@ class InitToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.run_first] = ToolRuleType.run_first
+    args: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Optional prefilled arguments for this tool. When present, these values will override any LLM-provided "
+            "arguments with the same keys during invocation. Keys must match the tool's parameter names and values "
+            "must satisfy the tool's JSON schema. Supports partial prefill; non-overlapping parameters are left to the model."
+        ),
+    )
+
+    @property
+    def requires_force_tool_call(self) -> bool:
+        """Initial tool rules require forcing tool calls."""
+        return True
 
 
 class TerminalToolRule(BaseToolRule):

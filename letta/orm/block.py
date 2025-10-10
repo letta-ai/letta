@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List, Optional, Type
 
 from sqlalchemy import JSON, BigInteger, ForeignKey, Index, Integer, String, UniqueConstraint, event
-from sqlalchemy.orm import Mapped, attributes, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
 from letta.orm.block_history import BlockHistory
@@ -25,6 +25,12 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
         UniqueConstraint("id", "label", name="unique_block_id_label"),
         Index("created_at_label_idx", "created_at", "label"),
         Index("ix_block_label", "label"),
+        Index("ix_block_organization_id", "organization_id"),
+        Index("ix_block_project_id", "project_id"),
+        Index("ix_block_is_template", "is_template"),
+        Index("ix_block_hidden", "hidden"),
+        Index("ix_block_org_project_template", "organization_id", "project_id", "is_template"),
+        Index("ix_block_organization_id_deployment_id", "organization_id", "deployment_id"),
     )
 
     template_name: Mapped[Optional[str]] = mapped_column(
@@ -102,21 +108,6 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
             lazy="joined",  # Typically want current history details readily available
             post_update=True,
         )  # Helps manage potential FK cycles
-
-
-@event.listens_for(Block, "after_update")  # Changed from 'before_update'
-def block_before_update(mapper, connection, target):
-    """Handle updating BlocksAgents when a block's label changes."""
-    label_history = attributes.get_history(target, "label")
-    if not label_history.has_changes():
-        return
-
-    blocks_agents = BlocksAgents.__table__
-    connection.execute(
-        blocks_agents.update()
-        .where(blocks_agents.c.block_id == target.id, blocks_agents.c.block_label == label_history.deleted[0])
-        .values(block_label=label_history.added[0])
-    )
 
 
 @event.listens_for(Block, "before_insert")

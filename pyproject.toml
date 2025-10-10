@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.11.7"
+version = "0.12.1"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -32,7 +32,6 @@ dependencies = [
     "pydantic-settings>=2.2.1",
     "httpx-sse>=0.4.0",
     "nltk>=3.8.1",
-    "composio-core>=0.7.7",
     "alembic>=1.13.3",
     "pyhumps>=3.8.0",
     "pathvalidate>=3.2.1",
@@ -70,6 +69,7 @@ dependencies = [
     "ruff[dev]>=0.12.10",
     "trafilatura",
     "readability-lxml",
+    "google-genai>=1.15.0",
 ]
 
 [project.scripts]
@@ -101,7 +101,6 @@ bedrock = [
     "boto3>=1.36.24",
     "aioboto3>=14.3.0",
 ]
-google = ["google-genai>=1.15.0"]
 
 # ====== Development ======
 dev = [

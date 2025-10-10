@@ -241,4 +241,5 @@ class MarshmallowAgentSchema(BaseSchema):
             "groups",
             "batch_items",
             "organization",
+            "runs",  # Exclude the runs relationship (agents_runs association table)
         )

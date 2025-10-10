@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from letta.helpers.singleton import singleton
 from letta.orm.errors import NoResultFound
-from letta.orm.job import Job as JobModel
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
@@ -48,6 +47,7 @@ class StepManager:
         feedback: Optional[Literal["positive", "negative"]] = None,
         has_feedback: Optional[bool] = None,
         project_id: Optional[str] = None,
+        run_id: Optional[str] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         async with db_registry.async_session() as session:
@@ -62,6 +62,8 @@ class StepManager:
                 filter_kwargs["feedback"] = feedback
             if project_id:
                 filter_kwargs["project_id"] = project_id
+            if run_id:
+                filter_kwargs["run_id"] = run_id
             steps = await StepModel.list_async(
                 db_session=session,
                 before=before,
@@ -88,7 +90,7 @@ class StepManager:
         context_window_limit: int,
         usage: UsageStatistics,
         provider_id: Optional[str] = None,
-        job_id: Optional[str] = None,
+        run_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
         stop_reason: Optional[LettaStopReason] = None,
@@ -109,7 +111,7 @@ class StepManager:
             "completion_tokens": usage.completion_tokens,
             "prompt_tokens": usage.prompt_tokens,
             "total_tokens": usage.total_tokens,
-            "job_id": job_id,
+            "run_id": run_id,
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
@@ -123,8 +125,8 @@ class StepManager:
         if stop_reason:
             step_data["stop_reason"] = stop_reason.stop_reason
         with db_registry.session() as session:
-            if job_id:
-                self._verify_job_access(session, job_id, actor, access=["write"])
+            if run_id:
+                self._verify_run_access(session, run_id, actor, access=["write"])
             new_step = StepModel(**step_data)
             new_step.create(session)
             return new_step.to_pydantic()
@@ -142,13 +144,14 @@ class StepManager:
         context_window_limit: int,
         usage: UsageStatistics,
         provider_id: Optional[str] = None,
-        job_id: Optional[str] = None,
+        run_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
         stop_reason: Optional[LettaStopReason] = None,
         status: Optional[StepStatus] = None,
         error_type: Optional[str] = None,
         error_data: Optional[Dict] = None,
+        allow_partial: Optional[bool] = False,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -163,7 +166,7 @@ class StepManager:
             "completion_tokens": usage.completion_tokens,
             "prompt_tokens": usage.prompt_tokens,
             "total_tokens": usage.total_tokens,
-            "job_id": job_id,
+            "run_id": run_id,
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
@@ -176,7 +179,15 @@ class StepManager:
             step_data["id"] = step_id
         if stop_reason:
             step_data["stop_reason"] = stop_reason.stop_reason
+
         async with db_registry.async_session() as session:
+            if allow_partial:
+                try:
+                    new_step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
+                    return new_step.to_pydantic()
+                except NoResultFound:
+                    pass
+
             new_step = StepModel(**step_data)
             await new_step.create_async(session, no_commit=True, no_refresh=True)
             pydantic_step = new_step.to_pydantic()
@@ -420,10 +431,11 @@ class StepManager:
         tool_execution_ns: Optional[int] = None,
         step_ns: Optional[int] = None,
         agent_id: Optional[str] = None,
-        job_id: Optional[str] = None,
+        run_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
+        allow_partial: Optional[bool] = False,
     ) -> PydanticStepMetrics:
         """Record performance metrics for a step.
 
@@ -434,7 +446,7 @@ class StepManager:
             tool_execution_ns: Time spent on tool execution in nanoseconds
             step_ns: Total time for the step in nanoseconds
             agent_id: The ID of the agent
-            job_id: The ID of the job
+            run_id: The ID of the run
             project_id: The ID of the project
             template_id: The ID of the template
             base_template_id: The ID of the base template
@@ -452,11 +464,18 @@ class StepManager:
             if step.organization_id != actor.organization_id:
                 raise Exception("Unauthorized")
 
+            if allow_partial:
+                try:
+                    metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+                    return metrics.to_pydantic()
+                except NoResultFound:
+                    pass
+
             metrics_data = {
                 "id": step_id,
                 "organization_id": actor.organization_id,
                 "agent_id": agent_id or step.agent_id,
-                "job_id": job_id or step.job_id,
+                "run_id": run_id,
                 "project_id": project_id or step.project_id,
                 "llm_request_ns": llm_request_ns,
                 "tool_execution_ns": tool_execution_ns,
@@ -469,62 +488,66 @@ class StepManager:
             await metrics.create_async(session)
             return metrics.to_pydantic()
 
-    def _verify_job_access(
+    def _verify_run_access(
         self,
         session: Session,
-        job_id: str,
+        run_id: str,
         actor: PydanticUser,
         access: List[Literal["read", "write", "delete"]] = ["read"],
-    ) -> JobModel:
+    ):
         """
-        Verify that a job exists and the user has the required access.
+        Verify that a run exists and the user has the required access.
 
         Args:
             session: The database session
-            job_id: The ID of the job to verify
+            run_id: The ID of the run to verify
             actor: The user making the request
 
         Returns:
-            The job if it exists and the user has access
+            The run if it exists and the user has access
 
         Raises:
-            NoResultFound: If the job does not exist or user does not have access
+            NoResultFound: If the run does not exist or user does not have access
         """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        job = session.execute(job_query).scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
+        from letta.orm.run import Run as RunModel
+
+        run_query = select(RunModel).where(RunModel.id == run_id)
+        run_query = RunModel.apply_access_predicate(run_query, actor, access, AccessType.USER)
+        run = session.execute(run_query).scalar_one_or_none()
+        if not run:
+            raise NoResultFound(f"Run with id {run_id} does not exist or user does not have access")
+        return run
 
     @staticmethod
-    async def _verify_job_access_async(
+    async def _verify_run_access_async(
         session: AsyncSession,
-        job_id: str,
+        run_id: str,
         actor: PydanticUser,
         access: List[Literal["read", "write", "delete"]] = ["read"],
-    ) -> JobModel:
+    ):
         """
-        Verify that a job exists and the user has the required access asynchronously.
+        Verify that a run exists and the user has the required access asynchronously.
 
         Args:
             session: The async database session
-            job_id: The ID of the job to verify
+            run_id: The ID of the run to verify
             actor: The user making the request
 
         Returns:
-            The job if it exists and the user has access
+            The run if it exists and the user has access
 
         Raises:
-            NoResultFound: If the job does not exist or user does not have access
+            NoResultFound: If the run does not exist or user does not have access
         """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        result = await session.execute(job_query)
-        job = result.scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
+        from letta.orm.run import Run as RunModel
+
+        run_query = select(RunModel).where(RunModel.id == run_id)
+        run_query = RunModel.apply_access_predicate(run_query, actor, access, AccessType.USER)
+        result = await session.execute(run_query)
+        run = result.scalar_one_or_none()
+        if not run:
+            raise NoResultFound(f"Run with id {run_id} does not exist or user does not have access")
+        return run
 
 
 # noinspection PyTypeChecker
@@ -549,7 +572,7 @@ class NoopStepManager(StepManager):
         context_window_limit: int,
         usage: UsageStatistics,
         provider_id: Optional[str] = None,
-        job_id: Optional[str] = None,
+        run_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
         stop_reason: Optional[LettaStopReason] = None,
@@ -572,7 +595,7 @@ class NoopStepManager(StepManager):
         context_window_limit: int,
         usage: UsageStatistics,
         provider_id: Optional[str] = None,
-        job_id: Optional[str] = None,
+        run_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
         stop_reason: Optional[LettaStopReason] = None,

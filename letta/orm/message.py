@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.letta_message_content import MessageContent, TextContent as PydanticTextContent
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import MessageContent, TextContent, TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage, ToolReturn
 from letta.settings import DatabaseChoice, settings
 
@@ -21,6 +22,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         Index("ix_messages_created_at", "created_at", "id"),
         Index("ix_messages_agent_sequence", "agent_id", "sequence_id"),
         Index("ix_messages_org_agent", "organization_id", "agent_id"),
+        Index("ix_messages_run_id", "run_id"),
+        # Composite index for optimizing the frequently-run query:
+        Index("ix_messages_run_sequence", "run_id", "sequence_id"),
     )
     __pydantic_model__ = PydanticMessage
 
@@ -34,6 +38,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     tool_call_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="ID of the tool call")
     step_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("steps.id", ondelete="SET NULL"), nullable=True, doc="ID of the step that this message belongs to"
+    )
+    run_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("runs.id", ondelete="SET NULL"), nullable=True, doc="ID of the run that this message belongs to"
     )
     otid: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The offline threading ID associated with this message")
     tool_returns: Mapped[List[ToolReturn]] = mapped_column(
@@ -68,11 +75,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="raise")
     step: Mapped["Step"] = relationship("Step", back_populates="messages", lazy="selectin")
-
-    # Job relationship
-    job_message: Mapped[Optional["JobMessage"]] = relationship(
-        "JobMessage", back_populates="message", uselist=False, cascade="all, delete-orphan", single_parent=True
-    )
+    run: Mapped["Run"] = relationship("Run", back_populates="messages", lazy="selectin")
 
     @property
     def job(self) -> Optional["Job"]:
@@ -87,6 +90,18 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         # If there are no tool calls, set tool_calls to None
         if self.tool_calls is None or len(self.tool_calls) == 0:
             model.tool_calls = None
+
+        # Handle legacy case of tool message with single tool return + single text content
+        if (
+            self.role == MessageRole.tool
+            and self.tool_returns
+            and len(self.tool_returns) == 1
+            and self.content
+            and len(self.content) == 1
+            and isinstance(self.content[0], TextContent)
+        ):
+            self.tool_returns[0].func_response = self.content[0].text
+
         return model
 
 

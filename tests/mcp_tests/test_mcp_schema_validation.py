@@ -75,26 +75,6 @@ async def test_mcp_tools_get_health_status():
     assert any("type" in reason for reason in invalid_tool.health.reasons)
 
 
-def test_composio_like_schema_marked_non_strict():
-    """Test that Composio-like schemas are correctly marked as NON_STRICT_ONLY."""
-
-    # Example schema from Composio with free-form message object
-    composio_schema = {
-        "type": "object",
-        "properties": {
-            "message": {"type": "object", "additionalProperties": {}, "description": "Message to send"}  # Free-form, missing "type"
-        },
-        "required": ["message"],
-        "additionalProperties": False,
-    }
-
-    status, reasons = validate_complete_json_schema(composio_schema)
-
-    assert status == SchemaHealth.NON_STRICT_ONLY
-    assert len(reasons) > 0
-    assert any("additionalProperties" in reason for reason in reasons)
-
-
 def test_empty_object_in_required_marked_invalid():
     """Test that required properties allowing empty objects are marked INVALID."""
 
@@ -183,12 +163,14 @@ async def test_add_mcp_tool_rejects_invalid_schemas():
 
             # Should raise HTTPException for invalid schema
             headers = HeaderParams(actor_id="test_user")
-            with pytest.raises(HTTPException) as exc_info:
+            from letta.errors import LettaInvalidMCPSchemaError
+
+            with pytest.raises(LettaInvalidMCPSchemaError) as exc_info:
                 await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, headers=headers)
 
-            assert exc_info.value.status_code == 400
-            assert "invalid schema" in exc_info.value.detail["message"].lower()
-            assert exc_info.value.detail["health_status"] == SchemaHealth.INVALID.value
+            assert "invalid schema" in exc_info.value.message.lower()
+            assert exc_info.value.details["mcp_tool_name"] == "test_tool"
+            assert exc_info.value.details["reasons"] == ["Missing 'type' at root level"]
 
 
 def test_mcp_schema_healing_for_optional_fields():

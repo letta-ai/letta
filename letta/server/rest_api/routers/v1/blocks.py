@@ -154,13 +154,10 @@ async def retrieve_block(
     headers: HeaderParams = Depends(get_headers),
 ):
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        block = await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
-        if block is None:
-            raise HTTPException(status_code=404, detail="Block not found")
-        return block
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Block not found")
+    block = await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
+    if block is None:
+        raise NoResultFound(f"Block with id '{block_id}' not found")
+    return block
 
 
 @router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
@@ -195,16 +192,13 @@ async def list_agents_for_block(
     Raises a 404 if the block does not exist.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        agents = await server.block_manager.get_agents_for_block_async(
-            block_id=block_id,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-            include_relationships=include_relationships,
-            actor=actor,
-        )
-        return agents
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Block with id={block_id} not found")
+    agents = await server.block_manager.get_agents_for_block_async(
+        block_id=block_id,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        include_relationships=include_relationships,
+        actor=actor,
+    )
+    return agents

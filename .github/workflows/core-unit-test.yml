@@ -26,7 +26,7 @@ jobs:
         **
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/core-unit-test.yml
-      install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google'
+      install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox'
       timeout-minutes: 15
       ref: ${{ github.event.pull_request.head.sha || github.sha }}
       matrix-strategy: |
@@ -36,14 +36,12 @@ jobs:
             "include": [
               {"test_suite": "test_client.py"},
               {"test_suite": "test_sdk_client.py"},
-              {"test_suite": "test_server.py"},
-              {"test_suite": "test_managers.py"},
+              {"test_suite": "managers/"},
               {"test_suite": "test_tool_schema_parsing.py"},
               {"test_suite": "test_tool_rule_solver.py"},
               {"test_suite": "test_memory.py"},
               {"test_suite": "test_utils.py"},
               {"test_suite": "test_stream_buffer_readers.py"},
-              {"test_suite": "test_agent_serialization.py"},
               {"test_suite": "test_agent_serialization_v2.py"},
               {"test_suite": "test_optimistic_json_parser.py"},
               {"test_suite": "test_llm_clients.py"},
@@ -51,7 +49,7 @@ jobs:
               {"test_suite": "test_providers.py"},
               {"test_suite": "test_sources.py"},
               {"test_suite": "sdk/"},
-              {"test_suite": "mcp_tests/", "use_experimental": true},
+              {"test_suite": "mcp_tests/"},
               {"test_suite": "test_timezone_formatting.py"},
               {"test_suite": "test_plugins.py"},
               {"test_suite": "test_embeddings.py"},

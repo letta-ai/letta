@@ -248,7 +248,11 @@ def unpack_message(packed_message: str) -> str:
         warnings.warn(f"Was unable to find 'message' field in packed message object: '{packed_message}'")
         return packed_message
     else:
-        message_type = message_json["type"]
+        try:
+            message_type = message_json["type"]
+        except:
+            return packed_message
+
         if message_type != "user_message":
             warnings.warn(f"Expected type to be 'user_message', but was '{message_type}', so not unpacking: '{packed_message}'")
             return packed_message

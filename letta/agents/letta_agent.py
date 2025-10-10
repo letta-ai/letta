@@ -1,4 +1,3 @@
-import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -13,6 +12,7 @@ from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _create_letta_response,
+    _load_last_function_response,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
@@ -34,7 +34,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import JobStatus, MessageRole, ProviderType, StepStatus, ToolType
+from letta.schemas.enums import JobStatus, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -48,7 +48,10 @@ from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
+from letta.server.rest_api.utils import (
+    create_approval_request_message_from_llm_response,
+    create_letta_messages_from_llm_response,
+)
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
@@ -297,7 +300,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=self.current_run_id if self.current_run_id else None,
+                    run_id=self.current_run_id if self.current_run_id else None,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -641,7 +644,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=run_id if run_id else self.current_run_id,
+                    run_id=run_id if run_id else self.current_run_id,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -765,7 +768,7 @@ class LettaAgent(BaseAgent):
                             step_id=step_id,
                             agent_state=agent_state,
                             step_metrics=step_metrics,
-                            job_id=run_id if run_id else self.current_run_id,
+                            run_id=run_id if run_id else self.current_run_id,
                         )
 
                 except Exception as e:
@@ -986,7 +989,7 @@ class LettaAgent(BaseAgent):
                     context_window_limit=agent_state.llm_config.context_window,
                     usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     provider_id=None,
-                    job_id=self.current_run_id if self.current_run_id else None,
+                    run_id=self.current_run_id if self.current_run_id else None,
                     step_id=step_id,
                     project_id=agent_state.project_id,
                     status=StepStatus.PENDING,
@@ -1592,7 +1595,6 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_VOICE_SLEEPTIME_CORE,
                 ToolType.LETTA_BUILTIN,
                 ToolType.LETTA_FILES_CORE,
-                ToolType.EXTERNAL_COMPOSIO,
                 ToolType.EXTERNAL_MCP,
             }
         ]
@@ -1619,6 +1621,7 @@ class LettaAgent(BaseAgent):
 
         return (
             llm_client.build_request_data(
+                agent_state.agent_type,
                 in_context_messages,
                 agent_state.llm_config,
                 allowed_tools,
@@ -1663,15 +1666,14 @@ class LettaAgent(BaseAgent):
                 function_arguments={},
                 tool_execution_result=ToolExecutionResult(status="error"),
                 tool_call_id=tool_call_id,
-                function_call_success=False,
                 function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=continue_stepping,
                 heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
                 reasoning_content=None,
                 pre_computed_assistant_message_id=None,
                 step_id=step_id,
+                run_id=self.current_run_id,
                 is_approval_response=True,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
@@ -1773,15 +1775,14 @@ class LettaAgent(BaseAgent):
                 function_arguments=tool_args,
                 tool_execution_result=tool_execution_result,
                 tool_call_id=tool_call_id,
-                function_call_success=tool_execution_result.success_flag,
                 function_response=function_response_string,
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=continue_stepping,
                 heartbeat_reason=heartbeat_reason,
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
+                run_id=self.current_run_id,
                 is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
@@ -1789,13 +1790,6 @@ class LettaAgent(BaseAgent):
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
-
-        if run_id:
-            await self.job_manager.add_messages_to_job_async(
-                job_id=run_id,
-                message_ids=[m.id for m in persisted_messages if m.role != "user"],
-                actor=self.actor,
-            )
 
         return persisted_messages, continue_stepping, stop_reason
 
@@ -1907,17 +1901,3 @@ class LettaAgent(BaseAgent):
             )
         log_event(name=f"finish_{tool_name}_execution", attributes=tool_execution_result.model_dump())
         return tool_execution_result
-
-    @trace_method
-    def _load_last_function_response(self, in_context_messages: list[Message]):
-        """Load the last function response from message history"""
-        for msg in reversed(in_context_messages):
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
-                text_content = msg.content[0].text
-                try:
-                    response_json = json.loads(text_content)
-                    if response_json.get("message"):
-                        return response_json["message"]
-                except (json.JSONDecodeError, KeyError):
-                    raise ValueError(f"Invalid JSON format in message: {text_content}")
-        return None

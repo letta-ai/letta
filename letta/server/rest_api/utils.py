@@ -27,7 +27,13 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_message_content import (
+    OmittedReasoningContent,
+    ReasoningContent,
+    RedactedReasoningContent,
+    SummarizedReasoningContent,
+    TextContent,
+)
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -148,7 +154,7 @@ def capture_sentry_exception(e: BaseException):
         sentry_sdk.capture_exception(e)
 
 
-def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, actor: User) -> List[Message]:
+def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, run_id: str, actor: User) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
 
@@ -156,7 +162,9 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     we should unify this when it's clear what message attributes we need.
     """
 
-    messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
+    messages = convert_message_creates_to_messages(
+        input_messages, agent_id, timezone, run_id, wrap_user_message=False, wrap_system_message=False
+    )
     return messages
 
 
@@ -184,10 +192,13 @@ def create_approval_request_message_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
+    run_id: str = None,
+    append_request_heartbeat: bool = True,
 ) -> Message:
     # Construct the tool call with the assistant's message
-    # Force set request_heartbeat in tool_args to calculated continue_stepping
-    function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
+    # Optionally set request_heartbeat in tool args (v2 behavior only)
+    if append_request_heartbeat:
+        function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
     tool_call = OpenAIToolCall(
         id=tool_call_id,
         function=OpenAIFunction(
@@ -207,6 +218,7 @@ def create_approval_request_message_from_llm_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
         step_id=step_id,
+        run_id=run_id,
     )
     if pre_computed_assistant_message_id:
         approval_message.id = pre_computed_assistant_message_id
@@ -216,82 +228,130 @@ def create_approval_request_message_from_llm_response(
 def create_letta_messages_from_llm_response(
     agent_id: str,
     model: str,
-    function_name: str,
-    function_arguments: Dict,
-    tool_execution_result: ToolExecutionResult,
-    tool_call_id: str,
-    function_call_success: bool,
+    function_name: Optional[str],
+    function_arguments: Optional[Dict],
+    tool_execution_result: Optional[ToolExecutionResult],
+    tool_call_id: Optional[str],
     function_response: Optional[str],
     timezone: str,
-    actor: User,
+    run_id: str | None = None,
+    step_id: str = None,
     continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
-    reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
+    reasoning_content: Optional[
+        List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent | SummarizedReasoningContent]]
+    ] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
-    step_id: str | None = None,
     is_approval_response: bool | None = None,
+    # force set request_heartbeat, useful for v2 loop to ensure matching tool rules
+    force_set_request_heartbeat: bool = True,
+    add_heartbeat_on_continue: bool = True,
 ) -> List[Message]:
     messages = []
-    if not is_approval_response:
-        # Construct the tool call with the assistant's message
-        # Force set request_heartbeat in tool_args to calculated continue_stepping
-        function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
-        tool_call = OpenAIToolCall(
-            id=tool_call_id,
-            function=OpenAIFunction(
-                name=function_name,
-                arguments=json.dumps(function_arguments),
-            ),
-            type="function",
-        )
-        # TODO: Use ToolCallContent instead of tool_calls
-        # TODO: This helps preserve ordering
-        assistant_message = Message(
-            role=MessageRole.assistant,
-            content=reasoning_content if reasoning_content else [],
-            agent_id=agent_id,
-            model=model,
-            tool_calls=[tool_call],
-            tool_call_id=tool_call_id,
-            created_at=get_utc_time(),
-            batch_item_id=llm_batch_item_id,
-        )
-        if pre_computed_assistant_message_id:
-            assistant_message.id = pre_computed_assistant_message_id
-        messages.append(assistant_message)
+    if not is_approval_response:  # Skip approval responses (omit them)
+        if function_name is not None:
+            # Construct the tool call with the assistant's message
+            # Force set request_heartbeat in tool_args to calculated continue_stepping
+            if force_set_request_heartbeat:
+                function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
+            tool_call = OpenAIToolCall(
+                id=tool_call_id,
+                function=OpenAIFunction(
+                    name=function_name,
+                    arguments=json.dumps(function_arguments),
+                ),
+                type="function",
+            )
+            # TODO: Use ToolCallContent instead of tool_calls
+            # TODO: This helps preserve ordering
+
+            # Safeguard against empty text messages
+            content = []
+            if reasoning_content:
+                for content_part in reasoning_content:
+                    if isinstance(content_part, TextContent) and content_part.text == "":
+                        continue
+                    content.append(content_part)
+
+            assistant_message = Message(
+                role=MessageRole.assistant,
+                content=content,
+                agent_id=agent_id,
+                model=model,
+                tool_calls=[tool_call],
+                tool_call_id=tool_call_id,
+                created_at=get_utc_time(),
+                batch_item_id=llm_batch_item_id,
+                run_id=run_id,
+            )
+        else:
+            # Safeguard against empty text messages
+            content = []
+            if reasoning_content:
+                for content_part in reasoning_content:
+                    if isinstance(content_part, TextContent) and content_part.text == "":
+                        continue
+                    content.append(content_part)
+
+            # Should only hit this if using react agents
+            if content and len(content) > 0:
+                assistant_message = Message(
+                    role=MessageRole.assistant,
+                    # NOTE: weird that this is called "reasoning_content" here, since it's not
+                    content=content,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_calls=None,
+                    tool_call_id=None,
+                    created_at=get_utc_time(),
+                    batch_item_id=llm_batch_item_id,
+                    run_id=run_id,
+                )
+            else:
+                assistant_message = None
+
+        if assistant_message:
+            if pre_computed_assistant_message_id:
+                assistant_message.id = pre_computed_assistant_message_id
+            messages.append(assistant_message)
 
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering
-    tool_message = Message(
-        role=MessageRole.tool,
-        content=[TextContent(text=package_function_response(function_call_success, function_response, timezone))],
-        agent_id=agent_id,
-        model=model,
-        tool_calls=[],
-        tool_call_id=tool_call_id,
-        created_at=get_utc_time(),
-        name=function_name,
-        batch_item_id=llm_batch_item_id,
-        tool_returns=[
-            ToolReturn(
-                status=tool_execution_result.status,
-                stderr=tool_execution_result.stderr,
-                stdout=tool_execution_result.stdout,
-                # func_return=tool_execution_result.func_return,
-            )
-        ],
-    )
-    messages.append(tool_message)
+    if tool_execution_result is not None:
+        packaged_function_response = package_function_response(tool_execution_result.success_flag, function_response, timezone)
+        tool_message = Message(
+            role=MessageRole.tool,
+            content=[TextContent(text=packaged_function_response)],
+            agent_id=agent_id,
+            model=model,
+            tool_calls=[],
+            tool_call_id=tool_call_id,
+            created_at=get_utc_time(),
+            name=function_name,
+            batch_item_id=llm_batch_item_id,
+            tool_returns=[
+                ToolReturn(
+                    tool_call_id=tool_call_id,
+                    status=tool_execution_result.status,
+                    stderr=tool_execution_result.stderr,
+                    stdout=tool_execution_result.stdout,
+                    func_response=packaged_function_response,
+                )
+            ],
+            run_id=run_id,
+        )
+        messages.append(tool_message)
 
-    if continue_stepping:
+    if continue_stepping and add_heartbeat_on_continue:
+        # TODO skip this for react agents, instead we just force looping
         heartbeat_system_message = create_heartbeat_system_message(
             agent_id=agent_id,
             model=model,
-            function_call_success=function_call_success,
-            actor=actor,
+            function_call_success=(tool_execution_result.success_flag if tool_execution_result is not None else True),
             timezone=timezone,
             heartbeat_reason=heartbeat_reason,
+            run_id=run_id,
         )
         messages.append(heartbeat_system_message)
 
@@ -306,9 +366,9 @@ def create_heartbeat_system_message(
     model: str,
     function_call_success: bool,
     timezone: str,
-    actor: User,
     llm_batch_item_id: Optional[str] = None,
     heartbeat_reason: Optional[str] = None,
+    run_id: Optional[str] = None,
 ) -> Message:
     if heartbeat_reason:
         text_content = heartbeat_reason
@@ -324,6 +384,7 @@ def create_heartbeat_system_message(
         tool_call_id=None,
         created_at=get_utc_time(),
         batch_item_id=llm_batch_item_id,
+        run_id=run_id,
     )
     return heartbeat_system_message
 
@@ -332,7 +393,6 @@ def create_assistant_messages_from_openai_response(
     response_text: str,
     agent_id: str,
     model: str,
-    actor: User,
     timezone: str,
 ) -> List[Message]:
     """
@@ -348,10 +408,8 @@ def create_assistant_messages_from_openai_response(
         function_arguments={DEFAULT_MESSAGE_TOOL_KWARG: response_text},  # Avoid raw string manipulation
         tool_execution_result=ToolExecutionResult(status="success"),
         tool_call_id=tool_call_id,
-        function_call_success=True,
         function_response=None,
         timezone=timezone,
-        actor=actor,
         continue_stepping=False,
     )
 

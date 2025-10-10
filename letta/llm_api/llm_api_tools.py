@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import time
 from typing import List, Optional, Union
@@ -174,11 +175,17 @@ def create(
 
             actor = UserManager().get_user_or_default(user_id=user_id)
             api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=actor)
-        elif model_settings.openai_api_key is None:
-            # the openai python client requires a dummy API key
-            api_key = "DUMMY_API_KEY"
         else:
-            api_key = model_settings.openai_api_key
+            # Prefer OpenRouter key when targeting OpenRouter
+            is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
+                llm_config.provider_name == "openrouter"
+            )
+            if is_openrouter:
+                api_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
+            if not is_openrouter or not api_key:
+                api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+            # the openai python client requires some API key string
+            api_key = api_key or "DUMMY_API_KEY"
 
         if function_call is None and functions is not None and len(functions) > 0:
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice

@@ -61,7 +61,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google
+        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox
       - name: Migrate database
         env:
           LETTA_PG_PORT: 5432
@@ -88,11 +88,9 @@ jobs:
           AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
-          LETTA_USE_EXPERIMENTAL: 1
         run: |
           uv run pytest \
             -s -vv \

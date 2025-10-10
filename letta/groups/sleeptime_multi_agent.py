@@ -3,10 +3,11 @@ import threading
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from letta.agent import Agent, AgentState
+from letta.agents.base_agent import BaseAgent
 from letta.groups.helpers import stringify_message
 from letta.interface import AgentInterface
 from letta.orm import User
+from letta.schemas.agent import AgentState
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message_content import TextContent
@@ -19,7 +20,7 @@ from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 
 
-class SleeptimeMultiAgent(Agent):
+class SleeptimeMultiAgent(BaseAgent):
     def __init__(
         self,
         interface: AgentInterface,

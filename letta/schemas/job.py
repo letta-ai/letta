@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from letta.schemas.letta_request import LettaRequest
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import get_utc_time
@@ -24,9 +27,9 @@ class JobBase(OrmMetadataBase):
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="The metadata of the job.")
     job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
 
-    ## TODO: Run-specific fields
-    # background: Optional[bool] = Field(None, description="Whether the job was created in background mode.")
-    # agent_id: Optional[str] = Field(None, description="The agent associated with this job/run.")
+    # Run-specific fields
+    background: Optional[bool] = Field(None, description="Whether the job was created in background mode.")
+    agent_id: Optional[str] = Field(None, description="The agent associated with this job/run.")
 
     callback_url: Optional[str] = Field(None, description="If set, POST to this URL when the job completes.")
     callback_sent_at: Optional[datetime] = Field(None, description="Timestamp when the callback was last attempted.")
@@ -112,3 +115,13 @@ class LettaRequestConfig(BaseModel):
     include_return_message_types: Optional[List[MessageType]] = Field(
         default=None, description="Only return specified message types in the response. If `None` (default) returns all messages."
     )
+
+    @classmethod
+    def from_letta_request(cls, request: "LettaRequest") -> "LettaRequestConfig":
+        """Create a LettaRequestConfig from a LettaRequest."""
+        return cls(
+            use_assistant_message=request.use_assistant_message,
+            assistant_message_tool_name=request.assistant_message_tool_name,
+            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            include_return_message_types=request.include_return_message_types,
+        )

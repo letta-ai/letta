@@ -40,6 +40,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.openai.embedding_response import EmbeddingResponse
+from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.utils import get_tool_call_id, smart_urljoin
 
@@ -82,6 +83,12 @@ def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool
     headers = {"Content-Type": "application/json"}
     if api_key is not None:
         headers["Authorization"] = f"Bearer {api_key}"
+    # Add optional OpenRouter headers if hitting OpenRouter
+    if "openrouter.ai" in url:
+        if model_settings.openrouter_referer:
+            headers["HTTP-Referer"] = model_settings.openrouter_referer
+        if model_settings.openrouter_title:
+            headers["X-Title"] = model_settings.openrouter_title
 
     logger.debug(f"Sending request to {url}")
     response = None
@@ -139,6 +146,11 @@ async def openai_get_model_list_async(
     headers = {"Content-Type": "application/json"}
     if api_key is not None:
         headers["Authorization"] = f"Bearer {api_key}"
+    if "openrouter.ai" in url:
+        if model_settings.openrouter_referer:
+            headers["HTTP-Referer"] = model_settings.openrouter_referer
+        if model_settings.openrouter_title:
+            headers["X-Title"] = model_settings.openrouter_title
 
     logger.debug(f"Sending request to {url}")
 
@@ -550,7 +562,16 @@ def openai_chat_completions_request_stream(
 
     data = prepare_openai_payload(chat_completion_request)
     data["stream"] = True
-    client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
+    kwargs = {"api_key": api_key, "base_url": url, "max_retries": 0}
+    if "openrouter.ai" in url:
+        headers = {}
+        if model_settings.openrouter_referer:
+            headers["HTTP-Referer"] = model_settings.openrouter_referer
+        if model_settings.openrouter_title:
+            headers["X-Title"] = model_settings.openrouter_title
+        if headers:
+            kwargs["default_headers"] = headers
+    client = OpenAI(**kwargs)
     try:
         stream = client.chat.completions.create(**data)
         for chunk in stream:
@@ -574,7 +595,16 @@ def openai_chat_completions_request(
     https://platform.openai.com/docs/guides/text-generation?lang=curl
     """
     data = prepare_openai_payload(chat_completion_request)
-    client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
+    kwargs = {"api_key": api_key, "base_url": url, "max_retries": 0}
+    if "openrouter.ai" in url:
+        headers = {}
+        if model_settings.openrouter_referer:
+            headers["HTTP-Referer"] = model_settings.openrouter_referer
+        if model_settings.openrouter_title:
+            headers["X-Title"] = model_settings.openrouter_title
+        if headers:
+            kwargs["default_headers"] = headers
+    client = OpenAI(**kwargs)
     log_event(name="llm_request_sent", attributes=data)
     chat_completion = client.chat.completions.create(**data)
     log_event(name="llm_response_received", attributes=chat_completion.model_dump())

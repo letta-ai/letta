@@ -18,8 +18,8 @@ class Step(StepBase):
     origin: Optional[str] = Field(None, description="The surface that this agent step was initiated from.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the step.")
     provider_id: Optional[str] = Field(None, description="The unique identifier of the provider that was configured for this step")
-    job_id: Optional[str] = Field(
-        None, description="The unique identifier of the job that this step belongs to. Only included for async calls."
+    run_id: Optional[str] = Field(
+        None, description="The unique identifier of the run that this step belongs to. Only included for async calls."
     )
     agent_id: Optional[str] = Field(None, description="The ID of the agent that performed the step.")
     provider_name: Optional[str] = Field(None, description="The name of the provider used for this step.")

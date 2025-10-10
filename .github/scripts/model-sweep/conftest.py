@@ -62,13 +62,6 @@ def default_user(default_organization):
     yield user
 
 
-@pytest.fixture
-def check_composio_key_set():
-    original_api_key = tool_settings.composio_api_key
-    assert original_api_key is not None, "Missing composio key! Cannot execute this test."
-    yield
-
-
 # --- Tool Fixtures ---
 @pytest.fixture
 def weather_tool_func():

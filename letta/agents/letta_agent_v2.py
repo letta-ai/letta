@@ -1,8 +1,7 @@
 import asyncio
-import json
 import uuid
 from datetime import datetime
-from typing import AsyncGenerator, Tuple
+from typing import AsyncGenerator, Optional, Tuple
 
 from opentelemetry.trace import Span
 
@@ -13,6 +12,8 @@ from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
+    _load_last_function_response,
+    _maybe_get_approval_messages,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
@@ -30,7 +31,7 @@ from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import AgentType, JobStatus, MessageRole, MessageStreamStatus, StepStatus
+from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -42,14 +43,17 @@ from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
+from letta.server.rest_api.utils import (
+    create_approval_request_message_from_llm_response,
+    create_letta_messages_from_llm_response,
+)
 from letta.services.agent_manager import AgentManager
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
-from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.step_manager import StepManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
@@ -89,22 +93,22 @@ class LettaAgentV2(BaseAgentV2):
         self.agent_manager = AgentManager()
         self.archive_manager = ArchiveManager()
         self.block_manager = BlockManager()
-        self.job_manager = JobManager()
+        self.run_manager = RunManager()
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
         self.step_manager = StepManager()
         self.telemetry_manager = TelemetryManager()
 
-        # TODO: Expand to more
-        if summarizer_settings.enable_summarization and model_settings.openai_api_key:
-            self.summarization_agent = EphemeralSummaryAgent(
-                target_block_label="conversation_summary",
-                agent_id=self.agent_state.id,
-                block_manager=self.block_manager,
-                message_manager=self.message_manager,
-                agent_manager=self.agent_manager,
-                actor=self.actor,
-            )
+        ## TODO: Expand to more
+        # if summarizer_settings.enable_summarization and model_settings.openai_api_key:
+        #    self.summarization_agent = EphemeralSummaryAgent(
+        #        target_block_label="conversation_summary",
+        #        agent_id=self.agent_state.id,
+        #        block_manager=self.block_manager,
+        #        message_manager=self.message_manager,
+        #        agent_manager=self.agent_manager,
+        #        actor=self.actor,
+        #    )
 
         # Initialize summarizer for context window management
         self.summarizer = Summarizer(
@@ -113,7 +117,7 @@ class LettaAgentV2(BaseAgentV2):
                 if self.agent_state.agent_type == AgentType.voice_convo_agent
                 else summarizer_settings.mode
             ),
-            summarizer_agent=self.summarization_agent,
+            summarizer_agent=None,  # self.summarization_agent,
             message_buffer_limit=summarizer_settings.message_buffer_limit,
             message_buffer_min=summarizer_settings.message_buffer_min,
             partial_evict_summarizer_percentage=summarizer_settings.partial_evict_summarizer_percentage,
@@ -138,12 +142,14 @@ class LettaAgentV2(BaseAgentV2):
         """
         request = {}
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-            input_messages, self.agent_state, self.message_manager, self.actor
+            input_messages, self.agent_state, self.message_manager, self.actor, None
         )
         response = self._step(
+            run_id=None,
             messages=in_context_messages + input_messages_to_persist,
             llm_adapter=LettaLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
             dry_run=True,
+            enforce_run_id_set=False,
         )
         async for chunk in response:
             request = chunk  # First chunk contains request data
@@ -179,11 +185,13 @@ class LettaAgentV2(BaseAgentV2):
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
 
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-            input_messages, self.agent_state, self.message_manager, self.actor
+            input_messages, self.agent_state, self.message_manager, self.actor, run_id
         )
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
         for i in range(max_steps):
+            remaining_turns = max_steps - i - 1
+
             response = self._step(
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
@@ -192,6 +200,7 @@ class LettaAgentV2(BaseAgentV2):
                 use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                remaining_turns=remaining_turns,
             )
 
             async for chunk in response:
@@ -264,6 +273,7 @@ class LettaAgentV2(BaseAgentV2):
             llm_adapter = LettaLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                run_id=run_id,
             )
         else:
             llm_adapter = LettaLLMRequestAdapter(
@@ -273,7 +283,7 @@ class LettaAgentV2(BaseAgentV2):
 
         try:
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-                input_messages, self.agent_state, self.message_manager, self.actor
+                input_messages, self.agent_state, self.message_manager, self.actor, run_id
             )
             in_context_messages = in_context_messages + input_messages_to_persist
             for i in range(max_steps):
@@ -332,13 +342,14 @@ class LettaAgentV2(BaseAgentV2):
         self,
         messages: list[Message],
         llm_adapter: LettaLLMAdapter,
+        run_id: Optional[str],
         input_messages_to_persist: list[Message] | None = None,
-        run_id: str | None = None,
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         remaining_turns: int = -1,
         dry_run: bool = False,
+        enforce_run_id_set: bool = True,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -361,6 +372,9 @@ class LettaAgentV2(BaseAgentV2):
         Yields:
             LettaMessage or dict: Chunks for streaming mode, or request data for dry_run
         """
+        if enforce_run_id_set and run_id is None:
+            raise AssertionError("run_id is required when enforce_run_id_set is True")
+
         step_progression = StepProgression.START
         # TODO(@caren): clean this up
         tool_call, reasoning_content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
@@ -374,9 +388,9 @@ class LettaAgentV2(BaseAgentV2):
             None,
         )
         try:
-            self.last_function_response = self._load_last_function_response(messages)
+            self.last_function_response = _load_last_function_response(messages)
             valid_tools = await self._get_valid_tools()
-            approval_request, approval_response = await self._maybe_get_approval_messages(messages)
+            approval_request, approval_response = _maybe_get_approval_messages(messages)
             if approval_request and approval_response:
                 tool_call = approval_request.tool_calls[0]
                 reasoning_content = approval_request.content
@@ -399,6 +413,7 @@ class LettaAgentV2(BaseAgentV2):
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
                         request_data = self.llm_client.build_request_data(
+                            agent_type=self.agent_state.agent_type,
                             messages=messages,
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
@@ -456,6 +471,13 @@ class LettaAgentV2(BaseAgentV2):
             if tool_call is None and llm_adapter.tool_call is None:
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.no_tool_call.value)
                 raise ValueError("No tool calls found in response, model must make a tool call")
+
+            # TODO: how should be associate input messages with runs?
+            ## Set run_id on input messages before persisting
+            # if input_messages_to_persist and run_id:
+            #    for message in input_messages_to_persist:
+            #        if message.run_id is None:
+            #            message.run_id = run_id
 
             persisted_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
                 tool_call or llm_adapter.tool_call,
@@ -558,6 +580,7 @@ class LettaAgentV2(BaseAgentV2):
                         for message in input_messages_to_persist:
                             message.is_err = True
                             message.step_id = step_id
+                            message.run_id = run_id
                         await self.message_manager.create_many_messages_async(
                             input_messages_to_persist,
                             actor=self.actor,
@@ -598,18 +621,11 @@ class LettaAgentV2(BaseAgentV2):
         self.last_function_response = None
         self.response_messages = []
 
-    async def _maybe_get_approval_messages(self, messages: list[Message]) -> Tuple[Message | None, Message | None]:
-        if len(messages) >= 2:
-            maybe_approval_request, maybe_approval_response = messages[-2], messages[-1]
-            if maybe_approval_request.role == "approval" and maybe_approval_response.role == "approval":
-                return maybe_approval_request, maybe_approval_response
-        return None, None
-
     @trace_method
     async def _check_run_cancellation(self, run_id) -> bool:
         try:
-            job = await self.job_manager.get_job_by_id_async(job_id=run_id, actor=self.actor)
-            return job.status == JobStatus.cancelled
+            run = await self.run_manager.get_run_by_id(run_id=run_id, actor=self.actor)
+            return run.status == RunStatus.cancelled
         except Exception as e:
             # Log the error but don't fail the execution
             self.logger.warning(f"Failed to check job cancellation status for job {run_id}: {e}")
@@ -678,6 +694,9 @@ class LettaAgentV2(BaseAgentV2):
 
         curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
+        # refresh files
+        agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
+
         # generate just the memory string with current state for comparison
         curr_memory_str = agent_state.memory.compile(
             tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
@@ -741,20 +760,6 @@ class LettaAgentV2(BaseAgentV2):
         return allowed_tools
 
     @trace_method
-    def _load_last_function_response(self, in_context_messages: list[Message]):
-        """Load the last function response from message history"""
-        for msg in reversed(in_context_messages):
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
-                text_content = msg.content[0].text
-                try:
-                    response_json = json.loads(text_content)
-                    if response_json.get("message"):
-                        return response_json["message"]
-                except (json.JSONDecodeError, KeyError):
-                    raise ValueError(f"Invalid JSON format in message: {text_content}")
-        return None
-
-    @trace_method
     def _request_checkpoint_start(self, request_start_timestamp_ns: int | None) -> Span | None:
         if request_start_timestamp_ns is not None:
             request_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
@@ -796,7 +801,7 @@ class LettaAgentV2(BaseAgentV2):
             context_window_limit=self.agent_state.llm_config.context_window,
             usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
             provider_id=None,
-            job_id=run_id,
+            run_id=run_id,
             step_id=step_id,
             project_id=self.agent_state.project_id,
             status=StepStatus.PENDING,
@@ -890,21 +895,22 @@ class LettaAgentV2(BaseAgentV2):
                 function_arguments={},
                 tool_execution_result=ToolExecutionResult(status="error"),
                 tool_call_id=tool_call_id,
-                function_call_success=False,
                 function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=continue_stepping,
                 heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
                 reasoning_content=None,
                 pre_computed_assistant_message_id=None,
                 step_id=step_id,
                 is_approval_response=True,
+                run_id=run_id,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
+
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist,
                 actor=self.actor,
+                run_id=run_id,
                 project_id=agent_state.project_id,
                 template_id=agent_state.template_id,
             )
@@ -938,6 +944,7 @@ class LettaAgentV2(BaseAgentV2):
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
+                run_id=run_id,
             )
             messages_to_persist = (initial_messages or []) + [approval_message]
             continue_stepping = False
@@ -1004,29 +1011,21 @@ class LettaAgentV2(BaseAgentV2):
                 function_arguments=tool_args,
                 tool_execution_result=tool_execution_result,
                 tool_call_id=tool_call_id,
-                function_call_success=tool_execution_result.success_flag,
                 function_response=function_response_string,
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=continue_stepping,
                 heartbeat_reason=heartbeat_reason,
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
+                run_id=run_id,
                 is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
+            messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
-
-        if run_id:
-            await self.job_manager.add_messages_to_job_async(
-                job_id=run_id,
-                message_ids=[m.id for m in persisted_messages if m.role != "user"],
-                actor=self.actor,
-            )
 
         return persisted_messages, continue_stepping, stop_reason
 
@@ -1085,6 +1084,7 @@ class LettaAgentV2(BaseAgentV2):
         agent_state: AgentState,
         agent_step_span: Span | None = None,
         step_id: str | None = None,
+        run_id: str = None,
     ) -> "ToolExecutionResult":
         """
         Executes a tool and returns the ToolExecutionResult.
@@ -1110,9 +1110,9 @@ class LettaAgentV2(BaseAgentV2):
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,
+            run_manager=self.run_manager,
             agent_manager=self.agent_manager,
             block_manager=self.block_manager,
-            job_manager=self.job_manager,
             passage_manager=self.passage_manager,
             sandbox_env_vars=sandbox_env_vars,
             actor=self.actor,
@@ -1148,28 +1148,38 @@ class LettaAgentV2(BaseAgentV2):
         total_tokens: int | None = None,
         force: bool = False,
     ) -> list[Message]:
+        # always skip summarization if last message is an approval request message
+        skip_summarization = False
+        latest_messages = in_context_messages + new_letta_messages
+        if latest_messages[-1].role == "approval" and len(latest_messages[-1].tool_calls) > 0:
+            skip_summarization = True
+
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
         # TODO: `force` and `clear` seem to no longer be used, we should remove
-        if force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window):
-            self.logger.warning(
-                f"Total tokens {total_tokens} exceeds configured max tokens {self.agent_state.llm_config.context_window}, forcefully clearing message history."
-            )
-            new_in_context_messages, updated = await self.summarizer.summarize(
-                in_context_messages=in_context_messages,
-                new_letta_messages=new_letta_messages,
-                force=True,
-                clear=True,
-            )
+        if not skip_summarization:
+            if force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window):
+                self.logger.warning(
+                    f"Total tokens {total_tokens} exceeds configured max tokens {self.agent_state.llm_config.context_window}, forcefully clearing message history."
+                )
+                new_in_context_messages, updated = await self.summarizer.summarize(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=new_letta_messages,
+                    force=True,
+                    clear=True,
+                )
+            else:
+                # NOTE (Sarah): Seems like this is doing nothing?
+                self.logger.info(
+                    f"Total tokens {total_tokens} does not exceed configured max tokens {self.agent_state.llm_config.context_window}, passing summarizing w/o force."
+                )
+                new_in_context_messages, updated = await self.summarizer.summarize(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=new_letta_messages,
+                )
         else:
-            # NOTE (Sarah): Seems like this is doing nothing?
-            self.logger.info(
-                f"Total tokens {total_tokens} does not exceed configured max tokens {self.agent_state.llm_config.context_window}, passing summarizing w/o force."
-            )
-            new_in_context_messages, updated = await self.summarizer.summarize(
-                in_context_messages=in_context_messages,
-                new_letta_messages=new_letta_messages,
-            )
+            new_in_context_messages = in_context_messages + new_letta_messages
+
         message_ids = [m.id for m in new_in_context_messages]
         await self.agent_manager.update_message_ids_async(
             agent_id=self.agent_state.id,
@@ -1195,7 +1205,7 @@ class LettaAgentV2(BaseAgentV2):
                 tool_execution_ns=step_metrics.tool_execution_ns,
                 step_ns=step_metrics.step_ns,
                 agent_id=self.agent_state.id,
-                job_id=run_id,
+                run_id=run_id,
                 project_id=self.agent_state.project_id,
                 template_id=self.agent_state.template_id,
                 base_template_id=self.agent_state.base_template_id,
@@ -1219,15 +1229,15 @@ class LettaAgentV2(BaseAgentV2):
             if request_span:
                 request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(duration_ns)})
             await self._update_agent_last_run_metrics(now, ns_to_ms(duration_ns))
-            if settings.track_agent_run and run_id:
-                await self.job_manager.record_response_duration(run_id, duration_ns, self.actor)
-                await self.job_manager.safe_update_job_status_async(
-                    job_id=run_id,
-                    new_status=JobStatus.failed if is_error else JobStatus.completed,
-                    actor=self.actor,
-                    metadata=job_update_metadata,
-                    stop_reason=self.stop_reason.stop_reason if self.stop_reason else StopReasonType.error,
-                )
+            # if settings.track_agent_run and run_id:
+            #    await self.job_manager.record_response_duration(run_id, duration_ns, self.actor)
+            #    await self.job_manager.safe_update_job_status_async(
+            #        job_id=run_id,
+            #        new_status=JobStatus.failed if is_error else JobStatus.completed,
+            #        actor=self.actor,
+            #        stop_reason=self.stop_reason.stop_reason if self.stop_reason else StopReasonType.error,
+            #        metadata=job_update_metadata,
+            #    )
         if request_span:
             request_span.end()
 

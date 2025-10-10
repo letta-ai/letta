@@ -5,38 +5,57 @@ import uuid
 import pytest
 
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.config import LettaConfig
 from letta.schemas.letta_message import ToolCallMessage
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
-from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRule, RequiredBeforeExitToolRule, TerminalToolRule
+from letta.schemas.run import Run
+from letta.schemas.tool_rule import (
+    ChildToolRule,
+    ContinueToolRule,
+    InitToolRule,
+    RequiredBeforeExitToolRule,
+    TerminalToolRule,
+    ToolCallNode,
+)
 from letta.server.server import SyncServer
-from letta.services.telemetry_manager import NoopTelemetryManager
+from letta.services.run_manager import RunManager
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
     assert_invoked_send_message_with_keyword,
     assert_sanity_checks,
     setup_agent,
 )
-from tests.helpers.utils import cleanup
+from tests.helpers.utils import cleanup_async
 from tests.utils import create_tool_from_func
 
 # Generate uuid for agent name for this example
 namespace = uuid.NAMESPACE_DNS
 agent_uuid = str(uuid.uuid5(namespace, "test_agent_tool_graph"))
-config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
+
+OPENAI_CONFIG = "tests/configs/llm_model_configs/openai-gpt-4.1.json"
+CLAUDE_SONNET_CONFIG = "tests/configs/llm_model_configs/claude-4-sonnet.json"
 
 
 @pytest.fixture()
-def server():
+async def server():
     config = LettaConfig.load()
     config.save()
 
     server = SyncServer()
+    await server.init_async()
     return server
 
 
+@pytest.fixture()
+def default_config_file():
+    """Provides the default config file path for tests."""
+    return OPENAI_CONFIG
+
+
 @pytest.fixture(scope="function")
-def first_secret_tool(server):
+async def first_secret_tool(server):
     def first_secret_word():
         """
         Retrieves the initial secret word in a multi-step sequence.
@@ -46,13 +65,13 @@ def first_secret_tool(server):
         """
         return "v0iq020i0g"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=first_secret_word), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=first_secret_word), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def second_secret_tool(server):
+async def second_secret_tool(server):
     def second_secret_word(prev_secret_word: str):
         """
         Retrieves the second secret word.
@@ -67,13 +86,13 @@ def second_secret_tool(server):
             raise RuntimeError(f"Expected secret {'v0iq020i0g'}, got {prev_secret_word}")
         return "4rwp2b4gxq"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=second_secret_word), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=second_secret_word), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def third_secret_tool(server):
+async def third_secret_tool(server):
     def third_secret_word(prev_secret_word: str):
         """
         Retrieves the third secret word.
@@ -88,13 +107,13 @@ def third_secret_tool(server):
             raise RuntimeError(f'Expected secret "4rwp2b4gxq", got {prev_secret_word}')
         return "hj2hwibbqm"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=third_secret_word), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=third_secret_word), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def fourth_secret_tool(server):
+async def fourth_secret_tool(server):
     def fourth_secret_word(prev_secret_word: str):
         """
         Retrieves the final secret word.
@@ -109,13 +128,13 @@ def fourth_secret_tool(server):
             raise RuntimeError(f"Expected secret {'hj2hwibbqm'}, got {prev_secret_word}")
         return "banana"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=fourth_secret_word), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=fourth_secret_word), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def flip_coin_tool(server):
+async def flip_coin_tool(server):
     def flip_coin():
         """
         Simulates a coin flip with a chance to return a secret word.
@@ -127,13 +146,13 @@ def flip_coin_tool(server):
 
         return "" if random.random() < 0.5 else "hj2hwibbqm"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=flip_coin), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=flip_coin), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def can_play_game_tool(server):
+async def can_play_game_tool(server):
     def can_play_game():
         """
         Determines whether a game can be played.
@@ -145,13 +164,13 @@ def can_play_game_tool(server):
 
         return random.random() < 0.5
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=can_play_game), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=can_play_game), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def return_none_tool(server):
+async def return_none_tool(server):
     def return_none():
         """
         Always returns None.
@@ -161,13 +180,13 @@ def return_none_tool(server):
         """
         return None
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=return_none), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=return_none), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def auto_error_tool(server):
+async def auto_error_tool(server):
     def auto_error():
         """
         Always raises an error when called.
@@ -177,13 +196,13 @@ def auto_error_tool(server):
         """
         raise RuntimeError("This should never be called.")
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=auto_error), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=auto_error), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def save_data_tool(server):
+async def save_data_tool(server):
     def save_data():
         """
         Saves important data before exiting.
@@ -193,13 +212,13 @@ def save_data_tool(server):
         """
         return "Data saved successfully"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=save_data), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=save_data), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def cleanup_temp_files_tool(server):
+async def cleanup_temp_files_tool(server):
     def cleanup_temp_files():
         """
         Cleans up temporary files before exiting.
@@ -209,13 +228,69 @@ def cleanup_temp_files_tool(server):
         """
         return "Temporary files cleaned up"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=cleanup_temp_files), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=cleanup_temp_files), actor=actor)
     yield tool
 
 
 @pytest.fixture(scope="function")
-def validate_work_tool(server):
+async def validate_api_key_tool(server):
+    SECRET = "REAL_KEY_123"
+
+    def validate_api_key(secret_key: str):
+        """
+        Validates an API key; errors if incorrect.
+
+        Args:
+            secret_key (str): The provided key.
+
+        Returns:
+            str: Confirmation string when key is valid.
+        """
+        if secret_key != SECRET:
+            raise RuntimeError(f"Invalid secret key: {secret_key}")
+        return "api key accepted"
+
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=validate_api_key), actor=actor)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+async def noop_tool(server):
+    def noop():
+        """Returns a simple confirmation string."""
+        return "ok"
+
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=noop), actor=actor)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+async def complex_child_tool(server):
+    def complex_child(arr: list, text: str, num: float, flag: bool):
+        """
+        Accepts complex typed arguments and returns a summary string.
+
+        Args:
+            arr (list): List of numeric or string items for testing.
+            text (str): Text value to include in the summary.
+            num (float): Numeric value to include in the summary.
+            flag (bool): Boolean flag to include in the summary.
+
+        Returns:
+            str: Summary string encoding the provided inputs.
+        """
+        return f"ok:{text}:{num}:{flag}:{len(arr)}:{len(obj)}"
+
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=complex_child), actor=actor)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+async def validate_work_tool(server):
     def validate_work():
         """
         Validates that work is complete before exiting.
@@ -225,25 +300,35 @@ def validate_work_tool(server):
         """
         return "Work validation passed"
 
-    actor = server.user_manager.get_user_or_default()
-    tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=validate_work), actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async()
+    tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=validate_work), actor=actor)
     yield tool
 
 
 @pytest.fixture
-def default_user(server):
-    yield server.user_manager.get_user_or_default()
+async def default_user(server):
+    actor = await server.user_manager.get_actor_or_default_async()
+    yield actor
 
 
 async def run_agent_step(agent_state, input_messages, actor):
     """Helper function to run agent step using LettaAgent directly instead of server.send_messages."""
-    agent_loop = LettaAgentV2(
+    agent_loop = LettaAgentV3(
         agent_state=agent_state,
+        actor=actor,
+    )
+
+    run = Run(
+        agent_id=agent_state.id,
+    )
+    run = await RunManager().create_run(
+        pydantic_run=run,
         actor=actor,
     )
 
     return await agent_loop.step(
         input_messages,
+        run_id=run.id,
         max_steps=50,
         use_assistant_message=False,
     )
@@ -254,7 +339,7 @@ async def run_agent_step(agent_state, input_messages, actor):
 async def test_single_path_agent_tool_call_graph(
     server, disable_e2b_api_key, first_secret_tool, second_secret_tool, third_secret_tool, fourth_secret_tool, auto_error_tool, default_user
 ):
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
     # Add tools
     tools = [first_secret_tool, second_secret_tool, third_secret_tool, fourth_secret_tool, auto_error_tool]
@@ -270,7 +355,7 @@ async def test_single_path_agent_tool_call_graph(
     ]
 
     # Make agent state
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
     response = await run_agent_step(
         agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="What is the fourth secret word?")],
@@ -301,20 +386,19 @@ async def test_single_path_agent_tool_call_graph(
     assert_invoked_send_message_with_keyword(response.messages, "banana")
 
     print(f"Got successful response from client: \n\n{response}")
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
 
 @pytest.mark.timeout(60)
 @pytest.mark.parametrize(
     "config_file",
     [
-        "tests/configs/llm_model_configs/claude-3-5-sonnet.json",
-        "tests/configs/llm_model_configs/openai-gpt-3.5-turbo.json",
-        "tests/configs/llm_model_configs/openai-gpt-4o.json",
+        CLAUDE_SONNET_CONFIG,
+        OPENAI_CONFIG,
     ],
 )
 @pytest.mark.parametrize("init_tools_case", ["single", "multiple"])
-def test_check_tool_rules_with_different_models_parametrized(
+async def test_check_tool_rules_with_different_models_parametrized(
     server, disable_e2b_api_key, first_secret_tool, second_secret_tool, third_secret_tool, default_user, config_file, init_tools_case
 ):
     """Test that tool rules are properly validated across model configurations and init tool scenarios."""
@@ -332,7 +416,7 @@ def test_check_tool_rules_with_different_models_parametrized(
 
     if "gpt-4o" in config_file or init_tools_case == "single":
         # Should succeed
-        agent_state = setup_agent(
+        agent_state = await setup_agent(
             server,
             config_file,
             agent_uuid=agent_uuid,
@@ -343,7 +427,7 @@ def test_check_tool_rules_with_different_models_parametrized(
     else:
         # Non-structured model with multiple init tools should fail
         with pytest.raises(ValueError, match="Multiple initial tools are not supported for non-structured models"):
-            setup_agent(
+            await setup_agent(
                 server,
                 config_file,
                 agent_uuid=agent_uuid,
@@ -351,7 +435,7 @@ def test_check_tool_rules_with_different_models_parametrized(
                 tool_rules=tool_rules,
             )
 
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
 
 @pytest.mark.timeout(180)
@@ -370,13 +454,12 @@ async def test_claude_initial_tool_rule_enforced(
         TerminalToolRule(tool_name=second_secret_tool.name),
     ]
     tools = [first_secret_tool, second_secret_tool]
-    anthropic_config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
 
     for i in range(3):
         agent_uuid = str(uuid.uuid4())
-        agent_state = setup_agent(
+        agent_state = await setup_agent(
             server,
-            anthropic_config_file,
+            CLAUDE_SONNET_CONFIG,
             agent_uuid=agent_uuid,
             tool_ids=[t.id for t in tools],
             tool_rules=tool_rules,
@@ -401,7 +484,7 @@ async def test_claude_initial_tool_rule_enforced(
                 tool_names = tool_names[1:]
 
         print(f"Passed iteration {i}")
-        cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+        await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
         # Exponential backoff
         if i < 2:
@@ -413,8 +496,7 @@ async def test_claude_initial_tool_rule_enforced(
 @pytest.mark.parametrize(
     "config_file",
     [
-        "tests/configs/llm_model_configs/claude-3-5-sonnet.json",
-        "tests/configs/llm_model_configs/openai-gpt-4o.json",
+        OPENAI_CONFIG,
     ],
 )
 @pytest.mark.asyncio
@@ -425,9 +507,9 @@ async def test_agent_no_structured_output_with_one_child_tool_parametrized(
     config_file,
 ):
     """Test that agent correctly calls tool chains with unstructured output under various model configs."""
-    send_message = server.tool_manager.get_tool_by_name(tool_name="send_message", actor=default_user)
-    archival_memory_search = server.tool_manager.get_tool_by_name(tool_name="archival_memory_search", actor=default_user)
-    archival_memory_insert = server.tool_manager.get_tool_by_name(tool_name="archival_memory_insert", actor=default_user)
+    send_message = await server.tool_manager.get_tool_by_name_async(tool_name="send_message", actor=default_user)
+    archival_memory_search = await server.tool_manager.get_tool_by_name_async(tool_name="archival_memory_search", actor=default_user)
+    archival_memory_insert = await server.tool_manager.get_tool_by_name_async(tool_name="archival_memory_insert", actor=default_user)
 
     tools = [send_message, archival_memory_search, archival_memory_insert]
 
@@ -444,7 +526,7 @@ async def test_agent_no_structured_output_with_one_child_tool_parametrized(
 
     for attempt in range(max_retries):
         try:
-            agent_state = setup_agent(
+            agent_state = await setup_agent(
                 server,
                 config_file,
                 agent_uuid=agent_uuid,
@@ -476,12 +558,12 @@ async def test_agent_no_structured_output_with_one_child_tool_parametrized(
         except AssertionError as e:
             last_error = e
             print(f"[{config_file}] Attempt {attempt + 1} failed")
-            cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+            await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
     if last_error:
         raise last_error
 
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
 
 @pytest.mark.timeout(30)
@@ -495,13 +577,12 @@ async def test_init_tool_rule_always_fails(
     include_base_tools,
 ):
     """Test behavior when InitToolRule invokes a tool that always fails."""
-    config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
     agent_uuid = str(uuid.uuid4())
 
     tool_rule = InitToolRule(tool_name=auto_error_tool.name)
-    agent_state = setup_agent(
+    agent_state = await setup_agent(
         server,
-        config_file,
+        OPENAI_CONFIG,
         agent_uuid=agent_uuid,
         tool_ids=[auto_error_tool.id],
         tool_rules=[tool_rule],
@@ -516,28 +597,251 @@ async def test_init_tool_rule_always_fails(
 
     assert_invoked_function_call(response.messages, auto_error_tool.name)
 
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_init_tool_rule_args_override_llm_payload(server, disable_e2b_api_key, validate_api_key_tool, default_user):
+    """InitToolRule args should override LLM-provided args for the initial tool call."""
+    REAL = "REAL_KEY_123"
+
+    tools = [validate_api_key_tool]
+    tool_rules = [
+        InitToolRule(tool_name="validate_api_key", args={"secret_key": REAL}),
+        ChildToolRule(tool_name="validate_api_key", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    # Ask the model to call with a fake key; prefilled args should override
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[
+            MessageCreate(
+                role="user",
+                content="Please validate my API key: FAKE_KEY_999, then send me confirmation.",
+            )
+        ],
+        actor=default_user,
+    )
+
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "validate_api_key")
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Verify the recorded tool-call arguments reflect the prefilled override
+    for m in response.messages:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == "validate_api_key":
+            args = json.loads(m.tool_call.arguments)
+            assert args.get("secret_key") == REAL
+            break
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_init_tool_rule_invalid_prefilled_type_blocks_flow(server, disable_e2b_api_key, validate_api_key_tool, default_user):
+    """Invalid prefilled args should produce an error and prevent further flow (no send_message)."""
+    tools = [validate_api_key_tool]
+    # Provide wrong type for secret_key (expects string)
+    tool_rules = [
+        InitToolRule(tool_name="validate_api_key", args={"secret_key": 123}),
+        ChildToolRule(tool_name="validate_api_key", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[MessageCreate(role="user", content="try validating my key")],
+        actor=default_user,
+    )
+
+    # Should attempt validate_api_key but not proceed to send_message
+    assert_invoked_function_call(response.messages, "validate_api_key")
+    with pytest.raises(Exception):
+        assert_invoked_function_call(response.messages, "send_message")
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_init_tool_rule_unknown_prefilled_key_blocks_flow(server, disable_e2b_api_key, validate_api_key_tool, default_user):
+    """Unknown prefilled arg key should error and block flow."""
+    tools = [validate_api_key_tool]
+    tool_rules = [
+        InitToolRule(tool_name="validate_api_key", args={"not_a_param": "value"}),
+        ChildToolRule(tool_name="validate_api_key", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[MessageCreate(role="user", content="validate with your best guess")],
+        actor=default_user,
+    )
+
+    assert_invoked_function_call(response.messages, "validate_api_key")
+    with pytest.raises(Exception):
+        assert_invoked_function_call(response.messages, "send_message")
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_child_tool_rule_args_override_llm_payload(server, disable_e2b_api_key, noop_tool, validate_api_key_tool, default_user):
+    """ChildToolRule ToolCallNode args should override LLM-provided args for the child when the parent is the last tool."""
+    REAL = "REAL_KEY_123"
+
+    tools = [noop_tool, validate_api_key_tool]
+    tool_rules = [
+        InitToolRule(tool_name="noop"),
+        ChildToolRule(
+            tool_name="noop",
+            children=["validate_api_key"],
+            child_arg_nodes=[ToolCallNode(name="validate_api_key", args={"secret_key": REAL})],
+        ),
+        ChildToolRule(tool_name="validate_api_key", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[
+            MessageCreate(role="user", content="Run noop, then validate my API key: FAKE_KEY, then send a message."),
+        ],
+        actor=default_user,
+    )
+
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "noop")
+    assert_invoked_function_call(response.messages, "validate_api_key")
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Verify override took effect on the child call
+    for m in response.messages:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == "validate_api_key":
+            args = json.loads(m.tool_call.arguments)
+            assert args.get("secret_key") == REAL
+            break
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.asyncio
+async def test_child_tool_rule_complex_args_override(server, disable_e2b_api_key, noop_tool, complex_child_tool, default_user):
+    """ChildToolRule ToolCallNode args with complex types should override LLM-supplied args."""
+    prefilled = {
+        "arr": [1, 2, 3],
+        "text": "HELLO",
+        "num": 3.14159,
+        "flag": True,
+    }
+
+    tools = [noop_tool, complex_child_tool]
+    tool_rules = [
+        InitToolRule(tool_name="noop"),
+        ChildToolRule(tool_name="noop", children=["complex_child"], child_arg_nodes=[ToolCallNode(name="complex_child", args=prefilled)]),
+        ChildToolRule(tool_name="complex_child", children=["send_message"]),
+        TerminalToolRule(tool_name="send_message"),
+    ]
+
+    agent_name = str(uuid.uuid4())
+    agent_state = await setup_agent(
+        server,
+        OPENAI_CONFIG,
+        agent_uuid=agent_name,
+        tool_ids=[t.id for t in tools],
+        tool_rules=tool_rules,
+    )
+
+    response = await run_agent_step(
+        agent_state=agent_state,
+        input_messages=[
+            MessageCreate(
+                role="user",
+                content=("Run noop, then call complex_child with obj={}, arr=[9,9], text='fake', num=0, flag=false, then send a message."),
+            )
+        ],
+        actor=default_user,
+    )
+
+    assert_sanity_checks(response)
+    assert_invoked_function_call(response.messages, "noop")
+    assert_invoked_function_call(response.messages, "complex_child")
+    assert_invoked_function_call(response.messages, "send_message")
+
+    # Verify override took effect on the complex child call
+    for m in response.messages:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == "complex_child":
+            args = json.loads(m.tool_call.arguments)
+            assert args.get("arr") == prefilled["arr"]
+            assert args.get("text") == prefilled["text"]
+            assert args.get("num") == prefilled["num"]
+            assert args.get("flag") is True
+            break
+
+    await cleanup_async(server=server, agent_uuid=agent_name, actor=default_user)
 
 
 @pytest.mark.asyncio
 async def test_continue_tool_rule(server, default_user):
     """Test the continue tool rule by forcing send_message to loop before ending with core_memory_append."""
-    config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
     agent_uuid = str(uuid.uuid4())
 
-    tool_ids = [
-        server.tool_manager.get_tool_by_name("send_message", actor=default_user).id,
-        server.tool_manager.get_tool_by_name("core_memory_append", actor=default_user).id,
+    tools = [
+        await server.tool_manager.get_tool_by_name_async("send_message", actor=default_user),
+        await server.tool_manager.get_tool_by_name_async("core_memory_append", actor=default_user),
     ]
+    tool_ids = [t.id for t in tools]
 
     tool_rules = [
         ContinueToolRule(tool_name="send_message"),
         TerminalToolRule(tool_name="core_memory_append"),
     ]
 
-    agent_state = setup_agent(
+    agent_state = await setup_agent(
         server,
-        config_file,
+        CLAUDE_SONNET_CONFIG,
         agent_uuid,
         tool_ids=tool_ids,
         tool_rules=tool_rules,
@@ -563,7 +867,7 @@ async def test_continue_tool_rule(server, default_user):
     )
     assert send_idx < append_idx, "send_message should occur before core_memory_append"
 
-    cleanup(server=server, agent_uuid=agent_uuid, actor=default_user)
+    await cleanup_async(server=server, agent_uuid=agent_uuid, actor=default_user)
 
 
 # @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
@@ -604,8 +908,8 @@ async def test_continue_tool_rule(server, default_user):
 #     ]
 #     tools = [flip_coin_tool, reveal_secret]
 #
-#     config_file = "tests/configs/llm_model_configs/claude-3-5-sonnet.json"
-#     agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+#     config_file = CLAUDE_SONNET_CONFIG
+#     agent_state = await setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 #     response = client.user_message(agent_id=agent_state.id, message="flip a coin until you get the secret word")
 #
 #     # Make checks
@@ -667,7 +971,7 @@ async def test_continue_tool_rule(server, default_user):
 #     tools = [tool, secret_word]
 #
 #     # Setup agent with all tools
-#     agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+#     agent_state = await setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 #
 #     # Ask agent to try different tools based on the game output
 #     response = client.user_message(agent_id=agent_state.id, message="call a function, any function. then call send_message")
@@ -729,7 +1033,7 @@ async def test_continue_tool_rule(server, default_user):
 #     tools = [flip_coin_tool, secret_word_tool]
 #
 #     # Setup initial agent
-#     agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+#     agent_state = await setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 #
 #     # Call flip_coin first
 #     response = client.user_message(agent_id=agent_state.id, message="flip a coin")
@@ -782,7 +1086,7 @@ async def test_continue_tool_rule(server, default_user):
 #     )
 #
 #     # Set up agent with the tool rule
-#     agent_state = setup_agent(
+#     agent_state = await setup_agent(
 #         client, config_file, agent_uuid, tool_rules=[tool_rule], tool_ids=[t.id for t in tools], include_base_tools=False
 #     )
 #
@@ -810,7 +1114,6 @@ async def test_continue_tool_rule(server, default_user):
 async def test_single_required_before_exit_tool(server, disable_e2b_api_key, save_data_tool, default_user):
     """Test that agent is forced to call a single required-before-exit tool before ending."""
     agent_name = "required_exit_single_tool_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool]
@@ -821,7 +1124,7 @@ async def test_single_required_before_exit_tool(server, disable_e2b_api_key, sav
     ]
 
     # Create agent
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would normally cause exit
     response = await run_agent_step(
@@ -852,7 +1155,6 @@ async def test_single_required_before_exit_tool(server, disable_e2b_api_key, sav
 async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, save_data_tool, cleanup_temp_files_tool, default_user):
     """Test that agent calls all required-before-exit tools before ending."""
     agent_name = "required_exit_multi_tool_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool, cleanup_temp_files_tool]
@@ -864,7 +1166,7 @@ async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, 
     ]
 
     # Create agent
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would normally cause exit
     response = await run_agent_step(
@@ -897,7 +1199,6 @@ async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, 
 async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key, first_secret_tool, save_data_tool, default_user):
     """Test required-before-exit rules work alongside other tool rules."""
     agent_name = "required_exit_with_rules_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules - combine with child tool rules
     tools = [first_secret_tool, save_data_tool]
@@ -909,7 +1210,7 @@ async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key
     ]
 
     # Create agent
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that would trigger tool flow
     response = await run_agent_step(
@@ -942,7 +1243,6 @@ async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key
 async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_key, save_data_tool, default_user):
     """Test that agent can exit normally when required tools are called during regular operation."""
     agent_name = "required_exit_normal_flow_agent"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
     # Set up tools and rules
     tools = [save_data_tool]
@@ -953,7 +1253,7 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     ]
 
     # Create agent
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+    agent_state = await setup_agent(server, OPENAI_CONFIG, agent_uuid=agent_name, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Send message that explicitly mentions calling the required tool
     response = await run_agent_step(
@@ -976,51 +1276,3 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
     assert len(send_message_calls) == 1, "Should call send_message exactly once"
 
     print(f"✓ Agent '{agent_name}' exited cleanly after calling required tool normally")
-
-
-@pytest.mark.timeout(60)
-@pytest.mark.asyncio
-async def test_terminal_tool_rule_send_message_request_heartbeat_false(server, disable_e2b_api_key, default_user):
-    """Test that when there's a terminal tool rule on send_message, the tool call has request_heartbeat=False."""
-    agent_name = "terminal_send_message_heartbeat_test"
-    config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
-
-    # Set up tool rules with terminal rule on send_message
-    tool_rules = [
-        TerminalToolRule(tool_name="send_message"),
-    ]
-
-    # Create agent
-    agent_state = setup_agent(server, config_file, agent_uuid=agent_name, tool_ids=[], tool_rules=tool_rules)
-
-    # Send message that should trigger send_message tool call
-    response = await run_agent_step(
-        agent_state=agent_state,
-        input_messages=[MessageCreate(role="user", content="Please send me a simple message.")],
-        actor=default_user,
-    )
-
-    # Assertions
-    assert_sanity_checks(response)
-    assert_invoked_function_call(response.messages, "send_message")
-
-    # Find the send_message tool call and check request_heartbeat is False
-    send_message_call = None
-    for message in response.messages:
-        if isinstance(message, ToolCallMessage) and message.tool_call.name == "send_message":
-            send_message_call = message
-            break
-
-    assert send_message_call is not None, "send_message tool call should be found"
-
-    # Parse the arguments and check request_heartbeat
-    try:
-        arguments = json.loads(send_message_call.tool_call.arguments)
-        assert "request_heartbeat" in arguments, "request_heartbeat should be present in send_message arguments"
-        assert arguments["request_heartbeat"] is False, "request_heartbeat should be False for terminal tool rule"
-
-        print(f"✓ Agent '{agent_name}' correctly set request_heartbeat=False for terminal send_message")
-    except json.JSONDecodeError:
-        pytest.fail("Failed to parse tool call arguments as JSON")
-    finally:
-        cleanup(server=server, agent_uuid=agent_name, actor=default_user)

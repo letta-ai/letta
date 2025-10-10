@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
+    from letta.orm.run import Run
     from letta.orm.source import Source
     from letta.orm.tool import Tool
 
@@ -38,6 +39,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     __table_args__ = (
         Index("ix_agents_created_at", "created_at", "id"),
         Index("ix_agents_organization_id", "organization_id"),
+        Index("ix_agents_organization_id_deployment_id", "organization_id", "deployment_id"),
+        Index("ix_agents_project_id", "project_id"),
     )
 
     # agent generates its own id
@@ -131,6 +134,13 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         cascade="all, delete-orphan",
         lazy="selectin",
         doc="Tags associated with the agent.",
+    )
+    runs: Mapped[List["Run"]] = relationship(
+        "Run",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        doc="Runs associated with the agent.",
     )
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",

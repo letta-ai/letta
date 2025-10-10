@@ -20,11 +20,9 @@ jobs:
           python-version: 3.12
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          activate-environment: true
-          cache-dependency-glob: "uv.lock"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Build the Python package
         run: uv build

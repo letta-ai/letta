@@ -1,4 +1,6 @@
 #!/usr/bin/env tsx
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 /**
  * Minimal TypeScript examples showing Letta's streaming API.
  * Demonstrates both step streaming (default) and token streaming modes.
@@ -20,6 +22,7 @@ async function stepStreamingExample(client: LettaClient, agentId: string): Promi
     for await (const chunk of stream as AsyncIterable<LettaMessage>) {
         // Each chunk is a complete message
         if (chunk.messageType === 'assistant_message') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
             console.log((chunk as any).content);
         }
     }
@@ -49,6 +52,7 @@ async function tokenStreamingExample(client: LettaClient, agentId: string): Prom
             }
 
             // Accumulate and print content
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const contentChunk = (chunk as any).content || '';
             messageAccumulators.set(msgId, messageAccumulators.get(msgId)! + contentChunk);
             process.stdout.write(contentChunk);

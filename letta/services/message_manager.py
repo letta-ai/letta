@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import delete, exists, func, select, text
 
@@ -216,17 +216,6 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def get_message_by_id(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
-        """Fetch a message by ID."""
-        with db_registry.session() as session:
-            try:
-                message = MessageModel.read(db_session=session, identifier=message_id, actor=actor)
-                return message.to_pydantic()
-            except NoResultFound:
-                return None
-
-    @enforce_types
-    @trace_method
     async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
@@ -235,14 +224,6 @@ class MessageManager:
                 return message.to_pydantic()
             except NoResultFound:
                 return None
-
-    @enforce_types
-    @trace_method
-    def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
-        """Fetch messages by ID and return them in the requested order."""
-        with db_registry.session() as session:
-            results = MessageModel.read_multiple(db_session=session, identifiers=message_ids, actor=actor)
-        return self._get_messages_by_id_postprocess(results, message_ids)
 
     @enforce_types
     @trace_method
@@ -265,18 +246,6 @@ class MessageManager:
         result_dict = {msg.id: msg.to_pydantic() for msg in results}
         return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
 
-    @enforce_types
-    @trace_method
-    def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
-        """Create a new message."""
-        with db_registry.session() as session:
-            # Set the organization id of the Pydantic message
-            msg_data = pydantic_msg.model_dump(to_orm=True)
-            msg_data["organization_id"] = actor.organization_id
-            msg = MessageModel(**msg_data)
-            msg.create(session, actor=actor)  # Persist to database
-            return msg.to_pydantic()
-
     def _create_many_preprocess(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[MessageModel]:
         # Create ORM model instances for all messages
         orm_messages = []
@@ -289,23 +258,48 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
-        """
-        Create multiple messages in a single database transaction.
+    async def check_existing_message_ids(self, message_ids: List[str], actor: PydanticUser) -> Set[str]:
+        """Check which message IDs already exist in the database.
+
         Args:
-            pydantic_msgs: List of Pydantic message models to create
+            message_ids: List of message IDs to check
             actor: User performing the action
 
         Returns:
-            List of created Pydantic message models
+            Set of message IDs that already exist in the database
         """
-        if not pydantic_msgs:
-            return []
+        if not message_ids:
+            return set()
 
-        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
-        with db_registry.session() as session:
-            created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
-            return [msg.to_pydantic() for msg in created_messages]
+        async with db_registry.async_session() as session:
+            query = select(MessageModel.id).where(MessageModel.id.in_(message_ids), MessageModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            return set(result.scalars().all())
+
+    @enforce_types
+    @trace_method
+    async def filter_existing_messages(
+        self, messages: List[PydanticMessage], actor: PydanticUser
+    ) -> Tuple[List[PydanticMessage], List[PydanticMessage]]:
+        """Filter messages into new and existing based on their IDs.
+
+        Args:
+            messages: List of messages to filter
+            actor: User performing the action
+
+        Returns:
+            Tuple of (new_messages, existing_messages)
+        """
+        message_ids = [msg.id for msg in messages if msg.id]
+        if not message_ids:
+            return messages, []
+
+        existing_ids = await self.check_existing_message_ids(message_ids, actor)
+
+        new_messages = [msg for msg in messages if msg.id not in existing_ids]
+        existing_messages = [msg for msg in messages if msg.id in existing_ids]
+
+        return new_messages, existing_messages
 
     @enforce_types
     @trace_method
@@ -313,9 +307,11 @@ class MessageManager:
         self,
         pydantic_msgs: List[PydanticMessage],
         actor: PydanticUser,
+        run_id: Optional[str] = None,
         strict_mode: bool = False,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        allow_partial: bool = False,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -326,14 +322,33 @@ class MessageManager:
             strict_mode: If True, wait for embedding to complete; if False, run in background
             project_id: Optional project ID for the messages (for Turbopuffer indexing)
             template_id: Optional template ID for the messages (for Turbopuffer indexing)
+            allow_partial: If True, skip messages that already exist; if False, fail on duplicates
 
         Returns:
-            List of created Pydantic message models
+            List of created Pydantic message models (and existing ones if allow_partial=True)
         """
         if not pydantic_msgs:
             return []
 
-        for message in pydantic_msgs:
+        messages_to_create = pydantic_msgs
+        existing_messages = []
+
+        if allow_partial:
+            # filter out messages that already exist
+            new_messages, existing_messages = await self.filter_existing_messages(pydantic_msgs, actor)
+            messages_to_create = new_messages
+
+            if not messages_to_create:
+                # all messages already exist, fetch and return them
+                async with db_registry.async_session() as session:
+                    existing_ids = [msg.id for msg in existing_messages if msg.id]
+                    query = select(MessageModel).where(
+                        MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id
+                    )
+                    result = await session.execute(query)
+                    return [msg.to_pydantic() for msg in result.scalars()]
+
+        for message in messages_to_create:
             if isinstance(message.content, list):
                 for content in message.content:
                     if content.type == MessageContentType.image and content.source.type == ImageSourceType.base64:
@@ -358,30 +373,34 @@ class MessageManager:
                             media_type=content.source.media_type,
                             detail=content.source.detail,
                         )
-        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
+        orm_messages = self._create_many_preprocess(messages_to_create, actor)
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
             await session.commit()
 
-            # embed messages in turbopuffer if enabled
-            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
+        from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and result:
-                # extract agent_id from the first message (all should have same agent_id)
-                agent_id = result[0].agent_id
-                if agent_id:
-                    if strict_mode:
-                        # wait for embedding to complete
-                        await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
-                    else:
-                        # fire and forget - run embedding in background
-                        fire_and_forget(
-                            self._embed_messages_background(result, actor, agent_id, project_id, template_id),
-                            task_name=f"embed_messages_for_agent_{agent_id}",
-                        )
+        if should_use_tpuf_for_messages() and result:
+            agent_id = result[0].agent_id
+            if agent_id:
+                if strict_mode:
+                    await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
+                else:
+                    fire_and_forget(
+                        self._embed_messages_background(result, actor, agent_id, project_id, template_id),
+                        task_name=f"embed_messages_for_agent_{agent_id}",
+                    )
 
-            return result
+        if allow_partial and existing_messages:
+            async with db_registry.async_session() as session:
+                existing_ids = [msg.id for msg in existing_messages if msg.id]
+                query = select(MessageModel).where(MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id)
+                existing_result = await session.execute(query)
+                existing_fetched = [msg.to_pydantic() for msg in existing_result.scalars()]
+                result.extend(existing_fetched)
+
+        return result
 
     async def _embed_messages_background(
         self,
@@ -441,13 +460,13 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def update_message_by_letta_message(
+    async def update_message_by_letta_message_async(
         self, message_id: str, letta_message_update: LettaMessageUpdateUnion, actor: PydanticUser
     ) -> PydanticMessage:
         """
         Updated the underlying messages table giving an update specified to the user-facing LettaMessage
         """
-        message = self.get_message_by_id(message_id=message_id, actor=actor)
+        message = await self.get_message_by_id_async(message_id=message_id, actor=actor)
         if letta_message_update.message_type == "assistant_message":
             # modify the tool call for send_message
             # TODO: fix this if we add parallel tool calls
@@ -468,7 +487,7 @@ class MessageManager:
         else:
             raise ValueError(f"Unsupported message type for modification: {letta_message_update.message_type}")
 
-        message = self.update_message_by_id(message_id=message_id, message_update=update_message, actor=actor)
+        message = await self.update_message_by_id_async(message_id=message_id, message_update=update_message, actor=actor)
 
         # convert back to LettaMessage
         for letta_msg in message.to_letta_messages(use_assistant_message=True):
@@ -477,63 +496,6 @@ class MessageManager:
 
         # raise error if message type got modified
         raise ValueError(f"Message type got modified: {letta_message_update.message_type}")
-
-    @enforce_types
-    @trace_method
-    def update_message_by_letta_message(
-        self, message_id: str, letta_message_update: LettaMessageUpdateUnion, actor: PydanticUser
-    ) -> PydanticMessage:
-        """
-        Updated the underlying messages table giving an update specified to the user-facing LettaMessage
-        """
-        message = self.get_message_by_id(message_id=message_id, actor=actor)
-        if letta_message_update.message_type == "assistant_message":
-            # modify the tool call for send_message
-            # TODO: fix this if we add parallel tool calls
-            # TODO: note this only works if the AssistantMessage is generated by the standard send_message
-            assert message.tool_calls[0].function.name == "send_message", (
-                f"Expected the first tool call to be send_message, but got {message.tool_calls[0].function.name}"
-            )
-            original_args = json.loads(message.tool_calls[0].function.arguments)
-            original_args["message"] = letta_message_update.content  # override the assistant message
-            update_tool_call = message.tool_calls[0].__deepcopy__()
-            update_tool_call.function.arguments = json.dumps(original_args)
-
-            update_message = MessageUpdate(tool_calls=[update_tool_call])
-        elif letta_message_update.message_type == "reasoning_message":
-            update_message = MessageUpdate(content=letta_message_update.reasoning)
-        elif letta_message_update.message_type == "user_message" or letta_message_update.message_type == "system_message":
-            update_message = MessageUpdate(content=letta_message_update.content)
-        else:
-            raise ValueError(f"Unsupported message type for modification: {letta_message_update.message_type}")
-
-        message = self.update_message_by_id(message_id=message_id, message_update=update_message, actor=actor)
-
-        # convert back to LettaMessage
-        for letta_msg in message.to_letta_messages(use_assistant_message=True):
-            if letta_msg.message_type == letta_message_update.message_type:
-                return letta_msg
-
-        # raise error if message type got modified
-        raise ValueError(f"Message type got modified: {letta_message_update.message_type}")
-
-    @enforce_types
-    @trace_method
-    def update_message_by_id(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
-        """
-        Updates an existing record in the database with values from the provided record object.
-        """
-        with db_registry.session() as session:
-            # Fetch existing message from database
-            message = MessageModel.read(
-                db_session=session,
-                identifier=message_id,
-                actor=actor,
-            )
-
-            message = self._update_message_by_id_impl(message_id, message_update, actor, message)
-            message.update(db_session=session, actor=actor)
-            return message.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -571,26 +533,21 @@ class MessageManager:
             pydantic_message = message.to_pydantic()
             await session.commit()
 
-            # update message in turbopuffer if enabled (delete and re-insert)
-            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
+        from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and pydantic_message.agent_id:
-                # extract text content from updated message
-                text = self._extract_message_text(pydantic_message)
+        if should_use_tpuf_for_messages() and pydantic_message.agent_id:
+            text = self._extract_message_text(pydantic_message)
 
-                # only update in turbopuffer if there's text content
-                if text:
-                    if strict_mode:
-                        # wait for embedding update to complete
-                        await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
-                    else:
-                        # fire and forget - run embedding update in background
-                        fire_and_forget(
-                            self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
-                            task_name=f"update_message_embedding_{message_id}",
-                        )
+            if text:
+                if strict_mode:
+                    await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
+                else:
+                    fire_and_forget(
+                        self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
+                        task_name=f"update_message_embedding_{message_id}",
+                    )
 
-            return pydantic_message
+        return pydantic_message
 
     async def _update_message_embedding_background(
         self, message: PydanticMessage, text: str, actor: PydanticUser, project_id: Optional[str] = None, template_id: Optional[str] = None
@@ -656,24 +613,10 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def delete_message_by_id(self, message_id: str, actor: PydanticUser) -> bool:
-        """Delete a message."""
-        with db_registry.session() as session:
-            try:
-                msg = MessageModel.read(
-                    db_session=session,
-                    identifier=message_id,
-                    actor=actor,
-                )
-                msg.hard_delete(session, actor=actor)
-                # Note: Turbopuffer deletion requires async, use delete_message_by_id_async for full deletion
-            except NoResultFound:
-                raise ValueError(f"Message with id {message_id} not found.")
-
-    @enforce_types
-    @trace_method
     async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
         """Delete a message (async version with turbopuffer support)."""
+        # capture agent_id before deletion
+        agent_id = None
         async with db_registry.async_session() as session:
             try:
                 msg = await MessageModel.read_async(
@@ -683,43 +626,22 @@ class MessageManager:
                 )
                 agent_id = msg.agent_id
                 await msg.hard_delete_async(session, actor=actor)
-
-                # delete from turbopuffer if enabled
-                from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
-
-                if should_use_tpuf_for_messages() and agent_id:
-                    try:
-                        tpuf_client = TurbopufferClient()
-                        await tpuf_client.delete_messages(
-                            agent_id=agent_id, organization_id=actor.organization_id, message_ids=[message_id]
-                        )
-                        logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
-                    except Exception as e:
-                        logger.error(f"Failed to delete message from Turbopuffer: {e}")
-                        if strict_mode:
-                            raise  # Re-raise the exception in strict mode
-
-                return True
-
             except NoResultFound:
                 raise ValueError(f"Message with id {message_id} not found.")
 
-    @enforce_types
-    @trace_method
-    def size(
-        self,
-        actor: PydanticUser,
-        role: Optional[MessageRole] = None,
-        agent_id: Optional[str] = None,
-    ) -> int:
-        """Get the total count of messages with optional filters.
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
 
-        Args:
-            actor: The user requesting the count
-            role: The role of the message
-        """
-        with db_registry.session() as session:
-            return MessageModel.size(db_session=session, actor=actor, role=role, agent_id=agent_id)
+        if should_use_tpuf_for_messages() and agent_id:
+            try:
+                tpuf_client = TurbopufferClient()
+                await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=[message_id])
+                logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete message from Turbopuffer: {e}")
+                if strict_mode:
+                    raise
+
+        return True
 
     @enforce_types
     @trace_method
@@ -739,29 +661,6 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    def list_user_messages_for_agent(
-        self,
-        agent_id: str,
-        actor: PydanticUser,
-        after: Optional[str] = None,
-        before: Optional[str] = None,
-        query_text: Optional[str] = None,
-        limit: Optional[int] = 50,
-        ascending: bool = True,
-    ) -> List[PydanticMessage]:
-        return self.list_messages_for_agent(
-            agent_id=agent_id,
-            actor=actor,
-            after=after,
-            before=before,
-            query_text=query_text,
-            roles=[MessageRole.user],
-            limit=limit,
-            ascending=ascending,
-        )
-
-    @enforce_types
-    @trace_method
     async def list_user_messages_for_agent_async(
         self,
         agent_id: str,
@@ -771,8 +670,9 @@ class MessageManager:
         query_text: Optional[str] = None,
         limit: Optional[int] = 50,
         ascending: bool = True,
+        run_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
-        return await self.list_messages_for_agent_async(
+        return await self.list_messages(
             agent_id=agent_id,
             actor=actor,
             after=after,
@@ -781,117 +681,15 @@ class MessageManager:
             roles=[MessageRole.user],
             limit=limit,
             ascending=ascending,
+            run_id=run_id,
         )
 
     @enforce_types
     @trace_method
-    def list_messages_for_agent(
+    async def list_messages(
         self,
-        agent_id: str,
         actor: PydanticUser,
-        after: Optional[str] = None,
-        before: Optional[str] = None,
-        query_text: Optional[str] = None,
-        roles: Optional[Sequence[MessageRole]] = None,
-        limit: Optional[int] = 50,
-        ascending: bool = True,
-        group_id: Optional[str] = None,
-    ) -> List[PydanticMessage]:
-        """
-        Most performant query to list messages for an agent by directly querying the Message table.
-
-        This function filters by the agent_id (leveraging the index on messages.agent_id)
-        and applies pagination using sequence_id as the cursor.
-        If query_text is provided, it will filter messages whose text content partially matches the query.
-        If role is provided, it will filter messages by the specified role.
-
-        Args:
-            agent_id: The ID of the agent whose messages are queried.
-            actor: The user performing the action (used for permission checks).
-            after: A message ID; if provided, only messages *after* this message (by sequence_id) are returned.
-            before: A message ID; if provided, only messages *before* this message (by sequence_id) are returned.
-            query_text: Optional string to partially match the message text content.
-            roles: Optional MessageRole to filter messages by role.
-            limit: Maximum number of messages to return.
-            ascending: If True, sort by sequence_id ascending; if False, sort descending.
-            group_id: Optional group ID to filter messages by group_id.
-
-        Returns:
-            List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
-
-        Raises:
-            NoResultFound: If the provided after/before message IDs do not exist.
-        """
-
-        with db_registry.session() as session:
-            # Permission check: raise if the agent doesn't exist or actor is not allowed.
-            AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-
-            # Build a query that directly filters the Message table by agent_id.
-            query = session.query(MessageModel).filter(MessageModel.agent_id == agent_id)
-
-            # If group_id is provided, filter messages by group_id.
-            if group_id:
-                query = query.filter(MessageModel.group_id == group_id)
-
-            # If query_text is provided, filter messages using database-specific JSON search.
-            if query_text:
-                if settings.database_engine is DatabaseChoice.POSTGRES:
-                    # PostgreSQL: Use json_array_elements and ILIKE
-                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                    query = query.filter(
-                        exists(
-                            select(1)
-                            .select_from(content_element)
-                            .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                            .params(query_text=f"%{query_text}%")
-                        )
-                    )
-                else:
-                    # SQLite: Use JSON_EXTRACT with individual array indices for case-insensitive search
-                    # Since SQLite doesn't support $[*] syntax, we'll use a different approach
-                    query = query.filter(text("JSON_EXTRACT(content, '$') LIKE :query_text")).params(query_text=f"%{query_text}%")
-
-            # If role(s) are provided, filter messages by those roles.
-            if roles:
-                role_values = [r.value for r in roles]
-                query = query.filter(MessageModel.role.in_(role_values))
-
-            # Apply 'after' pagination if specified.
-            if after:
-                after_ref = session.query(MessageModel.sequence_id).filter(MessageModel.id == after).one_or_none()
-                if not after_ref:
-                    raise NoResultFound(f"No message found with id '{after}' for agent '{agent_id}'.")
-                # Filter out any messages with a sequence_id <= after_ref.sequence_id
-                query = query.filter(MessageModel.sequence_id > after_ref.sequence_id)
-
-            # Apply 'before' pagination if specified.
-            if before:
-                before_ref = session.query(MessageModel.sequence_id).filter(MessageModel.id == before).one_or_none()
-                if not before_ref:
-                    raise NoResultFound(f"No message found with id '{before}' for agent '{agent_id}'.")
-                # Filter out any messages with a sequence_id >= before_ref.sequence_id
-                query = query.filter(MessageModel.sequence_id < before_ref.sequence_id)
-
-            # Apply ordering based on the ascending flag.
-            if ascending:
-                query = query.order_by(MessageModel.sequence_id.asc())
-            else:
-                query = query.order_by(MessageModel.sequence_id.desc())
-
-            # Limit the number of results.
-            query = query.limit(limit)
-
-            # Execute and convert each Message to its Pydantic representation.
-            results = query.all()
-            return [msg.to_pydantic() for msg in results]
-
-    @enforce_types
-    @trace_method
-    async def list_messages_for_agent_async(
-        self,
-        agent_id: str,
-        actor: PydanticUser,
+        agent_id: Optional[str] = None,
         after: Optional[str] = None,
         before: Optional[str] = None,
         query_text: Optional[str] = None,
@@ -900,9 +698,10 @@ class MessageManager:
         ascending: bool = True,
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
+        run_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
-        Most performant query to list messages for an agent by directly querying the Message table.
+        Most performant query to list messages by directly querying the Message table.
 
         This function filters by the agent_id (leveraging the index on messages.agent_id)
         and applies pagination using sequence_id as the cursor.
@@ -920,6 +719,7 @@ class MessageManager:
             ascending: If True, sort by sequence_id ascending; if False, sort descending.
             group_id: Optional group ID to filter messages by group_id.
             include_err: Optional boolean to include errors and error statuses. Used for debugging only.
+            run_id: Optional run ID to filter messages by run_id.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -930,17 +730,23 @@ class MessageManager:
 
         async with db_registry.async_session() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
-            await validate_agent_exists_async(session, agent_id, actor)
 
             # Build a query that directly filters the Message table by agent_id.
-            query = select(MessageModel).where(MessageModel.agent_id == agent_id)
+            query = select(MessageModel)
+
+            if agent_id:
+                await validate_agent_exists_async(session, agent_id, actor)
+                query = query.where(MessageModel.agent_id == agent_id)
 
             # If group_id is provided, filter messages by group_id.
             if group_id:
                 query = query.where(MessageModel.group_id == group_id)
 
-            if not include_err:
-                query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
+            if run_id:
+                query = query.where(MessageModel.run_id == run_id)
+
+            # if not include_err:
+            #    query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
 
             # If query_text is provided, filter messages using database-specific JSON search.
             if query_text:
@@ -1009,6 +815,7 @@ class MessageManager:
         while enforcing permission checks and avoiding any ORM‑level loads.
         Optionally excludes specific message IDs from deletion.
         """
+        rowcount = 0
         async with db_registry.async_session() as session:
             # 1) verify the agent exists and the actor has access
             await validate_agent_exists_async(session, agent_id, actor)
@@ -1023,31 +830,28 @@ class MessageManager:
                 stmt = stmt.where(~MessageModel.id.in_(exclude_ids))
 
             result = await session.execute(stmt)
+            rowcount = result.rowcount
 
             # 4) commit once
             await session.commit()
 
-            # 5) delete from turbopuffer if enabled
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+        # 5) delete from turbopuffer if enabled (outside of DB session)
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages():
-                try:
-                    tpuf_client = TurbopufferClient()
-                    if exclude_ids:
-                        # if we're excluding some IDs, we can't use delete_all
-                        # would need to query all messages first then delete specific ones
-                        # for now, log a warning
-                        logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
-                    # delete all messages for the agent from turbopuffer
-                    await tpuf_client.delete_all_messages(agent_id, actor.organization_id)
-                    logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
-                    if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+        if should_use_tpuf_for_messages():
+            try:
+                tpuf_client = TurbopufferClient()
+                if exclude_ids:
+                    logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
+                await tpuf_client.delete_all_messages(agent_id, actor.organization_id)
+                logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                if strict_mode:
+                    raise
 
-            # 6) return the number of rows deleted
-            return result.rowcount
+        # 6) return the number of rows deleted
+        return rowcount
 
     @enforce_types
     @trace_method
@@ -1059,11 +863,12 @@ class MessageManager:
         if not message_ids:
             return 0
 
-        async with db_registry.async_session() as session:
-            # get agent_ids BEFORE deleting (for turbopuffer)
-            agent_ids = []
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+        agent_ids = []
+        rowcount = 0
 
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+        async with db_registry.async_session() as session:
             if should_use_tpuf_for_messages():
                 agent_query = (
                     select(MessageModel.agent_id)
@@ -1077,25 +882,23 @@ class MessageManager:
             # issue a CORE DELETE against the mapped class for specific message IDs
             stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
             result = await session.execute(stmt)
+            rowcount = result.rowcount
 
             # commit once
             await session.commit()
 
-            # delete from turbopuffer if enabled
-            if should_use_tpuf_for_messages() and agent_ids:
-                try:
-                    tpuf_client = TurbopufferClient()
-                    # delete from each affected agent's namespace
-                    for agent_id in agent_ids:
-                        await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=message_ids)
-                    logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
-                    if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+        if should_use_tpuf_for_messages() and agent_ids:
+            try:
+                tpuf_client = TurbopufferClient()
+                for agent_id in agent_ids:
+                    await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=message_ids)
+                logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
+            except Exception as e:
+                logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                if strict_mode:
+                    raise
 
-            # return the number of rows deleted
-            return result.rowcount
+        return rowcount
 
     @enforce_types
     @trace_method
@@ -1180,7 +983,7 @@ class MessageManager:
             except Exception as e:
                 logger.error(f"Failed to search messages with Turbopuffer, falling back to SQL: {e}")
                 # fall back to SQL search
-                messages = await self.list_messages_for_agent_async(
+                messages = await self.list_messages(
                     agent_id=agent_id,
                     actor=actor,
                     query_text=query_text,
@@ -1200,7 +1003,7 @@ class MessageManager:
                 return message_tuples
         else:
             # use sql-based search
-            messages = await self.list_messages_for_agent_async(
+            messages = await self.list_messages(
                 agent_id=agent_id,
                 actor=actor,
                 query_text=query_text,

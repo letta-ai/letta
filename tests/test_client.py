@@ -100,14 +100,15 @@ def search_agent_two(client: Letta):
 
 
 @pytest.fixture(autouse=True)
-def clear_tables():
+async def clear_tables():
     """Clear the sandbox tables before each test."""
-    from letta.server.db import db_context
 
-    with db_context() as session:
-        session.execute(delete(SandboxEnvironmentVariable))
-        session.execute(delete(SandboxConfig))
-        session.commit()
+    from letta.server.db import db_registry
+
+    async with db_registry.async_session() as session:
+        await session.execute(delete(SandboxEnvironmentVariable))
+        await session.execute(delete(SandboxConfig))
+        await session.commit()
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -157,7 +158,7 @@ def test_add_and_manage_tags_for_agent(client: Letta):
     client.agents.delete(agent.id)
 
 
-def test_agent_tags(client: Letta):
+def test_agent_tags(client: Letta, clear_tables):
     """Test creating agents with tags and retrieving tags via the API."""
 
     # Create multiple agents with different tags
@@ -185,6 +186,8 @@ def test_agent_tags(client: Letta):
     # Test getting all tags
     all_tags = client.tags.list()
     expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
+    print("ALL TAGS", all_tags)
+    print("EXPECTED TAGS", expected_tags)
     assert sorted(all_tags) == expected_tags
 
     # Test pagination

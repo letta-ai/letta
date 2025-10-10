@@ -562,14 +562,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
                 if prev_message_type and prev_message_type != "tool_call_message":
                     message_index += 1
+                tool_call_delta = ToolCallDelta(
+                    name=json_reasoning_content.get("name"),
+                    arguments=json.dumps(json_reasoning_content.get("arguments")),
+                    tool_call_id=None,
+                )
                 processed_chunk = ToolCallMessage(
                     id=message_id,
                     date=message_date,
-                    tool_call=ToolCallDelta(
-                        name=json_reasoning_content.get("name"),
-                        arguments=json.dumps(json_reasoning_content.get("arguments")),
-                        tool_call_id=None,
-                    ),
+                    tool_call=tool_call_delta,
+                    tool_calls=tool_call_delta,
                     name=name,
                     otid=Message.generate_otid_from_id(message_id, message_index),
                 )
@@ -703,14 +705,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     else:
                         if prev_message_type and prev_message_type != "tool_call_message":
                             message_index += 1
+                        tc_delta = ToolCallDelta(
+                            name=tool_call_delta.get("name"),
+                            arguments=tool_call_delta.get("arguments"),
+                            tool_call_id=tool_call_delta.get("id"),
+                        )
                         processed_chunk = ToolCallMessage(
                             id=message_id,
                             date=message_date,
-                            tool_call=ToolCallDelta(
-                                name=tool_call_delta.get("name"),
-                                arguments=tool_call_delta.get("arguments"),
-                                tool_call_id=tool_call_delta.get("id"),
-                            ),
+                            tool_call=tc_delta,
+                            tool_calls=tc_delta,
                             name=name,
                             otid=Message.generate_otid_from_id(message_id, message_index),
                         )
@@ -779,14 +783,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             else:
                                 if prev_message_type and prev_message_type != "tool_call_message":
                                     message_index += 1
+                                tc_delta = ToolCallDelta(
+                                    name=self.function_name_buffer,
+                                    arguments=None,
+                                    tool_call_id=self.function_id_buffer,
+                                )
                                 processed_chunk = ToolCallMessage(
                                     id=message_id,
                                     date=message_date,
-                                    tool_call=ToolCallDelta(
-                                        name=self.function_name_buffer,
-                                        arguments=None,
-                                        tool_call_id=self.function_id_buffer,
-                                    ),
+                                    tool_call=tc_delta,
+                                    tool_calls=tc_delta,
                                     name=name,
                                     otid=Message.generate_otid_from_id(message_id, message_index),
                                 )
@@ -843,14 +849,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     combined_chunk = self.function_args_buffer + updates_main_json
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+                                    tc_delta = ToolCallDelta(
+                                        name=None,
+                                        arguments=combined_chunk,
+                                        tool_call_id=self.function_id_buffer,
+                                    )
                                     processed_chunk = ToolCallMessage(
                                         id=message_id,
                                         date=message_date,
-                                        tool_call=ToolCallDelta(
-                                            name=None,
-                                            arguments=combined_chunk,
-                                            tool_call_id=self.function_id_buffer,
-                                        ),
+                                        tool_call=tc_delta,
+                                        tool_calls=tc_delta,
                                         name=name,
                                         otid=Message.generate_otid_from_id(message_id, message_index),
                                     )
@@ -861,14 +869,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     # If there's no buffer to clear, just output a new chunk with new data
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+                                    tc_delta = ToolCallDelta(
+                                        name=None,
+                                        arguments=updates_main_json,
+                                        tool_call_id=self.function_id_buffer,
+                                    )
                                     processed_chunk = ToolCallMessage(
                                         id=message_id,
                                         date=message_date,
-                                        tool_call=ToolCallDelta(
-                                            name=None,
-                                            arguments=updates_main_json,
-                                            tool_call_id=self.function_id_buffer,
-                                        ),
+                                        tool_call=tc_delta,
+                                        tool_calls=tc_delta,
                                         name=name,
                                         otid=Message.generate_otid_from_id(message_id, message_index),
                                     )
@@ -992,14 +1002,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
+                    tc_delta = ToolCallDelta(
+                        name=tool_call_delta.get("name"),
+                        arguments=tool_call_delta.get("arguments"),
+                        tool_call_id=tool_call_delta.get("id"),
+                    )
                     processed_chunk = ToolCallMessage(
                         id=message_id,
                         date=message_date,
-                        tool_call=ToolCallDelta(
-                            name=tool_call_delta.get("name"),
-                            arguments=tool_call_delta.get("arguments"),
-                            tool_call_id=tool_call_delta.get("id"),
-                        ),
+                        tool_call=tc_delta,
+                        tool_calls=tc_delta,
                         name=name,
                         otid=Message.generate_otid_from_id(message_id, message_index),
                     )
@@ -1262,14 +1274,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         # Store the ID of the tool call so allow skipping the corresponding response
                         self.prev_assistant_message_id = function_call.id
                     else:
+                        tool_call_obj = ToolCall(
+                            name=function_call.function.name,
+                            arguments=function_call.function.arguments,
+                            tool_call_id=function_call.id,
+                        )
                         processed_chunk = ToolCallMessage(
                             id=msg_obj.id,
                             date=msg_obj.created_at,
-                            tool_call=ToolCall(
-                                name=function_call.function.name,
-                                arguments=function_call.function.arguments,
-                                tool_call_id=function_call.id,
-                            ),
+                            tool_call=tool_call_obj,
+                            tool_calls=tool_call_obj,
                             name=msg_obj.name,
                             otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                         )
@@ -1303,14 +1317,29 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 # Skip this tool call receipt
                 return
             else:
+                from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+                status = msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success"
+                stdout = msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else []
+                stderr = msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else []
+
+                tool_return_obj = ToolReturnSchema(
+                    tool_return=msg,
+                    status=status,
+                    tool_call_id=msg_obj.tool_call_id,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+
                 new_message = ToolReturnMessage(
                     id=msg_obj.id,
                     date=msg_obj.created_at,
                     tool_return=msg,
-                    status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success",
+                    status=status,
                     tool_call_id=msg_obj.tool_call_id,
-                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
-                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
+                    stdout=stdout,
+                    stderr=stderr,
+                    tool_returns=[tool_return_obj],
                     name=msg_obj.name,
                     otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                 )
@@ -1319,14 +1348,29 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             msg = msg.replace("Error: ", "", 1)
             # new_message = {"function_return": msg, "status": "error"}
             assert msg_obj.tool_call_id is not None
+            from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
+
+            status = msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error"
+            stdout = msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else []
+            stderr = msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else []
+
+            tool_return_obj = ToolReturnSchema(
+                tool_return=msg,
+                status=status,
+                tool_call_id=msg_obj.tool_call_id,
+                stdout=stdout,
+                stderr=stderr,
+            )
+
             new_message = ToolReturnMessage(
                 id=msg_obj.id,
                 date=msg_obj.created_at,
                 tool_return=msg,
-                status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error",
+                status=status,
                 tool_call_id=msg_obj.tool_call_id,
-                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else [],
-                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else [],
+                stdout=stdout,
+                stderr=stderr,
+                tool_returns=[tool_return_obj],
                 name=msg_obj.name,
                 otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
             )

@@ -120,6 +120,40 @@ async def check_provider(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}")
 
 
+@router.post("/{provider_id}/check", response_model=None, operation_id="check_existing_provider")
+async def check_existing_provider(
+    provider_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    """
+    Verify the API key and additional parameters for an existing provider.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        provider = await server.provider_manager.get_provider_async(provider_id=provider_id, actor=actor)
+
+        # Create a ProviderCheck from the existing provider
+        provider_check = ProviderCheck(
+            provider_type=provider.provider_type,
+            api_key=provider.api_key,
+            base_url=provider.base_url,
+        )
+
+        await server.provider_manager.check_provider_api_key(provider_check=provider_check)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={provider.provider_type.value}"}
+        )
+    except LLMAuthenticationError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{e.message}")
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Provider provider_id={provider_id} not found for user_id={actor.id}.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}")
+
+
 @router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
 async def delete_provider(
     provider_id: str,

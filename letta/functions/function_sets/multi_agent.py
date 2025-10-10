@@ -14,9 +14,6 @@ from letta.schemas.message import MessageCreate
 from letta.server.rest_api.dependencies import get_letta_server
 from letta.settings import settings
 
-if TYPE_CHECKING:
-    from letta.agent import Agent
-
 
 def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_agent_id: str) -> str:
     """

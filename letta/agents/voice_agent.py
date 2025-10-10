@@ -214,7 +214,6 @@ class VoiceAgent(BaseAgent):
                 response_text=content,
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                actor=self.actor,
                 timezone=agent_state.timezone,
             )
             letta_message_db_queue.extend(assistant_msgs)
@@ -273,11 +272,9 @@ class VoiceAgent(BaseAgent):
                 function_name=tool_call_name,
                 function_arguments=tool_args,
                 tool_call_id=tool_call_id,
-                function_call_success=success_flag,
                 function_response=tool_result,
                 tool_execution_result=tool_execution_result,
                 timezone=agent_state.timezone,
-                actor=self.actor,
                 continue_stepping=True,
             )
             letta_message_db_queue.extend(tool_call_messages)
@@ -343,8 +340,7 @@ class VoiceAgent(BaseAgent):
             tools = [
                 t
                 for t in agent_state.tools
-                if t.tool_type
-                in {ToolType.EXTERNAL_COMPOSIO, ToolType.CUSTOM, ToolType.LETTA_FILES_CORE, ToolType.LETTA_BUILTIN, ToolType.EXTERNAL_MCP}
+                if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_FILES_CORE, ToolType.LETTA_BUILTIN, ToolType.EXTERNAL_MCP}
             ]
         else:
             tools = agent_state.tools
@@ -504,7 +500,7 @@ class VoiceAgent(BaseAgent):
         keyword_results = {}
         if convo_keyword_queries:
             for keyword in convo_keyword_queries:
-                messages = await self.message_manager.list_messages_for_agent_async(
+                messages = await self.message_manager.list_messages(
                     agent_id=self.agent_id,
                     actor=self.actor,
                     query_text=keyword,

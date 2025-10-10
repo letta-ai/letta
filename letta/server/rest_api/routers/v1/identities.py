@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Header, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import AgentState
@@ -39,26 +39,19 @@ async def list_identities(
     """
     Get a list of all identities in the database
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-        identities = await server.identity_manager.list_identities_async(
-            name=name,
-            project_id=project_id,
-            identifier_key=identifier_key,
-            identity_type=identity_type,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-            actor=actor,
-        )
-    except HTTPException:
-        raise
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    identities = await server.identity_manager.list_identities_async(
+        name=name,
+        project_id=project_id,
+        identifier_key=identifier_key,
+        identity_type=identity_type,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        actor=actor,
+    )
     return identities
 
 
@@ -70,15 +63,11 @@ async def count_identities(
     """
     Get count of all identities for a user
     """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.size_async(actor=actor)
     except NoResultFound:
         return 0
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
 
 
 @router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
@@ -87,11 +76,8 @@ async def retrieve_identity(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
 
 
 @router.post("/", tags=["identities"], response_model=Identity, operation_id="create_identity")
@@ -103,21 +89,8 @@ async def create_identity(
         None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
     ),  # Only handled by next js middleware
 ):
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
-    except HTTPException:
-        raise
-    except UniqueConstraintViolationError:
-        if identity.project_id:
-            raise HTTPException(
-                status_code=409,
-                detail=f"An identity with identifier key {identity.identifier_key} already exists for project {identity.project_id}",
-            )
-        else:
-            raise HTTPException(status_code=409, detail=f"An identity with identifier key {identity.identifier_key} already exists")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
 
 
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
@@ -129,15 +102,8 @@ async def upsert_identity(
         None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
     ),  # Only handled by next js middleware
 ):
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
-    except HTTPException:
-        raise
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
 
 
 @router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity")
@@ -147,15 +113,8 @@ async def modify_identity(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
-    except HTTPException:
-        raise
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
 
 
 @router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
@@ -165,15 +124,8 @@ async def upsert_identity_properties(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.upsert_identity_properties_async(identity_id=identity_id, properties=properties, actor=actor)
-    except HTTPException:
-        raise
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.upsert_identity_properties_async(identity_id=identity_id, properties=properties, actor=actor)
 
 
 @router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity")
@@ -185,15 +137,8 @@ async def delete_identity(
     """
     Delete an identity by its identifier key
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        await server.identity_manager.delete_identity_async(identity_id=identity_id, actor=actor)
-    except HTTPException:
-        raise
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.identity_manager.delete_identity_async(identity_id=identity_id, actor=actor)
 
 
 @router.get("/{identity_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_identity")
@@ -218,20 +163,15 @@ async def list_agents_for_identity(
     """
     Get all agents associated with the specified identity.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.list_agents_for_identity_async(
-            identity_id=identity_id,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-            actor=actor,
-        )
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.list_agents_for_identity_async(
+        identity_id=identity_id,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        actor=actor,
+    )
 
 
 @router.get("/{identity_id}/blocks", response_model=List[Block], operation_id="list_blocks_for_identity")
@@ -256,17 +196,12 @@ async def list_blocks_for_identity(
     """
     Get all blocks associated with the specified identity.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.identity_manager.list_blocks_for_identity_async(
-            identity_id=identity_id,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-            actor=actor,
-        )
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.identity_manager.list_blocks_for_identity_async(
+        identity_id=identity_id,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        actor=actor,
+    )

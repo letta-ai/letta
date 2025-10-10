@@ -208,6 +208,22 @@ class AgentSerializationManager:
         )
         agent_schema.id = agent_file_id
 
+        # Ensure all in-context messages are present before ID remapping.
+        # AgentSchema.from_agent_state fetches a limited slice (~50) and may exclude messages still
+        # referenced by in_context_message_ids. Fetch any missing in-context messages by ID so remapping succeeds.
+        existing_msg_ids = {m.id for m in (agent_schema.messages or [])}
+        in_context_ids = agent_schema.in_context_message_ids or []
+        missing_in_context_ids = [mid for mid in in_context_ids if mid not in existing_msg_ids]
+        if missing_in_context_ids:
+            missing_msgs = await self.message_manager.get_messages_by_ids_async(message_ids=missing_in_context_ids, actor=actor)
+            fetched_ids = {m.id for m in missing_msgs}
+            not_found = [mid for mid in missing_in_context_ids if mid not in fetched_ids]
+            if not_found:
+                # Surface a clear mapping error; handled upstream by the route/export wrapper.
+                raise AgentExportIdMappingError(db_id=not_found[0], entity_type=MessageSchema.__id_prefix__)
+            for msg in missing_msgs:
+                agent_schema.messages.append(MessageSchema.from_message(msg))
+
         # wipe the values of tool_exec_environment_variables (they contain secrets)
         agent_secrets = agent_schema.secrets or agent_schema.tool_exec_environment_variables
         if agent_secrets:

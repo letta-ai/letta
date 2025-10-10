@@ -10,6 +10,31 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Database configuration for docker-compose
+      # Note: LETTA_PG_HOST is intentionally NOT set here because:
+      # - Inside containers: uses 'letta_db' (from dev-compose.yaml defaults)
+      # - Host pytest tests: uses 'localhost' (to connect via port mapping)
+      LETTA_PG_DB: letta
+      LETTA_PG_USER: letta
+      LETTA_PG_PASSWORD: letta
+      LETTA_PG_PORT: 5432
+      # Server configuration for tests
+      LETTA_SERVER_PASS: test_server_token
+      LETTA_SERVER_URL: http://localhost:8283
+      # API keys
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Additional API keys that dev-compose.yaml expects (optional)
+      GROQ_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      OLLAMA_BASE_URL: ""
+      AZURE_API_KEY: ""
+      AZURE_BASE_URL: ""
+      AZURE_API_VERSION: ""
+      GEMINI_API_KEY: ""
+      VLLM_API_BASE: ""
+      OPENLLM_AUTH_TYPE: ""
+      OPENLLM_API_KEY: ""
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -21,9 +46,9 @@ jobs:
         python-version: 3.11
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
-      with:
-        enable-cache: true
+      run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Set permissions for log directory
       run: |
@@ -32,14 +57,8 @@ jobs:
         chmod -R 755 /home/runner/.letta/logs
 
     - name: Build and run docker dev server
-      env:
-        LETTA_PG_DB:   letta
-        LETTA_PG_USER: letta
-        LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
       run: |
+        # dev-compose.yaml will use the environment variables we set above
         docker compose -f dev-compose.yaml up --build -d
 
     - name: Wait for service
@@ -47,14 +66,8 @@ jobs:
 
     - name: Run tests with pytest
       env:
-        LETTA_PG_DB:   letta
-        LETTA_PG_USER: letta
-        LETTA_PG_PASSWORD: letta
-        LETTA_PG_PORT: 8888
-        LETTA_SERVER_PASS: test_server_token
-        LETTA_SERVER_URL: http://localhost:8283
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
+        LETTA_PG_URI: postgresql+pg8000://${{ env.LETTA_PG_USER }}:${{ env.LETTA_PG_PASSWORD }}@localhost:${{ env.LETTA_PG_PORT }}/${{ env.LETTA_PG_DB }}
       run: |
         uv sync --extra dev --extra postgres --extra sqlite
         uv run pytest -s tests/test_client.py

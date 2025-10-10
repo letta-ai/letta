@@ -3,6 +3,8 @@ from typing import Optional
 from pydantic import Field
 
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
+from letta.schemas.secret import Secret
+from letta.settings import settings
 
 
 # Base Environment Variable
@@ -12,6 +14,28 @@ class EnvironmentVariableBase(OrmMetadataBase):
     value: str = Field(..., description="The value of the environment variable.")
     description: Optional[str] = Field(None, description="An optional description of the environment variable.")
     organization_id: Optional[str] = Field(None, description="The ID of the organization this environment variable belongs to.")
+
+    # Encrypted field (stored as Secret object, serialized to string for DB)
+    # Secret class handles validation and serialization automatically via __get_pydantic_core_schema__
+    value_enc: Secret | None = Field(None, description="Encrypted value as Secret object")
+
+    def get_value_secret(self) -> Secret:
+        """Get the value as a Secret object, preferring encrypted over plaintext."""
+        # If value_enc is already a Secret, return it
+        if self.value_enc is not None:
+            return self.value_enc
+        # Otherwise, create from plaintext value
+        return Secret.from_db(None, self.value)
+
+    def set_value_secret(self, secret: Secret) -> None:
+        """Set value from a Secret object, directly storing the Secret."""
+        self.value_enc = secret
+        # Also update plaintext field for dual-write during migration
+        secret_dict = secret.to_dict()
+        if not secret.was_encrypted:
+            self.value = secret_dict["plaintext"]
+        else:
+            self.value = None
 
 
 class EnvironmentVariableCreateBase(LettaBase):

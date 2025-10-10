@@ -28,6 +28,7 @@ class AgentType(str, Enum):
 
     memgpt_agent = "memgpt_agent"  # the OG set of memgpt tools
     memgpt_v2_agent = "memgpt_v2_agent"  # memgpt style tools, but refreshed
+    letta_v1_agent = "letta_v1_agent"  # simplification of the memgpt loop, no heartbeats or forced tool calls
     react_agent = "react_agent"  # basic react agent, no memory tools
     workflow_agent = "workflow_agent"  # workflow with auto-clearing message buffer
     split_thread_agent = "split_thread_agent"
@@ -48,6 +49,11 @@ class MessageRole(str, Enum):
     function = "function"
     system = "system"
     approval = "approval"
+
+
+class MessageSourceType(str, Enum):
+    input = "input"  # external input
+    output = "output"  # internal output
 
 
 class OptionState(str, Enum):
@@ -75,6 +81,18 @@ class JobStatus(StrEnum):
     @property
     def is_terminal(self):
         return self in (JobStatus.completed, JobStatus.failed, JobStatus.cancelled, JobStatus.expired)
+
+
+class RunStatus(StrEnum):
+    """
+    Status of the run.
+    """
+
+    created = "created"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
 
 
 class AgentStepStatus(str, Enum):
@@ -134,10 +152,11 @@ class ToolType(str, Enum):
     LETTA_VOICE_SLEEPTIME_CORE = "letta_voice_sleeptime_core"
     LETTA_BUILTIN = "letta_builtin"
     LETTA_FILES_CORE = "letta_files_core"
-    EXTERNAL_COMPOSIO = "external_composio"
-    EXTERNAL_LANGCHAIN = "external_langchain"
+    EXTERNAL_LANGCHAIN = "external_langchain" # DEPRECATED
+    EXTERNAL_COMPOSIO = "external_composio" # DEPRECATED
     # TODO is "external" the right name here? Since as of now, MCP is local / doesn't support remote?
     EXTERNAL_MCP = "external_mcp"
+
 
 
 class JobType(str, Enum):

@@ -8,6 +8,7 @@ from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.llm_config_overrides import LLM_HANDLE_OVERRIDES
+from letta.schemas.secret import Secret
 from letta.settings import model_settings
 
 
@@ -28,8 +29,14 @@ class Provider(ProviderBase):
     organization_id: str | None = Field(None, description="The organization id of the user")
     updated_at: datetime | None = Field(None, description="The last update timestamp of the provider.")
 
+    # Encrypted fields (stored as Secret objects, serialized to strings for DB)
+    # Secret class handles validation and serialization automatically via __get_pydantic_core_schema__
+    api_key_enc: Secret | None = Field(None, description="Encrypted API key as Secret object")
+    access_key_enc: Secret | None = Field(None, description="Encrypted access key as Secret object")
+
     @model_validator(mode="after")
     def default_base_url(self):
+        # Set default base URL
         if self.provider_type == ProviderType.openai and self.base_url is None:
             self.base_url = model_settings.openai_api_base
         return self
@@ -37,6 +44,42 @@ class Provider(ProviderBase):
     def resolve_identifier(self):
         if not self.id:
             self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
+
+    def get_api_key_secret(self) -> Secret:
+        """Get the API key as a Secret object, preferring encrypted over plaintext."""
+        # If api_key_enc is already a Secret, return it
+        if self.api_key_enc is not None:
+            return self.api_key_enc
+        # Otherwise, create from plaintext api_key
+        return Secret.from_db(None, self.api_key)
+
+    def get_access_key_secret(self) -> Secret:
+        """Get the access key as a Secret object, preferring encrypted over plaintext."""
+        # If access_key_enc is already a Secret, return it
+        if self.access_key_enc is not None:
+            return self.access_key_enc
+        # Otherwise, create from plaintext access_key
+        return Secret.from_db(None, self.access_key)
+
+    def set_api_key_secret(self, secret: Secret) -> None:
+        """Set API key from a Secret object, directly storing the Secret."""
+        self.api_key_enc = secret
+        # Also update plaintext field for dual-write during migration
+        secret_dict = secret.to_dict()
+        if not secret.was_encrypted:
+            self.api_key = secret_dict["plaintext"]
+        else:
+            self.api_key = None
+
+    def set_access_key_secret(self, secret: Secret) -> None:
+        """Set access key from a Secret object, directly storing the Secret."""
+        self.access_key_enc = secret
+        # Also update plaintext field for dual-write during migration
+        secret_dict = secret.to_dict()
+        if not secret.was_encrypted:
+            self.access_key = secret_dict["plaintext"]
+        else:
+            self.access_key = None
 
     async def check_api_key(self):
         """Check if the API key is valid for the provider"""

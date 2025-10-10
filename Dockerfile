@@ -1,6 +1,6 @@
 # Start with pgvector base for builder
 FROM ankane/pgvector:v0.5.1 AS builder
-
+# comment to trigger ci
 # Install Python and required packages
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -69,8 +69,7 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     PATH="/app/.venv/bin:$PATH" \
     POSTGRES_USER=letta \
     POSTGRES_PASSWORD=letta \
-    POSTGRES_DB=letta \
-    COMPOSIO_DISABLE_VERSION_CHECK=true
+    POSTGRES_DB=letta
 
 ARG LETTA_VERSION
 ENV LETTA_VERSION=${LETTA_VERSION}

@@ -122,7 +122,7 @@ async def list_batches(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    jobs = server.job_manager.list_jobs(
+    jobs = await server.job_manager.list_jobs_async(
         actor=actor,
         statuses=[JobStatus.created, JobStatus.running],
         job_type=JobType.BATCH,

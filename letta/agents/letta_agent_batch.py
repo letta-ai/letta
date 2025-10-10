@@ -192,6 +192,7 @@ class LettaAgentBatch(BaseAgent):
 
         log_event(name="send_llm_batch_request")
         batch_response = await llm_client.send_llm_batch_request_async(
+            agent_type=agent_states[0].agent_type,
             agent_messages_mapping=agent_messages_mapping,
             agent_tools_mapping=agent_tools_mapping,
             agent_llm_config_mapping=agent_llm_config_mapping,
@@ -501,7 +502,6 @@ class LettaAgentBatch(BaseAgent):
                 model=ctx.agent_state_map[agent_id].llm_config.model,
                 function_call_success=success_flag_map[agent_id],
                 timezone=ctx.agent_state_map[agent_id].timezone,
-                actor=self.actor,
             )
             batch_reqs.append(
                 LettaBatchRequest(
@@ -545,11 +545,9 @@ class LettaAgentBatch(BaseAgent):
             function_name=tool_call_name,
             function_arguments=tool_call_args,
             tool_call_id=tool_call_id,
-            function_call_success=success_flag,
             function_response=tool_exec_result,
             tool_execution_result=tool_exec_result_obj,
             timezone=agent_state.timezone,
-            actor=self.actor,
             continue_stepping=False,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=None,
@@ -615,7 +613,7 @@ class LettaAgentBatch(BaseAgent):
         self, agent_state: AgentState, input_messages: List[MessageCreate]
     ) -> List[Message]:
         current_in_context_messages, new_in_context_messages = await _prepare_in_context_messages_async(
-            input_messages, agent_state, self.message_manager, self.actor
+            input_messages, agent_state, self.message_manager, self.actor, run_id=None
         )
 
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)

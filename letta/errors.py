@@ -97,6 +97,46 @@ class LettaUserNotFoundError(LettaError):
     """Error raised when a user is not found."""
 
 
+class LettaInvalidArgumentError(LettaError):
+    """Error raised when an invalid argument is provided."""
+
+    def __init__(self, message: str, argument_name: Optional[str] = None):
+        details = {"argument_name": argument_name} if argument_name else {}
+        super().__init__(message=message, code=ErrorCode.INVALID_ARGUMENT, details=details)
+
+
+class LettaMCPError(LettaError):
+    """Base error for MCP-related issues."""
+
+
+class LettaInvalidMCPSchemaError(LettaMCPError):
+    """Error raised when an invalid MCP schema is provided."""
+
+    def __init__(self, server_name: str, mcp_tool_name: str, reasons: List[str]):
+        details = {"server_name": server_name, "mcp_tool_name": mcp_tool_name, "reasons": reasons}
+        super().__init__(
+            message=f"MCP tool {mcp_tool_name} has an invalid schema and cannot be attached - reasons: {reasons}",
+            code=ErrorCode.INVALID_ARGUMENT,
+            details=details,
+        )
+
+
+class LettaMCPConnectionError(LettaMCPError):
+    """Error raised when unable to connect to MCP server."""
+
+    def __init__(self, message: str, server_name: Optional[str] = None):
+        details = {"server_name": server_name} if server_name else {}
+        super().__init__(message=message, code=ErrorCode.INTERNAL_SERVER_ERROR, details=details)
+
+
+class LettaMCPTimeoutError(LettaMCPError):
+    """Error raised when MCP server operation times out."""
+
+    def __init__(self, message: str, server_name: Optional[str] = None):
+        details = {"server_name": server_name} if server_name else {}
+        super().__init__(message=message, code=ErrorCode.TIMEOUT, details=details)
+
+
 class LettaUnexpectedStreamCancellationError(LettaError):
     """Error raised when a streaming request is terminated unexpectedly."""
 

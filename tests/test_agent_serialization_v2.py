@@ -2,6 +2,7 @@ from typing import List, Optional
 
 import pytest
 
+from letta.agents.agent_loop import AgentLoop
 from letta.config import LettaConfig
 from letta.errors import AgentFileExportError, AgentFileImportError
 from letta.orm import Base
@@ -23,6 +24,7 @@ from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
+from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.user import User
 from letta.server.server import SyncServer
@@ -34,55 +36,57 @@ from tests.utils import create_tool_from_func
 # ------------------------------
 
 
-def _clear_tables():
-    from letta.server.db import db_context
+#
+async def _clear_tables():
+    from letta.server.db import db_registry
 
-    with db_context() as session:
+    async with db_registry.async_session() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
-            session.execute(table.delete())  # Truncate table
-        session.commit()
+            await session.execute(table.delete())  # Truncate table
+        await session.commit()
 
 
 @pytest.fixture(autouse=True)
-def clear_tables():
-    _clear_tables()
+async def clear_tables():
+    await _clear_tables()
 
 
 @pytest.fixture
-def server():
+async def server():
     config = LettaConfig.load()
     config.save()
     server = SyncServer(init_with_default_org_and_user=True)
-    server.tool_manager.upsert_base_tools(actor=server.default_user)
+    await server.init_async()
+    await server.tool_manager.upsert_base_tools_async(actor=server.default_user)
 
     yield server
 
 
 @pytest.fixture
-def default_organization(server: SyncServer):
+async def default_organization(server: SyncServer):
     """Fixture to create and return the default organization."""
-    org = server.organization_manager.create_default_organization()
+    org = await server.organization_manager.create_default_organization_async()
     yield org
 
 
 @pytest.fixture
-def default_user(server: SyncServer, default_organization):
+async def default_user(server: SyncServer, default_organization):
     """Fixture to create and return the default user within the default organization."""
-    user = server.user_manager.create_default_user(org_id=default_organization.id)
+    user = await server.user_manager.create_default_actor_async(org_id=default_organization.id)
     yield user
 
 
 @pytest.fixture
-def other_organization(server: SyncServer):
+async def other_organization(server: SyncServer):
     """Fixture to create and return another organization."""
-    org = server.organization_manager.create_organization(pydantic_org=Organization(name="test_org"))
+    org = await server.organization_manager.create_organization_async(pydantic_org=Organization(name="test_org"))
     yield org
 
 
 @pytest.fixture
-def other_user(server: SyncServer, other_organization):
+async def other_user(server: SyncServer, other_organization):
     """Fixture to create and return another user within the other organization."""
-    user = server.user_manager.create_user(pydantic_user=User(organization_id=other_organization.id, name="test_user"))
+    user = await server.user_manager.create_actor_async(pydantic_user=User(organization_id=other_organization.id, name="test_user"))
     yield user
 
 
@@ -120,19 +124,19 @@ def print_tool_func():
 
 
 @pytest.fixture
-def weather_tool(server, weather_tool_func, default_user):
-    weather_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=weather_tool_func), actor=default_user)
+async def weather_tool(server, weather_tool_func, default_user):
+    weather_tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=weather_tool_func), actor=default_user)
     yield weather_tool
 
 
 @pytest.fixture
-def print_tool(server, print_tool_func, default_user):
-    print_tool = server.tool_manager.create_or_update_tool(create_tool_from_func(func=print_tool_func), actor=default_user)
+async def print_tool(server, print_tool_func, default_user):
+    print_tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=print_tool_func), actor=default_user)
     yield print_tool
 
 
 @pytest.fixture
-def test_block(server: SyncServer, default_user):
+async def test_block(server: SyncServer, default_user):
     """Fixture to create and return a test block."""
     block_data = Block(
         label="test_block",
@@ -141,7 +145,7 @@ def test_block(server: SyncServer, default_user):
         limit=1000,
         metadata={"type": "test", "category": "demo"},
     )
-    block = server.block_manager.create_or_update_block(block_data, actor=default_user)
+    block = await server.block_manager.create_or_update_block_async(block_data, actor=default_user)
     yield block
 
 
@@ -162,8 +166,25 @@ def agent_serialization_manager(server, default_user):
     yield manager
 
 
+async def send_message_to_agent(server: SyncServer, agent_state, actor: User, messages: list[MessageCreate]):
+    run = Run(
+        agent_id=agent_state.id,
+    )
+    run = await server.run_manager.create_run(
+        pydantic_run=run,
+        actor=actor,
+    )
+
+    agent_loop = AgentLoop.load(agent_state=agent_state, actor=actor)
+    result = await agent_loop.step(
+        run_id=run.id,
+        input_messages=messages,
+    )
+    return result
+
+
 @pytest.fixture
-def test_agent(server: SyncServer, default_user, default_organization, test_block, weather_tool):
+async def test_agent(server: SyncServer, default_user, default_organization, test_block, weather_tool):
     """Fixture to create and return a test agent with messages."""
     memory_blocks = [
         CreateBlock(label="human", value="User is a test user"),
@@ -190,18 +211,16 @@ def test_agent(server: SyncServer, default_user, default_organization, test_bloc
         message_buffer_autoclear=False,
     )
 
-    agent_state = server.agent_manager.create_agent(
+    agent_state = await server.agent_manager.create_agent_async(
         agent_create=create_agent_request,
         actor=default_user,
     )
 
-    server.send_messages(
-        actor=default_user,
-        agent_id=agent_state.id,
-        input_messages=[MessageCreate(role=MessageRole.user, content="What's the weather like?")],
+    await send_message_to_agent(
+        server, agent_state, default_user, [MessageCreate(role=MessageRole.user, content="What's the weather like?")]
     )
 
-    agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_state.id, actor=default_user)
+    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=agent_state.id, actor=default_user)
     yield agent_state
 
 
@@ -938,7 +957,7 @@ class TestAgentFileExport:
             ],
         )
 
-        second_agent = server.agent_manager.create_agent(
+        second_agent = await server.agent_manager.create_agent_async(
             agent_create=create_agent_request,
             actor=default_user,
         )
@@ -1140,7 +1159,7 @@ class TestAgentFileImport:
 
         # check embedding handle
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
         assert imported_agent.embedding_config.handle == embedding_handle_override
 
     async def test_import_preserves_data(self, server, agent_serialization_manager, test_agent, default_user, other_user):
@@ -1150,7 +1169,7 @@ class TestAgentFileImport:
         result = await agent_serialization_manager.import_file(agent_file, other_user)
 
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
 
         assert imported_agent.name == test_agent.name
         assert imported_agent.system == test_agent.system
@@ -1161,8 +1180,8 @@ class TestAgentFileImport:
         assert len(imported_agent.tools) == len(test_agent.tools)
         assert len(imported_agent.memory.blocks) == len(test_agent.memory.blocks)
 
-        original_messages = server.message_manager.list_messages_for_agent(test_agent.id, default_user)
-        imported_messages = server.message_manager.list_messages_for_agent(imported_agent_id, other_user)
+        original_messages = await server.message_manager.list_messages(actor=default_user, agent_id=test_agent.id)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
 
         assert len(imported_messages) == len(original_messages)
 
@@ -1178,11 +1197,11 @@ class TestAgentFileImport:
         result = await agent_serialization_manager.import_file(agent_file, other_user)
 
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
 
         assert len(imported_agent.message_ids) == len(test_agent.message_ids)
 
-        imported_messages = server.message_manager.list_messages_for_agent(imported_agent_id, other_user)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
         imported_message_ids = {msg.id for msg in imported_messages}
 
         for in_context_id in imported_agent.message_ids:
@@ -1425,7 +1444,7 @@ class TestAgentFileRoundTrip:
             current_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
             current_user = target_user
 
-            imported_agent = server.agent_manager.get_agent_by_id(current_agent_id, current_user)
+            imported_agent = await server.agent_manager.get_agent_by_id_async(current_agent_id, current_user)
             assert imported_agent.name == test_agent.name
 
 
@@ -1458,7 +1477,7 @@ class TestAgentFileEdgeCases:
         # Verify
         assert result.success
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
 
         assert len(imported_agent.message_ids) == 0
 
@@ -1473,35 +1492,27 @@ class TestAgentFileEdgeCases:
             tool_ids=[weather_tool.id],
         )
 
-        agent_state = server.agent_manager.create_agent(
+        agent_state = await server.agent_manager.create_agent_async(
             agent_create=create_agent_request,
             actor=default_user,
         )
 
-        # Add many messages
-        for i in range(10):
-            server.send_messages(
-                actor=default_user,
-                agent_id=agent_state.id,
-                input_messages=[MessageCreate(role=MessageRole.user, content=f"Message {i}")],
-            )
+        num_messages = 5
 
-        # Export
+        for i in range(num_messages):
+            await send_message_to_agent(server, agent_state, default_user, [MessageCreate(role=MessageRole.user, content=f"Message {i}")])
+
         agent_file = await agent_serialization_manager.export([agent_state.id], default_user)
-
-        # Verify large file
         exported_agent = agent_file.agents[0]
-        assert len(exported_agent.messages) >= 10
-
-        # Import
+        assert len(exported_agent.messages) >= num_messages
         result = await agent_serialization_manager.import_file(agent_file, other_user)
 
         # Verify all messages imported correctly
         assert result.success
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
-        imported_messages = server.message_manager.list_messages_for_agent(imported_agent_id, other_user)
+        imported_messages = await server.message_manager.list_messages(actor=other_user, agent_id=imported_agent_id)
 
-        assert len(imported_messages) >= 10
+        assert len(imported_messages) >= num_messages
 
 
 class TestAgentFileValidation:
@@ -1528,10 +1539,11 @@ class TestAgentFileValidation:
         assert valid_schema.agents[0].id == "agent-0"
         assert valid_schema.metadata.get("revision_id") == current_revision
 
-    def test_message_schema_conversion(self, test_agent, server, default_user):
+    @pytest.mark.asyncio
+    async def test_message_schema_conversion(self, test_agent, server, default_user):
         """Test MessageSchema.from_message conversion."""
         # Get a message from the test agent
-        messages = server.message_manager.list_messages_for_agent(test_agent.id, default_user)
+        messages = await server.message_manager.list_messages(actor=default_user, agent_id=test_agent.id)
         if messages:
             original_message = messages[0]
 

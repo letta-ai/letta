@@ -32,6 +32,8 @@ class FileAgent(SqlalchemyBase, OrganizationMixin):
         # helpful indexes for look-ups
         Index("ix_file_agent", "file_id", "agent_id"),
         Index("ix_agent_filename", "agent_id", "file_name"),
+        # improve lookups by agent alone (e.g., WHERE agent_id IN (...))
+        Index("ix_files_agents_agent_id", "agent_id"),
     )
     __pydantic_model__ = PydanticFileAgent
 

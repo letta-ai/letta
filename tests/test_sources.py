@@ -1226,8 +1226,6 @@ def test_letta_free_embedding(disable_pinecone, disable_turbopuffer, client: Let
 
     # verify source was created with correct embedding
     assert source.name == "test_letta_free_source"
-    print("\n\n\n\ntest")
-    print(source.embedding_config)
     # assert source.embedding_config.embedding_model == "letta-free"
 
     # upload test.txt file

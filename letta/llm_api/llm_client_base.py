@@ -9,7 +9,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.errors import LLMError
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import AgentType, ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -40,6 +40,7 @@ class LLMClientBase:
     @trace_method
     def send_llm_request(
         self,
+        agent_type: AgentType,
         messages: List[Message],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,  # TODO: change to Tool object
@@ -52,7 +53,7 @@ class LLMClientBase:
         If stream=True, returns a Stream[ChatCompletionChunk] that can be iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, llm_config, tools, force_tool_call)
+        request_data = self.build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -108,6 +109,7 @@ class LLMClientBase:
 
     async def send_llm_batch_request_async(
         self,
+        agent_type: AgentType,
         agent_messages_mapping: Dict[str, List[Message]],
         agent_tools_mapping: Dict[str, List[dict]],
         agent_llm_config_mapping: Dict[str, LLMConfig],
@@ -120,10 +122,12 @@ class LLMClientBase:
     @abstractmethod
     def build_request_data(
         self,
+        agent_type: AgentType,
         messages: List[Message],
         llm_config: LLMConfig,
         tools: List[dict],
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.

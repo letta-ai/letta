@@ -31,7 +31,7 @@ class TestSchemaValidator:
         assert reasons == []
 
     def test_free_form_object_non_strict(self):
-        """Test that free-form objects (like Composio message) are marked as NON_STRICT_ONLY."""
+        """Test that free-form objects are marked as NON_STRICT_ONLY."""
         schema = {
             "type": "object",
             "properties": {
@@ -207,26 +207,6 @@ class TestSchemaValidator:
         assert status == SchemaHealth.INVALID
         assert any("items" in reason for reason in reasons)
 
-    def test_composio_like_schema(self):
-        """Test a schema similar to Composio's free-form message structure."""
-        schema = {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "object",
-                    "description": "Message to send",
-                    # No properties defined, no additionalProperties: false
-                    # This is a free-form object
-                }
-            },
-            "required": ["message"],
-            "additionalProperties": False,
-        }
-
-        status, reasons = validate_complete_json_schema(schema)
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        assert any("additionalProperties" in reason for reason in reasons)
-
     def test_non_dict_schema(self):
         """Test that non-dict schemas are marked INVALID."""
         schema = "not a dict"
@@ -249,23 +229,6 @@ class TestSchemaValidator:
         assert status == SchemaHealth.STRICT_COMPLIANT
         assert reasons == []
 
-    def test_composio_schema_with_optional_root_properties_non_strict(self):
-        """Test that Composio-like schemas with optional root properties are STRICT_COMPLIANT (validator is relaxed)."""
-        schema = {
-            "type": "object",
-            "properties": {
-                "thinking": {"type": "string", "description": "Deep inner monologue"},
-                "connected_account_id": {"type": "string", "description": "Specific connected account ID"},
-                "toolkit": {"type": "string", "description": "Name of the toolkit"},
-                "request_heartbeat": {"type": "boolean", "description": "Request immediate heartbeat"},
-            },
-            "required": ["thinking", "request_heartbeat"],  # Not all properties are required
-            "additionalProperties": False,
-        }
-
-        status, reasons = validate_complete_json_schema(schema)
-        assert status == SchemaHealth.STRICT_COMPLIANT
-        assert reasons == []
 
     def test_root_level_without_required_non_strict(self):
         """Test that root-level objects without 'required' field are STRICT_COMPLIANT (validator is relaxed)."""

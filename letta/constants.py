@@ -13,9 +13,6 @@ API_PREFIX = "/v1"
 OLLAMA_API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
 
-COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
-COMPOSIO_TOOL_TAG_NAME = "composio"
-
 MCP_CONFIG_NAME = "mcp_config.json"
 MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
 
@@ -89,7 +86,7 @@ SEND_MESSAGE_TOOL_NAME = "send_message"
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
 DEPRECATED_LETTA_TOOLS = ["archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
-BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace", "memory"]
 # New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
 BASE_MEMORY_TOOLS_V2 = [
     "memory_replace",
@@ -97,6 +94,11 @@ BASE_MEMORY_TOOLS_V2 = [
     # NOTE: leaving these ones out to simply the set? Can have these reserved for sleep-time
     # "memory_rethink",
     # "memory_finish_edits",
+]
+
+# v3 collection, currently just a omni memory tool for anthropic
+BASE_MEMORY_TOOLS_V3 = [
+    "memory",
 ]
 # Base tools if the memgpt agent has enable_sleeptime on
 BASE_SLEEPTIME_CHAT_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_search"]
@@ -118,6 +120,7 @@ BASE_VOICE_SLEEPTIME_TOOLS = [
     "rethink_user_memory",
     "finish_rethinking_memory",
 ]
+
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
 LOCAL_ONLY_MULTI_AGENT_TOOLS = ["send_message_to_agent_async"]
@@ -219,6 +222,7 @@ LLM_MAX_TOKENS = {
     "gpt-5-mini-2025-08-07": 272000,
     "gpt-5-nano": 272000,
     "gpt-5-nano-2025-08-07": 272000,
+    "gpt-5-codex": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only

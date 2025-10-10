@@ -62,68 +62,10 @@ class GroupManager:
 
     @enforce_types
     @trace_method
-    def retrieve_group(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
-        with db_registry.session() as session:
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
-            return group.to_pydantic()
-
-    @enforce_types
-    @trace_method
     async def retrieve_group_async(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
             return group.to_pydantic()
-
-    @enforce_types
-    @trace_method
-    def create_group(self, group: Union[GroupCreate, InternalTemplateGroupCreate], actor: PydanticUser) -> PydanticGroup:
-        with db_registry.session() as session:
-            new_group = GroupModel()
-            new_group.organization_id = actor.organization_id
-            new_group.description = group.description
-
-            match group.manager_config.manager_type:
-                case ManagerType.round_robin:
-                    new_group.manager_type = ManagerType.round_robin
-                    new_group.max_turns = group.manager_config.max_turns
-                case ManagerType.dynamic:
-                    new_group.manager_type = ManagerType.dynamic
-                    new_group.manager_agent_id = group.manager_config.manager_agent_id
-                    new_group.max_turns = group.manager_config.max_turns
-                    new_group.termination_token = group.manager_config.termination_token
-                case ManagerType.supervisor:
-                    new_group.manager_type = ManagerType.supervisor
-                    new_group.manager_agent_id = group.manager_config.manager_agent_id
-                case ManagerType.sleeptime:
-                    new_group.manager_type = ManagerType.sleeptime
-                    new_group.manager_agent_id = group.manager_config.manager_agent_id
-                    new_group.sleeptime_agent_frequency = group.manager_config.sleeptime_agent_frequency
-                    if new_group.sleeptime_agent_frequency:
-                        new_group.turns_counter = -1
-                case ManagerType.voice_sleeptime:
-                    new_group.manager_type = ManagerType.voice_sleeptime
-                    new_group.manager_agent_id = group.manager_config.manager_agent_id
-                    max_message_buffer_length = group.manager_config.max_message_buffer_length
-                    min_message_buffer_length = group.manager_config.min_message_buffer_length
-                    # Safety check for buffer length range
-                    self.ensure_buffer_length_range_valid(max_value=max_message_buffer_length, min_value=min_message_buffer_length)
-                    new_group.max_message_buffer_length = max_message_buffer_length
-                    new_group.min_message_buffer_length = min_message_buffer_length
-                case _:
-                    raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
-
-            if isinstance(group, InternalTemplateGroupCreate):
-                new_group.base_template_id = group.base_template_id
-                new_group.template_id = group.template_id
-                new_group.deployment_id = group.deployment_id
-
-            self._process_agent_relationship(session=session, group=new_group, agent_ids=group.agent_ids, allow_partial=False)
-
-            if group.shared_block_ids:
-                self._process_shared_block_relationship(session=session, group=new_group, block_ids=group.shared_block_ids)
-
-            new_group.create(session, actor=actor)
-            return new_group.to_pydantic()
 
     @enforce_types
     async def create_group_async(self, group: Union[GroupCreate, InternalTemplateGroupCreate], actor: PydanticUser) -> PydanticGroup:
@@ -240,55 +182,10 @@ class GroupManager:
 
     @enforce_types
     @trace_method
-    def delete_group(self, group_id: str, actor: PydanticUser) -> None:
-        with db_registry.session() as session:
-            # Retrieve the agent
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
-            group.hard_delete(session)
-
-    @enforce_types
-    @trace_method
     async def delete_group_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
             await group.hard_delete_async(session)
-
-    @enforce_types
-    @trace_method
-    def list_group_messages(
-        self,
-        actor: PydanticUser,
-        group_id: Optional[str] = None,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        limit: Optional[int] = 50,
-        use_assistant_message: bool = True,
-        assistant_message_tool_name: str = "send_message",
-        assistant_message_tool_kwarg: str = "message",
-    ) -> list[LettaMessage]:
-        with db_registry.session() as session:
-            filters = {
-                "organization_id": actor.organization_id,
-                "group_id": group_id,
-            }
-            messages = MessageModel.list(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                **filters,
-            )
-
-            messages = PydanticMessage.to_letta_messages_from_list(
-                messages=[msg.to_pydantic() for msg in messages],
-                use_assistant_message=use_assistant_message,
-                assistant_message_tool_name=assistant_message_tool_name,
-                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
-            )
-
-            # TODO: filter messages to return a clean conversation history
-
-            return messages
 
     @enforce_types
     @trace_method
@@ -329,20 +226,6 @@ class GroupManager:
 
     @enforce_types
     @trace_method
-    def reset_messages(self, group_id: str, actor: PydanticUser) -> None:
-        with db_registry.session() as session:
-            # Ensure group is loadable by user
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
-
-            # Delete all messages in the group
-            session.query(MessageModel).filter(
-                MessageModel.organization_id == actor.organization_id, MessageModel.group_id == group_id
-            ).delete(synchronize_session=False)
-
-            session.commit()
-
-    @enforce_types
-    @trace_method
     async def reset_messages_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -358,18 +241,6 @@ class GroupManager:
 
     @enforce_types
     @trace_method
-    def bump_turns_counter(self, group_id: str, actor: PydanticUser) -> int:
-        with db_registry.session() as session:
-            # Ensure group is loadable by user
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
-
-            # Update turns counter
-            group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
-            group.update(session, actor=actor)
-            return group.turns_counter
-
-    @enforce_types
-    @trace_method
     async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -379,19 +250,6 @@ class GroupManager:
             group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
             await group.update_async(session, actor=actor)
             return group.turns_counter
-
-    @enforce_types
-    def get_last_processed_message_id_and_update(self, group_id: str, last_processed_message_id: str, actor: PydanticUser) -> str:
-        with db_registry.session() as session:
-            # Ensure group is loadable by user
-            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
-
-            # Update last processed message id
-            prev_last_processed_message_id = group.last_processed_message_id
-            group.last_processed_message_id = last_processed_message_id
-            group.update(session, actor=actor)
-
-            return prev_last_processed_message_id
 
     @enforce_types
     @trace_method

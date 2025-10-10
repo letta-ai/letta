@@ -67,6 +67,11 @@ MODEL_LIST = [
         "name": "claude-sonnet-4-20250514",
         "context_window": 200000,
     },
+    # 4.5
+    {
+        "name": "claude-sonnet-4-5-20250929",
+        "context_window": 200000,
+    },
     ## Haiku
     # 3.0
     {
@@ -142,6 +147,17 @@ class AnthropicProvider(Provider):
                     # On fallback, we can set 200k (generally safe), but we should warn the user
                     warnings.warn(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
                     model["context_window"] = 200000
+
+            # Optional override: enable 1M context for Sonnet 4/4.5 when flag is set
+            try:
+                from letta.settings import model_settings
+
+                if model_settings.anthropic_sonnet_1m and (
+                    model["id"].startswith("claude-sonnet-4") or model["id"].startswith("claude-sonnet-4-5")
+                ):
+                    model["context_window"] = 1_000_000
+            except Exception:
+                pass
 
             max_tokens = 8192
             if "claude-3-opus" in model["id"]:

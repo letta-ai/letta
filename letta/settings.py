@@ -12,8 +12,6 @@ from letta.services.summarizer.enums import SummarizationMode
 
 
 class ToolSettings(BaseSettings):
-    composio_api_key: str | None = Field(default=None, description="API key for Composio")
-
     # Sandbox Configurations
     e2b_api_key: str | None = Field(default=None, description="API key for using E2B as a tool sandbox")
     e2b_sandbox_template_id: str | None = Field(default=None, description="Template ID for E2B Sandbox. Updated Manually.")
@@ -111,6 +109,14 @@ class ModelSettings(BaseSettings):
         validation_alias=AliasChoices("OPENAI_BASE_URL", "OPENAI_API_BASE"),  # pydantic-settings v1
     )
 
+    # openrouter
+    openrouter_api_key: Optional[str] = None
+    # Optional additional headers recommended by OpenRouter
+    # See https://openrouter.ai/docs/quick-start for details
+    openrouter_referer: Optional[str] = None  # e.g., your site URL
+    openrouter_title: Optional[str] = None  # e.g., your app name
+    openrouter_handle_base: Optional[str] = None
+
     # deepseek
     deepseek_api_key: Optional[str] = None
 
@@ -129,6 +135,16 @@ class ModelSettings(BaseSettings):
     # anthropic
     anthropic_api_key: Optional[str] = None
     anthropic_max_retries: int = 3
+    anthropic_sonnet_1m: bool = Field(
+        default=False,
+        description=(
+            "Enable 1M-token context window for Claude Sonnet 4/4.5. When true, adds the"
+            " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
+            " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
+            " to all orgs; once GA, this flag can be removed and behavior can default to on."
+        ),
+        alias="ANTHROPIC_SONNET_1M",
+    )
 
     # ollama
     ollama_base_url: Optional[str] = None
@@ -156,6 +172,7 @@ class ModelSettings(BaseSettings):
 
     # vLLM
     vllm_api_base: Optional[str] = None
+    vllm_handle_base: Optional[str] = None
 
     # lmstudio
     lmstudio_base_url: Optional[str] = None
@@ -232,7 +249,7 @@ class Settings(BaseSettings):
     pg_echo: bool = False  # Logging
     pool_pre_ping: bool = True  # Pre ping to check for dead connections
     pool_use_lifo: bool = True
-    disable_sqlalchemy_pooling: bool = False
+    disable_sqlalchemy_pooling: bool = True
     db_max_concurrent_sessions: Optional[int] = None
 
     redis_host: Optional[str] = Field(default=None, description="Host for Redis instance")
@@ -271,7 +288,6 @@ class Settings(BaseSettings):
     event_loop_threadpool_max_workers: int = 43
 
     # experimental toggle
-    use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
     use_asyncio_shield: bool = True
 
@@ -312,6 +328,9 @@ class Settings(BaseSettings):
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30
     file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
+
+    # enabling letta_agent_v1 architecture
+    use_letta_v1_agent: bool = False
 
     @property
     def letta_pg_uri(self) -> str:

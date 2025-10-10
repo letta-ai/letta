@@ -10,7 +10,7 @@ from anthropic.types.beta.message_create_params import MessageCreateParamsNonStr
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
 
-from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
+from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE, REQUEST_HEARTBEAT_PARAM
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
@@ -31,6 +31,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
@@ -54,15 +55,49 @@ class AnthropicClient(LLMClientBase):
     @deprecated("Synchronous version of this is no longer valid. Will result in model_dump of coroutine")
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
-        response = client.beta.messages.create(**request_data)
+        betas: list[str] = []
+        # Interleaved thinking for reasoner (sync path parity)
+        if llm_config.enable_reasoner:
+            betas.append("interleaved-thinking-2025-05-14")
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
+
+        if betas:
+            response = client.beta.messages.create(**request_data, betas=betas)
+        else:
+            response = client.beta.messages.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
 
+        betas: list[str] = []
+        # interleaved thinking for reasoner
         if llm_config.enable_reasoner:
-            response = await client.beta.messages.create(**request_data, betas=["interleaved-thinking-2025-05-14"])
+            betas.append("interleaved-thinking-2025-05-14")
+
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
+
+        if betas:
+            response = await client.beta.messages.create(**request_data, betas=betas)
         else:
             response = await client.beta.messages.create(**request_data)
 
@@ -83,11 +118,23 @@ class AnthropicClient(LLMClientBase):
         if llm_config.enable_reasoner:
             betas.append("interleaved-thinking-2025-05-14")
 
+        # 1M context beta for Sonnet 4/4.5 when enabled
+        try:
+            from letta.settings import model_settings
+
+            if model_settings.anthropic_sonnet_1m and (
+                llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
+            ):
+                betas.append("context-1m-2025-08-07")
+        except Exception:
+            pass
+
         return await client.beta.messages.create(**request_data, betas=betas)
 
     @trace_method
     async def send_llm_batch_request_async(
         self,
+        agent_type: AgentType,
         agent_messages_mapping: Dict[str, List[PydanticMessage]],
         agent_tools_mapping: Dict[str, List[dict]],
         agent_llm_config_mapping: Dict[str, LLMConfig],
@@ -114,6 +161,7 @@ class AnthropicClient(LLMClientBase):
         try:
             requests = {
                 agent_id: self.build_request_data(
+                    agent_type=agent_type,
                     messages=agent_messages_mapping[agent_id],
                     llm_config=agent_llm_config_mapping[agent_id],
                     tools=agent_tools_mapping[agent_id],
@@ -175,14 +223,19 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,  # if react, use native content + strip heartbeats
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
+        requires_subsequent_tool_call: bool = False,
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
-        prefix_fill = True
+        prefix_fill = True if agent_type != AgentType.letta_v1_agent else False
+        is_v1 = agent_type == AgentType.letta_v1_agent
+        # Determine local behavior for putting inner thoughts in kwargs without mutating llm_config
+        put_kwargs = bool(llm_config.put_inner_thoughts_in_kwargs) and not is_v1
         if not self.use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
@@ -222,8 +275,9 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
-        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
+        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner or agent_type == AgentType.letta_v1_agent:
             # NOTE: reasoning models currently do not allow for `any`
+            # NOTE: react agents should always have auto on, since the precense/absense of tool calls controls chaining
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
@@ -231,11 +285,17 @@ class AnthropicClient(LLMClientBase):
             tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
-            if not llm_config.put_inner_thoughts_in_kwargs:
-                logger.warning(
-                    f"Force setting put_inner_thoughts_in_kwargs to True for Claude because there is a forced tool call: {force_tool_call}"
-                )
-                llm_config.put_inner_thoughts_in_kwargs = True
+            if not put_kwargs:
+                if is_v1:
+                    # For v1 agents, native content is used and kwargs must remain disabled to avoid conflicts
+                    logger.warning(
+                        "Forced tool call requested but inner_thoughts_in_kwargs is disabled for v1 agent; proceeding without inner thoughts in kwargs."
+                    )
+                else:
+                    logger.warning(
+                        f"Force enabling inner thoughts in kwargs for Claude due to forced tool call: {force_tool_call} (local override only)"
+                    )
+                    put_kwargs = True
         else:
             tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools] if tools is not None else None
@@ -246,7 +306,7 @@ class AnthropicClient(LLMClientBase):
 
         # Add inner thoughts kwarg
         # TODO: Can probably make this more efficient
-        if tools_for_request and len(tools_for_request) > 0 and llm_config.put_inner_thoughts_in_kwargs:
+        if tools_for_request and len(tools_for_request) > 0 and put_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
                 functions=[t.function.model_dump() for t in tools_for_request],
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
@@ -268,8 +328,12 @@ class AnthropicClient(LLMClientBase):
         data["system"] = self._add_cache_control_to_system_message(system_content)
         data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
             messages=messages[1:],
+            current_model=llm_config.model,
             inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-            put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
+            put_inner_thoughts_in_kwargs=put_kwargs,
+            # if react, use native content + strip heartbeats
+            native_content=is_v1,
+            strip_request_heartbeat=is_v1,
         )
 
         # Ensure first message is user
@@ -279,15 +343,27 @@ class AnthropicClient(LLMClientBase):
         # Handle alternating messages
         data["messages"] = merge_tool_results_into_user_messages(data["messages"])
 
-        # Strip heartbeat pings if extended thinking
-        if llm_config.enable_reasoner:
-            data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
+        if agent_type == AgentType.letta_v1_agent:
+            # Both drop heartbeats in the payload
+            data["messages"] = drop_heartbeats(data["messages"])
+            # And drop heartbeats in the tools
+            if "tools" in data:
+                for tool in data["tools"]:
+                    tool["input_schema"]["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                    if "required" in tool["input_schema"] and REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
+                        # NOTE: required is not always present
+                        tool["input_schema"]["required"].remove(REQUEST_HEARTBEAT_PARAM)
+
+        else:
+            # Strip heartbeat pings if extended thinking
+            if llm_config.enable_reasoner:
+                data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
 
         # Prefix fill
         # https://docs.anthropic.com/en/api/messages#body-messages
         # NOTE: cannot prefill with tools for opus:
         # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
-        if prefix_fill and not llm_config.put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
+        if prefix_fill and not put_kwargs and "opus" not in data["model"]:
             data["messages"].append(
                 # Start the thinking process for the assistant
                 {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
@@ -298,6 +374,7 @@ class AnthropicClient(LLMClientBase):
     async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
         logging.getLogger("httpx").setLevel(logging.WARNING)
 
+        # Use the default client; token counting is lightweight and does not require BYOK overrides
         client = anthropic.AsyncAnthropic()
         if messages and len(messages) == 0:
             messages = None
@@ -306,23 +383,20 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
+        # Detect presence of reasoning blocks anywhere in the final assistant message.
+        # Interleaved thinking is not guaranteed to be the first content part.
         thinking_enabled = False
         if messages and len(messages) > 0:
-            # Check if the last assistant message starts with a thinking block
-            # Find the last assistant message
-            last_assistant_message = None
-            for message in reversed(messages):
-                if message.get("role") == "assistant":
-                    last_assistant_message = message
-                    break
-
-            if (
-                last_assistant_message
-                and isinstance(last_assistant_message.get("content"), list)
-                and len(last_assistant_message["content"]) > 0
-                and last_assistant_message["content"][0].get("type") == "thinking"
-            ):
-                thinking_enabled = True
+            last_assistant_message = next((m for m in reversed(messages) if m.get("role") == "assistant"), None)
+            if last_assistant_message:
+                content = last_assistant_message.get("content")
+                if isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"}:
+                            thinking_enabled = True
+                            break
+                elif isinstance(content, str) and "<thinking>" in content:
+                    thinking_enabled = True
 
         try:
             count_params = {
@@ -331,9 +405,27 @@ class AnthropicClient(LLMClientBase):
                 "tools": anthropic_tools or [],
             }
 
+            betas: list[str] = []
             if thinking_enabled:
+                # Match interleaved thinking behavior so token accounting is consistent
                 count_params["thinking"] = {"type": "enabled", "budget_tokens": 16000}
-            result = await client.beta.messages.count_tokens(**count_params)
+                betas.append("interleaved-thinking-2025-05-14")
+
+            # Opt-in to 1M context if enabled for this model in settings
+            try:
+                if (
+                    model
+                    and model_settings.anthropic_sonnet_1m
+                    and (model.startswith("claude-sonnet-4") or model.startswith("claude-sonnet-4-5"))
+                ):
+                    betas.append("context-1m-2025-08-07")
+            except Exception:
+                pass
+
+            if betas:
+                result = await client.beta.messages.count_tokens(**count_params, betas=betas)
+            else:
+                result = await client.beta.messages.count_tokens(**count_params)
         except:
             raise
 
@@ -714,6 +806,44 @@ def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
             return True
         else:
             return False
+
+
+def drop_heartbeats(messages: List[dict]):
+    cleaned_messages = []
+
+    # Loop through messages
+    # For messages with role 'user' and len(content) > 1,
+    #   Check if content[0].type == 'tool_result'
+    #   If so, iterate over content[1:] and while content.type == 'text' and is_heartbeat(content.text),
+    #     merge into content[0].content
+
+    for message in messages:
+        if "role" in message and "content" in message and message["role"] == "user":
+            content_parts = message["content"]
+
+            if isinstance(content_parts, str):
+                if is_heartbeat({"role": "user", "content": content_parts}):
+                    continue
+            elif isinstance(content_parts, list) and len(content_parts) == 1 and "text" in content_parts[0]:
+                if is_heartbeat({"role": "user", "content": content_parts[0]["text"]}):
+                    continue  # skip
+            else:
+                cleaned_parts = []
+                # Drop all the parts
+                for content_part in content_parts:
+                    if "text" in content_part and is_heartbeat({"role": "user", "content": content_part["text"]}):
+                        continue  # skip
+                    else:
+                        cleaned_parts.append(content_part)
+
+                if len(cleaned_parts) == 0:
+                    continue
+                else:
+                    message["content"] = cleaned_parts
+
+        cleaned_messages.append(message)
+
+    return cleaned_messages
 
 
 def merge_heartbeats_into_tool_responses(messages: List[dict]):

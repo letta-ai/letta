@@ -1,13 +1,16 @@
 import json
 import uuid
 import xml.etree.ElementTree as ET
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID, uuid4
 
 from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageCreateBase
@@ -53,6 +56,7 @@ def _prepare_in_context_messages(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: str,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -62,6 +66,7 @@ def _prepare_in_context_messages(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -78,7 +83,9 @@ def _prepare_in_context_messages(
 
     # Create a new user message from the input and store it
     new_in_context_messages = message_manager.create_many_messages(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+        ),
         actor=actor,
     )
 
@@ -90,6 +97,7 @@ async def _prepare_in_context_messages_async(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: str,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -100,6 +108,7 @@ async def _prepare_in_context_messages_async(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -116,7 +125,9 @@ async def _prepare_in_context_messages_async(
 
     # Create a new user message from the input and store it
     new_in_context_messages = await message_manager.create_many_messages_async(
-        create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
+        create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+        ),
         actor=actor,
         project_id=agent_state.project_id,
     )
@@ -129,6 +140,7 @@ async def _prepare_in_context_messages_no_persist_async(
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
+    run_id: Optional[str] = None,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
@@ -138,6 +150,7 @@ async def _prepare_in_context_messages_no_persist_async(
         agent_state (AgentState): The current state of the agent, including message buffer config.
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
+        run_id (str): The run ID associated with this message processing.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -173,7 +186,7 @@ async def _prepare_in_context_messages_no_persist_async(
 
         # Create a new user message from the input but dont store it yet
         new_in_context_messages = create_input_messages(
-            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
         )
 
     return current_in_context_messages, new_in_context_messages
@@ -232,8 +245,9 @@ def deserialize_message_history(xml_str: str) -> Tuple[List[str], str]:
     return messages, context
 
 
-def generate_step_id():
-    return f"step-{uuid.uuid4()}"
+def generate_step_id(uid: Optional[UUID] = None) -> str:
+    uid = uid or uuid4()
+    return f"step-{uid}"
 
 
 def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
@@ -254,6 +268,106 @@ def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
     return tool_args
 
 
+def _json_type_matches(value: Any, expected_type: Any) -> bool:
+    """Basic JSON Schema type checking for common types.
+
+    expected_type can be a string (e.g., "string") or a list (union).
+    This is intentionally lightweight; deeper validation can be added as needed.
+    """
+
+    def match_one(v: Any, t: str) -> bool:
+        if t == "string":
+            return isinstance(v, str)
+        if t == "integer":
+            # bool is subclass of int in Python; exclude
+            return isinstance(v, int) and not isinstance(v, bool)
+        if t == "number":
+            return (isinstance(v, int) and not isinstance(v, bool)) or isinstance(v, float)
+        if t == "boolean":
+            return isinstance(v, bool)
+        if t == "object":
+            return isinstance(v, dict)
+        if t == "array":
+            return isinstance(v, list)
+        if t == "null":
+            return v is None
+        # Fallback: don't over-reject on unknown types
+        return True
+
+    if isinstance(expected_type, list):
+        return any(match_one(value, t) for t in expected_type)
+    if isinstance(expected_type, str):
+        return match_one(value, expected_type)
+    return True
+
+
+def _schema_accepts_value(prop_schema: Dict[str, Any], value: Any) -> bool:
+    """Check if a value is acceptable for a property schema.
+
+    Handles: type, enum, const, anyOf, oneOf (by shallow traversal).
+    """
+    if prop_schema is None:
+        return True
+
+    # const has highest precedence
+    if "const" in prop_schema:
+        return value == prop_schema["const"]
+
+    # enums
+    if "enum" in prop_schema:
+        try:
+            return value in prop_schema["enum"]
+        except Exception:
+            return False
+
+    # unions
+    for union_key in ("anyOf", "oneOf"):
+        if union_key in prop_schema and isinstance(prop_schema[union_key], list):
+            for sub in prop_schema[union_key]:
+                if _schema_accepts_value(sub, value):
+                    return True
+            return False
+
+    # type-based
+    if "type" in prop_schema:
+        if not _json_type_matches(value, prop_schema["type"]):
+            return False
+
+    # No strict constraints specified: accept
+    return True
+
+
+def merge_and_validate_prefilled_args(tool: "Tool", llm_args: Dict[str, Any], prefilled_args: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge LLM-provided args with prefilled args from tool rules.
+
+    - Overlapping keys are replaced by prefilled values (prefilled wins).
+    - Validates that prefilled keys exist on the tool schema and that values satisfy
+      basic JSON Schema constraints (type/enum/const/anyOf/oneOf).
+    - Returns merged args, or raises ValueError on invalid prefilled inputs.
+    """
+    from letta.schemas.tool import Tool  # local import to avoid circulars in type hints
+
+    assert isinstance(tool, Tool)
+    schema = (tool.json_schema or {}).get("parameters", {})
+    props: Dict[str, Any] = schema.get("properties", {}) if isinstance(schema, dict) else {}
+
+    errors: list[str] = []
+    for k, v in prefilled_args.items():
+        if k not in props:
+            errors.append(f"Unknown argument '{k}' for tool '{tool.name}'.")
+            continue
+        if not _schema_accepts_value(props.get(k), v):
+            expected = props.get(k, {}).get("type")
+            errors.append(f"Invalid value for '{k}': {v!r} does not match expected schema type {expected!r}.")
+
+    if errors:
+        raise ValueError("; ".join(errors))
+
+    merged = dict(llm_args or {})
+    merged.update(prefilled_args)
+    return merged
+
+
 def _pop_heartbeat(tool_args: dict) -> bool:
     hb = tool_args.pop("request_heartbeat", False)
     return str(hb).lower() == "true" if isinstance(hb, str) else bool(hb)
@@ -264,3 +378,25 @@ def _build_rule_violation_result(tool_name: str, valid: list[str], solver: ToolR
     hint_txt = ("\n** Hint: Possible rules that were violated:\n" + "\n".join(f"\t- {h}" for h in hint_lines)) if hint_lines else ""
     msg = f"[ToolConstraintError] Cannot call {tool_name}, valid tools include: {valid}.{hint_txt}"
     return ToolExecutionResult(status="error", func_return=msg)
+
+
+def _load_last_function_response(in_context_messages: list[Message]):
+    """Load the last function response from message history"""
+    for msg in reversed(in_context_messages):
+        if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
+            text_content = msg.content[0].text
+            try:
+                response_json = json.loads(text_content)
+                if response_json.get("message"):
+                    return response_json["message"]
+            except (json.JSONDecodeError, KeyError):
+                raise ValueError(f"Invalid JSON format in message: {text_content}")
+    return None
+
+
+def _maybe_get_approval_messages(messages: list[Message]) -> Tuple[Message | None, Message | None]:
+    if len(messages) >= 2:
+        maybe_approval_request, maybe_approval_response = messages[-2], messages[-1]
+        if maybe_approval_request.role == "approval" and maybe_approval_response.role == "approval":
+            return maybe_approval_request, maybe_approval_response
+    return None, None

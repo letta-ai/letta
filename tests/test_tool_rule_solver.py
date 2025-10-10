@@ -1,6 +1,9 @@
 import pytest
 
+from letta.agents.helpers import merge_and_validate_prefilled_args
 from letta.helpers import ToolRulesSolver
+from letta.schemas.enums import ToolType
+from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
@@ -11,6 +14,7 @@ from letta.schemas.tool_rule import (
     RequiredBeforeExitToolRule,
     RequiresApprovalToolRule,
     TerminalToolRule,
+    ToolCallNode,
 )
 
 # Constants for tool names used in the tests
@@ -567,3 +571,563 @@ def test_required_before_exit_tool_rule_clear_history():
 
     assert solver.has_required_tools_been_called({SAVE_TOOL}) is False, "Should return False after clearing history"
     assert solver.get_uncalled_required_tools({SAVE_TOOL}) == [SAVE_TOOL], "Should show required tool as uncalled after clearing history"
+
+
+def test_should_force_tool_call_no_rules():
+    """Test should_force_tool_call with no tool rules."""
+    solver = ToolRulesSolver(tool_rules=[])
+    assert solver.should_force_tool_call() is False, "Should return False when no tool rules are present"
+
+
+def test_should_force_tool_call_init_rule_no_history():
+    """Test should_force_tool_call with InitToolRule and no history."""
+    init_rule = InitToolRule(tool_name=START_TOOL)
+    solver = ToolRulesSolver(tool_rules=[init_rule])
+    assert solver.should_force_tool_call() is True, "Should return True when InitToolRule is present and no history"
+
+
+def test_should_force_tool_call_init_rule_after_first_call():
+    """Test should_force_tool_call with InitToolRule after first tool call."""
+    init_rule = InitToolRule(tool_name=START_TOOL)
+    solver = ToolRulesSolver(tool_rules=[init_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False after first tool call"
+
+
+def test_should_force_tool_call_child_rule_active():
+    """Test should_force_tool_call when ChildToolRule is active."""
+    child_rule = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL, HELPER_TOOL])
+    solver = ToolRulesSolver(tool_rules=[child_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when last tool matches ChildToolRule"
+
+
+def test_should_force_tool_call_child_rule_inactive():
+    """Test should_force_tool_call when ChildToolRule is not active."""
+    child_rule = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL, HELPER_TOOL])
+    solver = ToolRulesSolver(tool_rules=[child_rule])
+
+    solver.register_tool_call(HELPER_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False when last tool doesn't match ChildToolRule"
+
+
+def test_should_force_tool_call_conditional_rule_active():
+    """Test should_force_tool_call when ConditionalToolRule is active."""
+    conditional_rule = ConditionalToolRule(
+        tool_name=START_TOOL, child_output_mapping={True: END_TOOL, False: NEXT_TOOL}, default_child=None
+    )
+    solver = ToolRulesSolver(tool_rules=[conditional_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when last tool matches ConditionalToolRule"
+
+
+def test_should_force_tool_call_parent_rule_active():
+    """Test should_force_tool_call when ParentToolRule is active."""
+    parent_rule = ParentToolRule(tool_name=START_TOOL, children=[NEXT_TOOL, HELPER_TOOL])
+    solver = ToolRulesSolver(tool_rules=[parent_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when last tool matches ParentToolRule"
+
+
+def test_should_force_tool_call_max_count_rule():
+    """Test should_force_tool_call with MaxCountPerStepToolRule (non-constraining)."""
+    max_count_rule = MaxCountPerStepToolRule(tool_name=START_TOOL, max_count_limit=2)
+    solver = ToolRulesSolver(tool_rules=[max_count_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False for MaxCountPerStepToolRule (not a constraining rule)"
+
+
+def test_should_force_tool_call_terminal_rule():
+    """Test should_force_tool_call with TerminalToolRule."""
+    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
+    solver = ToolRulesSolver(tool_rules=[terminal_rule])
+
+    solver.register_tool_call(END_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False for TerminalToolRule"
+
+
+def test_should_force_tool_call_continue_rule():
+    """Test should_force_tool_call with ContinueToolRule."""
+    continue_rule = ContinueToolRule(tool_name=NEXT_TOOL)
+    solver = ToolRulesSolver(tool_rules=[continue_rule])
+
+    solver.register_tool_call(NEXT_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False for ContinueToolRule"
+
+
+def test_should_force_tool_call_required_before_exit_rule():
+    """Test should_force_tool_call with RequiredBeforeExitToolRule."""
+    required_rule = RequiredBeforeExitToolRule(tool_name=SAVE_TOOL)
+    solver = ToolRulesSolver(tool_rules=[required_rule])
+
+    solver.register_tool_call(SAVE_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False for RequiredBeforeExitToolRule"
+
+
+def test_should_force_tool_call_requires_approval_rule():
+    """Test should_force_tool_call with RequiresApprovalToolRule."""
+    approval_rule = RequiresApprovalToolRule(tool_name=REQUIRES_APPROVAL_TOOL)
+    solver = ToolRulesSolver(tool_rules=[approval_rule])
+
+    solver.register_tool_call(REQUIRES_APPROVAL_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False for RequiresApprovalToolRule"
+
+
+def test_should_force_tool_call_multiple_constrained_rules_one_active():
+    """Test should_force_tool_call with multiple constrained rules where one is active."""
+    child_rule_1 = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL])
+    child_rule_2 = ChildToolRule(tool_name=NEXT_TOOL, children=[FINAL_TOOL])
+    parent_rule = ParentToolRule(tool_name=PREP_TOOL, children=[HELPER_TOOL])
+    solver = ToolRulesSolver(tool_rules=[child_rule_1, child_rule_2, parent_rule])
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when one constrained rule is active"
+
+    solver.register_tool_call(NEXT_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when a different constrained rule becomes active"
+
+    solver.register_tool_call(FINAL_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False when no constrained rules are active"
+
+
+def test_should_force_tool_call_after_clear_with_init_rule():
+    """Test should_force_tool_call after clearing history with InitToolRule."""
+    init_rule = InitToolRule(tool_name=START_TOOL)
+    child_rule = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL])
+    solver = ToolRulesSolver(tool_rules=[init_rule, child_rule])
+
+    assert solver.should_force_tool_call() is True, "Should return True initially with InitToolRule"
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when ChildToolRule is active"
+
+    solver.clear_tool_history()
+    assert solver.should_force_tool_call() is True, "Should return True again after clearing history with InitToolRule"
+
+
+def test_should_force_tool_call_mixed_rules():
+    """Test should_force_tool_call with a mix of constraining and non-constraining rules."""
+    init_rule = InitToolRule(tool_name=START_TOOL)
+    child_rule = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL])
+    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
+    continue_rule = ContinueToolRule(tool_name=HELPER_TOOL)
+    max_count_rule = MaxCountPerStepToolRule(tool_name=NEXT_TOOL, max_count_limit=2)
+    solver = ToolRulesSolver(tool_rules=[init_rule, child_rule, terminal_rule, continue_rule, max_count_rule])
+
+    assert solver.should_force_tool_call() is True, "Should return True with InitToolRule at start"
+
+    solver.register_tool_call(START_TOOL)
+    assert solver.should_force_tool_call() is True, "Should return True when ChildToolRule is active"
+
+    solver.register_tool_call(NEXT_TOOL)
+    assert solver.should_force_tool_call() is False, "Should return False when no constraining rules are active"
+
+
+def make_tool(name: str, properties: dict) -> Tool:
+    """Helper to build a minimal custom Tool with a JSON schema."""
+    return Tool(
+        name=name,
+        tool_type=ToolType.CUSTOM,
+        json_schema={
+            "name": name,
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    )
+
+
+def test_init_rule_args_are_cached_in_solver():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha", args={"x": 1, "y": "s"})])
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+
+    assert set(allowed) == {"alpha"}
+    # Cached mappings
+    assert solver.last_prefilled_args_by_tool == {"alpha": {"x": 1, "y": "s"}}
+    assert solver.last_prefilled_args_provenance.get("alpha") == "InitToolRule(alpha)"
+
+
+def test_cached_provenance_format():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="tool_one", args={"a": 123})])
+    _ = solver.get_allowed_tool_names(available_tools={"tool_one"})
+    prov = solver.last_prefilled_args_provenance.get("tool_one")
+    assert prov.startswith("InitToolRule(") and prov.endswith(")") and "tool_one" in prov
+
+
+def test_cache_empty_when_no_args():
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha")])
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+
+    assert set(allowed) == {"alpha"}
+    assert solver.last_prefilled_args_by_tool == {}
+    assert solver.last_prefilled_args_provenance == {}
+
+
+def test_cache_recomputed_on_next_call():
+    # First call caches args for init tool
+    solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="alpha", args={"p": 5})])
+    _ = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert solver.last_prefilled_args_by_tool == {"alpha": {"p": 5}}
+
+    # After a tool call, init rules no longer apply; next computation should clear caches
+    solver.register_tool_call("alpha")
+    _ = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert solver.last_prefilled_args_by_tool == {}
+    assert solver.last_prefilled_args_provenance == {}
+
+
+def test_merge_and_validate_prefilled_args_overrides_llm_values():
+    tool = make_tool("my_tool", properties={"a": {"type": "integer"}, "b": {"type": "string"}})
+    llm_args = {"a": 1, "b": "hello"}
+    prefilled = {"a": 42}
+
+    merged = merge_and_validate_prefilled_args(tool, llm_args, prefilled)
+    assert merged == {"a": 42, "b": "hello"}
+
+
+def test_merge_and_validate_prefilled_args_type_validation():
+    tool = make_tool("typed_tool", properties={"a": {"type": "integer"}})
+    llm_args = {"a": 1}
+    prefilled = {"a": "not-an-int"}
+
+    with pytest.raises(ValueError) as ei:
+        _ = merge_and_validate_prefilled_args(tool, llm_args, prefilled)
+    assert "Invalid value for 'a'" in str(ei.value)
+    assert "integer" in str(ei.value)
+
+
+def test_merge_and_validate_prefilled_args_unknown_key_fails():
+    tool = make_tool("limited_tool", properties={"a": {"type": "integer"}})
+    with pytest.raises(ValueError) as ei:
+        _ = merge_and_validate_prefilled_args(tool, llm_args={}, prefilled_args={"z": 3})
+    assert "Unknown argument 'z'" in str(ei.value)
+
+
+def test_merge_and_validate_prefilled_args_enum_const_anyof_oneof():
+    tool = make_tool(
+        "rich_tool",
+        properties={
+            "c": {"enum": ["x", "y"]},
+            "d": {"const": 5},
+            "e": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+            "f": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+            "g": {"type": "number"},
+        },
+    )
+
+    # Valid cases
+    merged = merge_and_validate_prefilled_args(tool, {}, {"c": "x"})
+    assert merged["c"] == "x"
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"d": 5})
+    assert merged["d"] == 5
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"e": 7})
+    assert merged["e"] == 7
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"f": "hello"})
+    assert merged["f"] == "hello"
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"g": 3.14})
+    assert merged["g"] == 3.14
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"g": 3})
+    assert merged["g"] == 3
+
+    # Invalid cases
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"c": "z"})  # enum fail
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"d": 6})  # const fail
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"e": []})  # anyOf none match
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"f": []})  # oneOf none match
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"g": True})  # bool not a number
+
+
+def test_merge_and_validate_prefilled_args_union_with_null():
+    tool = make_tool("union_tool", properties={"h": {"type": ["string", "null"]}})
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"h": None})
+    assert "h" in merged and merged["h"] is None
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"h": "ok"})
+    assert merged["h"] == "ok"
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"h": 5})
+
+
+def test_merge_and_validate_prefilled_args_object_and_array_types():
+    tool = make_tool(
+        "container_tool",
+        properties={
+            "obj": {"type": "object"},
+            "arr": {"type": "array"},
+        },
+    )
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"obj": {"k": 1}})
+    assert merged["obj"] == {"k": 1}
+
+    merged = merge_and_validate_prefilled_args(tool, {}, {"arr": [1, 2, 3]})
+    assert merged["arr"] == [1, 2, 3]
+
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"obj": "nope"})
+    with pytest.raises(ValueError):
+        _ = merge_and_validate_prefilled_args(tool, {}, {"arr": {}})
+
+
+def test_multiple_rules_args_last_write_wins_and_provenance():
+    # Two init rules for the same tool; the latter should overwrite overlapping keys and provenance
+    r1 = InitToolRule(tool_name="alpha", args={"x": 1, "y": "first"})
+    r2 = InitToolRule(tool_name="alpha", args={"y": "second", "z": True})
+    solver = ToolRulesSolver(tool_rules=[r1, r2])
+
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert set(allowed) == {"alpha"}
+
+    assert solver.last_prefilled_args_by_tool["alpha"] == {"x": 1, "y": "second", "z": True}
+    assert solver.last_prefilled_args_provenance.get("alpha") == "InitToolRule(alpha)"
+
+
+def test_child_rule_args_cached_only_when_parent_last_tool():
+    # Child with args and one without
+    rule = ChildToolRule(
+        tool_name="parent",
+        children=["child_a", "child_b"],
+        child_arg_nodes=[ToolCallNode(name="child_a", args={"x": 1})],
+    )
+    solver = ToolRulesSolver(tool_rules=[rule])
+
+    # Before parent call, child args should not be cached
+    allowed = solver.get_allowed_tool_names(available_tools={"parent", "child_a", "child_b"})
+    assert set(allowed) == {"parent", "child_a", "child_b"}
+    assert solver.last_prefilled_args_by_tool == {}
+
+    # After parent is last tool, cache should include child_a's args
+    solver.register_tool_call("parent")
+    allowed = solver.get_allowed_tool_names(available_tools={"parent", "child_a", "child_b"})
+    assert set(allowed) == {"child_a", "child_b"}
+    assert solver.last_prefilled_args_by_tool.get("child_a") == {"x": 1}
+    assert solver.last_prefilled_args_provenance.get("child_a") == "ChildToolRule(parent->child_a)"
+
+
+def test_init_then_child_args_applied_in_correct_phases():
+    # Init provides args for alpha; child provides args for beta
+    init = InitToolRule(tool_name="alpha", args={"seed": "A"})
+    child = ChildToolRule(
+        tool_name="alpha",
+        children=["beta"],
+        child_arg_nodes=[ToolCallNode(name="beta", args={"k": 1})],
+    )
+    solver = ToolRulesSolver(tool_rules=[init, child])
+
+    # Phase 1: start — init args apply
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert set(allowed) == {"alpha"}
+    assert solver.last_prefilled_args_by_tool == {"alpha": {"seed": "A"}}
+
+    # Phase 2: after alpha executed — child args apply
+    solver.register_tool_call("alpha")
+    allowed = solver.get_allowed_tool_names(available_tools={"alpha", "beta"})
+    assert set(allowed) == {"beta"}
+    assert solver.last_prefilled_args_by_tool == {"beta": {"k": 1}}
+
+
+def test_multi_child_rules_last_write_wins_for_same_child():
+    # Two ChildToolRules for the same parent/child; second overrides overlapping keys
+    child1 = ChildToolRule(
+        tool_name="p",
+        children=["c"],
+        child_arg_nodes=[ToolCallNode(name="c", args={"x": 1, "y": "a"})],
+    )
+    child2 = ChildToolRule(
+        tool_name="p",
+        children=["c"],
+        child_arg_nodes=[ToolCallNode(name="c", args={"y": "b", "z": 3})],
+    )
+    solver = ToolRulesSolver(tool_rules=[child1, child2])
+
+    solver.register_tool_call("p")
+    allowed = solver.get_allowed_tool_names(available_tools={"p", "c"})
+    assert set(allowed) == {"c"}
+    assert solver.last_prefilled_args_by_tool["c"] == {"x": 1, "y": "b", "z": 3}
+    # Provenance reflects the last write source
+    assert solver.last_prefilled_args_provenance.get("c") == "ChildToolRule(p->c)"
+
+
+def test_child_args_only_for_allowed_children():
+    # Provide args for two children, but restrict available_tools to one child
+    rule = ChildToolRule(
+        tool_name="p",
+        children=["allowed", "blocked"],
+        child_arg_nodes=[
+            ToolCallNode(name="allowed", args={"a": 1}),
+            ToolCallNode(name="blocked", args={"b": 2}),
+        ],
+    )
+    solver = ToolRulesSolver(tool_rules=[rule])
+    solver.register_tool_call("p")
+
+    allowed = solver.get_allowed_tool_names(available_tools={"allowed"})
+    assert set(allowed) == {"allowed"}
+    assert solver.last_prefilled_args_by_tool == {"allowed": {"a": 1}}
+    assert "blocked" not in solver.last_prefilled_args_by_tool
+
+
+def test_child_args_intersection_with_conditional_mapping():
+    # Child list has args for both, ConditionalToolRule limits to one based on output
+    child = ChildToolRule(
+        tool_name="decider",
+        children=["c1", "c2"],
+        child_arg_nodes=[ToolCallNode(name="c1", args={"x": 10}), ToolCallNode(name="c2", args={"y": 20})],
+    )
+    cond = ConditionalToolRule(
+        tool_name="decider",
+        default_child=None,
+        child_output_mapping={True: "c2", False: "c1"},
+        require_output_mapping=True,
+    )
+    solver = ToolRulesSolver(tool_rules=[child, cond])
+    solver.register_tool_call("decider")
+
+    allowed = solver.get_allowed_tool_names(available_tools={"c1", "c2"}, last_function_response='{"message": "true"}')
+    assert set(allowed) == {"c2"}
+    assert solver.last_prefilled_args_by_tool == {"c2": {"y": 20}}
+
+
+def test_child_rule_prefilled_complex_args_validation_success():
+    # Define complex child args with multiple JSON schema types
+    complex_args = {
+        "obj": {"k": 1, "nest": {"a": 2}},
+        "arr": [1, 2, 3],
+        "union": None,  # string | null
+        "any": "text",  # anyOf string|integer
+        "one": 42,  # oneOf string|integer
+        "num": 3.5,
+        "flag": True,
+        "str": "hello",
+    }
+
+    rule = ChildToolRule(
+        tool_name="p",
+        children=["complex_child"],
+        child_arg_nodes=[ToolCallNode(name="complex_child", args=complex_args)],
+    )
+    solver = ToolRulesSolver(tool_rules=[rule])
+    solver.register_tool_call("p")
+
+    allowed = solver.get_allowed_tool_names(available_tools={"complex_child"})
+    assert set(allowed) == {"complex_child"}
+    assert solver.last_prefilled_args_by_tool.get("complex_child") == complex_args
+
+    # Validate and merge against a tool schema with matching types
+    properties = {
+        "obj": {"type": "object"},
+        "arr": {"type": "array"},
+        "union": {"type": ["string", "null"]},
+        "any": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+        "one": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+        "num": {"type": "number"},
+        "flag": {"type": "boolean"},
+        "str": {"type": "string"},
+    }
+    tool = make_tool("complex_child", properties)
+    # LLM suggests competing values; prefilled should override
+    llm_args = {"str": "fake", "num": 7, "extra": "ignored"}
+    merged = merge_and_validate_prefilled_args(tool, llm_args, complex_args)
+    for k, v in complex_args.items():
+        assert merged[k] == v
+    assert merged.get("extra") == "ignored"  # untouched by prefill validation
+
+
+def test_child_rule_prefilled_complex_args_validation_fail():
+    # Provide intentionally bad types for several keys
+    bad_args = {
+        "obj": "not-an-object",  # should be object
+        "arr": {"not": "an array"},  # should be array
+        "union": 5,  # should be string|null
+        "any": [],  # anyOf string|integer
+        "one": [],  # oneOf string|integer
+        "num": True,  # bool is not accepted as number
+        "flag": "yes",  # should be boolean
+        "str": 123,  # should be string
+    }
+
+    rule = ChildToolRule(
+        tool_name="p",
+        children=["complex_child"],
+        child_arg_nodes=[ToolCallNode(name="complex_child", args=bad_args)],
+    )
+    solver = ToolRulesSolver(tool_rules=[rule])
+    solver.register_tool_call("p")
+    _ = solver.get_allowed_tool_names(available_tools={"complex_child"})
+    assert solver.last_prefilled_args_by_tool.get("complex_child") == bad_args
+
+    properties = {
+        "obj": {"type": "object"},
+        "arr": {"type": "array"},
+        "union": {"type": ["string", "null"]},
+        "any": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+        "one": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+        "num": {"type": "number"},
+        "flag": {"type": "boolean"},
+        "str": {"type": "string"},
+    }
+    tool = make_tool("complex_child", properties)
+
+    with pytest.raises(ValueError) as ei:
+        _ = merge_and_validate_prefilled_args(tool, llm_args={}, prefilled_args=bad_args)
+    msg = str(ei.value)
+    # Spot-check a few failures
+    assert "Unknown argument" not in msg  # keys exist
+    assert "Invalid value" in msg
+
+
+def test_child_tool_rule_validation_unknown_child_in_arg_nodes():
+    """ChildToolRule should reject child_arg_nodes that reference names not in children."""
+    with pytest.raises(ValueError) as ei:
+        _ = ChildToolRule(
+            tool_name="parent",
+            children=["known_child"],
+            child_arg_nodes=[ToolCallNode(name="unknown_child", args={"x": 1})],
+        )
+    assert "not in children" in str(ei.value)
+
+
+def test_child_tool_rule_validation_args_type_enforced():
+    """ToolCallNode.args must be a dict when present; otherwise Pydantic should raise."""
+    with pytest.raises(Exception) as ei:
+        _ = ChildToolRule(
+            tool_name="p",
+            children=["c1"],
+            child_arg_nodes=[ToolCallNode(name="c1", args="not-a-dict")],  # type: ignore[arg-type]
+        )
+    # Pydantic should raise a validation error about args type
+    assert "dict" in str(ei.value) or "dictionary" in str(ei.value)
+
+
+def test_child_tool_rule_validation_accepts_valid_nodes():
+    """A valid ChildToolRule with matching child and typed arg node should construct cleanly."""
+    rule = ChildToolRule(
+        tool_name="p",
+        children=["c1", "c2"],
+        child_arg_nodes=[ToolCallNode(name="c2", args={"k": 1})],
+    )
+    assert isinstance(rule, ChildToolRule)

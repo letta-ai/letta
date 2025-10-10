@@ -28,6 +28,7 @@ class LettaLLMAdapter(ABC):
         self.response_data: dict | None = None
         self.chat_completions_response: ChatCompletionResponse | None = None
         self.reasoning_content: list[TextContent | ReasoningContent | RedactedReasoningContent] | None = None
+        self.content: list[TextContent | ReasoningContent | RedactedReasoningContent] | None = None
         self.tool_call: ToolCall | None = None
         self.usage: LettaUsageStatistics = LettaUsageStatistics()
         self.telemetry_manager: TelemetryManager = TelemetryManager()

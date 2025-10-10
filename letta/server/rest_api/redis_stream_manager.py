@@ -8,9 +8,11 @@ from typing import AsyncIterator, Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import RunStatus
+from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.run import RunUpdate
 from letta.schemas.user import User
-from letta.services.job_manager import JobManager
+from letta.services.run_manager import RunManager
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
@@ -194,7 +196,7 @@ async def create_background_stream_processor(
     redis_client: AsyncRedisClient,
     run_id: str,
     writer: Optional[RedisSSEStreamWriter] = None,
-    job_manager: Optional[JobManager] = None,
+    run_manager: Optional[RunManager] = None,
     actor: Optional[User] = None,
 ) -> None:
     """
@@ -208,8 +210,8 @@ async def create_background_stream_processor(
         redis_client: Redis client instance
         run_id: The run ID to store chunks under
         writer: Optional pre-configured writer (creates new if not provided)
-        job_manager: Optional job manager for updating job status
-        actor: Optional actor for job status updates
+        run_manager: Optional run manager for updating run status
+        actor: Optional actor for run status updates
     """
     if writer is None:
         writer = RedisSSEStreamWriter(redis_client)
@@ -235,9 +237,12 @@ async def create_background_stream_processor(
         # Write error chunk
         # error_chunk = {"error": {"message": str(e)}}
         # Mark run_id terminal state
-        if job_manager and actor:
-            await job_manager.safe_update_job_status_async(
-                job_id=run_id, new_status=JobStatus.failed, actor=actor, metadata={"error": str(e)}
+        if run_manager and actor:
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value),
+                actor=actor,
+                metadata={"error": str(e)},
             )
 
         error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
@@ -245,6 +250,12 @@ async def create_background_stream_processor(
     finally:
         if should_stop_writer:
             await writer.stop()
+        if run_manager and actor:
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn.value),
+                actor=actor,
+            )
 
 
 async def redis_sse_stream_generator(

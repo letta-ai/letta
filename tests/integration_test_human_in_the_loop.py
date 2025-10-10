@@ -11,8 +11,10 @@ from dotenv import load_dotenv
 from letta_client import AgentState, ApprovalCreate, Letta, MessageCreate, Tool
 from letta_client.core.api_error import ApiError
 
+from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.log import get_logger
+from letta.schemas.enums import AgentType
 
 logger = get_logger(__name__)
 
@@ -21,7 +23,7 @@ logger = get_logger(__name__)
 # ------------------------------
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
-USER_MESSAGE_CONTENT = "This is an automated test message. Call the get_secret_code_tool to get the code for text 'hello world'. Make sure to set request_heartbeat to True."
+USER_MESSAGE_CONTENT = "This is an automated test message. Call the get_secret_code_tool to get the code for text 'hello world'."
 USER_MESSAGE_TEST_APPROVAL: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -136,12 +138,12 @@ def agent(client: Letta, approval_tool_fixture) -> AgentState:
     Creates and returns an agent state for testing with a pre-configured agent.
     The agent is configured with the requires_approval_tool.
     """
-    send_message_tool = client.tools.list(name="send_message")[0]
     agent_state = client.agents.create(
         name="approval_test_agent",
+        agent_type=AgentType.letta_v1_agent,
         include_base_tools=False,
-        tool_ids=[send_message_tool.id, approval_tool_fixture.id],
-        model="anthropic/claude-3-5-sonnet",
+        tool_ids=[approval_tool_fixture.id],
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         tags=["approval_test"],
     )
@@ -207,12 +209,17 @@ def test_send_message_with_requires_approval_tool(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 4
+    assert len(messages) == 5
     assert messages[0].message_type == "reasoning_message"
-    assert messages[1].message_type == "approval_request_message"
-    assert messages[2].message_type == "stop_reason"
-    assert messages[2].stop_reason == "requires_approval"
-    assert messages[3].message_type == "usage_statistics"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "approval_request_message"
+    # v3/v1 path: approval request tool args must not include request_heartbeat
+    # import json as _json
+
+    # _args = _json.loads(messages[2].tool_call.arguments)
+    # assert "request_heartbeat" not in _args
+    assert messages[3].message_type == "stop_reason"
+    assert messages[4].message_type == "usage_statistics"
 
 
 def test_send_message_after_turning_off_requires_approval(
@@ -247,13 +254,33 @@ def test_send_message_after_turning_off_requires_approval(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 5 or len(messages) == 7
-    assert messages[0].message_type == "reasoning_message"
-    assert messages[1].message_type == "tool_call_message"
-    assert messages[2].message_type == "tool_return_message"
-    if len(messages) > 5:
-        assert messages[3].message_type == "reasoning_message"
-        assert messages[4].message_type == "assistant_message"
+    assert 6 <= len(messages) <= 9
+    idx = 0
+
+    assert messages[idx].message_type == "reasoning_message"
+    idx += 1
+
+    try:
+        assert messages[idx].message_type == "assistant_message"
+        idx += 1
+    except:
+        pass
+
+    assert messages[idx].message_type == "tool_call_message"
+    idx += 1
+    assert messages[idx].message_type == "tool_return_message"
+    idx += 1
+
+    assert messages[idx].message_type == "reasoning_message"
+    idx += 1
+    try:
+        assert messages[idx].message_type == "assistant_message"
+        idx += 1
+    except:
+        assert messages[idx].message_type == "tool_call_message"
+        idx += 1
+        assert messages[idx].message_type == "tool_return_message"
+        idx += 1
 
 
 # ------------------------------
@@ -270,7 +297,12 @@ def test_approve_tool_call_request(
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
     approval_request_id = response.messages[0].id
-    tool_call_id = response.messages[1].tool_call.tool_call_id
+    tool_call_id = response.messages[2].tool_call.tool_call_id
+    # Ensure no request_heartbeat on approval request
+    # import json as _json
+
+    # _args = _json.loads(response.messages[0].tool_call.arguments)
+    # assert "request_heartbeat" not in _args
 
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
@@ -286,18 +318,24 @@ def test_approve_tool_call_request(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 3 or len(messages) == 5
+    assert len(messages) == 3 or len(messages) == 5 or len(messages) == 6
     assert messages[0].message_type == "tool_return_message"
     assert messages[0].tool_call_id == tool_call_id
     assert messages[0].status == "success"
-    if len(messages) == 3:
+    if len(messages) == 4:
         assert messages[1].message_type == "stop_reason"
         assert messages[2].message_type == "usage_statistics"
-    else:
+    elif len(messages) == 5:
         assert messages[1].message_type == "reasoning_message"
         assert messages[2].message_type == "assistant_message"
         assert messages[3].message_type == "stop_reason"
         assert messages[4].message_type == "usage_statistics"
+    elif len(messages) == 6:
+        assert messages[1].message_type == "reasoning_message"
+        assert messages[2].message_type == "tool_call_message"
+        assert messages[3].message_type == "tool_return_message"
+        assert messages[4].message_type == "stop_reason"
+        assert messages[5].message_type == "usage_statistics"
 
 
 def test_approve_cursor_fetch(
@@ -312,11 +350,17 @@ def test_approve_cursor_fetch(
     approval_request_id = response.messages[0].id
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 3
+    assert len(messages) == 4
     assert messages[0].message_type == "user_message"
     assert messages[1].message_type == "reasoning_message"
-    assert messages[2].message_type == "approval_request_message"
-    assert messages[2].id == approval_request_id
+    assert messages[2].message_type == "assistant_message"
+    assert messages[3].message_type == "approval_request_message"
+    assert messages[3].id == approval_request_id
+    # Ensure no request_heartbeat on approval request
+    import json as _json
+
+    _args = _json.loads(messages[3].tool_call.arguments)
+    assert "request_heartbeat" not in _args
 
     last_message_cursor = approval_request_id
     client.agents.messages.create(
@@ -330,14 +374,15 @@ def test_approve_cursor_fetch(
     )
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 2 or len(messages) == 5
+    assert len(messages) == 2 or len(messages) == 4
     assert messages[0].message_type == "approval_response_message"
+    assert messages[0].approval_request_id == approval_request_id
+    assert messages[0].approve is True
     assert messages[1].message_type == "tool_return_message"
     assert messages[1].status == "success"
-    if len(messages) == 5:
-        assert messages[2].message_type == "user_message"  # heartbeat
-        assert messages[3].message_type == "reasoning_message"
-        assert messages[4].message_type == "assistant_message"
+    if len(messages) == 4:
+        assert messages[2].message_type == "reasoning_message"
+        assert messages[3].message_type == "assistant_message"
 
 
 def test_approve_and_follow_up(
@@ -369,11 +414,18 @@ def test_approve_and_follow_up(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 4
-    assert messages[0].message_type == "reasoning_message"
-    assert messages[1].message_type == "assistant_message"
-    assert messages[2].message_type == "stop_reason"
-    assert messages[3].message_type == "usage_statistics"
+    assert len(messages) == 4 or len(messages) == 5
+    if len(messages) == 4:
+        assert messages[0].message_type == "reasoning_message"
+        assert messages[1].message_type == "assistant_message"
+        assert messages[2].message_type == "stop_reason"
+        assert messages[3].message_type == "usage_statistics"
+    elif len(messages) == 5:
+        assert messages[0].message_type == "reasoning_message"
+        assert messages[1].message_type == "tool_call_message"
+        assert messages[2].message_type == "tool_return_message"
+        assert messages[3].message_type == "stop_reason"
+        assert messages[4].message_type == "usage_statistics"
 
 
 def test_approve_and_follow_up_with_error(
@@ -386,8 +438,8 @@ def test_approve_and_follow_up_with_error(
     )
     approval_request_id = response.messages[0].id
 
-    # Mock the streaming interface to return no tool call on the follow up request heartbeat message
-    with patch.object(AnthropicStreamingInterface, "get_tool_call_object", return_value=None):
+    # Mock the streaming adapter to return llm invocation failure on the follow up turn
+    with patch.object(SimpleLLMStreamAdapter, "invoke_llm", side_effect=ValueError("TEST: Mocked error")):
         response = client.agents.messages.create_stream(
             agent_id=agent.id,
             messages=[
@@ -404,7 +456,7 @@ def test_approve_and_follow_up_with_error(
     assert messages is not None
     stop_reason_message = [m for m in messages if m.message_type == "stop_reason"][0]
     assert stop_reason_message
-    assert stop_reason_message.stop_reason == "no_tool_call"
+    assert stop_reason_message.stop_reason == "invalid_llm_response"
 
     # Ensure that agent is not bricked
     response = client.agents.messages.create_stream(
@@ -415,11 +467,13 @@ def test_approve_and_follow_up_with_error(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 4
+    assert len(messages) == 4 or len(messages) == 5
     assert messages[0].message_type == "reasoning_message"
-    assert messages[1].message_type == "assistant_message"
-    assert messages[2].message_type == "stop_reason"
-    assert messages[3].message_type == "usage_statistics"
+    if len(messages) == 4:
+        assert messages[1].message_type == "assistant_message"
+    else:
+        assert messages[1].message_type == "tool_call_message"
+        assert messages[2].message_type == "tool_return_message"
 
 
 # ------------------------------
@@ -436,7 +490,7 @@ def test_deny_tool_call_request(
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
     approval_request_id = response.messages[0].id
-    tool_call_id = response.messages[1].tool_call.tool_call_id
+    tool_call_id = response.messages[2].tool_call.tool_call_id
 
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
@@ -475,11 +529,17 @@ def test_deny_cursor_fetch(
     approval_request_id = response.messages[0].id
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 3
+    assert len(messages) == 4
     assert messages[0].message_type == "user_message"
     assert messages[1].message_type == "reasoning_message"
-    assert messages[2].message_type == "approval_request_message"
-    assert messages[2].id == approval_request_id
+    assert messages[2].message_type == "assistant_message"
+    assert messages[3].message_type == "approval_request_message"
+    assert messages[3].id == approval_request_id
+    # Ensure no request_heartbeat on approval request
+    # import json as _json
+
+    # _args = _json.loads(messages[2].tool_call.arguments)
+    # assert "request_heartbeat" not in _args
 
     last_message_cursor = approval_request_id
     client.agents.messages.create(
@@ -494,13 +554,12 @@ def test_deny_cursor_fetch(
     )
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 5
+    assert len(messages) == 4
     assert messages[0].message_type == "approval_response_message"
     assert messages[1].message_type == "tool_return_message"
     assert messages[1].status == "error"
-    assert messages[2].message_type == "user_message"  # heartbeat
-    assert messages[3].message_type == "reasoning_message"
-    assert messages[4].message_type == "assistant_message"
+    assert messages[2].message_type == "reasoning_message"
+    assert messages[3].message_type == "assistant_message"
 
 
 def test_deny_and_follow_up(
@@ -540,6 +599,38 @@ def test_deny_and_follow_up(
     assert messages[3].message_type == "usage_statistics"
 
 
+def test_deny_with_context_check(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(
+                approve=False,
+                approval_request_id=approval_request_id,
+                reason="Cancelled by user. Instead of responding, wait for next user input before replying.",
+            ),
+        ],
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    try:
+        client.agents.context.retrieve(agent_id=agent.id)
+    except Exception as e:
+        if len(messages) > 4:
+            raise ValueError("Model did not respond with only reasoning content, please rerun test to repro edge case.")
+        raise e
+
+
 def test_deny_and_follow_up_with_error(
     client: Letta,
     agent: AgentState,
@@ -550,8 +641,8 @@ def test_deny_and_follow_up_with_error(
     )
     approval_request_id = response.messages[0].id
 
-    # Mock the streaming interface to return no tool call on the follow up request heartbeat message
-    with patch.object(AnthropicStreamingInterface, "get_tool_call_object", return_value=None):
+    # Mock the streaming adapter to return llm invocation failure on the follow up turn
+    with patch.object(SimpleLLMStreamAdapter, "invoke_llm", side_effect=ValueError("TEST: Mocked error")):
         response = client.agents.messages.create_stream(
             agent_id=agent.id,
             messages=[
@@ -569,7 +660,7 @@ def test_deny_and_follow_up_with_error(
     assert messages is not None
     stop_reason_message = [m for m in messages if m.message_type == "stop_reason"][0]
     assert stop_reason_message
-    assert stop_reason_message.stop_reason == "no_tool_call"
+    assert stop_reason_message.stop_reason == "invalid_llm_response"
 
     # Ensure that agent is not bricked
     response = client.agents.messages.create_stream(

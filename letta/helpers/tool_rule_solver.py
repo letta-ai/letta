@@ -50,6 +50,16 @@ class ToolRulesSolver(BaseModel):
     )
     tool_call_history: list[str] = Field(default_factory=list, description="History of tool calls, updated with each tool call.")
 
+    # Last-evaluated prefilled args cache (per step)
+    last_prefilled_args_by_tool: dict[str, dict] = Field(
+        default_factory=dict, description="Cached mapping of tool name to prefilled args from the last allowlist evaluation.", exclude=True
+    )
+    last_prefilled_args_provenance: dict[str, str] = Field(
+        default_factory=dict,
+        description="Cached mapping of tool name to a short description of which rule provided the prefilled args.",
+        exclude=True,
+    )
+
     def __init__(self, tool_rules: list[ToolRule] | None = None, **kwargs):
         super().__init__(tool_rules=tool_rules, **kwargs)
 
@@ -88,28 +98,78 @@ class ToolRulesSolver(BaseModel):
     ) -> list[ToolName]:
         """Get a list of tool names allowed based on the last tool called.
 
+        Side-effect: also caches any prefilled args provided by active rules into
+        `last_prefilled_args_by_tool` and `last_prefilled_args_provenance`.
+
         The logic is as follows:
             1. if there are no previous tool calls, and we have InitToolRules, those are the only options for the first tool call
             2. else we take the intersection of the Parent/Child/Conditional/MaxSteps as the options
             3. Continue/Terminal/RequiredBeforeExit rules are applied in the agent loop flow, not to restrict tools
         """
-        # TODO: This piece of code here is quite ugly and deserves a refactor
-        # TODO: -> Tool rules should probably be refactored to take in a set of tool names?
+        # Compute allowed tools first
         if not self.tool_call_history and self.init_tool_rules:
-            return [rule.tool_name for rule in self.init_tool_rules]
+            allowed = [rule.tool_name for rule in self.init_tool_rules]
         else:
             valid_tool_sets = []
             for rule in self.child_based_tool_rules + self.parent_tool_rules:
                 tools = rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
                 valid_tool_sets.append(tools)
 
-            # Compute intersection of all valid tool sets
+            # Compute intersection of all valid tool sets and restrict to available_tools
             final_allowed_tools = set.intersection(*valid_tool_sets) if valid_tool_sets else available_tools
+            final_allowed_tools = final_allowed_tools & available_tools
 
             if error_on_empty and not final_allowed_tools:
                 raise ValueError("No valid tools found based on tool rules.")
 
-            return list(final_allowed_tools)
+            allowed = list(final_allowed_tools)
+
+        # Build prefilled args cache for current allowed set
+        args_by_tool: dict[str, dict] = {}
+        provenance_by_tool: dict[str, str] = {}
+
+        def _store_args(tool_name: str, args: dict, provenance: str):
+            if not isinstance(args, dict) or len(args) == 0:
+                return
+            if tool_name not in args_by_tool:
+                args_by_tool[tool_name] = {}
+            args_by_tool[tool_name].update(args)  # last-write-wins
+            provenance_by_tool[tool_name] = provenance
+
+        # For caching, restrict to actually available tools
+        allowed_set = set(allowed) & available_tools
+
+        last_tool = self.tool_call_history[-1] if self.tool_call_history else None
+
+        # Init rule args apply only at the beginning
+        if not self.tool_call_history and self.init_tool_rules:
+            for rule in self.init_tool_rules:
+                if hasattr(rule, "args") and getattr(rule, "args") and rule.tool_name in allowed_set:
+                    _store_args(rule.tool_name, getattr(rule, "args"), f"InitToolRule({rule.tool_name})")
+
+        # ChildToolRule per-child args apply only when parent is the last tool
+        for rule in self.child_based_tool_rules:
+            if isinstance(rule, ChildToolRule) and last_tool == rule.tool_name:
+                child_map = rule.get_child_args_map()
+                for child_name, child_args in child_map.items():
+                    if child_name in allowed_set:
+                        _store_args(child_name, child_args, f"ChildToolRule({rule.tool_name}->{child_name})")
+
+        # Rule-level args for other rule types (future-proofing)
+        for rule in (
+            self.parent_tool_rules
+            + self.continue_tool_rules
+            + self.terminal_tool_rules
+            + self.required_before_exit_tool_rules
+            + self.requires_approval_tool_rules
+        ):
+            if hasattr(rule, "args") and getattr(rule, "args") and getattr(rule, "tool_name", None) in allowed_set:
+                _store_args(rule.tool_name, getattr(rule, "args"), f"{rule.__class__.__name__}({rule.tool_name})")
+
+        self.last_prefilled_args_by_tool = args_by_tool
+        self.last_prefilled_args_provenance = provenance_by_tool
+
+        return allowed
 
     def is_terminal_tool(self, tool_name: ToolName) -> bool:
         """Check if the tool is defined as a terminal tool in the terminal tool rules or required-before-exit tool rules."""
@@ -209,3 +269,30 @@ class ToolRulesSolver(BaseModel):
                     violated_rules.append(rendered_prompt)
 
         return violated_rules
+
+    def should_force_tool_call(self) -> bool:
+        """
+        Determine if a tool call should be forced (using 'required' instead of 'auto') based on active constrained tool rules.
+
+        Returns:
+            bool: True if a constrained tool rule is currently active, False otherwise
+        """
+        # check if we're at the start with init rules
+        if not self.tool_call_history and self.init_tool_rules:
+            return True
+
+        # check if any constrained rule is currently active
+        if self.tool_call_history:
+            last_tool = self.tool_call_history[-1]
+
+            # check child-based rules (ChildToolRule, ConditionalToolRule)
+            for rule in self.child_based_tool_rules:
+                if rule.requires_force_tool_call and rule.tool_name == last_tool:
+                    return True
+
+            # check parent rules, `requires_force_tool_call` for safety in case this gets expanded
+            for rule in self.parent_tool_rules:
+                if rule.requires_force_tool_call and rule.tool_name == last_tool:
+                    return True
+
+        return False

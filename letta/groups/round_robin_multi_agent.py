@@ -1,15 +1,16 @@
 from typing import List, Optional
 
-from letta.agent import Agent, AgentState
+from letta.agents.base_agent import BaseAgent
 from letta.interface import AgentInterface
 from letta.orm import User
+from letta.schemas.agent import AgentState
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.usage import LettaUsageStatistics
 
 
-class RoundRobinMultiAgent(Agent):
+class RoundRobinMultiAgent(BaseAgent):
     def __init__(
         self,
         interface: AgentInterface,

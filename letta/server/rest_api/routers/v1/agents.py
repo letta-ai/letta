@@ -31,10 +31,10 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
-from letta.schemas.enums import JobType
+from letta.schemas.enums import AgentType, RunStatus
 from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
-from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
+from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
@@ -48,7 +48,7 @@ from letta.schemas.memory import (
 )
 from letta.schemas.message import MessageCreate, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
-from letta.schemas.run import Run
+from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
@@ -56,6 +56,8 @@ from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.server import SyncServer
+from letta.services.lettuce import LettuceClient
+from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 
@@ -188,28 +190,16 @@ async def export_agent(
     - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
     - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     if use_legacy_format:
         # Use the legacy serialization method
-        try:
-            agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
-            return agent.model_dump()
-        except NoResultFound:
-            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+        agent = await server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
+        return agent.model_dump()
     else:
         # Use the new multi-entity export format
-        try:
-            agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
-            return agent_file_schema.model_dump()
-        except AgentNotFoundForExportError:
-            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
-        except AgentExportIdMappingError as e:
-            raise HTTPException(
-                status_code=500, detail=f"Internal error during export: ID mapping failed for {e.entity_type} ID '{e.db_id}'"
-            )
-        except AgentExportProcessingError as e:
-            raise HTTPException(status_code=500, detail=f"Export processing failed: {str(e.original_error)}")
+        agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+        return agent_file_schema.model_dump()
 
 
 class ImportedAgentsResponse(BaseModel):
@@ -231,33 +221,19 @@ def import_agent_legacy(
     """
     Import an agent using the legacy AgentSchema format.
     """
-    try:
-        # Validate the JSON against AgentSchema before passing it to deserialize
-        agent_schema = AgentSchema.model_validate(agent_json)
+    # Validate the JSON against AgentSchema before passing it to deserialize
+    agent_schema = AgentSchema.model_validate(agent_json)
 
-        new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            project_id=project_id,
-            strip_messages=strip_messages,
-            env_vars=env_vars,
-        )
-        return [new_agent.id]
-
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e!s}")
-
-    except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
-
-    except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
-
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
+    new_agent = server.agent_manager.deserialize(
+        serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+        actor=actor,
+        append_copy_suffix=append_copy_suffix,
+        override_existing_tools=override_existing_tools,
+        project_id=project_id,
+        strip_messages=strip_messages,
+        env_vars=env_vars,
+    )
+    return [new_agent.id]
 
 
 async def _import_agent(
@@ -275,46 +251,29 @@ async def _import_agent(
     """
     Import an agent using the new AgentFileSchema format.
     """
-    try:
-        agent_schema = AgentFileSchema.model_validate(agent_file_json)
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
+    agent_schema = AgentFileSchema.model_validate(agent_file_json)
 
-    try:
-        if override_embedding_handle:
-            embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
-        else:
-            embedding_config_override = None
+    if override_embedding_handle:
+        embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+    else:
+        embedding_config_override = None
 
-        import_result = await server.agent_serialization_manager.import_file(
-            schema=agent_schema,
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            env_vars=env_vars,
-            override_embedding_config=embedding_config_override,
-            project_id=project_id,
-        )
+    import_result = await server.agent_serialization_manager.import_file(
+        schema=agent_schema,
+        actor=actor,
+        append_copy_suffix=append_copy_suffix,
+        override_existing_tools=override_existing_tools,
+        env_vars=env_vars,
+        override_embedding_config=embedding_config_override,
+        project_id=project_id,
+    )
 
-        if not import_result.success:
-            raise HTTPException(
-                status_code=500, detail=f"Import failed: {import_result.message}. Errors: {', '.join(import_result.errors)}"
-            )
+    if not import_result.success:
+        from letta.errors import AgentFileImportError
 
-        return import_result.imported_agent_ids
+        raise AgentFileImportError(f"Import failed: {import_result.message}. Errors: {', '.join(import_result.errors)}")
 
-    except AgentFileImportError as e:
-        raise HTTPException(status_code=400, detail=f"Agent file import error: {str(e)}")
-
-    except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
-
-    except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
-
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
+    return import_result.imported_agent_ids
 
 
 @router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
@@ -345,7 +304,7 @@ async def import_agent(
     Import a serialized agent file and recreate the agent(s) in the system.
     Returns the IDs of all imported agents.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         serialized_data = file.file.read()
@@ -384,15 +343,9 @@ async def import_agent(
         )
     else:
         # This is a legacy AgentSchema
-        agent_ids = import_agent_legacy(
-            agent_json=agent_json,
-            server=server,
-            actor=actor,
-            append_copy_suffix=append_copy_suffix,
-            override_existing_tools=override_existing_tools,
-            project_id=project_id,
-            strip_messages=strip_messages,
-            env_vars=env_vars,
+        raise HTTPException(
+            status_code=400,
+            detail="Legacy AgentSchema format is deprecated. Please use the new AgentFileSchema format with 'agents' field.",
         )
 
     return ImportedAgentsResponse(agent_ids=agent_ids)
@@ -408,11 +361,7 @@ async def retrieve_agent_context_window(
     Retrieve the context window of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
-    except Exception as e:
-        traceback.print_exc()
-        raise e
+    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -436,12 +385,10 @@ async def create_agent(
     """
     Create an agent.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.create_agent_async(agent, actor=actor)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    if headers.experimental_params.letta_v1_agent and agent.agent_type == AgentType.memgpt_v2_agent and not agent.enable_sleeptime:
+        agent.agent_type = AgentType.letta_v1_agent
+    return await server.create_agent_async(agent, actor=actor)
 
 
 @router.patch("/{agent_id}", response_model=AgentState, operation_id="modify_agent")
@@ -461,10 +408,28 @@ async def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(10, description="Maximum number of tools to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """Get tools from an existing agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_tools_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_tools_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
@@ -666,12 +631,9 @@ async def open_file(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Get the agent to access files configuration
-    try:
-        per_file_view_window_char_limit, max_files_open = await server.agent_manager.get_agent_files_config_async(
-            agent_id=agent_id, actor=actor
-        )
-    except ValueError:
-        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found")
+    per_file_view_window_char_limit, max_files_open = await server.agent_manager.get_agent_files_config_async(
+        agent_id=agent_id, actor=actor
+    )
 
     # Get file metadata
     file_metadata = await server.file_manager.get_file_by_id(file_id=file_id, actor=actor, include_content=True)
@@ -717,16 +679,13 @@ async def close_file(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Use update_file_agent_by_id to close the file
-    try:
-        await server.file_agent_manager.update_file_agent_by_id(
-            agent_id=agent_id,
-            file_id=file_id,
-            actor=actor,
-            is_open=False,
-        )
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"File id={file_id} successfully closed"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"File association for file_id={file_id} and agent_id={agent_id} not found")
+    await server.file_agent_manager.update_file_agent_by_id(
+        agent_id=agent_id,
+        file_id=file_id,
+        actor=actor,
+        is_open=False,
+    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"File id={file_id} successfully closed"})
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
@@ -752,10 +711,7 @@ async def retrieve_agent(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
@@ -768,11 +724,8 @@ async def delete_agent(
     Delete an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
+    await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
 
 
 @router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources")
@@ -780,12 +733,30 @@ async def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of sources to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Get the sources associated with an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_sources_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_agent_folders")
@@ -793,19 +764,49 @@ async def list_agent_folders(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come before this source ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Source ID cursor for pagination. Returns sources that come after this source ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of sources to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for sources by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Get the folders associated with an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.list_attached_sources_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
 async def list_agent_files(
     agent_id: str,
-    cursor: Optional[str] = Query(None, description="Pagination cursor from previous response"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items to return (1-100)"),
+    before: Optional[str] = Query(
+        None, description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="File ID cursor for pagination. Returns files that come after this file ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of files to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    cursor: Optional[str] = Query(
+        None, description="Pagination cursor from previous response (deprecated, use before/after)", deprecated=True
+    ),
     is_open: Optional[bool] = Query(None, description="Filter by open status (true for open files, false for closed files)"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -815,9 +816,18 @@ async def list_agent_files(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
+    effective_limit = limit or 20
+
     # get paginated file-agent relationships for this agent
     file_agents, next_cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
-        agent_id=agent_id, actor=actor, cursor=cursor, limit=limit, is_open=is_open
+        agent_id=agent_id,
+        actor=actor,
+        cursor=cursor,  # keep for backwards compatibility
+        limit=effective_limit,
+        is_open=is_open,
+        before=before,
+        after=after,
+        ascending=(order == "asc"),
     )
 
     # enrich with file and source metadata
@@ -872,10 +882,7 @@ async def retrieve_block(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
@@ -883,16 +890,31 @@ async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of blocks to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """
     Retrieve the core memory blocks of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
-        return agent.memory.blocks
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+
+    return await server.agent_manager.list_agent_blocks_async(
+        agent_id=agent_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
@@ -1015,34 +1037,26 @@ async def search_archival_memory(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    try:
-        # convert datetime to string in ISO 8601 format
-        start_datetime = start_datetime.isoformat() if start_datetime else None
-        end_datetime = end_datetime.isoformat() if end_datetime else None
+    # convert datetime to string in ISO 8601 format
+    start_datetime = start_datetime.isoformat() if start_datetime else None
+    end_datetime = end_datetime.isoformat() if end_datetime else None
 
-        # Use the shared agent manager method
-        formatted_results = await server.agent_manager.search_agent_archival_memory_async(
-            agent_id=agent_id,
-            actor=actor,
-            query=query,
-            tags=tags,
-            tag_match_mode=tag_match_mode,
-            top_k=top_k,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-        )
+    # Use the shared agent manager method
+    formatted_results = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=agent_id,
+        actor=actor,
+        query=query,
+        tags=tags,
+        tag_match_mode=tag_match_mode,
+        top_k=top_k,
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+    )
 
-        # Convert to proper response schema
-        search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
+    # Convert to proper response schema
+    search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
 
-        return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
-
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error during archival memory search: {str(e)}")
+    return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
 
 
 # TODO(ethan): query or path parameter for memory_id?
@@ -1073,9 +1087,17 @@ AgentMessagesResponse = Annotated[
 async def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    after: str | None = Query(None, description="Message after which to retrieve the returned messages."),
-    before: str | None = Query(None, description="Message before which to retrieve the returned messages."),
-    limit: int = Query(10, description="Maximum number of messages to retrieve."),
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     group_id: str | None = Query(None, description="Group ID to filter messages by."),
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
@@ -1096,7 +1118,7 @@ async def list_messages(
         before=before,
         limit=limit,
         group_id=group_id,
-        reverse=True,
+        reverse=(order == "desc"),
         return_message_object=False,
         use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
@@ -1107,7 +1129,7 @@ async def list_messages(
 
 
 @router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
-def modify_message(
+async def modify_message(
     agent_id: str,
     message_id: str,
     request: LettaMessageUpdateUnion = Body(...),
@@ -1118,8 +1140,10 @@ def modify_message(
     Update the details of a message associated with an agent.
     """
     # TODO: support modifying tool calls/returns
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
-    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.message_manager.update_message_by_letta_message_async(
+        message_id=message_id, letta_message_update=request, actor=actor
+    )
 
 
 # noinspection PyInconsistentReturns
@@ -1166,32 +1190,26 @@ async def send_message(
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
-        job_status = JobStatus.created
-        run = await server.job_manager.create_job_async(
-            pydantic_job=Run(
-                user_id=actor.id,
-                status=job_status,
+        runs_manager = RunManager()
+        run = await runs_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=agent_id,
+                background=False,
                 metadata={
-                    "job_type": "send_message",
-                    "agent_id": agent_id,
+                    "run_type": "send_message",
                 },
-                request_config=LettaRequestConfig(
-                    use_assistant_message=request.use_assistant_message,
-                    assistant_message_tool_name=request.assistant_message_tool_name,
-                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                    include_return_message_types=request.include_return_message_types,
-                ),
+                request_config=LettaRequestConfig.from_letta_request(request),
             ),
             actor=actor,
         )
     else:
         run = None
 
-    job_update_metadata = None
     # TODO (cliandy): clean this up
     redis_client = await get_redis_client()
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
+    run_update_metadata = None
     try:
         result = None
         if agent_eligible and model_compatible:
@@ -1217,17 +1235,17 @@ async def send_message(
                 assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
                 include_return_message_types=request.include_return_message_types,
             )
-        job_status = result.stop_reason.stop_reason.run_status
+        run_status = result.stop_reason.stop_reason.run_status
         return result
     except PendingApprovalError as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        run_update_metadata = {"error": str(e)}
+        run_status = RunStatus.failed
         raise HTTPException(
             status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
         )
     except Exception as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        run_update_metadata = {"error": str(e)}
+        run_status = RunStatus.failed
         raise
     finally:
         if settings.track_agent_run:
@@ -1236,12 +1254,14 @@ async def send_message(
             else:
                 # NOTE: we could also consider this an error?
                 stop_reason = None
-            await server.job_manager.safe_update_job_status_async(
-                job_id=run.id,
-                new_status=job_status,
+            await server.run_manager.update_run_by_id_async(
+                run_id=run.id,
+                update=RunUpdate(
+                    status=run_status,
+                    metadata=run_update_metadata,
+                    stop_reason=stop_reason,
+                ),
                 actor=actor,
-                metadata=job_update_metadata,
-                stop_reason=stop_reason,
             )
 
 
@@ -1297,29 +1317,24 @@ async def send_message_streaming(
         "deepseek",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
+    if agent.agent_type == AgentType.letta_v1_agent and agent.llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+        model_compatible_token_streaming = True
 
-    # Create a new job for execution tracking
+    # Create a new run for execution tracking
     if settings.track_agent_run:
-        job_status = JobStatus.created
-        run = await server.job_manager.create_job_async(
-            pydantic_job=Run(
-                user_id=actor.id,
-                status=job_status,
+        runs_manager = RunManager()
+        run = await runs_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=agent_id,
+                background=request.background or False,
                 metadata={
-                    "job_type": "send_message_streaming",
-                    "agent_id": agent_id,
-                    "background": request.background or False,
+                    "run_type": "send_message_streaming",
                 },
-                request_config=LettaRequestConfig(
-                    use_assistant_message=request.use_assistant_message,
-                    assistant_message_tool_name=request.assistant_message_tool_name,
-                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                    include_return_message_types=request.include_return_message_types,
-                ),
+                request_config=LettaRequestConfig.from_letta_request(request),
             ),
             actor=actor,
         )
-        job_update_metadata = None
+        run_update_metadata = None
         await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
     else:
         run = None
@@ -1344,6 +1359,16 @@ async def send_message_streaming(
                     )
                     async for chunk in stream:
                         yield chunk
+
+                    if run:
+                        runs_manager = RunManager()
+                        from letta.schemas.enums import RunStatus
+
+                        await runs_manager.update_run_by_id_async(
+                            run_id=run.id,
+                            update=RunUpdate(status=RunStatus.completed, stop_reason=agent_loop.stop_reason.stop_reason.value),
+                            actor=actor,
+                        )
 
                 except LLMTimeoutError as e:
                     error_data = {
@@ -1395,7 +1420,7 @@ async def send_message_streaming(
                         stream_generator=raw_stream,
                         redis_client=redis_client,
                         run_id=run.id,
-                        job_manager=server.job_manager,
+                        run_manager=server.run_manager,
                         actor=actor,
                     ),
                     label=f"background_stream_processor_{run.id}",
@@ -1431,24 +1456,24 @@ async def send_message_streaming(
                 include_return_message_types=request.include_return_message_types,
             )
         if settings.track_agent_run:
-            job_status = JobStatus.running
+            run_status = RunStatus.running
         return result
     except PendingApprovalError as e:
         if settings.track_agent_run:
-            job_update_metadata = {"error": str(e)}
-            job_status = JobStatus.failed
+            run_update_metadata = {"error": str(e)}
+            run_status = RunStatus.failed
         raise HTTPException(
             status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
         )
     except Exception as e:
         if settings.track_agent_run:
-            job_update_metadata = {"error": str(e)}
-            job_status = JobStatus.failed
+            run_update_metadata = {"error": str(e)}
+            run_status = RunStatus.failed
         raise
     finally:
         if settings.track_agent_run:
-            await server.job_manager.safe_update_job_status_async(
-                job_id=run.id, new_status=job_status, actor=actor, metadata=job_update_metadata
+            await server.run_manager.update_run_by_id_async(
+                run_id=run.id, update=RunUpdate(status=run_status, metadata=run_update_metadata), actor=actor
             )
 
 
@@ -1477,21 +1502,25 @@ async def cancel_agent_run(
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
         if run_id is None:
             logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
-            job_ids = await server.job_manager.list_jobs_async(
+            run_ids = await server.run_manager.list_runs(
                 actor=actor,
-                statuses=[JobStatus.created, JobStatus.running],
-                job_type=JobType.RUN,
+                statuses=[RunStatus.created, RunStatus.running],
                 ascending=False,
+                agent_id=agent_id,  # NOTE: this will override agent_ids if provided
             )
-            run_ids = [Run.from_job(job).id for job in job_ids]
+            run_ids = [run.id for run in run_ids]
         else:
             run_ids = [run_id]
 
     results = {}
     for run_id in run_ids:
-        success = await server.job_manager.safe_update_job_status_async(
-            job_id=run_id,
-            new_status=JobStatus.cancelled,
+        run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
+        if run.metadata.get("lettuce"):
+            lettuce_client = await LettuceClient.create()
+            await lettuce_client.cancel(run_id)
+        success = await server.run_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.cancelled),
             actor=actor,
         )
         results[run_id] = "cancelled" if success else "failed"
@@ -1517,21 +1546,18 @@ async def search_messages(
     if agent_count == 0:
         raise HTTPException(status_code=400, detail="No agents found in organization to derive embedding configuration from")
 
-    try:
-        results = await server.message_manager.search_messages_org_async(
-            actor=actor,
-            query_text=request.query,
-            search_mode=request.search_mode,
-            roles=request.roles,
-            project_id=request.project_id,
-            template_id=request.template_id,
-            limit=request.limit,
-            start_date=request.start_date,
-            end_date=request.end_date,
-        )
-        return results
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    results = await server.message_manager.search_messages_org_async(
+        actor=actor,
+        query_text=request.query,
+        search_mode=request.search_mode,
+        roles=request.roles,
+        project_id=request.project_id,
+        template_id=request.template_id,
+        limit=request.limit,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
+    return results
 
 
 async def _process_message_background(
@@ -1546,7 +1572,7 @@ async def _process_message_background(
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
 ) -> None:
-    """Background task to process the message and update job status."""
+    """Background task to process the message and update run status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
     try:
         agent = await server.agent_manager.get_agent_by_id_async(
@@ -1583,7 +1609,7 @@ async def _process_message_background(
                 input_messages=messages,
                 stream_steps=False,
                 stream_tokens=False,
-                metadata={"job_id": run_id},
+                metadata={"run_id": run_id},
                 # Support for AssistantMessage
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
@@ -1591,34 +1617,40 @@ async def _process_message_background(
                 include_return_message_types=include_return_message_types,
             )
 
-        job_update = JobUpdate(
-            status=JobStatus.completed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"result": result.model_dump(mode="json")},
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.completed, stop_reason=result.stop_reason.stop_reason),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
     except PendingApprovalError as e:
-        # Update job status to failed with specific error info
-        job_update = JobUpdate(
-            status=JobStatus.failed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"error": str(e), "error_code": "PENDING_APPROVAL", "pending_request_id": e.pending_request_id},
+        # Update run status to failed with specific error info
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.failed),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
     except Exception as e:
-        # Update job status to failed
-        job_update = JobUpdate(
-            status=JobStatus.failed,
-            completed_at=datetime.now(timezone.utc),
-            metadata={"error": str(e)},
+        # Update run status to failed
+        runs_manager = RunManager()
+        from letta.schemas.enums import RunStatus
+
+        await runs_manager.update_run_by_id_async(
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.failed),
+            actor=actor,
         )
-        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
 
 @router.post(
     "/{agent_id}/messages/async",
-    response_model=Run,
+    response_model=PydanticRun,
     operation_id="create_agent_message_async",
 )
 async def send_message_async(
@@ -1631,29 +1663,44 @@ async def send_message_async(
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
 
-    This is "asynchronous" in the sense that it's a background job and explicitly must be fetched by the run ID.
-    This is more like `send_message_job`
+    This is "asynchronous" in the sense that it's a background run and explicitly must be fetched by the run ID.
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    # Create a new job
-    run = Run(
-        user_id=actor.id,
-        status=JobStatus.created,
+    # Create a new run
+    use_lettuce = headers.experimental_params.message_async
+    run = PydanticRun(
         callback_url=request.callback_url,
+        agent_id=agent_id,
+        background=True,  # Async endpoints are always background
         metadata={
-            "job_type": "send_message_async",
-            "agent_id": agent_id,
+            "run_type": "send_message_async",
+            "lettuce": use_lettuce,
         },
-        request_config=LettaRequestConfig(
-            use_assistant_message=request.use_assistant_message,
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-            include_return_message_types=request.include_return_message_types,
-        ),
+        request_config=LettaRequestConfig.from_letta_request(request),
     )
-    run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
+    run = await server.run_manager.create_run(
+        pydantic_run=run,
+        actor=actor,
+    )
+
+    if use_lettuce:
+        agent_state = await server.agent_manager.get_agent_by_id_async(
+            agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+        )
+        if agent_state.multi_agent_group is None and agent_state.agent_type != AgentType.letta_v1_agent:
+            lettuce_client = await LettuceClient.create()
+            run_id_from_lettuce = await lettuce_client.step(
+                agent_state=agent_state,
+                actor=actor,
+                input_messages=request.messages,
+                max_steps=request.max_steps,
+                run_id=run.id,
+                use_assistant_message=request.use_assistant_message,
+                include_return_message_types=request.include_return_message_types,
+            )
+            if run_id_from_lettuce:
+                return run
 
     # Create asyncio task for background processing (shielded to prevent cancellation)
     task = safe_create_shielded_task(
@@ -1681,17 +1728,21 @@ async def send_message_async(
             # Don't mark as failed since the shielded task is still running
         except Exception as e:
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
-            safe_create_task(
-                server.job_manager.update_job_by_id_async(
-                    job_id=run.id,
-                    job_update=JobUpdate(
-                        status=JobStatus.failed,
-                        completed_at=datetime.now(timezone.utc),
-                        metadata={"error": str(e)},
-                    ),
+            from letta.services.run_manager import RunManager
+
+            async def update_failed_run():
+                runs_manager = RunManager()
+                from letta.schemas.enums import RunStatus
+
+                await runs_manager.update_run_by_id_async(
+                    run_id=run.id,
+                    update=RunUpdate(status=RunStatus.failed),
                     actor=actor,
-                ),
-                label=f"update_failed_job_{run.id}",
+                )
+
+            safe_create_task(
+                update_failed_run(),
+                label=f"update_failed_run_{run.id}",
             )
 
     task.add_done_callback(handle_task_completion)
@@ -1719,11 +1770,30 @@ async def list_agent_groups(
     manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of groups to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
     """Lists the groups for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     logger.info("in list agents with manager_type", manager_type)
-    return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
+    return await server.agent_manager.list_groups_async(
+        agent_id=agent_id,
+        manager_type=manager_type,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
 
 
 @router.post(
@@ -1745,7 +1815,9 @@ async def preview_raw_payload(
     be sent to the LLM provider. Useful for debugging and inspection.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent = await server.agent_manager.get_agent_by_id_async(
+        agent_id, actor, include_relationships=["multi_agent_group", "memory", "sources"]
+    )
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",

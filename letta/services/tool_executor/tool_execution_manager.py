@@ -16,11 +16,10 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
-from letta.services.tool_executor.composio_tool_executor import ExternalComposioToolExecutor
 from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
 from letta.services.tool_executor.files_tool_executor import LettaFileToolExecutor
 from letta.services.tool_executor.mcp_tool_executor import ExternalMCPToolExecutor
@@ -40,7 +39,6 @@ class ToolExecutorFactory:
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
         ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
         ToolType.LETTA_FILES_CORE: LettaFileToolExecutor,
-        ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
 
@@ -51,7 +49,7 @@ class ToolExecutorFactory:
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
-        job_manager: JobManager,
+        run_manager: RunManager,
         passage_manager: PassageManager,
         actor: User,
     ) -> ToolExecutor:
@@ -61,7 +59,7 @@ class ToolExecutorFactory:
             message_manager=message_manager,
             agent_manager=agent_manager,
             block_manager=block_manager,
-            job_manager=job_manager,
+            run_manager=run_manager,
             passage_manager=passage_manager,
             actor=actor,
         )
@@ -75,7 +73,7 @@ class ToolExecutionManager:
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
-        job_manager: JobManager,
+        run_manager: RunManager,
         passage_manager: PassageManager,
         actor: User,
         agent_state: Optional[AgentState] = None,
@@ -85,7 +83,7 @@ class ToolExecutionManager:
         self.message_manager = message_manager
         self.agent_manager = agent_manager
         self.block_manager = block_manager
-        self.job_manager = job_manager
+        self.run_manager = run_manager
         self.passage_manager = passage_manager
         self.agent_state = agent_state
         self.logger = get_logger(__name__)
@@ -107,7 +105,7 @@ class ToolExecutionManager:
                 message_manager=self.message_manager,
                 agent_manager=self.agent_manager,
                 block_manager=self.block_manager,
-                job_manager=self.job_manager,
+                run_manager=self.run_manager,
                 passage_manager=self.passage_manager,
                 actor=self.actor,
             )

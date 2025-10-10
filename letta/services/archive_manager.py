@@ -21,32 +21,6 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
-    def create_archive(
-        self,
-        name: str,
-        description: Optional[str] = None,
-        actor: PydanticUser = None,
-    ) -> PydanticArchive:
-        """Create a new archive."""
-        try:
-            with db_registry.session() as session:
-                # determine vector db provider based on settings
-                vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
-
-                archive = ArchiveModel(
-                    name=name,
-                    description=description,
-                    organization_id=actor.organization_id,
-                    vector_db_provider=vector_db_provider,
-                )
-                archive.create(session, actor=actor)
-                return archive.to_pydantic()
-        except Exception as e:
-            logger.exception(f"Failed to create archive {name}. error={e}")
-            raise
-
-    @enforce_types
-    @trace_method
     async def create_archive_async(
         self,
         name: str,
@@ -159,36 +133,6 @@ class ArchiveManager:
                 **filter_kwargs,
             )
             return [a.to_pydantic() for a in archives]
-
-    @enforce_types
-    @trace_method
-    def attach_agent_to_archive(
-        self,
-        agent_id: str,
-        archive_id: str,
-        is_owner: bool,
-        actor: PydanticUser,
-    ) -> None:
-        """Attach an agent to an archive."""
-        with db_registry.session() as session:
-            # Check if already attached
-            existing = session.query(ArchivesAgents).filter_by(agent_id=agent_id, archive_id=archive_id).first()
-
-            if existing:
-                # Update ownership if needed
-                if existing.is_owner != is_owner:
-                    existing.is_owner = is_owner
-                    session.commit()
-                return
-
-            # Create new relationship
-            archives_agents = ArchivesAgents(
-                agent_id=agent_id,
-                archive_id=archive_id,
-                is_owner=is_owner,
-            )
-            session.add(archives_agents)
-            session.commit()
 
     @enforce_types
     @trace_method
@@ -344,50 +288,6 @@ class ArchiveManager:
             else:
                 # this shouldn't happen, but if it does, re-raise
                 raise
-
-    @enforce_types
-    @trace_method
-    def get_or_create_default_archive_for_agent(
-        self,
-        agent_id: str,
-        agent_name: Optional[str] = None,
-        actor: PydanticUser = None,
-    ) -> PydanticArchive:
-        """Get the agent's default archive, creating one if it doesn't exist."""
-        with db_registry.session() as session:
-            # First check if agent has any archives
-            query = select(ArchivesAgents.archive_id).where(ArchivesAgents.agent_id == agent_id)
-            result = session.execute(query)
-            archive_ids = [row[0] for row in result.fetchall()]
-
-            if archive_ids:
-                # TODO: Remove this check once we support multiple archives per agent
-                if len(archive_ids) > 1:
-                    raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported")
-                # Get the archive
-                archive = ArchiveModel.read(db_session=session, identifier=archive_ids[0], actor=actor)
-                return archive.to_pydantic()
-
-            # Create a default archive for this agent
-            archive_name = f"{agent_name or f'Agent {agent_id}'}'s Archive"
-
-            # Create the archive
-            archive_model = ArchiveModel(
-                name=archive_name,
-                description="Default archive created automatically",
-                organization_id=actor.organization_id,
-            )
-            archive_model.create(session, actor=actor)
-
-        # Attach the agent to the archive as owner
-        self.attach_agent_to_archive(
-            agent_id=agent_id,
-            archive_id=archive_model.id,
-            is_owner=True,
-            actor=actor,
-        )
-
-        return archive_model.to_pydantic()
 
     @enforce_types
     @trace_method
