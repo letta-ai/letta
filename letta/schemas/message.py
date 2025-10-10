@@ -328,7 +328,7 @@ class Message(BaseMessage):
                     ),
                 )
         elif self.role == MessageRole.tool:
-            messages.extend(self._convert_tool_return_message())
+            messages.append(self._convert_tool_return_message())
         elif self.role == MessageRole.user:
             messages.append(self._convert_user_message())
         elif self.role == MessageRole.system:
@@ -629,7 +629,7 @@ class Message(BaseMessage):
 
         return messages
 
-    def _convert_tool_return_message(self) -> List[ToolReturnMessage]:
+    def _convert_tool_return_message(self) -> ToolReturnMessage:
         """Convert tool role message to ToolReturnMessage.
 
         The tool return is packaged as follows:
@@ -640,7 +640,7 @@ class Message(BaseMessage):
             }
 
         Returns:
-            List[ToolReturnMessage]: Converted tool return messages
+            ToolReturnMessage: Converted tool return message
 
         Raises:
             ValueError: If message role is not 'tool', parsing fails, or no valid content exists
@@ -660,27 +660,49 @@ class Message(BaseMessage):
 
         return self._convert_legacy_tool_return()
 
-    def _convert_explicit_tool_returns(self) -> List[ToolReturnMessage]:
-        """Convert explicit tool returns to ToolReturnMessage list."""
-        tool_returns = []
+    def _convert_explicit_tool_returns(self) -> ToolReturnMessage:
+        """Convert explicit tool returns to a single ToolReturnMessage."""
+        from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
 
-        for index, tool_return in enumerate(self.tool_returns):
+        # build list of all tool return objects
+        all_tool_returns = []
+        for tool_return in self.tool_returns:
             parsed_data = self._parse_tool_response(tool_return.func_response)
 
-            tool_returns.append(
-                self._create_tool_return_message(
-                    message_text=parsed_data["message"],
-                    status=parsed_data["status"],
-                    tool_call_id=tool_return.tool_call_id,
-                    stdout=tool_return.stdout,
-                    stderr=tool_return.stderr,
-                    otid_index=index,
-                )
+            tool_return_obj = ToolReturnSchema(
+                tool_return=parsed_data["message"],
+                status=parsed_data["status"],
+                tool_call_id=tool_return.tool_call_id,
+                stdout=tool_return.stdout,
+                stderr=tool_return.stderr,
             )
+            all_tool_returns.append(tool_return_obj)
 
-        return tool_returns
+        if not all_tool_returns:
+            # this should not happen if tool_returns is non-empty, but handle gracefully
+            raise ValueError("No tool returns to convert")
 
-    def _convert_legacy_tool_return(self) -> List[ToolReturnMessage]:
+        first_tool_return = all_tool_returns[0]
+
+        return ToolReturnMessage(
+            id=self.id,
+            date=self.created_at,
+            # deprecated top-level fields populated from first tool return
+            tool_return=first_tool_return.tool_return,
+            status=first_tool_return.status,
+            tool_call_id=first_tool_return.tool_call_id,
+            stdout=first_tool_return.stdout,
+            stderr=first_tool_return.stderr,
+            tool_returns=all_tool_returns,
+            name=self.name,
+            otid=Message.generate_otid_from_id(self.id, 0),
+            sender_id=self.sender_id,
+            step_id=self.step_id,
+            is_err=self.is_err,
+            run_id=self.run_id,
+        )
+
+    def _convert_legacy_tool_return(self) -> ToolReturnMessage:
         """Convert legacy single text content to ToolReturnMessage."""
         if not self._has_single_text_content():
             raise ValueError(f"No valid tool returns to convert: {self}")
@@ -688,16 +710,14 @@ class Message(BaseMessage):
         text_content = self.content[0].text
         parsed_data = self._parse_tool_response(text_content)
 
-        return [
-            self._create_tool_return_message(
-                message_text=parsed_data["message"],
-                status=parsed_data["status"],
-                tool_call_id=self.tool_call_id,
-                stdout=None,
-                stderr=None,
-                otid_index=0,
-            )
-        ]
+        return self._create_tool_return_message(
+            message_text=parsed_data["message"],
+            status=parsed_data["status"],
+            tool_call_id=self.tool_call_id,
+            stdout=None,
+            stderr=None,
+            otid_index=0,
+        )
 
     def _has_single_text_content(self) -> bool:
         """Check if message has exactly one text content item."""
