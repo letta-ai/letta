@@ -12,8 +12,8 @@ By the end, you'll understand how to replace LangChain's `MemorySaver` with Lett
 
 To follow along, you'll need:
 
-- **Python 3.10 or higher**
-- **A [Letta Cloud](https://app.letta.com/login?redirect=/) account with an API key**
+- Python 3.10 or higher
+- A [Letta Cloud](https://app.letta.com/login?redirect=/) account with an API key
 
 ### Creating a Letta Cloud account
 
@@ -25,10 +25,10 @@ Once logged in:
 
 1. Click your profile icon in the top right corner
 2. Select **API Keys** from the menu
-3. Click **Create New API Key**
-4. Copy the key and save it somewhere safe (you won't be able to see it again)
+3. Click **+ Create API Key**
+4. Copy the key and save it somewhere safe
 
-<img className="w-300" src="/images/letta_cloud_api_key_gen.png" />
+<img src="/images/migrations/letta_api_key.png" />
 
 ## An example LangChain chatbot
 
@@ -54,8 +54,8 @@ We'll start with a simple LangChain chatbot that remembers conversation history 
         response = model.invoke(state["messages"])
         return {"messages": [response]}
 
-    workflow.add_edge(START, "model")
     workflow.add_node("model", call_model)
+    workflow.add_edge(START, "model")
 
     # Add memory with MemorySaver
     memory = MemorySaver()
@@ -138,8 +138,8 @@ def call_model(state: MessagesState):
     response = model.invoke(state["messages"])
     return {"messages": [response]}
 
-workflow.add_edge(START, "model")
 workflow.add_node("model", call_model)
+workflow.add_edge(START, "model")
 ```
 
 LangChain requires explicit workflow graph definition even for simple linear flows. You define state schemas, create nodes for each step, and manually wire them together with edges.
@@ -148,7 +148,7 @@ We'll eliminate all of these patterns by migrating to Letta's persistent memory 
 
 ## Migrating to Letta
 
-Now we'll convert the LangChain chatbot to Letta step by step. We'll create a new file for the Letta version so you can compare them side by side.
+Now we'll convert the LangChain chatbot to Letta step by step. We'll create a new file for the Letta chatbot so you can compare them side by side.
 
 ### Install Letta and initialize the client
 
@@ -158,7 +158,7 @@ First, install the Letta Python client:
 pip install letta-client
 ```
 
-Create a new file called `letta_chatbot.py` and start with the imports and client initialization.
+Create a new file called `letta_chatbot.py` with code from the LangChain chatbot. We'll replace the relevant sections as we go.
 
 ### Replace library imports with platform client
 
@@ -194,12 +194,8 @@ def call_model(state: MessagesState):
     response = model.invoke(state["messages"])
     return {"messages": [response]}
 
-workflow.add_edge(START, "model")
 workflow.add_node("model", call_model)
-
-# Add memory with MemorySaver
-memory = MemorySaver()
-app = workflow.compile(checkpointer=memory)
+workflow.add_edge(START, "model")
 ```
 
 With the Letta client initialization:
@@ -215,11 +211,14 @@ Notice how much simpler this is. Letta handles the model, workflow, and memory m
 
 LangChain's `MemorySaver` stores conversation history implicitly as an in-memory message list. It disappears when your program stops.
 
-Letta uses explicit memory blocks that define what the agent should remember. The `human` block stores what the agent learns about the person. The `persona` block defines how the agent sees itself. These persist automatically on Letta's servers.
+Letta uses explicit memory blocks that define what the agent should remember. A `human` block stores what the agent learns about the person. The `persona` block defines how the agent sees itself. These persist automatically on Letta's servers.
 
-Remove the thread config code:
+Remove the memory and thread config code:
 
 ```python
+memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)
+
 # Configuration with thread ID for this conversation
 config = {"configurable": {"thread_id": "user-123"}}
 ```
@@ -250,7 +249,7 @@ print(f"Created agent: {agent.id}")
 
 LangChain requires thread IDs passed with every request. You create thread IDs, store them in a database mapping users to threads, and pass a config dictionary with every call. Your load balancer needs session affinity rules to route users to the correct pod.
 
-Letta uses agent IDs. Each user maps to an agent, and any pod can serve any request because state lives on the platform. No config dict, no thread management, no session affinity.
+Letta uses agent IDs. Each user maps to an agent, and any pod can serve any request because state lives on the platform. No config dictionary, no thread management, no session affinity.
 
 Replace the LangChain message code:
 
@@ -405,11 +404,11 @@ The Agent Development Environment (ADE) lets you see what your agent is thinking
 
 Visit [app.letta.com](https://app.letta.com) and log in. Navigate to the **Agents** section in the dashboard where you'll see your agent listed:
 
-<img className="w-300" src="/images/migrations/agent-dashboard.png" />
+<img src="/images/migrations/agent-dashboard.png" />
 
 Click on your agent, then select **Open in ADE** to access the Agent Development Environment:
 
-<img className="w-300" src="/images/migrations/agent-dev-environment.png" />
+<img src="/images/migrations/agent-dev-environment.png" />
 
 In the ADE, you can view:
 
@@ -430,11 +429,11 @@ In LangChain, you'd need to build custom logging to see which tool was called wi
 
 ## What we eliminated in the migration
 
-The LangChain version required workflow graph definition, state schema setup, MemorySaver configuration, and thread config management. 
+The LangChain version required workflow graph definition, state schema setup, MemorySaver configuration, and thread config management.
 
 The Letta version accomplishes the same functionality with just agent creation and message sending.
 
-More importantly, we avoided infrastructure you'd need to build for a production LangChain app. Our simple example used in-memory `MemorySaver`, which loses all conversations when the program stops. A real application would need:
+More importantly, we avoided infrastructure you'd need to build for a production LangChain app. Our simple LangChain example used in-memory `MemorySaver`, which loses all conversations when the program stops. A real application would need:
 
 - Database setup for PostgreSQL checkpointer
 - Thread lifecycle management code to create and track thread IDs per user
