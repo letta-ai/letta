@@ -30050,6 +30050,28 @@
             ],
             "title": "Denial Reason",
             "description": "The reason the tool call request was denied."
+          },
+          "approvals": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ApprovalReturn"
+                    },
+                    {
+                      "$ref": "#/components/schemas/letta__schemas__message__ToolReturn"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvals",
+            "description": "The list of approvals for this message."
           }
         },
         "additionalProperties": false,
