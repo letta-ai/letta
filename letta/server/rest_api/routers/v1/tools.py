@@ -443,14 +443,11 @@ async def add_mcp_tool(
                 argument_name="mcp_tool_name",
             )
 
-        # Check tool health - reject only INVALID tools
-        if mcp_tool.health:
-            if mcp_tool.health.status == "INVALID":
-                raise LettaInvalidMCPSchemaError(
-                    server_name=mcp_server_name,
-                    mcp_tool_name=mcp_tool_name,
-                    reasons=mcp_tool.health.reasons,
-                )
+        # Log warning if tool has invalid schema but allow attachment
+        if mcp_tool.health and mcp_tool.health.status == "INVALID":
+            logger.warning(
+                f"Attaching MCP tool {mcp_tool_name} from server {mcp_server_name} with invalid schema. Reasons: {mcp_tool.health.reasons}"
+            )
 
         tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
         # For config-based servers, use the server name as ID since they don't have database IDs

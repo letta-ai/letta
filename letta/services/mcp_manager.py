@@ -73,7 +73,7 @@ class MCPManager:
             tools = await mcp_client.list_tools()
             # Add health information to each tool
             for tool in tools:
-                # Try to normalize the schema and re-validate\
+                # Try to normalize the schema and re-validate
                 if tool.inputSchema:
                     tool.inputSchema = normalize_mcp_schema(tool.inputSchema)
                     health_status, reasons = validate_complete_json_schema(tool.inputSchema)
@@ -174,10 +174,7 @@ class MCPManager:
 
                 # After normalization attempt, check if still INVALID
                 if mcp_tool.health and mcp_tool.health.status == "INVALID":
-                    raise ValueError(
-                        f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid even after normalization. "
-                        f"Reasons: {', '.join(mcp_tool.health.reasons)}"
-                    )
+                    logger.warning(f"Tool {mcp_tool_name} has potentially invalid schema. Reasons: {', '.join(mcp_tool.health.reasons)}")
 
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
                 return await self.tool_manager.create_mcp_tool_async(
