@@ -104,6 +104,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
             and len(self.content) == 1
             and isinstance(self.content[0], TextContent)
         ):
+            self.tool_call_id = self.tool_returns[0].tool_call_id
             self.tool_returns[0].func_response = self.content[0].text
 
         return model

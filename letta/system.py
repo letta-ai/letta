@@ -42,11 +42,17 @@ def get_initial_boot_messages(version, timezone, tool_call_id):
             },
             # obligatory function return message
             {
-                # "role": "function",
                 "role": "tool",
                 "name": "send_message",  # NOTE: technically not up to spec, this is old functions style
                 "content": package_function_response(True, None, timezone),
                 "tool_call_id": tool_call_id,
+                "tool_returns": [
+                    {
+                        "tool_call_id": tool_call_id,
+                        "status": "success",
+                        "func_response": package_function_response(True, None, timezone),
+                    }
+                ],
             },
         ]
 

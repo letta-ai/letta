@@ -38,7 +38,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.settings import DatabaseChoice, settings
@@ -536,6 +536,13 @@ def package_initial_message_sequence(
                     agent_id=agent_id,
                     model=model,
                     tool_call_id=tool_call_id,
+                    tool_returns=[
+                        ToolReturn(
+                            tool_call_id=tool_call_id,
+                            status="success",
+                            func_response=function_response,
+                        )
+                    ],
                 )
             )
         else:

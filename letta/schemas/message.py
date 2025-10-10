@@ -883,6 +883,12 @@ class Message(BaseMessage):
             [TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else []
         )
 
+        # This is really hacky and this interface is poorly designed, we should auto derive tool_returns instead of passing it in
+        if not tool_returns:
+            tool_returns = []
+            if "tool_returns" in openai_message_dict:
+                tool_returns = [ToolReturn(**tr) for tr in openai_message_dict["tool_returns"]]
+
         # TODO(caren) bad assumption here that "reasoning_content" always comes before "redacted_reasoning_content"
         if "reasoning_content" in openai_message_dict and openai_message_dict["reasoning_content"]:
             content.append(
@@ -1481,19 +1487,33 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             # NOTE: Anthropic uses role "user" for "tool" responses
-            assert self.tool_call_id is not None, vars(self)
-            anthropic_message = {
-                "role": "user",  # NOTE: diff
-                "content": [
-                    # TODO support error types etc
+            content = []
+            for tool_return in self.tool_returns:
+                content.append(
                     {
                         "type": "tool_result",
-                        "tool_use_id": self.tool_call_id,
-                        "content": text_content,
+                        "tool_use_id": tool_return.tool_call_id,
+                        "content": tool_return.func_response,
                     }
-                ],
-            }
-
+                )
+            if content:
+                anthropic_message = {
+                    "role": "user",
+                    "content": content,
+                }
+            else:
+                # This is for legacy reasons
+                anthropic_message = {
+                    "role": "user",  # NOTE: diff
+                    "content": [
+                        # TODO support error types etc
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": self.tool_call_id,
+                            "content": text_content,
+                        }
+                    ],
+                }
         else:
             raise ValueError(self.role)
 
