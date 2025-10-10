@@ -285,6 +285,12 @@ class ApprovalRequestMessage(LettaMessage):
     tool_call: Union[ToolCall, ToolCallDelta] = Field(..., description="The tool call that has been requested by the llm to run")
 
 
+class ApprovalReturn(BaseModel):
+    tool_call_id: str = Field(..., description="The ID of the tool call that corresponds to this approval")
+    approve: bool = Field(..., description="Whether the tool has been approved")
+    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+
+
 class ApprovalResponseMessage(LettaMessage):
     """
     A message representing a response form the user indicating whether a tool has been approved to run.
@@ -301,9 +307,10 @@ class ApprovalResponseMessage(LettaMessage):
     message_type: Literal[MessageType.approval_response_message] = Field(
         default=MessageType.approval_response_message, description="The type of the message."
     )
-    approve: bool = Field(..., description="Whether the tool has been approved")
-    approval_request_id: str = Field(..., description="The message ID of the approval request")
-    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+    approvals: Optional[List[ApprovalReturn]] = Field(default=None, description="The list of approval responses")
+    approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
+    approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
+    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
 
 
 class AssistantMessage(LettaMessage):

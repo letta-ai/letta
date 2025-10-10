@@ -22319,15 +22319,46 @@
             "description": "The message type to be created.",
             "default": "approval"
           },
+          "approvals": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ApprovalReturn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvals",
+            "description": "The list of approval responses"
+          },
           "approve": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Approve",
-            "description": "Whether the tool has been approved"
+            "description": "Whether the tool has been approved",
+            "deprecated": true
           },
           "approval_request_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Approval Request Id",
-            "description": "The message ID of the approval request"
+            "description": "The message ID of the approval request",
+            "deprecated": true
           },
           "reason": {
             "anyOf": [
@@ -22339,11 +22370,11 @@
               }
             ],
             "title": "Reason",
-            "description": "An optional explanation for the provided approval status"
+            "description": "An optional explanation for the provided approval status",
+            "deprecated": true
           }
         },
         "type": "object",
-        "required": ["approve", "approval_request_id"],
         "title": "ApprovalCreate",
         "description": "Input to approve or deny a tool call request"
       },
@@ -22555,15 +22586,77 @@
             ],
             "title": "Run Id"
           },
+          "approvals": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ApprovalReturn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvals",
+            "description": "The list of approval responses"
+          },
+          "approve": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approve",
+            "description": "Whether the tool has been approved",
+            "deprecated": true
+          },
+          "approval_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Request Id",
+            "description": "The message ID of the approval request",
+            "deprecated": true
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "An optional explanation for the provided approval status",
+            "deprecated": true
+          }
+        },
+        "type": "object",
+        "required": ["id", "date"],
+        "title": "ApprovalResponseMessage",
+        "description": "A message representing a response form the user indicating whether a tool has been approved to run.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    approve: (bool) Whether the tool has been approved\n    approval_request_id: The ID of the approval request\n    reason: (Optional[str]) An optional explanation for the provided approval status"
+      },
+      "ApprovalReturn": {
+        "properties": {
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id",
+            "description": "The ID of the tool call that corresponds to this approval"
+          },
           "approve": {
             "type": "boolean",
             "title": "Approve",
             "description": "Whether the tool has been approved"
-          },
-          "approval_request_id": {
-            "type": "string",
-            "title": "Approval Request Id",
-            "description": "The message ID of the approval request"
           },
           "reason": {
             "anyOf": [
@@ -22579,9 +22672,8 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "approve", "approval_request_id"],
-        "title": "ApprovalResponseMessage",
-        "description": "A message representing a response form the user indicating whether a tool has been approved to run.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    approve: (bool) Whether the tool has been approved\n    approval_request_id: The ID of the approval request\n    reason: (Optional[str]) An optional explanation for the provided approval status"
+        "required": ["tool_call_id", "approve"],
+        "title": "ApprovalReturn"
       },
       "ArchivalMemorySearchResponse": {
         "properties": {

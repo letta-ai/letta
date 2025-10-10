@@ -23,6 +23,7 @@ from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     ApprovalRequestMessage,
     ApprovalResponseMessage,
+    ApprovalReturn,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
@@ -116,9 +117,22 @@ class ApprovalCreate(MessageCreateBase):
     """Input to approve or deny a tool call request"""
 
     type: Literal[MessageCreateType.approval] = Field(default=MessageCreateType.approval, description="The message type to be created.")
-    approve: bool = Field(..., description="Whether the tool has been approved")
-    approval_request_id: str = Field(..., description="The message ID of the approval request")
-    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+    approvals: Optional[List[ApprovalReturn]] = Field(default=None, description="The list of approval responses")
+    approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
+    approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
+    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
+
+    @model_validator(mode="after")
+    def migrate_deprecated_fields(self):
+        if not self.approvals and self.approve is not None and self.approval_request_id is not None:
+            self.approvals = [
+                ApprovalReturn(
+                    tool_call_id=self.approval_request_id,
+                    approve=self.approve,
+                    reason=self.reason,
+                )
+            ]
+        return self
 
 
 MessageCreateUnion = Union[MessageCreate, ApprovalCreate]
@@ -334,6 +348,14 @@ class Message(BaseMessage):
                     approve=self.approve,
                     approval_request_id=self.approval_request_id,
                     reason=self.denial_reason,
+                    approvals=[
+                        # TODO: temporary workaround to populate from legacy fields
+                        ApprovalReturn(
+                            tool_call_id=self.approval_request_id,
+                            approve=self.approve,
+                            reason=self.denial_reason,
+                        )
+                    ],
                     run_id=self.run_id,
                 )
                 messages.append(approval_response_message)
