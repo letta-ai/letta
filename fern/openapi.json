@@ -30090,21 +30090,14 @@
             "anyOf": [
               {
                 "items": {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "$ref": "#/components/schemas/ApprovalReturn"
                     },
                     {
-                      "$ref": "#/components/schemas/letta__schemas__letta_message__ToolReturn"
+                      "$ref": "#/components/schemas/letta__schemas__message__ToolReturn"
                     }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "approval": "#/components/schemas/ApprovalReturn",
-                      "tool": "#/components/schemas/letta__schemas__letta_message__ToolReturn"
-                    }
-                  }
+                  ]
                 },
                 "type": "array"
               },
