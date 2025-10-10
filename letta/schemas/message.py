@@ -676,14 +676,12 @@ class Message(BaseMessage):
 
     def _convert_explicit_tool_returns(self) -> ToolReturnMessage:
         """Convert explicit tool returns to a single ToolReturnMessage."""
-        from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
-
         # build list of all tool return objects
         all_tool_returns = []
         for tool_return in self.tool_returns:
             parsed_data = self._parse_tool_response(tool_return.func_response)
 
-            tool_return_obj = ToolReturnSchema(
+            tool_return_obj = LettaToolReturn(
                 tool_return=parsed_data["message"],
                 status=parsed_data["status"],
                 tool_call_id=tool_return.tool_call_id,
@@ -780,9 +778,7 @@ class Message(BaseMessage):
         Returns:
             Configured ToolReturnMessage instance
         """
-        from letta.schemas.letta_message import ToolReturn as ToolReturnSchema
-
-        tool_return_obj = ToolReturnSchema(
+        tool_return_obj = LettaToolReturn(
             tool_return=message_text,
             status=status,
             tool_call_id=tool_call_id,
