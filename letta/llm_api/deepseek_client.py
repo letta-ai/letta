@@ -334,6 +334,15 @@ class DeepseekClient(OpenAIClient):
     def supports_structured_output(self, llm_config: LLMConfig) -> bool:
         return False
 
+    def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
+        """Override to prevent marking deepseek-reasoner as omitted reasoning.
+        
+        DeepSeek Reasoner (R1) actually includes reasoning_content in its responses,
+        unlike OpenAI o1/o3 which omit it. So we return False to prevent the
+        parent class from setting omitted_reasoning_content=True.
+        """
+        return False
+
     @trace_method
     def build_request_data(
         self,
@@ -414,6 +423,22 @@ class DeepseekClient(OpenAIClient):
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
         response = ChatCompletionResponse(**response_data)
+        
+        # For deepseek-reasoner model (R1), reasoning_content is natively populated
+        # Just use the parent class conversion - no special handling needed
+        if llm_config.model == "deepseek-reasoner":
+            result = super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
+            # Debug logging
+            if result.choices and result.choices[0].message:
+                msg = result.choices[0].message
+                print(f"[DeepSeek Reasoner] reasoning_content present: {msg.reasoning_content is not None}")
+                print(f"[DeepSeek Reasoner] omitted_reasoning_content: {msg.omitted_reasoning_content}")
+                if msg.reasoning_content:
+                    print(f"[DeepSeek Reasoner] reasoning_content preview: {msg.reasoning_content[:100]}...")
+            return result
+        
+        # For other DeepSeek models that don't natively support tool calls,
+        # we need to parse the JSON from content
         if response.choices[0].message.tool_calls:
             return super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
         return convert_deepseek_response_to_chatcompletion(response)
