@@ -189,22 +189,6 @@ def create_application() -> "FastAPI":
     print(f"\n[[ Letta server // v{letta_version} ]]")
 
     if SENTRY_ENABLED:
-
-        def before_send_filter(event, hint):
-            """Filter out 404 errors and other noise from Sentry"""
-            # Skip 404 errors to avoid noise from user navigation issues
-            if "exc_info" in hint and hint["exc_info"]:
-                exc_type, exc_value, exc_tb = hint["exc_info"]
-                # Check if this is a 404-related exception
-                if hasattr(exc_value, "status_code") and exc_value.status_code == 404:
-                    return None
-
-            # Skip events that look like 404s based on tags or context
-            if event.get("tags", {}).get("status_code") == 404:
-                return None
-
-            return event
-
         sentry_sdk.init(
             dsn=os.getenv("SENTRY_DSN"),
             environment=os.getenv("LETTA_ENVIRONMENT", "undefined"),
@@ -214,7 +198,6 @@ def create_application() -> "FastAPI":
                 "continuous_profiling_auto_start": True,
             },
         )
-        logger.info("Sentry enabled with 404 filtering.")
 
     debug_mode = "--debug" in sys.argv
     app = FastAPI(
@@ -247,9 +230,6 @@ def create_application() -> "FastAPI":
 
     async def error_handler_with_code(request: Request, exc: Exception, code: int, detail: str | None = None):
         logger.error(f"{type(exc).__name__}", exc_info=exc)
-        # Skip Sentry for 404 errors to avoid noise from user navigation issues
-        if SENTRY_ENABLED and code != 404:
-            sentry_sdk.capture_exception(exc)
 
         if not detail:
             detail = str(exc)
@@ -329,8 +309,6 @@ def create_application() -> "FastAPI":
     @app.exception_handler(BedrockPermissionError)
     async def bedrock_permission_error_handler(request, exc: BedrockPermissionError):
         logger.error("Bedrock permission denied.")
-        if SENTRY_ENABLED:
-            sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=403,
