@@ -61,7 +61,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 run_id=self.run_id,
                 step_id=step_id,
             )
-        elif self.llm_config.model_endpoint_type == ProviderType.openai:
+        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.deepseek]:
             # For non-v1 agents, always use Chat Completions streaming interface
             self.interface = OpenAIStreamingInterface(
                 use_assistant_message=use_assistant_message,

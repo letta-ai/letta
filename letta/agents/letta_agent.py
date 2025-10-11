@@ -1027,7 +1027,7 @@ class LettaAgent(BaseAgent):
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                             requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
                         )
-                    elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
+                    elif agent_state.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.deepseek]:
                         interface = OpenAIStreamingInterface(
                             use_assistant_message=use_assistant_message,
                             is_openai_proxy=agent_state.llm_config.provider_name == "lmstudio_openai",
