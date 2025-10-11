@@ -347,12 +347,13 @@ class Message(BaseMessage):
                 if self.approvals:
                     first_approval = [a for a in self.approvals if isinstance(a, ApprovalReturn)]
 
-                    def maybe_convert_tool_return_message(maybe_tool_return: ToolReturn):
-                        if isinstance(maybe_tool_return, LettaToolReturn):
+                    def maybe_convert_tool_return_message(maybe_tool_return):
+                        if isinstance(maybe_tool_return, ToolReturn):
+                            parsed_data = self._parse_tool_response(maybe_tool_return.func_response)
                             return LettaToolReturn(
                                 tool_call_id=maybe_tool_return.tool_call_id,
                                 status=maybe_tool_return.status,
-                                tool_return=maybe_tool_return.tool_return,
+                                tool_return=parsed_data["message"],
                                 stdout=maybe_tool_return.stdout,
                                 stderr=maybe_tool_return.stderr,
                             )
