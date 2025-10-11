@@ -43,6 +43,7 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
+    ReasoningContent,
     SummarizedReasoningContent,
     SummarizedReasoningContentPart,
     TextContent,
@@ -528,14 +529,30 @@ class SimpleOpenAIStreamingInterface:
         self.tool_call_id = ""
 
         self.content_messages = []
+        self.reasoning_messages = []  # Track reasoning messages for models like DeepSeek Reasoner
         self.emitted_hidden_reasoning = False  # Track if we've emitted hidden reasoning message
 
         self.requires_approval_tools = requires_approval_tools
 
-    def get_content(self) -> list[TextContent | OmittedReasoningContent]:
+    def get_content(self) -> list[TextContent | OmittedReasoningContent | ReasoningContent]:
         shown_omitted = False
         concat_content = ""
+        concat_reasoning = ""
         merged_messages = []
+        
+        # Process reasoning messages (for models like DeepSeek Reasoner)
+        for msg in self.reasoning_messages:
+            if isinstance(msg, ReasoningMessage):
+                concat_reasoning += msg.reasoning
+        
+        if concat_reasoning:
+            merged_messages.append(ReasoningContent(
+                reasoning=concat_reasoning,
+                is_native=True,
+                signature=None
+            ))
+        
+        # Process content messages
         for msg in self.content_messages:
             if isinstance(msg, HiddenReasoningMessage) and not shown_omitted:
                 merged_messages.append(OmittedReasoningContent())
@@ -545,7 +562,10 @@ class SimpleOpenAIStreamingInterface:
                     concat_content += "".join([c.text for c in msg.content])
                 else:
                     concat_content += msg.content
-        merged_messages.append(TextContent(text=concat_content))
+        
+        if concat_content:
+            merged_messages.append(TextContent(text=concat_content))
+        
         return merged_messages
 
     def get_tool_call_object(self) -> ToolCall:
@@ -662,6 +682,24 @@ class SimpleOpenAIStreamingInterface:
         if chunk.choices:
             choice = chunk.choices[0]
             message_delta = choice.delta
+
+            # Process reasoning_content (for models like DeepSeek Reasoner)
+            if hasattr(message_delta, 'reasoning_content') and message_delta.reasoning_content is not None and message_delta.reasoning_content != "":
+                if prev_message_type and prev_message_type != "reasoning_message":
+                    message_index += 1
+                reasoning_msg = ReasoningMessage(
+                    id=self.letta_message_id,
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    source="reasoner_model",
+                    reasoning=message_delta.reasoning_content,
+                    run_id=self.run_id,
+                    step_id=self.step_id,
+                )
+                self.reasoning_messages.append(reasoning_msg)
+                prev_message_type = reasoning_msg.message_type
+                message_index += 1
+                yield reasoning_msg
 
             if message_delta.content is not None and message_delta.content != "":
                 assistant_msg = AssistantMessage(
