@@ -359,8 +359,8 @@ class DeepseekClient(OpenAIClient):
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
 
         def add_functions_to_system_message(system_message: ChatMessage):
-            system_message.content += f"<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>"
-            system_message.content += 'Select best function to call simply respond with a single json block with the fields "name" and "arguments". Use double quotes around the arguments.'
+            system_message.content += f"\n\n<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>\n\n"
+            system_message.content += 'To call a function, respond with ONLY a JSON object in this exact format (no tags, no markdown, no additional text):\n{"name": "function_name", "arguments": {"param1": "value1"}}\n\nIMPORTANT: Your response must be ONLY the JSON object, nothing else. Do not wrap it in <ToolCall> tags or any other formatting.'
 
         openai_message_list = [
             cast_message_to_subtype(m) for m in PydanticMessage.to_openai_dicts_from_list(messages, put_inner_thoughts_in_kwargs=False)
@@ -372,6 +372,11 @@ class DeepseekClient(OpenAIClient):
             )  # Inject additional instructions to the system prompt with the available functions
 
             openai_message_list = map_messages_to_deepseek_format(openai_message_list)
+            
+            # Remove tools and tool_choice from the request since deepseek-reasoner doesn't support them
+            # If we leave them in, DeepSeek will fall back to deepseek-chat
+            data.pop("tools", None)
+            data.pop("tool_choice", None)
 
         data["messages"] = [m.dict() for m in openai_message_list]
 
@@ -406,6 +411,8 @@ class DeepseekClient(OpenAIClient):
         """
         api_key = model_settings.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
+        
+        # Log the first chunk we receive to see what DeepSeek actually returns
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
             **request_data, stream=True, stream_options={"include_usage": True}
         )
@@ -424,21 +431,44 @@ class DeepseekClient(OpenAIClient):
         """
         response = ChatCompletionResponse(**response_data)
         
-        # For deepseek-reasoner model (R1), reasoning_content is natively populated
-        # Just use the parent class conversion - no special handling needed
+        # For deepseek-reasoner, reasoning_content is natively populated by the API
+        # BUT we still need to parse function calls from JSON in content since it doesn't support native tool calling
         if llm_config.model == "deepseek-reasoner":
-            result = super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
-            # Debug logging
-            if result.choices and result.choices[0].message:
-                msg = result.choices[0].message
-                print(f"[DeepSeek Reasoner] reasoning_content present: {msg.reasoning_content is not None}")
-                print(f"[DeepSeek Reasoner] omitted_reasoning_content: {msg.omitted_reasoning_content}")
-                if msg.reasoning_content:
-                    print(f"[DeepSeek Reasoner] reasoning_content preview: {msg.reasoning_content[:100]}...")
-            return result
+            # Parse function calls from JSON in content (if present)
+            content = response.choices[0].message.content
+            if content and content.strip().startswith("{"):
+                try:
+                    # Try to parse as JSON function call
+                    content_dict = json.loads(content.strip())
+                    
+                    if "name" in content_dict and "arguments" in content_dict:
+                        # It's a function call
+                        if type(content_dict["arguments"]) == str:
+                            content_dict["arguments"] = json.loads(content_dict["arguments"])
+                        
+                        tool_calls = [
+                            ToolCall(
+                                id=get_tool_call_id(),
+                                type="function",
+                                function=Function(
+                                    name=content_dict["name"],
+                                    arguments=json.dumps(content_dict["arguments"]),
+                                ),
+                            )
+                        ]
+                        response.choices[0].message.tool_calls = tool_calls
+                        # Clear content since it was just the function call
+                        response.choices[0].message.content = ""
+                except (json.JSONDecodeError, KeyError):
+                    # Not a function call, keep as-is
+                    pass
+            
+            # Keep reasoning_content as-is (don't move or null it)
+            return response
         
-        # For other DeepSeek models that don't natively support tool calls,
-        # we need to parse the JSON from content
+        # For other DeepSeek models that already have native tool_calls, use parent conversion
         if response.choices[0].message.tool_calls:
             return super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
+        
+        # For deepseek-chat without native tool calls, parse JSON and move reasoning to content
         return convert_deepseek_response_to_chatcompletion(response)
