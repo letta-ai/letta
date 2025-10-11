@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from letta_client import Letta, MessageCreate
 
-from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
+from letta.interfaces.openai_streaming_interface import SimpleOpenAIStreamingInterface
 from letta.schemas.letta_message import ReasoningMessage, ToolCallMessage
 from tests.utils import wait_for_server
 
@@ -28,13 +28,7 @@ class TestJSONFunctionCallParser:
     @pytest.fixture
     def interface(self):
         """Create a streaming interface instance for testing."""
-        return OpenAIStreamingInterface(
-            is_openai_proxy=False,
-            messages=[],
-            tools=[],
-            requires_approval_tools=[],
-            model="deepseek-reasoner",
-        )
+        return SimpleOpenAIStreamingInterface()
 
     def test_parse_complete_single_function_call(self, interface):
         """Test parsing a complete single function call."""
@@ -148,7 +142,7 @@ class TestDeepSeekStreamingWithMocks:
     @pytest.mark.asyncio
     async def test_streaming_with_reasoning_content(self):
         """Test that reasoning content chunks are processed correctly."""
-        interface = OpenAIStreamingInterface(
+        interface = SimpleOpenAIStreamingInterface(
             is_openai_proxy=False,
             messages=[],
             tools=[],
@@ -182,7 +176,7 @@ class TestDeepSeekStreamingWithMocks:
     @pytest.mark.asyncio
     async def test_streaming_with_single_function_call(self):
         """Test that single function calls are parsed and converted to ToolCallMessage."""
-        interface = OpenAIStreamingInterface(
+        interface = SimpleOpenAIStreamingInterface(
             is_openai_proxy=False,
             messages=[],
             tools=[{"name": "memory_insert"}],
@@ -222,7 +216,7 @@ class TestDeepSeekStreamingWithMocks:
     @pytest.mark.asyncio
     async def test_streaming_with_parallel_function_calls(self):
         """Test that parallel function calls (array) are handled correctly."""
-        interface = OpenAIStreamingInterface(
+        interface = SimpleOpenAIStreamingInterface(
             is_openai_proxy=False,
             messages=[],
             tools=[{"name": "memory_insert"}, {"name": "conversation_search"}],
