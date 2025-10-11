@@ -34,7 +34,7 @@ def merge_tool_message(previous_message: ChatMessage, tool_message: ToolMessage)
     """
     Merge `ToolMessage` objects into the previous message.
     """
-    previous_message.content += (
+    previous_message.content = (previous_message.content or "") + (
         f"<ToolMessage> content: {tool_message.content}, role: {tool_message.role}, tool_call_id: {tool_message.tool_call_id}</ToolMessage>"
     )
     return previous_message
@@ -45,7 +45,7 @@ def handle_assistant_message(assistant_message: AssistantMessage) -> AssistantMe
     For `AssistantMessage` objects, remove the `tool_calls` field and add them to the `content` field.
     """
 
-    if "tool_calls" in assistant_message.dict().keys():
+    if "tool_calls" in assistant_message.dict().keys() and assistant_message.tool_calls is not None:
         assistant_message.content = "".join(
             [
                 # f"<ToolCall> name: {tool_call.function.name}, function: {tool_call.function}</ToolCall>"
@@ -54,10 +54,15 @@ def handle_assistant_message(assistant_message: AssistantMessage) -> AssistantMe
             ]
         )
         del assistant_message.tool_calls
+    
+    # Ensure content is never None
+    if assistant_message.content is None:
+        assistant_message.content = ""
+    
     return assistant_message
 
 
-def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Message]:
+def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[ChatMessage]:
     """
     Deepeek API has the following constraints: messages must be interleaved between user and assistant messages, ending on a user message.
     Tools are currently unstable for V3 and not supported for R1 in the API: https://api-docs.deepseek.com/guides/function_calling.
@@ -75,17 +80,17 @@ def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Messag
         if message.role == "user":
             if deepseek_messages[-1].role == "assistant" or deepseek_messages[-1].role == "system":
                 # User message, add it
-                deepseek_messages.append(UserMessage(content=message.content))
+                deepseek_messages.append(UserMessage(content=message.content or ""))
             else:
                 # add to the content of the previous message
-                deepseek_messages[-1].content += message.content
+                deepseek_messages[-1].content = (deepseek_messages[-1].content or "") + (message.content or "")
         elif message.role == "assistant":
             if deepseek_messages[-1].role == "user":
                 # Assistant message, remove tool calls and add them to the content
                 deepseek_messages.append(handle_assistant_message(message))
             else:
                 # add to the content of the previous message
-                deepseek_messages[-1].content += message.content
+                deepseek_messages[-1].content = (deepseek_messages[-1].content or "") + (message.content or "")
         elif message.role == "tool" and deepseek_messages[-1].role == "assistant":
             # Tool message, add it to the last assistant message
             merged_message = merge_tool_message(deepseek_messages[-1], message)
@@ -101,7 +106,7 @@ def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Messag
 
 def build_deepseek_chat_completions_request(
     llm_config: LLMConfig,
-    messages: List[_Message],
+    messages: List[PydanticMessage],
     user_id: Optional[str],
     functions: Optional[list],
     function_call: Optional[str],
