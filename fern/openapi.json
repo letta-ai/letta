@@ -14207,6 +14207,36 @@
                               "model": {
                                 "type": "string"
                               },
+                              "display_name": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
                               "model_endpoint_type": {
                                 "type": "string",
                                 "enum": [
@@ -28693,6 +28723,18 @@
             "type": "string",
             "title": "Model",
             "description": "LLM model name. "
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "A human-friendly display name for the model."
           },
           "model_endpoint_type": {
             "type": "string",

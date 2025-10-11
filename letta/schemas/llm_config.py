@@ -13,6 +13,8 @@ class LLMConfig(BaseModel):
     """Configuration for Language Model (LLM) connection and generation parameters."""
 
     model: str = Field(..., description="LLM model name. ")
+    display_name: Optional[str] = Field(None, description="A human-friendly display name for the model.")
+
     model_endpoint_type: Literal[
         "openai",
         "anthropic",
