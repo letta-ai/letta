@@ -308,6 +308,7 @@ class LettaAgentV3(LettaAgentV2):
             else:
                 # Check for job cancellation at the start of each step
                 if run_id and await self._check_run_cancellation(run_id):
+                    self.should_continue = False
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.cancelled.value)
                     self.logger.info(f"Agent execution cancelled for run {run_id}")
                     return

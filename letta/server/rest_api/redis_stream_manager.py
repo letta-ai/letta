@@ -213,6 +213,7 @@ async def create_background_stream_processor(
         run_manager: Optional run manager for updating run status
         actor: Optional actor for run status updates
     """
+    stop_reason = None
     if writer is None:
         writer = RedisSSEStreamWriter(redis_client)
         await writer.start()
@@ -231,6 +232,15 @@ async def create_background_stream_processor(
 
             if is_done:
                 break
+
+            try:
+                # sorry for this
+                maybe_json_chunk = chunk.split("data: ")[1]
+                maybe_stop_reason = json.loads(maybe_json_chunk) if maybe_json_chunk and maybe_json_chunk[0] == "{" else None
+                if maybe_stop_reason and maybe_stop_reason.get("message_type") == "stop_reason":
+                    stop_reason = maybe_stop_reason.get("stop_reason")
+            except:
+                pass
 
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
@@ -251,9 +261,14 @@ async def create_background_stream_processor(
         if should_stop_writer:
             await writer.stop()
         if run_manager and actor:
+            if stop_reason == "cancelled":
+                run_status = RunStatus.cancelled
+            else:
+                run_status = RunStatus.completed
+
             await run_manager.update_run_by_id_async(
                 run_id=run_id,
-                update=RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn.value),
+                update=RunUpdate(status=run_status, stop_reason=stop_reason or StopReasonType.end_turn.value),
                 actor=actor,
             )
 

@@ -1,4 +1,6 @@
+import asyncio
 import base64
+import itertools
 import json
 import os
 import threading
@@ -164,6 +166,7 @@ def assert_tool_call_response(
     llm_config: LLMConfig,
     streaming: bool = False,
     from_db: bool = False,
+    with_cancellation: bool = False,
 ) -> None:
     """
     Asserts that the messages list follows the expected sequence:
@@ -175,10 +178,11 @@ def assert_tool_call_response(
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
-    expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
-        llm_config, tool_call=True, streaming=streaming, from_db=from_db
-    )
-    assert expected_message_count_min <= len(messages) <= expected_message_count_max
+    if not with_cancellation:
+        expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
+            llm_config, tool_call=True, streaming=streaming, from_db=from_db
+        )
+        assert expected_message_count_min <= len(messages) <= expected_message_count_max
 
     # User message if loaded from db
     index = 0
@@ -217,28 +221,30 @@ def assert_tool_call_response(
     assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
     index += 1
 
-    # Reasoning message if reasoning enabled
-    otid_suffix = 0
-    try:
-        if is_reasoner_model(llm_config):
-            assert isinstance(messages[index], ReasoningMessage)
-            assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-            index += 1
-            otid_suffix += 1
-    except:
-        # Reasoning is non-deterministic, so don't throw if missing
-        pass
+    # Messages from second agent step if request has not been cancelled
+    if not with_cancellation:
+        # Reasoning message if reasoning enabled
+        otid_suffix = 0
+        try:
+            if is_reasoner_model(llm_config):
+                assert isinstance(messages[index], ReasoningMessage)
+                assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
+                index += 1
+                otid_suffix += 1
+        except:
+            # Reasoning is non-deterministic, so don't throw if missing
+            pass
 
-    # Assistant message
-    assert isinstance(messages[index], AssistantMessage)
-    assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-    index += 1
-    otid_suffix += 1
+        # Assistant message
+        assert isinstance(messages[index], AssistantMessage)
+        assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
+        index += 1
+        otid_suffix += 1
 
     # Stop reason and usage statistics if streaming
     if streaming:
         assert isinstance(messages[index], LettaStopReason)
-        assert messages[index].stop_reason == "end_turn"
+        assert messages[index].stop_reason == ("cancelled" if with_cancellation else "end_turn")
         index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
@@ -280,11 +286,19 @@ async def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = Fa
     return [m for m in messages if m is not None]
 
 
+async def cancel_run_after_delay(client: AsyncLetta, agent_id: str):
+    await asyncio.sleep(0.5)
+    await client.agents.messages.cancel(agent_id=agent_id)
+
+
 async def wait_for_run_completion(client: AsyncLetta, run_id: str, timeout: float = 30.0, interval: float = 0.5) -> Run:
     start = time.time()
     while True:
         run = await client.runs.retrieve(run_id)
         if run.status == "completed":
+            return run
+        if run.status == "cancelled":
+            time.sleep(5)
             return run
         if run.status == "failed":
             raise RuntimeError(f"Run {run_id} did not complete: status = {run.status}")
@@ -501,7 +515,20 @@ async def test_greeting(
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
-@pytest.mark.parametrize("send_type", ["step", "stream_steps", "stream_tokens", "stream_tokens_background", "async"])
+@pytest.mark.parametrize(
+    ["send_type", "cancellation"],
+    list(
+        itertools.product(
+            ["step", "stream_steps", "stream_tokens", "stream_tokens_background", "async"], ["with_cancellation", "no_cancellation"]
+        )
+    ),
+    ids=[
+        f"{s}-{c}"
+        for s, c in itertools.product(
+            ["step", "stream_steps", "stream_tokens", "stream_tokens_background", "async"], ["with_cancellation", "no_cancellation"]
+        )
+    ],
+)
 @pytest.mark.asyncio(loop_scope="function")
 async def test_tool_call(
     disable_e2b_api_key: Any,
@@ -509,9 +536,13 @@ async def test_tool_call(
     agent_state: AgentState,
     llm_config: LLMConfig,
     send_type: str,
+    cancellation: str,
 ) -> None:
     last_message = await client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    if cancellation == "with_cancellation":
+        _cancellation_task = asyncio.create_task(cancel_run_after_delay(client, agent_state.id))
 
     if send_type == "step":
         response = await client.agents.messages.create(
@@ -539,16 +570,22 @@ async def test_tool_call(
         messages = await accumulate_chunks(response)
         run_id = messages[0].run_id
 
-    assert_tool_call_response(messages, streaming=("stream" in send_type), llm_config=llm_config)
+    assert_tool_call_response(
+        messages, streaming=("stream" in send_type), llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
+    )
 
     if "background" in send_type:
         response = client.runs.stream(run_id=run_id, starting_after=0)
         messages = await accumulate_chunks(response)
-        assert_tool_call_response(messages, streaming=("stream" in send_type), llm_config=llm_config)
+        assert_tool_call_response(
+            messages, streaming=("stream" in send_type), llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
+        )
 
     messages_from_db = await client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_tool_call_response(
+        messages_from_db, from_db=True, llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
+    )
 
     assert run_id is not None
     run = await client.runs.retrieve(run_id=run_id)
-    assert run.status == JobStatus.completed
+    assert run.status == ("cancelled" if cancellation == "with_cancellation" else "completed")

@@ -1364,9 +1364,14 @@ async def send_message_streaming(
                         runs_manager = RunManager()
                         from letta.schemas.enums import RunStatus
 
+                        if agent_loop.stop_reason.stop_reason.value == "cancelled":
+                            run_status = RunStatus.cancelled
+                        else:
+                            run_status = RunStatus.completed
+
                         await runs_manager.update_run_by_id_async(
                             run_id=run.id,
-                            update=RunUpdate(status=RunStatus.completed, stop_reason=agent_loop.stop_reason.stop_reason.value),
+                            update=RunUpdate(status=run_status, stop_reason=agent_loop.stop_reason.stop_reason.value),
                             actor=actor,
                         )
 
@@ -1620,9 +1625,14 @@ async def _process_message_background(
         runs_manager = RunManager()
         from letta.schemas.enums import RunStatus
 
+        if result.stop_reason.stop_reason == "cancelled":
+            run_status = RunStatus.cancelled
+        else:
+            run_status = RunStatus.completed
+
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.completed, stop_reason=result.stop_reason.stop_reason),
+            update=RunUpdate(status=run_status, stop_reason=result.stop_reason.stop_reason),
             actor=actor,
         )
 
