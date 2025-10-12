@@ -125,8 +125,13 @@ class OpenAIStreamingInterface:
         self.content_buffer: list[str] = []
         self.tool_call_name: str | None = None
         self.tool_call_id: str | None = None
+        self.tool_call_args: str | None = None
         self.reasoning_messages = []
         self.emitted_hidden_reasoning = False  # Track if we've emitted hidden reasoning message
+        
+        # For JSON function call parsing (DeepSeek Reasoner and similar models)
+        self.json_content_buffer = ""  # Accumulate content chunks for JSON parsing
+        self.is_buffering_json = False  # Track if we're accumulating a potential JSON function call
 
         self.requires_approval_tools = requires_approval_tools
 
@@ -140,8 +145,62 @@ class OpenAIStreamingInterface:
         else:
             return [TextContent(text=content)]
 
+    def _try_parse_json_function_call(self, text: str) -> tuple[bool, dict | list | None]:
+        """
+        Try to parse text as a JSON function call (single or parallel).
+        Returns (is_complete, parsed_dict_or_list or None)
+        """
+        text = text.strip()
+        
+        # Must start with { or [
+        if not text.startswith("{") and not text.startswith("["):
+            return (False, None)
+        
+        # Check if JSON might be complete (matching braces/brackets)
+        if text.startswith("{"):
+            open_braces = text.count("{")
+            close_braces = text.count("}")
+            if open_braces != close_braces or close_braces == 0:
+                return (False, None)
+        elif text.startswith("["):
+            open_brackets = text.count("[")
+            close_brackets = text.count("]")
+            if open_brackets != close_brackets or close_brackets == 0:
+                return (False, None)
+        
+        # Try to parse
+        try:
+            parsed = json.loads(text)
+            
+            # Check if it's a single function call (object)
+            if isinstance(parsed, dict) and "name" in parsed and "arguments" in parsed:
+                return (True, parsed)
+            
+            # Check if it's parallel function calls (array of objects)
+            elif isinstance(parsed, list) and len(parsed) > 0:
+                # Verify all items are function calls
+                if all(isinstance(item, dict) and "name" in item and "arguments" in item for item in parsed):
+                    return (True, parsed)
+                else:
+                    # Valid JSON array but not all function calls
+                    return (True, None)
+            else:
+                # Valid JSON but not a function call
+                return (True, None)
+        except json.JSONDecodeError:
+            # Not valid JSON yet (or malformed)
+            return (False, None)
+
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
+        # First check if we have JSON-parsed tool calls (for DeepSeek Reasoner and similar models)
+        if self.tool_call_name and self.tool_call_args and self.tool_call_id:
+            return ToolCall(
+                id=self.tool_call_id,
+                function=FunctionCall(arguments=self.tool_call_args, name=self.tool_call_name),
+            )
+        
+        # Fall back to native OpenAI tool calls
         function_name = self.last_flushed_function_name if self.last_flushed_function_name else self.function_name_buffer
         if not function_name:
             raise ValueError("No tool call ID available")
@@ -486,6 +545,76 @@ class OpenAIStreamingInterface:
                                     yield tool_call_msg
                                     self.function_id_buffer = None
 
+            # Handle content deltas (for models like DeepSeek Reasoner that return JSON function calls as text)
+            if message_delta.content is not None and message_delta.content != "":
+                # Add to buffer
+                self.json_content_buffer += message_delta.content
+                
+                # Check if we're starting JSON buffering (single object or array)
+                stripped = self.json_content_buffer.strip()
+                if not self.is_buffering_json and (stripped.startswith("{") or stripped.startswith("[")):
+                    self.is_buffering_json = True
+                
+                # If buffering JSON, try to parse
+                if self.is_buffering_json:
+                    is_complete, parsed = self._try_parse_json_function_call(self.json_content_buffer)
+                    
+                    if is_complete:
+                        if parsed:
+                            # Handle both single function call (dict) and parallel calls (list)
+                            function_call_data = parsed[0] if isinstance(parsed, list) else parsed
+                            
+                            # Parse arguments if they're a string
+                            arguments = function_call_data["arguments"]
+                            if isinstance(arguments, str):
+                                try:
+                                    arguments = json.loads(arguments)
+                                except json.JSONDecodeError:
+                                    pass  # Keep as string if can't parse
+                            
+                            # Serialize arguments to JSON string
+                            arguments_str = json.dumps(arguments) if isinstance(arguments, dict) else arguments
+                            
+                            # Set the streaming interface state for agent loop
+                            self.tool_call_name = function_call_data["name"]
+                            self.tool_call_args = arguments_str
+                            self.tool_call_id = get_tool_call_id()
+                            
+                            # Create and yield ToolCallMessage for UI
+                            from letta.schemas.letta_message import ToolCall as LettaToolCall
+                            
+                            tool_call = LettaToolCall(
+                                name=self.tool_call_name,
+                                arguments=self.tool_call_args,
+                                tool_call_id=self.tool_call_id,
+                            )
+                            
+                            if prev_message_type and prev_message_type != "tool_call_message":
+                                message_index += 1
+                            
+                            tool_call_msg = ToolCallMessage(
+                                id=self.letta_message_id,
+                                date=datetime.now(timezone.utc),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                tool_call=tool_call,
+                                tool_calls=[tool_call],
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            
+                            # Reset buffer
+                            self.json_content_buffer = ""
+                            self.is_buffering_json = False
+                            
+                            prev_message_type = tool_call_msg.message_type
+                            yield tool_call_msg
+                        else:
+                            # Valid JSON but not a function call, treat as regular content
+                            # Reset buffer and don't yield (this is non-function JSON text)
+                            self.json_content_buffer = ""
+                            self.is_buffering_json = False
+                # else: keep buffering, don't yield yet
+
 
 class SimpleOpenAIStreamingInterface:
     """
@@ -805,6 +934,7 @@ class SimpleOpenAIStreamingInterface:
                                 date=datetime.now(timezone.utc),
                                 otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                 tool_call=tool_call,
+                                tool_calls=[tool_call],
                                 run_id=self.run_id,
                                 step_id=self.step_id,
                             )
