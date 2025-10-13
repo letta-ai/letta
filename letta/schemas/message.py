@@ -1490,6 +1490,8 @@ class Message(BaseMessage):
             # NOTE: Anthropic uses role "user" for "tool" responses
             content = []
             for tool_return in self.tool_returns:
+                if not tool_return.tool_call_id:
+                    raise TypeError("Anthropic API requires tool_use_id to be set.")
                 content.append(
                     {
                         "type": "tool_result",
@@ -1503,6 +1505,8 @@ class Message(BaseMessage):
                     "content": content,
                 }
             else:
+                if not self.tool_call_id:
+                    raise TypeError("Anthropic API requires tool_use_id to be set.")
                 # This is for legacy reasons
                 anthropic_message = {
                     "role": "user",  # NOTE: diff
