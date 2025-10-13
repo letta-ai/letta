@@ -649,6 +649,24 @@ class OpenAIClient(LLMClientBase):
         # We just need to instantiate the Pydantic model for validation and type safety.
         chat_completion_response = ChatCompletionResponse(**response_data)
         chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
+
+        # Parse reasoning_content from vLLM/OpenRouter/OpenAI proxies that return this field
+        # This handles cases where the proxy returns .reasoning_content in the response
+        if (
+            chat_completion_response.choices
+            and len(chat_completion_response.choices) > 0
+            and chat_completion_response.choices[0].message
+            and not chat_completion_response.choices[0].message.reasoning_content
+        ):
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                choice_data = response_data["choices"][0]
+                if "message" in choice_data and "reasoning_content" in choice_data["message"]:
+                    reasoning_content = choice_data["message"]["reasoning_content"]
+                    if reasoning_content:
+                        chat_completion_response.choices[0].message.reasoning_content = reasoning_content
+
+                        chat_completion_response.choices[0].message.reasoning_content_signature = None
+
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(

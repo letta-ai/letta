@@ -43,6 +43,7 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
+    ReasoningContent,
     SummarizedReasoningContent,
     SummarizedReasoningContentPart,
     TextContent,
@@ -532,20 +533,31 @@ class SimpleOpenAIStreamingInterface:
 
         self.requires_approval_tools = requires_approval_tools
 
-    def get_content(self) -> list[TextContent | OmittedReasoningContent]:
+    def get_content(self) -> list[TextContent | OmittedReasoningContent | ReasoningContent]:
         shown_omitted = False
         concat_content = ""
         merged_messages = []
+        reasoning_content = []
+
         for msg in self.content_messages:
             if isinstance(msg, HiddenReasoningMessage) and not shown_omitted:
                 merged_messages.append(OmittedReasoningContent())
                 shown_omitted = True
+            elif isinstance(msg, ReasoningMessage):
+                reasoning_content.append(msg.reasoning)
             elif isinstance(msg, AssistantMessage):
                 if isinstance(msg.content, list):
                     concat_content += "".join([c.text for c in msg.content])
                 else:
                     concat_content += msg.content
-        merged_messages.append(TextContent(text=concat_content))
+
+        if reasoning_content:
+            combined_reasoning = "".join(reasoning_content)
+            merged_messages.append(ReasoningContent(is_native=True, reasoning=combined_reasoning, signature=None))
+
+        if concat_content:
+            merged_messages.append(TextContent(text=concat_content))
+
         return merged_messages
 
     def get_tool_call_object(self) -> ToolCall:
@@ -674,8 +686,32 @@ class SimpleOpenAIStreamingInterface:
                 )
                 self.content_messages.append(assistant_msg)
                 prev_message_type = assistant_msg.message_type
-                message_index += 1  # Increment for the next message
+                message_index += 1
                 yield assistant_msg
+
+            if (
+                hasattr(chunk, "choices")
+                and len(chunk.choices) > 0
+                and hasattr(chunk.choices[0], "delta")
+                and hasattr(chunk.choices[0].delta, "reasoning_content")
+            ):
+                delta = chunk.choices[0].delta
+                reasoning_content = getattr(delta, "reasoning_content", None)
+                if reasoning_content is not None and reasoning_content != "":
+                    reasoning_msg = ReasoningMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        source="reasoner_model",
+                        reasoning=reasoning_content,
+                        signature=None,
+                        run_id=self.run_id,
+                        step_id=self.step_id,
+                    )
+                    self.content_messages.append(reasoning_msg)
+                    prev_message_type = reasoning_msg.message_type
+                    message_index += 1
+                    yield reasoning_msg
 
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 tool_call = message_delta.tool_calls[0]
