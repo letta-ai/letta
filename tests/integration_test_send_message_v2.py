@@ -293,8 +293,8 @@ async def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = Fa
     return [m for m in messages if m is not None]
 
 
-async def cancel_run_after_delay(client: AsyncLetta, agent_id: str):
-    await asyncio.sleep(0.5)
+async def cancel_run_after_delay(client: AsyncLetta, agent_id: str, delay: float = 0.5):
+    await asyncio.sleep(delay)
     await client.agents.messages.cancel(agent_id=agent_id)
 
 
@@ -625,7 +625,8 @@ async def test_tool_call(
     agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     if cancellation == "with_cancellation":
-        _cancellation_task = asyncio.create_task(cancel_run_after_delay(client, agent_state.id))
+        delay = 5 if llm_config.model == "gpt-5" else 0.5  # increase delay for responses api
+        _cancellation_task = asyncio.create_task(cancel_run_after_delay(client, agent_state.id, delay=delay))
 
     if send_type == "step":
         response = await client.agents.messages.create(
