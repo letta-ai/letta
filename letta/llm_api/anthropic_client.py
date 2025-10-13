@@ -575,7 +575,7 @@ class AnthropicClient(LLMClientBase):
         reasoning_content = None
         reasoning_content_signature = None
         redacted_reasoning_content = None
-        tool_calls = None
+        tool_calls: list[ToolCall] = []
 
         if len(response.content) > 0:
             for content_part in response.content:
@@ -594,7 +594,7 @@ class AnthropicClient(LLMClientBase):
                             arguments = str(tool_input["function"]["arguments"])
                     else:
                         arguments = json.dumps(tool_input, indent=2)
-                    tool_calls = [
+                    tool_calls.append(
                         ToolCall(
                             id=content_part.id,
                             type="function",
@@ -603,7 +603,7 @@ class AnthropicClient(LLMClientBase):
                                 arguments=arguments,
                             ),
                         )
-                    ]
+                    )
                 if content_part.type == "thinking":
                     reasoning_content = content_part.thinking
                     reasoning_content_signature = content_part.signature
@@ -623,7 +623,7 @@ class AnthropicClient(LLMClientBase):
                 reasoning_content=reasoning_content,
                 reasoning_content_signature=reasoning_content_signature,
                 redacted_reasoning_content=redacted_reasoning_content,
-                tool_calls=tool_calls,
+                tool_calls=tool_calls or None,
             ),
         )
 

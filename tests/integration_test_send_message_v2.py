@@ -522,9 +522,9 @@ async def test_greeting(
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
-@pytest.mark.parametrize("send_type", ["stream_tokens"])  # ["step", "stream_steps", "stream_tokens", "stream_tokens_background"])
+@pytest.mark.parametrize("send_type", ["step", "stream_tokens"])  # ["step", "stream_steps", "stream_tokens", "stream_tokens_background"])
 @pytest.mark.asyncio(loop_scope="function")
-async def test_parallel_tool_call_anthropic_streaming(
+async def test_parallel_tool_call_anthropic(
     disable_e2b_api_key: Any,
     client: AsyncLetta,
     agent_state: AgentState,
