@@ -12488,66 +12488,6 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/migrate": {
-      "post": {
-        "description": "Migrate an agent to a new versioned agent template. This will only work for \"classic\" and non-multiagent agent templates.",
-        "summary": "Migrate Agent",
-        "tags": ["agents"],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "agents.migrateAgent",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "to_template": {
-                    "type": "string"
-                  },
-                  "preserve_core_memories": {
-                    "type": "boolean"
-                  },
-                  "preserve_tool_variables": {
-                    "type": "boolean",
-                    "description": "If true, preserves the existing agent's tool environment variables instead of using the template's variables"
-                  }
-                },
-                "required": ["to_template", "preserve_core_memories"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [true]
-                    }
-                  },
-                  "required": ["success"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/agents/{agent_id}/core-memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
