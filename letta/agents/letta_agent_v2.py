@@ -470,7 +470,7 @@ class LettaAgentV2(BaseAgentV2):
             # Handle the AI response with the extracted data
             if tool_call is None and llm_adapter.tool_call is None:
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.no_tool_call.value)
-                raise ValueError("No tool calls found in response, model must make a tool call")
+                raise LLMError("No tool calls found in response, model must make a tool call")
 
             # TODO: how should be associate input messages with runs?
             ## Set run_id on input messages before persisting

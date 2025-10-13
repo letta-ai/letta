@@ -31,6 +31,7 @@ from letta_client.types import (
     UserMessage,
 )
 
+from letta.errors import LLMError
 from letta.helpers.reasoning_helper import is_reasoning_completely_disabled
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.log import get_logger
@@ -1018,7 +1019,7 @@ def test_agent_loop_error(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.step") as mock_step:
-        mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
+        mock_step.side_effect = LLMError("No tool calls found in response, model must make a tool call")
 
         with pytest.raises(ApiError):
             client.agents.messages.create(
