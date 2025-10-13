@@ -47,7 +47,9 @@ class CryptoUtils:
             master_key = settings.encryption_key
 
         if not master_key:
-            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
+            raise ValueError(
+                "No encryption key configured. Please set the LETTA_ENCRYPTION_KEY environment variable (not fully supported yet for Letta v0.12.1 and below)."
+            )
 
         # Generate random salt and IV
         salt = os.urandom(cls.SALT_SIZE)
@@ -91,7 +93,9 @@ class CryptoUtils:
             master_key = settings.encryption_key
 
         if not master_key:
-            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
+            raise ValueError(
+                "No encryption key configured. Please set the LETTA_ENCRYPTION_KEY environment variable (not fully supported yet for Letta v0.12.1 and below)."
+            )
 
         try:
             # Decode from base64
