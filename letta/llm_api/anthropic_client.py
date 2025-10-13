@@ -585,6 +585,8 @@ class AnthropicClient(LLMClientBase):
                     # hack for incorrect tool format
                     tool_input = json.loads(json.dumps(content_part.input))
                     if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
+                        if isinstance(tool_input["function"], str):
+                            tool_input["function"] = json.loads(tool_input["function"])
                         arguments = json.dumps(tool_input["function"]["arguments"], indent=2)
                         try:
                             args_json = json.loads(arguments)
