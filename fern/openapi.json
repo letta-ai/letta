@@ -12233,7 +12233,9 @@
       "post": {
         "tags": ["voice"],
         "summary": "Create Voice Chat Completions",
+        "description": "DEPRECATED: This voice-beta endpoint has been deprecated.\n\nThe voice functionality has been integrated into the main chat completions endpoint.\nPlease use the standard /v1/agents/{agent_id}/messages endpoint instead.\n\nThis endpoint will be removed in a future version.",
         "operationId": "create_voice_chat_completions",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -12265,6 +12267,16 @@
                 "schema": {}
               },
               "text/event-stream": {}
+            }
+          },
+          "410": {
+            "description": "Endpoint deprecated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "This endpoint has been deprecated"
+                }
+              }
             }
           },
           "422": {

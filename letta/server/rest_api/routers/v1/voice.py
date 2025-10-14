@@ -1,14 +1,9 @@
 from typing import TYPE_CHECKING, Any, Dict
 
-import openai
 from fastapi import APIRouter, Body, Depends
-from fastapi.responses import StreamingResponse
 
-from letta.agents.voice_agent import VoiceAgent
 from letta.log import get_logger
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
-from letta.server.rest_api.utils import get_user_message_from_chat_completions_request
-from letta.settings import model_settings
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -23,11 +18,16 @@ logger = get_logger(__name__)
     "/{agent_id}/chat/completions",
     response_model=None,
     operation_id="create_voice_chat_completions",
+    deprecated=True,
     responses={
         200: {
             "description": "Successful response",
             "content": {"text/event-stream": {}},
-        }
+        },
+        410: {
+            "description": "Endpoint deprecated",
+            "content": {"application/json": {"example": {"detail": "This endpoint has been deprecated"}}},
+        },
     },
 )
 async def create_voice_chat_completions(
@@ -36,28 +36,19 @@ async def create_voice_chat_completions(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    """
+    DEPRECATED: This voice-beta endpoint has been deprecated.
 
-    # Create OpenAI async client
-    client = openai.AsyncClient(
-        api_key=model_settings.openai_api_key,
-        max_retries=0,
-        http_client=server.httpx_client,
-    )
+    The voice functionality has been integrated into the main chat completions endpoint.
+    Please use the standard /v1/agents/{agent_id}/messages endpoint instead.
 
-    # Instantiate our LowLatencyAgent
-    agent = VoiceAgent(
-        agent_id=agent_id,
-        openai_client=client,
-        message_manager=server.message_manager,
-        agent_manager=server.agent_manager,
-        block_manager=server.block_manager,
-        run_manager=server.run_manager,
-        passage_manager=server.passage_manager,
-        actor=actor,
-    )
+    This endpoint will be removed in a future version.
+    """
+    from fastapi import HTTPException
 
-    # Return the streaming generator
-    return StreamingResponse(
-        agent.step_stream(input_messages=get_user_message_from_chat_completions_request(completion_request)), media_type="text/event-stream"
+    logger.warning(f"Deprecated voice-beta endpoint called for agent {agent_id}")
+
+    raise HTTPException(
+        status_code=410,
+        detail="The /voice-beta endpoint has been deprecated and is no longer available.",
     )
