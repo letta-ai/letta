@@ -1,13 +1,13 @@
-import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import JobStatus, RunStatus
+from letta.schemas.enums import RunStatus
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
@@ -59,7 +59,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             request_start_timestamp_ns=request_start_timestamp_ns,
         )
 
-        await self.run_sleeptime_agents(use_assistant_message=use_assistant_message)
+        await self.run_sleeptime_agents()
 
         response.usage.run_ids = self.run_ids
         return response
@@ -92,10 +92,10 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         ):
             yield chunk
 
-        await self.run_sleeptime_agents(use_assistant_message=use_assistant_message)
+        await self.run_sleeptime_agents()
 
     @trace_method
-    async def run_sleeptime_agents(self, use_assistant_message: bool = True):
+    async def run_sleeptime_agents(self):
         # Get response messages
         last_response_messages = self.response_messages
 
@@ -117,7 +117,6 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                         sleeptime_agent_id,
                         last_response_messages,
                         last_processed_message_id,
-                        use_assistant_message,
                     )
                     self.run_ids.append(sleeptime_run_id)
                 except Exception as e:
@@ -131,7 +130,6 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         sleeptime_agent_id: str,
         response_messages: list[Message],
         last_processed_message_id: str,
-        use_assistant_message: bool = True,
     ) -> str:
         run = Run(
             agent_id=sleeptime_agent_id,
@@ -150,7 +148,6 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                 response_messages=response_messages,
                 last_processed_message_id=last_processed_message_id,
                 run_id=run.id,
-                use_assistant_message=use_assistant_message,
             ),
             label=f"participant_agent_step_{sleeptime_agent_id}",
         )
@@ -164,7 +161,6 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         response_messages: list[Message],
         last_processed_message_id: str,
         run_id: str,
-        use_assistant_message: bool = True,
     ) -> LettaResponse:
         try:
             # Update run status
@@ -200,7 +196,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
 
             # Load sleeptime agent
             sleeptime_agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=sleeptime_agent_id, actor=self.actor)
-            sleeptime_agent = LettaAgentV2(
+            sleeptime_agent = LettaAgentV3(
                 agent_state=sleeptime_agent_state,
                 actor=self.actor,
             )
@@ -209,7 +205,6 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             result = await sleeptime_agent.step(
                 input_messages=sleeptime_agent_messages,
                 run_id=run_id,
-                use_assistant_message=use_assistant_message,
             )
 
             # Update run status
