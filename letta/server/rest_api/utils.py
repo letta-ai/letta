@@ -169,7 +169,9 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     return messages
 
 
-def create_approval_response_message_from_input(agent_state: AgentState, input_message: ApprovalCreate) -> List[Message]:
+def create_approval_response_message_from_input(
+    agent_state: AgentState, input_message: ApprovalCreate, run_id: Optional[str] = None
+) -> List[Message]:
     def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
         if isinstance(maybe_tool_return, LettaToolReturn):
             packaged_function_response = package_function_response(
@@ -193,6 +195,7 @@ def create_approval_response_message_from_input(agent_state: AgentState, input_m
             approve=input_message.approve,
             denial_reason=input_message.reason,
             approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
+            run_id=run_id,
         )
     ]
 
