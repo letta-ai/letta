@@ -172,13 +172,20 @@ class AgentManager:
 
     @staticmethod
     async def _resolve_tools_async(
-        session, names: Set[str], ids: Set[str], org_id: str
+        session, names: Set[str], ids: Set[str], org_id: str, ignore_invalid_tools: bool = False
     ) -> Tuple[Dict[str, str], Dict[str, str], List[str]]:
         """
         Bulk‑fetch all ToolModel rows matching either name ∈ names or id ∈ ids
         (and scoped to this organization), and return two maps:
           name_to_id, id_to_name.
-        Raises if any requested name or id was not found.
+        Raises if any requested name or id was not found (unless ignore_invalid_tools is True).
+
+        Args:
+            session: Database session
+            names: Set of tool names to resolve
+            ids: Set of tool IDs to resolve
+            org_id: Organization ID for scoping
+            ignore_invalid_tools: If True, silently filters out missing tools instead of raising an error
         """
         stmt = select(ToolModel.id, ToolModel.name, ToolModel.default_requires_approval).where(
             ToolModel.organization_id == org_id,
@@ -195,10 +202,21 @@ class AgentManager:
 
         missing_names = names - set(name_to_id.keys())
         missing_ids = ids - set(id_to_name.keys())
-        if missing_names:
-            raise ValueError(f"Tools not found by name: {missing_names}")
-        if missing_ids:
-            raise ValueError(f"Tools not found by id:   {missing_ids}")
+
+        if not ignore_invalid_tools:
+            # Original behavior: raise errors for missing tools
+            if missing_names:
+                raise ValueError(f"Tools not found by name: {missing_names}")
+            if missing_ids:
+                raise ValueError(f"Tools not found by id:   {missing_ids}")
+        else:
+            # New behavior: log missing tools but don't raise errors
+            if missing_names or missing_ids:
+                logger = get_logger(__name__)
+                if missing_names:
+                    logger.warning(f"Ignoring tools not found by name: {missing_names}")
+                if missing_ids:
+                    logger.warning(f"Ignoring tools not found by id: {missing_ids}")
 
         return name_to_id, id_to_name, requires_approval
 
@@ -312,6 +330,7 @@ class AgentManager:
         actor: PydanticUser,
         _test_only_force_id: Optional[str] = None,
         _init_with_no_messages: bool = False,
+        ignore_invalid_tools: bool = False,
     ) -> PydanticAgentState:
         # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
@@ -421,6 +440,7 @@ class AgentManager:
                     tool_names,
                     supplied_ids,
                     actor.organization_id,
+                    ignore_invalid_tools=ignore_invalid_tools,
                 )
 
                 tool_ids = set(name_to_id.values()) | set(id_to_name.keys())

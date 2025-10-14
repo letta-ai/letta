@@ -39,7 +39,8 @@ async def create_agent(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.agent_manager.create_agent_async(agent, actor=actor)
+        # Default to ignore_invalid_tools=True for template-based agent creation
+        return await server.agent_manager.create_agent_async(agent, actor=actor, ignore_invalid_tools=True)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
