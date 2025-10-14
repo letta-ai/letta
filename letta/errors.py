@@ -19,6 +19,7 @@ class ErrorCode(Enum):
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
     TIMEOUT = "TIMEOUT"
     CONFLICT = "CONFLICT"
+    EXPIRED = "EXPIRED"
 
 
 class LettaError(Exception):
@@ -139,6 +140,13 @@ class LettaMCPTimeoutError(LettaMCPError):
 
 class LettaUnexpectedStreamCancellationError(LettaError):
     """Error raised when a streaming request is terminated unexpectedly."""
+
+
+class LettaExpiredError(LettaError):
+    """Error raised when a resource has expired."""
+
+    def __init__(self, message: str):
+        super().__init__(message=message, code=ErrorCode.EXPIRED)
 
 
 class LLMError(LettaError):

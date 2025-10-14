@@ -26,6 +26,7 @@ from letta.errors import (
     AgentNotFoundForExportError,
     BedrockPermissionError,
     LettaAgentNotFoundError,
+    LettaExpiredError,
     LettaInvalidArgumentError,
     LettaInvalidMCPSchemaError,
     LettaMCPConnectionError,
@@ -242,6 +243,7 @@ def create_application() -> "FastAPI":
     _error_handler_404_user = partial(_error_handler_404, detail="User not found")
     _error_handler_408 = partial(error_handler_with_code, code=408)
     _error_handler_409 = partial(error_handler_with_code, code=409)
+    _error_handler_410 = partial(error_handler_with_code, code=410)
     _error_handler_422 = partial(error_handler_with_code, code=422)
     _error_handler_500 = partial(error_handler_with_code, code=500)
     _error_handler_503 = partial(error_handler_with_code, code=503)
@@ -258,6 +260,9 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
     app.add_exception_handler(AgentNotFoundForExportError, _error_handler_404)
+
+    # 410 Expired errors
+    app.add_exception_handler(LettaExpiredError, _error_handler_410)
 
     # 408 Timeout errors
     app.add_exception_handler(LettaMCPTimeoutError, _error_handler_408)

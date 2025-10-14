@@ -5,8 +5,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
 
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
+from letta.errors import LettaExpiredError, LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.orm.errors import NoResultFound
 from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import RetrieveStreamRequest
@@ -151,28 +151,25 @@ async def retrieve_run(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 
-    try:
-        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
+    run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
 
-        use_lettuce = run.metadata and run.metadata.get("lettuce")
-        if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
-            lettuce_client = await LettuceClient.create()
-            status = await lettuce_client.get_status(run_id=run_id)
+    use_lettuce = run.metadata and run.metadata.get("lettuce")
+    if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
+        lettuce_client = await LettuceClient.create()
+        status = await lettuce_client.get_status(run_id=run_id)
 
-            # Map the status to our enum
-            run_status = run.status
-            if status == "RUNNING":
-                run_status = RunStatus.running
-            elif status == "COMPLETED":
-                run_status = RunStatus.completed
-            elif status == "FAILED":
-                run_status = RunStatus.failed
-            elif status == "CANCELLED":
-                run_status = RunStatus.cancelled
-            run.status = run_status
-        return run
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Run not found")
+        # Map the status to our enum
+        run_status = run.status
+        if status == "RUNNING":
+            run_status = RunStatus.running
+        elif status == "COMPLETED":
+            run_status = RunStatus.completed
+        elif status == "FAILED":
+            run_status = RunStatus.failed
+        elif status == "CANCELLED":
+            run_status = RunStatus.cancelled
+        run.status = run_status
+    return run
 
 
 RunMessagesResponse = Annotated[
@@ -218,11 +215,7 @@ async def retrieve_run_usage(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 
-    try:
-        usage = await runs_manager.get_run_usage(run_id=run_id, actor=actor)
-        return usage
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+    return await runs_manager.get_run_usage(run_id=run_id, actor=actor)
 
 
 @router.get("/{run_id}/metrics", response_model=RunMetrics, operation_id="retrieve_metrics_for_run")
@@ -234,12 +227,9 @@ async def retrieve_metrics_for_run(
     """
     Get run metrics by run ID.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        runs_manager = RunManager()
-        return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Run metrics not found")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
+    return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
 
 
 @router.get(
@@ -330,16 +320,13 @@ async def retrieve_stream(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
 
-    try:
-        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
 
     if not run.background:
-        raise HTTPException(status_code=400, detail="Run was not created in background mode, so it cannot be retrieved.")
+        raise LettaInvalidArgumentError("Run was not created in background mode, so it cannot be retrieved.")
 
     if run.created_at < get_utc_time() - timedelta(hours=3):
-        raise HTTPException(status_code=410, detail="Run was created more than 3 hours ago, and is now expired.")
+        raise LettaExpiredError("Run was created more than 3 hours ago, and is now expired.")
 
     redis_client = await get_redis_client()
 
