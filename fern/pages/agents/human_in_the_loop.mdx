@@ -378,8 +378,10 @@ curl --request POST \
   --data '{
     "messages": [{
       "type": "approval",
-      "approve": true,
-      "approval_request_id": "message-abc123"
+      "approvals": [{
+        "approve": true,
+        "tool_call_id": "tool-xyz789"
+      }]
     }]
   }'
 
@@ -409,8 +411,10 @@ response = client.agents.messages.create(
     agent_id=agent.id,
     messages=[{
         "type": "approval",
-        "approve": True,
-        "approval_request_id": "message-abc123",
+        "approvals": [{
+            "approve": True,
+            "tool_call_id": "tool-xyz789"
+        }]
     }]
 )
 
@@ -441,8 +445,10 @@ const response = await client.agents.messages.create({
     requestBody: {
         messages: [{
             type: "approval",
-            approve: true,
-            approvalRequestId: "message-abc123"
+            approvals: [{
+                approve: true,
+                tool_call_id: "tool-xyz789"
+            }]
         }]
     }
 });
@@ -481,9 +487,11 @@ curl --request POST \
   --data '{
     "messages": [{
       "type": "approval",
-      "approve": false,
-      "approval_request_id": "message-abc123",
-      "reason": "Only delete records older than 30 days, not all test data"
+      "approvals": [{
+        "approve": false,
+        "tool_call_id": "tool-xyz789",
+        "reason": "Only delete records older than 30 days, not all test data"
+      }]
     }]
   }'
 
@@ -516,9 +524,11 @@ response = client.agents.messages.create(
     agent_id=agent.id,
     messages=[{
         "type": "approval",
-        "approve": False,
-        "approval_request_id": approval_request_id,
-        "reason": "Only delete records older than 30 days, not all test data"
+        "approvals": [{
+            "approve": False,
+            "tool_call_id": "tool-xyz789",
+            "reason": "Only delete records older than 30 days, not all test data"
+        }]
     }]
 )
 
@@ -552,9 +562,11 @@ const response = await client.agents.messages.create({
     requestBody: {
         messages: [{
             type: "approval",
-            approve: false,
-            approvalRequestId: approvalRequestId,
-            reason: "Only delete records older than 30 days, not all test data"
+            approvals: [{
+                approve: false,
+                tool_call_id: "tool-xyz789",
+                reason: "Only delete records older than 30 days, not all test data"
+            }]
         }]
     }
 });
@@ -613,7 +625,7 @@ curl --request GET   --url http://localhost:8283/v1/runs/$RUN_ID/stream   --head
 # Receive an approval_request_message, then approve in background
 approve = client.agents.messages.create_stream(
     agent_id=agent.id,
-    messages=[{"type": "approval", "approve": True, "approval_request_id": approval_request_id}],
+    messages=[{"type": "approval", "approvals": [{"approve": True, "tool_call_id": "tool-xyz789"}]}],
     stream_tokens=True,
     background=True,
 )
@@ -638,7 +650,7 @@ if run_id:
 const approve = await client.agents.messages.createStream({
   agentId: agent.id,
   requestBody: {
-    messages: [{ type: "approval", approve: true, approvalRequestId }],
+    messages: [{ type: "approval", approvals: [{ approve: true, tool_call_id: "tool-xyz789" }] }],
     streamTokens: true,
     background: true,
   }
@@ -673,6 +685,6 @@ if (runId) {
 See [background mode](/guides/agents/long-running) for resumption patterns.
 ### IDs and UI Triggers
 
-- **approval_request_id**: Always send approvals/denials using the `approval_request_message.id`.
-- **tool_call_id**: Informational only; not accepted for approval/denial.
-- **UI trigger**: Open the approval UI on `approval_request_message` only; do not drive UI from `stop_reason`.
+- **approval_request_id**: This field is now deprecated, but it is still used for backwards compatibility. Used `approval_request_message.id`.
+- **tool_call_id**: Always send approvals/denials using the `tool_call_id` from the `ApprovalRequestMessage`.
+- **UI trigger**: Open the approval UI on `approval_request_message` only; do not derive UI from `stop_reason`.
