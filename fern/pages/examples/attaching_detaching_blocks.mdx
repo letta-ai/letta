@@ -1,0 +1,513 @@
+---
+title: "Attaching and Detaching Memory Blocks"
+subtitle: Dynamically control agent memory with attachable blocks
+slug: examples/attaching-detaching-blocks
+---
+
+## Overview
+
+Memory blocks are structured sections of an agent's context window that persist across all interactions. They're always visible to the agent while they are attached. This makes them perfect for storing information that agents need constant access to, like organizational policies, user preferences, or working memory.
+
+One of the most powerful features of memory blocks is that they can be created independently and attached to or detached from agents at any time.
+
+This allows you to:
+
+- **Dynamically control** what information an agent has access to
+- **Share memory** across multiple agents by attaching the same block to different agents
+- **Temporarily grant access** to sensitive information, then revoke it when no longer needed
+- **Switch contexts** by swapping out blocks as an agent moves between different tasks
+
+By the end of this guide, you'll understand how to create standalone memory blocks, attach them to agents, detach them to remove access, and re-attach them when needed.
+
+<Note>
+For a comprehensive overview of memory blocks and their capabilities, see the [memory blocks guide](/guides/agents/memory-blocks).
+</Note>
+
+<Note>
+**This example uses Letta Cloud.** Generate an API key at [app.letta.com/api-keys](https://app.letta.com/api-keys) and set it as `LETTA_API_KEY` in your environment. Self-hosted servers only need an API key if authentication is enabled. You can learn more about self-hosting [here](/guides/selfhosting).
+</Note>
+
+## What You'll Learn
+
+- Creating standalone memory blocks
+- Attaching blocks to agents
+- Testing agent access to attached blocks
+- Detaching blocks to revoke access
+- Re-attaching blocks to restore access
+
+## Prerequisites
+
+You will need to install `letta-client` to interface with a Letta server:
+
+<CodeGroup>
+```bash TypeScript
+npm install @letta-ai/letta-client
+```
+```bash Python
+pip install letta-client
+```
+</CodeGroup>
+
+## Steps
+
+### Step 1: Initialize Client and Create Agent
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize the Letta client using LETTA_API_KEY environment variable
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// If self-hosting, specify the base URL:
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+
+// Create agent
+// API Reference: https://docs.letta.com/api-reference/agents/create
+const agent = await client.agents.create({
+    name: "hello_world_assistant",
+    model: "openai/gpt-4o-mini",
+    // embedding: "openai/text-embedding-3-small", // Only set this if self-hosting
+});
+
+console.log(`Created agent: ${agent.id}\n`);
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize the Letta client using LETTA_API_KEY environment variable
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# If self-hosting, specify the base URL:
+# client = Letta(base_url="http://localhost:8283")
+
+# Create agent
+# API Reference: https://docs.letta.com/api-reference/agents/create
+agent = client.agents.create(
+    name="hello_world_assistant",
+    model="openai/gpt-4o-mini",
+    # embedding="openai/text-embedding-3-small", # Only set this if self-hosting
+)
+
+print(f"Created agent: {agent.id}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Created agent: agent-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+### Step 2: Create a Standalone Memory Block
+
+Memory blocks can be created independently of any agent. This allows you to share the same block across multiple agents or attach/detach blocks as needed.
+
+In this example, we'll create a standalone memory block storing information about Letta. We'll include a code that you can use to get the agent to respond to indicate that it has access to information in the block.
+
+When the block is attached, writing "The code is TimberTheDog1234!" will cause the agent to respond with "Access granted". If the block is not attached, the agent will not have access to any content in the block and will likely be confused by the code.
+
+<CodeGroup>
+```typescript TypeScript
+// Create memory block storing information about Letta
+// API Reference: https://docs.letta.com/api-reference/blocks/create
+const block = await client.blocks.create({
+    label: "organization",
+    value: `Organization: Letta
+Website: https://www.letta.com
+Description: Letta is a platform for building and running stateful agents.
+Code: TimberTheDog1234!
+
+When users provide a code, you should check if it matches the code you have
+available. If it matches, you should respond with "Access granted".`
+});
+
+console.log(`Created block: ${block.id}\n`);
+```
+```python Python
+# Create memory block storing information about Letta
+# API Reference: https://docs.letta.com/api-reference/blocks/create
+block = client.blocks.create(
+    label="organization",
+    value="""Organization: Letta
+Website: https://www.letta.com
+Description: Letta is a platform for building and running stateful agents.
+Code: TimberTheDog1234!
+
+When users provide a code, you should check if it matches the code you have
+available. If it matches, you should respond with "Access granted".""",
+)
+
+print(f"Created block: {block.id}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Created block: block-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+### Step 3: Attach Block to Agent
+
+Now let's attach the block to our agent. Attached blocks are injected into the agent's context window and are available to the agent to use in its responses.
+
+<CodeGroup>
+```typescript TypeScript
+// Attach memory block to agent
+// API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
+await client.agents.blocks.attach(agent.id, { blockId: block.id });
+
+console.log(`Attached block ${block.id} to agent ${agent.id}\n`);
+```
+```python Python
+# Attach memory block to agent
+# API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
+agent = client.agents.blocks.attach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+
+print(f"Attached block {block.id} to agent {agent.id}\n")
+```
+</CodeGroup>
+
+### Step 4: Test Agent Access to Block
+
+The agent can now see what's in the block. Let's ask it about Letta to verify that it can see the general information in the block -- the description, website, and organization name.
+
+<CodeGroup>
+```typescript TypeScript
+// Send a message to test the agent's knowledge
+// API Reference: https://docs.letta.com/api-reference/agents/messages/create
+const response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "What is Letta?" }]
+});
+
+for (const msg of response.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Agent response: ${msg.content}\n`);
+    }
+}
+```
+```python Python
+# Send a message to test the agent's knowledge
+# API Reference: https://docs.letta.com/api-reference/agents/messages/create
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "What is Letta?"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Agent response: {msg.content}\n")
+```
+</CodeGroup>
+
+The agent will respond with general information about Letta:
+
+> **Agent response**: Letta is a platform designed for building and running stateful
+> agents. You can find more information about it on their website:
+> https://www.letta.com
+
+### Step 5: Detach Block from Agent
+
+Blocks can be detached from an agent, removing them from the agent's context window. Detached blocks are not deleted and can be re-attached to an agent later.
+
+<CodeGroup>
+```typescript TypeScript
+// Detach the block from the agent
+// API Reference: https://docs.letta.com/api-reference/agents/blocks/detach
+await client.agents.blocks.detach(agent.id, block.id);
+
+console.log(`Detached block ${block.id} from agent ${agent.id}\n`);
+```
+```python Python
+# Detach the block from the agent
+# API Reference: https://docs.letta.com/api-reference/agents/blocks/detach
+agent = client.agents.blocks.detach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+
+print(f"Detached block {block.id} from agent {agent.id}\n")
+```
+</CodeGroup>
+
+### Step 6: Verify Block is Detached
+
+Let's test the code that was in the block. The agent should no longer have access to it.
+
+<CodeGroup>
+```typescript TypeScript
+// Test that the agent no longer has access to the code
+const response2 = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+});
+
+for (const msg of response2.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Agent response: ${msg.content}\n`);
+    }
+}
+```
+```python Python
+# Test that the agent no longer has access to the code
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "The code is TimberTheDog1234!"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Agent response: {msg.content}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Agent response: It seems like you've provided a code or password. If this is
+sensitive information, please ensure you only share it with trusted parties and
+in secure environments. Let me know how I can assist you further!
+```
+</Accordion>
+
+<Note>
+The agent doesn't recognize the code because the block containing that information has been detached.
+</Note>
+
+### Step 7: Re-attach Block and Test Again
+
+Let's re-attach the block to restore the agent's access to the information.
+
+<CodeGroup>
+```typescript TypeScript
+// Re-attach the block to the agent
+await client.agents.blocks.attach(agent.id, { blockId: block.id });
+
+console.log(`Re-attached block ${block.id} to agent ${agent.id}\n`);
+
+// Test the code again
+const response3 = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+});
+
+for (const msg of response3.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Agent response: ${msg.content}\n`);
+    }
+}
+```
+```python Python
+# Re-attach the block to the agent
+agent = client.agents.blocks.attach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+
+print(f"Re-attached block {block.id} to agent {agent.id}\n")
+
+# Test the code again
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "The code is TimberTheDog1234!"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Agent response: {msg.content}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Agent response: Access granted. How can I assist you further?
+```
+</Accordion>
+
+<Note>
+The agent now recognizes the code because we've re-attached the block containing that information.
+</Note>
+
+## Complete Example
+
+Here's the full code in one place that you can run:
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize client
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// Create agent
+const agent = await client.agents.create({
+    name: "hello_world_assistant",
+    model: "openai/gpt-4o-mini",
+});
+
+console.log(`Created agent: ${agent.id}\n`);
+
+// Create standalone memory block
+const block = await client.blocks.create({
+    label: "organization",
+    value: `Organization: Letta
+Website: https://www.letta.com
+Description: Letta is a platform for building and running stateful agents.
+Code: TimberTheDog1234!
+
+When users provide a code, you should check if it matches the code you have
+available. If it matches, you should respond with "Access granted".`
+});
+
+console.log(`Created block: ${block.id}\n`);
+
+// Attach block to agent
+await client.agents.blocks.attach(agent.id, { blockId: block.id });
+console.log(`Attached block to agent\n`);
+
+// Test agent with block attached
+let response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "What is Letta?" }]
+});
+console.log(`Agent response: ${response.messages[0].content}\n`);
+
+// Detach block
+await client.agents.blocks.detach(agent.id, block.id);
+console.log(`Detached block from agent\n`);
+
+// Test agent without block
+response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+});
+console.log(`Agent response: ${response.messages[0].content}\n`);
+
+// Re-attach block
+await client.agents.blocks.attach(agent.id, { blockId: block.id });
+console.log(`Re-attached block to agent\n`);
+
+// Test agent with block re-attached
+response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+});
+console.log(`Agent response: ${response.messages[0].content}\n`);
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize client
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# Create agent
+agent = client.agents.create(
+    name="hello_world_assistant",
+    model="openai/gpt-4o-mini",
+)
+
+print(f"Created agent: {agent.id}\n")
+
+# Create standalone memory block
+block = client.blocks.create(
+    label="organization",
+    value="""Organization: Letta
+Website: https://www.letta.com
+Description: Letta is a platform for building and running stateful agents.
+Code: TimberTheDog1234!
+
+When users provide a code, you should check if it matches the code you have
+available. If it matches, you should respond with "Access granted".""",
+)
+
+print(f"Created block: {block.id}\n")
+
+# Attach block to agent
+agent = client.agents.blocks.attach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+print(f"Attached block to agent\n")
+
+# Test agent with block attached
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "What is Letta?"}],
+)
+print(f"Agent response: {response.messages[0].content}\n")
+
+# Detach block
+agent = client.agents.blocks.detach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+print(f"Detached block from agent\n")
+
+# Test agent without block
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "The code is TimberTheDog1234!"}],
+)
+print(f"Agent response: {response.messages[0].content}\n")
+
+# Re-attach block
+agent = client.agents.blocks.attach(
+    agent_id=agent.id,
+    block_id=block.id,
+)
+print(f"Re-attached block to agent\n")
+
+# Test agent with block re-attached
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "The code is TimberTheDog1234!"}],
+)
+print(f"Agent response: {response.messages[0].content}\n")
+```
+</CodeGroup>
+
+## Key Concepts
+
+<CardGroup cols={2}>
+<Card title="Standalone Blocks" icon="cube">
+Memory blocks can be created independently and shared across multiple agents
+</Card>
+
+<Card title="Dynamic Access Control" icon="key">
+Attach and detach blocks to control what information an agent can access
+</Card>
+
+<Card title="Block Persistence" icon="database">
+Detached blocks are not deleted and can be re-attached at any time
+</Card>
+
+<Card title="Shared Memory" icon="share-nodes">
+The same block can be attached to multiple agents, enabling shared knowledge
+</Card>
+</CardGroup>
+
+## Use Cases
+
+<AccordionGroup>
+<Accordion title="Temporary Access to Sensitive Information">
+Attach a block with credentials or sensitive data only when needed, then detach it to prevent unauthorized access.
+</Accordion>
+
+<Accordion title="Shared Knowledge Across Agents">
+Create a single block with organizational knowledge and attach it to multiple agents to ensure consistency.
+</Accordion>
+
+<Accordion title="Context Switching">
+Detach blocks related to one task and attach blocks for another, allowing an agent to switch contexts efficiently.
+</Accordion>
+
+<Accordion title="Role-Based Access">
+Give different agents access to different blocks based on their roles or permissions.
+</Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Card title="Memory Blocks Guide" icon="database" href="/guides/agents/memory-blocks">
+Learn more about memory blocks, including how to update them and manage their lifecycle
+</Card>

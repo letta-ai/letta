@@ -25,9 +25,9 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.tool_manager import ToolManager
@@ -378,7 +378,7 @@ async def test_summarization(disable_e2b_api_key, voice_agent, server_url):
         agent_manager=agent_manager,
         actor=actor,
         block_manager=BlockManager(),
-        job_manager=JobManager(),
+        run_manager=RunManager(),
         passage_manager=PassageManager(),
         target_block_label="human",
     )
@@ -457,7 +457,7 @@ async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
         agent_manager=agent_manager,
         actor=actor,
         block_manager=BlockManager(),
-        job_manager=JobManager(),
+        run_manager=RunManager(),
         passage_manager=PassageManager(),
         target_block_label="human",
     )

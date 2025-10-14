@@ -14,9 +14,9 @@ from letta.schemas.tool_rule import ChildToolRule, ContinueToolRule, InitToolRul
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.types import JsonDict
@@ -34,7 +34,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
-        job_manager: JobManager,
+        run_manager: RunManager,
         passage_manager: PassageManager,
         target_block_label: str,
         actor: User,
@@ -44,7 +44,7 @@ class VoiceSleeptimeAgent(LettaAgent):
             message_manager=message_manager,
             agent_manager=agent_manager,
             block_manager=block_manager,
-            job_manager=job_manager,
+            job_manager=run_manager,
             passage_manager=passage_manager,
             actor=actor,
         )
