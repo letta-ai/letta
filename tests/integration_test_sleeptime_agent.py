@@ -11,7 +11,7 @@ from letta_client.core.api_error import ApiError
 from letta.constants import DEFAULT_HUMAN
 from letta.orm.errors import NoResultFound
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import JobStatus, JobType, ToolRuleType
+from letta.schemas.enums import AgentType, JobStatus, JobType, ToolRuleType
 from letta.schemas.group import ManagerType, SleeptimeManagerUpdate
 from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run
@@ -83,9 +83,10 @@ async def test_sleeptime_group_chat(client):
                 value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
             ),
         ],
-        model="anthropic/claude-3-5-sonnet-20240620",
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
+        agent_type=AgentType.letta_v1_agent,
     )
 
     assert main_agent.enable_sleeptime == True
@@ -185,9 +186,10 @@ async def test_sleeptime_removes_redundant_information(client):
                 value="My favorite plant is the fiddle leaf\nMy favorite dog is the husky\nMy favorite plant is the fiddle leaf\nMy favorite plant is the fiddle leaf",
             ),
         ],
-        model="anthropic/claude-3-5-sonnet-20240620",
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
+        agent_type=AgentType.letta_v1_agent,
     )
 
     group = client.groups.modify(
@@ -232,7 +234,7 @@ async def test_sleeptime_removes_redundant_information(client):
 async def test_sleeptime_edit(client):
     sleeptime_agent = client.agents.create(
         name="sleeptime_agent",
-        agent_type="sleeptime_agent",
+        agent_type=AgentType.sleeptime_agent,
         memory_blocks=[
             CreateBlock(
                 label="human",
@@ -255,7 +257,7 @@ async def test_sleeptime_edit(client):
                 limit=2000,
             ),
         ],
-        model="anthropic/claude-3-5-sonnet-20240620",
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
     )
@@ -293,9 +295,10 @@ async def test_sleeptime_agent_new_block_attachment(client):
                 value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
             ),
         ],
-        model="anthropic/claude-3-5-sonnet-20240620",
+        model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
+        agent_type=AgentType.letta_v1_agent,
     )
 
     assert main_agent.enable_sleeptime == True
