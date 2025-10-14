@@ -677,7 +677,7 @@ js:
 
 analytics:
   posthog:
-    api-key: ${POSTHOG_API_KEY}
+    api-key: ${POSTHOG_KEY}
     endpoint: https://us.i.posthog.com
 
 favicon: assets/favicon.png
