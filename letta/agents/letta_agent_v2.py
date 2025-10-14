@@ -535,7 +535,7 @@ class LettaAgentV2(BaseAgentV2):
                 )
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
-            self.logger.error(f"Error during step processing: {e}")
+            self.logger.exception(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
 
             # This indicates we failed after we decided to stop stepping, which indicates a bug with our flow.
