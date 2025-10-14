@@ -348,6 +348,21 @@ class AssistantMessage(LettaMessage):
     )
 
 
+class LettaPing(LettaMessage):
+    """
+    A ping message used as a keepalive to prevent SSE streams from timing out during long running requests.
+
+    Args:
+        id (str): The ID of the message
+        date (datetime): The date the message was created in ISO format
+    """
+
+    message_type: Literal["ping"] = Field(
+        "ping",
+        description="The type of the message. Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
+    )
+
+
 # NOTE: use Pydantic's discriminated unions feature: https://docs.pydantic.dev/latest/concepts/unions/#discriminated-unions
 LettaMessageUnion = Annotated[
     Union[
@@ -392,6 +407,24 @@ def create_letta_message_union_schema():
                 "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
             },
         },
+    }
+
+
+def create_letta_ping_schema():
+    return {
+        "properties": {
+            "message_type": {
+                "type": "string",
+                "const": "ping",
+                "title": "Message Type",
+                "description": "The type of the message.",
+                "default": "ping",
+            }
+        },
+        "type": "object",
+        "required": ["message_type"],
+        "title": "LettaPing",
+        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
     }
 
 

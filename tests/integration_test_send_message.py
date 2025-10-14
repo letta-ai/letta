@@ -36,7 +36,7 @@ from letta.helpers.reasoning_helper import is_reasoning_completely_disabled
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.letta_ping import LettaPing
+from letta.schemas.letta_message import LettaPing
 from letta.schemas.llm_config import LLMConfig
 
 logger = get_logger(__name__)

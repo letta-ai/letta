@@ -143,7 +143,7 @@ class StreamingService:
 
                 # conditionally wrap with keepalive based on request parameter
                 if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
+                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
                 else:
                     stream = raw_stream
 

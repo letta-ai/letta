@@ -42,13 +42,12 @@ from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pineco
 from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
-from letta.schemas.letta_message import create_letta_message_union_schema
+from letta.schemas.letta_message import create_letta_message_union_schema, create_letta_ping_schema
 from letta.schemas.letta_message_content import (
     create_letta_assistant_message_content_union_schema,
     create_letta_message_content_union_schema,
     create_letta_user_message_content_union_schema,
 )
-from letta.schemas.letta_ping import create_letta_ping_schema
 from letta.server.constants import REST_DEFAULT_PORT
 from letta.server.db import db_registry
 

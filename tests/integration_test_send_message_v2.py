@@ -36,7 +36,7 @@ from letta_client.types import (
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import AgentType, JobStatus
-from letta.schemas.letta_ping import LettaPing
+from letta.schemas.letta_message import LettaPing
 from letta.schemas.llm_config import LLMConfig
 
 logger = get_logger(__name__)

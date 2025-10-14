@@ -5,6 +5,8 @@
 import asyncio
 import json
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
+from uuid import uuid4
 
 import anyio
 from fastapi import HTTPException
@@ -14,7 +16,7 @@ from starlette.types import Send
 from letta.errors import LettaUnexpectedStreamCancellationError, PendingApprovalError
 from letta.log import get_logger
 from letta.schemas.enums import RunStatus
-from letta.schemas.letta_ping import LettaPing
+from letta.schemas.letta_message import LettaPing
 from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.run_manager import RunManager
@@ -34,6 +36,7 @@ class RunCancelledException(Exception):
 
 async def add_keepalive_to_stream(
     stream_generator: AsyncIterator[str | bytes],
+    run_id: str,
     keepalive_interval: float = 30.0,
 ) -> AsyncIterator[str | bytes]:
     """
@@ -83,7 +86,7 @@ async def add_keepalive_to_stream(
                 # No data received within keepalive interval
                 if not stream_exhausted:
                     # Send keepalive ping in the same format as [DONE]
-                    yield f"data: {LettaPing().model_dump_json()}\n\n"
+                    yield f"data: {LettaPing(id=f'ping-{uuid4()}', date=datetime.now(timezone.utc), run_id=run_id).model_dump_json()}\n\n"
                 else:
                     # Stream is done but queue might be processing
                     # Check if there's anything left
