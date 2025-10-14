@@ -58,7 +58,7 @@ class UserManager:
     @enforce_types
     @trace_method
     async def update_actor_async(self, user_update: UserUpdate) -> PydanticUser:
-        """Update user details (async version)."""
+        """Update user details (async version). Raises NoResultFound if not found."""
         async with db_registry.async_session() as session:
             # Retrieve the existing user by ID
             existing_user = await UserModel.read_async(db_session=session, identifier=user_update.id)
@@ -76,7 +76,7 @@ class UserManager:
     @enforce_types
     @trace_method
     async def delete_actor_by_id_async(self, user_id: str):
-        """Delete a user and their associated records (agents, sources, mappings) asynchronously."""
+        """Delete a user and their associated records (agents, sources, mappings) asynchronously. Raises NoResultFound if not found."""
         async with db_registry.async_session() as session:
             # Delete from user table
             user = await UserModel.read_async(db_session=session, identifier=user_id)

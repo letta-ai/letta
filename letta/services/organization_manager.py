@@ -20,8 +20,8 @@ class OrganizationManager:
 
     @enforce_types
     @trace_method
-    async def get_organization_by_id_async(self, org_id: str) -> Optional[PydanticOrganization]:
-        """Fetch an organization by ID."""
+    async def get_organization_by_id_async(self, org_id: str) -> PydanticOrganization:
+        """Fetch an organization by ID. Raises NoResultFound if not found."""
         async with db_registry.async_session() as session:
             organization = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             return organization.to_pydantic()
@@ -64,7 +64,7 @@ class OrganizationManager:
     @enforce_types
     @trace_method
     async def update_organization_async(self, org_id: str, org_update: OrganizationUpdate) -> PydanticOrganization:
-        """Update an organization."""
+        """Update an organization. Raises NoResultFound if not found."""
         async with db_registry.async_session() as session:
             org = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             if org_update.name:
@@ -77,7 +77,7 @@ class OrganizationManager:
     @enforce_types
     @trace_method
     async def delete_organization_by_id_async(self, org_id: str):
-        """Delete an organization by marking it as deleted."""
+        """Delete an organization by marking it as deleted. Raises NoResultFound if not found."""
         async with db_registry.async_session() as session:
             organization = await OrganizationModel.read_async(db_session=session, identifier=org_id)
             await organization.hard_delete_async(session)

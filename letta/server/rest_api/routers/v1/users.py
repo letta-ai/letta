@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from letta.schemas.user import User, UserCreate, UserUpdate
 from letta.server.rest_api.dependencies import get_letta_server
@@ -22,13 +22,7 @@ async def list_users(
     """
     Get a list of all users in the database
     """
-    try:
-        users = await server.user_manager.list_actors_async(after=after, limit=limit)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
-    return users
+    return await server.user_manager.list_actors_async(after=after, limit=limit)
 
 
 @router.post("/", tags=["admin"], response_model=User, operation_id="create_user")
@@ -62,13 +56,7 @@ async def delete_user(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     # TODO make a soft deletion, instead of a hard deletion
-    try:
-        user = await server.user_manager.get_actor_by_id_async(actor_id=user_id)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User does not exist")
-        await server.user_manager.delete_actor_by_id_async(user_id=user_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    # Get the user first so we can return it after deletion
+    user = await server.user_manager.get_actor_by_id_async(actor_id=user_id)
+    await server.user_manager.delete_actor_by_id_async(user_id=user_id)
     return user

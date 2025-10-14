@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from letta.schemas.organization import Organization, OrganizationCreate, OrganizationUpdate
 from letta.server.rest_api.dependencies import get_letta_server
@@ -21,13 +21,7 @@ async def get_all_orgs(
     """
     Get a list of all orgs in the database
     """
-    try:
-        orgs = await server.organization_manager.list_organizations_async(after=after, limit=limit)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
-    return orgs
+    return await server.organization_manager.list_organizations_async(after=after, limit=limit)
 
 
 @router.post("/", tags=["admin"], response_model=Organization, operation_id="create_organization")
@@ -49,15 +43,9 @@ async def delete_org(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     # TODO make a soft deletion, instead of a hard deletion
-    try:
-        org = await server.organization_manager.get_organization_by_id_async(org_id=org_id)
-        if org is None:
-            raise HTTPException(status_code=404, detail="Organization does not exist")
-        await server.organization_manager.delete_organization_by_id_async(org_id=org_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    # Get the org first so we can return it after deletion
+    org = await server.organization_manager.get_organization_by_id_async(org_id=org_id)
+    await server.organization_manager.delete_organization_by_id_async(org_id=org_id)
     return org
 
 
@@ -67,13 +55,4 @@ async def update_org(
     request: OrganizationUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
-    try:
-        org = await server.organization_manager.get_organization_by_id_async(org_id=org_id)
-        if org is None:
-            raise HTTPException(status_code=404, detail="Organization does not exist")
-        org = await server.organization_manager.update_organization_async(org_id=org_id, name=request.name)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
-    return org
+    return await server.organization_manager.update_organization_async(org_id=org_id, org_update=request)
