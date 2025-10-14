@@ -27,6 +27,7 @@ from letta.constants import (
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.validators import is_valid_agent_id
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import (
@@ -961,6 +962,9 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
+        if not is_valid_agent_id(agent_id):
+            raise NoResultFound("Agent id should match agent-{uuid}")
+
         async with db_registry.async_session() as session:
             try:
                 query = select(AgentModel)
