@@ -45,17 +45,17 @@ From the Letta dashboard, you'll create a new template and configure it in the A
   <Step title="Create a new template">
     From the Letta dashboard, click **Templates** → **+ New template** → **Start from scratch**.
 
-    <img className="w-300" src="../../images/add-template.png" alt="Creating a new agent template in the Letta dashboard" />
+    <img  src="/images/add-template.png" alt="Creating a new agent template in the Letta dashboard" />
   </Step>
   <Step title="Explore the Agent Development Environment">
     The ADE interface has three key areas: a center chat simulator for testing, a left sidebar for configuration (template settings, tools, LLM config), and a right panel showing memory architecture with real-time context utilization.
 
-    <img className="w-300" src="../../images/agent-development-environment.png" alt="Agent Development Environment interface showing chat simulator, configuration sidebar, and memory blocks panel" />
+    <img  src="/images/agent-development-environment.png" alt="Agent Development Environment interface showing chat simulator, configuration sidebar, and memory blocks panel" />
   </Step>
   <Step title="Name your template">
     Rename your template `customer-success-agent` by clicking the **pen icon** next to the **Name** field.
 
-    <img className="w-300" src="../../images/name-template.png" alt="Editing agent template name in the ADE" />
+    <img  src="/images/name-template.png" alt="Editing agent template name in the ADE" />
   </Step>
 </Steps>
 </Accordion>
@@ -65,7 +65,7 @@ From the Letta dashboard, you'll create a new template and configure it in the A
 
 Memory blocks create your agent's persistent knowledge architecture. In the ADE's right panel, in the **Core Memory** section, click **Advanced** → **+ New block** to add custom memory blocks.
 
-<img className="w-300" src="../../images/add-custom-memory-block.png" alt="Adding custom memory blocks in Core Memory section" />
+<img  src="/images/add-custom-memory-block.png" alt="Adding custom memory blocks in Core Memory section" />
 
 Create four core memory blocks with the following configurations:
 
@@ -236,7 +236,7 @@ The `{{variable_name}}` placeholders in the `customer` memory block are populate
 
 Tools transform your agent from a static responder into an active researcher that can autonomously gather information and take action. In the ADE's left sidebar, click **Tools** → **Tool Manager**. This opens a modal where you'll configure Model Context Protocol (MCP) servers that provide external capabilities.
 
-<img className="w-300" src="../../images/mcp-options.png" alt="Tool manager modal showing MCP server configuration options" />
+<img  src="/images/mcp-options.png" alt="Tool manager modal showing MCP server configuration options" />
 
 Your agent needs research tools to look up customer backgrounds and company information, plus email tools to draft and send personalized welcome messages automatically.
 
@@ -250,11 +250,11 @@ Exa provides web search, company research, and LinkedIn lookup capabilities for 
 
 2. Go to [exa.ai](https://exa.ai) to create an account. Then visit [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys) to copy your default secret key.
 
-   <img className="w-300" src="../../images/exa-api.png" alt="Exa API key configuration in dashboard" />
+   <img  src="/images/exa-api.png" alt="Exa API key configuration in dashboard" />
 
 3. Paste the [Exa MCP server URL](https://docs.exa.ai/reference/exa-mcp#remote-exa-mcp) `https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key` in the Server URL field on the modal. Replace `your-exa-api-key` with your Exa secret key and click **Test connection**. When connected, the modal displays a list of available tools, including `web_search_exa`, `company_research_exa`, and `linkedin_search_exa`. Click **Confirm** to add the server.
 
-   <img className="w-300" src="../../images/exa-tools.png" alt="Available Exa tools after successful connection" />
+   <img  src="/images/exa-tools.png" alt="Available Exa tools after successful connection" />
 </Step>
 </Steps>
 </Accordion>
@@ -266,19 +266,19 @@ Zapier provides Gmail integration for drafting and sending personalized emails.
 
 1. Click **+ Add MCP server** again and select **Zapier**. For the API setup, go to [mcp.zapier.com/mcp](https://mcp.zapier.com/mcp), create an account, then click **+ New MCP Server** in your Zapier dashboard.
 
-   <img className="w-300" src="../../images/zap-new-mcp.png" alt="Creating new MCP server in Zapier dashboard" />
+   <img  src="/images/zap-new-mcp.png" alt="Creating new MCP server in Zapier dashboard" />
 
 2. Choose **Other** from the **MCP Client** options and name it `Email sender`. After creating the server, click **+ Add tool**, select **Gmail** from the modal, and add the Gmail tools. Connect your Gmail account for sending emails.
 
-   <img className="w-300" src="../../images/gmail-tools.png" alt="Adding Gmail tools in Zapier MCP server" />
+   <img  src="/images/gmail-tools.png" alt="Adding Gmail tools in Zapier MCP server" />
 
 3. In your Zapier dashboard, click **Connect** in the top toolbar and copy the **Server URL**.
 
-   <img className="w-300" src="../../images/zap-server-url.png" alt="Copying server URL from Zapier dashboard" />
+   <img  src="/images/zap-server-url.png" alt="Copying server URL from Zapier dashboard" />
 
 4. Return to the Letta modal, paste the server URL in the Server URL field, and test the connection. When you see the Gmail tools appear, click **Confirm**.
 
-   <img className="w-300" src="../../images/gmail-tools-connected.png" alt="Gmail tools successfully connected in Letta" />
+   <img  src="/images/gmail-tools-connected.png" alt="Gmail tools successfully connected in Letta" />
 </Step>
 </Steps>
 </Accordion>
@@ -288,7 +288,7 @@ Zapier provides Gmail integration for drafting and sending personalized emails.
 <Step title="Connect tools to the template">
 In the **Tool manager** view, you can now see both MCP servers. Click each server to view the available tools. To attach them, click the **link icon** next to the tools your agent needs:
 
-<img className="w-300" src="../../images/attach-tool.png" alt="Attaching tools to agent in Tool Manager" />
+<img  src="/images/attach-tool.png" alt="Attaching tools to agent in Tool Manager" />
 
 **From Exa**: Attach `web_search_exa`, `company_research_exa`, and `linkedin_search_exa`.
 
@@ -351,7 +351,7 @@ npm start
 
 Open `http://localhost:3000` in your browser. Click **Sign Up** and create a test account. After signing up, you'll be redirected to the chat interface. Try sending a message – the chatbot will echo it back. This echo behavior is a placeholder that we'll replace with Letta agent integration.
 
-<img className="w-300" src="../../images/customer-specific-agents-demo-app.png" alt="Customer success agent chat interface showing conversation with the agent" />
+<img  src="/images/customer-specific-agents-demo-app.png" alt="Customer success agent chat interface showing conversation with the agent" />
 </Step>
 
 <Step title="Understand the application structure">
