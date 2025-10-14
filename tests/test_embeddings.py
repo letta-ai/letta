@@ -102,7 +102,7 @@ async def test_openai_embedding_chunking(default_user):
 
 @pytest.mark.asyncio
 async def test_openai_embedding_retry_logic(default_user):
-    """Test that failed chunks are retried with halved size"""
+    """Test that failed chunks are retried with reduced batch size"""
     embedding_config = EmbeddingConfig(
         embedding_endpoint_type="openai",
         embedding_endpoint="https://api.openai.com/v1",
@@ -123,7 +123,7 @@ async def test_openai_embedding_retry_logic(default_user):
             call_count += 1
             input_size = len(kwargs["input"])
 
-            # fail on first attempt for large chunks only
+            # fail on first attempt for large batches only
             if input_size == 2048 and call_count <= 2:
                 raise Exception("Too many inputs")
 
@@ -138,7 +138,7 @@ async def test_openai_embedding_retry_logic(default_user):
 
         assert len(embeddings) == 3000
         # initial: 2 chunks (2048, 952)
-        # after retry: first 2048 splits into 2x1024, so total 3 successful calls + 2 failed = 5
+        # after retry: first 2048 splits into 2x1024 with reduced batch_size, so total 3 successful calls + 2 failed = 5
         assert call_count > 3
 
 
