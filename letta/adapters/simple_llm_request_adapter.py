@@ -38,7 +38,11 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         self.request_data = request_data
 
         # Make the blocking LLM request
-        self.response_data = await self.llm_client.request_async(request_data, self.llm_config)
+        try:
+            self.response_data = await self.llm_client.request_async(request_data, self.llm_config)
+        except Exception as e:
+            raise self.llm_client.handle_llm_error(e)
+
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
         # Convert response to chat completion format
