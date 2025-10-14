@@ -1507,6 +1507,7 @@ class Message(BaseMessage):
             else:
                 if not self.tool_call_id:
                     raise TypeError("Anthropic API requires tool_use_id to be set.")
+
                 # This is for legacy reasons
                 anthropic_message = {
                     "role": "user",  # NOTE: diff
