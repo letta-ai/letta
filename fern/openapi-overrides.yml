@@ -16,6 +16,13 @@ paths:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - tools
@@ -109,6 +116,13 @@ paths:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - sources
@@ -165,6 +179,13 @@ paths:
       x-fern-sdk-group-name:
         - folders
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - folders
@@ -238,6 +259,13 @@ paths:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - agents
@@ -462,6 +490,13 @@ paths:
           required: true
           schema:
             type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
   /v1/agents/{agent_id}/archival-memory/search:
     get:
       x-fern-sdk-group-name:
@@ -726,6 +761,13 @@ paths:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - blocks
@@ -856,6 +898,13 @@ paths:
       x-fern-sdk-group-name:
         - providers
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
     patch:
       x-fern-sdk-group-name:
         - providers
@@ -925,6 +974,13 @@ paths:
       x-fern-sdk-group-name:
         - identities
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
   /v1/identities/count:
     get:
       x-fern-sdk-group-name:
@@ -973,6 +1029,13 @@ paths:
       x-fern-sdk-group-name:
         - groups
       x-fern-sdk-method-name: delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              example:
+                success: true
   /v1/groups/count:
     get:
       x-fern-sdk-group-name:
