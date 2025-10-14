@@ -727,7 +727,7 @@ class OpenAIClient(LLMClientBase):
         # queue of (start_idx, chunk_inputs) to process
         chunks_to_process = [(i, inputs[i : i + 2048]) for i in range(0, len(inputs), 2048)]
 
-        min_chunk_size = 64
+        min_chunk_size = 256
 
         while chunks_to_process:
             tasks = []
