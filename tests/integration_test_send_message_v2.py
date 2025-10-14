@@ -51,8 +51,8 @@ all_configs = [
     "openai-gpt-4o-mini.json",
     "openai-o3.json",
     "openai-gpt-5.json",
-    "claude-3-5-sonnet.json",
-    "claude-3-7-sonnet-extended.json",
+    "claude-4-5-sonnet.json",
+    "claude-4-1-opus.json",
     "gemini-2.5-flash.json",
 ]
 
@@ -329,14 +329,15 @@ def get_expected_message_count_range(
 
 
     Tool Call:
-    ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    | gpt-4o                   |  gpt-o3 (med effort)     |  gpt-5 (high effort)     |  sonnet-3-5              |  sonnet-3.7-thinking     |  flash-2.5-thinking      |
-    | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ |
-    | ToolCallMessage          |  ToolCallMessage         |  ReasoningMessage        |  AssistantMessage        |  ReasoningMessage        |  ReasoningMessage        |
-    | ToolReturnMessage        |  ToolReturnMessage       |  ToolCallMessage         |  ToolCallMessage         |  AssistantMessage        |  ToolCallMessage         |
-    | AssistantMessage         |  AssistantMessage        |  ToolReturnMessage       |  ToolReturnMessage       |  ToolCallMessage         |  ToolReturnMessage       |
-    |                          |                          |  ReasoningMessage        |  AssistantMessage        |  ToolReturnMessage       |  ReasoningMessage        |
-    |                          |                          |  AssistantMessage        |                          |  AssistantMessage        |  AssistantMessage        |
+    ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    | gpt-4o                   |  gpt-o3 (med effort)     |  gpt-5 (high effort)     |  sonnet-3-5              |  sonnet-3.7-thinking     |  sonnet-4.5/opus-4.1     |  flash-2.5-thinking      |
+    | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ |
+    | ToolCallMessage          |  ToolCallMessage         |  ReasoningMessage        |  AssistantMessage        |  ReasoningMessage        |  ReasoningMessage        |  ReasoningMessage        |
+    | ToolReturnMessage        |  ToolReturnMessage       |  ToolCallMessage         |  ToolCallMessage         |  AssistantMessage        |  AssistantMessage        |  ToolCallMessage         |
+    | AssistantMessage         |  AssistantMessage        |  ToolReturnMessage       |  ToolReturnMessage       |  ToolCallMessage         |  ToolCallMessage         |  ToolReturnMessage       |
+    |                          |                          |  ReasoningMessage        |  AssistantMessage        |  ToolReturnMessage       |  ToolReturnMessage       |  ReasoningMessage        |
+    |                          |                          |  AssistantMessage        |                          |  AssistantMessage        |  ReasoningMessage        |  AssistantMessage        |
+    |                          |                          |                          |                          |                          |  AssistantMessage        |                          |
 
     """
     # assistant message
@@ -346,9 +347,17 @@ def get_expected_message_count_range(
     if is_reasoner_model(llm_config):
         # reasoning message
         expected_range += 1
-        if tool_call and not LLMConfig.is_anthropic_reasoning_model(llm_config):
-            # reasoning message for additional turn, only for openai and google models
-            expected_range += 1
+        if tool_call:
+            # check for sonnet 4.5 or opus 4.1 specifically
+            is_sonnet_4_5_or_opus_4_1 = (
+                llm_config.model_endpoint_type == "anthropic"
+                and llm_config.enable_reasoner
+                and (llm_config.model.startswith("claude-sonnet-4-5") or llm_config.model.startswith("claude-opus-4-1"))
+            )
+            if is_sonnet_4_5_or_opus_4_1 or not LLMConfig.is_anthropic_reasoning_model(llm_config):
+                # sonnet 4.5 and opus 4.1 return a reasoning message before the final assistant message
+                # so do the other native reasoning models
+                expected_range += 1
 
     if tool_call:
         # tool call and tool return messages
