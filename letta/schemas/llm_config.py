@@ -239,6 +239,7 @@ class LLMConfig(BaseModel):
             config.model.startswith("claude-opus-4")
             or config.model.startswith("claude-sonnet-4")
             or config.model.startswith("claude-3-7-sonnet")
+            or config.model.startswith("claude-4-5-haiku")
         )
 
     @classmethod
