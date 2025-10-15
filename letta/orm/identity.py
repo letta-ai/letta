@@ -64,6 +64,6 @@ class Identity(SqlalchemyBase, OrganizationMixin, ProjectMixin):
             "agent_ids": self.agent_ids,
             "block_ids": self.block_ids,
             "organization_id": self.organization_id,
-            "properties": self.properties,
+            "properties": self.properties or [],
         }
         return PydanticIdentity(**state)
