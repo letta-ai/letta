@@ -206,11 +206,16 @@ class RunManager:
         async with db_registry.async_session() as session:
             metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
             # Calculate runtime if run is completing
-            if is_terminal_update and metrics.run_start_ns:
-                import time
+            if is_terminal_update:
+                # Use total_duration_ns from RunUpdate if provided
+                # Otherwise fall back to system time
+                if update.total_duration_ns is not None:
+                    metrics.run_ns = update.total_duration_ns
+                elif metrics.run_start_ns:
+                    import time
 
-                current_ns = int(time.time() * 1e9)
-                metrics.run_ns = current_ns - metrics.run_start_ns
+                    current_ns = int(time.time() * 1e9)
+                    metrics.run_ns = current_ns - metrics.run_start_ns
             metrics.num_steps = num_steps
             await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             await session.commit()

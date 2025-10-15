@@ -65,4 +65,5 @@ class RunUpdate(RunBase):
     completed_at: Optional[datetime] = Field(None, description="The timestamp when the run was completed.")
     stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the run was stopped.")
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Additional metadata for the run.")
+    total_duration_ns: Optional[int] = Field(None, description="Total run duration in nanoseconds")
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
