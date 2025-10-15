@@ -300,6 +300,7 @@ class SimpleAnthropicStreamingInterface:
                         id=self.letta_message_id,
                         # Do not emit placeholder arguments here to avoid UI duplicates
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
@@ -397,6 +398,7 @@ class SimpleAnthropicStreamingInterface:
                     tool_call_msg = ToolCallMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
