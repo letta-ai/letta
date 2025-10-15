@@ -1,6 +1,7 @@
 import os
 import threading
 import uuid
+from typing import List
 
 import pytest
 from dotenv import load_dotenv
@@ -9,8 +10,9 @@ from openai import AsyncOpenAI
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageStreamStatus
+from letta.schemas.enums import AgentType, MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.message import MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage as OpenAIUserMessage
 from letta.schemas.usage import LettaUsageStatistics
 from tests.utils import wait_for_server
@@ -71,7 +73,7 @@ def weather_tool(client):
         """
         Fetches the current weather for a given location.
 
-        Parameters:
+        Args:
             location (str): The location to get the weather for.
 
         Returns:
@@ -100,6 +102,7 @@ def weather_tool(client):
 def agent(client, roll_dice_tool, weather_tool):
     """Creates an agent and ensures cleanup after tests."""
     agent_state = client.agents.create(
+        agent_type=AgentType.letta_v1_agent,
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
         tool_ids=[roll_dice_tool.id, weather_tool.id],
         include_base_tools=True,
@@ -111,7 +114,6 @@ def agent(client, roll_dice_tool, weather_tool):
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
     )
     yield agent_state
-    client.agents.delete(agent_state.id)
 
 
 # --- Helper Functions --- #
@@ -149,42 +151,46 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "What's the weather in SF?"])
-@pytest.mark.parametrize("endpoint", ["openai/v1"])
-async def test_chat_completions_streaming_openai_client(disable_e2b_api_key, client, agent, message, endpoint):
-    """Tests chat completion streaming using the Async OpenAI client."""
-    request = _get_chat_request(message)
+@pytest.mark.parametrize("message", ["Tell me a short joke"])
+async def test_chat_completions_streaming_openai_client(disable_e2b_api_key, client, agent, roll_dice_tool, message):
+    """Tests Letta's OpenAI-compatible chat completions streaming endpoint."""
+    async_client = AsyncOpenAI(base_url="http://localhost:8283/v1", max_retries=0)
 
-    async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{agent.id}", max_retries=0)
-    stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
+    stream = await async_client.chat.completions.create(
+        model=agent.id,  # agent ID goes in model field
+        messages=[{"role": "user", "content": message}],
+        stream=True,
+    )
 
     received_chunks = 0
     stop_chunk_count = 0
     last_chunk = None
+    content_parts = []
 
     try:
-        async with stream:
-            async for chunk in stream:
-                assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
-                assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
+        async for chunk in stream:
+            assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
+            assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
 
-                # Track last chunk for final verification
-                last_chunk = chunk
+            last_chunk = chunk
 
-                # If this chunk has a finish reason of "stop", track it
-                if chunk.choices[0].finish_reason == "stop":
-                    stop_chunk_count += 1
-                    # Fail early if more than one stop chunk is sent
-                    assert stop_chunk_count == 1, f"Multiple stop chunks detected: {chunk.model_dump_json(indent=4)}"
-                    continue
+            if chunk.choices[0].finish_reason == "stop":
+                stop_chunk_count += 1
+                assert stop_chunk_count == 1, f"Multiple stop chunks detected: {chunk.model_dump_json(indent=4)}"
+                continue
 
-                # Validate regular content chunks
-                assert chunk.choices[0].delta.content, f"Chunk at index {received_chunks} has no content: {chunk.model_dump_json(indent=4)}"
+            if chunk.choices[0].delta.content:
+                content_parts.append(chunk.choices[0].delta.content)
                 received_chunks += 1
     except Exception as e:
         pytest.fail(f"Streaming failed with exception: {e}")
 
-    assert received_chunks > 0, "No valid streaming chunks were received."
+    print("\n=== Stream Summary ===")
+    print(f"Received chunks: {received_chunks}")
+    print(f"Full response: {''.join(content_parts)}")
+    print(f"Stop chunk count: {stop_chunk_count}")
 
-    # Ensure the last chunk is the expected stop chunk
+    assert received_chunks > 0, "No valid streaming chunks were received."
+    assert stop_chunk_count == 1, "Expected exactly one stop chunk."
     assert last_chunk is not None, "No last chunk received."
+    assert last_chunk.choices[0].finish_reason == "stop", "Last chunk should have finish_reason='stop'"

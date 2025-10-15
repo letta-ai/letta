@@ -1049,6 +1049,23 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def validate_agent_exists_async(self, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Validate that an agent exists and user has access to it.
+        Lightweight method that doesn't load the full agent object.
+
+        Args:
+            agent_id: ID of the agent to validate
+            actor: User performing the action
+
+        Raises:
+            LettaAgentNotFoundError: If agent doesn't exist or user doesn't have access
+        """
+        async with db_registry.async_session() as session:
+            await validate_agent_exists_async(session, agent_id, actor)
+
+    @enforce_types
+    @trace_method
     async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.

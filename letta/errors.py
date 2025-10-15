@@ -142,6 +142,14 @@ class LettaMCPTimeoutError(LettaMCPError):
         super().__init__(message=message, code=ErrorCode.TIMEOUT, details=details)
 
 
+class LettaServiceUnavailableError(LettaError):
+    """Error raised when a required service is unavailable."""
+
+    def __init__(self, message: str, service_name: Optional[str] = None):
+        details = {"service_name": service_name} if service_name else {}
+        super().__init__(message=message, code=ErrorCode.INTERNAL_SERVER_ERROR, details=details)
+
+
 class LettaUnexpectedStreamCancellationError(LettaError):
     """Error raised when a streaming request is terminated unexpectedly."""
 

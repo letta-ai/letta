@@ -31,6 +31,7 @@ from letta.errors import (
     LettaInvalidMCPSchemaError,
     LettaMCPConnectionError,
     LettaMCPTimeoutError,
+    LettaServiceUnavailableError,
     LettaToolCreateError,
     LettaToolNameConflictError,
     LettaUnsupportedFileUploadError,
@@ -39,6 +40,7 @@ from letta.errors import (
     LLMError,
     LLMRateLimitError,
     LLMTimeoutError,
+    PendingApprovalError,
 )
 from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
 from letta.jobs.scheduler import start_scheduler_with_leader_election
@@ -274,6 +276,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
+    app.add_exception_handler(PendingApprovalError, _error_handler_409)
 
     # 415 Unsupported Media Type errors
     app.add_exception_handler(LettaUnsupportedFileUploadError, _error_handler_415)
@@ -287,6 +290,7 @@ def create_application() -> "FastAPI":
 
     # 503 Service Unavailable errors
     app.add_exception_handler(OperationalError, _error_handler_503)
+    app.add_exception_handler(LettaServiceUnavailableError, _error_handler_503)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
