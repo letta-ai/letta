@@ -254,6 +254,7 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         remaining_turns: int = -1,
         dry_run: bool = False,
+        enforce_run_id_set: bool = True,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -275,6 +276,9 @@ class LettaAgentV3(LettaAgentV2):
         Yields:
             LettaMessage or dict: Chunks for streaming mode, or request data for dry_run
         """
+        if enforce_run_id_set and run_id is None:
+            raise AssertionError("run_id is required when enforce_run_id_set is True")
+
         step_progression = StepProgression.START
         # TODO(@caren): clean this up
         tool_call, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
