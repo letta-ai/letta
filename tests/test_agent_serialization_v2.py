@@ -6,7 +6,7 @@ from letta.agents.agent_loop import AgentLoop
 from letta.config import LettaConfig
 from letta.errors import AgentFileExportError, AgentFileImportError
 from letta.orm import Base
-from letta.schemas.agent import CreateAgent
+from letta.schemas.agent import AgentType, CreateAgent
 from letta.schemas.agent_file import (
     AgentFileSchema,
     AgentSchema,
@@ -193,6 +193,7 @@ async def test_agent(server: SyncServer, default_user, default_organization, tes
 
     create_agent_request = CreateAgent(
         name="test_agent_v2",
+        agent_type=AgentType.letta_v1_agent,
         system="You are a helpful assistant for testing agent file export/import.",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
