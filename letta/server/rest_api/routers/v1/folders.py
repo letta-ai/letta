@@ -9,6 +9,7 @@ from starlette import status
 from starlette.responses import Response
 
 import letta.constants as constants
+from letta.errors import LettaInvalidArgumentError, LettaUnsupportedFileUploadError
 from letta.helpers.pinecone_utils import (
     delete_file_records_from_pinecone_index,
     delete_source_records_from_pinecone_index,
@@ -70,8 +71,6 @@ async def retrieve_folder(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
-    if not folder:
-        raise HTTPException(status_code=404, detail=f"Folder with id={folder_id} not found.")
     return folder
 
 
@@ -90,8 +89,6 @@ async def get_folder_by_name(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_name(source_name=folder_name, actor=actor)
-    if not folder:
-        raise HTTPException(status_code=404, detail=f"Folder with name={folder_name} not found.")
     return folder.id
 
 
@@ -157,8 +154,9 @@ async def create_folder(
     if not folder_create.embedding_config:
         if not folder_create.embedding:
             if settings.default_embedding_handle is None:
-                # TODO: modify error type
-                raise ValueError("Must specify either embedding or embedding_config in request")
+                raise LettaInvalidArgumentError(
+                    "Must specify either embedding or embedding_config in request", argument_name="default_embedding_handle"
+                )
             else:
                 folder_create.embedding = settings.default_embedding_handle
         folder_create.embedding_config = await server.get_embedding_config_from_handle_async(
@@ -188,8 +186,7 @@ async def modify_folder(
     """
     # TODO: allow updating the handle/embedding config
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    if not await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor):
-        raise HTTPException(status_code=404, detail=f"Folder with id={folder_id} does not exist.")
+    await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
     return await server.source_manager.update_source(source_id=folder_id, source_update=folder, actor=actor)
 
 
@@ -222,11 +219,9 @@ async def delete_folder(
         await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
         if agent_state.enable_sleeptime:
-            try:
-                block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=folder.name, actor=actor)
+            block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=folder.name, actor=actor)
+            if block:
                 await server.block_manager.delete_block_async(block.id, actor)
-            except:
-                pass
     await server.delete_source(source_id=folder_id, actor=actor)
 
 
@@ -265,9 +260,8 @@ async def upload_file_to_folder(
 
     # If still not allowed, reject with 415.
     if media_type not in allowed_media_types:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=(
+        raise LettaUnsupportedFileUploadError(
+            message=(
                 f"Unsupported file type: {media_type or 'unknown'} "
                 f"(filename: {file.filename}). "
                 f"Supported types: PDF, text files (.txt, .md), JSON, and code files (.py, .js, .java, etc.)."
@@ -277,8 +271,6 @@ async def upload_file_to_folder(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Folder with id={folder_id} not found.")
 
     content = await file.read()
 
@@ -297,8 +289,9 @@ async def upload_file_to_folder(
     if existing_file:
         # Duplicate found, handle based on strategy
         if duplicate_handling == DuplicateFileHandling.ERROR:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail=f"File '{original_filename}' already exists in folder '{folder.name}'"
+            raise LettaInvalidArgumentError(
+                message=f"File '{original_filename}' already exists in folder '{folder.name}'",
+                argument_name="duplicate_handling",
             )
         elif duplicate_handling == DuplicateFileHandling.SKIP:
             # Return existing file metadata with custom header to indicate it was skipped
@@ -528,8 +521,6 @@ async def delete_file_from_folder(
         await delete_file_records_from_pinecone_index(file_id=file_id, actor=actor)
 
     safe_create_task(sleeptime_document_ingest_async(server, folder_id, actor, clear_history=True), label="document_ingest_after_delete")
-    if deleted_file is None:
-        raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 
 
 async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, filename: str, bytes: bytes, actor: User):

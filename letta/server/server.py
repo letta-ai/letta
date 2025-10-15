@@ -761,8 +761,6 @@ class SyncServer(object):
 
         # TODO: move this into a thread
         source = await self.source_manager.get_source_by_id(source_id=source_id)
-        if source is None:
-            raise NoResultFound(f"Source {source_id} does not exist")
         connector = DirectoryConnector(input_files=[file_path])
         num_passages, num_documents = await self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
 

@@ -33,6 +33,7 @@ from letta.errors import (
     LettaMCPTimeoutError,
     LettaToolCreateError,
     LettaToolNameConflictError,
+    LettaUnsupportedFileUploadError,
     LettaUserNotFoundError,
     LLMAuthenticationError,
     LLMError,
@@ -244,6 +245,7 @@ def create_application() -> "FastAPI":
     _error_handler_408 = partial(error_handler_with_code, code=408)
     _error_handler_409 = partial(error_handler_with_code, code=409)
     _error_handler_410 = partial(error_handler_with_code, code=410)
+    _error_handler_415 = partial(error_handler_with_code, code=415)
     _error_handler_422 = partial(error_handler_with_code, code=422)
     _error_handler_500 = partial(error_handler_with_code, code=500)
     _error_handler_503 = partial(error_handler_with_code, code=503)
@@ -272,6 +274,9 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
+
+    # 415 Unsupported Media Type errors
+    app.add_exception_handler(LettaUnsupportedFileUploadError, _error_handler_415)
 
     # 422 Validation errors
     app.add_exception_handler(ValidationError, _error_handler_422)

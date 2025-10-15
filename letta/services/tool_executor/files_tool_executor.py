@@ -2,6 +2,8 @@ import asyncio
 import re
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy.exc import NoResultFound
+
 from letta.constants import PINECONE_TEXT_FIELD_NAME
 from letta.functions.types import FileOpenRequest
 from letta.helpers.pinecone_utils import search_pinecone_index, should_use_pinecone
@@ -389,9 +391,9 @@ class LettaFileToolExecutor(ToolExecutor):
 
             for file_agent in file_agents:
                 # Load file content
-                file = await self.file_manager.get_file_by_id(file_id=file_agent.file_id, actor=self.actor, include_content=True)
-
-                if not file or not file.content:
+                try:
+                    file = await self.file_manager.get_file_by_id(file_id=file_agent.file_id, actor=self.actor, include_content=True)
+                except NoResultFound:
                     files_skipped += 1
                     self.logger.warning(f"Grep: Skipping file {file_agent.file_name} - no content available")
                     continue

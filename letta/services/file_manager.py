@@ -60,7 +60,11 @@ class FileManager:
         text: Optional[str] = None,
     ) -> PydanticFileMetadata:
         # short-circuit if it already exists
-        existing = await self.get_file_by_id(file_metadata.id, actor=actor)
+        try:
+            existing = await self.get_file_by_id(file_metadata.id, actor=actor)
+        except NoResultFound:
+            existing = None
+
         if existing:
             return existing
 
@@ -105,35 +109,29 @@ class FileManager:
         lazy SELECT (avoids MissingGreenlet).
         """
         async with db_registry.async_session() as session:
-            try:
-                if include_content:
-                    # explicit eager load
-                    query = (
-                        select(FileMetadataModel).where(FileMetadataModel.id == file_id).options(selectinload(FileMetadataModel.content))
-                    )
-                    # apply org-scoping if actor provided
-                    if actor:
-                        query = FileMetadataModel.apply_access_predicate(
-                            query,
-                            actor,
-                            access=["read"],
-                            access_type=AccessType.ORGANIZATION,
-                        )
-
-                    result = await session.execute(query)
-                    file_orm = result.scalar_one()
-                else:
-                    # fast path (metadata only)
-                    file_orm = await FileMetadataModel.read_async(
-                        db_session=session,
-                        identifier=file_id,
-                        actor=actor,
+            if include_content:
+                # explicit eager load
+                query = select(FileMetadataModel).where(FileMetadataModel.id == file_id).options(selectinload(FileMetadataModel.content))
+                # apply org-scoping if actor provided
+                if actor:
+                    query = FileMetadataModel.apply_access_predicate(
+                        query,
+                        actor,
+                        access=["read"],
+                        access_type=AccessType.ORGANIZATION,
                     )
 
-                return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
+                result = await session.execute(query)
+                file_orm = result.scalar_one()
+            else:
+                # fast path (metadata only)
+                file_orm = await FileMetadataModel.read_async(
+                    db_session=session,
+                    identifier=file_id,
+                    actor=actor,
+                )
 
-            except NoResultFound:
-                return None
+            return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
 
     @enforce_types
     @trace_method

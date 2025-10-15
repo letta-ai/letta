@@ -98,6 +98,10 @@ class LettaUserNotFoundError(LettaError):
     """Error raised when a user is not found."""
 
 
+class LettaUnsupportedFileUploadError(LettaError):
+    """Error raised when an unsupported file upload is attempted."""
+
+
 class LettaInvalidArgumentError(LettaError):
     """Error raised when an invalid argument is provided."""
 

@@ -61,7 +61,11 @@ class SourceManager:
     @trace_method
     async def create_source(self, source: PydanticSource, actor: PydanticUser) -> PydanticSource:
         """Create a new source based on the PydanticSource schema."""
-        db_source = await self.get_source_by_id(source.id, actor=actor)
+        try:
+            db_source = await self.get_source_by_id(source.id, actor=actor)
+        except NoResultFound:
+            db_source = None
+
         if db_source:
             return db_source
         else:
@@ -346,11 +350,8 @@ class SourceManager:
     async def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
         async with db_registry.async_session() as session:
-            try:
-                source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
-                return source.to_pydantic()
-            except NoResultFound:
-                return None
+            source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
+            return source.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -364,7 +365,7 @@ class SourceManager:
                 limit=1,
             )
             if not sources:
-                return None
+                raise NoResultFound(f"Source with name={source_name} not found.")
             else:
                 return sources[0].to_pydantic()
 
