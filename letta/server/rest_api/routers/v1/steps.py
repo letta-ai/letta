@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Header, Query
 from pydantic import BaseModel, Field
 
-from letta.orm.errors import NoResultFound
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.message import Message
 from letta.schemas.provider_trace import ProviderTrace
@@ -77,11 +76,8 @@ async def retrieve_step(
     """
     Get a step by ID.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.step_manager.get_step_async(step_id=step_id, actor=actor)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Step not found")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.step_manager.get_step_async(step_id=step_id, actor=actor)
 
 
 @router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_metrics_for_step")
@@ -93,11 +89,8 @@ async def retrieve_metrics_for_step(
     """
     Get step metrics by step ID.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.step_manager.get_step_metrics_async(step_id=step_id, actor=actor)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Step metrics not found")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.step_manager.get_step_metrics_async(step_id=step_id, actor=actor)
 
 
 @router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
@@ -133,11 +126,8 @@ async def modify_feedback_for_step(
     """
     Modify feedback for a given step.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.step_manager.add_feedback_async(step_id=step_id, feedback=request.feedback, tags=request.tags, actor=actor)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Step not found")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.step_manager.add_feedback_async(step_id=step_id, feedback=request.feedback, tags=request.tags, actor=actor)
 
 
 @router.get("/{step_id}/messages", response_model=List[LettaMessageUnion], operation_id="list_messages_for_step")
@@ -178,8 +168,4 @@ async def update_step_transaction_id(
     Update the transaction ID for a step.
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
-
-    try:
-        return await server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Step not found")
+    return await server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
