@@ -393,7 +393,6 @@ class MCPManager:
                 return mcp_server.to_pydantic()
             except Exception as e:
                 await session.rollback()
-                logger.error(f"Failed to create MCP server: {e}")
                 raise
 
     @enforce_types
