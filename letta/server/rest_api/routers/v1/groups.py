@@ -1,11 +1,10 @@
 from typing import Annotated, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, Header, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.orm.errors import NoResultFound
 from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
@@ -77,11 +76,7 @@ async def retrieve_group(
     Retrieve the group by id.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
-    try:
-        return await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
 
 
 @router.post("/", response_model=Group, operation_id="create_group")
@@ -96,11 +91,8 @@ async def create_group(
     """
     Create a new multi-agent group with the specified configuration.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.group_manager.create_group_async(group, actor=actor)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.group_manager.create_group_async(group, actor=actor)
 
 
 @router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
@@ -116,11 +108,8 @@ async def modify_group(
     """
     Create a new multi-agent group with the specified configuration.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.group_manager.modify_group_async(group_id=group_id, group_update=group, actor=actor)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.group_manager.modify_group_async(group_id=group_id, group_update=group, actor=actor)
 
 
 @router.delete("/{group_id}", response_model=None, operation_id="delete_group")
@@ -133,11 +122,8 @@ async def delete_group(
     Delete a multi-agent group.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    try:
-        await server.group_manager.delete_group_async(group_id=group_id, actor=actor)
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Group id={group_id} successfully deleted"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Group id={group_id} not found for user_id={actor.id}.")
+    await server.group_manager.delete_group_async(group_id=group_id, actor=actor)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Group id={group_id} successfully deleted"})
 
 
 @router.post(
