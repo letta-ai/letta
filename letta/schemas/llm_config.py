@@ -255,6 +255,10 @@ class LLMConfig(BaseModel):
         )
 
     @classmethod
+    def is_deepseek_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "deepseek" and config.model == "deepseek-reasoner"
+
+    @classmethod
     def supports_verbosity(cls, config: "LLMConfig") -> bool:
         """Check if the model supports verbosity control."""
         return config.model_endpoint_type == "openai" and config.model.startswith("gpt-5")
@@ -267,6 +271,7 @@ class LLMConfig(BaseModel):
 
         For AgentType.letta_v1_agent, we enforce stricter semantics:
         - OpenAI native reasoning (o1/o3/o4/gpt-5): force enabled (non-togglable)
+        - DeepSeek reasoning (deepseek-reasoner): force enabled (non-togglable)
         - Anthropic (claude 3.7 / 4): toggle honored (default on elsewhere)
         - Google Gemini (2.5 family): force disabled until native reasoning supported
         - All others: disabled (no simulated reasoning via kwargs)
@@ -284,6 +289,12 @@ class LLMConfig(BaseModel):
                         config.reasoning_effort = "medium"
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
+                return config
+
+            # DeepSeek reasoning models: always on (similar to OpenAI)
+            if cls.is_deepseek_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
                 return config
 
             # Anthropic 3.7/4 and Gemini: toggle honored
@@ -325,6 +336,10 @@ class LLMConfig(BaseModel):
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
+            elif cls.is_deepseek_reasoning_model(config):
+                logger.warning("Reasoning cannot be disabled for DeepSeek Reasoner model")
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
             elif config.model.startswith("gemini-2.5-pro"):
                 logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
                 # Handle as non-reasoner until we support summary
@@ -358,6 +373,8 @@ class LLMConfig(BaseModel):
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
+            elif cls.is_deepseek_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
             else:
                 config.put_inner_thoughts_in_kwargs = True
 

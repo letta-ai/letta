@@ -56,9 +56,11 @@ from letta.settings import model_settings
 logger = get_logger(__name__)
 
 
-def is_openai_reasoning_model(model: str) -> bool:
+def is_openai_reasoning_model(model: str | None) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
-
+    if model is None:
+        return False
+    
     # NOTE: needs to be updated with new model releases
     is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4") or model.startswith("gpt-5")
     return is_reasoning

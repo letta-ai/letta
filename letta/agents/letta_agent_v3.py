@@ -166,6 +166,9 @@ class LettaAgentV3(LettaAgentV2):
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         first_chunk = True
 
+        # Streaming now supports JSON function call parsing for models like deepseek-reasoner
+        # No need to force non-streaming anymore
+
         if stream_tokens:
             llm_adapter = SimpleLLMStreamAdapter(
                 llm_client=self.llm_client,
