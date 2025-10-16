@@ -145,6 +145,19 @@ class ToolCreate(LettaBase):
             json_schema=json_schema,
         )
 
+    def model_dump(self, to_orm: bool = False, **kwargs):
+        """
+        Override LettaBase.model_dump to explicitly handle 'tags' being None,
+        ensuring that the output includes 'tags' as None (or any current value).
+        """
+        data = super().model_dump(**kwargs)
+        # TODO: consider making tags itself optional in the ORM
+        # Ensure 'tags' is included even when None, but only if tags is in the dict
+        # (i.e., don't add tags if exclude_unset=True was used and tags wasn't set)
+        if "tags" in data and data["tags"] is None:
+            data["tags"] = []
+        return data
+
 
 class ToolUpdate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
