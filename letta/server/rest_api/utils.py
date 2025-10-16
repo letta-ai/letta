@@ -36,7 +36,7 @@ from letta.schemas.letta_message_content import (
     TextContent,
 )
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
+from letta.schemas.message import ApprovalCreate, ApprovalReturn, Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -172,7 +172,16 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
 def create_approval_response_message_from_input(
     agent_state: AgentState, input_message: ApprovalCreate, run_id: Optional[str] = None
 ) -> List[Message]:
-    def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
+    if not input_message.approvals:
+        input_message.approvals = [
+            ApprovalCreate(approve=input_message.approve, tool_call_id=input_message.approval_request_id, reason=input_message.reason)
+        ]
+    approval_messages = [
+        a for a in input_message.approvals if isinstance(a, ApprovalReturn) or (isinstance(a, dict) and a.get("type") == "approval")
+    ]
+    first_approval = approval_messages[0] if approval_messages else None
+
+    def maybe_convert_return_message(maybe_tool_return):
         if isinstance(maybe_tool_return, LettaToolReturn):
             packaged_function_response = package_function_response(
                 maybe_tool_return.status == "success", maybe_tool_return.tool_return, agent_state.timezone
@@ -191,10 +200,10 @@ def create_approval_response_message_from_input(
             role=MessageRole.approval,
             agent_id=agent_state.id,
             model=agent_state.llm_config.model,
-            approval_request_id=input_message.approval_request_id,
-            approve=input_message.approve,
-            denial_reason=input_message.reason,
-            approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
+            approval_request_id=first_approval.tool_call_id if first_approval else input_message.approval_request_id,
+            approve=first_approval.approve if first_approval else input_message.approve,
+            denial_reason=first_approval.reason if first_approval else input_message.reason,
+            approvals=[maybe_convert_return_message(approval) for approval in input_message.approvals],
             run_id=run_id,
         )
     ]
