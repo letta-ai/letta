@@ -1,10 +1,8 @@
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.responses import JSONResponse
 
-from letta.errors import LLMAuthenticationError
-from letta.orm.errors import NoResultFound
 from letta.schemas.enums import ProviderType
 from letta.schemas.providers import Provider, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -38,15 +36,10 @@ async def list_providers(
     """
     Get a list of all custom providers.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        providers = await server.provider_manager.list_providers_async(
-            before=before, after=after, limit=limit, actor=actor, name=name, provider_type=provider_type, ascending=(order == "asc")
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    providers = await server.provider_manager.list_providers_async(
+        before=before, after=after, limit=limit, actor=actor, name=name, provider_type=provider_type, ascending=(order == "asc")
+    )
     return providers
 
 
@@ -106,18 +99,13 @@ async def check_provider(
     """
     Verify the API key and additional parameters for a provider.
     """
-    try:
-        if request.base_url and len(request.base_url) == 0:
-            # set to null if empty string
-            request.base_url = None
-        await server.provider_manager.check_provider_api_key(provider_check=request)
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={request.provider_type.value}"}
-        )
-    except LLMAuthenticationError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{e.message}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}")
+    if request.base_url and len(request.base_url) == 0:
+        # set to null if empty string
+        request.base_url = None
+    await server.provider_manager.check_provider_api_key(provider_check=request)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={request.provider_type.value}"}
+    )
 
 
 @router.post("/{provider_id}/check", response_model=None, operation_id="check_existing_provider")
@@ -129,29 +117,20 @@ async def check_existing_provider(
     """
     Verify the API key and additional parameters for an existing provider.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        provider = await server.provider_manager.get_provider_async(provider_id=provider_id, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    provider = await server.provider_manager.get_provider_async(provider_id=provider_id, actor=actor)
 
-        # Create a ProviderCheck from the existing provider
-        provider_check = ProviderCheck(
-            provider_type=provider.provider_type,
-            api_key=provider.api_key,
-            base_url=provider.base_url,
-        )
+    # Create a ProviderCheck from the existing provider
+    provider_check = ProviderCheck(
+        provider_type=provider.provider_type,
+        api_key=provider.api_key,
+        base_url=provider.base_url,
+    )
 
-        await server.provider_manager.check_provider_api_key(provider_check=provider_check)
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={provider.provider_type.value}"}
-        )
-    except LLMAuthenticationError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{e.message}")
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Provider provider_id={provider_id} not found for user_id={actor.id}.")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}")
+    await server.provider_manager.check_provider_api_key(provider_check=provider_check)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={provider.provider_type.value}"}
+    )
 
 
 @router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
@@ -163,13 +142,6 @@ async def delete_provider(
     """
     Delete an existing custom provider.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        await server.provider_manager.delete_provider_by_id_async(provider_id=provider_id, actor=actor)
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Provider id={provider_id} successfully deleted"})
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Provider provider_id={provider_id} not found for user_id={actor.id}.")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{e}")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.provider_manager.delete_provider_by_id_async(provider_id=provider_id, actor=actor)
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Provider id={provider_id} successfully deleted"})
