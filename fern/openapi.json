@@ -3755,8 +3755,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "max_steps",
@@ -3885,8 +3891,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -3926,8 +3938,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -3975,8 +3993,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "include_relationships",
@@ -4035,8 +4059,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4074,8 +4104,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -4195,15 +4231,6 @@
         "operationId": "attach_tool",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "tool_id",
             "in": "path",
             "required": true,
@@ -4211,6 +4238,21 @@
               "type": "string",
               "title": "Tool Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4245,15 +4287,6 @@
         "operationId": "detach_tool",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "tool_id",
             "in": "path",
             "required": true,
@@ -4261,6 +4294,21 @@
               "type": "string",
               "title": "Tool Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4295,15 +4343,6 @@
         "operationId": "modify_approval",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "tool_name",
             "in": "path",
             "required": true,
@@ -4311,6 +4350,21 @@
               "type": "string",
               "title": "Tool Name"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "requires_approval",
@@ -4354,15 +4408,6 @@
         "operationId": "attach_source_to_agent",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "source_id",
             "in": "path",
             "required": true,
@@ -4370,6 +4415,21 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4404,15 +4464,6 @@
         "operationId": "attach_folder_to_agent",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "folder_id",
             "in": "path",
             "required": true,
@@ -4420,6 +4471,21 @@
               "type": "string",
               "title": "Folder Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4454,15 +4520,6 @@
         "operationId": "detach_source_from_agent",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "source_id",
             "in": "path",
             "required": true,
@@ -4470,6 +4527,21 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4504,15 +4576,6 @@
         "operationId": "detach_folder_from_agent",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "folder_id",
             "in": "path",
             "required": true,
@@ -4520,6 +4583,21 @@
               "type": "string",
               "title": "Folder Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4559,8 +4637,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4599,15 +4683,6 @@
         "operationId": "open_file",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "file_id",
             "in": "path",
             "required": true,
@@ -4615,6 +4690,21 @@
               "type": "string",
               "title": "File Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4653,15 +4743,6 @@
         "operationId": "close_file",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "file_id",
             "in": "path",
             "required": true,
@@ -4669,6 +4750,21 @@
               "type": "string",
               "title": "File Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -4706,8 +4802,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -4832,8 +4934,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -4958,8 +5066,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -5118,8 +5232,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -5154,15 +5274,6 @@
         "operationId": "retrieve_core_memory_block",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "block_label",
             "in": "path",
             "required": true,
@@ -5170,6 +5281,21 @@
               "type": "string",
               "title": "Block Label"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -5202,15 +5328,6 @@
         "operationId": "modify_core_memory_block",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "block_label",
             "in": "path",
             "required": true,
@@ -5218,6 +5335,21 @@
               "type": "string",
               "title": "Block Label"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -5267,8 +5399,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -5388,15 +5526,6 @@
         "operationId": "attach_core_memory_block",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "block_id",
             "in": "path",
             "required": true,
@@ -5404,6 +5533,21 @@
               "type": "string",
               "title": "Block Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -5438,15 +5582,6 @@
         "operationId": "detach_core_memory_block",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "block_id",
             "in": "path",
             "required": true,
@@ -5454,6 +5589,21 @@
               "type": "string",
               "title": "Block Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -5493,8 +5643,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "after",
@@ -5627,8 +5783,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -5682,8 +5844,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "query",
@@ -5819,15 +5987,6 @@
         "operationId": "delete_passage",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "memory_id",
             "in": "path",
             "required": true,
@@ -5835,6 +5994,21 @@
               "type": "string",
               "title": "Memory Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "responses": {
@@ -5872,8 +6046,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "before",
@@ -6068,8 +6248,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6114,15 +6300,6 @@
         "operationId": "modify_message",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
             "name": "message_id",
             "in": "path",
             "required": true,
@@ -6130,6 +6307,21 @@
               "type": "string",
               "title": "Message Id"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6236,8 +6428,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6288,8 +6486,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6385,8 +6589,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6436,8 +6646,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "add_default_initial_messages",
@@ -6489,8 +6705,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "manager_type",
@@ -6633,8 +6855,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -6694,8 +6922,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Agent Id"
-            }
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
           },
           {
             "name": "max_message_length",

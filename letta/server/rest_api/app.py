@@ -11,6 +11,7 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -46,6 +47,7 @@ from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pineco
 from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.otel.tracing import get_trace_id
 from letta.schemas.letta_message import create_letta_message_union_schema, create_letta_ping_schema
 from letta.schemas.letta_message_content import (
     create_letta_assistant_message_content_union_schema,
@@ -66,6 +68,7 @@ from letta.server.rest_api.static_files import mount_static_files
 from letta.server.rest_api.utils import SENTRY_ENABLED
 from letta.server.server import SyncServer
 from letta.settings import settings, telemetry_settings
+from letta.validators import PATH_VALIDATORS, PRIMITIVE_ID_PATTERNS
 
 if SENTRY_ENABLED:
     import sentry_sdk
@@ -229,6 +232,65 @@ def create_application() -> "FastAPI":
                 # "debug_info": str(exc) if settings.debug else None
             },
         )
+
+    # Reasoning for this handler is the default path validation logic returns a pretty gnarly error message
+    # because of the uuid4 pattern. This handler rewrites the error message to be more user-friendly and less intimidating.
+    @app.exception_handler(RequestValidationError)
+    async def custom_request_validation_handler(request: Request, exc: RequestValidationError):
+        """Generalize path `_id` validation messages and include example IDs.
+
+        - Rewrites string pattern/length mismatches to "primitive-{uuid4}"
+        - Preserves stringified `detail` and includes `trace_id`
+        - Adds top-level `examples` from `PATH_VALIDATORS` for offending params
+        """
+        errors = exc.errors()
+        examples_set: set[str] = set()
+        content = {"trace_id": get_trace_id() or ""}
+        for err in errors:
+            fastapi_error_loc = err.get("loc", [])
+            # only rewrite path param validation errors (should expand in future)
+            if len(fastapi_error_loc) != 2 or fastapi_error_loc[0] != "path":
+                continue
+
+            # re-write the error message
+            parameter_name = fastapi_error_loc[1]
+            err_type = err.get("type")
+            if (
+                err_type in {"string_pattern_mismatch", "string_too_short", "string_too_long"}
+                and isinstance(parameter_name, str)
+                and parameter_name.endswith("_id")
+            ):
+                primitive = parameter_name[:-3]
+                validator = PATH_VALIDATORS.get(primitive)
+                if validator:
+                    # simplify default error message
+                    err["msg"] = f"String should match pattern '{primitive}-{{uuid4}}'"
+
+                    # rewrite as string_pattern_mismatch even if the input length is too short or too long (more intuitive for user)
+                    if err_type in {"string_too_short", "string_too_long"}:
+                        # FYI: the pattern is the same as the pattern inthe validator object but for some reason the validator object
+                        # doesn't let you access it directly (unless you call into pydantic layer)
+                        err["ctx"] = {"pattern": PRIMITIVE_ID_PATTERNS[primitive].pattern}
+                    err["type"] = "string_pattern_mismatch"
+
+                    # collect examples for top-level examples field (prevents duplicates and allows for multiple examples for multiple primitives)
+                    # e.g. if there are 2 malformed agent ids, the examples field will contain 2 examples for the agent primitive
+                    # e.g. if there is a malformed agent id and malformed folder id, the examples field will contain both examples, for both the agent and folder primitives
+                    try:
+                        exs = getattr(validator, "examples", None)
+                        if exs:
+                            for ex in exs:
+                                examples_set.add(ex)
+                        else:
+                            examples_set.add(f"{primitive}-123e4567-e89b-42d3-8456-426614174000")
+                    except Exception:
+                        examples_set.add(f"{primitive}-123e4567-e89b-42d3-8456-426614174000")
+
+        # Preserve current API contract: stringified list of errors
+        content["detail"] = repr(errors)
+        if examples_set:
+            content["examples"] = sorted(examples_set)
+        return JSONResponse(status_code=422, content=content)
 
     async def error_handler_with_code(request: Request, exc: Exception, code: int, detail: str | None = None):
         logger.error(f"{type(exc).__name__}", exc_info=exc)
@@ -447,6 +509,9 @@ def create_application() -> "FastAPI":
             except Exception as e:
                 logger.warning(f"Failed to setup SQLAlchemy instrumentation: {e}")
                 # Don't fail startup if instrumentation fails
+
+        # Ensure our validation handler overrides tracing's handler when tracing is enabled
+        app.add_exception_handler(RequestValidationError, custom_request_validation_handler)
 
     for route in v1_routes:
         app.include_router(route, prefix=API_PREFIX)

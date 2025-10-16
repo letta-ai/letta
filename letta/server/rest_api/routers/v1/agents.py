@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Path, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
@@ -14,7 +14,7 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.errors import (
     AgentExportIdMappingError,
@@ -59,6 +59,7 @@ from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
+from letta.validators import PATH_VALIDATORS
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -169,7 +170,7 @@ class IndentedORJSONResponse(Response):
 
 @router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent")
 async def export_agent(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -352,7 +353,7 @@ async def import_agent(
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
 async def retrieve_agent_context_window(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -392,7 +393,7 @@ async def create_agent(
 
 @router.patch("/{agent_id}", response_model=AgentState, operation_id="modify_agent")
 async def modify_agent(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -404,7 +405,7 @@ async def modify_agent(
 
 @router.get("/{agent_id}/tools", response_model=list[Tool], operation_id="list_agent_tools")
 async def list_agent_tools(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
@@ -433,8 +434,8 @@ async def list_agent_tools(
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
 async def attach_tool(
-    agent_id: str,
     tool_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -449,8 +450,8 @@ async def attach_tool(
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
 async def detach_tool(
-    agent_id: str,
     tool_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -465,9 +466,9 @@ async def detach_tool(
 
 @router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval")
 async def modify_approval(
-    agent_id: str,
     tool_name: str,
     requires_approval: bool,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -484,8 +485,8 @@ async def modify_approval(
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
 async def attach_source(
-    agent_id: str,
     source_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -511,8 +512,8 @@ async def attach_source(
 
 @router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=AgentState, operation_id="attach_folder_to_agent")
 async def attach_folder_to_agent(
-    agent_id: str,
     folder_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -538,8 +539,8 @@ async def attach_folder_to_agent(
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
 async def detach_source(
-    agent_id: str,
     source_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -568,8 +569,8 @@ async def detach_source(
 
 @router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=AgentState, operation_id="detach_folder_from_agent")
 async def detach_folder_from_agent(
-    agent_id: str,
     folder_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -598,7 +599,7 @@ async def detach_folder_from_agent(
 
 @router.patch("/{agent_id}/files/close-all", response_model=List[str], operation_id="close_all_open_files")
 async def close_all_open_files(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -615,8 +616,8 @@ async def close_all_open_files(
 
 @router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file")
 async def open_file(
-    agent_id: str,
     file_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -664,8 +665,8 @@ async def open_file(
 
 @router.patch("/{agent_id}/files/{file_id}/close", response_model=None, operation_id="close_file")
 async def close_file(
-    agent_id: str,
     file_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -689,7 +690,7 @@ async def close_file(
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
 async def retrieve_agent(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     include_relationships: list[str] | None = Query(
         None,
         description=(
@@ -704,9 +705,6 @@ async def retrieve_agent(
     """
     Get the state of the agent.
     """
-    # Check if agent_id matches uuid4 format
-    if not AGENT_ID_PATTERN.match(agent_id):
-        raise HTTPException(status_code=400, detail=f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
@@ -715,7 +713,7 @@ async def retrieve_agent(
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
 async def delete_agent(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -729,7 +727,7 @@ async def delete_agent(
 
 @router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources")
 async def list_agent_sources(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
@@ -760,7 +758,7 @@ async def list_agent_sources(
 
 @router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_agent_folders")
 async def list_agent_folders(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
@@ -791,7 +789,7 @@ async def list_agent_folders(
 
 @router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
 async def list_agent_files(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     before: Optional[str] = Query(
         None, description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
     ),
@@ -856,7 +854,7 @@ async def list_agent_files(
 # TODO: remove? can also get with agent blocks
 @router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
 async def retrieve_agent_memory(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -871,8 +869,8 @@ async def retrieve_agent_memory(
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
 async def retrieve_block(
-    agent_id: str,
     block_label: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -886,7 +884,7 @@ async def retrieve_block(
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
 async def list_blocks(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
@@ -918,8 +916,8 @@ async def list_blocks(
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
 async def modify_block(
-    agent_id: str,
     block_label: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     block_update: BlockUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -941,8 +939,8 @@ async def modify_block(
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
 async def attach_block(
-    agent_id: str,
     block_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -955,8 +953,8 @@ async def attach_block(
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
 async def detach_block(
-    agent_id: str,
     block_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -969,7 +967,7 @@ async def detach_block(
 
 @router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages")
 async def list_passages(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     after: str | None = Query(None, description="Unique ID of the memory to start the query range at."),
     before: str | None = Query(None, description="Unique ID of the memory to end the query range at."),
@@ -998,7 +996,7 @@ async def list_passages(
 
 @router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage")
 async def create_passage(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1015,7 +1013,7 @@ async def create_passage(
 
 @router.get("/{agent_id}/archival-memory/search", response_model=ArchivalMemorySearchResponse, operation_id="search_archival_memory")
 async def search_archival_memory(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     query: str = Query(..., description="String to search for using semantic similarity"),
     tags: Optional[List[str]] = Query(None, description="Optional list of tags to filter search results"),
     tag_match_mode: Literal["any", "all"] = Query(
@@ -1062,8 +1060,8 @@ async def search_archival_memory(
 # @router.delete("/{agent_id}/archival")
 @router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
 async def delete_passage(
-    agent_id: str,
     memory_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1084,7 +1082,7 @@ AgentMessagesResponse = Annotated[
 
 @router.get("/{agent_id}/messages", response_model=AgentMessagesResponse, operation_id="list_messages")
 async def list_messages(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     before: Optional[str] = Query(
         None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
@@ -1129,8 +1127,8 @@ async def list_messages(
 
 @router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
 async def modify_message(
-    agent_id: str,
     message_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1152,8 +1150,8 @@ async def modify_message(
     operation_id="send_message",
 )
 async def send_message(
-    agent_id: str,
     request_obj: Request,  # FastAPI Request
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -1279,8 +1277,8 @@ async def send_message(
     },
 )
 async def send_message_streaming(
-    agent_id: str,
     request_obj: Request,  # FastAPI Request
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -1313,7 +1311,7 @@ class CancelAgentRunRequest(BaseModel):
 
 @router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
 async def cancel_agent_run(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     request: CancelAgentRunRequest = Body(None),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1394,11 +1392,11 @@ async def _process_message_background(
     run_id: str,
     server: SyncServer,
     actor: User,
-    agent_id: str,
     messages: list[MessageCreate],
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
 ) -> None:
@@ -1489,7 +1487,7 @@ async def _process_message_background(
     operation_id="create_agent_message_async",
 )
 async def send_message_async(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     server: SyncServer = Depends(get_letta_server),
     request: LettaAsyncRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -1593,7 +1591,7 @@ async def send_message_async(
 
 @router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
 async def reset_messages(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1607,7 +1605,7 @@ async def reset_messages(
 
 @router.get("/{agent_id}/groups", response_model=list[Group], operation_id="list_agent_groups")
 async def list_agent_groups(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1643,7 +1641,7 @@ async def list_agent_groups(
     operation_id="preview_raw_payload",
 )
 async def preview_raw_payload(
-    agent_id: str,
+    agent_id: str = PATH_VALIDATORS["agent"],
     request: Union[LettaRequest, LettaStreamingRequest] = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -1688,8 +1686,8 @@ async def preview_raw_payload(
 
 @router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_agent_conversation")
 async def summarize_agent_conversation(
-    agent_id: str,
     request_obj: Request,  # FastAPI Request
+    agent_id: str = PATH_VALIDATORS["agent"],
     max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

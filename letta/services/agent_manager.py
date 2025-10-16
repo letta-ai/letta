@@ -25,9 +25,9 @@ from letta.constants import (
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
+from letta.errors import LettaAgentNotFoundError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.helpers.validators import is_valid_agent_id
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import (
@@ -110,6 +110,7 @@ from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, model_settings, settings
 from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
+from letta.validators import is_valid_id
 
 logger = get_logger(__name__)
 
@@ -982,8 +983,10 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-        if not is_valid_agent_id(agent_id):
-            raise NoResultFound("Agent id should match agent-{uuid}")
+
+        # Check if agent_id matches uuid4 format
+        if not is_valid_id("agent", agent_id):
+            raise LettaAgentNotFoundError(f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
 
         async with db_registry.async_session() as session:
             try:
