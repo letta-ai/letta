@@ -329,6 +329,10 @@ class Settings(BaseSettings):
     file_processing_timeout_minutes: int = 30
     file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
 
+    # Letta client settings for tool execution
+    default_base_url: str = Field(default="http://localhost:8283", description="Default base URL for Letta client in tool execution")
+    default_token: Optional[str] = Field(default=None, description="Default token for Letta client in tool execution")
+
     # enabling letta_agent_v1 architecture
     use_letta_v1_agent: bool = False
 

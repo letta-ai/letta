@@ -57,11 +57,19 @@ class AsyncToolSandboxBase(ABC):
                     f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
                 )
 
+            # Check for reserved keyword arguments
+            tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
+
             # TODO: deprecate this
-            if "agent_state" in parse_function_arguments(self.tool.source_code, self.tool.name):
+            if "agent_state" in tool_arguments:
                 self.inject_agent_state = True
             else:
                 self.inject_agent_state = False
+
+            # Check for Letta client and agent_id injection
+            self.inject_letta_client = "letta_client" in tool_arguments or "client" in tool_arguments
+            self.inject_agent_id = "agent_id" in tool_arguments
+
             self.is_async_function = self._detect_async_function()
         self._initialized = True
 
@@ -112,12 +120,16 @@ class AsyncToolSandboxBase(ABC):
                 tool_args += self.initialize_param(param, self.args[param])
 
         agent_state_pickle = pickle.dumps(agent_state) if self.inject_agent_state else None
+        agent_id = agent_state.id if agent_state else None
 
         code = self._render_sandbox_code(
             future_import=future_import,
             inject_agent_state=self.inject_agent_state,
+            inject_letta_client=self.inject_letta_client,
+            inject_agent_id=self.inject_agent_id,
             schema_imports=schema_code or "",
             agent_state_pickle=agent_state_pickle,
+            agent_id=agent_id,
             tool_args=tool_args,
             tool_source_code=self.tool.source_code,
             local_sandbox_result_var_name=self.LOCAL_SANDBOX_RESULT_VAR_NAME,
@@ -133,8 +145,11 @@ class AsyncToolSandboxBase(ABC):
         *,
         future_import: bool,
         inject_agent_state: bool,
+        inject_letta_client: bool,
+        inject_agent_id: bool,
         schema_imports: str,
         agent_state_pickle: bytes | None,
+        agent_id: str | None,
         tool_args: str,
         tool_source_code: str,
         local_sandbox_result_var_name: str,
@@ -162,6 +177,10 @@ class AsyncToolSandboxBase(ABC):
         if inject_agent_state:
             lines.extend(["import letta", "from letta import *"])  # noqa: F401
 
+        # Import Letta client if needed
+        if inject_letta_client:
+            lines.append("from letta_client import Letta")
+
         if schema_imports:
             lines.append(schema_imports.rstrip())
 
@@ -169,6 +188,34 @@ class AsyncToolSandboxBase(ABC):
             lines.append(f"agent_state = pickle.loads({repr(agent_state_pickle)})")
         else:
             lines.append("agent_state = None")
+
+        # Initialize Letta client if needed
+        if inject_letta_client:
+            from letta.settings import settings
+
+            lines.extend(
+                [
+                    "# Initialize Letta client for tool execution",
+                    "letta_client = Letta(",
+                    f"    base_url={repr(settings.default_base_url)},",
+                    f"    token={repr(settings.default_token)}",
+                    ")",
+                    "# Compatibility shim for client.agents.get",
+                    "try:",
+                    "    _agents = letta_client.agents",
+                    "    if not hasattr(_agents, 'get') and hasattr(_agents, 'retrieve'):",
+                    "        setattr(_agents, 'get', _agents.retrieve)",
+                    "except Exception:",
+                    "    pass",
+                ]
+            )
+
+        # Set agent_id if needed
+        if inject_agent_id:
+            if agent_id:
+                lines.append(f"agent_id = {repr(agent_id)}")
+            else:
+                lines.append("agent_id = None")
 
         if tool_args:
             lines.append(tool_args.rstrip())
@@ -286,8 +333,21 @@ class AsyncToolSandboxBase(ABC):
                 kwargs.append(name)
 
         param_list = [f"{arg}={arg}" for arg in kwargs]
+
+        # Add reserved keyword arguments
         if self.inject_agent_state:
             param_list.append("agent_state=agent_state")
+
+        if self.inject_letta_client:
+            # Check if the function expects 'client' or 'letta_client'
+            tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
+            if "client" in tool_arguments:
+                param_list.append("client=letta_client")
+            elif "letta_client" in tool_arguments:
+                param_list.append("letta_client=letta_client")
+
+        if self.inject_agent_id:
+            param_list.append("agent_id=agent_id")
 
         params = ", ".join(param_list)
         func_call_str = self.tool.name + "(" + params + ")"
