@@ -1,9 +1,8 @@
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel
 
-from letta.orm.errors import NoResultFound
 from letta.schemas.archive import Archive as PydanticArchive
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
@@ -40,15 +39,12 @@ async def create_archive(
     """
     Create a new archive.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.archive_manager.create_archive_async(
-            name=archive.name,
-            description=archive.description,
-            actor=actor,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.create_archive_async(
+        name=archive.name,
+        description=archive.description,
+        actor=actor,
+    )
 
 
 @router.get("/", response_model=List[PydanticArchive], operation_id="list_archives")
@@ -73,20 +69,17 @@ async def list_archives(
     """
     Get a list of all archives for the current organization with optional filters and pagination.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        archives = await server.archive_manager.list_archives_async(
-            actor=actor,
-            before=before,
-            after=after,
-            limit=limit,
-            ascending=(order == "asc"),
-            name=name,
-            agent_id=agent_id,
-        )
-        return archives
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    archives = await server.archive_manager.list_archives_async(
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        name=name,
+        agent_id=agent_id,
+    )
+    return archives
 
 
 @router.patch("/{archive_id}", response_model=PydanticArchive, operation_id="modify_archive")
@@ -99,15 +92,10 @@ async def modify_archive(
     """
     Update an existing archive's name and/or description.
     """
-    try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-        return await server.archive_manager.update_archive_async(
-            archive_id=archive_id,
-            name=archive.name,
-            description=archive.description,
-            actor=actor,
-        )
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.update_archive_async(
+        archive_id=archive_id,
+        name=archive.name,
+        description=archive.description,
+        actor=actor,
+    )
