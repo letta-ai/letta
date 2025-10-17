@@ -7314,8 +7314,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           }
         ],
         "responses": {
@@ -7353,8 +7359,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           },
           {
             "name": "X-Project",
@@ -7420,8 +7432,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           }
         ],
         "responses": {
@@ -7459,8 +7477,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -7508,8 +7532,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           },
           {
             "name": "before",
@@ -7670,8 +7700,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -7722,8 +7758,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           },
           {
             "name": "message_id",
@@ -7845,8 +7887,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Group Id"
-            }
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
           }
         ],
         "responses": {

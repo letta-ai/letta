@@ -69,7 +69,7 @@ async def count_groups(
 
 @router.get("/{group_id}", response_model=Group, operation_id="retrieve_group")
 async def retrieve_group(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -98,7 +98,7 @@ async def create_group(
 
 @router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
 async def modify_group(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     group: GroupUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -115,7 +115,7 @@ async def modify_group(
 
 @router.delete("/{group_id}", response_model=None, operation_id="delete_group")
 async def delete_group(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -133,7 +133,7 @@ async def delete_group(
     operation_id="send_group_message",
 )
 async def send_group_message(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -171,7 +171,7 @@ async def send_group_message(
     },
 )
 async def send_group_message_streaming(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -203,7 +203,7 @@ GroupMessagesResponse = Annotated[
 
 @router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message")
 async def modify_group_message(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     message_id: str = PATH_VALIDATORS["message"],
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -219,7 +219,7 @@ async def modify_group_message(
 
 @router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages")
 async def list_group_messages(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     before: Optional[str] = Query(
         None,
         description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
@@ -274,7 +274,7 @@ async def list_group_messages(
 
 @router.patch("/{group_id}/reset-messages", response_model=None, operation_id="reset_group_messages")
 async def reset_group_messages(
-    group_id: str,
+    group_id: str = PATH_VALIDATORS["group"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
