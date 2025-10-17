@@ -41,6 +41,25 @@ def backfill_missing_tool_call_ids(messages: list, agent_id: Optional[str] = Non
 
     from letta.schemas.message import Message as PydanticMessage
 
+    # Check if messages are ordered chronologically (oldest first)
+    # If not, reverse the list to ensure proper chronological order
+    was_reversed = False
+    if len(messages) > 1:
+        first_msg = messages[0]
+        last_msg = messages[-1]
+
+        # Only check PydanticMessage objects that have created_at
+        if (
+            isinstance(first_msg, PydanticMessage)
+            and isinstance(last_msg, PydanticMessage)
+            and hasattr(first_msg, "created_at")
+            and hasattr(last_msg, "created_at")
+        ):
+            # If first message is newer than last message, list is reversed
+            if first_msg.created_at > last_msg.created_at:
+                was_reversed = True
+                messages.reverse()
+
     updated_messages = []
     last_tool_call_id = None
     backfilled_count = 0
@@ -91,6 +110,9 @@ def backfill_missing_tool_call_ids(messages: list, agent_id: Optional[str] = Non
         logger.warning(
             f"Backfilled {backfilled_count} missing tool_call_ids for historical messages (oct 1-6, 2025 bug) - {agent_info}, {actor_info}"
         )
+
+    if was_reversed:
+        updated_messages.reverse()
 
     return updated_messages
 
