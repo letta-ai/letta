@@ -7,6 +7,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.validators import PATH_VALIDATORS
 
 if TYPE_CHECKING:
     pass
@@ -128,7 +129,7 @@ async def create_block(
 
 @router.patch("/{block_id}", response_model=Block, operation_id="modify_block")
 async def modify_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     block_update: BlockUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -139,7 +140,7 @@ async def modify_block(
 
 @router.delete("/{block_id}", operation_id="delete_block")
 async def delete_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -149,7 +150,7 @@ async def delete_block(
 
 @router.get("/{block_id}", response_model=Block, operation_id="retrieve_block")
 async def retrieve_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -162,7 +163,7 @@ async def retrieve_block(
 
 @router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
 async def list_agents_for_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     before: Optional[str] = Query(
         None,
         description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",

@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Path, Query, Request, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
@@ -939,7 +939,7 @@ async def modify_block(
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
 async def attach_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -953,7 +953,7 @@ async def attach_block(
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
 async def detach_block(
-    block_id: str,
+    block_id: str = PATH_VALIDATORS["block"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

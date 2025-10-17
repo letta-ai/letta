@@ -5567,8 +5567,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           },
           {
             "name": "agent_id",
@@ -5623,8 +5629,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           },
           {
             "name": "agent_id",
@@ -9448,8 +9460,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -9496,8 +9514,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           }
         ],
         "responses": {
@@ -9532,8 +9556,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           }
         ],
         "responses": {
@@ -9573,8 +9603,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Block Id"
-            }
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
           },
           {
             "name": "before",
