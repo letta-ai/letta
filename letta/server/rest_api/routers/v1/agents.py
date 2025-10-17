@@ -485,7 +485,7 @@ async def modify_approval(
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
 async def attach_source(
-    source_id: str,
+    source_id: str = PATH_VALIDATORS["source"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -539,7 +539,7 @@ async def attach_folder_to_agent(
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
 async def detach_source(
-    source_id: str,
+    source_id: str = PATH_VALIDATORS["source"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
