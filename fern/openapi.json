@@ -26255,7 +26255,14 @@
             "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Parallel Tool Calls",
             "description": "If set to True, enables parallel tool calling. Defaults to False.",
             "default": false
@@ -29567,7 +29574,14 @@
             "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Parallel Tool Calls",
             "description": "If set to True, enables parallel tool calling. Defaults to False.",
             "default": false
@@ -36821,7 +36835,14 @@
             "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Parallel Tool Calls",
             "description": "If set to True, enables parallel tool calling. Defaults to False.",
             "default": false
@@ -38046,7 +38067,14 @@
             "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Parallel Tool Calls",
             "description": "If set to True, enables parallel tool calling. Defaults to False.",
             "default": false
