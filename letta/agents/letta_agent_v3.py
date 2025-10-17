@@ -608,6 +608,74 @@ class LettaAgentV3(LettaAgentV2):
 
         Unified approach: treats single and multi-tool calls uniformly to reduce code duplication.
         """
+        # 1. Handle no-tool cases (content-only or no-op)
+        if not tool_calls and not tool_call_denials and not tool_returns:
+            # Case 1a: No tool call, no content (LLM no-op)
+            if content is None or len(content) == 0:
+                # Check if there are required-before-exit tools that haven't been called
+                uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
+                if uncalled:
+                    heartbeat_reason = (
+                        f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
+                    )
+                    from letta.server.rest_api.utils import create_heartbeat_system_message
+
+                    heartbeat_msg = create_heartbeat_system_message(
+                        agent_id=agent_state.id,
+                        model=agent_state.llm_config.model,
+                        function_call_success=True,
+                        timezone=agent_state.timezone,
+                        heartbeat_reason=heartbeat_reason,
+                        run_id=run_id,
+                    )
+                    messages_to_persist = (initial_messages or []) + [heartbeat_msg]
+                    continue_stepping, stop_reason = True, None
+                else:
+                    # No required tools remaining, end turn without persisting no-op
+                    continue_stepping = False
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                    messages_to_persist = initial_messages or []
+
+            # Case 1b: No tool call but has content
+            else:
+                continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
+                    agent_state=agent_state,
+                    tool_call_name=None,
+                    tool_rule_violated=False,
+                    tool_rules_solver=tool_rules_solver,
+                    is_final_step=is_final_step,
+                )
+                assistant_message = create_letta_messages_from_llm_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=None,
+                    function_arguments=None,
+                    tool_execution_result=None,
+                    tool_call_id=None,
+                    function_response=None,
+                    timezone=agent_state.timezone,
+                    continue_stepping=continue_stepping,
+                    heartbeat_reason=heartbeat_reason,
+                    reasoning_content=content,
+                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                    step_id=step_id,
+                    run_id=run_id,
+                    is_approval_response=is_approval_response,
+                    force_set_request_heartbeat=False,
+                    add_heartbeat_on_continue=bool(heartbeat_reason),
+                )
+                messages_to_persist = (initial_messages or []) + assistant_message
+
+            # Persist messages for no-tool cases
+            for message in messages_to_persist:
+                if message.run_id is None:
+                    message.run_id = run_id
+
+            persisted_messages = await self.message_manager.create_many_messages_async(
+                messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
+            )
+            return persisted_messages, continue_stepping, stop_reason
+
         if tool_returns:
             assert len(tool_returns) == 1, "Only one tool return is supported"
             tool_return = tool_returns[0]
@@ -679,74 +747,6 @@ class LettaAgentV3(LettaAgentV2):
                 run_id=run_id,
                 project_id=agent_state.project_id,
                 template_id=agent_state.template_id,
-            )
-            return persisted_messages, continue_stepping, stop_reason
-
-        # 3. Handle no-tool cases (content-only or no-op)
-        if not tool_calls:
-            # Case 3a: No tool call, no content (LLM no-op)
-            if content is None or len(content) == 0:
-                # Check if there are required-before-exit tools that haven't been called
-                uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
-                if uncalled:
-                    heartbeat_reason = (
-                        f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
-                    )
-                    from letta.server.rest_api.utils import create_heartbeat_system_message
-
-                    heartbeat_msg = create_heartbeat_system_message(
-                        agent_id=agent_state.id,
-                        model=agent_state.llm_config.model,
-                        function_call_success=True,
-                        timezone=agent_state.timezone,
-                        heartbeat_reason=heartbeat_reason,
-                        run_id=run_id,
-                    )
-                    messages_to_persist = (initial_messages or []) + [heartbeat_msg]
-                    continue_stepping, stop_reason = True, None
-                else:
-                    # No required tools remaining, end turn without persisting no-op
-                    continue_stepping = False
-                    stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                    messages_to_persist = initial_messages or []
-
-            # Case 3b: No tool call but has content
-            else:
-                continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
-                    agent_state=agent_state,
-                    tool_call_name=None,
-                    tool_rule_violated=False,
-                    tool_rules_solver=tool_rules_solver,
-                    is_final_step=is_final_step,
-                )
-                assistant_message = create_letta_messages_from_llm_response(
-                    agent_id=agent_state.id,
-                    model=agent_state.llm_config.model,
-                    function_name=None,
-                    function_arguments=None,
-                    tool_execution_result=None,
-                    tool_call_id=None,
-                    function_response=None,
-                    timezone=agent_state.timezone,
-                    continue_stepping=continue_stepping,
-                    heartbeat_reason=heartbeat_reason,
-                    reasoning_content=content,
-                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                    step_id=step_id,
-                    run_id=run_id,
-                    is_approval_response=is_approval_response,
-                    force_set_request_heartbeat=False,
-                    add_heartbeat_on_continue=bool(heartbeat_reason),
-                )
-                messages_to_persist = (initial_messages or []) + assistant_message
-
-            # Persist messages for no-tool cases
-            for message in messages_to_persist:
-                if message.run_id is None:
-                    message.run_id = run_id
-
-            persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
             )
             return persisted_messages, continue_stepping, stop_reason
 
