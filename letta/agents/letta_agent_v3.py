@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 from typing import AsyncGenerator, Optional
 
@@ -31,7 +32,7 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -676,6 +677,38 @@ class LettaAgentV3(LettaAgentV2):
             )
             return persisted_messages, continue_stepping, stop_reason
 
+        # 2. Check whether tool call requires approval
+        tool_names = [tc.function.name for tc in tool_calls]
+        requires_approval = (
+            not is_approval_response
+            and tool_names
+            and any(tool_rules_solver.is_requires_approval_tool(tool_name) for tool_name in tool_names)
+        )
+        if requires_approval:
+            approval_message = create_approval_request_message_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                tool_calls=tool_calls,
+                reasoning_content=content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+                run_id=run_id,
+            )
+            messages_to_persist = (initial_messages or []) + [approval_message]
+
+            for message in messages_to_persist:
+                if message.run_id is None:
+                    message.run_id = run_id
+
+            persisted_messages = await self.message_manager.create_many_messages_async(
+                messages_to_persist,
+                actor=self.actor,
+                run_id=run_id,
+                project_id=agent_state.project_id,
+                template_id=agent_state.template_id,
+            )
+            return persisted_messages, False, LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+
         if tool_returns:
             assert len(tool_returns) == 1, "Only one tool return is supported"
             tool_return = tool_returns[0]
@@ -752,44 +785,7 @@ class LettaAgentV3(LettaAgentV2):
 
         # 4. Unified tool execution path (works for both single and multiple tools)
 
-        # 4a. Check for single tool approval case (special handling required)
-        if len(tool_calls) == 1 and not is_approval_response:
-            single_tool = tool_calls[0]
-            tool_name = single_tool.function.name
-            tool_args = _safe_load_tool_call_str(single_tool.function.arguments)
-            tool_args.pop(REQUEST_HEARTBEAT_PARAM, None)
-            tool_args.pop(INNER_THOUGHTS_KWARG, None)
-
-            if tool_rules_solver.is_requires_approval_tool(tool_name):
-                tool_call_id = single_tool.id or f"call_{uuid.uuid4().hex[:8]}"
-                approval_message = create_approval_request_message_from_llm_response(
-                    agent_id=agent_state.id,
-                    model=agent_state.llm_config.model,
-                    function_name=tool_name,
-                    function_arguments=tool_args,
-                    tool_call_id=tool_call_id,
-                    actor=self.actor,
-                    continue_stepping=True,
-                    reasoning_content=content,
-                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                    step_id=step_id,
-                    run_id=run_id,
-                    append_request_heartbeat=False,
-                )
-                messages_to_persist = (initial_messages or []) + [approval_message]
-
-                for message in messages_to_persist:
-                    if message.run_id is None:
-                        message.run_id = run_id
-
-                persisted_messages = await self.message_manager.create_many_messages_async(
-                    messages_to_persist,
-                    actor=self.actor,
-                    run_id=run_id,
-                    project_id=agent_state.project_id,
-                    template_id=agent_state.template_id,
-                )
-                return persisted_messages, False, LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+        # 4a. TODO
 
         # 4b. Validate parallel tool calling constraints
         if len(tool_calls) > 1:

@@ -1,3 +1,4 @@
+import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -18,7 +19,7 @@ from letta.agents.helpers import (
     _safe_load_tool_call_str,
     generate_step_id,
 )
-from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import AsyncTimer, get_utc_time, get_utc_timestamp_ns, ns_to_ms
@@ -41,7 +42,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreateBase
-from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
@@ -1698,14 +1699,11 @@ class LettaAgent(BaseAgent):
             request_heartbeat=request_heartbeat,
         )
         if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
+            tool_args[REQUEST_HEARTBEAT_PARAM] = request_heartbeat
             approval_message = create_approval_request_message_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                function_name=tool_call_name,
-                function_arguments=tool_args,
-                tool_call_id=tool_call_id,
-                actor=self.actor,
-                continue_stepping=request_heartbeat,
+                tool_calls=[ToolCall(id=tool_call_id, function=FunctionCall(name=tool_call_name, arguments=json.dumps(tool_args)))],
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,

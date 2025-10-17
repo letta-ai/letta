@@ -36,7 +36,7 @@ from letta.schemas.letta_message_content import (
     TextContent,
 )
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import ApprovalCreate, ApprovalReturn, Message, MessageCreate, ToolReturn
+from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -172,16 +172,7 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
 def create_approval_response_message_from_input(
     agent_state: AgentState, input_message: ApprovalCreate, run_id: Optional[str] = None
 ) -> List[Message]:
-    if not input_message.approvals:
-        input_message.approvals = [
-            ApprovalCreate(approve=input_message.approve, tool_call_id=input_message.approval_request_id, reason=input_message.reason)
-        ]
-    approval_messages = [
-        a for a in input_message.approvals if isinstance(a, ApprovalReturn) or (isinstance(a, dict) and a.get("type") == "approval")
-    ]
-    first_approval = approval_messages[0] if approval_messages else None
-
-    def maybe_convert_return_message(maybe_tool_return):
+    def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
         if isinstance(maybe_tool_return, LettaToolReturn):
             packaged_function_response = package_function_response(
                 maybe_tool_return.status == "success", maybe_tool_return.tool_return, agent_state.timezone
@@ -200,10 +191,10 @@ def create_approval_response_message_from_input(
             role=MessageRole.approval,
             agent_id=agent_state.id,
             model=agent_state.llm_config.model,
-            approval_request_id=first_approval.tool_call_id if first_approval else input_message.approval_request_id,
-            approve=first_approval.approve if first_approval else input_message.approve,
-            denial_reason=first_approval.reason if first_approval else input_message.reason,
-            approvals=[maybe_convert_return_message(approval) for approval in input_message.approvals],
+            approval_request_id=input_message.approval_request_id,
+            approve=input_message.approve,
+            denial_reason=input_message.reason,
+            approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
             run_id=run_id,
         )
     ]
@@ -212,29 +203,24 @@ def create_approval_response_message_from_input(
 def create_approval_request_message_from_llm_response(
     agent_id: str,
     model: str,
-    function_name: str,
-    function_arguments: Dict,
-    tool_call_id: str,
-    actor: User,
-    continue_stepping: bool = False,
+    tool_calls: List[OpenAIToolCall],
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
     run_id: str = None,
-    append_request_heartbeat: bool = True,
 ) -> Message:
     # Construct the tool call with the assistant's message
-    # Optionally set request_heartbeat in tool args (v2 behavior only)
-    if append_request_heartbeat:
-        function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
-    tool_call = OpenAIToolCall(
-        id=tool_call_id,
-        function=OpenAIFunction(
-            name=function_name,
-            arguments=json.dumps(function_arguments),
-        ),
-        type="function",
-    )
+    oai_tool_calls = [
+        OpenAIToolCall(
+            id=tool_call.id,
+            function=OpenAIFunction(
+                name=tool_call.function.name,
+                arguments=tool_call.function.arguments,
+            ),
+            type="function",
+        )
+        for tool_call in tool_calls
+    ]
     # TODO: Use ToolCallContent instead of tool_calls
     # TODO: This helps preserve ordering
     approval_message = Message(
@@ -242,8 +228,8 @@ def create_approval_request_message_from_llm_response(
         content=reasoning_content if reasoning_content else [],
         agent_id=agent_id,
         model=model,
-        tool_calls=[tool_call],
-        tool_call_id=tool_call_id,
+        tool_calls=oai_tool_calls,
+        tool_call_id=oai_tool_calls[0].id,
         created_at=get_utc_time(),
         step_id=step_id,
         run_id=run_id,
