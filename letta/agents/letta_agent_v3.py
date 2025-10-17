@@ -456,7 +456,7 @@ class LettaAgentV3(LettaAgentV2):
                 step_metrics=step_metrics,
                 is_approval_response=approval_response is not None,
                 tool_call_denials=tool_call_denials,
-                tool_return=tool_returns[0] if tool_returns else None,
+                tool_returns=tool_returns,
             )
             aggregated_persisted.extend(persisted_messages)
             # NOTE: there is an edge case where persisted_messages is empty (the LLM did a "no-op")
@@ -600,7 +600,7 @@ class LettaAgentV3(LettaAgentV2):
         is_approval_response: bool | None = None,
         tool_calls: list[ToolCall] = [],
         tool_call_denials: list[ToolCallDenial] = [],
-        tool_return: ToolReturn | None = None,
+        tool_returns: list[ToolReturn] = [],
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate tool calls,
@@ -608,9 +608,9 @@ class LettaAgentV3(LettaAgentV2):
 
         Unified approach: treats single and multi-tool calls uniformly to reduce code duplication.
         """
-        first_tool_call = tool_calls[0] if tool_calls else None
-
-        if tool_return is not None:
+        if tool_returns:
+            assert len(tool_returns) == 1, "Only one tool return is supported"
+            tool_return = tool_returns[0]
             continue_stepping = True
             stop_reason = None
             tool_call_messages = [
