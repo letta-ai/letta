@@ -38,6 +38,7 @@ from letta.services.mcp.oauth_utils import MCPOAuthSession, drill_down_exception
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
 from letta.settings import tool_settings
+from letta.validators import PATH_VALIDATORS
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -46,7 +47,7 @@ logger = get_logger(__name__)
 
 @router.delete("/{tool_id}", operation_id="delete_tool")
 async def delete_tool(
-    tool_id: str,
+    tool_id: str = PATH_VALIDATORS["tool"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -149,7 +150,7 @@ async def count_tools(
 
 @router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
 async def retrieve_tool(
-    tool_id: str,
+    tool_id: str = PATH_VALIDATORS["tool"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -297,8 +298,8 @@ async def upsert_tool(
 
 @router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
 async def modify_tool(
-    tool_id: str,
     request: ToolUpdate = Body(...),
+    tool_id: str = PATH_VALIDATORS["tool"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

@@ -434,7 +434,7 @@ async def list_agent_tools(
 
 @router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
 async def attach_tool(
-    tool_id: str,
+    tool_id: str = PATH_VALIDATORS["tool"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -450,7 +450,7 @@ async def attach_tool(
 
 @router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
 async def detach_tool(
-    tool_id: str,
+    tool_id: str = PATH_VALIDATORS["tool"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
