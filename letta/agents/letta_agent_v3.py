@@ -454,7 +454,7 @@ class LettaAgentV3(LettaAgentV2):
                 is_final_step=(remaining_turns == 0),
                 run_id=run_id,
                 step_metrics=step_metrics,
-                is_approval=approval_response is not None,
+                is_approval_response=approval_response is not None,
                 tool_call_denials=tool_call_denials,
                 tool_return=tool_returns[0] if tool_returns else None,
             )
@@ -597,7 +597,7 @@ class LettaAgentV3(LettaAgentV2):
         is_final_step: bool | None = None,
         run_id: str | None = None,
         step_metrics: StepMetrics = None,
-        is_approval: bool | None = None,
+        is_approval_response: bool | None = None,
         tool_calls: list[ToolCall] = [],
         tool_call_denials: list[ToolCallDenial] = [],
         tool_return: ToolReturn | None = None,
@@ -734,7 +734,7 @@ class LettaAgentV3(LettaAgentV2):
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
                     run_id=run_id,
-                    is_approval_response=is_approval,
+                    is_approval_response=is_approval_response,
                     force_set_request_heartbeat=False,
                     add_heartbeat_on_continue=bool(heartbeat_reason),
                 )
@@ -753,7 +753,7 @@ class LettaAgentV3(LettaAgentV2):
         # 4. Unified tool execution path (works for both single and multiple tools)
 
         # 4a. Check for single tool approval case (special handling required)
-        if len(tool_calls) == 1 and not is_approval:
+        if len(tool_calls) == 1 and not is_approval_response:
             single_tool = tool_calls[0]
             tool_name = single_tool.function.name
             tool_args = _safe_load_tool_call_str(single_tool.function.arguments)
@@ -812,7 +812,7 @@ class LettaAgentV3(LettaAgentV2):
             args.pop(INNER_THOUGHTS_KWARG, None)
 
             # Validate against allowed tools
-            tool_rule_violated = name not in valid_tool_names and not is_approval
+            tool_rule_violated = name not in valid_tool_names and not is_approval_response
 
             # Handle prefilled args if present
             if not tool_rule_violated:
@@ -962,7 +962,7 @@ class LettaAgentV3(LettaAgentV2):
             step_id=step_id,
             reasoning_content=content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            is_approval_response=is_approval,
+            is_approval_response=is_approval_response,
         )
 
         messages_to_persist: list[Message] = (initial_messages or []) + parallel_messages
