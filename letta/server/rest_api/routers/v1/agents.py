@@ -1392,11 +1392,11 @@ async def _process_message_background(
     run_id: str,
     server: SyncServer,
     actor: User,
+    agent_id: str,
     messages: list[MessageCreate],
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
-    agent_id: str = PATH_VALIDATORS["agent"],
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
 ) -> None:
