@@ -1,42 +1,41 @@
 ---
-title: Migrating a LangChain Chatbot to Letta
-subtitle: Convert a session-based chatbot to use persistent memory
+title: Migrating a LangChain chatbot to Letta
+subtitle: Convert a session-based chatbot to use persistent memory.
 slug: migrations/chatbot
 ---
 
-This guide shows how to migrate a LangChain chatbot to Letta. While the example is simple, it demonstrates the core migration patterns you'll use for larger, more complex applications: replacing thread-based session management with persistent memory, converting stateless agents to stateful architecture, and eliminating manual state tracking.
+This guide demonstrates how to migrate a LangChain chatbot to Letta. While the example is simple, it illustrates the core patterns needed for migrating larger, more complex applications, including replacing thread-based session management with persistent memory, converting stateless agents to stateful architecture, and eliminating manual state tracking.
 
-By the end, you'll understand how to replace LangChain's `MemorySaver` with Letta's memory blocks, eliminate thread ID management from your application, convert session-based state to persistent agent state, and apply these patterns to tools, RAG, and multi-agent systems.
+You'll learn how to replace LangChain's `MemorySaver` with Letta's memory blocks, eliminate thread ID management from your application, convert session-based state to persistent agent state, and apply these patterns to tools, RAG, and multi-agent systems.
 
 ## Prerequisites
 
-To follow along, you'll need:
+To follow along, you need:
 
 - Python 3.10 or higher
 - A [Letta Cloud](https://app.letta.com/login?redirect=/) account with an API key
 
-### Creating a Letta Cloud account
+### Create a Letta Cloud account
 
-Visit [app.letta.com](https://app.letta.com) and sign up using a Google account, GitHub account, or email address. After logging in, you'll be directed to the Letta Dashboard.
+Visit [app.letta.com](https://app.letta.com) and sign up using a Google account, GitHub account, or email address.
 
-### Getting your API key
+### Get your API key
 
-Once logged in:
+When you log in, you're directed to the Letta dashboard:
 
-1. Click your profile icon in the top right corner
-2. Select **API Keys** from the menu
-3. Click **+ Create API Key**
-4. Copy the key and save it somewhere safe
+- Click your profile icon in the top right corner and select **API Keys** from the dropdown menu.
+- Click **+ Create API Key**.
+- Copy the key and save it somewhere safe.
 
 <img src="/images/migrations/letta_api_key.png" />
 
-## An example LangChain chatbot
+## The example LangChain chatbot
 
-We'll start with a simple LangChain chatbot that remembers conversation history using LangGraph's `MemorySaver`.
+We'll start by building a simple LangChain chatbot that remembers conversation history using LangGraph's `MemorySaver`.
 
 <Steps>
   <Step title="Create the chatbot file">
-    Create a new file called `langchain_chatbot.py` and add the following code:
+    Create a new file called `langchain_chatbot.py` and add the following code to it:
 
     ```python
     from langchain_core.messages import HumanMessage
@@ -80,37 +79,43 @@ We'll start with a simple LangChain chatbot that remembers conversation history 
     ```
   </Step>
 
-  <Step title="Install required packages">
+  <Step title="Install the required packages">
+    Run the following command in your terminal:
+
     ```bash
     pip install langchain-core langgraph langchain-openai langchain
     ```
   </Step>
 
   <Step title="Set your OpenAI API key">
+    Run the following command, replacing `"your-api-key-here"` with your Letta API key:
+
     ```bash
     export OPENAI_API_KEY="your-api-key-here"
     ```
   </Step>
 
   <Step title="Run the chatbot">
+    Run this command to initiate the LangChain chatbot:
+
     ```bash
     python langchain_chatbot.py
     ```
   </Step>
 </Steps>
 
-You should see output like:
+You should see an output similar to the following:
 
 ```
 Hello Alice! How can I help you today?
 Your name is Alice.
 ```
 
-The chatbot remembers Alice's name because we used the same `thread_id` for both messages. If we changed the thread ID in the second message, the chatbot would have no memory of the first conversation.
+The chatbot remembers Alice's name because we used the same `thread_id` for both messages. If we'd changed the thread ID in the second message, the chatbot would have no memory of the first conversation.
 
-### Understanding the LangChain patterns we'll migrate
+## LangChain migration patterns
 
-This simple example contains the core patterns you'll encounter in all LangChain applications—whether they use tools, RAG, or multi-agent systems. Let's break down the key components we'll need to replace.
+This simple example contains the core patterns you'll encounter in all LangChain applications, regardless of whether they use tools, RAG, or multi-agent systems. Let's break down the key components you need to replace.
 
 #### Thread-based session management
 
@@ -118,7 +123,7 @@ This simple example contains the core patterns you'll encounter in all LangChain
 config = {"configurable": {"thread_id": "user-123"}}
 ```
 
-LangChain requires you to manually create, track, and pass thread IDs for every conversation. In production, this means database tables mapping users to thread IDs, cleanup jobs for abandoned threads, session affinity in load balancers, and the risk of using the wrong thread ID. This pattern repeats in every LangChain app—tools use the same thread config with every invocation, RAG systems tie retriever state to threads, and multi-agent systems require complex graph state management across threads.
+LangChain requires you to manually create, track, and pass thread IDs for every conversation. In production, this means database tables mapping users to thread IDs, cleanup jobs for abandoned threads, session affinity in load balancers, and the risk of using the wrong thread ID. This pattern repeats in every LangChain app: tools use the same thread config with every invocation, RAG systems tie retriever state to threads, and multi-agent systems require complex graph state management across threads.
 
 #### In-memory state storage
 
@@ -127,7 +132,7 @@ memory = MemorySaver()
 app = workflow.compile(checkpointer=memory)
 ```
 
-The `MemorySaver` keeps state only in your application's memory. When the program stops, all conversations are lost. For production persistence, you'd need PostgreSQL checkpointer setup, database schema migrations, connection pooling configuration, and manual state cleanup.
+The `MemorySaver` keeps state only in your application's memory. When the program stops, all conversations are lost. For production persistence, you'd need a PostgreSQL checkpointer setup, database schema migrations, a connection-pooling configuration, and manual state cleanup.
 
 #### Graph workflow definition
 
@@ -142,174 +147,174 @@ workflow.add_node("model", call_model)
 workflow.add_edge(START, "model")
 ```
 
-LangChain requires explicit workflow graph definition even for simple linear flows. You define state schemas, create nodes for each step, and manually wire them together with edges.
+LangChain requires explicit workflow graph definitions even for simple linear flows. You define state schemas, create nodes for each step, and manually wire them together with edges.
 
-We'll eliminate all of these patterns by migrating to Letta's persistent memory model.
+Migrating to Letta's persistent memory model eliminates all these patterns.
 
 ## Migrating to Letta
 
-Now we'll convert the LangChain chatbot to Letta step by step. We'll create a new file for the Letta chatbot so you can compare them side by side.
+Now we'll convert the LangChain chatbot to a Letta chatbot step by step. We'll create a new file for the Letta chatbot so you can compare both chatbots side by side.
 
-### Install Letta and initialize the client
+  <Step title="Install Letta and initialize the client">
+    First, install the Letta Python client:
+    
+    ```bash
+    pip install letta-client
+    ```
+    
+    Create a new `letta_chatbot.py` file with code from the LangChain chatbot.
+  </Step>
 
-First, install the Letta Python client:
+  <Step title="Replace LangChain library imports with the Letta platform client">
+    LangChain is a library that runs inside your application's process. Letta is a platform where agents run as a service, and your application makes HTTP requests to interact with those agents.
+    
+    This means your application stays lightweight. In LangChain, your pods need memory for model inference, pod affinity rules for session continuity, and database connection pooling for state. In Letta, you just need an HTTP client. Agents run on the platform, so you don't manage inference, state, or coordination.
+    
+    Replace the LangChain imports:
+    
+    ```python
+    from langchain_core.messages import HumanMessage
+    from langchain.chat_models import init_chat_model
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import START, MessagesState, StateGraph
+    ```
+    
+    With the following Letta import:
+    
+    ```python
+    from letta_client import Letta
+    ```
+    
+    Then replace the entire workflow setup:
+    
+    ```python
+    # Initialize the chat model
+    model = init_chat_model("gpt-4o-mini", model_provider="openai")
+    
+    # Define the graph workflow
+    workflow = StateGraph(state_schema=MessagesState)
+    
+    def call_model(state: MessagesState):
+        response = model.invoke(state["messages"])
+        return {"messages": [response]}
+    
+    workflow.add_node("model", call_model)
+    workflow.add_edge(START, "model")
+    ```
+    
+    With the Letta client initialization:
+    
+    ```python
+    # Initialize Letta client with your API key
+    client = Letta(token="your-letta-api-key-here")
+    ```
+    
+    Notice how much simpler this is. Letta handles the model, workflow, and memory management on the server, so you don't need to configure any of that locally.
+  </Step>
 
-```bash
-pip install letta-client
-```
+  <Step title="Replace MemorySaver with memory blocks">
+    LangChain's `MemorySaver` stores conversation history implicitly as an in-memory message list. It disappears when your program stops.
+    
+    Letta uses explicit memory blocks that define what the agent should remember. A `human` block stores what the agent learns about the person. The `persona` block defines how the agent sees itself. These persist automatically on Letta's servers.
+    
+    Remove the memory and thread config code:
+    
+    ```python
+    memory = MemorySaver()
+    app = workflow.compile(checkpointer=memory)
+    
+    # Configuration with thread ID for this conversation
+    config = {"configurable": {"thread_id": "user-123"}}
+    ```
+    
+    Add agent creation with memory blocks:
+    
+    ```python
+    # Create an agent with memory blocks
+    agent = client.agents.create(
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        memory_blocks=[
+            {
+                "label": "human",
+                "value": "I don't know the human's name yet."
+            },
+            {
+                "label": "persona",
+                "value": "I am a helpful assistant who remembers conversations."
+            }
+        ]
+    )
+    
+    print(f"Created agent: {agent.id}")
+    ```
+  </Step>
 
-Create a new file called `letta_chatbot.py` with code from the LangChain chatbot. We'll replace the relevant sections as we go.
+  <Step title="Replace thread-based messaging with agent messaging">
+    LangChain requires you to pass thread IDs with every request. You create thread IDs, store them in a database mapping users to threads, and pass a config dictionary with every call. Your load balancer needs session affinity rules to route users to the correct pod.
+    
+    Letta uses agent IDs. Each user maps to an agent, and any pod can serve any request, because Letta maintains state on the platform. No config dictionary, thread management, or session affinity required.
+    
+    Replace the LangChain message code:
+    
+    ```python
+    # First message
+    response = app.invoke(
+        {"messages": [HumanMessage(content="Hi, my name is Alice")]},
+        config=config
+    )
+    print(response["messages"][-1].content)
+    
+    # Second message - same thread ID means it remembers
+    response = app.invoke(
+        {"messages": [HumanMessage(content="What's my name?")]},
+        config=config
+    )
+    print(response["messages"][-1].content)
+    ```
+    
+    With the Letta version:
+    
+    ```python
+    # First message
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            {
+                "role": "user",
+                "content": "Hi, my name is Alice"
+            }
+        ]
+    )
+    
+    # Print the assistant's response
+    for message in response.messages:
+        if message.message_type == "assistant_message":
+            print(message.content)
+    
+    # Second message - agent remembers automatically
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            {
+                "role": "user",
+                "content": "What's my name?"
+            }
+        ]
+    )
+    
+    # Print the assistant's response
+    for message in response.messages:
+        if message.message_type == "assistant_message":
+            print(message.content)
+    ```
+    
+    The key difference is that this version has no `config` parameter or thread ID. Letta agents maintain their state automatically, so all you need is the agent ID.
+    
+    The response also includes more detail than LangChain. Letta returns multiple message types, including reasoning (the agent's internal thoughts), tool calls, and the final assistant message.
+  </Step>
 
-### Replace library imports with platform client
-
-LangChain is a library that runs inside your application's process. Letta is a platform where agents run as a service. Your application makes HTTP requests to interact with agents.
-
-This means your application stays lightweight. In LangChain, your pods need memory for model inference, pod affinity rules for session continuity, and database connection pooling for state. In Letta, you just need an HTTP client. Agents run on the platform, so you don't manage inference, state, or coordination.
-
-Replace the LangChain imports:
-
-```python
-from langchain_core.messages import HumanMessage
-from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import START, MessagesState, StateGraph
-```
-
-With the Letta import:
-
-```python
-from letta_client import Letta
-```
-
-Then replace the entire workflow setup:
-
-```python
-# Initialize the chat model
-model = init_chat_model("gpt-4o-mini", model_provider="openai")
-
-# Define the graph workflow
-workflow = StateGraph(state_schema=MessagesState)
-
-def call_model(state: MessagesState):
-    response = model.invoke(state["messages"])
-    return {"messages": [response]}
-
-workflow.add_node("model", call_model)
-workflow.add_edge(START, "model")
-```
-
-With the Letta client initialization:
-
-```python
-# Initialize Letta client with your API key
-client = Letta(token="your-letta-api-key-here")
-```
-
-Notice how much simpler this is. Letta handles the model, workflow, and memory management on the server, so you don't need to configure any of that locally.
-
-### Replace MemorySaver with memory blocks
-
-LangChain's `MemorySaver` stores conversation history implicitly as an in-memory message list. It disappears when your program stops.
-
-Letta uses explicit memory blocks that define what the agent should remember. A `human` block stores what the agent learns about the person. The `persona` block defines how the agent sees itself. These persist automatically on Letta's servers.
-
-Remove the memory and thread config code:
-
-```python
-memory = MemorySaver()
-app = workflow.compile(checkpointer=memory)
-
-# Configuration with thread ID for this conversation
-config = {"configurable": {"thread_id": "user-123"}}
-```
-
-Add agent creation with memory blocks:
-
-```python
-# Create an agent with memory blocks
-agent = client.agents.create(
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    memory_blocks=[
-        {
-            "label": "human",
-            "value": "I don't know the human's name yet."
-        },
-        {
-            "label": "persona",
-            "value": "I am a helpful assistant who remembers conversations."
-        }
-    ]
-)
-
-print(f"Created agent: {agent.id}")
-```
-
-### Replace thread-based messaging with agent messaging
-
-LangChain requires thread IDs passed with every request. You create thread IDs, store them in a database mapping users to threads, and pass a config dictionary with every call. Your load balancer needs session affinity rules to route users to the correct pod.
-
-Letta uses agent IDs. Each user maps to an agent, and any pod can serve any request because state lives on the platform. No config dictionary, no thread management, no session affinity.
-
-Replace the LangChain message code:
-
-```python
-# First message
-response = app.invoke(
-    {"messages": [HumanMessage(content="Hi, my name is Alice")]},
-    config=config
-)
-print(response["messages"][-1].content)
-
-# Second message - same thread ID means it remembers
-response = app.invoke(
-    {"messages": [HumanMessage(content="What's my name?")]},
-    config=config
-)
-print(response["messages"][-1].content)
-```
-
-With the Letta version:
-
-```python
-# First message
-response = client.agents.messages.create(
-    agent_id=agent.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "Hi, my name is Alice"
-        }
-    ]
-)
-
-# Print the assistant's response
-for message in response.messages:
-    if message.message_type == "assistant_message":
-        print(message.content)
-
-# Second message - agent remembers automatically
-response = client.agents.messages.create(
-    agent_id=agent.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "What's my name?"
-        }
-    ]
-)
-
-# Print the assistant's response
-for message in response.messages:
-    if message.message_type == "assistant_message":
-        print(message.content)
-```
-
-The key difference: there's no `config` parameter and no thread ID. Letta agents maintain their state automatically. The agent ID is all you need.
-
-The response also includes more detail than LangChain. Letta returns multiple message types including reasoning (the agent's internal thoughts), tool calls, and the final assistant message.
-
-## The Complete Letta Chatbot
+## The complete Letta chatbot
 
 Here's the full `letta_chatbot.py` file after migration:
 
@@ -376,7 +381,7 @@ for message in response.messages:
     export LETTA_API_KEY="your-letta-api-key-here"
     ```
 
-    Or pass it directly in the code:
+    Alternatively, pass it directly in the code:
 
     ```python
     client = Letta(token="letta_xxxxx...")
@@ -398,33 +403,33 @@ for message in response.messages:
   </Step>
 </Steps>
 
-## Viewing Your Agent in the ADE
+## View your Agent in the ADE
 
 The Agent Development Environment (ADE) lets you see what your agent is thinking and what it remembers.
 
-Visit [app.letta.com](https://app.letta.com) and log in. Navigate to the **Agents** section in the dashboard where you'll see your agent listed:
+Visit [app.letta.com](https://app.letta.com) and log in. Navigate to the **Agents** section on the dashboard, where your agent is listed:
 
 <img src="/images/migrations/agent-dashboard.png" />
 
-Click on your agent, then select **Open in ADE** to access the Agent Development Environment:
+Click on your agent, then select **Open in ADE**:
 
 <img src="/images/migrations/agent-dev-environment.png" />
 
 In the ADE, you can view:
 
-- **Memory blocks**: See what the agent has stored in its `human` and `persona` blocks
+- **Memory blocks**: The data the agent has stored in its `human` and `persona` blocks
 - **Message history**: Every message exchanged with the agent
 - **Reasoning steps**: The agent's internal thoughts (chain-of-thought)
 - **Context window**: What the agent sees when it processes messages
 
-After the first message, the agent updated its memory block to remember Alice's name. This happens automatically through Letta's built-in memory management tools.
+After the first message, the agent updates its memory block to remember Alice's name. This happens automatically through Letta's built-in memory management tools.
 
-The ADE provides observability that would require custom tooling in LangChain. You can inspect memory to see exactly what the agent remembers, watch reasoning traces to understand the agent's decision-making process, monitor tool calls to see which tools agents invoke and why, and view the context window to understand what's loaded in context versus archival.
+The ADE provides observability that would require custom tooling in LangChain. You can inspect memory to see exactly what the agent remembers, watch reasoning traces to understand the agent's decision-making process, monitor tool calls to see which tools agents invoke and why, and view the context window to understand what's stored in context versus archival memory.
 
 <Note>
 This built-in observability becomes critical when debugging agents with tools, RAG pipelines, or multi-agent coordination.
 
-In LangChain, you'd need to build custom logging to see which tool was called with what parameters, what documents were retrieved from your vector store, or how state flows between agents. With Letta's ADE, all of this is visible by default.
+In LangChain, you'd need to build custom logging to see which tools are called with which parameters, what documents are retrieved from your vector store, or how state flows between agents. Within the Letta ADE, all of this is visible by default.
 </Note>
 
 ## What we eliminated in the migration
@@ -433,30 +438,45 @@ The LangChain version required workflow graph definition, state schema setup, Me
 
 The Letta version accomplishes the same functionality with just agent creation and message sending.
 
-More importantly, we avoided infrastructure you'd need to build for a production LangChain app. Our simple LangChain example used in-memory `MemorySaver`, which loses all conversations when the program stops. A real application would need:
+More importantly, we avoided creating the infrastructure you'd need to build for a production LangChain app. Our simple LangChain example used in-memory `MemorySaver`, which loses all conversations when the program stops. A real application would need:
 
-- Database setup for PostgreSQL checkpointer
-- Thread lifecycle management code to create and track thread IDs per user
+- A database setup for a PostgreSQL checkpointer
+- Thread lifecycle management code for creating and tracking thread IDs per user
 - Session cleanup jobs to remove abandoned threads
 - State synchronization logic across your application servers
 
-With Letta, none of this infrastructure exists because agents persist their state automatically on the platform.
+With Letta, none of this infrastructure exists because agents' state automatically persists on the platform.
 
-## Applying these patterns to your application
+## Apply these patterns to other applications
 
-Now that you understand the core migration patterns, here's how to approach larger LangChain applications.
+Now that you understand the core migration patterns, you can approach migrating larger LangChain applications as follows:
 
-Start by identifying session and thread management code (like we removed here), mapping state to memory blocks (like `human` and `persona`), converting from library calls to API calls (like we did with `client.agents.create`), and testing that state persists across restarts.
+- First, identify session and thread management code (like we removed here).
+- Map state to memory blocks (like `human` and `persona`).
+- Convert library calls to API calls (like we did with `client.agents.create`).
+- Test that state persists across restarts.
 
-If your app uses tools, the same pattern applies. Register tools with Letta server, attach to agents, and eliminate thread configs. See the [Custom Tools](/guides/agents/custom-tools) guide.
+If your app uses tools, the same pattern applies:
 
-If your app uses RAG (vector stores, retrievers), replace document loaders and vector stores with Letta's filesystem. Upload files to folders and attach to agents. See the [Letta Filesystem](/guides/agents/filesystem) guide.
+- Register tools with the Letta server.
+- Attach to agents.
+- Eliminate thread configs.
 
-If your app uses multi-agent systems (LangGraph supervisors), replace graph coordination with shared memory blocks. See the [Multi-Agent Shared Memory](/guides/agents/multi-agent-shared-memory) guide.
+See the [Custom Tools](/guides/agents/custom-tools) guide for more information.
+
+If your app uses RAG (for example, vector stores or retrievers), approach migration as follows:
+
+- Replace document loaders and vector stores with Letta's filesystem.
+- Upload files to folders.
+- Attach to agents.
+
+See the [Letta Filesystem](/guides/agents/filesystem) guide for more information.
+
+If your app uses multi-agent systems (like LangGraph supervisors), replace graph coordination with shared memory blocks. See the [Multi-Agent Shared Memory](/guides/agents/multi-agent-shared-memory) guide for more information.
 
 ## Continue Learning
 
-- [Add custom tools](/guides/agents/custom-tools) to give your agent new capabilities
-- Learn about [memory blocks](/guides/agents/memory-blocks) and how agents edit their own memory
-- Build [multi-agent systems](/guides/agents/multi-agent) with shared memory
-- Explore different [agent architectures](/guides/agents/architectures)
+- [Add custom tools](/guides/agents/custom-tools) to give your agent new capabilities.
+- Learn about [memory blocks](/guides/agents/memory-blocks) and how agents edit their own memory.
+- Build [multi-agent systems](/guides/agents/multi-agent) with shared memory.
+- Explore different [agent architectures](/guides/agents/architectures).
