@@ -17124,6 +17124,35 @@
                                   ],
                                   "nullable": true
                                 },
+                                "enable_parallel_execution": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
                                 "created_by_id": {
                                   "oneOf": [
                                     {
@@ -35728,6 +35757,19 @@
             "title": "Default Requires Approval",
             "description": "Default value for whether or not executing this tool requires approval."
           },
+          "enable_parallel_execution": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Parallel Execution",
+            "description": "If set to True, then this tool will potentially be executed concurrently with other tools. Default False.",
+            "default": false
+          },
           "created_by_id": {
             "anyOf": [
               {
@@ -36203,6 +36245,19 @@
             ],
             "title": "Default Requires Approval",
             "description": "Whether or not to require approval before executing this tool."
+          },
+          "enable_parallel_execution": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Parallel Execution",
+            "description": "If set to True, then this tool will potentially be executed concurrently with other tools. Default False.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -36746,6 +36801,19 @@
             ],
             "title": "Default Requires Approval",
             "description": "Whether or not to require approval before executing this tool."
+          },
+          "enable_parallel_execution": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Parallel Execution",
+            "description": "If set to True, then this tool will potentially be executed concurrently with other tools. Default False.",
+            "default": false
           }
         },
         "type": "object",
@@ -38896,6 +38964,19 @@
             ],
             "title": "Default Requires Approval",
             "description": "Default value for whether or not executing this tool requires approval."
+          },
+          "enable_parallel_execution": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Parallel Execution",
+            "description": "If set to True, then this tool will potentially be executed concurrently with other tools. Default False.",
+            "default": false
           },
           "created_by_id": {
             "anyOf": [
