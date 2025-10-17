@@ -62,7 +62,7 @@ async def count_folders(
 
 @router.get("/{folder_id}", response_model=Folder, operation_id="retrieve_folder")
 async def retrieve_folder(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -177,8 +177,8 @@ async def create_folder(
 
 @router.patch("/{folder_id}", response_model=Folder, operation_id="modify_folder")
 async def modify_folder(
-    folder_id: str,
     folder: SourceUpdate,
+    folder_id: str = PATH_VALIDATORS["folder"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -193,7 +193,7 @@ async def modify_folder(
 
 @router.delete("/{folder_id}", response_model=None, operation_id="delete_folder")
 async def delete_folder(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -229,7 +229,7 @@ async def delete_folder(
 @router.post("/{folder_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_folder")
 async def upload_file_to_folder(
     file: UploadFile,
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -344,7 +344,7 @@ async def upload_file_to_folder(
 
 @router.get("/{folder_id}/agents", response_model=List[str], operation_id="list_agents_for_folder")
 async def list_agents_for_folder(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     before: Optional[str] = Query(
         None,
         description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
@@ -377,7 +377,7 @@ async def list_agents_for_folder(
 
 @router.get("/{folder_id}/passages", response_model=List[Passage], operation_id="list_folder_passages")
 async def list_folder_passages(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     before: Optional[str] = Query(
         None,
         description="Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order",
@@ -410,7 +410,7 @@ async def list_folder_passages(
 
 @router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_folder_files")
 async def list_folder_files(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     before: Optional[str] = Query(
         None,
         description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",

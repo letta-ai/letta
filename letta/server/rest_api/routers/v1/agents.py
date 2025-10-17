@@ -512,7 +512,7 @@ async def attach_source(
 
 @router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=AgentState, operation_id="attach_folder_to_agent")
 async def attach_folder_to_agent(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -569,7 +569,7 @@ async def detach_source(
 
 @router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=AgentState, operation_id="detach_folder_from_agent")
 async def detach_folder_from_agent(
-    folder_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
