@@ -3,7 +3,23 @@ import re
 from fastapi import Path
 
 # TODO: extract this list from routers/v1/__init__.py and ROUTERS
-primitives = ["agent", "message", "run", "job", "group", "block", "file", "folder", "source", "tool", "mcp_server"]
+primitives = [
+    "agent",
+    "message",
+    "run",
+    "job",
+    "group",
+    "block",
+    "file",
+    "folder",
+    "source",
+    "tool",
+    "archive",
+    "provider",
+    "sandbox",
+    "step",
+    "identity",
+]
 
 PRIMITIVE_ID_PATTERNS = {
     # f-string interpolation gets confused because of the regex's required curly braces {}

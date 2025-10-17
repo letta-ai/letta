@@ -21,6 +21,7 @@ from letta.schemas.sandbox_config import (
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.services.helpers.tool_execution_helper import create_venv_for_local_sandbox, install_pip_requirements_for_sandbox
+from letta.validators import PATH_VALIDATORS
 
 router = APIRouter(prefix="/sandbox-config", tags=["sandbox-config"])
 
@@ -87,8 +88,8 @@ async def create_custom_local_sandbox_config(
 
 @router.patch("/{sandbox_config_id}", response_model=PydanticSandboxConfig)
 async def update_sandbox_config(
-    sandbox_config_id: str,
     config_update: SandboxConfigUpdate,
+    sandbox_config_id: str = PATH_VALIDATORS["sandbox"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -98,7 +99,7 @@ async def update_sandbox_config(
 
 @router.delete("/{sandbox_config_id}", status_code=204)
 async def delete_sandbox_config(
-    sandbox_config_id: str,
+    sandbox_config_id: str = PATH_VALIDATORS["sandbox"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -157,8 +158,8 @@ async def force_recreate_local_sandbox_venv(
 
 @router.post("/{sandbox_config_id}/environment-variable", response_model=PydanticEnvVar)
 async def create_sandbox_env_var(
-    sandbox_config_id: str,
     env_var_create: SandboxEnvironmentVariableCreate,
+    sandbox_config_id: str = PATH_VALIDATORS["sandbox"],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -189,7 +190,7 @@ async def delete_sandbox_env_var(
 
 @router.get("/{sandbox_config_id}/environment-variable", response_model=List[PydanticEnvVar])
 async def list_sandbox_env_vars(
-    sandbox_config_id: str,
+    sandbox_config_id: str = PATH_VALIDATORS["sandbox"],
     limit: int = Query(1000, description="Number of results to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     server: SyncServer = Depends(get_letta_server),

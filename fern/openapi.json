@@ -212,8 +212,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Archive Id"
-            }
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -8150,8 +8156,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           }
         ],
         "responses": {
@@ -8188,8 +8200,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -8237,8 +8255,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           }
         ],
         "responses": {
@@ -8275,8 +8299,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -8328,8 +8358,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "before",
@@ -8454,8 +8490,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
-            }
+            },
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "before",
@@ -10263,8 +10305,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^provider-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the provider in the format 'provider-<uuid4>'",
+              "examples": ["provider-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Provider Id"
-            }
+            },
+            "description": "The ID of the provider in the format 'provider-<uuid4>'"
           }
         ],
         "responses": {
@@ -10302,8 +10350,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^provider-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the provider in the format 'provider-<uuid4>'",
+              "examples": ["provider-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Provider Id"
-            }
+            },
+            "description": "The ID of the provider in the format 'provider-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -10351,8 +10405,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^provider-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the provider in the format 'provider-<uuid4>'",
+              "examples": ["provider-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Provider Id"
-            }
+            },
+            "description": "The ID of the provider in the format 'provider-<uuid4>'"
           }
         ],
         "responses": {
@@ -10428,8 +10488,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 45,
+              "maxLength": 45,
+              "pattern": "^provider-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the provider in the format 'provider-<uuid4>'",
+              "examples": ["provider-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Provider Id"
-            }
+            },
+            "description": "The ID of the provider in the format 'provider-<uuid4>'"
           }
         ],
         "responses": {
@@ -11589,8 +11655,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^step-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the step in the format 'step-<uuid4>'",
+              "examples": ["step-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Step Id"
-            }
+            },
+            "description": "The ID of the step in the format 'step-<uuid4>'"
           }
         ],
         "responses": {
@@ -11630,8 +11702,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^step-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the step in the format 'step-<uuid4>'",
+              "examples": ["step-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Step Id"
-            }
+            },
+            "description": "The ID of the step in the format 'step-<uuid4>'"
           }
         ],
         "responses": {
@@ -11670,8 +11748,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^step-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the step in the format 'step-<uuid4>'",
+              "examples": ["step-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Step Id"
-            }
+            },
+            "description": "The ID of the step in the format 'step-<uuid4>'"
           }
         ],
         "responses": {
@@ -11719,8 +11803,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^step-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the step in the format 'step-<uuid4>'",
+              "examples": ["step-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Step Id"
-            }
+            },
+            "description": "The ID of the step in the format 'step-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -11770,8 +11860,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^step-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the step in the format 'step-<uuid4>'",
+              "examples": ["step-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Step Id"
-            }
+            },
+            "description": "The ID of the step in the format 'step-<uuid4>'"
           },
           {
             "name": "before",
