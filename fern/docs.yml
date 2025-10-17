@@ -613,6 +613,10 @@ navigation:
         contents:
           - page: Building customer-specific relationship agents
             path: pages/tutorials/customer-specific-agents.mdx
+      - section: RAG
+        contents:
+          - page: Connect Your Custom RAG Pipeline to a Letta Agent
+            path: pages/tutorials/letta-rag.mdx
 
   - tab: leaderboard
     layout:
