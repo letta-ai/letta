@@ -317,7 +317,7 @@ class LettaAgentV3(LettaAgentV2):
                 pending_tool_calls = {
                     backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id: a
                     for a in approval_response.approvals
-                    if a.type == "approval"
+                    if a.type == "approval" and a.approve
                 }
                 tool_calls = [t for t in approval_request.tool_calls if t.id in pending_tool_calls]
 
@@ -455,8 +455,7 @@ class LettaAgentV3(LettaAgentV2):
                 run_id=run_id,
                 step_metrics=step_metrics,
                 is_approval=approval_response is not None,
-                is_denial=(len(tool_call_denials) > 0),
-                denial_reason=tool_call_denials[0].reason if tool_call_denials else None,
+                tool_call_denials=tool_call_denials,
                 tool_return=tool_returns[0] if tool_returns else None,
             )
             aggregated_persisted.extend(persisted_messages)
@@ -599,9 +598,8 @@ class LettaAgentV3(LettaAgentV2):
         run_id: str | None = None,
         step_metrics: StepMetrics = None,
         is_approval: bool | None = None,
-        is_denial: bool | None = None,
-        denial_reason: str | None = None,
         tool_calls: list[ToolCall] = [],
+        tool_call_denials: list[ToolCallDenial] = [],
         tool_return: ToolReturn | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
@@ -644,18 +642,19 @@ class LettaAgentV3(LettaAgentV2):
             return persisted_messages, continue_stepping, stop_reason
 
         # Handle denial case first (special case that bypasses normal flow)
-        if is_denial and first_tool_call is not None:
-            tool_call_id = first_tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+        if tool_call_denials:
+            assert len(tool_call_denials) == 1, "Only one tool call denial is supported"
+            tool_call_denial = tool_call_denials[0]
             continue_stepping = True
             stop_reason = None
             tool_call_messages = create_letta_messages_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                function_name=first_tool_call.function.name,
+                function_name=tool_call_denial.function.name,
                 function_arguments={},
                 tool_execution_result=ToolExecutionResult(status="error"),
-                tool_call_id=tool_call_id,
-                function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
+                tool_call_id=tool_call_denial.id or f"call_{uuid.uuid4().hex[:8]}",
+                function_response=f"Error: request to call tool denied. User reason: {tool_call_denial.reason}",
                 timezone=agent_state.timezone,
                 continue_stepping=continue_stepping,
                 heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
@@ -735,7 +734,7 @@ class LettaAgentV3(LettaAgentV2):
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
                     run_id=run_id,
-                    is_approval_response=is_approval or is_denial,
+                    is_approval_response=is_approval,
                     force_set_request_heartbeat=False,
                     add_heartbeat_on_continue=bool(heartbeat_reason),
                 )
@@ -963,7 +962,7 @@ class LettaAgentV3(LettaAgentV2):
             step_id=step_id,
             reasoning_content=content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            is_approval_response=(is_approval or is_denial),
+            is_approval_response=is_approval,
         )
 
         messages_to_persist: list[Message] = (initial_messages or []) + parallel_messages
