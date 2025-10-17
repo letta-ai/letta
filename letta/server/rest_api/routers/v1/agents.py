@@ -1127,8 +1127,8 @@ async def list_messages(
 
 @router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
 async def modify_message(
-    message_id: str,
-    agent_id: str = PATH_VALIDATORS["agent"],
+    agent_id: str = PATH_VALIDATORS["agent"],  # backwards compatible. Consider removing for v1
+    message_id: str = PATH_VALIDATORS["message"],
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

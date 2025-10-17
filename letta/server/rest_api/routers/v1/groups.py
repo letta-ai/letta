@@ -11,6 +11,7 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.validators import PATH_VALIDATORS
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -203,7 +204,7 @@ GroupMessagesResponse = Annotated[
 @router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message")
 async def modify_group_message(
     group_id: str,
-    message_id: str,
+    message_id: str = PATH_VALIDATORS["message"],
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

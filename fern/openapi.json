@@ -6348,15 +6348,6 @@
         "operationId": "modify_message",
         "parameters": [
           {
-            "name": "message_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Message Id"
-            }
-          },
-          {
             "name": "agent_id",
             "in": "path",
             "required": true,
@@ -6370,6 +6361,21 @@
               "title": "Agent Id"
             },
             "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^message-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the message in the format 'message-<uuid4>'",
+              "examples": ["message-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Message Id"
+            },
+            "description": "The ID of the message in the format 'message-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -7725,8 +7731,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^message-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the message in the format 'message-<uuid4>'",
+              "examples": ["message-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Message Id"
-            }
+            },
+            "description": "The ID of the message in the format 'message-<uuid4>'"
           }
         ],
         "requestBody": {
