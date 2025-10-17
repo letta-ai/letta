@@ -36,6 +36,7 @@ from letta.services.file_processor.parser.markitdown_parser import MarkitdownFil
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
 from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
+from letta.validators import PATH_VALIDATORS
 
 logger = get_logger(__name__)
 
@@ -386,8 +387,8 @@ async def list_source_files(
 
 @router.get("/{source_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata", deprecated=True)
 async def get_file_metadata(
-    source_id: str,
-    file_id: str,
+    source_id: str = PATH_VALIDATORS["source"],
+    file_id: str = PATH_VALIDATORS["file"],
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -412,8 +413,8 @@ async def get_file_metadata(
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source", deprecated=True)
 async def delete_file_from_source(
-    source_id: str,
-    file_id: str,
+    source_id: str = PATH_VALIDATORS["source"],
+    file_id: str = PATH_VALIDATORS["file"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

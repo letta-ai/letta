@@ -616,7 +616,7 @@ async def close_all_open_files(
 
 @router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file")
 async def open_file(
-    file_id: str,
+    file_id: str = PATH_VALIDATORS["file"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -665,7 +665,7 @@ async def open_file(
 
 @router.patch("/{agent_id}/files/{file_id}/close", response_model=None, operation_id="close_file")
 async def close_file(
-    file_id: str,
+    file_id: str = PATH_VALIDATORS["file"],
     agent_id: str = PATH_VALIDATORS["agent"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

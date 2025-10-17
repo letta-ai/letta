@@ -37,6 +37,7 @@ from letta.services.file_processor.parser.markitdown_parser import MarkitdownFil
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
 from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
+from letta.validators import PATH_VALIDATORS
 
 logger = get_logger(__name__)
 
@@ -496,8 +497,8 @@ async def list_folder_files(
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{folder_id}/{file_id}", status_code=204, operation_id="delete_file_from_folder")
 async def delete_file_from_folder(
-    folder_id: str,
-    file_id: str,
+    folder_id: str = PATH_VALIDATORS["folder"],
+    file_id: str = PATH_VALIDATORS["file"],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
