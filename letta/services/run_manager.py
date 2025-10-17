@@ -272,7 +272,7 @@ class RunManager:
                 log_event("POST callback finished")
                 result["callback_status_code"] = resp.status_code
         except Exception as e:
-            error_message = f"Failed to dispatch callback for run {callback_info['run_id']} to {callback_info['callback_url']}: {e!s}"
+            error_message = f"Failed to dispatch callback for run {callback_info['run_id']} to {callback_info['callback_url']}: {e!r}"
             logger.error(error_message)
             result["callback_error"] = error_message
             # Continue silently - callback failures should not affect run completion
