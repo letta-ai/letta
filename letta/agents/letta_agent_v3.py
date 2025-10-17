@@ -27,7 +27,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import LettaMessage, MessageType
+from letta.schemas.letta_message import ApprovalReturn, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
@@ -318,19 +318,19 @@ class LettaAgentV3(LettaAgentV2):
                 pending_tool_calls = {
                     backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id: a
                     for a in approval_response.approvals
-                    if a.type == "approval" and a.approve
+                    if isinstance(a, ApprovalReturn) and a.approve
                 }
                 tool_calls = [t for t in approval_request.tool_calls if t.id in pending_tool_calls]
 
                 # Get tool calls that were denied
-                denies = {d.tool_call_id: d for d in approval_response.approvals if d.type == "approval" and not d.approve}
+                denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
                 tool_call_denials = [
                     ToolCallDenial(**t.model_dump(), reason=denies.get(t.id).reason) for t in approval_request.tool_calls if t.id in denies
                 ]
 
                 # Get tool calls that were executed client side
                 if approval_response.approvals:
-                    tool_returns = [r for r in approval_response.approvals if r.type == "tool"]
+                    tool_returns = [r for r in approval_response.approvals if isinstance(r, ToolReturn)]
 
                 step_id = approval_request.step_id
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
