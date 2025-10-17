@@ -14935,6 +14935,36 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "parallel_tool_calls": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -26223,6 +26253,12 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           }
         },
         "type": "object",
@@ -29530,6 +29566,12 @@
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
           },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
+          },
           "deployment_id": {
             "type": "string",
             "title": "Deployment Id",
@@ -30269,6 +30311,19 @@
             ],
             "title": "Tier",
             "description": "The cost tier for the model (cloud only)."
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           }
         },
         "type": "object",
@@ -36764,6 +36819,12 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           }
         },
         "type": "object",
@@ -37983,6 +38044,12 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           },
           "id": {
             "type": "string",

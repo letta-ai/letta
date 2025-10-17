@@ -372,11 +372,11 @@ class LettaAgentV3(LettaAgentV2):
                                     isinstance(request_data.get("tool_choice"), dict)
                                     and "disable_parallel_tool_use" in request_data["tool_choice"]
                                 ):
-                                    # Gate parallel tool use on both: no tool rules and no approval-required tools
-                                    if no_tool_rules and not has_approval_tools:
+                                    # Gate parallel tool use on both: no tool rules and no approval-required tools and toggled on
+                                    if no_tool_rules and not has_approval_tools and self.agent_state.llm_config.parallel_tool_calls:
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = False
                                     else:
-                                        # Explicitly disable when approvals exist (TODO support later) or tool rules present
+                                        # Explicitly disable when approvals exist (TODO support later) or tool rules present or llm_config toggled off
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = True
                         except Exception:
                             # if this fails, we simply don't enable parallel tool use

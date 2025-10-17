@@ -256,6 +256,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         None,
         description="If set to True, the agent will be hidden.",
     )
+    parallel_tool_calls: bool = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
 
     @field_validator("name")
     @classmethod
@@ -371,6 +372,7 @@ class UpdateAgent(BaseModel):
         None,
         description="If set to True, the agent will be hidden.",
     )
+    parallel_tool_calls: bool = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 

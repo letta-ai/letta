@@ -80,6 +80,7 @@ class LLMConfig(BaseModel):
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
+    parallel_tool_calls: Optional[bool] = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
 
     @model_validator(mode="before")
     @classmethod
