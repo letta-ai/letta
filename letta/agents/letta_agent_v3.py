@@ -281,7 +281,7 @@ class LettaAgentV3(LettaAgentV2):
 
         step_progression = StepProgression.START
         # TODO(@caren): clean this up
-        tool_call, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
+        tool_calls, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
             None,
             None,
             None,
@@ -305,7 +305,7 @@ class LettaAgentV3(LettaAgentV2):
 
             approval_request, approval_response = _maybe_get_approval_messages(messages)
             if approval_request and approval_response:
-                tool_call = approval_request.tool_calls[0]
+                tool_calls = approval_request.tool_calls
                 content = approval_request.content
                 step_id = approval_request.step_id
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
@@ -404,19 +404,12 @@ class LettaAgentV3(LettaAgentV2):
 
                 self._update_global_usage_stats(llm_adapter.usage)
 
-            # Handle the AI response with the extracted data (supports multiple tool calls)
-            # Gather tool calls. Approval paths specify a single tool call.
-            tool_calls_list: list[ToolCall] = []
-            if tool_call is not None:
-                tool_calls_list = [tool_call]
-            else:
-                # Prefer the new multi-call field from streaming adapters
+                # Handle the AI response with the extracted data (supports multiple tool calls)
+                # Gather tool calls. Approval paths specify a single tool call.
                 if hasattr(llm_adapter, "tool_calls") and llm_adapter.tool_calls:
-                    tool_calls_list = llm_adapter.tool_calls
+                    tool_calls = llm_adapter.tool_calls
                 elif llm_adapter.tool_call is not None:
-                    tool_calls_list = [llm_adapter.tool_call]
-                else:
-                    tool_calls_list = []
+                    tool_calls = [llm_adapter.tool_call]
 
             aggregated_persisted: list[Message] = []
             tool_return_payload = (
@@ -424,11 +417,9 @@ class LettaAgentV3(LettaAgentV2):
                 if approval_response and approval_response.approvals and isinstance(approval_response.approvals[0], ToolReturn)
                 else None
             )
-            primary_tool_call = tool_calls_list[0] if len(tool_calls_list) == 1 else None
 
             persisted_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
-                tool_call=primary_tool_call,
-                tool_calls=tool_calls_list,
+                tool_calls=tool_calls,
                 valid_tool_names=[tool["name"] for tool in valid_tools],
                 agent_state=self.agent_state,
                 tool_rules_solver=self.tool_rules_solver,
@@ -592,8 +583,7 @@ class LettaAgentV3(LettaAgentV2):
         is_approval: bool | None = None,
         is_denial: bool | None = None,
         denial_reason: str | None = None,
-        tool_call: ToolCall | None = None,
-        tool_calls: Optional[list[ToolCall]] = None,
+        tool_calls: list[ToolCall] = [],
         tool_return: ToolReturn | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
@@ -602,10 +592,7 @@ class LettaAgentV3(LettaAgentV2):
 
         Unified approach: treats single and multi-tool calls uniformly to reduce code duplication.
         """
-        tool_calls = list(tool_calls) if tool_calls else []
-        if tool_call is not None and not tool_calls:
-            tool_calls = [tool_call]
-        first_tool_call = tool_calls[0] if tool_calls else tool_call
+        first_tool_call = tool_calls[0] if tool_calls else None
 
         if tool_return is not None:
             continue_stepping = True
