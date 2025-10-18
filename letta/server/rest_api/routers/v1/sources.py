@@ -21,9 +21,9 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
-from letta.schemas.file import FileMetadata
+from letta.schemas.file import FileMetadata, FileMetadataBase
 from letta.schemas.passage import Passage
-from letta.schemas.source import Source, SourceCreate, SourceUpdate
+from letta.schemas.source import BaseSource, Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -60,7 +60,7 @@ async def count_sources(
 
 @router.get("/{source_id}", response_model=Source, operation_id="retrieve_source", deprecated=True)
 async def retrieve_source(
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -158,7 +158,7 @@ async def create_source(
 @router.patch("/{source_id}", response_model=Source, operation_id="modify_source", deprecated=True)
 async def modify_source(
     source: SourceUpdate,
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -173,7 +173,7 @@ async def modify_source(
 
 @router.delete("/{source_id}", response_model=None, operation_id="delete_source", deprecated=True)
 async def delete_source(
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -209,7 +209,7 @@ async def delete_source(
 @router.post("/{source_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_source", deprecated=True)
 async def upload_file_to_source(
     file: UploadFile,
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -324,7 +324,7 @@ async def upload_file_to_source(
 
 @router.get("/{source_id}/agents", response_model=List[str], operation_id="get_agents_for_source", deprecated=True)
 async def get_agents_for_source(
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -337,7 +337,7 @@ async def get_agents_for_source(
 
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages", deprecated=True)
 async def list_source_passages(
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(100, description="Maximum number of messages to retrieve."),
@@ -359,7 +359,7 @@ async def list_source_passages(
 
 @router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_source_files", deprecated=True)
 async def list_source_files(
-    source_id: str = PATH_VALIDATORS["source"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     include_content: bool = Query(False, description="Whether to include full file content"),
@@ -387,8 +387,8 @@ async def list_source_files(
 
 @router.get("/{source_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata", deprecated=True)
 async def get_file_metadata(
-    source_id: str = PATH_VALIDATORS["source"],
-    file_id: str = PATH_VALIDATORS["file"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
+    file_id: str = PATH_VALIDATORS[FileMetadataBase.__id_prefix__],
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -413,8 +413,8 @@ async def get_file_metadata(
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source", deprecated=True)
 async def delete_file_from_source(
-    source_id: str = PATH_VALIDATORS["source"],
-    file_id: str = PATH_VALIDATORS["file"],
+    source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
+    file_id: str = PATH_VALIDATORS[FileMetadataBase.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

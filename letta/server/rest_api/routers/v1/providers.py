@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from letta.schemas.enums import ProviderType
-from letta.schemas.providers import Provider, ProviderCheck, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.validators import PATH_VALIDATORS
 
@@ -46,7 +46,7 @@ async def list_providers(
 
 @router.get("/{provider_id}", response_model=Provider, operation_id="retrieve_provider")
 async def retrieve_provider(
-    provider_id: str = PATH_VALIDATORS["provider"],
+    provider_id: str = PATH_VALIDATORS[ProviderBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -81,7 +81,7 @@ async def create_provider(
 @router.patch("/{provider_id}", response_model=Provider, operation_id="modify_provider")
 async def modify_provider(
     request: ProviderUpdate = Body(...),
-    provider_id: str = PATH_VALIDATORS["provider"],
+    provider_id: str = PATH_VALIDATORS[ProviderBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -111,7 +111,7 @@ async def check_provider(
 
 @router.post("/{provider_id}/check", response_model=None, operation_id="check_existing_provider")
 async def check_existing_provider(
-    provider_id: str = PATH_VALIDATORS["provider"],
+    provider_id: str = PATH_VALIDATORS[ProviderBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -136,7 +136,7 @@ async def check_existing_provider(
 
 @router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
 async def delete_provider(
-    provider_id: str = PATH_VALIDATORS["provider"],
+    provider_id: str = PATH_VALIDATORS[ProviderBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):

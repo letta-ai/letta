@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.message import Message
 from letta.schemas.provider_trace import ProviderTrace
-from letta.schemas.step import Step
+from letta.schemas.step import Step, StepBase
 from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
@@ -70,7 +70,7 @@ async def list_steps(
 
 @router.get("/{step_id}", response_model=Step, operation_id="retrieve_step")
 async def retrieve_step(
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
@@ -83,7 +83,7 @@ async def retrieve_step(
 
 @router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_metrics_for_step")
 async def retrieve_metrics_for_step(
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
@@ -96,7 +96,7 @@ async def retrieve_metrics_for_step(
 
 @router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
 async def retrieve_trace_for_step(
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -120,7 +120,7 @@ class ModifyFeedbackRequest(BaseModel):
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="modify_feedback_for_step")
 async def modify_feedback_for_step(
     request: ModifyFeedbackRequest = Body(...),
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
@@ -133,7 +133,7 @@ async def modify_feedback_for_step(
 
 @router.get("/{step_id}/messages", response_model=List[LettaMessageUnion], operation_id="list_messages_for_step")
 async def list_messages_for_step(
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
     before: Optional[str] = Query(
@@ -161,7 +161,7 @@ async def list_messages_for_step(
 @router.patch("/{step_id}/transaction/{transaction_id}", response_model=Step, operation_id="update_step_transaction_id")
 async def update_step_transaction_id(
     transaction_id: str,
-    step_id: str = PATH_VALIDATORS["step"],
+    step_id: str = PATH_VALIDATORS[StepBase.__id_prefix__],
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):

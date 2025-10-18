@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, Query, UploadFile
 from starlette import status
 from starlette.responses import Response
 
@@ -21,10 +21,10 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
-from letta.schemas.file import FileMetadata
-from letta.schemas.folder import Folder
+from letta.schemas.file import FileMetadata, FileMetadataBase
+from letta.schemas.folder import BaseFolder, Folder
 from letta.schemas.passage import Passage
-from letta.schemas.source import Source, SourceCreate, SourceUpdate
+from letta.schemas.source import BaseSource, Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -37,7 +37,7 @@ from letta.services.file_processor.parser.markitdown_parser import MarkitdownFil
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
 from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
-from letta.validators import PATH_VALIDATORS
+from letta.validators import PATH_VALIDATORS, PRIMITIVE_ID_PATTERNS
 
 logger = get_logger(__name__)
 
@@ -62,7 +62,7 @@ async def count_folders(
 
 @router.get("/{folder_id}", response_model=Folder, operation_id="retrieve_folder")
 async def retrieve_folder(
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -178,7 +178,7 @@ async def create_folder(
 @router.patch("/{folder_id}", response_model=Folder, operation_id="modify_folder")
 async def modify_folder(
     folder: SourceUpdate,
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -193,7 +193,7 @@ async def modify_folder(
 
 @router.delete("/{folder_id}", response_model=None, operation_id="delete_folder")
 async def delete_folder(
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -229,7 +229,7 @@ async def delete_folder(
 @router.post("/{folder_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_folder")
 async def upload_file_to_folder(
     file: UploadFile,
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -344,7 +344,7 @@ async def upload_file_to_folder(
 
 @router.get("/{folder_id}/agents", response_model=List[str], operation_id="list_agents_for_folder")
 async def list_agents_for_folder(
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     before: Optional[str] = Query(
         None,
         description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
@@ -377,7 +377,7 @@ async def list_agents_for_folder(
 
 @router.get("/{folder_id}/passages", response_model=List[Passage], operation_id="list_folder_passages")
 async def list_folder_passages(
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     before: Optional[str] = Query(
         None,
         description="Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order",
@@ -410,7 +410,7 @@ async def list_folder_passages(
 
 @router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_folder_files")
 async def list_folder_files(
-    folder_id: str = PATH_VALIDATORS["folder"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
     before: Optional[str] = Query(
         None,
         description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",
@@ -497,8 +497,8 @@ async def list_folder_files(
 # it's still good practice to return a status indicating the success or failure of the deletion
 @router.delete("/{folder_id}/{file_id}", status_code=204, operation_id="delete_file_from_folder")
 async def delete_file_from_folder(
-    folder_id: str = PATH_VALIDATORS["folder"],
-    file_id: str = PATH_VALIDATORS["file"],
+    folder_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[BaseFolder.__id_prefix__].pattern),
+    file_id: str = PathParam(..., pattern=PRIMITIVE_ID_PATTERNS[FileMetadataBase.__id_prefix__].pattern),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

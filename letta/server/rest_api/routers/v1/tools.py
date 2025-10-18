@@ -30,7 +30,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
+from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
@@ -47,7 +47,7 @@ logger = get_logger(__name__)
 
 @router.delete("/{tool_id}", operation_id="delete_tool")
 async def delete_tool(
-    tool_id: str = PATH_VALIDATORS["tool"],
+    tool_id: str = PATH_VALIDATORS[BaseTool.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -150,7 +150,7 @@ async def count_tools(
 
 @router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
 async def retrieve_tool(
-    tool_id: str = PATH_VALIDATORS["tool"],
+    tool_id: str = PATH_VALIDATORS[BaseTool.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -299,7 +299,7 @@ async def upsert_tool(
 @router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
 async def modify_tool(
     request: ToolUpdate = Body(...),
-    tool_id: str = PATH_VALIDATORS["tool"],
+    tool_id: str = PATH_VALIDATORS[BaseTool.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

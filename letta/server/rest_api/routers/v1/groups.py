@@ -5,10 +5,11 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
+from letta.schemas.group import Group, GroupBase, GroupCreate, GroupUpdate, ManagerType
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.message import BaseMessage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import PATH_VALIDATORS
@@ -69,7 +70,7 @@ async def count_groups(
 
 @router.get("/{group_id}", response_model=Group, operation_id="retrieve_group")
 async def retrieve_group(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -98,7 +99,7 @@ async def create_group(
 
 @router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
 async def modify_group(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     group: GroupUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -115,7 +116,7 @@ async def modify_group(
 
 @router.delete("/{group_id}", response_model=None, operation_id="delete_group")
 async def delete_group(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -133,7 +134,7 @@ async def delete_group(
     operation_id="send_group_message",
 )
 async def send_group_message(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -171,7 +172,7 @@ async def send_group_message(
     },
 )
 async def send_group_message_streaming(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
@@ -203,8 +204,8 @@ GroupMessagesResponse = Annotated[
 
 @router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message")
 async def modify_group_message(
-    group_id: str = PATH_VALIDATORS["group"],
-    message_id: str = PATH_VALIDATORS["message"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
+    message_id: str = PATH_VALIDATORS[BaseMessage.__id_prefix__],
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -219,7 +220,7 @@ async def modify_group_message(
 
 @router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages")
 async def list_group_messages(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     before: Optional[str] = Query(
         None,
         description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
@@ -274,7 +275,7 @@ async def list_group_messages(
 
 @router.patch("/{group_id}/reset-messages", response_model=None, operation_id="reset_group_messages")
 async def reset_group_messages(
-    group_id: str = PATH_VALIDATORS["group"],
+    group_id: str = PATH_VALIDATORS[GroupBase.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
