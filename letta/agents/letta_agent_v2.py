@@ -40,6 +40,7 @@ from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
 from letta.schemas.step import Step, StepProgression
 from letta.schemas.step_metrics import StepMetrics
+from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -954,8 +955,10 @@ class LettaAgentV2(BaseAgentV2):
             else:
                 # Track tool execution time
                 tool_start_time = get_utc_timestamp_ns()
+                target_tool = next((x for x in agent_state.tools if x.name == tool_call_name), None)
+
                 tool_execution_result = await self._execute_tool(
-                    tool_name=tool_call_name,
+                    target_tool=target_tool,
                     tool_args=tool_args,
                     agent_state=agent_state,
                     agent_step_span=agent_step_span,
@@ -1076,20 +1079,20 @@ class LettaAgentV2(BaseAgentV2):
     @trace_method
     async def _execute_tool(
         self,
-        tool_name: str,
+        target_tool: Tool,
         tool_args: JsonDict,
         agent_state: AgentState,
         agent_step_span: Span | None = None,
         step_id: str | None = None,
-        run_id: str = None,
     ) -> "ToolExecutionResult":
         """
         Executes a tool and returns the ToolExecutionResult.
         """
         from letta.schemas.tool_execution_result import ToolExecutionResult
 
+        tool_name = target_tool.name
+
         # Special memory case
-        target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
         if not target_tool:
             # TODO: fix this error message
             return ToolExecutionResult(
