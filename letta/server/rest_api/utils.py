@@ -218,6 +218,7 @@ def create_approval_request_message_from_llm_response(
                 arguments=tool_call.function.arguments,
             ),
             type="function",
+            requires_approval=tool_call.requires_approval,
         )
         for tool_call in tool_calls
     ]
@@ -390,6 +391,7 @@ def create_parallel_tool_messages_from_llm_response(
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     is_approval_response: bool = False,
+    tool_returns: List[ToolReturn] = [],
 ) -> List[Message]:
     """
     Build two messages representing a parallel tool-call step:
@@ -453,7 +455,6 @@ def create_parallel_tool_messages_from_llm_response(
         messages.append(assistant_message)
 
     content: List[TextContent] = []
-    tool_returns: List[ToolReturn] = []
     for spec, exec_result, response in zip(tool_call_specs, tool_execution_results, function_responses):
         packaged = package_function_response(exec_result.success_flag, response, timezone)
         content.append(TextContent(text=packaged))

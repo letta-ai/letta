@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import AgentState, ApprovalCreate, Letta, MessageCreate, Tool
+from letta_client import AgentState, ApprovalCreate, Letta, LlmConfig, MessageCreate, Tool
 from letta_client.core.api_error import ApiError
 
 from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
@@ -42,6 +42,14 @@ USER_MESSAGE_FOLLOW_UP: List[MessageCreate] = [
         otid=USER_MESSAGE_FOLLOW_UP_OTID,
     )
 ]
+USER_MESSAGE_PARALLEL_TOOL_CALL_CONTENT = "This is an automated test message. Call the get_secret_code_tool 3 times in parallel for the following inputs: 'hello world', 'hello letta', 'hello test', and also call the roll_dice_tool once with a 16-sided dice."
+USER_MESSAGE_PARALLEL_TOOL_CALL: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=USER_MESSAGE_PARALLEL_TOOL_CALL_CONTENT,
+        otid=USER_MESSAGE_OTID,
+    )
+]
 
 
 def get_secret_code_tool(input_text: str) -> str:
@@ -53,6 +61,19 @@ def get_secret_code_tool(input_text: str) -> str:
         str: The secret code based on the input text.
     """
     return str(abs(hash(input_text)))
+
+
+def roll_dice_tool(num_sides: int) -> str:
+    """
+    A tool that returns a random number between 1 and num_sides.
+    Args:
+        num_sides (int): The number of sides on the die.
+    Returns:
+        str: The random number between 1 and num_sides.
+    """
+    import random
+
+    return str(random.randint(1, num_sides))
 
 
 def accumulate_chunks(stream):
@@ -133,7 +154,18 @@ def approval_tool_fixture(client: Letta) -> Tool:
 
 
 @pytest.fixture(scope="function")
-def agent(client: Letta, approval_tool_fixture) -> AgentState:
+def dice_tool_fixture(client: Letta) -> Tool:
+    client.tools.upsert_base_tools()
+    dice_tool = client.tools.upsert_from_function(
+        func=roll_dice_tool,
+    )
+    yield dice_tool
+
+    client.tools.delete(tool_id=dice_tool.id)
+
+
+@pytest.fixture(scope="function")
+def agent(client: Letta, approval_tool_fixture, dice_tool_fixture) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
     The agent is configured with the requires_approval_tool.
@@ -142,10 +174,16 @@ def agent(client: Letta, approval_tool_fixture) -> AgentState:
         name="approval_test_agent",
         agent_type=AgentType.letta_v1_agent,
         include_base_tools=False,
-        tool_ids=[approval_tool_fixture.id],
+        tool_ids=[approval_tool_fixture.id, dice_tool_fixture.id],
+        include_base_tool_rules=False,
+        tool_rules=[],
+        # parallel_tool_calls=True,
         model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         tags=["approval_test"],
+    )
+    agent_state = client.agents.modify(
+        agent_id=agent_state.id, llm_config=dict(agent_state.llm_config.model_dump(), **{"parallel_tool_calls": True})
     )
     yield agent_state
 
@@ -224,6 +262,35 @@ def test_invoke_approval_request(
     client: Letta,
     agent: AgentState,
 ) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+
+    messages = response.messages
+
+    assert messages is not None
+    assert len(messages) == 3
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "approval_request_message"
+    assert messages[2].tool_call is not None
+    assert messages[2].tool_call.name == "get_secret_code_tool"
+    assert messages[2].requested_tool_calls is not None
+    assert len(messages[2].requested_tool_calls) == 1
+    assert messages[2].requested_tool_calls[0]["name"] == "get_secret_code_tool"
+
+    # v3/v1 path: approval request tool args must not include request_heartbeat
+    import json as _json
+
+    _args = _json.loads(messages[2].tool_call.arguments)
+    assert "request_heartbeat" not in _args
+
+
+def test_invoke_approval_request_stream(
+    client: Letta,
+    agent: AgentState,
+) -> None:
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
@@ -237,11 +304,8 @@ def test_invoke_approval_request(
     assert messages[0].message_type == "reasoning_message"
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "approval_request_message"
-    # v3/v1 path: approval request tool args must not include request_heartbeat
-    # import json as _json
-
-    # _args = _json.loads(messages[2].tool_call.arguments)
-    # assert "request_heartbeat" not in _args
+    assert messages[2].tool_call is not None
+    assert messages[2].tool_call.name == "get_secret_code_tool"
     assert messages[3].message_type == "stop_reason"
     assert messages[4].message_type == "usage_statistics"
 
@@ -1105,3 +1169,92 @@ def test_client_side_tool_call_and_follow_up_with_error(
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "stop_reason"
     assert messages[3].message_type == "usage_statistics"
+
+
+def test_parallel_tool_calling(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
+    )
+
+    messages = response.messages
+
+    assert messages is not None
+    assert len(messages) == 3
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "approval_request_message"
+    assert messages[2].tool_call is not None
+    assert messages[2].tool_call.name == "get_secret_code_tool" or messages[2].tool_call.name == "roll_dice_tool"
+
+    assert len(messages[2].requested_tool_calls) == 3
+    assert messages[2].requested_tool_calls[0]["name"] == "get_secret_code_tool"
+    assert "hello world" in messages[2].requested_tool_calls[0]["arguments"]
+    approve_tool_call_id = messages[2].requested_tool_calls[0]["tool_call_id"]
+    assert messages[2].requested_tool_calls[1]["name"] == "get_secret_code_tool"
+    assert "hello letta" in messages[2].requested_tool_calls[1]["arguments"]
+    deny_tool_call_id = messages[2].requested_tool_calls[1]["tool_call_id"]
+    assert messages[2].requested_tool_calls[2]["name"] == "get_secret_code_tool"
+    assert "hello test" in messages[2].requested_tool_calls[2]["arguments"]
+    client_side_tool_call_id = messages[2].requested_tool_calls[2]["tool_call_id"]
+
+    assert len(messages[2].allowed_tool_calls) == 1
+    assert messages[2].allowed_tool_calls[0]["name"] == "roll_dice_tool"
+    assert "6" in messages[2].allowed_tool_calls[0]["arguments"]
+    dice_tool_call_id = messages[2].allowed_tool_calls[0]["tool_call_id"]
+
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(
+                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
+                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
+                approvals=[
+                    {
+                        "type": "approval",
+                        "approve": True,
+                        "tool_call_id": approve_tool_call_id,
+                    },
+                    {
+                        "type": "approval",
+                        "approve": False,
+                        "tool_call_id": deny_tool_call_id,
+                    },
+                    {
+                        "type": "tool",
+                        "tool_call_id": client_side_tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            ),
+        ],
+    )
+
+    messages = response.messages
+
+    assert messages is not None
+    assert len(messages) == 1 or len(messages) == 3 or len(messages) == 4
+    assert messages[0].message_type == "tool_return_message"
+    assert len(messages[0].tool_returns) == 4
+    for tool_return in messages[0].tool_returns:
+        if tool_return["tool_call_id"] == approve_tool_call_id:
+            assert tool_return["status"] == "success"
+        elif tool_return["tool_call_id"] == deny_tool_call_id:
+            assert tool_return["status"] == "error"
+        elif tool_return["tool_call_id"] == client_side_tool_call_id:
+            assert tool_return["status"] == "success"
+            assert tool_return["tool_return"] == SECRET_CODE
+        else:
+            assert tool_return["tool_call_id"] == dice_tool_call_id
+            assert tool_return["status"] == "success"
+    if len(messages) == 3:
+        assert messages[1].message_type == "reasoning_message"
+        assert messages[2].message_type == "assistant_message"
+    elif len(messages) == 4:
+        assert messages[1].message_type == "reasoning_message"
+        assert messages[2].message_type == "tool_call_message"
+        assert messages[3].message_type == "tool_return_message"

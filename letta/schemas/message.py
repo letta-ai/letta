@@ -339,10 +339,7 @@ class Message(BaseMessage):
             if self.content:
                 messages.extend(self._convert_reasoning_messages(text_is_assistant_message=text_is_assistant_message))
             if self.tool_calls is not None:
-                tool_calls = self._convert_tool_call_messages()
-                assert len(tool_calls) == 1
-                approval_request_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
-                messages.append(approval_request_message)
+                messages.append(self._convert_approval_request_message())
             else:
                 if self.approvals:
                     first_approval = [a for a in self.approvals if isinstance(a, ApprovalReturn)]
@@ -813,6 +810,37 @@ class Message(BaseMessage):
             return "error"
         else:
             raise ValueError(f"Invalid status: {status}")
+
+    def _convert_approval_request_message(self) -> ApprovalRequestMessage:
+        """Convert approval request message to ApprovalRequestMessage"""
+        allowed_tool_calls = []
+        if len(self.tool_calls) == 0 and self.tool_call:
+            requested_tool_calls = [self.tool_call]
+        if len(self.tool_calls) == 1:
+            requested_tool_calls = self.tool_calls
+        else:
+            requested_tool_calls = [t for t in self.tool_calls if t.requires_approval]
+            allowed_tool_calls = [t for t in self.tool_calls if not t.requires_approval]
+
+        def _convert_tool_call(tool_call):
+            return ToolCall(
+                name=tool_call.function.name,
+                arguments=tool_call.function.arguments,
+                tool_call_id=tool_call.id,
+            )
+
+        return ApprovalRequestMessage(
+            id=self.id,
+            date=self.created_at,
+            otid=self.otid,
+            sender_id=self.sender_id,
+            step_id=self.step_id,
+            run_id=self.run_id,
+            tool_call=_convert_tool_call(requested_tool_calls[0]),  # backwards compatibility
+            requested_tool_calls=[_convert_tool_call(tc) for tc in requested_tool_calls],
+            allowed_tool_calls=[_convert_tool_call(tc) for tc in allowed_tool_calls],
+            name=self.name,
+        )
 
     def _convert_user_message(self) -> UserMessage:
         """Convert user role message to UserMessage"""

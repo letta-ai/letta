@@ -137,7 +137,9 @@ async def _prepare_in_context_messages_async(
 
 def validate_approval_tool_call_ids(approval_request_message: Message, approval_response_message: ApprovalCreate):
     approval_requests = approval_request_message.tool_calls
-    approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests]
+    approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests if approval_request.requires_approval]
+    if not approval_request_tool_call_ids and len(approval_request_message.tool_calls) == 1:
+        approval_request_tool_call_ids = [approval_request_message.tool_calls[0].id]
 
     approval_responses = approval_response_message.approvals
     approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
