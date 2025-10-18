@@ -155,6 +155,16 @@ LETTA_TOOL_SET = set(
     + FILES_TOOLS
 )
 
+LETTA_PARALLEL_SAFE_TOOLS = {
+    "conversation_search",
+    "archival_memory_search",
+    "run_code",
+    "web_search",
+    "fetch_webpage",
+    "grep_files",
+    "semantic_search_files",
+}
+
 
 def FUNCTION_RETURN_VALUE_TRUNCATED(return_str, return_char: int, return_char_limit: int):
     return (

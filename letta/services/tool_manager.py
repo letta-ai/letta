@@ -13,6 +13,7 @@ from letta.constants import (
     BASE_VOICE_SLEEPTIME_TOOLS,
     BUILTIN_TOOLS,
     FILES_TOOLS,
+    LETTA_PARALLEL_SAFE_TOOLS,
     LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
@@ -662,12 +663,14 @@ class ToolManager:
                 continue
 
             # create pydantic tool for validation and conversion
+            parallel_safe = name in LETTA_PARALLEL_SAFE_TOOLS
             pydantic_tool = PydanticTool(
                 name=name,
                 tags=[tool_type.value],
                 source_type="python",
                 tool_type=tool_type,
                 return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
+                enable_parallel_execution=parallel_safe,
             )
 
             # auto-generate description if not provided
