@@ -606,9 +606,11 @@ navigation:
           - page: Overview
             path: pages/cookbooks_simple.mdx
           - page: Your First Agent
-            path: pages/examples/hello_world.mdx
+            path: pages/tutorials/hello_world.mdx
           - page: Attaching and Detaching Memory Blocks
-            path: pages/examples/attaching_detaching_blocks.mdx
+            path: pages/tutorials/attaching_detaching_blocks.mdx
+          - page: Shared Memory Blocks
+            path: pages/tutorials/shared-memory-blocks.mdx
       - section: Multi-Agent
         contents:
           - page: Async Multi-Agent

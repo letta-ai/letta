@@ -1,0 +1,541 @@
+---
+title: "Shared Memory Blocks"
+subtitle: Enable multi-agent collaboration through shared memory
+slug: tutorials/shared-memory-blocks
+---
+
+## Overview
+
+Memory blocks can be shared between multiple agents, enabling powerful multi-agent collaboration patterns. When a block is shared, all attached agents can read and write to it, creating a common workspace for coordinating information and tasks.
+
+This tutorial demonstrates how to:
+- Create memory blocks that multiple agents can access
+- Build collaborative workflows where agents contribute different information
+- Use read-only blocks to provide shared context without allowing modifications
+- Understand how memory tools handle concurrent updates
+
+By the end of this guide, you'll understand how to build simple multi-agent systems where agents work together by sharing memory.
+
+<Note>
+**This tutorial uses Letta Cloud.** Generate an API key at [app.letta.com/api-keys](https://app.letta.com/api-keys) and set it as `LETTA_API_KEY` in your environment. Self-hosted servers only need an API key if authentication is enabled.
+
+The `web_search` tool used in this tutorial requires an `EXA_API_KEY` environment variable when self-hosting. You can learn more about self-hosting [here](/guides/selfhosting).
+</Note>
+
+## What You'll Learn
+
+- Creating standalone memory blocks for sharing
+- Attaching the same block to multiple agents
+- Building collaborative workflows with shared memory
+- Using read-only blocks for policies and system information
+- Understanding how memory tools handle concurrent updates
+
+## Prerequisites
+
+You will need to install `letta-client` to interface with a Letta server:
+
+<CodeGroup>
+```bash TypeScript
+npm install @letta-ai/letta-client
+```
+```bash Python
+pip install letta-client
+```
+</CodeGroup>
+
+## Steps
+
+### Step 1: Initialize Client
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize the Letta client using LETTA_API_KEY environment variable
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// If self-hosting, specify the base URL:
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize the Letta client using LETTA_API_KEY environment variable
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# If self-hosting, specify the base URL:
+# client = Letta(base_url="http://localhost:8283")
+```
+</CodeGroup>
+
+### Step 2: Create a Shared Memory Block
+
+Create a standalone memory block that will be shared between multiple agents. This block will serve as a collaborative workspace where both agents can contribute information.
+
+We're going to give the block the label "organization" to indicate that it contains information about some organization. The starting value of this block is "Organization: Letta" to give the agents a starting point to work from.
+
+<CodeGroup>
+```typescript TypeScript
+// Create a memory block that will be shared between agents
+// API Reference: https://docs.letta.com/api-reference/blocks/create
+const block = await client.blocks.create({
+    label: "organization",
+    value: "Organization: Letta",
+    limit: 4000,
+});
+
+console.log(`Created shared block: ${block.id}\n`);
+```
+```python Python
+# Create a memory block that will be shared between agents
+# API Reference: https://docs.letta.com/api-reference/blocks/create
+block = client.blocks.create(
+    label="organization",
+    value="Organization: Letta",
+    limit=4000,
+)
+
+print(f"Created shared block: {block.id}\n")
+```
+</CodeGroup>
+
+### Step 3: Create Agents with Shared Block
+
+Create two agents that will both have access to the same memory block. You can attach blocks during creation using `block_ids` or later using the `attach` method.
+
+We'll provide each agent with the `web_search` tool to search the web for information. This tool is built-in to Letta. If you are self-hosting, you will need to set an `EXA_API_KEY` environment variable for either the server or the agent to use this tool.
+
+<CodeGroup>
+```typescript TypeScript
+// Create first agent with block attached during creation
+// API Reference: https://docs.letta.com/api-reference/agents/create
+const agent1 = await client.agents.create({
+    name: "agent1",
+    model: "openai/gpt-4o-mini",
+    blockIds: [block.id],
+    tools: ["web_search"],
+});
+console.log(`Created agent1: ${agent1.id}`);
+
+// Create second agent and attach block afterward
+const agent2 = await client.agents.create({
+    name: "agent2",
+    model: "openai/gpt-4o-mini",
+    tools: ["web_search"],
+});
+console.log(`Created agent2: ${agent2.id}`);
+
+// Attach the shared block to agent2
+// API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
+await client.agents.blocks.attach(agent2.id, { blockId: block.id });
+console.log(`Attached block to agent2\n`);
+```
+```python Python
+# Create first agent with block attached during creation
+# API Reference: https://docs.letta.com/api-reference/agents/create
+agent1 = client.agents.create(
+    name="agent1",
+    model="openai/gpt-4o-mini",
+    block_ids=[block.id],
+    tools=["web_search"],
+)
+print(f"Created agent1: {agent1.id}")
+
+# Create second agent and attach block afterward
+agent2 = client.agents.create(
+    name="agent2",
+    model="openai/gpt-4o-mini",
+    tools=["web_search"],
+)
+print(f"Created agent2: {agent2.id}")
+
+# Attach the shared block to agent2
+# API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
+agent2 = client.agents.blocks.attach(
+    agent_id=agent2.id,
+    block_id=block.id,
+)
+print(f"Attached block to agent2: {agent2.id}")
+```
+</CodeGroup>
+
+### Step 4: Have Agents Collaborate via Shared Memory
+
+Now let's have both agents research different topics and contribute their findings to the shared memory block.
+
+- **Agent 1**: Searches for information about the connection between memory blocks and Letta.
+- **Agent 2**: Searches for information about the origin of Letta.
+
+We're going to ask each agent to search for different information and insert what they learn into the shared memory block, prepended with the agent's name (either `Agent1:` or `Agent2:`).
+
+<CodeGroup>
+```typescript TypeScript
+// Agent1 searches for information about memory blocks
+// API Reference: https://docs.letta.com/api-reference/agents/messages/create
+const response1 = await client.agents.messages.create(agent1.id, {
+    messages: [{
+        role: "user",
+        content: `Find information about the connection between memory blocks and Letta.
+Insert what you learn into the memory block, prepended with "Agent1: ".`
+    }]
+});
+
+for (const msg of response1.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Agent1 response: ${msg.content}`);
+    }
+    if (msg.messageType === "tool_call_message") {
+        console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
+    }
+}
+
+// Agent2 searches for information about Letta's origin
+const response2 = await client.agents.messages.create(agent2.id, {
+    messages: [{
+        role: "user",
+        content: `Find information about the origin of Letta.
+Insert what you learn into the memory block, prepended with "Agent2: ".`
+    }]
+});
+
+for (const msg of response2.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Agent2 response: ${msg.content}`);
+    }
+    if (msg.messageType === "tool_call_message") {
+        console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
+    }
+}
+```
+```python Python
+# Agent1 searches for information about memory blocks
+# API Reference: https://docs.letta.com/api-reference/agents/messages/create
+response = client.agents.messages.create(
+    agent_id=agent1.id,
+    messages=[{"role": "user", "content": """
+    Find information about the connection between memory blocks and Letta.
+    Insert what you learn into the memory block, prepended with "Agent1: ".
+"""}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Agent1 response: {msg.content}")
+    if msg.message_type == "tool_call_message":
+        print(f"Tool call: {msg.tool_call.name}({msg.tool_call.arguments})")
+
+# Agent2 searches for information about Letta's origin
+response = client.agents.messages.create(
+    agent_id=agent2.id,
+    messages=[{"role": "user", "content": """
+    Find information about the origin of Letta.
+    Insert what you learn into the memory block, prepended with "Agent2: ".
+"""}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Agent2 response: {msg.content}")
+    if msg.message_type == "tool_call_message":
+        print(f"Tool call: {msg.tool_call.name}({msg.tool_call.arguments})")
+```
+</CodeGroup>
+
+### Step 5: Inspect the Shared Memory
+
+Let's retrieve the shared memory block to see both agents' contributions:
+
+<CodeGroup>
+```typescript TypeScript
+// Retrieve the shared block to see what both agents learned
+// API Reference: https://docs.letta.com/api-reference/blocks/retrieve
+const updatedBlock = await client.blocks.retrieve(block.id);
+
+console.log("==== Updated block ====");
+console.log(updatedBlock.value);
+console.log("=======================\n");
+```
+```python Python
+# Retrieve the shared block to see what both agents learned
+# API Reference: https://docs.letta.com/api-reference/blocks/retrieve
+updated_block = client.blocks.retrieve(block.id)
+
+print(f"==== Updated block ====")
+print(updated_block.value)
+print(f"=======================")
+```
+</CodeGroup>
+
+The output should be something like this:
+
+> Organization: Letta
+>
+> Agent1: Memory blocks are integral to the Letta framework for managing context in large language models (LLMs). They serve as structured units that enhance an agent's ability to maintain long-term memory and coherence across interactions. Specifically, Letta utilizes memory blocks to organize context into discrete categories, such as "human" memory (user preferences and facts) and "persona" memory (the agent's self-concept and traits). This structured approach allows agents to edit and persist important information, improving performance, personalization, and controllability. By effectively managing the context window through these memory blocks, Letta enhances the overall functionality and adaptability of its LLM agents.
+>
+> Agent2: Letta originated as MemGPT, a research project focused on building
+> stateful AI agents with long-term memory capabilities. It evolved into a
+> platform for building and deploying production-ready agents.
+
+Note that each agent has placed their information into the block, prepended with their name. This is a simple way to identify who contributed what to the block. You don't have to prepend agent identifiers to the block, we only did this for demonstration purposes.
+
+<Note>
+**Understanding concurrent updates**: Memory tools handle concurrent updates differently:
+- `memory_insert` is additive and the most robust for multi-agent systems. Multiple agents can insert content simultaneously without conflicts, as each insert simply appends to the block.
+- `memory_replace` validates that the exact old content exists before replacing it. If another agent modifies the content being replaced, the tool call fails with a validation error, preventing accidental overwrites.
+- `memory_rethink` performs a complete rewrite of the entire block and follows "most recent write wins." This is a destructive operation - use cautiously in multi-agent systems as it can overwrite other agents' contributions.
+</Note>
+
+### Step 6: Using Read-Only Blocks
+
+Read-only blocks are useful for sharing policies, system information, or terms of service that agents should reference but not modify.
+
+<CodeGroup>
+```typescript TypeScript
+// Create a read-only block for policies or system information
+// API Reference: https://docs.letta.com/api-reference/blocks/create
+const readOnlyBlock = await client.blocks.create({
+    label: "read_only_block",
+    value: "This is a read-only block.",
+    readOnly: true,
+});
+
+// Attach the read-only block to an agent
+const readOnlyAgent = await client.agents.create({
+    name: "read_only_agent",
+    model: "openai/gpt-4o-mini",
+    blockIds: [readOnlyBlock.id],
+});
+
+console.log(`Created read-only agent: ${readOnlyAgent.id}`);
+```
+```python Python
+# Create a read-only block for policies or system information
+# API Reference: https://docs.letta.com/api-reference/blocks/create
+read_only_block = client.blocks.create(
+    label="read_only_block",
+    value="This is a read-only block.",
+    read_only=True,
+)
+
+# Attach the read-only block to an agent
+read_only_agent = client.agents.create(
+    name="read_only_agent",
+    model="openai/gpt-4o-mini",
+    block_ids=[read_only_block.id],
+)
+
+print(f"Created read-only agent: {read_only_agent.id}")
+```
+</CodeGroup>
+
+<Note>
+Agents can see read-only blocks in their context but cannot modify them using memory tools. This is useful for organizational policies, system configuration, or any information that should be reference-only.
+</Note>
+
+## Complete Example
+
+Here's the full code in one place that you can run:
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize client
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// Create shared block
+const block = await client.blocks.create({
+    label: "organization",
+    value: "Organization: Letta",
+    limit: 4000,
+});
+
+console.log(`Created shared block: ${block.id}\n`);
+
+// Create agents with shared block
+const agent1 = await client.agents.create({
+    name: "agent1",
+    model: "openai/gpt-4o-mini",
+    blockIds: [block.id],
+    tools: ["web_search"],
+});
+
+const agent2 = await client.agents.create({
+    name: "agent2",
+    model: "openai/gpt-4o-mini",
+    tools: ["web_search"],
+});
+
+await client.agents.blocks.attach(agent2.id, { blockId: block.id });
+
+console.log(`Created agents: ${agent1.id}, ${agent2.id}\n`);
+
+// Agent1 contributes information
+const response1 = await client.agents.messages.create(agent1.id, {
+    messages: [{
+        role: "user",
+        content: `Find information about the connection between memory blocks and Letta.
+Insert what you learn into the memory block, prepended with "Agent1: ".`
+    }]
+});
+
+// Agent2 contributes information
+const response2 = await client.agents.messages.create(agent2.id, {
+    messages: [{
+        role: "user",
+        content: `Find information about the origin of Letta.
+Insert what you learn into the memory block, prepended with "Agent2: ".`
+    }]
+});
+
+// Inspect the shared memory
+const updatedBlock = await client.blocks.retrieve(block.id);
+console.log("==== Updated block ====");
+console.log(updatedBlock.value);
+console.log("=======================\n");
+
+// Create read-only block
+const readOnlyBlock = await client.blocks.create({
+    label: "policies",
+    value: "Company Policy: Always be helpful and respectful.",
+    readOnly: true,
+});
+
+const readOnlyAgent = await client.agents.create({
+    name: "policy_agent",
+    model: "openai/gpt-4o-mini",
+    blockIds: [readOnlyBlock.id],
+});
+
+console.log(`Created read-only agent: ${readOnlyAgent.id}`);
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize client
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# Create shared block
+block = client.blocks.create(
+    label="organization",
+    value="Organization: Letta",
+    limit=4000,
+)
+
+print(f"Created shared block: {block.id}\n")
+
+# Create agents with shared block
+agent1 = client.agents.create(
+    name="agent1",
+    model="openai/gpt-4o-mini",
+    block_ids=[block.id],
+    tools=["web_search"],
+)
+
+agent2 = client.agents.create(
+    name="agent2",
+    model="openai/gpt-4o-mini",
+    tools=["web_search"],
+)
+
+agent2 = client.agents.blocks.attach(
+    agent_id=agent2.id,
+    block_id=block.id,
+)
+
+print(f"Created agents: {agent1.id}, {agent2.id}\n")
+
+# Agent1 contributes information
+response = client.agents.messages.create(
+    agent_id=agent1.id,
+    messages=[{"role": "user", "content": """
+    Find information about the connection between memory blocks and Letta.
+    Insert what you learn into the memory block, prepended with "Agent1: ".
+"""}],
+)
+
+# Agent2 contributes information
+response = client.agents.messages.create(
+    agent_id=agent2.id,
+    messages=[{"role": "user", "content": """
+    Find information about the origin of Letta.
+    Insert what you learn into the memory block, prepended with "Agent2: ".
+"""}],
+)
+
+# Inspect the shared memory
+updated_block = client.blocks.retrieve(block.id)
+print(f"==== Updated block ====")
+print(updated_block.value)
+print(f"=======================")
+
+# Create read-only block
+read_only_block = client.blocks.create(
+    label="policies",
+    value="Company Policy: Always be helpful and respectful.",
+    read_only=True,
+)
+
+read_only_agent = client.agents.create(
+    name="policy_agent",
+    model="openai/gpt-4o-mini",
+    block_ids=[read_only_block.id],
+)
+
+print(f"Created read-only agent: {read_only_agent.id}")
+```
+</CodeGroup>
+
+## Key Concepts
+
+<CardGroup cols={2}>
+<Card title="Shared Memory" icon="share-nodes">
+Multiple agents can access the same memory block, enabling collaboration and information sharing
+</Card>
+
+<Card title="Flexible Attachment" icon="link">
+Blocks can be attached during agent creation with block_ids or later using the attach method
+</Card>
+
+<Card title="Concurrent Updates" icon="rotate">
+Memory tools handle concurrent updates differently - insert is additive, replace validates, rethink overwrites
+</Card>
+
+<Card title="Read-Only Blocks" icon="lock">
+Prevent agent modifications while still providing shared context like policies or system information
+</Card>
+</CardGroup>
+
+## Use Cases
+
+<AccordionGroup>
+<Accordion title="Multi-Agent Research">
+Have multiple agents research different topics and contribute findings to a shared knowledge base.
+</Accordion>
+
+<Accordion title="Organizational Policies">
+Create read-only blocks with company policies, terms of service, or system guidelines that all agents reference.
+</Accordion>
+
+<Accordion title="Task Coordination">
+Use shared blocks as a coordination layer where agents update task status and communicate progress.
+</Accordion>
+
+<Accordion title="Collaborative Problem Solving">
+Enable agents with different specializations to work together by sharing context and intermediate results.
+</Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Memory Blocks Guide" icon="database" href="/guides/agents/memory-blocks">
+Learn more about memory blocks, including managing and updating them
+</Card>
+
+<Card title="Attaching and Detaching Blocks" icon="link" href="/examples/attaching-detaching-blocks">
+Understand how to dynamically control agent access to memory blocks
+</Card>
+</CardGroup>
