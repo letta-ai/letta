@@ -1,0 +1,426 @@
+---
+title: "Your First Letta Agent"
+subtitle: Create an agent, send messages, and understand basic memory
+slug: examples/hello-world
+---
+
+This example walks you through creating your first Letta agent from scratch. Unlike traditional chatbots that forget everything between conversations, Letta agents are **stateful** - they maintain persistent memory and can learn about you over time.
+
+By the end of this guide, you'll understand how to create an agent, send it messages, and see how it automatically updates its memory based on your interactions.
+
+<Note>
+**This example uses Letta Cloud.** Generate an API key at [app.letta.com/api-keys](https://app.letta.com/api-keys) and set it as `LETTA_API_KEY` in your environment. Self-hosted servers only need an API key if authentication is enabled. You can learn more about self-hosting [here](/guides/selfhosting).
+</Note>
+
+## What You'll Learn
+
+- Initializing the Letta client
+- Creating an agent with [memory blocks](/guides/agents/memory-blocks)
+- Sending messages and receiving responses
+- How agents update their own memory
+- Inspecting memory tool calls and block contents
+
+## Prerequisites
+
+You will need to install `letta-client` to interface with a Letta server:
+
+<CodeGroup>
+```bash TypeScript
+npm install @letta-ai/letta-client
+```
+```bash Python
+pip install letta-client
+```
+</CodeGroup>
+
+## Steps
+
+### Step 1: Initialize Client
+
+A __client__ is a connection to a Letta server. It's used to create and interact with agents, as well as any of Letta's other features.
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize the Letta client using LETTA_API_KEY environment variable
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// If self-hosting, specify the base URL:
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize the Letta client using LETTA_API_KEY environment variable
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# If self-hosting, specify the base URL:
+# client = Letta(base_url="http://localhost:8283")
+```
+</CodeGroup>
+
+### Step 2: Create Agent
+
+Now that we have a client, let's create an agent with memory blocks that define what the agent knows about itself and you. Memory blocks can be used for any purpose, but we're building a simple chatbot that stores information about its personality (`persona`) and you (`human`).
+
+<CodeGroup>
+```typescript TypeScript
+// Create your first agent
+// API Reference: https://docs.letta.com/api-reference/agents/create
+const agent = await client.agents.create({
+    name: "hello_world_assistant",
+
+    // Memory blocks define what the agent knows about itself and you.
+    // Agents can modify these blocks during conversations using memory
+    // tools like memory_replace, memory_insert, memory_rethink, and memory.
+    memoryBlocks: [
+        {
+            label: "persona",
+            value: "I am a friendly AI assistant here to help you learn about Letta."
+        },
+        {
+            label: "human",
+            value: "Name: User\nFirst interaction: Learning about Letta"
+        }
+    ],
+
+    // Model configuration
+    model: "openai/gpt-4o-mini",
+    // embedding: "openai/text-embedding-3-small", // Only set this if self-hosting
+});
+
+console.log(`Created agent: ${agent.id}`);
+```
+```python Python
+# Create your first agent
+# API Reference: https://docs.letta.com/api-reference/agents/create
+agent = client.agents.create(
+    name="hello_world_assistant",
+
+    # Memory blocks define what the agent knows about itself and you
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am a friendly AI assistant here to help you learn about Letta."
+        },
+        {
+            "label": "human",
+            "value": "Name: User\nFirst interaction: Learning about Letta"
+        }
+    ],
+
+    # Model configuration
+    model="openai/gpt-4o-mini",
+    # embedding="openai/text-embedding-3-small", # Only set this if self-hosting
+)
+
+print(f"Created agent: {agent.id}")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Created agent: agent-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+<Note>
+**Memory blocks** are the foundation of Letta agents. The `persona` block defines the agent's identity and behavior, while the `human` block stores information about the user. Learn more in the [Memory Blocks guide](/guides/agents/memory-blocks).
+</Note>
+
+### Step 3: Send Your First Message
+
+Now let's send a message to the agent to see what it can do.
+
+<CodeGroup>
+```typescript TypeScript
+// Send a message to your agent
+// API Reference: https://docs.letta.com/api-reference/agents/messages/create
+const response = await client.agents.messages.create(agent.id, {
+    messages: [{
+        role: "user",
+        content: "Hello! What's your purpose?"
+    }]
+});
+
+// Extract and print the assistant's response
+for (const message of response.messages) {
+    if (message.messageType === "assistant_message") {
+        console.log(`Assistant: ${message.content}`);
+    }
+}
+```
+```python Python
+# Send a message to your agent
+# API Reference: https://docs.letta.com/api-reference/agents/messages/create
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{
+        "role": "user",
+        "content": "Hello! What's your purpose?"
+    }]
+)
+
+# Extract and print the assistant's response
+for message in response.messages:
+    if message.message_type == "assistant_message":
+        print(f"Assistant: {message.content}")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Assistant: Hello! I'm here to help you learn about Letta and answer any questions
+you might have. Letta is a framework for building stateful AI agents with long-term
+memory. I can explain concepts, provide examples, and guide you through using the
+platform. What would you like to know?
+```
+</Accordion>
+
+### Step 4: Provide Information for the Agent to Remember
+
+Now let's give the agent some information about yourself. If prompted correctly, the agent can add this information to a relevant memory block using one of its default memory tools. Unless tools are modified during creation, new agents usually have `memory_insert` and `memory_replace` tools.
+
+<CodeGroup>
+```typescript TypeScript
+// Send information about yourself
+const response2 = await client.agents.messages.create(agent.id, {
+    messages: [{
+        role: "user",
+        content: "My name is Cameron. Please store this information in your memory."
+    }]
+});
+
+// Print out tool calls and the assistant's response
+for (const msg of response2.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Assistant: ${msg.content}\n`);
+    }
+    if (msg.messageType === "tool_call_message") {
+        console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
+    }
+}
+```
+```python Python
+# Send information about yourself
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "My name is Cameron. Please store this information in your memory."}]
+)
+
+# Print out tool calls and the assistant's response
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+    if msg.message_type == "tool_call_message":
+        print(f"Tool call: {msg.tool_call.name}({msg.tool_call.arguments})")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Tool call: memory_replace({"block_label": "human", "old_content": "Name: User", "new_content": "Name: Cameron"})
+Assistant: Got it! I've updated my memory with your name, Cameron. How can I assist you today?
+```
+</Accordion>
+
+<Note>
+Notice the `tool_call_message` showing the agent using the `memory_replace` tool to update the `human` block. This is how Letta agents manage their own memory.
+</Note>
+
+### Step 5: Inspect Agent Memory
+
+Let's see what the agent remembers. We'll print out both the summary and the full content of each memory block:
+
+<CodeGroup>
+```typescript TypeScript
+// Retrieve the agent's current memory blocks
+// API Reference: https://docs.letta.com/api-reference/agents/blocks/list
+const blocks = await client.agents.blocks.list(agent.id);
+
+console.log("Current Memory:");
+for (const block of blocks) {
+    console.log(`  ${block.label}: ${block.value.length}/${block.limit} chars`);
+    console.log(`  ${block.value}\n`);
+}
+```
+```python Python
+# Retrieve the agent's current memory blocks
+# API Reference: https://docs.letta.com/api-reference/agents/blocks/list
+blocks = client.agents.blocks.list(agent_id=agent.id)
+
+print("Current Memory:")
+for block in blocks:
+    print(f"  {block.label}: {len(block.value)}/{block.limit} chars")
+    print(f"  {block.value}\n")
+```
+</CodeGroup>
+
+The `persona` block should have:
+
+> I am a friendly AI assistant here to help you learn about Letta.
+
+The `human` block should have something like:
+
+> Name: Cameron
+
+
+<Note>
+Notice how the `human` block now contains "Name: Cameron" instead of "Name: User". The agent used the `memory_replace` tool to update its memory based on the information you provided.
+</Note>
+
+## Complete Example
+
+Here's the full code in one place that you can run:
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize client using LETTA_API_KEY environment variable
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// If self-hosting, specify the base URL:
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+
+// Create agent
+const agent = await client.agents.create({
+    name: "hello_world_assistant",
+    memoryBlocks: [
+        {
+            label: "persona",
+            value: "I am a friendly AI assistant here to help you learn about Letta."
+        },
+        {
+            label: "human",
+            value: "Name: User\nFirst interaction: Learning about Letta"
+        }
+    ],
+    model: "openai/gpt-4o-mini",
+    // embedding: "openai/text-embedding-3-small", // Only set this if self-hosting
+});
+
+console.log(`Created agent: ${agent.id}\n`);
+
+// Send first message
+let response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "Hello! What's your purpose?" }]
+});
+
+for (const msg of response.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Assistant: ${msg.content}\n`);
+    }
+}
+
+// Send information about yourself
+response = await client.agents.messages.create(agent.id, {
+    messages: [{ role: "user", content: "My name is Cameron. Please store this information in your memory." }]
+});
+
+// Print out tool calls and the assistant's response
+for (const msg of response.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Assistant: ${msg.content}\n`);
+    }
+    if (msg.messageType === "tool_call_message") {
+        console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
+    }
+}
+
+// Inspect memory
+const blocks = await client.agents.blocks.list(agent.id);
+console.log("Current Memory:");
+for (const block of blocks) {
+    console.log(`  ${block.label}: ${block.value.length}/${block.limit} chars`);
+    console.log(`  ${block.value}\n`);
+}
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize client using LETTA_API_KEY environment variable
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# If self-hosting, specify the base URL:
+# client = Letta(base_url="http://localhost:8283")
+
+# Create agent
+agent = client.agents.create(
+    name="hello_world_assistant",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am a friendly AI assistant here to help you learn about Letta."
+        },
+        {
+            "label": "human",
+            "value": "Name: User\nFirst interaction: Learning about Letta"
+        }
+    ],
+    model="openai/gpt-4o-mini",
+    # embedding="openai/text-embedding-3-small", # Only set this if self-hosting
+)
+
+print(f"Created agent: {agent.id}\n")
+
+# Send first message
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Hello! What's your purpose?"}]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+
+# Send information about yourself
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "My name is Cameron. Please store this information in your memory."}]
+)
+
+# Print out tool calls and the assistant's response
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+    if msg.message_type == "tool_call_message":
+        print(f"Tool call: {msg.tool_call.name}({msg.tool_call.arguments})")
+
+# Inspect memory
+blocks = client.agents.blocks.list(agent_id=agent.id)
+print("Current Memory:")
+for block in blocks:
+    print(f"  {block.label}: {len(block.value)}/{block.limit} chars")
+    print(f"  {block.value}\n")
+```
+</CodeGroup>
+
+## Key Concepts
+
+<CardGroup cols={2}>
+<Card title="Stateful Agents" icon="brain">
+Letta agents maintain memory across conversations, unlike stateless chat APIs
+</Card>
+
+<Card title="Memory Blocks" icon="cube">
+Modular memory components that agents can read and update during conversations
+</Card>
+
+<Card title="Persistent Context" icon="clock">
+Agents remember user preferences, conversation history, and learned information
+</Card>
+
+<Card title="Automatic Updates" icon="rotate">
+Agents intelligently update their memory as they learn more about you
+</Card>
+</CardGroup>
+
+## Next Steps
+
+<Card title="Memory Blocks Guide" icon="database" href="/guides/agents/memory-blocks">
+Learn how to work with memory blocks, update them, and control agent knowledge
+</Card>
