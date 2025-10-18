@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field
 
@@ -17,5 +17,6 @@ class RunMetrics(RunMetricsBase):
     run_start_ns: Optional[int] = Field(None, description="The timestamp of the start of the run in nanoseconds.")
     run_ns: Optional[int] = Field(None, description="Total time for the run in nanoseconds.")
     num_steps: Optional[int] = Field(None, description="The number of steps in the run.")
+    tools_used: Optional[List[str]] = Field(None, description="List of tool IDs that were used in this run.")
     template_id: Optional[str] = Field(None, description="The template ID that the run belongs to (cloud only).")
     base_template_id: Optional[str] = Field(None, description="The base template ID that the run belongs to (cloud only).")

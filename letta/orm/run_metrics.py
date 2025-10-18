@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String
+from sqlalchemy import JSON, BigInteger, ForeignKey, Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
@@ -42,6 +42,11 @@ class RunMetrics(SqlalchemyBase, ProjectMixin, AgentMixin, OrganizationMixin, Te
         Integer,
         nullable=True,
         doc="The number of steps in the run",
+    )
+    tools_used: Mapped[Optional[List[str]]] = mapped_column(
+        JSON,
+        nullable=True,
+        doc="List of tool IDs that were used in this run",
     )
     run: Mapped[Optional["Run"]] = relationship("Run", foreign_keys=[id])
     agent: Mapped[Optional["Agent"]] = relationship("Agent")

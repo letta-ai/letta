@@ -203,6 +203,22 @@ class RunManager:
 
         # update run metrics table
         num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
+
+        # Collect tools used from run messages
+        tools_used = set()
+        messages = await self.message_manager.list_messages(actor=actor, run_id=run_id)
+        for message in messages:
+            if message.tool_calls:
+                for tool_call in message.tool_calls:
+                    if hasattr(tool_call, "function") and hasattr(tool_call.function, "name"):
+                        # Get tool ID from tool name
+                        from letta.services.tool_manager import ToolManager
+
+                        tool_manager = ToolManager()
+                        tool_id = await tool_manager.get_tool_id_by_name_async(tool_call.function.name, actor)
+                        if tool_id:
+                            tools_used.add(tool_id)
+
         async with db_registry.async_session() as session:
             metrics = await RunMetricsModel.read_async(db_session=session, identifier=run_id, actor=actor)
             # Calculate runtime if run is completing
@@ -217,6 +233,7 @@ class RunManager:
                     current_ns = int(time.time() * 1e9)
                     metrics.run_ns = current_ns - metrics.run_start_ns
             metrics.num_steps = num_steps
+            metrics.tools_used = list(tools_used) if tools_used else None
             await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             await session.commit()
 

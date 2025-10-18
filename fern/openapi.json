@@ -33932,6 +33932,21 @@
             "title": "Num Steps",
             "description": "The number of steps in the run."
           },
+          "tools_used": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Used",
+            "description": "List of tool IDs that were used in this run."
+          },
           "template_id": {
             "anyOf": [
               {
