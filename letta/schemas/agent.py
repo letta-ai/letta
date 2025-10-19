@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
+from letta.errors import AgentExportProcessingError
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
@@ -269,9 +270,16 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
             # don't check if not provided
             return name
 
-        # Regex for allowed characters (alphanumeric, spaces, hyphens, underscores)
-        if not re.match("^[A-Za-z0-9 _-]+$", name):
-            raise ValueError("Name contains invalid characters.")
+        # Regex for allowed characters (Unicode letters, digits, spaces, hyphens, underscores, apostrophes)
+        # \w in Python 3 with re.UNICODE matches Unicode letters, digits, and underscores
+        # We explicitly allow: letters (any language), digits, spaces, hyphens, underscores, apostrophes
+        # We block filesystem-unsafe characters: / \ : * ? " < > |
+        if not re.match(r"^[\w '\-]+$", name, re.UNICODE):
+            raise AgentExportProcessingError(
+                f"Agent name '{name}' contains invalid characters. Only letters (any language), digits, spaces, "
+                f"hyphens, underscores, and apostrophes are allowed. Please avoid filesystem-unsafe characters "
+                f'like: / \\ : * ? " < > |'
+            )
 
         # Further checks can be added here...
         # TODO
