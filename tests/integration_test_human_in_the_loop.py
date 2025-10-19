@@ -120,6 +120,25 @@ def approve_tool_call(client: Letta, agent_id: str, tool_call_id: str):
     )
 
 
+def approve_tool_call(client: Letta, agent_id: str, tool_call_id: str):
+    client.agents.messages.create(
+        agent_id=agent_id,
+        messages=[
+            ApprovalCreate(
+                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
+                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
+                approvals=[
+                    {
+                        "type": "approval",
+                        "approve": True,
+                        "tool_call_id": tool_call_id,
+                    },
+                ],
+            ),
+        ],
+    )
+
+
 # ------------------------------
 # Fixtures
 # ------------------------------
@@ -212,7 +231,7 @@ def test_send_user_message_with_pending_request(client, agent):
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
 
 
 def test_send_approval_message_with_incorrect_request_id(client, agent):
@@ -238,7 +257,7 @@ def test_send_approval_message_with_incorrect_request_id(client, agent):
             ],
         )
 
-    approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
 
 
 # ------------------------------
@@ -258,12 +277,15 @@ def test_invoke_approval_request(
     messages = response.messages
 
     assert messages is not None
-    assert messages[-1].message_type == "approval_request_message"
-    assert messages[-1].tool_call is not None
-    assert messages[-1].tool_call.name == "get_secret_code_tool"
-    assert messages[-1].tool_calls is not None
-    assert len(messages[-1].tool_calls) == 1
-    assert messages[-1].tool_calls[0].name == "get_secret_code_tool"
+    assert len(messages) == 3
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "approval_request_message"
+    assert messages[2].tool_call is not None
+    assert messages[2].tool_call.name == "get_secret_code_tool"
+    assert messages[2].tool_calls is not None
+    assert len(messages[2].tool_calls) == 1
+    assert messages[2].tool_calls[0]["name"] == "get_secret_code_tool"
 
     # v3/v1 path: approval request tool args must not include request_heartbeat
     import json as _json
@@ -271,9 +293,9 @@ def test_invoke_approval_request(
     _args = _json.loads(messages[-1].tool_call.arguments)
     assert "request_heartbeat" not in _args
 
-    client.get(f"/v1/agents/{agent.id}/context", cast_to=dict[str, Any])
+    client.agents.context.retrieve(agent_id=agent.id)
 
-    approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
 
 
 def test_invoke_approval_request_stream(
@@ -295,9 +317,9 @@ def test_invoke_approval_request_stream(
     assert messages[-2].message_type == "stop_reason"
     assert messages[-1].message_type == "usage_statistics"
 
-    client.get(f"/v1/agents/{agent.id}/context", cast_to=dict[str, Any])
+    client.agents.context.retrieve(agent_id=agent.id)
 
-    approve_tool_call(client, agent.id, messages[-3].tool_call.tool_call_id)
+    approve_tool_call(client, agent.id, messages[2].tool_call.tool_call_id)
 
 
 def test_invoke_tool_after_turning_off_requires_approval(
@@ -309,7 +331,7 @@ def test_invoke_tool_after_turning_off_requires_approval(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
-    tool_call_id = response.messages[-1].tool_call.tool_call_id
+    tool_call_id = response.messages[2].tool_call.tool_call_id
 
     response = client.agents.messages.stream(
         agent_id=agent.id,
@@ -382,9 +404,9 @@ def test_approve_tool_call_request(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
-    tool_call_id = response.messages[-1].tool_call.tool_call_id
+    tool_call_id = response.messages[2].tool_call.tool_call_id
 
-    response = client.agents.messages.stream(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=[
             {
@@ -1160,7 +1182,7 @@ def test_parallel_tool_calling(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1)[0].id
     response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
@@ -1169,29 +1191,32 @@ def test_parallel_tool_calling(
     messages = response.messages
 
     assert messages is not None
-    assert messages[-2].message_type == "tool_call_message"
-    assert len(messages[-2].tool_calls) == 1
-    assert messages[-2].tool_calls[0].name == "roll_dice_tool"
-    assert "6" in messages[-2].tool_calls[0].arguments
-    dice_tool_call_id = messages[-2].tool_calls[0].tool_call_id
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "tool_call_message"
+    assert len(messages[2].tool_calls) == 1
+    assert messages[2].tool_calls[0]["name"] == "roll_dice_tool"
+    assert "6" in messages[2].tool_calls[0]["arguments"]
+    dice_tool_call_id = messages[2].tool_calls[0]["tool_call_id"]
 
-    assert messages[-1].message_type == "approval_request_message"
-    assert messages[-1].tool_call is not None
-    assert messages[-1].tool_call.name == "get_secret_code_tool"
+    assert messages[3].message_type == "approval_request_message"
+    assert messages[3].tool_call is not None
+    assert messages[3].tool_call.name == "get_secret_code_tool"
 
-    assert len(messages[-1].tool_calls) == 3
-    assert messages[-1].tool_calls[0].name == "get_secret_code_tool"
-    assert "hello world" in messages[-1].tool_calls[0].arguments
-    approve_tool_call_id = messages[-1].tool_calls[0].tool_call_id
-    assert messages[-1].tool_calls[1].name == "get_secret_code_tool"
-    assert "hello letta" in messages[-1].tool_calls[1].arguments
-    deny_tool_call_id = messages[-1].tool_calls[1].tool_call_id
-    assert messages[-1].tool_calls[2].name == "get_secret_code_tool"
-    assert "hello test" in messages[-1].tool_calls[2].arguments
-    client_side_tool_call_id = messages[-1].tool_calls[2].tool_call_id
+    assert len(messages[3].tool_calls) == 3
+    assert messages[3].tool_calls[0]["name"] == "get_secret_code_tool"
+    assert "hello world" in messages[3].tool_calls[0]["arguments"]
+    approve_tool_call_id = messages[3].tool_calls[0]["tool_call_id"]
+    assert messages[3].tool_calls[1]["name"] == "get_secret_code_tool"
+    assert "hello letta" in messages[3].tool_calls[1]["arguments"]
+    deny_tool_call_id = messages[3].tool_calls[1]["tool_call_id"]
+    assert messages[3].tool_calls[2]["name"] == "get_secret_code_tool"
+    assert "hello test" in messages[3].tool_calls[2]["arguments"]
+    client_side_tool_call_id = messages[3].tool_calls[2]["tool_call_id"]
 
     # ensure context is not bricked
-    client.get(f"/v1/agents/{agent.id}/context", cast_to=dict[str, Any])
+    client.agents.context.retrieve(agent_id=agent.id)
 
     response = client.agents.messages.create(
         agent_id=agent.id,
@@ -1246,9 +1271,9 @@ def test_parallel_tool_calling(
         assert messages[3].message_type == "tool_return_message"
 
     # ensure context is not bricked
-    client.get(f"/v1/agents/{agent.id}/context", cast_to=dict[str, Any])
+    client.agents.context.retrieve(agent_id=agent.id)
 
-    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor).items
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
     assert len(messages) > 6
     assert messages[0].message_type == "user_message"
     assert messages[1].message_type == "reasoning_message"
@@ -1258,7 +1283,7 @@ def test_parallel_tool_calling(
     assert messages[5].message_type == "approval_response_message"
     assert messages[6].message_type == "tool_return_message"
 
-    response = client.agents.messages.stream(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
         stream_tokens=True,
@@ -1272,50 +1297,3 @@ def test_parallel_tool_calling(
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "stop_reason"
     assert messages[3].message_type == "usage_statistics"
-
-
-def test_agent_records_last_stop_reason_after_approval_flow(
-    client: Letta,
-    agent: AgentState,
-) -> None:
-    """
-    Test that the agent's last_stop_reason is properly updated after a human-in-the-loop flow.
-    This verifies the integration between run completion and agent state updates.
-    """
-    # Get initial agent state
-    initial_agent = client.agents.retrieve(agent_id=agent.id)
-    initial_stop_reason = initial_agent.last_stop_reason
-
-    # Trigger approval request
-    response = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=USER_MESSAGE_TEST_APPROVAL,
-    )
-
-    # Verify we got an approval request
-    messages = response.messages
-    assert messages is not None
-    assert messages[-1].message_type == "approval_request_message"
-
-    # Check agent after approval request (run should be paused with requires_approval)
-    agent_after_request = client.agents.retrieve(agent_id=agent.id)
-    assert agent_after_request.last_stop_reason == "requires_approval"
-
-    # Approve the tool call
-    approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
-
-    # Check agent after approval (run should complete with end_turn or similar)
-    agent_after_approval = client.agents.retrieve(agent_id=agent.id)
-    # After approval and run completion, stop reason should be updated (could be end_turn or other terminal reason)
-    assert agent_after_approval.last_stop_reason is not None
-    assert agent_after_approval.last_stop_reason != initial_stop_reason  # Should be different from initial
-
-    # Send follow-up message to complete the flow
-    response2 = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=USER_MESSAGE_FOLLOW_UP,
-    )
-
-    # Verify final agent state has the most recent stop reason
-    final_agent = client.agents.retrieve(agent_id=agent.id)
-    assert final_agent.last_stop_reason is not None

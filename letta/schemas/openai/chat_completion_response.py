@@ -21,10 +21,6 @@ class ToolCall(BaseModel):
     function: FunctionCall
 
 
-class ToolCallDenial(ToolCall):
-    reason: Optional[str] = None
-
-
 class LogProbToken(BaseModel):
     token: str
     logprob: float

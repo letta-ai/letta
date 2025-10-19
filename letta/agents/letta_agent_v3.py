@@ -462,14 +462,11 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Get tool calls that are pending
                 backfill_tool_call_id = approval_request.tool_calls[0].id  # legacy case
-                if approval_response.approvals:
-                    approved_tool_call_ids = {
-                        backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
-                        for a in approval_response.approvals
-                        if isinstance(a, ApprovalReturn) and a.approve
-                    }
-                else:
-                    approved_tool_call_ids = {}
+                approved_tool_call_ids = {
+                    backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
+                    for a in approval_response.approvals
+                    if isinstance(a, ApprovalReturn) and a.approve
+                }
                 tool_calls = [tool_call for tool_call in approval_request.tool_calls if tool_call.id in approved_tool_call_ids]
                 pending_tool_call_message = _maybe_get_pending_tool_call_message(messages)
                 if pending_tool_call_message:
