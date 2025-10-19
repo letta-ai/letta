@@ -203,12 +203,40 @@ def create_approval_response_message_from_input(
 def create_approval_request_message_from_llm_response(
     agent_id: str,
     model: str,
-    tool_calls: List[OpenAIToolCall],
+    requested_tool_calls: List[OpenAIToolCall],
+    allowed_tool_calls: List[OpenAIToolCall] = [],
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
     run_id: str = None,
 ) -> Message:
+    messages = []
+    if allowed_tool_calls:
+        oai_tool_calls = [
+            OpenAIToolCall(
+                id=tool_call.id,
+                function=OpenAIFunction(
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments,
+                ),
+                type="function",
+            )
+            for tool_call in allowed_tool_calls
+        ]
+        tool_message = Message(
+            role=MessageRole.assistant,
+            content=reasoning_content if reasoning_content else [],
+            agent_id=agent_id,
+            model=model,
+            tool_calls=oai_tool_calls,
+            tool_call_id=allowed_tool_calls[0].id,
+            created_at=get_utc_time(),
+            step_id=step_id,
+            run_id=run_id,
+        )
+        if pre_computed_assistant_message_id:
+            tool_message.id = pre_computed_assistant_message_id
+        messages.append(tool_message)
     # Construct the tool call with the assistant's message
     oai_tool_calls = [
         OpenAIToolCall(
@@ -218,15 +246,14 @@ def create_approval_request_message_from_llm_response(
                 arguments=tool_call.function.arguments,
             ),
             type="function",
-            requires_approval=tool_call.requires_approval,
         )
-        for tool_call in tool_calls
+        for tool_call in requested_tool_calls
     ]
     # TODO: Use ToolCallContent instead of tool_calls
     # TODO: This helps preserve ordering
     approval_message = Message(
         role=MessageRole.approval,
-        content=reasoning_content if reasoning_content else [],
+        content=reasoning_content if reasoning_content and not allowed_tool_calls else [],
         agent_id=agent_id,
         model=model,
         tool_calls=oai_tool_calls,
@@ -236,8 +263,17 @@ def create_approval_request_message_from_llm_response(
         run_id=run_id,
     )
     if pre_computed_assistant_message_id:
-        approval_message.id = pre_computed_assistant_message_id
-    return approval_message
+        approval_message.id = increment_message_uuid(pre_computed_assistant_message_id)
+    messages.append(approval_message)
+    return messages
+
+
+def increment_message_uuid(message_id: str):
+    message_uuid = uuid.UUID(message_id.split("-", maxsplit=1)[1])
+    uuid_as_int = message_uuid.int
+    incremented_int = uuid_as_int + 1
+    incremented_uuid = uuid.UUID(int=incremented_int)
+    return "message-" + str(incremented_uuid)
 
 
 def create_letta_messages_from_llm_response(

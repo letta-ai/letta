@@ -87,6 +87,25 @@ def accumulate_chunks(stream):
     return messages
 
 
+def approve_tool_call(client: Letta, agent_id: str, tool_call_id: str):
+    client.agents.messages.create(
+        agent_id=agent_id,
+        messages=[
+            ApprovalCreate(
+                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
+                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
+                approvals=[
+                    {
+                        "type": "approval",
+                        "approve": True,
+                        "tool_call_id": tool_call_id,
+                    },
+                ],
+            ),
+        ],
+    )
+
+
 # ------------------------------
 # Fixtures
 # ------------------------------
@@ -216,7 +235,7 @@ def test_send_approval_without_pending_request(client, agent):
 
 
 def test_send_user_message_with_pending_request(client, agent):
-    client.agents.messages.create(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -227,9 +246,11 @@ def test_send_user_message_with_pending_request(client, agent):
             messages=[MessageCreate(role="user", content="hi")],
         )
 
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
+
 
 def test_send_approval_message_with_incorrect_request_id(client, agent):
-    client.agents.messages.create(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -251,6 +272,8 @@ def test_send_approval_message_with_incorrect_request_id(client, agent):
                 ),
             ],
         )
+
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
 
 
 # ------------------------------
@@ -276,15 +299,19 @@ def test_invoke_approval_request(
     assert messages[2].message_type == "approval_request_message"
     assert messages[2].tool_call is not None
     assert messages[2].tool_call.name == "get_secret_code_tool"
-    assert messages[2].requested_tool_calls is not None
-    assert len(messages[2].requested_tool_calls) == 1
-    assert messages[2].requested_tool_calls[0]["name"] == "get_secret_code_tool"
+    assert messages[2].tool_calls is not None
+    assert len(messages[2].tool_calls) == 1
+    assert messages[2].tool_calls[0]["name"] == "get_secret_code_tool"
 
     # v3/v1 path: approval request tool args must not include request_heartbeat
     import json as _json
 
     _args = _json.loads(messages[2].tool_call.arguments)
     assert "request_heartbeat" not in _args
+
+    client.agents.context.retrieve(agent_id=agent.id)
+
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
 
 
 def test_invoke_approval_request_stream(
@@ -309,43 +336,9 @@ def test_invoke_approval_request_stream(
     assert messages[3].message_type == "stop_reason"
     assert messages[4].message_type == "usage_statistics"
 
+    client.agents.context.retrieve(agent_id=agent.id)
 
-def test_invoke_approval_request_with_context_check(
-    client: Letta,
-    agent: AgentState,
-) -> None:
-    response = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=USER_MESSAGE_TEST_APPROVAL,
-    )
-    tool_call_id = response.messages[2].tool_call.tool_call_id
-
-    response = client.agents.messages.create_stream(
-        agent_id=agent.id,
-        messages=[
-            ApprovalCreate(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
-                    {
-                        "type": "approval",
-                        "approve": True,
-                        "tool_call_id": tool_call_id,
-                    },
-                ],
-            ),
-        ],
-        stream_tokens=True,
-    )
-
-    messages = accumulate_chunks(response)
-
-    try:
-        client.agents.context.retrieve(agent_id=agent.id)
-    except Exception as e:
-        if len(messages) > 4:
-            raise ValueError("Model did not respond with only reasoning content, please rerun test to repro edge case.")
-        raise e
+    approve_tool_call(client, agent.id, messages[2].tool_call.tool_call_id)
 
 
 def test_invoke_tool_after_turning_off_requires_approval(
@@ -357,7 +350,6 @@ def test_invoke_tool_after_turning_off_requires_approval(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
-    approval_request_id = response.messages[0].id
     tool_call_id = response.messages[2].tool_call.tool_call_id
 
     response = client.agents.messages.create_stream(
@@ -432,13 +424,7 @@ def test_approve_tool_call_request(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
-    approval_request_id = response.messages[0].id
     tool_call_id = response.messages[2].tool_call.tool_call_id
-    # Ensure no request_heartbeat on approval request
-    # import json as _json
-
-    # _args = _json.loads(response.messages[0].tool_call.arguments)
-    # assert "request_heartbeat" not in _args
 
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
@@ -1175,6 +1161,7 @@ def test_parallel_tool_calling(
     client: Letta,
     agent: AgentState,
 ) -> None:
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1)[0].id
     response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
@@ -1183,28 +1170,32 @@ def test_parallel_tool_calling(
     messages = response.messages
 
     assert messages is not None
-    assert len(messages) == 3
+    assert len(messages) == 4
     assert messages[0].message_type == "reasoning_message"
     assert messages[1].message_type == "assistant_message"
-    assert messages[2].message_type == "approval_request_message"
-    assert messages[2].tool_call is not None
-    assert messages[2].tool_call.name == "get_secret_code_tool" or messages[2].tool_call.name == "roll_dice_tool"
+    assert messages[2].message_type == "tool_call_message"
+    assert len(messages[2].tool_calls) == 1
+    assert messages[2].tool_calls[0]["name"] == "roll_dice_tool"
+    assert "6" in messages[2].tool_calls[0]["arguments"]
+    dice_tool_call_id = messages[2].tool_calls[0]["tool_call_id"]
 
-    assert len(messages[2].requested_tool_calls) == 3
-    assert messages[2].requested_tool_calls[0]["name"] == "get_secret_code_tool"
-    assert "hello world" in messages[2].requested_tool_calls[0]["arguments"]
-    approve_tool_call_id = messages[2].requested_tool_calls[0]["tool_call_id"]
-    assert messages[2].requested_tool_calls[1]["name"] == "get_secret_code_tool"
-    assert "hello letta" in messages[2].requested_tool_calls[1]["arguments"]
-    deny_tool_call_id = messages[2].requested_tool_calls[1]["tool_call_id"]
-    assert messages[2].requested_tool_calls[2]["name"] == "get_secret_code_tool"
-    assert "hello test" in messages[2].requested_tool_calls[2]["arguments"]
-    client_side_tool_call_id = messages[2].requested_tool_calls[2]["tool_call_id"]
+    assert messages[3].message_type == "approval_request_message"
+    assert messages[3].tool_call is not None
+    assert messages[3].tool_call.name == "get_secret_code_tool"
 
-    assert len(messages[2].allowed_tool_calls) == 1
-    assert messages[2].allowed_tool_calls[0]["name"] == "roll_dice_tool"
-    assert "6" in messages[2].allowed_tool_calls[0]["arguments"]
-    dice_tool_call_id = messages[2].allowed_tool_calls[0]["tool_call_id"]
+    assert len(messages[3].tool_calls) == 3
+    assert messages[3].tool_calls[0]["name"] == "get_secret_code_tool"
+    assert "hello world" in messages[3].tool_calls[0]["arguments"]
+    approve_tool_call_id = messages[3].tool_calls[0]["tool_call_id"]
+    assert messages[3].tool_calls[1]["name"] == "get_secret_code_tool"
+    assert "hello letta" in messages[3].tool_calls[1]["arguments"]
+    deny_tool_call_id = messages[3].tool_calls[1]["tool_call_id"]
+    assert messages[3].tool_calls[2]["name"] == "get_secret_code_tool"
+    assert "hello test" in messages[3].tool_calls[2]["arguments"]
+    client_side_tool_call_id = messages[3].tool_calls[2]["tool_call_id"]
+
+    # ensure context is not bricked
+    client.agents.context.retrieve(agent_id=agent.id)
 
     response = client.agents.messages.create(
         agent_id=agent.id,
@@ -1258,3 +1249,31 @@ def test_parallel_tool_calling(
         assert messages[1].message_type == "reasoning_message"
         assert messages[2].message_type == "tool_call_message"
         assert messages[3].message_type == "tool_return_message"
+
+    # ensure context is not bricked
+    client.agents.context.retrieve(agent_id=agent.id)
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
+    assert len(messages) > 6
+    assert messages[0].message_type == "user_message"
+    assert messages[1].message_type == "reasoning_message"
+    assert messages[2].message_type == "assistant_message"
+    assert messages[3].message_type == "tool_call_message"
+    assert messages[4].message_type == "approval_request_message"
+    assert messages[5].message_type == "approval_response_message"
+    assert messages[6].message_type == "tool_return_message"
+
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[3].message_type == "usage_statistics"

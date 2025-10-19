@@ -137,9 +137,7 @@ async def _prepare_in_context_messages_async(
 
 def validate_approval_tool_call_ids(approval_request_message: Message, approval_response_message: ApprovalCreate):
     approval_requests = approval_request_message.tool_calls
-    approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests if approval_request.requires_approval]
-    if not approval_request_tool_call_ids and len(approval_request_message.tool_calls) == 1:
-        approval_request_tool_call_ids = [approval_request_message.tool_calls[0].id]
+    approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests]
 
     approval_responses = approval_response_message.approvals
     approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
@@ -418,3 +416,19 @@ def _maybe_get_approval_messages(messages: list[Message]) -> Tuple[Message | Non
         if maybe_approval_request.role == "approval" and maybe_approval_response.role == "approval":
             return maybe_approval_request, maybe_approval_response
     return None, None
+
+
+def _maybe_get_pending_tool_call_message(messages: list[Message]) -> Message | None:
+    """
+    Only used in the case where hitl is invoked with parallel tool calling,
+    where agent calls some tools that require approval, and others that don't.
+    """
+    if len(messages) >= 3:
+        maybe_tool_call_message = messages[-3]
+        if (
+            maybe_tool_call_message.role == "assistant"
+            and maybe_tool_call_message.tool_calls is not None
+            and len(maybe_tool_call_message.tool_calls) > 0
+        ):
+            return maybe_tool_call_message
+    return None

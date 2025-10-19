@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
+from letta_client import LettaMessageUnion
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.responses import ResponseReasoningItem
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -813,14 +814,6 @@ class Message(BaseMessage):
 
     def _convert_approval_request_message(self) -> ApprovalRequestMessage:
         """Convert approval request message to ApprovalRequestMessage"""
-        allowed_tool_calls = []
-        if len(self.tool_calls) == 0 and self.tool_call:
-            requested_tool_calls = [self.tool_call]
-        if len(self.tool_calls) == 1:
-            requested_tool_calls = self.tool_calls
-        else:
-            requested_tool_calls = [t for t in self.tool_calls if t.requires_approval]
-            allowed_tool_calls = [t for t in self.tool_calls if not t.requires_approval]
 
         def _convert_tool_call(tool_call):
             return ToolCall(
@@ -836,9 +829,8 @@ class Message(BaseMessage):
             sender_id=self.sender_id,
             step_id=self.step_id,
             run_id=self.run_id,
-            tool_call=_convert_tool_call(requested_tool_calls[0]),  # backwards compatibility
-            requested_tool_calls=[_convert_tool_call(tc) for tc in requested_tool_calls],
-            allowed_tool_calls=[_convert_tool_call(tc) for tc in allowed_tool_calls],
+            tool_call=_convert_tool_call(self.tool_calls[0]),  # backwards compatibility
+            tool_calls=[_convert_tool_call(tc) for tc in self.tool_calls],
             name=self.name,
         )
 
@@ -1819,6 +1811,9 @@ class Message(BaseMessage):
         # Filter last message if it is a lone approval request without a response - this only occurs for token counting
         if messages[-1].role == "approval" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
             messages.remove(messages[-1])
+            # Also filter pending tool call message if this turn invoked parallel tool calling
+            if messages and messages[-1].role == "assistant" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
+                messages.remove(messages[-1])
 
         # Filter last message if it is a lone reasoning message without assistant message or tool call
         if (
@@ -1828,6 +1823,28 @@ class Message(BaseMessage):
         ):
             messages.remove(messages[-1])
 
+        # Collapse adjacent tool call and approval messages
+        messages = Message.collapse_tool_call_messages_for_llm_api(messages)
+
+        return messages
+
+    @staticmethod
+    def collapse_tool_call_messages_for_llm_api(
+        messages: List[Message],
+    ) -> List[Message]:
+        adjacent_tool_call_approval_messages = []
+        for i in range(len(messages) - 1):
+            if (
+                messages[i].role == MessageRole.assistant
+                and messages[i].tool_calls is not None
+                and messages[i + 1].role == MessageRole.approval
+                and messages[i + 1].tool_calls is not None
+            ):
+                adjacent_tool_call_approval_messages.append(i)
+        for i in reversed(adjacent_tool_call_approval_messages):
+            messages[i].content = messages[i].content + messages[i + 1].content
+            messages[i].tool_calls = messages[i].tool_calls + messages[i + 1].tool_calls
+            messages.remove(messages[i + 1])
         return messages
 
     @staticmethod

@@ -12,6 +12,7 @@ from letta.agents.helpers import (
     _build_rule_violation_result,
     _load_last_function_response,
     _maybe_get_approval_messages,
+    _maybe_get_pending_tool_call_message,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
     generate_step_id,
@@ -315,15 +316,15 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Get tool calls that are pending
                 backfill_tool_call_id = approval_request.tool_calls[0].id  # legacy case
-                approved_tool_call_ids = [
+                approved_tool_call_ids = {
                     backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
                     for a in approval_response.approvals
                     if isinstance(a, ApprovalReturn) and a.approve
-                ]
-                pending_tool_call_ids = [
-                    t.id for t in approval_request.tool_calls if not t.requires_approval and t.id not in approved_tool_call_ids
-                ]
-                tool_calls = [t for t in approval_request.tool_calls if t.id in approved_tool_call_ids + pending_tool_call_ids]
+                }
+                tool_calls = [tool_call for tool_call in approval_request.tool_calls if tool_call.id in approved_tool_call_ids]
+                pending_tool_call_message = _maybe_get_pending_tool_call_message(messages)
+                if pending_tool_call_message:
+                    tool_calls.extend(pending_tool_call_message.tool_calls)
 
                 # Get tool calls that were denied
                 denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
@@ -681,21 +682,20 @@ class LettaAgentV3(LettaAgentV2):
 
         # 2. Check whether tool call requires approval
         if not is_approval_response:
-            requires_approval = False
-            for tool_call in tool_calls:
-                tool_call.requires_approval = tool_rules_solver.is_requires_approval_tool(tool_call.function.name)
-                requires_approval = requires_approval or tool_call.requires_approval
-            if requires_approval:
-                approval_message = create_approval_request_message_from_llm_response(
+            requested_tool_calls = [t for t in tool_calls if tool_rules_solver.is_requires_approval_tool(t.function.name)]
+            allowed_tool_calls = [t for t in tool_calls if not tool_rules_solver.is_requires_approval_tool(t.function.name)]
+            if requested_tool_calls:
+                approval_messages = create_approval_request_message_from_llm_response(
                     agent_id=agent_state.id,
                     model=agent_state.llm_config.model,
-                    tool_calls=tool_calls,
+                    requested_tool_calls=requested_tool_calls,
+                    allowed_tool_calls=allowed_tool_calls,
                     reasoning_content=content,
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
                     run_id=run_id,
                 )
-                messages_to_persist = (initial_messages or []) + [approval_message]
+                messages_to_persist = (initial_messages or []) + approval_messages
 
                 for message in messages_to_persist:
                     if message.run_id is None:

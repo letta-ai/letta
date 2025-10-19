@@ -1700,15 +1700,17 @@ class LettaAgent(BaseAgent):
         )
         if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
             tool_args[REQUEST_HEARTBEAT_PARAM] = request_heartbeat
-            approval_message = create_approval_request_message_from_llm_response(
+            approval_messages = create_approval_request_message_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                tool_calls=[ToolCall(id=tool_call_id, function=FunctionCall(name=tool_call_name, arguments=json.dumps(tool_args)))],
+                requested_tool_calls=[
+                    ToolCall(id=tool_call_id, function=FunctionCall(name=tool_call_name, arguments=json.dumps(tool_args)))
+                ],
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
             )
-            messages_to_persist = (initial_messages or []) + [approval_message]
+            messages_to_persist = (initial_messages or []) + approval_messages
             continue_stepping = False
             stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
         else:

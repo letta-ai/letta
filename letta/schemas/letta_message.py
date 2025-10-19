@@ -305,12 +305,8 @@ class ApprovalRequestMessage(LettaMessage):
     tool_call: Union[ToolCall, ToolCallDelta] = Field(
         ..., description="The tool call that has been requested by the llm to run", deprecated=True
     )
-    requested_tool_calls: Optional[Union[List[ToolCall], ToolCallDelta]] = Field(
+    tool_calls: Optional[Union[List[ToolCall], ToolCallDelta]] = Field(
         None, description="The tool calls that have been requested by the llm to run, which are pending approval"
-    )
-    allowed_tool_calls: Optional[Union[List[ToolCall], ToolCallDelta]] = Field(
-        None,
-        description="Any tool calls returned by the llm during the same turn that do not require approvals, which will execute once this approval request is handled regardless of approval or denial. Only used when parallel_tool_calls is enabled",
     )
 
 

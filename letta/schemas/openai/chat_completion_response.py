@@ -19,7 +19,6 @@ class ToolCall(BaseModel):
     type: Literal["function"] = "function"
     # function: ToolCallFunction
     function: FunctionCall
-    requires_approval: Optional[bool] = None
 
 
 class LogProbToken(BaseModel):
