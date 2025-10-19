@@ -188,7 +188,7 @@ async def _prepare_in_context_messages_no_persist_async(
     # Check for approval-related message validation
     if len(input_messages) == 1 and input_messages[0].type == "approval":
         # User is trying to send an approval response
-        if current_in_context_messages[-1].role != "approval":
+        if current_in_context_messages and current_in_context_messages[-1].role != "approval":
             raise ValueError(
                 "Cannot process approval response: No tool call is currently awaiting approval. "
                 "Please send a regular message to interact with the agent."
@@ -199,7 +199,7 @@ async def _prepare_in_context_messages_no_persist_async(
         )
     else:
         # User is trying to send a regular message
-        if current_in_context_messages[-1].role == "approval":
+        if current_in_context_messages and current_in_context_messages[-1].role == "approval":
             raise PendingApprovalError(pending_request_id=current_in_context_messages[-1].id)
 
         # Create a new user message from the input but dont store it yet
