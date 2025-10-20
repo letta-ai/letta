@@ -1,0 +1,411 @@
+---
+title: Best Practices
+subtitle: Patterns, pitfalls, and advanced usage
+slug: guides/agents/archival-best-practices
+---
+
+## Agent best practices
+
+These patterns help agents use archival memory effectively during conversations.
+
+### 1. Avoid over-insertion
+
+The most common pitfall is inserting too many memories, creating clutter. Trust the agent to decide what's worth storing long-term.
+
+### 2. Use tags consistently
+
+Establish a tag taxonomy and stick to it. Good language models typically handle tagging well.
+
+### 3. Add context to insertions
+
+❌ Don't: "Likes replicants"
+✅ Do: "Deckard shows unusual empathy toward replicants, particularly Rachael, suggesting possible replicant identity"
+
+### 4. Let agents experiment
+
+Agents can test different query styles to understand what works:
+
+```python
+# What the agent does (agent tool call)
+archival_memory_search(query="How does the Voight-Kampff test work?")
+archival_memory_search(query="Voight-Kampff procedure")
+archival_memory_search(query="replicant detection method")
+```
+
+**Important:** Have the agent persist learnings from experimentation in a memory block (like `archival_tracking` or `archival_policies`), not in archival itself (avoid meta-clutter).
+
+## Developer best practices (SDK)
+
+These patterns help developers configure and manage archival memory via the SDK.
+
+### Backfilling archives
+
+Developers can pre-load archival memory with existing knowledge via the SDK:
+
+<CodeGroup>
+```typescript TypeScript
+// Load company policies
+const policies = [
+    "All replicants must undergo Voight-Kampff testing upon arrival",
+    "Blade Runner units are authorized to retire rogue replicants",
+    "Tyrell Corporation employees must report suspected replicants immediately"
+];
+
+for (const policy of policies) {
+    await client.agents.passages.insert(agent.id, {
+        content: policy,
+        tags: ["policy", "company", "protocol"]
+    });
+}
+
+// Load technical documentation
+const docs = [
+    {
+        content: "Nexus-6 replicants: Superior strength, agility, and intelligence. Four-year lifespan prevents emotional development.",
+        tags: ["technical", "nexus-6", "specifications"]
+    },
+    {
+        content: "Voight-Kampff test: Measures capillary dilation, blush response, and pupil dilation to detect replicants.",
+        tags: ["technical", "testing", "voight-kampff"]
+    }
+];
+
+for (const doc of docs) {
+    await client.agents.passages.insert(agent.id, {
+        content: doc.content,
+        tags: doc.tags
+    });
+}
+```
+```python Python
+# Load company policies
+policies = [
+    "All replicants must undergo Voight-Kampff testing upon arrival",
+    "Blade Runner units are authorized to retire rogue replicants",
+    "Tyrell Corporation employees must report suspected replicants immediately"
+]
+
+for policy in policies:
+    client.agents.passages.insert(
+        agent_id=agent.id,
+        content=policy,
+        tags=["policy", "company", "protocol"]
+    )
+
+# Load technical documentation
+docs = [
+    {
+        "content": "Nexus-6 replicants: Superior strength, agility, and intelligence. Four-year lifespan prevents emotional development.",
+        "tags": ["technical", "nexus-6", "specifications"]
+    },
+    {
+        "content": "Voight-Kampff test: Measures capillary dilation, blush response, and pupil dilation to detect replicants.",
+        "tags": ["technical", "testing", "voight-kampff"]
+    }
+]
+
+for doc in docs:
+    client.agents.passages.insert(
+        agent_id=agent.id,
+        content=doc["content"],
+        tags=doc["tags"]
+    )
+```
+</CodeGroup>
+
+**Use cases for backfilling:**
+- Migrating knowledge bases to Letta
+- Seeding specialized agents with domain knowledge
+- Loading historical conversation logs
+- Importing research libraries
+
+### Create an archival policies block
+
+Help your agent learn how to use archival memory effectively by creating a dedicated memory block for archival usage policies:
+
+<CodeGroup>
+```typescript TypeScript
+await client.blocks.create({
+    label: "archival_policies",
+    value: `
+    When to insert into archival:
+    - User preferences and important facts about the user
+    - Technical specifications and reference information
+    - Significant decisions or outcomes from conversations
+
+    When NOT to insert:
+    - Temporary conversational context
+    - Information already stored
+    - Trivial details or pleasantries
+
+    Search strategies:
+    - Use natural language questions for best results
+    - Include tags when filtering by category
+    - Try semantic variations if first search doesn't find what you need
+    `
+});
+```
+```python Python
+client.blocks.create(
+    label="archival_policies",
+    value="""
+    When to insert into archival:
+    - User preferences and important facts about the user
+    - Technical specifications and reference information
+    - Significant decisions or outcomes from conversations
+
+    When NOT to insert:
+    - Temporary conversational context
+    - Information already stored
+    - Trivial details or pleasantries
+
+    Search strategies:
+    - Use natural language questions for best results
+    - Include tags when filtering by category
+    - Try semantic variations if first search doesn't find what you need
+    """
+)
+```
+</CodeGroup>
+
+You can improve this block through conversation with your agent:
+
+> **You:** "I noticed you didn't store the fact that I prefer TypeScript for backend development. Update your archival policies block to ensure you capture language preferences in the future."
+
+> **Agent:** Updates the archival_policies block to include "Programming language preferences" under "When to insert into archival"
+
+This collaborative approach helps agents learn from mistakes and improve their archival memory usage over time.
+
+### Track query effectiveness
+
+Build self-improving agents by having them track archival search effectiveness in a memory block:
+
+<CodeGroup>
+```typescript TypeScript
+// Create a memory block for tracking
+await client.blocks.create({
+    label: "archival_tracking",
+    value: `
+    Query patterns: Natural language questions work best
+    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
+    Success rate: ~85% of searches return relevant results
+    Frequently searched topics: [technical specifications, protocols, case histories]
+    Common patterns: Queries about technical specs work better than vague questions
+    Improvements needed: Add more tags for better filtering
+    `
+});
+```
+```python Python
+# Create a memory block for tracking
+client.blocks.create(
+    label="archival_tracking",
+    value="""
+    Query patterns: Natural language questions work best
+    Recent searches: "test procedures" (3 results), "replicant specs" (5 results)
+    Success rate: ~85% of searches return relevant results
+    Frequently searched topics: [technical specifications, protocols, case histories]
+    Common patterns: Queries about technical specs work better than vague questions
+    Improvements needed: Add more tags for better filtering
+    """
+)
+```
+</CodeGroup>
+
+The agent can update this block based on search results and continuously refine its archival strategy.
+
+### Enforcing archival usage with tool rules
+
+If your agent forgets to use archival memory, you should first try prompting the agent to use it more consistently. If prompting alone doesn't work, you can enforce archival usage with [tool rules](/guides/agents/tool-rules).
+
+**Force archival search at turn start:**
+
+<CodeGroup>
+```typescript TypeScript
+await client.agents.update(agent.id, {
+    toolRules: [
+        { type: "init", toolName: "archival_memory_search" }
+    ]
+});
+```
+```python Python
+from letta_client.types import InitToolRule
+
+client.agents.update(
+    agent_id=agent.id,
+    tool_rules=[
+        InitToolRule(tool_name="archival_memory_search")
+    ]
+)
+```
+</CodeGroup>
+
+**Require archival insertion before exit:**
+
+<CodeGroup>
+```typescript TypeScript
+await client.agents.update(agent.id, {
+    toolRules: [
+        {
+            type: "child",
+            toolName: "send_message",
+            children: ["archival_memory_insert"]
+        }
+    ]
+});
+```
+```python Python
+from letta_client.types import ChildToolRule
+
+client.agents.update(
+    agent_id=agent.id,
+    tool_rules=[
+        ChildToolRule(
+            tool_name="send_message",
+            children=["archival_memory_insert"]
+        )
+    ]
+)
+```
+</CodeGroup>
+
+<Info>
+**Using the ADE:** Tool rules can also be configured in the Agent Development Environment's Tool Manager interface.
+</Info>
+
+<Warning>
+**Note:** Anthropic models don't support strict structured output, so tool rules may not be enforced. Use OpenAI or Gemini models for guaranteed tool rule compliance.
+</Warning>
+
+**When to use tool rules:**
+- Knowledge management agents that should always search context
+- Agents that need to learn from every interaction
+- Librarian/archivist agents focused on information storage
+
+**Latency considerations:** Forcing archival search adds a tool call at the start of every turn. For latency-sensitive applications (like customer support), consider making archival search optional.
+
+[Learn more about tool rules →](/guides/agents/tool-rules)
+
+### Modifying archival memories
+
+While agents cannot modify archival memories, developers can update or delete them via the SDK:
+
+<CodeGroup>
+```typescript TypeScript
+// Update a memory
+await client.agents.passages.update(agent.id, passage.id, {
+    content: "Updated content",
+    tags: ["new", "tags"]
+});
+
+// Delete a memory
+await client.agents.passages.delete(agent.id, passage.id);
+```
+```python Python
+# Update a memory
+client.agents.passages.update(
+    agent_id=agent.id,
+    passage_id=passage.id,
+    content="Updated content",
+    tags=["new", "tags"]
+)
+
+# Delete a memory
+client.agents.passages.delete(
+    agent_id=agent.id,
+    passage_id=passage.id
+)
+```
+</CodeGroup>
+
+This allows you to:
+- Fix incorrect information
+- Update outdated facts
+- Remove sensitive or irrelevant data
+- Reorganize tag structures
+
+## Troubleshooting
+
+### Why can't my agent delete or modify archival memories?
+
+Archival memory is designed to be **agent-immutable** by default. Agents can only insert and search, not modify or delete. This is intentional to prevent agents from "forgetting" important information.
+
+**Solution:** If you need to modify or delete archival memories, use the SDK via `client.agents.passages.update()` or `client.agents.passages.delete()`.
+
+### When should I use the SDK vs letting the agent handle archival?
+
+**Let the agent handle it when:**
+- The agent needs to decide what's worth remembering during conversations
+- You want the agent to curate its own knowledge base
+- Information emerges naturally from user interactions
+
+**Use the SDK when:**
+- Pre-loading knowledge before the agent starts (backfilling)
+- Cleaning up incorrect or outdated information
+- Bulk operations (importing documentation, migrating data)
+- Managing memories outside of agent conversations
+
+### My agent isn't using archival memory
+
+**Common causes:**
+1. **Agent doesn't know to use it** - Add guidance to the agent's system prompt or create an `archival_policies` memory block
+2. **Agent doesn't need it yet** - With small amounts of information, agents may rely on conversation history instead
+3. **Model limitations** - Some models are better at tool use than others
+
+**Solutions:**
+- Add explicit instructions in the agent's prompt about when to use archival
+- Use tool rules to enforce archival usage (see "Enforcing archival usage with tool rules" above)
+- Try a different model (OpenAI and Gemini models handle tool use well)
+
+### Search returns no results or wrong results
+
+**Common causes:**
+1. **Empty archive** - Agent or developer hasn't inserted any memories yet
+2. **Query mismatch** - Query doesn't semantically match stored content
+3. **Tag filters too restrictive** - Filtering by tags that don't exist or are too narrow
+
+**Solutions:**
+- Verify memories exist using `client.agents.passages.list()` (uses cursor-based pagination with `after`, `before`, and `limit` parameters)
+- Try broader or rephrased queries
+- Check tags by listing passages to see what's actually stored
+- Remove tag filters temporarily to see if that's the issue
+
+### Agent inserting too many memories
+
+**Common causes:**
+1. **No guidance** - Agent doesn't know when to insert vs when not to
+2. **Tool rules forcing insertion** - Tool rules may require archival use
+3. **Agent being overly cautious** - Some models default to storing everything
+
+**Solutions:**
+- Create an `archival_policies` block with clear guidelines (see "Create an archival policies block" above)
+- Review and adjust tool rules if you're using them
+- Add explicit examples of what NOT to store in the agent's prompt
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Searching & Querying"
+    href="/guides/agents/archival-search"
+  >
+    Learn how to search archival memory effectively
+  </Card>
+  <Card
+    title="Archival Memory Overview"
+    href="/guides/agents/archival-memory"
+  >
+    Back to archival memory overview
+  </Card>
+  <Card
+    title="Memory Blocks"
+    href="/guides/agents/memory-blocks"
+  >
+    Learn about always-visible memory
+  </Card>
+  <Card
+    title="Tool Rules"
+    href="/guides/agents/tool-rules"
+  >
+    Advanced tool execution constraints
+  </Card>
+</CardGroup>
