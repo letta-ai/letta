@@ -33934,7 +33934,7 @@
           "server_url": {
             "type": "string",
             "title": "Server Url",
-            "description": "The URL of the server (MCP SSE client will connect to this URL)"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -33973,13 +33973,13 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom HTTP headers to include with SSE requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "type": "object",
         "required": ["server_name", "server_url"],
         "title": "SSEServerConfig",
-        "description": "Configuration for an MCP server using SSE\n\nAuthentication can be provided in multiple ways:\n1. Using auth_header + auth_token: Will add a specific header with the token\n   Example: auth_header=\"Authorization\", auth_token=\"Bearer abc123\"\n\n2. Using the custom_headers dict: For more complex authentication scenarios\n   Example: custom_headers={\"X-API-Key\": \"abc123\", \"X-Custom-Header\": \"value\"}"
+        "description": "Configuration for an MCP server using SSE"
       },
       "SandboxConfig": {
         "properties": {
@@ -35265,7 +35265,7 @@
           "server_url": {
             "type": "string",
             "title": "Server Url",
-            "description": "The URL path for the streamable HTTP server (e.g., 'example/mcp')"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -35304,13 +35304,13 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom HTTP headers to include with streamable HTTP requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "type": "object",
         "required": ["server_name", "server_url"],
         "title": "StreamableHTTPServerConfig",
-        "description": "Configuration for an MCP server using Streamable HTTP\n\nAuthentication can be provided in multiple ways:\n1. Using auth_header + auth_token: Will add a specific header with the token\n   Example: auth_header=\"Authorization\", auth_token=\"Bearer abc123\"\n\n2. Using the custom_headers dict: For more complex authentication scenarios\n   Example: custom_headers={\"X-API-Key\": \"abc123\", \"X-Custom-Header\": \"value\"}"
+        "description": "Configuration for an MCP server using Streamable HTTP"
       },
       "SummarizedReasoningContent": {
         "properties": {

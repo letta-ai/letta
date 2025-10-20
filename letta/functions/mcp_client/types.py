@@ -129,9 +129,9 @@ class BaseServerConfig(BaseModel):
         raise NotImplementedError
 
 
-class SSEServerConfig(BaseServerConfig):
+class HTTPBasedServerConfig(BaseServerConfig):
     """
-    Configuration for an MCP server using SSE
+    Base configuration for HTTP-based MCP servers (SSE and Streamable HTTP).
 
     Authentication can be provided in multiple ways:
     1. Using auth_header + auth_token: Will add a specific header with the token
@@ -141,11 +141,10 @@ class SSEServerConfig(BaseServerConfig):
        Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}
     """
 
-    type: MCPServerType = MCPServerType.SSE
-    server_url: str = Field(..., description="The URL of the server (MCP SSE client will connect to this URL)")
+    server_url: str = Field(..., description="The URL of the server")
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
-    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with SSE requests")
+    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
     def resolve_token(self) -> Optional[str]:
         """
@@ -170,13 +169,13 @@ class SSEServerConfig(BaseServerConfig):
 
         self.custom_headers = super().resolve_custom_headers(self.custom_headers, environment_variables)
 
-    def to_dict(self) -> dict:
-        values = {
-            "transport": "sse",
-            "url": self.server_url,
-        }
+    def _build_headers_dict(self) -> Optional[dict[str, str]]:
+        """
+        Build headers dictionary from custom_headers and auth_header/auth_token.
 
-        # TODO: handle custom headers
+        Returns:
+            Dictionary of headers or None if no headers are configured
+        """
         if self.custom_headers is not None or (self.auth_header is not None and self.auth_token is not None):
             headers = self.custom_headers.copy() if self.custom_headers else {}
 
@@ -184,6 +183,24 @@ class SSEServerConfig(BaseServerConfig):
             if self.auth_header is not None and self.auth_token is not None:
                 headers[self.auth_header] = self.auth_token
 
+            return headers
+        return None
+
+
+class SSEServerConfig(HTTPBasedServerConfig):
+    """Configuration for an MCP server using SSE"""
+
+    type: MCPServerType = MCPServerType.SSE
+
+    def to_dict(self) -> dict:
+        values = {
+            "transport": "sse",
+            "url": self.server_url,
+        }
+
+        # Handle custom headers using shared method
+        headers = self._build_headers_dict()
+        if headers:
             values["headers"] = headers
 
         return values
@@ -210,46 +227,10 @@ class StdioServerConfig(BaseServerConfig):
         return values
 
 
-class StreamableHTTPServerConfig(BaseServerConfig):
-    """
-    Configuration for an MCP server using Streamable HTTP
-
-    Authentication can be provided in multiple ways:
-    1. Using auth_header + auth_token: Will add a specific header with the token
-       Example: auth_header="Authorization", auth_token="Bearer abc123"
-
-    2. Using the custom_headers dict: For more complex authentication scenarios
-       Example: custom_headers={"X-API-Key": "abc123", "X-Custom-Header": "value"}
-    """
+class StreamableHTTPServerConfig(HTTPBasedServerConfig):
+    """Configuration for an MCP server using Streamable HTTP"""
 
     type: MCPServerType = MCPServerType.STREAMABLE_HTTP
-    server_url: str = Field(..., description="The URL path for the streamable HTTP server (e.g., 'example/mcp')")
-    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
-    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
-    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with streamable HTTP requests")
-
-    def resolve_token(self) -> Optional[str]:
-        """
-        Extract token for storage if auth_header/auth_token are provided
-        and not already in custom_headers.
-
-        Returns:
-            The resolved token (without Bearer prefix) if it should be stored separately, None otherwise
-        """
-        if self.auth_token and self.auth_header:
-            # Check if custom_headers already has the auth header
-            if not self.custom_headers or self.auth_header not in self.custom_headers:
-                # Strip Bearer prefix if present
-                if self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
-                    return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
-                return self.auth_token
-        return None
-
-    def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
-        if self.auth_token and super().is_templated_tool_variable(self.auth_token):
-            self.auth_token = super().get_tool_variable(self.auth_token, environment_variables)
-
-        self.custom_headers = super().resolve_custom_headers(self.custom_headers, environment_variables)
 
     def model_post_init(self, __context) -> None:
         """Validate the server URL format."""
@@ -275,14 +256,9 @@ class StreamableHTTPServerConfig(BaseServerConfig):
             "url": self.server_url,
         }
 
-        # Handle custom headers
-        if self.custom_headers is not None or (self.auth_header is not None and self.auth_token is not None):
-            headers = self.custom_headers.copy() if self.custom_headers else {}
-
-            # Add auth header if specified
-            if self.auth_header is not None and self.auth_token is not None:
-                headers[self.auth_header] = self.auth_token
-
+        # Handle custom headers using shared method
+        headers = self._build_headers_dict()
+        if headers:
             values["headers"] = headers
 
         return values
