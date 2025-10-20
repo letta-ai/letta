@@ -36,30 +36,33 @@ Archival memory is a semantically searchable database where agents store facts, 
 
 ## How agents interact with archival memory
 
+<Info>
+**Two ways to interact with archival memory:**
+
+**Agent tools** - What agents do autonomously during conversations:
+- `archival_memory_insert` - Store new information
+- `archival_memory_search` - Query for relevant memories
+
+**SDK endpoints** - What developers do via `client.agents.passages.*`:
+- Insert, search, list, update, and delete memories programmatically
+- Manage archival content outside of agent conversations
+</Info>
+
 Agents have two primary tools for archival memory: `archival_memory_insert` and `archival_memory_search`.
 
 ### Inserting information
 
-Agents can insert memories during conversations:
+**Agents** can insert memories during conversations using the `archival_memory_insert` tool:
 
-<CodeGroup>
-```typescript TypeScript
-// Agent inserts after learning something
-archival_memory_insert(
-    content: "Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
-    tags: ["replicant", "history", "retirement"]
-)
-```
-```python Python
-# Agent inserts after learning something
+```python
+# What the agent does (agent tool call)
 archival_memory_insert(
     content="Deckard retired six replicants in the off-world colonies before returning to Los Angeles",
     tags=["replicant", "history", "retirement"]
 )
 ```
-</CodeGroup>
 
-Developers can also insert programmatically:
+**Developers** can also insert programmatically via the SDK:
 
 <CodeGroup>
 ```typescript TypeScript
@@ -79,20 +82,32 @@ client.agents.passages.insert(
 
 ### Searching for information
 
-<CodeGroup>
-```typescript TypeScript
-// Agent searches semantically
-const results = archival_memory_search(
-    query: "replicant lifespan",
-    tags: ["technical"],  // Optional: filter by tags
-    page: 0
-)
-```
-```python Python
-# Agent searches semantically
+**Agents** can search semantically using the `archival_memory_search` tool:
+
+```python
+# What the agent does (agent tool call)
 results = archival_memory_search(
     query="replicant lifespan",
     tags=["technical"],  # Optional: filter by tags
+    page=0
+)
+```
+
+**Developers** can also search programmatically via the SDK:
+
+<CodeGroup>
+```typescript TypeScript
+const results = await client.agents.passages.search(agent.id, {
+    query: "replicant lifespan",
+    tags: ["technical"],
+    page: 0
+});
+```
+```python Python
+results = client.agents.passages.search(
+    agent_id=agent.id,
+    query="replicant lifespan",
+    tags=["technical"],
     page=0
 )
 ```
@@ -130,19 +145,7 @@ An agent with 32k+ memories tracking interactions:
 - Cross-references related research
 - Builds a semantic knowledge graph
 
-## Archival memory vs other memory types
-
-| Feature | Memory Blocks | Archival Memory | Conversation Search |
-|---------|--------------|-----------------|-------------------|
-| **Always visible** | ✅ Yes | ❌ No (searched) | ❌ No (searched) |
-| **Search type** | N/A | Semantic | Full-text + semantic |
-| **Storage limit** | Character limit | Unlimited | Unlimited |
-| **Agent modifiable** | ✅ Full edit control | ❌ Insert + search only | ❌ Search only |
-| **SDK modifiable** | ✅ Yes | ✅ Yes | ❌ No |
-| **Use case** | Current state | Long-term facts | Past messages |
-| **Best for** | Active context | Historical records | Conversation history |
-
-### When to use archival vs conversation search
+## Archival memory vs conversation search
 
 <Tip>
 **Archival memory** is for **intentional** storage:
