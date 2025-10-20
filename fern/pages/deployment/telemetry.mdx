@@ -3,6 +3,10 @@ title: Collecting Traces & Telemetry
 slug: guides/server/otel
 ---
 
+<Note>
+**ClickHouse is optional** and only required for telemetry/observability features. Letta works perfectly fine without it using just PostgreSQL. You only need ClickHouse if you want to collect traces, view LLM provider requests, or analyze system performance metrics.
+</Note>
+
 Letta uses [ClickHouse](https://clickhouse.com/) to store telemetry. ClickHouse is a database optimized for storing logs and traces. Traces can be used to view raw requests to LLM providers and also understand your agent's system performance metrics.
 
 ## Configuring ClickHouse
