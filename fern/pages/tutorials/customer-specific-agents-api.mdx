@@ -113,7 +113,7 @@ Communication Preferences:
 {{communication_preferences}}
 ```
 
-The `customer` memory block stores everything your agent learns about the individual customer contact. You populate the template variables when creating agents from the template, and the agents' research findings accumulate in the descriptive fields.
+The `customer` memory block stores everything your agent learns about the individual customer contact. The template variables will be populated when you create agents from this template, and the agents' research findings accumulate in the descriptive fields.
 </Step>
 </Steps>
 </Accordion>
@@ -294,11 +294,11 @@ Zapier provides Gmail integration for drafting and sending personalized emails.
 
    <img  src="/images/gmail-tools.png" alt="Adding Gmail tools in Zapier MCP server" />
 
-3. In your Zapier dashboard, click **Connect** in the top toolbar and copy the **Server URL**.
+4. In your Zapier dashboard, click **Connect** in the top toolbar and copy the **Server URL**.
 
    <img  src="/images/zap-server-url.png" alt="Copying server URL from Zapier dashboard" />
 
-4. Return to the Letta modal, paste the server URL in the **Server URL** field, and test the connection. When you see the Gmail tools appear, click **Confirm**.
+5. Return to the Letta modal, paste the server URL in the **Server URL** field, and test the connection. When you see the Gmail tools appear, click **Confirm**.
 
    <img  src="/images/gmail-tools-connected.png" alt="Gmail tools successfully connected in Letta" />
 </Step>
@@ -603,7 +603,7 @@ console.log(`[Background] Agent created with ID: ${agent.id}`);
 
 The code checks whether `LETTA_TEMPLATE_VERSION` is configured. If it is, the agent is created from your template with memory variables populated from the sign-up form. The template version string (like `default-project/customer-success-agent:latest`) is split into the project slug and template name:version components that the SDK expects.
 
-The `memoryVariables` object maps sign-up form data to the template variables we defined in Step 1. These values populate the `{{variable_name}}` placeholders in the agent's `customer` memory block. Fields like `professional_background` and `business_challenges` remain empty – the agent will research and populate these using its tools.
+The `memoryVariables` object maps sign-up form data to the template variables we defined in [Step 1](#set-up-memory-blocks). These values populate the `{{variable_name}}` placeholders in the agent's `customer` memory block. Fields like `professional_background` and `business_challenges` remain empty – the agent will research and populate these using its tools.
 
 If no template is configured, the code falls back to manual agent creation with basic memory blocks. This fallback won't include the research tools or additional memory blocks from your template, but it allows testing without template configuration.
 
@@ -719,7 +719,7 @@ The endpoint now sends each message to the user's dedicated agent via `lettaClie
 
 Agent responses can contain multiple messages – function call results, internal reasoning, and the final assistant message. We loop through the response messages to find the one with `messageType: 'assistant_message'`, which contains the text that should be displayed to the user.
 
-The endpoint includes validation to check that the user exists and has an associated agent. If agent creation is still in progress (the background function in Step 3), the error message indicates that no agent is available yet.
+The endpoint includes validation to check that the user exists and has an associated agent. If agent creation is still in progress (the background function in [Step 3](#step-3-create-identities-on-sign-up)), the error message indicates that no agent is available yet.
 
 ## Step 6: Test the application
 
