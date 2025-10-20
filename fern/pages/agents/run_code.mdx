@@ -1,0 +1,258 @@
+---
+title: Code Interpreter
+subtitle: Execute code in a secure sandbox with full network access
+slug: guides/agents/run-code
+---
+
+The `run_code` tool enables Letta agents to execute code in a secure sandboxed environment. Useful for data analysis, calculations, API calls, and programmatic computation.
+
+<Info>
+On [Letta Cloud](/guides/cloud/overview), this tool works out of the box. For self-hosted deployments, you'll need to [configure an E2B API key](#self-hosted-setup).
+</Info>
+
+<Warning>
+Each execution runs in a **fresh environment** - variables, files, and state do not persist between runs.
+</Warning>
+
+## Quick Start
+
+<CodeGroup>
+```python Python
+from letta import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["run_code"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I can run Python code for data analysis and API calls."
+    }]
+)
+```
+
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+const agent = await client.agents.create({
+  model: "openai/gpt-4o",
+  tools: ["run_code"],
+  memoryBlocks: [{
+    label: "persona",
+    value: "I can run Python code for data analysis and API calls."
+  }]
+});
+```
+</CodeGroup>
+
+## Tool Parameters
+
+| Parameter | Type | Options | Description |
+|-----------|------|---------|-------------|
+| `code` | `str` | Required | The code to execute |
+| `language` | `str` | `python`, `js`, `ts`, `r`, `java` | Programming language |
+
+## Return Format
+
+```json
+{
+  "results": ["Last expression value"],
+  "logs": {
+    "stdout": ["Print statements"],
+    "stderr": ["Error output"]
+  },
+  "error": "Error details if execution failed"
+}
+```
+
+**Output types:**
+- `results[]`: Last expression value (Jupyter-style)
+- `logs.stdout`: Print statements and standard output
+- `logs.stderr`: Error messages
+- `error`: Present if execution failed
+
+## Supported Languages
+
+| Language | Key Limitations |
+|----------|-----------------|
+| **Python** | None - full ecosystem available |
+| **JavaScript** | No npm packages - built-in Node modules only |
+| **TypeScript** | No npm packages - built-in Node modules only |
+| **R** | No tidyverse - base R only |
+| **Java** | JShell-style execution - no traditional class definitions |
+
+### Python
+
+Full Python ecosystem with common packages pre-installed:
+
+- **Data**: numpy, pandas, scipy, scikit-learn
+- **Web**: requests, aiohttp, beautifulsoup4
+- **Utilities**: matplotlib, PyYAML, Pillow
+
+Check available packages:
+```python
+import pkg_resources
+print([d.project_name for d in pkg_resources.working_set])
+```
+
+### JavaScript & TypeScript
+
+No npm packages available - only built-in Node modules.
+
+```javascript
+// Works
+const fs = require('fs');
+const http = require('http');
+
+// Fails
+const axios = require('axios');
+```
+
+### R
+
+Base R only - no tidyverse packages.
+
+```r
+# Works
+mean(c(1, 2, 3))
+
+# Fails
+library(ggplot2)
+```
+
+### Java
+
+JShell-style execution - statement-level only.
+
+```java
+// Works
+System.out.println("Hello");
+int x = 42;
+
+// Fails
+public class Main {
+    public static void main(String[] args) { }
+}
+```
+
+## Network Access
+
+The sandbox has full network access for HTTP requests, API calls, and DNS resolution.
+
+```python
+import requests
+
+response = requests.get('https://api.github.com/repos/letta-ai/letta')
+data = response.json()
+print(f"Stars: {data['stargazers_count']}")
+```
+
+## No State Persistence
+
+Variables, files, and state do not carry over between executions. Each `run_code` call is completely isolated.
+
+```python
+# First execution
+x = 42
+
+# Second execution (separate run_code call)
+print(x)  # Error: NameError: name 'x' is not defined
+```
+
+**Implications:**
+- Must re-import libraries each time
+- Files written to disk are lost
+- Cannot build up state across executions
+
+## Self-Hosted Setup
+
+For self-hosted servers, configure an E2B API key. [E2B](https://e2b.dev) provides the sandbox infrastructure.
+
+<CodeGroup>
+```bash Docker
+docker run \
+  -e E2B_API_KEY="your_e2b_api_key" \
+  letta/letta:latest
+```
+
+```yaml Docker Compose
+services:
+  letta:
+    environment:
+      - E2B_API_KEY=your_e2b_api_key
+```
+
+```bash Server
+export E2B_API_KEY="your_e2b_api_key"
+letta server
+```
+
+```python Per-Agent
+agent = client.agents.create(
+    tools=["run_code"],
+    tool_env_vars={
+        "E2B_API_KEY": "your_e2b_api_key"
+    }
+)
+```
+</CodeGroup>
+
+## Common Patterns
+
+### Data Analysis
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["run_code"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I use Python with pandas and numpy for data analysis."
+    }]
+)
+```
+
+### API Integration
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["run_code", "web_search"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I fetch data from APIs using run_code and search docs with web_search."
+    }]
+)
+```
+
+### Statistical Analysis
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["run_code"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I perform statistical analysis using scipy and numpy."
+    }]
+)
+```
+
+## When to Use
+
+| Use Case | Tool | Why |
+|----------|------|-----|
+| Data analysis | `run_code` | Full Python data stack |
+| Math calculations | `run_code` | Programmatic computation |
+| Live API data | `run_code` | Network + processing |
+| Web scraping | `run_code` | requests + BeautifulSoup |
+| Simple search | `web_search` | Purpose-built |
+| Persistent data | Archival memory | State persistence |
+
+## Related Documentation
+
+- [Utilities Overview](/guides/agents/prebuilt-tools)
+- [Web Search](/guides/agents/web-search)
+- [Fetch Webpage](/guides/agents/fetch-webpage)
+- [Custom Tools](/guides/agents/custom-tools)
+- [Tool Variables](/guides/agents/tool-variables)

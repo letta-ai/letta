@@ -151,8 +151,17 @@ navigation:
         contents:
           - page: Overview
             path: pages/agents/tools.mdx
-          - page: Pre-built Tools
+          - page: Base Tools
+            path: pages/agents/base_tools.mdx
+          - section: Utilities
             path: pages/agents/prebuilt_tools.mdx
+            contents:
+              - page: Web Search
+                path: pages/agents/web_search.mdx
+              - page: Code Interpreter
+                path: pages/agents/run_code.mdx
+              - page: Fetch Webpage
+                path: pages/agents/fetch_webpage.mdx
           - page: Custom Tools
             path: pages/agents/custom_tools.mdx
           - page: Tool Rules
