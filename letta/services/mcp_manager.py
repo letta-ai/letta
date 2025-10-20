@@ -477,44 +477,45 @@ class MCPManager:
         # First, create the MCP server
         created_server = await self.create_mcp_server(pydantic_mcp_server, actor)
 
+        # TODO: skipping optmistic sync for now to test oauth fix
         # Optimistically try to sync tools
-        try:
-            logger.info(f"Attempting to auto-sync tools from MCP server: {created_server.server_name}")
+        # try:
+        #     logger.info(f"Attempting to auto-sync tools from MCP server: {created_server.server_name}")
 
-            # List all tools from the MCP server
-            mcp_tools = await self.list_mcp_server_tools(mcp_server_name=created_server.server_name, actor=actor)
+        #     # List all tools from the MCP server
+        #     mcp_tools = await self.list_mcp_server_tools(mcp_server_name=created_server.server_name, actor=actor)
 
-            # Filter out invalid tools
-            valid_tools = [tool for tool in mcp_tools if not (tool.health and tool.health.status == "INVALID")]
+        #     # Filter out invalid tools
+        #     valid_tools = [tool for tool in mcp_tools if not (tool.health and tool.health.status == "INVALID")]
 
-            # Register in parallel
-            if valid_tools:
-                tool_tasks = []
-                for mcp_tool in valid_tools:
-                    tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
-                    task = self.tool_manager.create_mcp_tool_async(
-                        tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
-                    )
-                    tool_tasks.append(task)
+        #     # Register in parallel
+        #     if valid_tools:
+        #         tool_tasks = []
+        #         for mcp_tool in valid_tools:
+        #             tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
+        #             task = self.tool_manager.create_mcp_tool_async(
+        #                 tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
+        #             )
+        #             tool_tasks.append(task)
 
-                results = await asyncio.gather(*tool_tasks, return_exceptions=True)
+        #         results = await asyncio.gather(*tool_tasks, return_exceptions=True)
 
-                successful = sum(1 for r in results if not isinstance(r, Exception))
-                failed = len(results) - successful
-                logger.info(
-                    f"Auto-sync completed for MCP server {created_server.server_name}: "
-                    f"{successful} tools persisted, {failed} failed, "
-                    f"{len(mcp_tools) - len(valid_tools)} invalid tools skipped"
-                )
-            else:
-                logger.info(f"No valid tools found to sync from MCP server {created_server.server_name}")
+        #         successful = sum(1 for r in results if not isinstance(r, Exception))
+        #         failed = len(results) - successful
+        #         logger.info(
+        #             f"Auto-sync completed for MCP server {created_server.server_name}: "
+        #             f"{successful} tools persisted, {failed} failed, "
+        #             f"{len(mcp_tools) - len(valid_tools)} invalid tools skipped"
+        #         )
+        #     else:
+        #         logger.info(f"No valid tools found to sync from MCP server {created_server.server_name}")
 
-        except Exception as e:
-            # Log the error but don't fail the server creation
-            logger.warning(
-                f"Failed to auto-sync tools from MCP server {created_server.server_name}: {e}. "
-                f"Server was created successfully but tools were not persisted."
-            )
+        # except Exception as e:
+        #     # Log the error but don't fail the server creation
+        #     logger.warning(
+        #         f"Failed to auto-sync tools from MCP server {created_server.server_name}: {e}. "
+        #         f"Server was created successfully but tools were not persisted."
+        #     )
 
         return created_server
 
