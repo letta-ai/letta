@@ -439,6 +439,7 @@ class AnthropicClient(LLMClientBase):
             llm_config.model.startswith("claude-3-7-sonnet")
             or llm_config.model.startswith("claude-sonnet-4")
             or llm_config.model.startswith("claude-opus-4")
+            or llm_config.model.startswith("claude-haiku-4-5")
         )
 
     @trace_method
