@@ -576,7 +576,6 @@ navigation:
                   - GET /v1/agents/{agent_id}/archival-memory
                   - GET /v1/agents/{agent_id}/archival-memory/search
                   - POST /v1/agents/{agent_id}/archival-memory
-                  - PATCH /v1/agents/{agent_id}/archival-memory/{memory_id}
                   - DELETE /v1/agents/{agent_id}/archival-memory/{memory_id}
               - section: Sources
                 icon: ban
