@@ -1309,8 +1309,8 @@ class CancelAgentRunRequest(BaseModel):
     run_ids: list[str] | None = Field(None, description="Optional list of run IDs to cancel")
 
 
-@router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
-async def cancel_agent_run(
+@router.post("/{agent_id}/messages/cancel", operation_id="cancel_message")
+async def cancel_message(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     request: CancelAgentRunRequest = Body(None),
     server: SyncServer = Depends(get_letta_server),

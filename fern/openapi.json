@@ -6641,9 +6641,9 @@
     "/v1/agents/{agent_id}/messages/cancel": {
       "post": {
         "tags": ["agents"],
-        "summary": "Cancel Agent Run",
+        "summary": "Cancel Message",
         "description": "Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.\n\nNote to cancel active runs associated with an agent, redis is required.",
-        "operationId": "cancel_agent_run",
+        "operationId": "cancel_message",
         "parameters": [
           {
             "name": "agent_id",
@@ -6678,7 +6678,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Cancel Agent Run"
+                  "title": "Response Cancel Message"
                 }
               }
             }
