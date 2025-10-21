@@ -121,7 +121,7 @@ async def sse_async_generator(
                     err_msg = f"Expected LettaUsageStatistics, got {type(usage)}"
                     logger.error(err_msg)
                     raise ValueError(err_msg)
-                yield sse_formatter(usage.model_dump(exclude={"steps_messages"}))
+                yield sse_formatter(usage.model_dump())
 
             except ContextWindowExceededError as e:
                 capture_sentry_exception(e)

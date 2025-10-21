@@ -2363,7 +2363,6 @@ def test_create_agent(client: LettaSDKClient) -> None:
                     "prompt_tokens",
                     "total_tokens",
                     "step_count",
-                    "steps_messages",
                     "run_ids",
                 },
             )
