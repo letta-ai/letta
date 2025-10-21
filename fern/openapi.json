@@ -3845,7 +3845,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "Export Agent",
-        "description": "Export the serialized JSON representation of an agent, formatted with indentation.\n\nSupports two export formats:\n- Legacy format (use_legacy_format=true): Single agent with inline tools/blocks\n- New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.",
+        "description": "Export the serialized JSON representation of an agent, formatted with indentation.",
         "operationId": "export_agent",
         "parameters": [
           {
@@ -3869,9 +3869,11 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "deprecated": true,
               "default": 100,
               "title": "Max Steps"
-            }
+            },
+            "deprecated": true
           },
           {
             "name": "use_legacy_format",
@@ -3879,11 +3881,13 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).",
+              "description": "If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
+              "deprecated": true,
               "default": false,
               "title": "Use Legacy Format"
             },
-            "description": "If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2)."
+            "description": "If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
+            "deprecated": true
           }
         ],
         "requestBody": {

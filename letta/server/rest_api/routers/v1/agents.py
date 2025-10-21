@@ -171,12 +171,13 @@ class IndentedORJSONResponse(Response):
 @router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent")
 async def export_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
-    max_steps: int = 100,
+    max_steps: int = Query(100, deprecated=True),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     use_legacy_format: bool = Query(
         False,
-        description="If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).",
+        description="If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
+        deprecated=True,
     ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
@@ -185,21 +186,12 @@ async def export_agent(
 ) -> JSONResponse:
     """
     Export the serialized JSON representation of an agent, formatted with indentation.
-
-    Supports two export formats:
-    - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
-    - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
     if use_legacy_format:
-        # Use the legacy serialization method
-        agent = await server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
-        return agent.model_dump()
-    else:
-        # Use the new multi-entity export format
-        agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
-        return agent_file_schema.model_dump()
+        raise HTTPException(status_code=400, detail="Legacy format is not supported")
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+    return agent_file_schema.model_dump()
 
 
 class ImportedAgentsResponse(BaseModel):
