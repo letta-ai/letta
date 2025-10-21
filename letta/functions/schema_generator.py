@@ -723,6 +723,73 @@ def generate_tool_schema_for_mcp(
     # Get $defs for $ref resolution
     defs = parameters_schema.get("$defs", {})
 
+    def deduplicate_anyof(anyof_list):
+        """
+        Deduplicate entries in an anyOf array based on their content.
+
+        Rules:
+        1. Remove exact duplicates (same type, same properties)
+        2. For duplicate types with different metadata (e.g., format):
+           - Keep the most specific version (with format/constraints)
+           - If one has format and others don't, keep only the one with format
+        """
+        if not anyof_list:
+            return anyof_list
+
+        seen = []
+        result = []
+
+        for item in anyof_list:
+            if not isinstance(item, dict):
+                if item not in seen:
+                    seen.append(item)
+                    result.append(item)
+                continue
+
+            # Create a hashable representation for comparison
+            # Sort keys to ensure consistent comparison
+            item_type = item.get("type")
+            item_format = item.get("format")
+
+            # Check if we've seen this exact item
+            is_duplicate = False
+            for existing_idx, existing in enumerate(result):
+                if not isinstance(existing, dict):
+                    continue
+
+                existing_type = existing.get("type")
+                existing_format = existing.get("format")
+
+                # Exact match - skip this item
+                if item == existing:
+                    is_duplicate = True
+                    break
+
+                # Same type with different format handling
+                if item_type and item_type == existing_type:
+                    # Both have same type
+                    if item_format and not existing_format:
+                        # New item has format, existing doesn't - replace existing with new
+                        result[existing_idx] = item
+                        is_duplicate = True
+                        break
+                    elif not item_format and existing_format:
+                        # Existing has format, new doesn't - keep existing, skip new
+                        is_duplicate = True
+                        break
+                    elif item_format == existing_format:
+                        # Same type and format (or both None) - compare full objects
+                        # Prefer the one with more properties/constraints
+                        if len(item) >= len(existing):
+                            result[existing_idx] = item
+                        is_duplicate = True
+                        break
+
+            if not is_duplicate:
+                result.append(item)
+
+        return result
+
     def inline_ref(schema_node, defs, depth=0, max_depth=10):
         """
         Recursively inline all $ref references in a schema node.
@@ -757,7 +824,10 @@ def generate_tool_schema_for_mcp(
 
         # Recursively process nested structures
         if "anyOf" in result:
+            # Inline refs in each anyOf option
             result["anyOf"] = [inline_ref(opt, defs, depth + 1, max_depth) for opt in result["anyOf"]]
+            # Deduplicate anyOf entries
+            result["anyOf"] = deduplicate_anyof(result["anyOf"])
         if "properties" in result and isinstance(result["properties"], dict):
             result["properties"] = {
                 prop_name: inline_ref(prop_schema, defs, depth + 1, max_depth) for prop_name, prop_schema in result["properties"].items()
