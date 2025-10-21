@@ -631,8 +631,6 @@ class AnthropicClient(LLMClientBase):
             or llm_config.model.startswith("claude-sonnet-4")
             or llm_config.model.startswith("claude-opus-4")
             or llm_config.model.startswith("claude-haiku-4-5")
-            # Opus 4.5 support - to extend effort parameter to other models, modify this check
-            or llm_config.model.startswith("claude-opus-4-5")
         )
 
     @trace_method

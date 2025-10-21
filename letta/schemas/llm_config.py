@@ -181,7 +181,6 @@ class LLMConfig(BaseModel):
             or model.startswith("claude-sonnet-4")
             or model.startswith("claude-opus-4")
             or model.startswith("claude-haiku-4-5")
-            or model.startswith("claude-opus-4-5")
         ):
             values["put_inner_thoughts_in_kwargs"] = False
 
@@ -382,7 +381,6 @@ class LLMConfig(BaseModel):
             or config.model.startswith("claude-sonnet-4")
             or config.model.startswith("claude-3-7-sonnet")
             or config.model.startswith("claude-haiku-4-5")
-            or config.model.startswith("claude-opus-4-5")
         )
 
     @classmethod
