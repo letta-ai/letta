@@ -1247,7 +1247,10 @@ class AgentManager:
 
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
-        curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
+        if agent_state.message_ids == []:
+            curr_system_message = None
+        else:
+            curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
 
         if curr_system_message is None:
             logger.warning(f"No system message found for agent {agent_state.id} and user {actor}")
