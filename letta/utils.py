@@ -1129,6 +1129,29 @@ def safe_create_task(coro, label: str = "background task"):
     return task
 
 
+@trace_method
+def safe_create_task_with_return(coro, label: str = "background task"):
+    async def wrapper():
+        try:
+            return await coro
+        except Exception as e:
+            logger.exception(f"{label} failed with {type(e).__name__}: {e}")
+            raise
+
+    task = asyncio.create_task(wrapper())
+
+    # Add task to the set to maintain strong reference
+    _background_tasks.add(task)
+
+    # Log task count to trace
+    log_attributes({"total_background_task_count": get_background_task_count()})
+
+    # Remove task from set when done to prevent memory leaks
+    task.add_done_callback(_background_tasks.discard)
+
+    return task
+
+
 def safe_create_shielded_task(coro, label: str = "shielded background task"):
     """
     Create a shielded background task that cannot be cancelled externally.

@@ -37,7 +37,9 @@ from letta.server.server import SyncServer
 from letta.services.mcp.oauth_utils import MCPOAuthSession, drill_down_exception, oauth_stream_event
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
+from letta.services.summarizer.summarizer import traceback
 from letta.settings import tool_settings
+from letta.utils import asyncio
 from letta.validators import ToolId
 
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -664,7 +666,11 @@ async def connect_mcp_server(
             detailed_error = drill_down_exception(e)
             logger.error(f"Error in OAuth stream:\n{detailed_error}")
             yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Internal error: {detailed_error}")
-
+        # TODO: investigate cancelled by cancel scope errors here during oauth exchange flow
+        except asyncio.CancelledError as e:
+            logger.error(f"CancelledError: {e!r}")
+            tb = "".join(traceback.format_stack())
+            logger.error(f"Stack trace at cancellation:\n{tb}")
         finally:
             if client:
                 try:

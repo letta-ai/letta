@@ -40,12 +40,13 @@ from letta.schemas.secret import Secret
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings, tool_settings
-from letta.utils import enforce_types, printd, safe_create_task
+from letta.utils import enforce_types, printd, safe_create_task_with_return
 
 logger = get_logger(__name__)
 
@@ -1149,12 +1150,26 @@ class MCPManager:
         # Get authorization URL by triggering OAuth flow
         temp_client = None
         connect_task = None
+
+        async def connect_and_cleanup(client: AsyncBaseMCPClient, ready_queue: asyncio.Queue):
+            """Wrap connection and cleanup in the same task to share cancel scope"""
+            try:
+                await client.connect_to_server()
+                # Send client to main task without finishing the task
+                await ready_queue.put(client)
+                # Now wait for signal to cleanup
+                await client._cleanup_event.wait()
+            finally:
+                await client.cleanup()
+
         try:
+            ready_queue = asyncio.Queue()
             temp_client = await self.get_mcp_client(request, actor, oauth_provider)
+            temp_client._cleanup_event = asyncio.Event()
 
             # Run connect_to_server in background to avoid blocking
             # This will trigger the OAuth flow and the redirect_handler will save the authorization URL to database
-            connect_task = safe_create_task(temp_client.connect_to_server(), label="mcp_oauth_connect")
+            connect_task = safe_create_task_with_return(connect_and_cleanup(temp_client, ready_queue), label="mcp_oauth_connect")
 
             # Fetch the authorization URL from database and yield state to client to proceed with handling authorization URL
             auth_session = await self.get_oauth_session_by_id(session_id, actor)
@@ -1173,11 +1188,14 @@ class MCPManager:
             yield oauth_stream_event(OauthStreamEvent.WAITING_FOR_AUTH, message="Waiting for user authorization...")
 
             # Callback handler will poll for authorization code and state and update the OAuth session
-            await connect_task
-
+            # Get the client from the queue
+            temp_client = await ready_queue.get()
             tools = await temp_client.list_tools(serialize=True)
             yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
 
+            # Signal the background task to cleanup in its own task
+            temp_client._cleanup_event.set()
+            await connect_task  # now it finishes safely
         except Exception as e:
             logger.error(f"Error triggering OAuth flow: {e}")
             yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Failed to trigger OAuth: {str(e)}")
@@ -1190,8 +1208,3 @@ class MCPManager:
                     await connect_task
                 except asyncio.CancelledError:
                     pass
-            if temp_client:
-                try:
-                    await temp_client.cleanup()
-                except Exception as cleanup_error:
-                    logger.warning(f"Error during temp MCP client cleanup: {cleanup_error}")
