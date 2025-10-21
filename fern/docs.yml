@@ -529,9 +529,9 @@ navigation:
               - section: Tools
                 contents:
                   - GET /v1/agents/{agent_id}/tools
-                  - PATCH /v1/agents/{agent_id}/tools/approval/{tool_name}
                   - PATCH /v1/agents/{agent_id}/tools/attach/{tool_id}
                   - PATCH /v1/agents/{agent_id}/tools/detach/{tool_id}
+                  - PATCH /v1/agents/{agent_id}/tools/approval/{tool_name}
               - section: Messages
                 contents:
                   - GET /v1/agents/{agent_id}/messages
