@@ -662,6 +662,16 @@ def normalize_mcp_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
                     # Handle anyOf (complex union types)
                     if "anyOf" in prop_schema:
                         for option in prop_schema["anyOf"]:
+                            # Add explicit type to $ref options for flattening support
+                            if "$ref" in option and "type" not in option:
+                                if defs and option["$ref"].startswith("#/$defs/"):
+                                    def_name = option["$ref"].split("/")[-1]
+                                    if def_name in defs and "type" in defs[def_name]:
+                                        option["type"] = defs[def_name]["type"]
+                                # Default to object if type can't be resolved
+                                if "type" not in option:
+                                    option["type"] = "object"
+                            # Recursively normalize object types
                             if isinstance(option, dict) and option.get("type") == "object":
                                 normalize_object_schema(option, defs)
 
@@ -710,28 +720,61 @@ def generate_tool_schema_for_mcp(
     # Normalise so downstream code can treat it consistently.
     parameters_schema.setdefault("required", [])
 
-    # Process properties to handle anyOf types and make optional fields strict-compatible
-    # TODO: de-duplicate with handling in normalize_mcp_schema
+    # Get $defs for $ref resolution
+    defs = parameters_schema.get("$defs", {})
+
+    def inline_ref(schema_node, defs, depth=0, max_depth=10):
+        """
+        Recursively inline all $ref references in a schema node.
+        Returns a new schema with all $refs replaced by their definitions.
+        """
+        if depth > max_depth:
+            return schema_node  # Prevent infinite recursion
+
+        if not isinstance(schema_node, dict):
+            return schema_node
+
+        # Make a copy to avoid modifying the original
+        result = schema_node.copy()
+
+        # If this node has a $ref, resolve it and merge
+        if "$ref" in result:
+            ref_path = result["$ref"]
+            if ref_path.startswith("#/$defs/"):
+                def_name = ref_path.split("/")[-1]
+                if def_name in defs:
+                    # Get the referenced schema
+                    ref_schema = defs[def_name].copy()
+                    # Remove the $ref
+                    del result["$ref"]
+                    # Merge the referenced schema into result
+                    # The referenced schema properties take precedence
+                    for key, value in ref_schema.items():
+                        if key not in result:
+                            result[key] = value
+                    # Recursively inline any $refs in the merged schema
+                    result = inline_ref(result, defs, depth + 1, max_depth)
+
+        # Recursively process nested structures
+        if "anyOf" in result:
+            result["anyOf"] = [inline_ref(opt, defs, depth + 1, max_depth) for opt in result["anyOf"]]
+        if "properties" in result and isinstance(result["properties"], dict):
+            result["properties"] = {
+                prop_name: inline_ref(prop_schema, defs, depth + 1, max_depth) for prop_name, prop_schema in result["properties"].items()
+            }
+        if "items" in result:
+            result["items"] = inline_ref(result["items"], defs, depth + 1, max_depth)
+
+        return result
+
+    # Process properties to inline all $refs while keeping anyOf structure
     if "properties" in parameters_schema:
-        for field_name, field_props in parameters_schema["properties"].items():
-            # Handle anyOf types by flattening to type array
-            if "anyOf" in field_props and "type" not in field_props:
-                types = []
-                format_value = None
-                for option in field_props["anyOf"]:
-                    if "type" in option:
-                        types.append(option["type"])
-                        # Capture format if present (e.g., uuid format for strings)
-                        if "format" in option and not format_value:
-                            format_value = option["format"]
-                if types:
-                    # Deduplicate types using set
-                    field_props["type"] = list(dict.fromkeys(types))
-                    # Only add format if the field is not optional (doesn't have null type)
-                    if format_value and len(field_props["type"]) == 1 and "null" not in field_props["type"]:
-                        field_props["format"] = format_value
-                    # Remove the anyOf since we've flattened it
-                    del field_props["anyOf"]
+        for field_name in list(parameters_schema["properties"].keys()):
+            field_props = parameters_schema["properties"][field_name]
+
+            # Inline all $refs in this property (recursively)
+            field_props = inline_ref(field_props, defs)
+            parameters_schema["properties"][field_name] = field_props
 
             # For strict mode: heal optional fields by making them required with null type
             if strict and field_name not in parameters_schema["required"]:
