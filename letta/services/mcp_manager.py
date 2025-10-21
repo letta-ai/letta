@@ -1156,11 +1156,16 @@ class MCPManager:
             # This will trigger the OAuth flow and the redirect_handler will save the authorization URL to database
             connect_task = safe_create_task(temp_client.connect_to_server(), label="mcp_oauth_connect")
 
-            # Give the OAuth flow time to trigger and save the URL
-            await asyncio.sleep(1.0)
-
             # Fetch the authorization URL from database and yield state to client to proceed with handling authorization URL
             auth_session = await self.get_oauth_session_by_id(session_id, actor)
+
+            # Give the OAuth flow time to connect to the MCP server and store the authorization URL
+            timeout = 0
+            while not auth_session or not auth_session.authorization_url and not connect_task.done() and timeout < 10:
+                timeout += 1
+                auth_session = await self.get_oauth_session_by_id(session_id, actor)
+                await asyncio.sleep(1.0)
+
             if auth_session and auth_session.authorization_url:
                 yield oauth_stream_event(OauthStreamEvent.AUTHORIZATION_URL, url=auth_session.authorization_url, session_id=session_id)
 
