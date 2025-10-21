@@ -403,8 +403,8 @@ async def modify_agent(
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
 
-@router.get("/{agent_id}/tools", response_model=list[Tool], operation_id="list_agent_tools")
-async def list_agent_tools(
+@router.get("/{agent_id}/tools", response_model=list[Tool], operation_id="list_tools_for_agent")
+async def list_tools_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -420,7 +420,7 @@ async def list_agent_tools(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
-    """Get tools from an existing agent"""
+    """Get tools from an existing agent."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.list_attached_tools_async(
         agent_id=agent_id,
@@ -432,8 +432,8 @@ async def list_agent_tools(
     )
 
 
-@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
-async def attach_tool(
+@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool_to_agent")
+async def attach_tool_to_agent(
     tool_id: str = PATH_VALIDATORS[BaseTool.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -448,8 +448,8 @@ async def attach_tool(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
-async def detach_tool(
+@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool_from_agent")
+async def detach_tool_from_agent(
     tool_id: str = PATH_VALIDATORS[BaseTool.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -464,8 +464,8 @@ async def detach_tool(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval")
-async def modify_approval(
+@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval_for_tool")
+async def modify_approval_for_tool(
     tool_name: str,
     requires_approval: bool,
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],

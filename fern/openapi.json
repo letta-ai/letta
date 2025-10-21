@@ -4193,9 +4193,9 @@
     "/v1/agents/{agent_id}/tools": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Agent Tools",
-        "description": "Get tools from an existing agent",
-        "operationId": "list_agent_tools",
+        "summary": "List Tools For Agent",
+        "description": "Get tools from an existing agent.",
+        "operationId": "list_tools_for_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -4304,7 +4304,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Tool"
                   },
-                  "title": "Response List Agent Tools"
+                  "title": "Response List Tools For Agent"
                 }
               }
             }
@@ -4325,9 +4325,9 @@
     "/v1/agents/{agent_id}/tools/attach/{tool_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Attach Tool",
+        "summary": "Attach Tool To Agent",
         "description": "Attach a tool to an agent.",
-        "operationId": "attach_tool",
+        "operationId": "attach_tool_to_agent",
         "parameters": [
           {
             "name": "tool_id",
@@ -4387,9 +4387,9 @@
     "/v1/agents/{agent_id}/tools/detach/{tool_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Detach Tool",
+        "summary": "Detach Tool From Agent",
         "description": "Detach a tool from an agent.",
-        "operationId": "detach_tool",
+        "operationId": "detach_tool_from_agent",
         "parameters": [
           {
             "name": "tool_id",
@@ -4449,9 +4449,9 @@
     "/v1/agents/{agent_id}/tools/approval/{tool_name}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Modify Approval",
+        "summary": "Modify Approval For Tool",
         "description": "Attach a tool to an agent.",
-        "operationId": "modify_approval",
+        "operationId": "modify_approval_for_tool",
         "parameters": [
           {
             "name": "tool_name",
