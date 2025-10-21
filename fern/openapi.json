@@ -5416,7 +5416,7 @@
     "/v1/agents/{agent_id}/core-memory/blocks/{block_label}": {
       "get": {
         "tags": ["agents"],
-        "summary": "Retrieve Block",
+        "summary": "Retrieve Block For Agent",
         "description": "Retrieve a core memory block from an agent.",
         "operationId": "retrieve_core_memory_block",
         "parameters": [
@@ -5470,7 +5470,7 @@
       },
       "patch": {
         "tags": ["agents"],
-        "summary": "Modify Block",
+        "summary": "Modify Block For Agent",
         "description": "Updates a core memory block of an agent.",
         "operationId": "modify_core_memory_block",
         "parameters": [
@@ -5536,7 +5536,7 @@
     "/v1/agents/{agent_id}/core-memory/blocks": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Blocks",
+        "summary": "List Blocks For Agent",
         "description": "Retrieve the core memory blocks of a specific agent.",
         "operationId": "list_core_memory_blocks",
         "parameters": [
@@ -5668,7 +5668,7 @@
     "/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Attach Block",
+        "summary": "Attach Block To Agent",
         "description": "Attach a core memory block to an agent.",
         "operationId": "attach_core_memory_block",
         "parameters": [
@@ -5730,7 +5730,7 @@
     "/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Detach Block",
+        "summary": "Detach Block From Agent",
         "description": "Detach a core memory block from an agent.",
         "operationId": "detach_core_memory_block",
         "parameters": [

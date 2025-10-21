@@ -868,7 +868,7 @@ async def retrieve_agent_memory(
 
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
-async def retrieve_block(
+async def retrieve_block_for_agent(
     block_label: str,
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -883,7 +883,7 @@ async def retrieve_block(
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
-async def list_blocks(
+async def list_blocks_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -915,7 +915,7 @@ async def list_blocks(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
-async def modify_block(
+async def modify_block_for_agent(
     block_label: str,
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     block_update: BlockUpdate = Body(...),
@@ -938,7 +938,7 @@ async def modify_block(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
-async def attach_block(
+async def attach_block_to_agent(
     block_id: str = PATH_VALIDATORS[BaseBlock.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -952,7 +952,7 @@ async def attach_block(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
-async def detach_block(
+async def detach_block_from_agent(
     block_id: str = PATH_VALIDATORS[BaseBlock.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
