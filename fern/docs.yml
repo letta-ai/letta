@@ -513,10 +513,12 @@ navigation:
               - POST /v1/agents/
               - PATCH /v1/agents/{agent_id}
               - DELETE /v1/agents/{agent_id}
-              - GET /v1/agents/count
+              - endpoint: GET /v1/agents/count
+                hidden: true
               - POST /v1/agents/import
               - GET /v1/agents/{agent_id}/export
-              - POST /v1/agents/search
+              - endpoint: POST /v1/agents/search
+                hidden: true
               - section: Blocks
                 contents:
                   - GET /v1/agents/{agent_id}/core-memory/blocks
@@ -582,7 +584,6 @@ navigation:
                   - GET /v1/agents/{agent_id}/sources
                   - PATCH /v1/agents/{agent_id}/sources/attach/{source_id}
                   - PATCH /v1/agents/{agent_id}/sources/detach/{source_id}
-
           - models:
               - GET /v1/models/
               - endpoint: GET /v1/models/embedding
@@ -595,7 +596,8 @@ navigation:
               - POST /v1/blocks/
               - PATCH /v1/blocks/{block_id}
               - DELETE /v1/blocks/{block_id}
-              - GET /v1/blocks/count
+              - endpoint: GET /v1/blocks/count
+                hidden: true
           - identities:
               - GET /v1/identities/
               - GET /v1/identities/{identity_id}
@@ -603,15 +605,19 @@ navigation:
               - PUT /v1/identities/
               - PATCH /v1/identities/{identity_id}
               - DELETE /v1/identities/{identity_id}
-              - GET /v1/identities/count
-          - tools
+              - endpoint: GET /v1/identities/count
+                hidden: true
+          - tools:
+              - endpoint: GET /v1/tools/count
+                hidden: true
           - folders:
               - GET /v1/folders/
               - GET /v1/folders/{folder_id}
               - POST /v1/folders/
               - PATCH /v1/folders/{folder_id}
               - DELETE /v1/folders/{folder_id}
-              - GET /v1/folders/count
+              - endpoint: GET /v1/folders/count
+                hidden: true
           - jobs
           - runs
           - steps
@@ -621,7 +627,8 @@ navigation:
               - POST /v1/groups/
               - PATCH /v1/groups/{group_id}
               - DELETE /v1/groups/{group_id}
-              - GET /v1/groups/count
+              - endpoint: GET /v1/groups/count
+                hidden: true
           - providers:
               - GET /v1/providers/
               - GET /v1/providers/{provider_id}
