@@ -351,7 +351,7 @@ async def import_agent(
     return ImportedAgentsResponse(agent_ids=agent_ids)
 
 
-@router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
+@router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window", deprecated=True)
 async def retrieve_agent_context_window(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -483,7 +483,7 @@ async def modify_approval_for_tool(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
+@router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent", deprecated=True)
 async def attach_source(
     source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
@@ -537,7 +537,7 @@ async def attach_folder_to_agent(
     return agent_state
 
 
-@router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
+@router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent", deprecated=True)
 async def detach_source(
     source_id: str = PATH_VALIDATORS[BaseSource.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
@@ -725,7 +725,7 @@ async def delete_agent(
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
 
 
-@router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources")
+@router.get("/{agent_id}/sources", response_model=list[Source], operation_id="list_agent_sources", deprecated=True)
 async def list_agent_sources(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -852,7 +852,7 @@ async def list_files_for_agent(
 
 
 # TODO: remove? can also get with agent blocks
-@router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
+@router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory", deprecated=True)
 async def retrieve_agent_memory(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -965,7 +965,7 @@ async def detach_block_from_agent(
     return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages")
+@router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages", deprecated=True)
 async def list_passages(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -994,7 +994,7 @@ async def list_passages(
     )
 
 
-@router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage")
+@router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage", deprecated=True)
 async def create_passage(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     request: CreateArchivalMemory = Body(...),
@@ -1011,7 +1011,12 @@ async def create_passage(
     )
 
 
-@router.get("/{agent_id}/archival-memory/search", response_model=ArchivalMemorySearchResponse, operation_id="search_archival_memory")
+@router.get(
+    "/{agent_id}/archival-memory/search",
+    response_model=ArchivalMemorySearchResponse,
+    operation_id="search_archival_memory",
+    deprecated=True,
+)
 async def search_archival_memory(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     query: str = Query(..., description="String to search for using semantic similarity"),
@@ -1058,7 +1063,7 @@ async def search_archival_memory(
 
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
+@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage", deprecated=True)
 async def delete_passage(
     memory_id: str,
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],

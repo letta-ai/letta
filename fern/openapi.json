@@ -3983,6 +3983,7 @@
         "summary": "Retrieve Agent Context Window",
         "description": "Retrieve the context window of a specific agent.",
         "operationId": "retrieve_agent_context_window",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -4517,6 +4518,7 @@
         "summary": "Attach Source",
         "description": "Attach a source to an agent.",
         "operationId": "attach_source_to_agent",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -4641,6 +4643,7 @@
         "summary": "Detach Source",
         "description": "Detach a source from an agent.",
         "operationId": "detach_source_from_agent",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -4942,6 +4945,7 @@
         "summary": "List Agent Sources",
         "description": "Get the sources associated with an agent.",
         "operationId": "list_agent_sources",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -5372,6 +5376,7 @@
         "summary": "Retrieve Agent Memory",
         "description": "Retrieve the memory state of a specific agent.\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
         "operationId": "retrieve_agent_memory",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -5795,6 +5800,7 @@
         "summary": "List Passages",
         "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
         "operationId": "list_passages",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -5935,6 +5941,7 @@
         "summary": "Create Passage",
         "description": "Insert a memory into an agent's archival memory store.",
         "operationId": "create_passage",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -5996,6 +6003,7 @@
         "summary": "Search Archival Memory",
         "description": "Search archival memory using semantic (embedding-based) search with optional temporal filtering.\n\nThis endpoint allows manual triggering of archival memory searches, enabling users to query\nan agent's archival memory store directly via the API. The search uses the same functionality\nas the agent's archival_memory_search tool but is accessible for external API usage.",
         "operationId": "search_archival_memory",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -6144,6 +6152,7 @@
         "summary": "Delete Passage",
         "description": "Delete a memory from an agent's archival memory store.",
         "operationId": "delete_passage",
+        "deprecated": true,
         "parameters": [
           {
             "name": "memory_id",
