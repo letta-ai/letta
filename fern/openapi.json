@@ -16629,6 +16629,410 @@
                             },
                             "required": ["blocks"]
                           },
+                          "blocks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "value": {
+                                  "type": "string"
+                                },
+                                "limit": {
+                                  "oneOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {}
+                                  ]
+                                },
+                                "project_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "name": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "is_template": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {}
+                                  ]
+                                },
+                                "base_template_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "deployment_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "entity_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "preserve_on_migration": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "label": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "read_only": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {}
+                                  ]
+                                },
+                                "description": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "metadata": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "hidden": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {}
+                                  ]
+                                },
+                                "created_by_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                },
+                                "last_updated_by_id": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    },
+                                    {}
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              "required": ["value"]
+                            }
+                          },
                           "tools": {
                             "type": "array",
                             "items": {
@@ -19485,6 +19889,7 @@
                           "llm_config",
                           "embedding_config",
                           "memory",
+                          "blocks",
                           "tools",
                           "sources",
                           "tags"
@@ -22737,7 +23142,16 @@
           },
           "memory": {
             "$ref": "#/components/schemas/Memory",
-            "description": "The in-context memory of the agent."
+            "description": "The in-context memory of the agent.",
+            "deprecated": true
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/Block"
+            },
+            "type": "array",
+            "title": "Blocks",
+            "description": "The memory blocks used by the agent."
           },
           "tools": {
             "items": {
@@ -22962,6 +23376,7 @@
           "llm_config",
           "embedding_config",
           "memory",
+          "blocks",
           "tools",
           "sources",
           "tags"

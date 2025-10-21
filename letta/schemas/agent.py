@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.errors import AgentExportProcessingError
-from letta.schemas.block import CreateBlock
+from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.file import FileStatus
@@ -85,7 +85,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 
-    memory: Memory = Field(..., description="The in-context memory of the agent.")
+    memory: Memory = Field(..., description="The in-context memory of the agent.", deprecated=True)
+    blocks: List[Block] = Field(..., description="The memory blocks used by the agent.")
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
