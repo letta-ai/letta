@@ -170,6 +170,7 @@ class PromptGenerator:
         tool_rules_solver: Optional[ToolRulesSolver] = None,
         sources: Optional[List] = None,
         max_files_open: Optional[int] = None,
+        llm_config: Optional[object] = None,
     ) -> str:
         tool_constraint_block = None
         if tool_rules_solver is not None:
@@ -182,7 +183,7 @@ class PromptGenerator:
             pass
 
         memory_with_sources = in_context_memory.compile(
-            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
+            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open, llm_config=llm_config
         )
 
         return PromptGenerator.get_system_message_from_compiled_memory(

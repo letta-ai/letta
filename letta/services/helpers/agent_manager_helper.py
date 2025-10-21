@@ -256,6 +256,7 @@ def compile_system_message(
     tool_rules_solver: Optional[ToolRulesSolver] = None,
     sources: Optional[List] = None,
     max_files_open: Optional[int] = None,
+    llm_config: Optional[object] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -289,7 +290,7 @@ def compile_system_message(
         )
 
         memory_with_sources = in_context_memory.compile(
-            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
+            tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open, llm_config=llm_config
         )
         full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
 

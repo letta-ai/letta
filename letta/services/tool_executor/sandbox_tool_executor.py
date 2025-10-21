@@ -36,7 +36,7 @@ class SandboxToolExecutor(ToolExecutor):
     ) -> ToolExecutionResult:
         # Store original memory state
         if agent_state:
-            orig_memory_str = agent_state.memory.compile()
+            orig_memory_str = agent_state.memory.compile(llm_config=agent_state.llm_config)
         else:
             orig_memory_str = None
 
@@ -89,7 +89,7 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Verify memory integrity
             if agent_state:
-                new_memory_str = agent_state.memory.compile()
+                new_memory_str = agent_state.memory.compile(llm_config=agent_state.llm_config)
                 assert orig_memory_str == new_memory_str, "Memory should not be modified in a sandbox tool"
 
             # Update agent memory if needed

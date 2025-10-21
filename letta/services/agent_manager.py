@@ -1173,7 +1173,7 @@ class AgentManager:
 
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = agent_state.memory.compile(sources=agent_state.sources)
+        curr_memory_str = agent_state.memory.compile(sources=agent_state.sources, llm_config=agent_state.llm_config)
         if curr_memory_str in curr_system_message_openai["content"] and not force:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
             logger.debug(
@@ -1202,6 +1202,7 @@ class AgentManager:
             archival_memory_size=num_archival_memories,
             sources=agent_state.sources,
             max_files_open=agent_state.max_files_open,
+            llm_config=agent_state.llm_config,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1264,6 +1265,7 @@ class AgentManager:
             sources=agent_state.sources,
             tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
+            llm_config=agent_state.llm_config,
         )
         if curr_memory_str in curr_system_message_openai["content"] and not force:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
@@ -1451,6 +1453,7 @@ class AgentManager:
             sources=agent_state.sources,
             tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
+            llm_config=agent_state.llm_config,
         )
         if new_memory_str not in system_message.content[0].text:
             # update the blocks (LRW) in the DB

@@ -294,6 +294,7 @@ SNIPPET_LINES: int = 4
 def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str: str) -> str:  # type: ignore
     """
     The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.
+    Do NOT attempt to replace long strings, e.g. do not attempt to replace the entire contents of a memory block with a new string.
 
     Args:
         label (str): Section of the memory to be edited, identified by its label.
@@ -311,10 +312,10 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
         memory_replace(label="human", old_str="Their name is Alice", new_str="")
 
         # Bad example - do NOT add (view-only) line numbers to the args
-        memory_replace(label="human", old_str="Line 1: Their name is Alice", new_str="Line 1: Their name is Bob")
+        memory_replace(label="human", old_str="1: Their name is Alice", new_str="1: Their name is Bob")
 
-        # Bad example - do NOT include the number number warning either
-        memory_replace(label="human", old_str="# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice", new_str="Line 1: Their name is Bob")
+        # Bad example - do NOT include the line number warning either
+        memory_replace(label="human", old_str="# NOTE: Line numbers shown below (with arrows like '1→') are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\n1→ Their name is Alice", new_str="1→ Their name is Bob")
 
         # Good example - no line numbers or line number warning (they are view-only), just the text
         memory_replace(label="human", old_str="Their name is Alice", new_str="Their name is Bob")

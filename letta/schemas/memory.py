@@ -153,11 +153,11 @@ class Memory(BaseModel, validate_assignment=True):
             s.write(f"\n- chars_current={len(value)}")
             s.write(f"\n- chars_limit={limit}\n")
             s.write("</metadata>\n")
+            s.write(f"<warning>\n{CORE_MEMORY_LINE_NUMBER_WARNING}\n</warning>\n")
             s.write("<value>\n")
-            s.write(f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n")
             if value:
                 for i, line in enumerate(value.split("\n"), start=1):
-                    s.write(f"Line {i}: {line}\n")
+                    s.write(f"{i}→ {line}\n")
             s.write("</value>\n")
             s.write(f"</{label}>\n")
             if idx != len(self.blocks) - 1:
@@ -264,14 +264,21 @@ class Memory(BaseModel, validate_assignment=True):
             s.write("</directory>\n")
         s.write("</directories>")
 
-    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
         """Efficiently render memory, tool rules, and sources into a prompt string."""
         s = StringIO()
 
         raw_type = self.agent_type.value if hasattr(self.agent_type, "value") else (self.agent_type or "")
         norm_type = raw_type.lower()
         is_react = norm_type in ("react_agent", "workflow_agent")
-        is_line_numbered = norm_type in ("sleeptime_agent", "memgpt_v2_agent", "letta_v1_agent")
+
+        # Check if we should use line numbers based on both agent type and model provider
+        is_line_numbered = False  # Default to no line numbers
+        if llm_config and hasattr(llm_config, "model_endpoint_type"):
+            is_anthropic = llm_config.model_endpoint_type == "anthropic"
+            is_line_numbered_agent_type = norm_type in ("sleeptime_agent", "memgpt_v2_agent", "letta_v1_agent")
+            # Only use line numbers for specific agent types AND Anthropic models
+            is_line_numbered = is_line_numbered_agent_type and is_anthropic
 
         # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
         if not is_react:
@@ -297,22 +304,23 @@ class Memory(BaseModel, validate_assignment=True):
         return s.getvalue()
 
     @trace_method
-    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
+    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
         """Async version that offloads to a thread for CPU-bound string building."""
         return await asyncio.to_thread(
             self.compile,
             tool_usage_rules=tool_usage_rules,
             sources=sources,
             max_files_open=max_files_open,
+            llm_config=llm_config,
         )
 
     @trace_method
-    async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
+    async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
         """Deprecated: use compile() instead."""
         import warnings
 
         warnings.warn("compile_in_thread_async is deprecated; use compile()", DeprecationWarning, stacklevel=2)
-        return self.compile(tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open)
+        return self.compile(tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open, llm_config=llm_config)
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""

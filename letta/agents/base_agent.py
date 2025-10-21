@@ -140,7 +140,10 @@ class BaseAgent(ABC):
 
             # generate just the memory string with current state for comparison
             curr_memory_str = agent_state.memory.compile(
-                tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
+                tool_usage_rules=tool_constraint_block,
+                sources=agent_state.sources,
+                max_files_open=agent_state.max_files_open,
+                llm_config=agent_state.llm_config,
             )
             new_dynamic_section = extract_dynamic_section(curr_memory_str)
 

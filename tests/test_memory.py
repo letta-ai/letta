@@ -65,14 +65,43 @@ def test_compile_line_numbered_blocks_sleeptime():
     m = Memory(agent_type=AgentType.sleeptime_agent, blocks=[Block(label="notes", value="line1\nline2", limit=100)])
     out = m.compile()
     assert "<memory_blocks>" in out
-    assert CORE_MEMORY_LINE_NUMBER_WARNING in out
-    assert "Line 1: line1" in out and "Line 2: line2" in out
+    # Without llm_config, should NOT show line numbers (backward compatibility)
+    assert CORE_MEMORY_LINE_NUMBER_WARNING not in out
+    assert "1→ line1" not in out and "2→ line2" not in out
+    assert "line1" in out and "line2" in out  # Content should still be there
 
 
 def test_compile_line_numbered_blocks_memgpt_v2():
     m = Memory(agent_type=AgentType.memgpt_v2_agent, blocks=[Block(label="notes", value="a\nb", limit=100)])
     out = m.compile()
-    assert "Line 1: a" in out and "Line 2: b" in out
+    # Without llm_config, should NOT show line numbers (backward compatibility)
+    assert "1→ a" not in out and "2→ b" not in out
+    assert "a" in out and "b" in out  # Content should still be there
+
+
+def test_compile_line_numbered_blocks_with_anthropic():
+    """Test that line numbers appear when using Anthropic models."""
+    from letta.schemas.llm_config import LLMConfig
+
+    m = Memory(agent_type=AgentType.letta_v1_agent, blocks=[Block(label="notes", value="line1\nline2", limit=100)])
+    anthropic_config = LLMConfig(model="claude-3-sonnet-20240229", model_endpoint_type="anthropic", context_window=200000)
+    out = m.compile(llm_config=anthropic_config)
+    assert "<memory_blocks>" in out
+    assert CORE_MEMORY_LINE_NUMBER_WARNING in out
+    assert "1→ line1" in out and "2→ line2" in out
+
+
+def test_compile_line_numbered_blocks_with_openai():
+    """Test that line numbers do NOT appear when using OpenAI models."""
+    from letta.schemas.llm_config import LLMConfig
+
+    m = Memory(agent_type=AgentType.letta_v1_agent, blocks=[Block(label="notes", value="line1\nline2", limit=100)])
+    openai_config = LLMConfig(model="gpt-4", model_endpoint_type="openai", context_window=128000)
+    out = m.compile(llm_config=openai_config)
+    assert "<memory_blocks>" in out
+    assert CORE_MEMORY_LINE_NUMBER_WARNING not in out
+    assert "1→ line1" not in out and "2→ line2" not in out
+    assert "line1" in out and "line2" in out  # Content should still be there
 
 
 def test_compile_empty_returns_empty_string():

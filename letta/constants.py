@@ -125,10 +125,10 @@ LOCAL_ONLY_MULTI_AGENT_TOOLS = ["send_message_to_agent_async"]
 
 # Used to catch if line numbers are pushed in
 # MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(r"^Line \d+: ", re.MULTILINE)
-# More "robust" version that handles different kinds of whitespace
+# Updated to match new arrow format: "1→ content"
 # shared constant for both memory_insert and memory_replace
 MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
-    r"^[ \t]*Line[ \t]+\d+[ \t]*:",  # allow any leading whitespace and flexible spacing
+    r"^[ \t]*\d+→[ \t]*",  # match number followed by arrow, with optional whitespace
     re.MULTILINE,
 )
 
@@ -210,9 +210,7 @@ ERROR_MESSAGE_PREFIX = "Error"
 
 NON_USER_MSG_PREFIX = "[This is an automated system message hidden from the user] "
 
-CORE_MEMORY_LINE_NUMBER_WARNING = (
-    "# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
-)
+CORE_MEMORY_LINE_NUMBER_WARNING = "# NOTE: Line numbers shown below (with arrows like '1→') are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
 
 
 # Constants to do with summarization / conversation length window
