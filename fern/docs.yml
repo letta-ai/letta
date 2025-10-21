@@ -517,6 +517,72 @@ navigation:
               - POST /v1/agents/import
               - GET /v1/agents/{agent_id}/export
               - POST /v1/agents/search
+              - section: Blocks
+                contents:
+                  - GET /v1/agents/{agent_id}/core-memory/blocks
+                  - GET /v1/agents/{agent_id}/core-memory/blocks/{block_label}
+                  - PATCH /v1/agents/{agent_id}/core-memory/blocks/{block_label}
+                  - PATCH /v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}
+                  - PATCH /v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}
+              - section: Tools
+                contents:
+                  - GET /v1/agents/{agent_id}/tools
+                  - PATCH /v1/agents/{agent_id}/tools/approval/{tool_name}
+                  - PATCH /v1/agents/{agent_id}/tools/attach/{tool_id}
+                  - PATCH /v1/agents/{agent_id}/tools/detach/{tool_id}
+              - section: Messages
+                contents:
+                  - GET /v1/agents/{agent_id}/messages
+                  - POST /v1/agents/{agent_id}/messages
+                  - POST /v1/agents/{agent_id}/messages/stream
+                  - POST /v1/agents/{agent_id}/messages/async
+                  - POST /v1/agents/{agent_id}/messages/cancel
+                  - POST /v1/agents/{agent_id}/summarize
+                  - POST /v1/agents/{agent_id}/messages/preview-raw-payload
+                  - POST /v1/agents/messages/search
+                  - PATCH /v1/agents/{agent_id}/messages/{message_id}
+                  - PATCH /v1/agents/{agent_id}/reset-messages
+              - section: Folders
+                contents:
+                  - GET /v1/agents/{agent_id}/folders
+                  - PATCH /v1/agents/{agent_id}/folders/attach/{folder_id}
+                  - PATCH /v1/agents/{agent_id}/folders/detach/{folder_id}
+              - section: Files
+                contents:
+                  - GET /v1/agents/{agent_id}/files
+                  - PATCH /v1/agents/{agent_id}/files/{file_id}/open
+                  - PATCH /v1/agents/{agent_id}/files/{file_id}/close
+                  - PATCH /v1/agents/{agent_id}/files/close-all
+              - section: Groups
+                contents:
+                  - GET /v1/agents/{agent_id}/groups
+              - section: Context
+                icon: ban
+                contents:
+                  - GET /v1/agents/{agent_id}/context
+              - section: Core Memory
+                icon: ban
+                contents:
+                  - GET /v1/agents/{agent_id}/core-memory
+              - section: Memory Variables
+                icon: ban
+                contents:
+                  - GET /v1/agents/{agent_id}/core-memory/variables
+              - section: Passages
+                icon: ban
+                contents:
+                  - GET /v1/agents/{agent_id}/archival-memory
+                  - GET /v1/agents/{agent_id}/archival-memory/search
+                  - POST /v1/agents/{agent_id}/archival-memory
+                  - PATCH /v1/agents/{agent_id}/archival-memory/{memory_id}
+                  - DELETE /v1/agents/{agent_id}/archival-memory/{memory_id}
+              - section: Sources
+                icon: ban
+                contents:
+                  - GET /v1/agents/{agent_id}/sources
+                  - PATCH /v1/agents/{agent_id}/sources/attach/{source_id}
+                  - PATCH /v1/agents/{agent_id}/sources/detach/{source_id}
+
           - models:
               - GET /v1/models/
               - endpoint: GET /v1/models/embedding
