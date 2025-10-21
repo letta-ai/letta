@@ -450,6 +450,57 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
     return success_msg
 
 
+def memory_apply_patch(agent_state: "AgentState", label: str, patch: str) -> str:  # type: ignore
+    """
+    Apply a unified-diff style patch to a memory block by anchoring on content and context (not line numbers).
+
+    The patch format is a simplified unified diff that supports one or more hunks. Each hunk may optionally
+    start with a line beginning with `@@` and then contains lines that begin with one of:
+    - " " (space): context lines that must match the current memory content
+    - "-": lines to remove (must match exactly in the current content)
+    - "+": lines to add
+
+    Notes:
+    - Do not include line number prefixes like "Line 12:" anywhere in the patch. Line numbers are for display only.
+    - Do not include the line-number warning banner. Provide only the text to edit.
+    - Tabs are normalized to spaces for matching consistency.
+
+    Args:
+        label (str): The memory block to edit, identified by its label.
+        patch (str): The simplified unified-diff patch text composed of context (" "), deletion ("-"), and addition ("+") lines. Optional
+            lines beginning with "@@" can be used to delimit hunks. Do not include visual line numbers or warning banners.
+
+    Examples:
+        Simple replacement:
+            label="human",
+            patch:
+                @@
+                -Their name is Alice
+                +Their name is Bob
+
+        Replacement with surrounding context for disambiguation:
+            label="persona",
+            patch:
+                @@
+                 Persona:
+                -Friendly and curious
+                +Friendly, curious, and precise
+                 Likes: Hiking
+
+        Insertion (no deletions) between two context lines:
+            label="todos",
+            patch:
+                @@
+                 - [ ] Step 1: Gather requirements
+                 + [ ] Step 1.5: Clarify stakeholders
+                 - [ ] Step 2: Draft design
+
+    Returns:
+        str: A success message if the patch applied cleanly; raises ValueError otherwise.
+    """
+    raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
+
+
 def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> None:
     """
     The memory_rethink command allows you to completely rewrite the contents of a memory block. Use this tool to make large sweeping changes (e.g. when you want to condense or reorganize the memory blocks), do NOT use this tool to make small precise edits (e.g. add or remove a line, replace a specific string, etc).

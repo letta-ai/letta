@@ -47,6 +47,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             "core_memory_replace": self.core_memory_replace,
             "memory_replace": self.memory_replace,
             "memory_insert": self.memory_insert,
+            "memory_apply_patch": self.memory_apply_patch,
             "memory_str_replace": self.memory_str_replace,
             "memory_str_insert": self.memory_str_insert,
             "memory_rethink": self.memory_rethink,
@@ -392,6 +393,116 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         # return None
         return success_msg
+
+    async def memory_apply_patch(self, agent_state: AgentState, actor: User, label: str, patch: str) -> str:
+        """Apply a simplified unified-diff style patch to a memory block, anchored on content and context.
+
+        Args:
+            label: The memory block label to modify.
+            patch: Patch text with lines starting with " ", "-", or "+" and optional "@@" hunk headers.
+
+        Returns:
+            Success message on clean application; raises ValueError on mismatch/ambiguity.
+        """
+        if agent_state.memory.get_block(label).read_only:
+            raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
+
+        # Guardrails: forbid visual line numbers and warning banners
+        if MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(patch or ""):
+            raise ValueError(
+                "Patch contains a line number prefix, which is not allowed. Do not include line numbers (they are for display only)."
+            )
+        if CORE_MEMORY_LINE_NUMBER_WARNING in (patch or ""):
+            raise ValueError("Patch contains the line number warning banner, which is not allowed. Provide only the text to edit.")
+
+        current_value = str(agent_state.memory.get_block(label).value).expandtabs()
+        patch = str(patch).expandtabs()
+
+        current_lines = current_value.split("\n")
+        # Ignore common diff headers
+        raw_lines = patch.splitlines()
+        patch_lines = [ln for ln in raw_lines if not ln.startswith("*** ") and not ln.startswith("---") and not ln.startswith("+++")]
+
+        # Split into hunks using '@@' as delimiter
+        hunks: list[list[str]] = []
+        h: list[str] = []
+        for ln in patch_lines:
+            if ln.startswith("@@"):
+                if h:
+                    hunks.append(h)
+                    h = []
+                continue
+            if ln.startswith(" ") or ln.startswith("-") or ln.startswith("+"):
+                h.append(ln)
+            elif ln.strip() == "":
+                # Treat blank line as context for empty string line
+                h.append(" ")
+            else:
+                # Skip unknown metadata lines
+                continue
+        if h:
+            hunks.append(h)
+
+        if not hunks:
+            raise ValueError("No applicable hunks found in patch. Ensure lines start with ' ', '-', or '+'.")
+
+        def find_all_subseq(hay: list[str], needle: list[str]) -> list[int]:
+            out: list[int] = []
+            n = len(needle)
+            if n == 0:
+                return out
+            for i in range(0, len(hay) - n + 1):
+                if hay[i : i + n] == needle:
+                    out.append(i)
+            return out
+
+        # Apply each hunk sequentially against the rolling buffer
+        for hunk in hunks:
+            expected: list[str] = []
+            replacement: list[str] = []
+            for ln in hunk:
+                if ln.startswith(" "):
+                    line = ln[1:]
+                    expected.append(line)
+                    replacement.append(line)
+                elif ln.startswith("-"):
+                    line = ln[1:]
+                    expected.append(line)
+                elif ln.startswith("+"):
+                    line = ln[1:]
+                    replacement.append(line)
+
+            if not expected and replacement:
+                # Pure insertion with no context: append at end
+                current_lines = current_lines + replacement
+                continue
+
+            matches = find_all_subseq(current_lines, expected)
+            if len(matches) == 0:
+                sample = "\n".join(expected[:4])
+                raise ValueError(
+                    "Failed to apply patch: expected hunk context not found in the memory block. "
+                    f"Verify the target lines exist and try providing more context. Expected start:\n{sample}"
+                )
+            if len(matches) > 1:
+                raise ValueError(
+                    "Failed to apply patch: hunk context matched multiple places in the memory block. "
+                    "Please add more unique surrounding context to disambiguate."
+                )
+
+            idx = matches[0]
+            end = idx + len(expected)
+            current_lines = current_lines[:idx] + replacement + current_lines[end:]
+
+        new_value = "\n".join(current_lines)
+        agent_state.memory.update_block_value(label=label, value=new_value)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+
+        return (
+            f"The core memory block with label `{label}` has been edited. "
+            "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). "
+            "Edit the memory block again if necessary."
+        )
 
     async def memory_insert(
         self,
