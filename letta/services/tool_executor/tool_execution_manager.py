@@ -142,7 +142,7 @@ class ToolExecutionManager:
             )
         except Exception as e:
             status = "error"
-            self.logger.error(f"Error executing tool {function_name}: {str(e)}")
+            self.logger.info(f"Error executing tool {function_name}: {str(e)}")
             error_message = get_friendly_error_msg(
                 function_name=function_name,
                 exception_name=type(e).__name__,
