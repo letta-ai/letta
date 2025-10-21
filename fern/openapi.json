@@ -30775,20 +30775,23 @@
           "use_assistant_message": {
             "type": "boolean",
             "title": "Use Assistant Message",
-            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
-            "default": true
+            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": true,
+            "deprecated": true
           },
           "assistant_message_tool_name": {
             "type": "string",
             "title": "Assistant Message Tool Name",
-            "description": "The name of the designated message tool.",
-            "default": "send_message"
+            "description": "The name of the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "send_message",
+            "deprecated": true
           },
           "assistant_message_tool_kwarg": {
             "type": "string",
             "title": "Assistant Message Tool Kwarg",
-            "description": "The name of the message argument in the designated message tool.",
-            "default": "message"
+            "description": "The name of the message argument in the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "message",
+            "deprecated": true
           },
           "include_return_message_types": {
             "anyOf": [
@@ -30809,7 +30812,8 @@
             "type": "string",
             "title": "Enable Thinking",
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
-            "default": true
+            "default": true,
+            "deprecated": true
           },
           "callback_url": {
             "anyOf": [
@@ -30868,20 +30872,23 @@
           "use_assistant_message": {
             "type": "boolean",
             "title": "Use Assistant Message",
-            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
-            "default": true
+            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": true,
+            "deprecated": true
           },
           "assistant_message_tool_name": {
             "type": "string",
             "title": "Assistant Message Tool Name",
-            "description": "The name of the designated message tool.",
-            "default": "send_message"
+            "description": "The name of the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "send_message",
+            "deprecated": true
           },
           "assistant_message_tool_kwarg": {
             "type": "string",
             "title": "Assistant Message Tool Kwarg",
-            "description": "The name of the message argument in the designated message tool.",
-            "default": "message"
+            "description": "The name of the message argument in the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "message",
+            "deprecated": true
           },
           "include_return_message_types": {
             "anyOf": [
@@ -30902,7 +30909,8 @@
             "type": "string",
             "title": "Enable Thinking",
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
-            "default": true
+            "default": true,
+            "deprecated": true
           },
           "agent_id": {
             "type": "string",
@@ -30995,20 +31003,23 @@
           "use_assistant_message": {
             "type": "boolean",
             "title": "Use Assistant Message",
-            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
-            "default": true
+            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": true,
+            "deprecated": true
           },
           "assistant_message_tool_name": {
             "type": "string",
             "title": "Assistant Message Tool Name",
-            "description": "The name of the designated message tool.",
-            "default": "send_message"
+            "description": "The name of the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "send_message",
+            "deprecated": true
           },
           "assistant_message_tool_kwarg": {
             "type": "string",
             "title": "Assistant Message Tool Kwarg",
-            "description": "The name of the message argument in the designated message tool.",
-            "default": "message"
+            "description": "The name of the message argument in the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "message",
+            "deprecated": true
           },
           "include_return_message_types": {
             "anyOf": [
@@ -31029,7 +31040,8 @@
             "type": "string",
             "title": "Enable Thinking",
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
-            "default": true
+            "default": true,
+            "deprecated": true
           }
         },
         "type": "object",
@@ -31143,20 +31155,23 @@
           "use_assistant_message": {
             "type": "boolean",
             "title": "Use Assistant Message",
-            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
-            "default": true
+            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": true,
+            "deprecated": true
           },
           "assistant_message_tool_name": {
             "type": "string",
             "title": "Assistant Message Tool Name",
-            "description": "The name of the designated message tool.",
-            "default": "send_message"
+            "description": "The name of the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "send_message",
+            "deprecated": true
           },
           "assistant_message_tool_kwarg": {
             "type": "string",
             "title": "Assistant Message Tool Kwarg",
-            "description": "The name of the message argument in the designated message tool.",
-            "default": "message"
+            "description": "The name of the message argument in the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+            "default": "message",
+            "deprecated": true
           },
           "include_return_message_types": {
             "anyOf": [
@@ -31177,7 +31192,8 @@
             "type": "string",
             "title": "Enable Thinking",
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
-            "default": true
+            "default": true,
+            "deprecated": true
           },
           "stream_tokens": {
             "type": "boolean",

@@ -15,15 +15,18 @@ class LettaRequest(BaseModel):
     )
     use_assistant_message: bool = Field(
         default=True,
-        description="Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
+        description="Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+        deprecated=True,
     )
     assistant_message_tool_name: str = Field(
         default=DEFAULT_MESSAGE_TOOL,
-        description="The name of the designated message tool.",
+        description="The name of the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+        deprecated=True,
     )
     assistant_message_tool_kwarg: str = Field(
         default=DEFAULT_MESSAGE_TOOL_KWARG,
-        description="The name of the message argument in the designated message tool.",
+        description="The name of the message argument in the designated message tool. Still supported for legacy agent types, but deprecated for letta_v1_agent onward.",
+        deprecated=True,
     )
 
     # filter to only return specific message types
@@ -34,6 +37,7 @@ class LettaRequest(BaseModel):
     enable_thinking: str = Field(
         default=True,
         description="If set to True, enables reasoning before responses or tool calls from the agent.",
+        deprecated=True,
     )
 
     @field_validator("messages", mode="before")
