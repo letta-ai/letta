@@ -108,6 +108,7 @@ class RunManager:
         ascending: bool = False,
         stop_reason: Optional[str] = None,
         background: Optional[bool] = None,
+        template_family: Optional[str] = None,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
@@ -132,6 +133,10 @@ class RunManager:
             # Filter by background
             if background is not None:
                 query = query.filter(RunModel.background == background)
+
+            # Filter by template_family (base_template_id)
+            if template_family:
+                query = query.filter(RunModel.base_template_id == template_family)
 
             # Apply pagination
             from letta.services.helpers.run_manager_helper import _apply_pagination_async

@@ -382,6 +382,19 @@ async def test_list_runs_by_stop_reason(server: SyncServer, sarah_agent, default
     assert runs[0].id == run.id
 
 
+@pytest.mark.asyncio
+async def test_list_runs_by_base_template_id(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs by template family."""
+    run_data = PydanticRun(
+        agent_id=sarah_agent.id,
+        base_template_id="test-template-family",
+    )
+
+    await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+    runs = await server.run_manager.list_runs(actor=default_user, template_family="test-template-family")
+    assert len(runs) == 1
+
+
 async def test_e2e_run_callback(monkeypatch, server: SyncServer, default_user, sarah_agent):
     """Test that run callbacks are properly dispatched when a run is completed."""
     captured = {}

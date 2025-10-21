@@ -25,6 +25,7 @@ class Run(RunBase):
         created_at (datetime): The timestamp when the run was created.
         completed_at (datetime): The timestamp when the run was completed.
         agent_id (str): The unique identifier of the agent associated with the run.
+        base_template_id (str): The base template ID that the run belongs to.
         stop_reason (StopReasonType): The reason why the run was stopped.
         background (bool): Whether the run was created in background mode.
         metadata (dict): Additional metadata for the run.
@@ -40,6 +41,9 @@ class Run(RunBase):
 
     # Agent relationship
     agent_id: str = Field(..., description="The unique identifier of the agent associated with the run.")
+
+    # Template fields
+    base_template_id: Optional[str] = Field(None, description="The base template ID that the run belongs to.")
 
     # Run configuration
     background: Optional[bool] = Field(None, description="Whether the run was created in background mode.")
