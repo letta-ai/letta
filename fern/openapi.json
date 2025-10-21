@@ -4762,9 +4762,9 @@
     "/v1/agents/{agent_id}/files/close-all": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Close All Open Files",
+        "summary": "Close All Files For Agent",
         "description": "Closes all currently open files for a given agent.\n\nThis endpoint updates the file state for the agent so that no files are marked as open.\nTypically used to reset the working memory view for the agent.",
-        "operationId": "close_all_open_files",
+        "operationId": "close_all_files_for_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -4792,7 +4792,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "title": "Response Close All Open Files"
+                  "title": "Response Close All Files For Agent"
                 }
               }
             }
@@ -4813,9 +4813,9 @@
     "/v1/agents/{agent_id}/files/{file_id}/open": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Open File",
+        "summary": "Open File For Agent",
         "description": "Opens a specific file for a given agent.\n\nThis endpoint marks a specific file as open in the agent's file state.\nThe file will be included in the agent's working memory view.\nReturns a list of file names that were closed due to LRU eviction.",
-        "operationId": "open_file",
+        "operationId": "open_file_for_agent",
         "parameters": [
           {
             "name": "file_id",
@@ -4858,7 +4858,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "title": "Response Open File"
+                  "title": "Response Open File For Agent"
                 }
               }
             }
@@ -4879,9 +4879,9 @@
     "/v1/agents/{agent_id}/files/{file_id}/close": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Close File",
+        "summary": "Close File For Agent",
         "description": "Closes a specific file for a given agent.\n\nThis endpoint marks a specific file as closed in the agent's file state.\nThe file will be removed from the agent's working memory view.",
-        "operationId": "close_file",
+        "operationId": "close_file_for_agent",
         "parameters": [
           {
             "name": "file_id",
@@ -5071,9 +5071,9 @@
     "/v1/agents/{agent_id}/folders": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Agent Folders",
+        "summary": "List Folders For Agent",
         "description": "Get the folders associated with an agent.",
-        "operationId": "list_agent_folders",
+        "operationId": "list_folders_for_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -5182,7 +5182,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Source"
                   },
-                  "title": "Response List Agent Folders"
+                  "title": "Response List Folders For Agent"
                 }
               }
             }
@@ -5203,9 +5203,9 @@
     "/v1/agents/{agent_id}/files": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Agent Files",
-        "description": "Get the files attached to an agent with their open/closed status (paginated).",
-        "operationId": "list_agent_files",
+        "summary": "List Files For Agent",
+        "description": "Get the files attached to an agent with their open/closed status.",
+        "operationId": "list_files_for_agent",
         "parameters": [
           {
             "name": "agent_id",

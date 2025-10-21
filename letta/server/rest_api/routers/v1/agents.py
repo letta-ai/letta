@@ -597,8 +597,8 @@ async def detach_folder_from_agent(
     return agent_state
 
 
-@router.patch("/{agent_id}/files/close-all", response_model=List[str], operation_id="close_all_open_files")
-async def close_all_open_files(
+@router.patch("/{agent_id}/files/close-all", response_model=List[str], operation_id="close_all_files_for_agent")
+async def close_all_files_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -614,8 +614,8 @@ async def close_all_open_files(
     return await server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
 
 
-@router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file")
-async def open_file(
+@router.patch("/{agent_id}/files/{file_id}/open", response_model=List[str], operation_id="open_file_for_agent")
+async def open_file_for_agent(
     file_id: str = PATH_VALIDATORS[FileMetadataBase.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -663,8 +663,8 @@ async def open_file(
     return closed_files
 
 
-@router.patch("/{agent_id}/files/{file_id}/close", response_model=None, operation_id="close_file")
-async def close_file(
+@router.patch("/{agent_id}/files/{file_id}/close", response_model=None, operation_id="close_file_for_agent")
+async def close_file_for_agent(
     file_id: str = PATH_VALIDATORS[FileMetadataBase.__id_prefix__],
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
@@ -756,8 +756,8 @@ async def list_agent_sources(
     )
 
 
-@router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_agent_folders")
-async def list_agent_folders(
+@router.get("/{agent_id}/folders", response_model=list[Source], operation_id="list_folders_for_agent")
+async def list_folders_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -787,8 +787,8 @@ async def list_agent_folders(
     )
 
 
-@router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
-async def list_agent_files(
+@router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_files_for_agent")
+async def list_files_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     before: Optional[str] = Query(
         None, description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
@@ -809,7 +809,7 @@ async def list_agent_files(
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the files attached to an agent with their open/closed status (paginated).
+    Get the files attached to an agent with their open/closed status.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
