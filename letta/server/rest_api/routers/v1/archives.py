@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
-from letta.validators import PATH_VALIDATORS
+from letta.validators import ArchiveId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
 
@@ -85,8 +85,8 @@ async def list_archives(
 
 @router.patch("/{archive_id}", response_model=PydanticArchive, operation_id="modify_archive")
 async def modify_archive(
+    archive_id: ArchiveId,
     archive: ArchiveUpdateRequest = Body(...),
-    archive_id: str = PATH_VALIDATORS[ArchiveBase.__id_prefix__],
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

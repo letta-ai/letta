@@ -1,4 +1,5 @@
 import re
+from typing import Annotated
 
 from fastapi import Path
 
@@ -44,17 +45,50 @@ PRIMITIVE_ID_PATTERNS = {
     for primitive in primitives
 }
 
-PATH_VALIDATORS = {}
-for primitive in primitives:
-    PATH_VALIDATORS[primitive] = Path(
-        description=f"The ID of the {primitive} in the format '{primitive}-<uuid4>'",
-        pattern=PRIMITIVE_ID_PATTERNS[primitive].pattern,
-        examples=[f"{primitive}-123e4567-e89b-42d3-8456-426614174000"],
-        # len(agent) + len("-") + len(uuid4)
-        min_length=len(primitive) + 1 + 36,
-        max_length=len(primitive) + 1 + 36,
-    )
+
+def _create_path_validator_factory(primitive: str):
+    """
+    Creates a factory function that returns a fresh Path validator.
+
+    This avoids shared state issues when the same validator is used
+    across multiple endpoints with different parameter names.
+    """
+
+    def factory():
+        return Path(
+            description=f"The ID of the {primitive} in the format '{primitive}-<uuid4>'",
+            pattern=PRIMITIVE_ID_PATTERNS[primitive].pattern,
+            examples=[f"{primitive}-123e4567-e89b-42d3-8456-426614174000"],
+            min_length=len(primitive) + 1 + 36,
+            max_length=len(primitive) + 1 + 36,
+        )
+
+    return factory
+
+
+# PATH_VALIDATORS now contains factory functions, not Path objects
+# Usage: folder_id: str = PATH_VALIDATORS[BaseFolder.__id_prefix__]()
+PATH_VALIDATORS = {primitive: _create_path_validator_factory(primitive) for primitive in primitives}
 
 
 def is_valid_id(primitive: str, id: str) -> bool:
     return PRIMITIVE_ID_PATTERNS[primitive].match(id) is not None
+
+
+# Type aliases for common ID types
+# These can be used directly in route handler signatures for cleaner code
+AgentId = Annotated[str, PATH_VALIDATORS[AgentState.__id_prefix__]()]
+ToolId = Annotated[str, PATH_VALIDATORS[BaseTool.__id_prefix__]()]
+SourceId = Annotated[str, PATH_VALIDATORS[BaseSource.__id_prefix__]()]
+BlockId = Annotated[str, PATH_VALIDATORS[BaseBlock.__id_prefix__]()]
+MessageId = Annotated[str, PATH_VALIDATORS[BaseMessage.__id_prefix__]()]
+RunId = Annotated[str, PATH_VALIDATORS[RunBase.__id_prefix__]()]
+JobId = Annotated[str, PATH_VALIDATORS[JobBase.__id_prefix__]()]
+GroupId = Annotated[str, PATH_VALIDATORS[GroupBase.__id_prefix__]()]
+FileId = Annotated[str, PATH_VALIDATORS[FileMetadataBase.__id_prefix__]()]
+FolderId = Annotated[str, PATH_VALIDATORS[BaseFolder.__id_prefix__]()]
+ArchiveId = Annotated[str, PATH_VALIDATORS[ArchiveBase.__id_prefix__]()]
+ProviderId = Annotated[str, PATH_VALIDATORS[ProviderBase.__id_prefix__]()]
+SandboxConfigId = Annotated[str, PATH_VALIDATORS[SandboxConfigBase.__id_prefix__]()]
+StepId = Annotated[str, PATH_VALIDATORS[StepBase.__id_prefix__]()]
+IdentityId = Annotated[str, PATH_VALIDATORS[IdentityBase.__id_prefix__]()]

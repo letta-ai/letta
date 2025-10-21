@@ -7,7 +7,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.block import Block
 from letta.schemas.identity import Identity, IdentityBase, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
-from letta.validators import PATH_VALIDATORS
+from letta.validators import IdentityId
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -73,7 +73,7 @@ async def count_identities(
 
 @router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
 async def retrieve_identity(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -109,7 +109,7 @@ async def upsert_identity(
 
 @router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity")
 async def modify_identity(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -120,7 +120,7 @@ async def modify_identity(
 
 @router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
 async def upsert_identity_properties(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     properties: List[IdentityProperty] = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -131,7 +131,7 @@ async def upsert_identity_properties(
 
 @router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity")
 async def delete_identity(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -144,7 +144,7 @@ async def delete_identity(
 
 @router.get("/{identity_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_identity")
 async def list_agents_for_identity(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     before: Optional[str] = Query(
         None,
         description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
@@ -177,7 +177,7 @@ async def list_agents_for_identity(
 
 @router.get("/{identity_id}/blocks", response_model=List[Block], operation_id="list_blocks_for_identity")
 async def list_blocks_for_identity(
-    identity_id: str = PATH_VALIDATORS[IdentityBase.__id_prefix__],
+    identity_id: IdentityId,
     before: Optional[str] = Query(
         None,
         description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",

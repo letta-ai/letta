@@ -2521,9 +2521,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           }
         ],
         "responses": {
@@ -2561,9 +2566,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           }
         ],
         "requestBody": {
@@ -2611,9 +2621,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           }
         ],
         "responses": {
@@ -2910,9 +2925,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           },
           {
             "name": "duplicate_handling",
@@ -2991,9 +3011,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           },
           {
             "name": "before",
@@ -3118,9 +3143,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           },
           {
             "name": "before",
@@ -3245,9 +3275,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           },
           {
             "name": "before",
@@ -3384,9 +3419,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the source in the format 'source-<uuid4>'",
+              "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Folder Id"
-            }
+            },
+            "description": "The ID of the source in the format 'source-<uuid4>'"
           },
           {
             "name": "file_id",
@@ -3394,9 +3434,14 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
               "pattern": "^file-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the file in the format 'file-<uuid4>'",
+              "examples": ["file-123e4567-e89b-42d3-8456-426614174000"],
               "title": "File Id"
-            }
+            },
+            "description": "The ID of the file in the format 'file-<uuid4>'"
           }
         ],
         "responses": {
@@ -4587,7 +4632,7 @@
         "operationId": "attach_folder_to_agent",
         "parameters": [
           {
-            "name": "source_id",
+            "name": "folder_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -4597,7 +4642,7 @@
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
               "description": "The ID of the source in the format 'source-<uuid4>'",
               "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
-              "title": "Source Id"
+              "title": "Folder Id"
             },
             "description": "The ID of the source in the format 'source-<uuid4>'"
           },
@@ -4712,7 +4757,7 @@
         "operationId": "detach_folder_from_agent",
         "parameters": [
           {
-            "name": "source_id",
+            "name": "folder_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -4722,7 +4767,7 @@
               "pattern": "^source-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
               "description": "The ID of the source in the format 'source-<uuid4>'",
               "examples": ["source-123e4567-e89b-42d3-8456-426614174000"],
-              "title": "Source Id"
+              "title": "Folder Id"
             },
             "description": "The ID of the source in the format 'source-<uuid4>'"
           },

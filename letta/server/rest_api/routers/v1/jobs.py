@@ -8,7 +8,7 @@ from letta.schemas.job import Job, JobBase
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
-from letta.validators import PATH_VALIDATORS
+from letta.validators import JobId
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -89,7 +89,7 @@ async def list_active_jobs(
 
 @router.get("/{job_id}", response_model=Job, operation_id="retrieve_job")
 async def retrieve_job(
-    job_id: str = PATH_VALIDATORS[JobBase.__id_prefix__],
+    job_id: JobId,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -102,7 +102,7 @@ async def retrieve_job(
 
 @router.patch("/{job_id}/cancel", response_model=Job, operation_id="cancel_job")
 async def cancel_job(
-    job_id: str = PATH_VALIDATORS[JobBase.__id_prefix__],
+    job_id: JobId,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -127,7 +127,7 @@ async def cancel_job(
 
 @router.delete("/{job_id}", response_model=Job, operation_id="delete_job")
 async def delete_job(
-    job_id: str = PATH_VALIDATORS[JobBase.__id_prefix__],
+    job_id: JobId,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
