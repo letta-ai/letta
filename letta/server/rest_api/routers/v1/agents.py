@@ -1603,8 +1603,8 @@ async def reset_messages(
     )
 
 
-@router.get("/{agent_id}/groups", response_model=list[Group], operation_id="list_agent_groups")
-async def list_agent_groups(
+@router.get("/{agent_id}/groups", response_model=list[Group], operation_id="list_groups_for_agent")
+async def list_groups_for_agent(
     agent_id: str = PATH_VALIDATORS[AgentState.__id_prefix__],
     manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -1621,7 +1621,7 @@ async def list_agent_groups(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
 ):
-    """Lists the groups for an agent"""
+    """Lists the groups for an agent."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     logger.info("in list agents with manager_type", manager_type)
     return await server.agent_manager.list_groups_async(

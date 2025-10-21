@@ -6860,9 +6860,9 @@
     "/v1/agents/{agent_id}/groups": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Agent Groups",
-        "description": "Lists the groups for an agent",
-        "operationId": "list_agent_groups",
+        "summary": "List Groups For Agent",
+        "description": "Lists the groups for an agent.",
+        "operationId": "list_groups_for_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -6989,7 +6989,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Group"
                   },
-                  "title": "Response List Agent Groups"
+                  "title": "Response List Groups For Agent"
                 }
               }
             }
