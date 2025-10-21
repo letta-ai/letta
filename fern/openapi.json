@@ -8879,7 +8879,7 @@
         "tags": ["_internal_runs"],
         "summary": "List Runs",
         "description": "List all runs.",
-        "operationId": "list_runs",
+        "operationId": "list_internal_runs",
         "parameters": [
           {
             "name": "agent_id",
@@ -9115,7 +9115,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Run"
                   },
-                  "title": "Response List Runs"
+                  "title": "Response List Internal Runs"
                 }
               }
             }
@@ -11091,7 +11091,7 @@
         "tags": ["runs"],
         "summary": "List Runs",
         "description": "List all runs.",
-        "operationId": "list_runs1",
+        "operationId": "list_runs",
         "parameters": [
           {
             "name": "agent_id",
