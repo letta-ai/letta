@@ -4584,7 +4584,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Modify Approval For Tool",
-        "description": "Attach a tool to an agent.",
+        "description": "Modify the approval requirement for a tool attached to an agent.\n\nAccepts requires_approval via request body (preferred) or query parameter (deprecated).",
         "operationId": "modify_approval_for_tool",
         "parameters": [
           {
@@ -4614,13 +4614,41 @@
           {
             "name": "requires_approval",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "boolean",
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whether the tool requires approval before execution",
+              "deprecated": true,
               "title": "Requires Approval"
-            }
+            },
+            "description": "Whether the tool requires approval before execution",
+            "deprecated": true
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModifyApprovalRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -26140,6 +26168,20 @@
         },
         "type": "object",
         "title": "ModalSandboxConfig"
+      },
+      "ModifyApprovalRequest": {
+        "properties": {
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "description": "Whether the tool requires approval before execution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["requires_approval"],
+        "title": "ModifyApprovalRequest",
+        "description": "Request body for modifying tool approval requirements."
       },
       "ModifyFeedbackRequest": {
         "properties": {

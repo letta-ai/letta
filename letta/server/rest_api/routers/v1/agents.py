@@ -8,7 +8,7 @@ from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException,
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
@@ -456,21 +456,41 @@ async def detach_tool_from_agent(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
+class ModifyApprovalRequest(BaseModel):
+    """Request body for modifying tool approval requirements."""
+
+    requires_approval: bool = Field(..., description="Whether the tool requires approval before execution")
+
+    model_config = ConfigDict(extra="forbid")
+
+
 @router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval_for_tool")
 async def modify_approval_for_tool(
     tool_name: str,
-    requires_approval: bool,
     agent_id: AgentId,
+    requires_approval: bool | None = Query(None, description="Whether the tool requires approval before execution", deprecated=True),
+    request: ModifyApprovalRequest | None = Body(None),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Attach a tool to an agent.
+    Modify the approval requirement for a tool attached to an agent.
+
+    Accepts requires_approval via request body (preferred) or query parameter (deprecated).
     """
+    # Prefer body over query param for backwards compatibility
+    if request is not None:
+        approval_value = request.requires_approval
+    elif requires_approval is not None:
+        approval_value = requires_approval
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="requires_approval must be provided either in request body or as query parameter",
+        )
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    await server.agent_manager.modify_approvals_async(
-        agent_id=agent_id, tool_name=tool_name, requires_approval=requires_approval, actor=actor
-    )
+    await server.agent_manager.modify_approvals_async(agent_id=agent_id, tool_name=tool_name, requires_approval=approval_value, actor=actor)
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
