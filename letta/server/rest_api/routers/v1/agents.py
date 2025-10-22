@@ -1683,17 +1683,12 @@ async def preview_raw_payload(
 
 @router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_messages")
 async def summarize_messages(
-    request_obj: Request,  # FastAPI Request
     agent_id: AgentId,
-    max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Summarize an agent's conversation history to a target message length.
-
-    This endpoint summarizes the current message history for a given agent,
-    truncating and compressing it down to the specified `max_message_length`.
+    Summarize an agent's conversation history.
     """
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)

@@ -7226,7 +7226,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Summarize Messages",
-        "description": "Summarize an agent's conversation history to a target message length.\n\nThis endpoint summarizes the current message history for a given agent,\ntruncating and compressing it down to the specified `max_message_length`.",
+        "description": "Summarize an agent's conversation history.",
         "operationId": "summarize_messages",
         "parameters": [
           {
@@ -7243,17 +7243,6 @@
               "title": "Agent Id"
             },
             "description": "The ID of the agent in the format 'agent-<uuid4>'"
-          },
-          {
-            "name": "max_message_length",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "description": "Maximum number of messages to retain after summarization.",
-              "title": "Max Message Length"
-            },
-            "description": "Maximum number of messages to retain after summarization."
           }
         ],
         "responses": {
