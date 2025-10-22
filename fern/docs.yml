@@ -26,6 +26,23 @@ tabs:
     display-name: Discord
     icon: fa-brands fa-discord
     href: https://discord.gg/letta
+<<<<<<< HEAD
+=======
+  community:
+    display-name: Developer Community
+    icon: fa-sharp fa-light fa-user-astronaut
+    skip-slug: true
+  install:
+    display-name: Download
+    icon: fa-sharp fa-light fa-download
+    skip-slug: true
+  showcase:
+    display-name: Examples
+    skip-slug: true
+  leaderboard:
+    display-name: Leaderboard
+    skip-slug: true
+>>>>>>> 1a47b8ece (docs: center documentation around current Letta architecture (#5634))
 landing-page:
   page: home
   path: pages/index.mdx
@@ -63,9 +80,24 @@ navigation:
         contents:
           - page: Agent basics
             path: pages/agents/overview.mdx
+<<<<<<< HEAD
           - page: Context hierarchy
             path: pages/agents/context_hierarchy.mdx
           - section: Memory
+=======
+          - page: Context Hierarchy
+            path: pages/agents/context_hierarchy.mdx
+          - page: Message Types
+            path: pages/agents/message_types.mdx
+
+      - section: Memory
+        path: pages/agents/memory.mdx
+        contents:
+          - page: Memory Blocks
+            path: pages/agents/memory_blocks.mdx
+          - section: Archival Memory
+            path: pages/agents/archival_memory_overview.mdx
+>>>>>>> 1a47b8ece (docs: center documentation around current Letta architecture (#5634))
             contents:
               - page: Memory overview
                 path: pages/agents/memory.mdx
@@ -337,6 +369,25 @@ navigation:
               - page: Vapi integration
                 path: pages/voice/voice_vapi.mdx
 
+
+      - section: Legacy & Migration
+        contents:
+          - page: Legacy Architecture Overview
+            path: pages/legacy/architectures_overview.mdx
+          - page: Migration Guide
+            path: pages/legacy/migration_guide.mdx
+          - page: MemGPT Agents (Legacy)
+            path: pages/legacy/memgpt_agents_legacy.mdx
+          - page: Workflows (Legacy)
+            path: pages/legacy/workflows_legacy.mdx
+          - page: Low-latency Agents (Legacy)
+            path: pages/legacy/low_latency_agents_legacy.mdx
+          - page: ReAct Agents (Legacy)
+            path: pages/legacy/react_agents_legacy.mdx
+          - page: Heartbeats (Legacy)
+            path: pages/legacy/heartbeats_legacy.mdx
+          - page: Architecture Naming History
+            path: pages/legacy/naming_history.mdx
 
       #- section: Tool Execution
       #  contents:
@@ -673,7 +724,6 @@ navigation:
           - page: Agentic RAG
             path: pages/cookbooks/rag-agentic.mdx
 
-
   # - tab: cookbooks
   #   layout:
   #     - section: Cookbooks
@@ -863,6 +913,7 @@ redirects:
     destination: "/guides/legacy/workflows_legacy"
   - source: "/guides/agents/architectures/low-latency"
     destination: "/guides/legacy/low_latency_agents_legacy"
+<<<<<<< HEAD
   - source: "/leaderboard"
     destination: "https://leaderboard.letta.com"
   - source: "/leaderboard/overview"
@@ -875,3 +926,5 @@ redirects:
     destination: "/guides/development-tools/testing-evals/letta-evals-overview"
   - source: "/guides/evals/overview"
     destination: "/guides/development-tools/testing-evals/letta-evals-overview"
+=======
+>>>>>>> 1a47b8ece (docs: center documentation around current Letta architecture (#5634))

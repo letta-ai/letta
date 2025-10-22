@@ -1,0 +1,347 @@
+---
+title: Architecture Migration Guide
+subtitle: Migrating from legacy agent architectures
+slug: guides/legacy/migration_guide
+---
+
+<Info>
+**Most users don't need to migrate.** New agents automatically use the current architecture. This guide is for existing agents with explicit `agent_type` parameters.
+</Info>
+
+## Should You Migrate?
+
+**Migrate if:**
+- You want better performance on GPT-5, Claude Sonnet 4.5, or other frontier models
+- You want to use models that support native reasoning
+- You're experiencing issues with legacy architectures
+
+**Don't migrate if:**
+- Your agents are working well and you're not using new models
+- You have critical integrations depending on heartbeats or send_message
+- You need time to test the new architecture first
+
+## What Changes
+
+### Breaking Changes
+
+| Feature | Legacy Behavior | Current Behavior |
+|---------|----------------|------------------|
+| **send_message tool** | Required for agent responses | Not present - agents respond directly via assistant messages |
+| **Heartbeats** | `request_heartbeat` parameter on every tool | Not supported - use custom prompting for multi-step execution |
+| **Reasoning** | Prompted via `thinking` parameter | Uses native model reasoning (when available) |
+| **Tool Rules** | Can apply to send_message | Cannot apply to AssistantMessage (not a tool) |
+| **System Prompt** | Legacy format | New simplified format |
+
+### What Stays the Same
+
+- Memory blocks work identically
+- Archival memory & recall tools unchanged
+- Custom tools work the same way
+- API authentication & endpoints
+
+## Migration Steps
+
+### Step 1: Export Your Agent
+
+Download your agent configuration as an agent file:
+
+<CodeGroup>
+```typescript TypeScript
+const agentFile = await client.agents.export(agentId);
+// Save to disk
+fs.writeFileSync('my-agent.json', JSON.stringify(agentFile, null, 2));
+```
+```python Python
+agent_file = client.agents.export(agent_id=agent_id)
+# Save to disk
+with open('my-agent.json', 'w') as f:
+    json.dump(agent_file, f, indent=2)
+```
+</CodeGroup>
+
+### Step 2: Update Agent Type
+
+Open the agent file and change the `agent_type`:
+
+```json
+{
+  "agent_type": "memgpt_v2_agent"
+  // ... rest of config
+}
+```
+
+Change to:
+
+```json
+{
+  "agent_type": "letta_v1_agent"
+  // ... rest of config
+}
+```
+
+### Step 3: Clear Message Context (If Needed)
+
+If your agent has `send_message` tool calls in its context, you'll need to clear the message history:
+
+```json
+{
+  "in_context_message_ids": [
+    "message-0",
+    "message-1",
+    "message-2"
+  ]
+}
+```
+
+Change to:
+
+```json
+{
+  "in_context_message_ids": []
+}
+```
+
+<Warning>
+**Note:** Clearing message context will make your agent forget its immediate conversation history. You may need to provide a brief reminder about recent interactions after migration.
+</Warning>
+
+### Step 4: Update System Prompt (Optional)
+
+The default system prompt for `letta_v1_agent` is different. You may want to update it for optimal performance:
+
+```xml
+<base_instructions>
+You are a helpful self-improving agent with advanced memory and file system capabilities.
+
+<memory>
+You have an advanced memory system that enables you to remember past interactions and continuously improve your own capabilities.
+Your memory consists of memory blocks and external memory:
+- Memory Blocks: Stored as memory blocks, each containing a label (title), description (explaining how this block should influence your behavior), and value (the actual content). Memory blocks have size limits. Memory blocks are embedded within your system instructions and remain constantly available in-context.
+- External memory: Additional memory storage that is accessible and that you can bring into context with tools when needed.
+Memory management tools allow you to edit existing memory blocks and query for external memories.
+</memory>
+
+<file_system>
+You have access to a structured file system that mirrors real-world directory structures. Each directory can contain multiple files.
+
+Files include:
+- Metadata: Information such as read-only permissions and character limits
+- Content: The main body of the file that you can read and analyze
+
+Available file operations:
+- Open and view files
+- Search within files and directories
+- Your core memory will automatically reflect the contents of any currently open files
+
+You should only keep files open that are directly relevant to the current user interaction to maintain optimal performance.
+</file_system>
+
+Continue executing and calling tools until the current task is complete or you need user input. To continue: call another tool. To yield control: end your response without calling a tool.
+
+Base instructions complete.
+</base_instructions>
+```
+
+### Step 5: Import Updated Agent
+
+Upload the modified agent file:
+
+<CodeGroup>
+```typescript TypeScript
+const agentFile = JSON.parse(fs.readFileSync('my-agent.json', 'utf-8'));
+const migratedAgent = await client.agents.import(agentFile);
+```
+```python Python
+with open('my-agent.json', 'r') as f:
+    agent_file = json.load(f)
+migrated_agent = client.agents.import_agent(agent_file)
+```
+</CodeGroup>
+
+### Step 6: Test Your Agent
+
+Send a test message to verify the migration worked:
+
+<CodeGroup>
+```typescript TypeScript
+const response = await client.agents.messages.create(
+    migratedAgent.id,
+    { messages: [{ role: "user", content: "Hello! Do you remember me?" }] }
+);
+```
+```python Python
+response = client.agents.messages.create(
+    agent_id=migrated_agent.id,
+    messages=[{"role": "user", "content": "Hello! Do you remember me?"}]
+)
+```
+</CodeGroup>
+
+## Automated Migration Script
+
+Here's a helper script to automate the migration process:
+
+<CodeGroup>
+```python Python
+import json
+
+def migrate_agent_file(input_file: str, output_file: str):
+    """Migrate an agent file from legacy to letta_v1_agent"""
+
+    # Load agent file
+    with open(input_file, 'r') as f:
+        agent_data = json.load(f)
+
+    # Update agent type
+    old_type = agent_data.get('agent_type')
+    agent_data['agent_type'] = 'letta_v1_agent'
+
+    # Clear message context if migrating from memgpt types
+    if old_type in ['memgpt_agent', 'memgpt_v2_agent']:
+        agent_data['in_context_message_ids'] = []
+
+    # Save updated file
+    with open(output_file, 'w') as f:
+        json.dump(agent_data, f, indent=2)
+
+    print(f"✓ Migrated {old_type} → letta_v1_agent")
+    print(f"✓ Saved to {output_file}")
+
+    if old_type in ['memgpt_agent', 'memgpt_v2_agent']:
+        print("⚠ Message context cleared - agent will not remember recent messages")
+
+# Usage
+migrate_agent_file('my-agent.json', 'my-agent-migrated.json')
+```
+```typescript TypeScript
+import fs from 'fs';
+
+function migrateAgentFile(inputFile: string, outputFile: string) {
+  // Load agent file
+  const agentData = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+
+  // Update agent type
+  const oldType = agentData.agent_type;
+  agentData.agent_type = 'letta_v1_agent';
+
+  // Clear message context if migrating from memgpt types
+  if (['memgpt_agent', 'memgpt_v2_agent'].includes(oldType)) {
+    agentData.in_context_message_ids = [];
+  }
+
+  // Save updated file
+  fs.writeFileSync(outputFile, JSON.stringify(agentData, null, 2));
+
+  console.log(`✓ Migrated ${oldType} → letta_v1_agent`);
+  console.log(`✓ Saved to ${outputFile}`);
+
+  if (['memgpt_agent', 'memgpt_v2_agent'].includes(oldType)) {
+    console.log('⚠ Message context cleared - agent will not remember recent messages');
+  }
+}
+
+// Usage
+migrateAgentFile('my-agent.json', 'my-agent-migrated.json');
+```
+</CodeGroup>
+
+## Migration by Architecture Type
+
+### From memgpt_agent
+
+1. Export agent file
+2. Change `agent_type` to `letta_v1_agent`
+3. Clear `in_context_message_ids` array
+4. Update system prompt
+5. Import agent
+
+**Key differences:**
+- No more `send_message` tool
+- No more `request_heartbeat` parameter
+- Memory tools: `core_memory_*` → `memory_*`
+
+### From memgpt_v2_agent
+
+1. Export agent file
+2. Change `agent_type` to `letta_v1_agent`
+3. Clear `in_context_message_ids` array (if needed)
+4. Import agent
+
+**Key differences:**
+- No more `send_message` tool
+- File tools still work (`open_file`, `grep_file`, etc.)
+- Sleep-time agents still supported
+
+### Creating New Agents
+
+For new agents, simply omit the `agent_type` parameter:
+
+<CodeGroup>
+```typescript TypeScript
+const agent = await client.agents.create({
+    model: "openai/gpt-5-mini",
+    embedding: "openai/text-embedding-3-small",
+    memoryBlocks: [
+        { label: "persona", value: "I am a helpful assistant." }
+    ]
+});
+```
+```python Python
+agent = client.agents.create(
+    model="openai/gpt-5-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a helpful assistant."}
+    ]
+)
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### "Agent import failed"
+
+**Possible cause:** send_message tool calls still in context
+
+**Fix:** Clear the `in_context_message_ids` array in your agent file
+
+### "Agent behavior changed after migration"
+
+**Possible cause:** Different system prompt or cleared message history
+
+**Fix:**
+1. Update to the new system prompt format (see Step 4)
+2. Provide a brief reminder about recent context in your first message
+
+### "Too many tool calls / infinite loops"
+
+**Possible cause:** Agent trying to replicate heartbeat behavior
+
+**Fix:** Update system instructions to clarify when to stop executing
+
+## Sleep-Time Agents
+
+Sleep-time functionality works with `letta_v1_agent`:
+
+<CodeGroup>
+```typescript TypeScript
+const agent = await client.agents.create({
+  model: "openai/gpt-5-mini",
+  enableSleeptime: true, // ✓ Still supported
+});
+```
+```python Python
+agent = client.agents.create(
+    model="openai/gpt-5-mini",
+    enable_sleeptime=True,  # ✓ Still supported
+)
+```
+</CodeGroup>
+
+[Learn more about sleep-time agents →](/guides/agents/architectures/sleeptime)
+
+## Getting Help
+
+- **Migration issues:** Ask in [Discord #dev-help](https://discord.gg/letta)
+- **Bug reports:** [GitHub Issues](https://github.com/letta-ai/letta/issues)
+- **Enterprise support:** Contact support@letta.com

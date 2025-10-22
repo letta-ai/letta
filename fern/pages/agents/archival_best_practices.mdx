@@ -239,34 +239,6 @@ client.agents.update(
 ```
 </CodeGroup>
 
-**Require archival insertion before exit:**
-
-<CodeGroup>
-```typescript TypeScript
-await client.agents.update(agent.id, {
-    toolRules: [
-        {
-            type: "child",
-            toolName: "send_message",
-            children: ["archival_memory_insert"]
-        }
-    ]
-});
-```
-```python Python
-from letta_client.types import ChildToolRule
-
-client.agents.update(
-    agent_id=agent.id,
-    tool_rules=[
-        ChildToolRule(
-            tool_name="send_message",
-            children=["archival_memory_insert"]
-        )
-    ]
-)
-```
-</CodeGroup>
 
 <Info>
 **Using the ADE:** Tool rules can also be configured in the Agent Development Environment's Tool Manager interface.
