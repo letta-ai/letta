@@ -1062,12 +1062,12 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "description": (str, type(None)),
         "metadata": (dict, type(None)),
         # Memory and tools
-        "memory": Memory,
+        "memory": Memory,  # deprecated
         "blocks": list,
         "tools": list,
         "sources": list,
         "tags": list,
-        "tool_exec_environment_variables": list,
+        "tool_exec_environment_variables": list,  # deprecated
         "secrets": list,
         # Project and template fields
         "project_id": (str, type(None)),
@@ -1081,7 +1081,8 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "message_buffer_autoclear": bool,
         "enable_sleeptime": (bool, type(None)),
         # Multi-agent
-        "multi_agent_group": (Group, type(None)),
+        "multi_agent_group": (Group, type(None)),  # deprecated
+        "managed_group": (Group, type(None)),
         # Run metrics
         "last_run_completion": (datetime, type(None)),
         "last_run_duration_ms": (int, type(None)),

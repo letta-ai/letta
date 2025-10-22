@@ -118,8 +118,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         description="If set to True, memory management will move to a background agent thread.",
     )
 
-    multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
-
+    multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages", deprecated=True)
+    managed_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
     # Run metrics
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")

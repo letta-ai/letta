@@ -16729,6 +16729,18 @@
                 "type": "null"
               }
             ],
+            "description": "The multi-agent group that this agent manages",
+            "deprecated": true
+          },
+          "managed_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Group"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "The multi-agent group that this agent manages"
           },
           "last_run_completion": {
