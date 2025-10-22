@@ -1093,9 +1093,9 @@ async def list_messages(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     group_id: str | None = Query(None, description="Group ID to filter messages by."),
-    use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
-    assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
-    assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
+    use_assistant_message: bool = Query(True, description="Whether to use assistant messages", deprecated=True),
+    assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool.", deprecated=True),
+    assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument.", deprecated=True),
     include_err: bool | None = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),

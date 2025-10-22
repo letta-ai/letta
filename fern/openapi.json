@@ -6462,10 +6462,12 @@
             "schema": {
               "type": "boolean",
               "description": "Whether to use assistant messages",
+              "deprecated": true,
               "default": true,
               "title": "Use Assistant Message"
             },
-            "description": "Whether to use assistant messages"
+            "description": "Whether to use assistant messages",
+            "deprecated": true
           },
           {
             "name": "assistant_message_tool_name",
@@ -6474,10 +6476,12 @@
             "schema": {
               "type": "string",
               "description": "The name of the designated message tool.",
+              "deprecated": true,
               "default": "send_message",
               "title": "Assistant Message Tool Name"
             },
-            "description": "The name of the designated message tool."
+            "description": "The name of the designated message tool.",
+            "deprecated": true
           },
           {
             "name": "assistant_message_tool_kwarg",
@@ -6486,10 +6490,12 @@
             "schema": {
               "type": "string",
               "description": "The name of the message argument.",
+              "deprecated": true,
               "default": "message",
               "title": "Assistant Message Tool Kwarg"
             },
-            "description": "The name of the message argument."
+            "description": "The name of the message argument.",
+            "deprecated": true
           },
           {
             "name": "include_err",
@@ -7882,10 +7888,12 @@
             "schema": {
               "type": "boolean",
               "description": "Whether to use assistant messages",
+              "deprecated": true,
               "default": true,
               "title": "Use Assistant Message"
             },
-            "description": "Whether to use assistant messages"
+            "description": "Whether to use assistant messages",
+            "deprecated": true
           },
           {
             "name": "assistant_message_tool_name",
@@ -7894,10 +7902,12 @@
             "schema": {
               "type": "string",
               "description": "The name of the designated message tool.",
+              "deprecated": true,
               "default": "send_message",
               "title": "Assistant Message Tool Name"
             },
-            "description": "The name of the designated message tool."
+            "description": "The name of the designated message tool.",
+            "deprecated": true
           },
           {
             "name": "assistant_message_tool_kwarg",
@@ -7906,10 +7916,12 @@
             "schema": {
               "type": "string",
               "description": "The name of the message argument.",
+              "deprecated": true,
               "default": "message",
               "title": "Assistant Message Tool Kwarg"
             },
-            "description": "The name of the message argument."
+            "description": "The name of the message argument.",
+            "deprecated": true
           }
         ],
         "responses": {
