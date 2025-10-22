@@ -220,7 +220,7 @@ async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, pri
 @pytest.mark.asyncio
 async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user):
     """Test bulk detaching tools from a nonexistent agent."""
-    nonexistent_agent_id = "nonexistent-agent-id"
+    nonexistent_agent_id = f"agent-{uuid.uuid4()}"
     tool_ids = [print_tool.id, other_tool.id]
 
     with pytest.raises(LettaAgentNotFoundError):
@@ -230,19 +230,19 @@ async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_too
 async def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test attaching a tool to a nonexistent agent."""
     with pytest.raises(LettaAgentNotFoundError):
-        await server.agent_manager.attach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id=f"agent-{uuid.uuid4()}", tool_id=print_tool.id, actor=default_user)
 
 
 async def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent tool to an agent."""
     with pytest.raises(NoResultFound):
-        await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
+        await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=f"tool-{uuid.uuid4()}", actor=default_user)
 
 
 async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test detaching a tool from a nonexistent agent."""
     with pytest.raises(LettaAgentNotFoundError):
-        await server.agent_manager.detach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
+        await server.agent_manager.detach_tool_async(agent_id=f"agent-{uuid.uuid4()}", tool_id=print_tool.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -330,7 +330,7 @@ async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agen
 @pytest.mark.asyncio
 async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user):
     """Test bulk attaching tools to a nonexistent agent."""
-    nonexistent_agent_id = "nonexistent-agent-id"
+    nonexistent_agent_id = f"agent-{uuid.uuid4()}"
     tool_ids = [print_tool.id, other_tool.id]
 
     with pytest.raises(LettaAgentNotFoundError):
@@ -2187,7 +2187,8 @@ async def test_list_tools_with_corrupted_tool(server: SyncServer, default_user, 
     from letta.orm.tool import Tool as ToolModel
 
     async with db_registry.async_session() as session:
-        # Create a tool with no json_schema (corrupted state)
+        # Create a tool with corrupted ID format (bypassing validation)
+        # This simulates a tool that somehow got corrupted in the database
         corrupted_tool = ToolModel(
             id=f"tool-corrupted-{uuid.uuid4()}",
             name="corrupted_tool",

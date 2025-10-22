@@ -9,6 +9,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.group import Group as GroupModel
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.group import Group as PydanticGroup, GroupCreate, GroupUpdate, InternalTemplateGroupCreate, ManagerType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
@@ -16,6 +17,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 
 class GroupManager:
@@ -62,6 +64,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def retrieve_group_async(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -119,6 +122,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def modify_group_async(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -182,6 +186,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def delete_group_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -189,6 +194,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def list_group_messages_async(
         self,
         actor: PydanticUser,
@@ -226,6 +232,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def reset_messages_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -241,6 +248,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -253,6 +261,8 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @raise_on_invalid_id(param_name="last_processed_message_id", expected_prefix=PrimitiveType.MESSAGE)
     async def get_last_processed_message_id_and_update_async(
         self, group_id: str, last_processed_message_id: str, actor: PydanticUser
     ) -> str:

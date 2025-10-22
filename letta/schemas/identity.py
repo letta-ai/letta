@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from pydantic import Field
 
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
@@ -28,7 +29,7 @@ class IdentityPropertyType(str, Enum):
 
 
 class IdentityBase(LettaBase):
-    __id_prefix__ = "identity"
+    __id_prefix__ = PrimitiveType.IDENTITY.value
 
 
 class IdentityProperty(LettaBase):

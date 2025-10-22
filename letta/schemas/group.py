@@ -3,6 +3,7 @@ from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
@@ -20,7 +21,7 @@ class ManagerConfig(BaseModel):
 
 
 class GroupBase(LettaBase):
-    __id_prefix__ = "group"
+    __id_prefix__ = PrimitiveType.GROUP.value
 
 
 class Group(GroupBase):

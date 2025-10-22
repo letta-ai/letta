@@ -14,7 +14,7 @@ from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, RunStatus
+from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, RunStatus, PrimitiveType
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_response import LettaResponse
@@ -31,6 +31,7 @@ from letta.services.helpers.agent_manager_helper import validate_agent_exists_as
 from letta.services.message_manager import MessageManager
 from letta.services.step_manager import StepManager
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -85,6 +86,7 @@ class RunManager:
         return run.to_pydantic()
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_by_id(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Get a run by its ID."""
         async with db_registry.async_session() as session:
@@ -176,6 +178,7 @@ class RunManager:
             return [run.to_pydantic() for run in runs]
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def delete_run(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Delete a run by its ID."""
         async with db_registry.async_session() as session:
@@ -189,11 +192,11 @@ class RunManager:
         return pydantic_run
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def update_run_by_id_async(
         self, run_id: str, update: RunUpdate, actor: PydanticUser, refresh_result_messages: bool = True
     ) -> PydanticRun:
         """Update a run using a RunUpdate object."""
-
         async with db_registry.async_session() as session:
             run = await RunModel.read_async(db_session=session, identifier=run_id, actor=actor)
 
@@ -327,6 +330,7 @@ class RunManager:
             return result
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_usage(self, run_id: str, actor: PydanticUser) -> LettaUsageStatistics:
         """Get usage statistics for a run."""
         async with db_registry.async_session() as session:
@@ -344,6 +348,7 @@ class RunManager:
         return total_usage
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_messages(
         self,
         run_id: str,
@@ -378,6 +383,7 @@ class RunManager:
         return letta_messages
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_request_config(self, run_id: str, actor: PydanticUser) -> Optional[LettaRequestConfig]:
         """Get the letta request config from a run."""
         async with db_registry.async_session() as session:
@@ -388,6 +394,7 @@ class RunManager:
             return pydantic_run.request_config
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_metrics_async(self, run_id: str, actor: PydanticUser) -> PydanticRunMetrics:
         """Get metrics for a run."""
         async with db_registry.async_session() as session:
@@ -395,6 +402,7 @@ class RunManager:
             return metrics.to_pydantic()
 
     @enforce_types
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_steps(
         self,
         run_id: str,

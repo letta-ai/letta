@@ -4,14 +4,14 @@ from typing import Optional
 from pydantic import ConfigDict, Field
 
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.schemas.enums import RunStatus
+from letta.schemas.enums import PrimitiveType, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.letta_stop_reason import StopReasonType
 
 
 class RunBase(LettaBase):
-    __id_prefix__ = "run"
+    __id_prefix__ = PrimitiveType.RUN.value
 
 
 class Run(RunBase):

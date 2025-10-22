@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from letta.schemas.enums import PrimitiveType
+
 if TYPE_CHECKING:
     from letta.schemas.letta_request import LettaRequest
 
@@ -15,7 +17,7 @@ from letta.schemas.letta_stop_reason import StopReasonType
 
 
 class JobBase(OrmMetadataBase):
-    __id_prefix__ = "job"
+    __id_prefix__ = PrimitiveType.JOB.value
     status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
     created_at: datetime = Field(default_factory=get_utc_time, description="The unix timestamp of when the job was created.")
 

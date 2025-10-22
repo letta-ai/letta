@@ -44,7 +44,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
+from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -174,21 +174,21 @@ async def test_detach_source(server: SyncServer, sarah_agent, default_source, de
 async def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
     """Test attaching a source to a nonexistent agent."""
     with pytest.raises(NoResultFound):
-        await server.agent_manager.attach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id=f"agent-{uuid.uuid4()}", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
 async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent source to an agent."""
     with pytest.raises(NoResultFound):
-        await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
+        await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=f"source-{uuid.uuid4()}", actor=default_user)
 
 
 @pytest.mark.asyncio
 async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
     """Test detaching a source from a nonexistent agent."""
     with pytest.raises(LettaAgentNotFoundError):
-        await server.agent_manager.detach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
+        await server.agent_manager.detach_source_async(agent_id=f"agent-{uuid.uuid4()}", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -234,7 +234,7 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
 
 async def test_list_attached_agents_nonexistent_source(server: SyncServer, default_user):
     """Test listing agents for a nonexistent source."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.source_manager.list_attached_agents(source_id="nonexistent-source-id", actor=default_user)
 
 

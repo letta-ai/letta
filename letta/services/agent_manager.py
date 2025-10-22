@@ -58,7 +58,7 @@ from letta.schemas.agent import (
 )
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.llm_config import LLMConfig
@@ -110,7 +110,7 @@ from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, model_settings, settings
 from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
-from letta.validators import is_valid_id
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -672,6 +672,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def update_agent_async(
         self,
         agent_id: str,
@@ -976,6 +977,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_agent_by_id_async(
         self,
         agent_id: str,
@@ -983,10 +985,6 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
-
-        # Check if agent_id matches uuid4 format
-        if not is_valid_id("agent", agent_id):
-            raise LettaAgentNotFoundError(f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
 
         async with db_registry.async_session() as session:
             try:
@@ -1039,6 +1037,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_agent_archive_ids_async(self, agent_id: str, actor: PydanticUser) -> List[str]:
         """Get all archive IDs associated with an agent."""
         from letta.orm import ArchivesAgents
@@ -1052,6 +1051,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def validate_agent_exists_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Validate that an agent exists and user has access to it.
@@ -1069,6 +1069,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -1131,6 +1132,7 @@ class AgentManager:
     # TODO: This can also be made more efficient, instead of getting, setting, we can do it all in one db session for one query.
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
         return await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
@@ -1143,6 +1145,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
         return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
@@ -1324,6 +1327,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
@@ -1434,6 +1438,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
         """
         Update internal memory object and system prompt if there have been modifications.
@@ -1546,6 +1551,8 @@ class AgentManager:
     # ======================================================================================================================
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
     async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a source to an agent.
@@ -1615,6 +1622,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
         """
         Async version of append_system_message.
@@ -1702,6 +1710,8 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
     async def detach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
@@ -1787,6 +1797,8 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
     async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent. For sleeptime agents, also attaches to paired agents in the same group."""
         async with db_registry.async_session() as session:
@@ -2373,8 +2385,9 @@ class AgentManager:
     # Tool Management
     # ======================================================================================================================
     @enforce_types
-    @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
     async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Attaches a tool to an agent.
@@ -2443,6 +2456,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def bulk_attach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
         """
         Efficiently attaches multiple tools to an agent in a single operation.
@@ -2608,6 +2622,8 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
     async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Detaches a tool from an agent.
@@ -2637,6 +2653,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def bulk_detach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
         """
         Efficiently detaches multiple tools from an agent in a single operation.
@@ -2673,6 +2690,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def modify_approvals_async(self, agent_id: str, tool_name: str, requires_approval: bool, actor: PydanticUser) -> None:
         def is_target_rule(rule):
             return rule.tool_name == tool_name and rule.type == "requires_approval"
@@ -3021,6 +3039,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_agent_files_config_async(self, agent_id: str, actor: PydanticUser) -> Tuple[int, int]:
         """Get per_file_view_window_char_limit and max_files_open for an agent.
 
@@ -3077,6 +3096,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_agent_max_files_open_async(self, agent_id: str, actor: PydanticUser) -> int:
         """Get max_files_open for an agent.
 
@@ -3105,6 +3125,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_agent_per_file_view_window_char_limit_async(self, agent_id: str, actor: PydanticUser) -> int:
         """Get per_file_view_window_char_limit for an agent.
 
@@ -3131,7 +3152,9 @@ class AgentManager:
 
             return row
 
+    @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
         agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
             agent_id=agent_id, actor=actor, force=True, dry_run=True

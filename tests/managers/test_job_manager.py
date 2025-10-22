@@ -44,7 +44,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
+from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -233,7 +233,7 @@ async def test_update_job_auto_complete(server: SyncServer, default_user):
 async def test_get_job_not_found(server: SyncServer, default_user):
     """Test fetching a non-existent job."""
     non_existent_job_id = "nonexistent-id"
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.job_manager.get_job_by_id_async(non_existent_job_id, actor=default_user)
 
 
@@ -241,7 +241,7 @@ async def test_get_job_not_found(server: SyncServer, default_user):
 async def test_delete_job_not_found(server: SyncServer, default_user):
     """Test deleting a non-existent job."""
     non_existent_job_id = "nonexistent-id"
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.job_manager.delete_job_by_id_async(non_existent_job_id, actor=default_user)
 
 
@@ -412,9 +412,6 @@ async def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
 # ======================================================================================================================
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_record_ttft(server: SyncServer, default_user):
     """Test recording time to first token for a job."""
@@ -478,9 +475,11 @@ async def test_record_timing_metrics_together(server: SyncServer, default_user):
 
 @pytest.mark.asyncio
 async def test_record_timing_invalid_job(server: SyncServer, default_user):
-    """Test recording timing metrics for non-existent job fails gracefully."""
-    # Try to record TTFT for non-existent job - should not raise exception but log warning
-    await server.job_manager.record_ttft("nonexistent_job_id", 1_000_000_000, default_user)
+    """Test recording timing metrics for non-existent job raises LettaInvalidArgumentError."""
+    # Try to record TTFT for non-existent job - should raise LettaInvalidArgumentError
+    with pytest.raises(LettaInvalidArgumentError):
+        await server.job_manager.record_ttft("nonexistent_job_id", 1_000_000_000, default_user)
 
-    # Try to record response duration for non-existent job - should not raise exception but log warning
-    await server.job_manager.record_response_duration("nonexistent_job_id", 2_000_000_000, default_user)
+    # Try to record response duration for non-existent job - should raise LettaInvalidArgumentError
+    with pytest.raises(LettaInvalidArgumentError):
+        await server.job_manager.record_response_duration("nonexistent_job_id", 2_000_000_000, default_user)

@@ -12,6 +12,7 @@ from letta.orm.identity import Identity as IdentityModel
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.identity import (
     Identity as PydanticIdentity,
     IdentityCreate,
@@ -24,6 +25,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 
 class IdentityManager:
@@ -62,6 +64,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def get_identity_async(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
@@ -143,6 +146,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def update_identity_async(
         self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
     ) -> PydanticIdentity:
@@ -206,6 +210,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def upsert_identity_properties_async(
         self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser
     ) -> PydanticIdentity:
@@ -223,6 +228,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def delete_identity_async(self, identity_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
@@ -280,6 +286,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def list_agents_for_identity_async(
         self,
         identity_id: str,
@@ -311,6 +318,7 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     async def list_blocks_for_identity_async(
         self,
         identity_id: str,

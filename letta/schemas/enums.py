@@ -1,6 +1,31 @@
 from enum import Enum, StrEnum
 
 
+class PrimitiveType(str, Enum):
+    """
+    Enum for all primitive resource types in Letta.
+
+    The enum values ARE the actual ID prefixes used in the system.
+    This serves as the single source of truth for all ID prefixes.
+    """
+
+    AGENT = "agent"
+    MESSAGE = "message"
+    RUN = "run"
+    JOB = "job"
+    GROUP = "group"
+    BLOCK = "block"
+    FILE = "file"
+    FOLDER = "source"  # Note: folder IDs use "source" prefix for historical reasons
+    SOURCE = "source"
+    TOOL = "tool"
+    ARCHIVE = "archive"
+    PROVIDER = "provider"
+    SANDBOX_CONFIG = "sandbox"  # Note: sandbox_config IDs use "sandbox" prefix
+    STEP = "step"
+    IDENTITY = "identity"
+
+
 class ProviderType(str, Enum):
     anthropic = "anthropic"
     azure = "azure"

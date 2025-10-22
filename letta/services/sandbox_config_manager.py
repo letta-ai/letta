@@ -5,7 +5,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import SandboxConfig as SandboxConfigModel, SandboxEnvironmentVariable as SandboxEnvVarModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import SandboxType
+from letta.schemas.enums import PrimitiveType, SandboxType
 from letta.schemas.environment_variables import (
     SandboxEnvironmentVariable as PydanticEnvVar,
     SandboxEnvironmentVariableCreate,
@@ -20,6 +20,7 @@ from letta.schemas.sandbox_config import (
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types, printd
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -101,6 +102,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def update_sandbox_config_async(
         self, sandbox_config_id: str, sandbox_update: SandboxConfigUpdate, actor: PydanticUser
     ) -> PydanticSandboxConfig:
@@ -129,6 +131,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def delete_sandbox_config_async(self, sandbox_config_id: str, actor: PydanticUser) -> PydanticSandboxConfig:
         """Delete a sandbox configuration by its ID."""
         async with db_registry.async_session() as session:
@@ -176,6 +179,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def create_sandbox_env_var_async(
         self, env_var_create: SandboxEnvironmentVariableCreate, sandbox_config_id: str, actor: PydanticUser
     ) -> PydanticEnvVar:
@@ -266,6 +270,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def list_sandbox_env_vars_async(
         self,
         sandbox_config_id: str,
@@ -302,6 +307,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     def get_sandbox_env_vars_as_dict(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -315,6 +321,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def get_sandbox_env_vars_as_dict_async(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -324,6 +331,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     async def get_sandbox_env_var_by_key_and_sandbox_config_id_async(
         self, key: str, sandbox_config_id: str, actor: Optional[PydanticUser] = None
     ) -> Optional[PydanticEnvVar]:

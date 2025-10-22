@@ -8,6 +8,7 @@ from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_C
 from letta.errors import AgentExportProcessingError
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
@@ -57,7 +58,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         embedding_config (EmbeddingConfig): The embedding configuration used by the agent.
     """
 
-    __id_prefix__ = "agent"
+    __id_prefix__ = PrimitiveType.AGENT.value
 
     # NOTE: this is what is returned to the client and also what is used to initialize `Agent`
     id: str = Field(..., description="The id of the agent. Assigned by the database.")

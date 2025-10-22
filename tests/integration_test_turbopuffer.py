@@ -286,7 +286,7 @@ async def test_turbopuffer_metadata_attributes(default_user, enable_turbopuffer)
         pytest.skip("No Turbopuffer API key available")
 
     client = TurbopufferClient()
-    archive_id = f"test-archive-{datetime.now().timestamp()}"
+    archive_id = f"archive-{uuid.uuid4()}"
 
     try:
         # Insert passages with various metadata
@@ -391,7 +391,7 @@ async def test_hybrid_search_with_real_tpuf(default_user, enable_turbopuffer):
     from letta.helpers.tpuf_client import TurbopufferClient
 
     client = TurbopufferClient()
-    archive_id = f"test-hybrid-{datetime.now().timestamp()}"
+    archive_id = f"archive-{uuid.uuid4()}"
     org_id = str(uuid.uuid4())
 
     try:
@@ -497,7 +497,7 @@ async def test_tag_filtering_with_real_tpuf(default_user, enable_turbopuffer):
     from letta.helpers.tpuf_client import TurbopufferClient
 
     client = TurbopufferClient()
-    archive_id = f"test-tags-{datetime.now().timestamp()}"
+    archive_id = f"archive-{uuid.uuid4()}"
     org_id = str(uuid.uuid4())
 
     try:
@@ -628,7 +628,7 @@ async def test_temporal_filtering_with_real_tpuf(default_user, enable_turbopuffe
     client = TurbopufferClient()
 
     # Create a unique archive ID for this test
-    archive_id = f"test-temporal-{uuid.uuid4()}"
+    archive_id = f"archive-{uuid.uuid4()}"
 
     try:
         # Create passages with different timestamps

@@ -5,7 +5,7 @@ from pydantic import Field
 
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import VectorDBProvider
+from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.letta_base import LettaBase
 
 
@@ -14,7 +14,7 @@ class BaseSource(LettaBase):
     Shared attributes across all source schemas.
     """
 
-    __id_prefix__ = "source"
+    __id_prefix__ = PrimitiveType.SOURCE.value
 
     # Core source fields
     name: str = Field(..., description="The name of the source.")

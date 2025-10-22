@@ -3,14 +3,14 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import Field
 
-from letta.schemas.enums import StepStatus
+from letta.schemas.enums import PrimitiveType, StepStatus
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message
 
 
 class StepBase(LettaBase):
-    __id_prefix__ = "step"
+    __id_prefix__ = PrimitiveType.STEP.value
 
 
 class Step(StepBase):

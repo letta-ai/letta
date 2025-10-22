@@ -11,6 +11,7 @@ from letta.constants import (
     LETTA_VOICE_TOOL_MODULE_NAME,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
+from letta.schemas.enums import PrimitiveType
 
 # MCP Tool metadata constants for schema health status
 MCP_TOOL_METADATA_SCHEMA_STATUS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_STATUS"
@@ -28,7 +29,7 @@ logger = get_logger(__name__)
 
 
 class BaseTool(LettaBase):
-    __id_prefix__ = "tool"
+    __id_prefix__ = PrimitiveType.TOOL.value
 
 
 class Tool(BaseTool):

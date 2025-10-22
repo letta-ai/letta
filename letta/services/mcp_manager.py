@@ -25,6 +25,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.mcp_oauth import MCPOAuth, OAuthSessionStatus
 from letta.orm.mcp_server import MCPServer as MCPServerModel
 from letta.orm.tool import Tool as ToolModel
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.mcp import (
     MCPOAuthSession,
     MCPOAuthSessionCreate,
@@ -47,6 +48,7 @@ from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClie
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings, tool_settings
 from letta.utils import enforce_types, printd, safe_create_task_with_return
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -60,6 +62,7 @@ class MCPManager:
         self.cached_mcp_servers = {}  # maps id -> async connection
 
     @enforce_types
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def list_mcp_server_tools(self, mcp_server_name: str, actor: PydanticUser, agent_id: Optional[str] = None) -> List[MCPTool]:
         """Get a list of all tools for a specific MCP server."""
         mcp_client = None

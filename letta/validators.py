@@ -1,48 +1,21 @@
+import inspect
 import re
+from functools import wraps
 from typing import Annotated
 
 from fastapi import Path
 
-from letta.schemas.agent import AgentState
-from letta.schemas.archive import ArchiveBase
-from letta.schemas.block import BaseBlock
-from letta.schemas.file import FileMetadataBase
-from letta.schemas.folder import BaseFolder
-from letta.schemas.group import GroupBase
-from letta.schemas.identity import IdentityBase
-from letta.schemas.job import JobBase
-from letta.schemas.message import BaseMessage
-from letta.schemas.providers import ProviderBase
-from letta.schemas.run import RunBase
-from letta.schemas.sandbox_config import SandboxConfigBase
-from letta.schemas.source import BaseSource
-from letta.schemas.step import StepBase
-from letta.schemas.tool import BaseTool
+from letta.errors import LettaInvalidArgumentError
+from letta.schemas.enums import PrimitiveType  # PrimitiveType is now in schemas.enums
 
-# TODO: extract this list from routers/v1/__init__.py and ROUTERS
-primitives = [
-    AgentState.__id_prefix__,
-    BaseMessage.__id_prefix__,
-    RunBase.__id_prefix__,
-    JobBase.__id_prefix__,
-    GroupBase.__id_prefix__,
-    BaseBlock.__id_prefix__,
-    FileMetadataBase.__id_prefix__,
-    BaseFolder.__id_prefix__,
-    BaseSource.__id_prefix__,
-    BaseTool.__id_prefix__,
-    ArchiveBase.__id_prefix__,
-    ProviderBase.__id_prefix__,
-    SandboxConfigBase.__id_prefix__,
-    StepBase.__id_prefix__,
-    IdentityBase.__id_prefix__,
-]
+# Map from PrimitiveType to the actual prefix string (which is just the enum value)
+PRIMITIVE_ID_PREFIXES = {primitive_type: primitive_type.value for primitive_type in PrimitiveType}
 
 
 PRIMITIVE_ID_PATTERNS = {
     # f-string interpolation gets confused because of the regex's required curly braces {}
-    primitive: re.compile("^" + primitive + "-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-    for primitive in primitives
+    prefix: re.compile("^" + prefix + "-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+    for prefix in PRIMITIVE_ID_PREFIXES.values()
 }
 
 
@@ -67,28 +40,65 @@ def _create_path_validator_factory(primitive: str):
 
 
 # PATH_VALIDATORS now contains factory functions, not Path objects
-# Usage: folder_id: str = PATH_VALIDATORS[BaseFolder.__id_prefix__]()
-PATH_VALIDATORS = {primitive: _create_path_validator_factory(primitive) for primitive in primitives}
-
-
-def is_valid_id(primitive: str, id: str) -> bool:
-    return PRIMITIVE_ID_PATTERNS[primitive].match(id) is not None
+# Usage: folder_id: str = PATH_VALIDATORS[PrimitiveType.FOLDER.value]()
+PATH_VALIDATORS = {primitive_type.value: _create_path_validator_factory(primitive_type.value) for primitive_type in PrimitiveType}
 
 
 # Type aliases for common ID types
 # These can be used directly in route handler signatures for cleaner code
-AgentId = Annotated[str, PATH_VALIDATORS[AgentState.__id_prefix__]()]
-ToolId = Annotated[str, PATH_VALIDATORS[BaseTool.__id_prefix__]()]
-SourceId = Annotated[str, PATH_VALIDATORS[BaseSource.__id_prefix__]()]
-BlockId = Annotated[str, PATH_VALIDATORS[BaseBlock.__id_prefix__]()]
-MessageId = Annotated[str, PATH_VALIDATORS[BaseMessage.__id_prefix__]()]
-RunId = Annotated[str, PATH_VALIDATORS[RunBase.__id_prefix__]()]
-JobId = Annotated[str, PATH_VALIDATORS[JobBase.__id_prefix__]()]
-GroupId = Annotated[str, PATH_VALIDATORS[GroupBase.__id_prefix__]()]
-FileId = Annotated[str, PATH_VALIDATORS[FileMetadataBase.__id_prefix__]()]
-FolderId = Annotated[str, PATH_VALIDATORS[BaseFolder.__id_prefix__]()]
-ArchiveId = Annotated[str, PATH_VALIDATORS[ArchiveBase.__id_prefix__]()]
-ProviderId = Annotated[str, PATH_VALIDATORS[ProviderBase.__id_prefix__]()]
-SandboxConfigId = Annotated[str, PATH_VALIDATORS[SandboxConfigBase.__id_prefix__]()]
-StepId = Annotated[str, PATH_VALIDATORS[StepBase.__id_prefix__]()]
-IdentityId = Annotated[str, PATH_VALIDATORS[IdentityBase.__id_prefix__]()]
+AgentId = Annotated[str, PATH_VALIDATORS[PrimitiveType.AGENT.value]()]
+ToolId = Annotated[str, PATH_VALIDATORS[PrimitiveType.TOOL.value]()]
+SourceId = Annotated[str, PATH_VALIDATORS[PrimitiveType.SOURCE.value]()]
+BlockId = Annotated[str, PATH_VALIDATORS[PrimitiveType.BLOCK.value]()]
+MessageId = Annotated[str, PATH_VALIDATORS[PrimitiveType.MESSAGE.value]()]
+RunId = Annotated[str, PATH_VALIDATORS[PrimitiveType.RUN.value]()]
+JobId = Annotated[str, PATH_VALIDATORS[PrimitiveType.JOB.value]()]
+GroupId = Annotated[str, PATH_VALIDATORS[PrimitiveType.GROUP.value]()]
+FileId = Annotated[str, PATH_VALIDATORS[PrimitiveType.FILE.value]()]
+FolderId = Annotated[str, PATH_VALIDATORS[PrimitiveType.FOLDER.value]()]
+ArchiveId = Annotated[str, PATH_VALIDATORS[PrimitiveType.ARCHIVE.value]()]
+ProviderId = Annotated[str, PATH_VALIDATORS[PrimitiveType.PROVIDER.value]()]
+SandboxConfigId = Annotated[str, PATH_VALIDATORS[PrimitiveType.SANDBOX_CONFIG.value]()]
+StepId = Annotated[str, PATH_VALIDATORS[PrimitiveType.STEP.value]()]
+IdentityId = Annotated[str, PATH_VALIDATORS[PrimitiveType.IDENTITY.value]()]
+
+
+def raise_on_invalid_id(param_name: str, expected_prefix: PrimitiveType):
+    """
+    Decorator that validates an ID parameter has the expected prefix format.
+    Can be stacked multiple times on the same function to validate different IDs.
+
+    Args:
+        param_name: The name of the function parameter to validate (e.g., "agent_id")
+        expected_prefix: The expected primitive type (e.g., PrimitiveType.AGENT)
+
+    Example:
+        @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+        @raise_on_invalid_id(param_name="folder_id", expected_prefix=PrimitiveType.FOLDER)
+        def my_function(agent_id: str, folder_id: str):
+            pass
+    """
+
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            sig = inspect.signature(function)
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+
+            if param_name in bound_args.arguments:
+                arg_value = bound_args.arguments[param_name]
+
+                if arg_value is not None:
+                    prefix = PRIMITIVE_ID_PREFIXES[expected_prefix]
+                    if PRIMITIVE_ID_PATTERNS[prefix].match(arg_value) is None:
+                        raise LettaInvalidArgumentError(
+                            message=f"Invalid {expected_prefix.value} ID format: {arg_value}. Expected format: '{prefix}-<uuid4>'",
+                            argument_name=param_name,
+                        )
+
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

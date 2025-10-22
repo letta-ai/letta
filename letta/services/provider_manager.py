@@ -2,12 +2,13 @@ from typing import List, Optional, Tuple, Union
 
 from letta.orm.provider import Provider as ProviderModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import ProviderCategory, ProviderType
+from letta.schemas.enums import PrimitiveType, ProviderCategory, ProviderType
 from letta.schemas.providers import Provider as PydanticProvider, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.schemas.secret import Secret
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 
 class ProviderManager:
@@ -40,6 +41,7 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     async def update_provider_async(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         async with db_registry.async_session() as session:
@@ -103,6 +105,7 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
         """Delete a provider."""
         async with db_registry.async_session() as session:
@@ -153,6 +156,7 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     async def get_provider_async(self, provider_id: str, actor: PydanticUser) -> PydanticProvider:
         async with db_registry.async_session() as session:
             provider_model = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)

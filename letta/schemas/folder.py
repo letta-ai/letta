@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import Field
 
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
@@ -12,7 +13,7 @@ class BaseFolder(LettaBase):
     Shared attributes across all folder schemas.
     """
 
-    __id_prefix__ = "source"  # TODO: change to "folder"
+    __id_prefix__ = PrimitiveType.FOLDER.value  # TODO: change to "folder"
 
     # Core folder fields
     name: str = Field(..., description="The name of the folder.")

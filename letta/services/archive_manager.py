@@ -7,11 +7,12 @@ from letta.log import get_logger
 from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
 from letta.otel.tracing import trace_method
 from letta.schemas.archive import Archive as PydanticArchive
-from letta.schemas.enums import VectorDBProvider
+from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import settings
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -47,6 +48,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def get_archive_by_id_async(
         self,
         archive_id: str,
@@ -63,6 +65,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def update_archive_async(
         self,
         archive_id: str,
@@ -89,6 +92,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def list_archives_async(
         self,
         *,
@@ -136,6 +140,8 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def attach_agent_to_archive_async(
         self,
         agent_id: str,
@@ -172,6 +178,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -204,6 +211,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def delete_archive_async(
         self,
         archive_id: str,
@@ -221,6 +229,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_or_create_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -291,6 +300,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def get_agents_for_archive_async(
         self,
         archive_id: str,
@@ -333,6 +343,7 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     async def get_or_set_vector_db_namespace_async(
         self,
         archive_id: str,

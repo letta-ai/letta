@@ -19,7 +19,7 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, RE
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     ApprovalRequestMessage,
@@ -170,7 +170,7 @@ class MessageUpdate(BaseModel):
 
 
 class BaseMessage(OrmMetadataBase):
-    __id_prefix__ = "message"
+    __id_prefix__ = PrimitiveType.MESSAGE.value
 
 
 class Message(BaseMessage):

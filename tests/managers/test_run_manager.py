@@ -44,7 +44,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
 )
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
+from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
@@ -241,7 +241,7 @@ async def test_update_run_auto_complete(server: SyncServer, default_user, sarah_
 async def test_get_run_not_found(server: SyncServer, default_user):
     """Test fetching a non-existent run."""
     non_existent_run_id = "nonexistent-id"
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.run_manager.get_run_by_id(non_existent_run_id, actor=default_user)
 
 
@@ -249,7 +249,7 @@ async def test_get_run_not_found(server: SyncServer, default_user):
 async def test_delete_run_not_found(server: SyncServer, default_user):
     """Test deleting a non-existent run."""
     non_existent_run_id = "nonexistent-id"
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.run_manager.delete_run(non_existent_run_id, actor=default_user)
 
 
@@ -1268,7 +1268,7 @@ async def test_run_usage_stats_get_nonexistent_run(server: SyncServer, default_u
     """Test getting usage statistics for a nonexistent run."""
     run_manager = server.run_manager
 
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await run_manager.get_run_usage(run_id="nonexistent_run", actor=default_user)
 
 
@@ -1307,7 +1307,7 @@ async def test_get_run_request_config_none(server: SyncServer, sarah_agent, defa
 @pytest.mark.asyncio
 async def test_get_run_request_config_nonexistent_run(server: SyncServer, default_user):
     """Test getting request config for a nonexistent run."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.run_manager.get_run_request_config("nonexistent_run", actor=default_user)
 
 
@@ -1453,7 +1453,7 @@ async def test_run_metrics_num_steps_tracking(server: SyncServer, sarah_agent, d
 @pytest.mark.asyncio
 async def test_run_metrics_not_found(server: SyncServer, default_user):
     """Test getting metrics for non-existent run."""
-    with pytest.raises(NoResultFound):
+    with pytest.raises(LettaInvalidArgumentError):
         await server.run_manager.get_run_metrics_async(run_id="nonexistent_run", actor=default_user)
 
 

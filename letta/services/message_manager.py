@@ -10,7 +10,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.letta_message import LettaMessageUpdateUnion
 from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType, TextContent
 from letta.schemas.message import Message as PydanticMessage, MessageSearchResult, MessageUpdate
@@ -20,6 +20,7 @@ from letta.services.file_manager import FileManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types, fire_and_forget
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -308,6 +309,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
     async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
@@ -712,6 +714,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
     async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
         """Delete a message (async version with turbopuffer support)."""
         # capture agent_id before deletion

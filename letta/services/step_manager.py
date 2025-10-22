@@ -13,7 +13,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.orm.step_metrics import StepMetrics as StepMetricsModel
 from letta.otel.tracing import get_trace_id, trace_method
-from letta.schemas.enums import StepStatus
+from letta.schemas.enums import PrimitiveType, StepStatus
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
@@ -22,6 +22,7 @@ from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 
 class FeedbackType(str, Enum):
@@ -32,6 +33,8 @@ class FeedbackType(str, Enum):
 class StepManager:
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def list_steps_async(
         self,
         actor: PydanticUser,
@@ -79,6 +82,10 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     def log_step(
         self,
         actor: PydanticUser,
@@ -133,6 +140,10 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def log_step_async(
         self,
         actor: PydanticUser,
@@ -196,6 +207,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def get_step_async(self, step_id: str, actor: PydanticUser) -> PydanticStep:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
@@ -203,6 +215,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def get_step_metrics_async(self, step_id: str, actor: PydanticUser) -> PydanticStepMetrics:
         async with db_registry.async_session() as session:
             metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
@@ -210,6 +223,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def add_feedback_async(
         self, step_id: str, feedback: FeedbackType | None, actor: PydanticUser, tags: list[str] | None = None
     ) -> PydanticStep:
@@ -225,6 +239,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
         """Update the transaction ID for a step.
 
@@ -252,6 +267,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def list_step_messages_async(
         self,
         step_id: str,
@@ -276,6 +292,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def update_step_stop_reason(self, actor: PydanticUser, step_id: str, stop_reason: StopReasonType) -> PydanticStep:
         """Update the stop reason for a step.
 
@@ -303,6 +320,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def update_step_error_async(
         self,
         actor: PydanticUser,
@@ -348,6 +366,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def update_step_success_async(
         self,
         actor: PydanticUser,
@@ -388,6 +407,7 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
     async def update_step_cancelled_async(
         self,
         actor: PydanticUser,
@@ -423,6 +443,9 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def record_step_metrics_async(
         self,
         actor: PydanticUser,

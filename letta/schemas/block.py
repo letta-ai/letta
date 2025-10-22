@@ -4,6 +4,7 @@ from typing import Any, Optional
 from pydantic import ConfigDict, Field, model_validator
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 # block of the LLM context
@@ -12,7 +13,7 @@ from letta.schemas.letta_base import LettaBase
 class BaseBlock(LettaBase, validate_assignment=True):
     """Base block of the LLM context"""
 
-    __id_prefix__ = "block"
+    __id_prefix__ = PrimitiveType.BLOCK.value
 
     # data value
     value: str = Field(..., description="Value of the block.")

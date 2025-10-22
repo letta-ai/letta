@@ -14,7 +14,7 @@ from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step, Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import JobStatus, JobType, MessageRole
+from letta.schemas.enums import JobStatus, JobType, MessageRole, PrimitiveType
 from letta.schemas.job import BatchJob as PydanticBatchJob, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_stop_reason import StopReasonType
@@ -26,6 +26,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -70,6 +71,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def update_job_by_id_async(
         self, job_id: str, job_update: JobUpdate, actor: PydanticUser, safe_update: bool = False
     ) -> PydanticJob:
@@ -147,6 +149,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def safe_update_job_status_async(
         self,
         job_id: str,
@@ -187,6 +190,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def get_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID asynchronously."""
         async with db_registry.async_session() as session:
@@ -301,6 +305,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def delete_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         async with db_registry.async_session() as session:
@@ -310,6 +315,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_messages(
         self,
         run_id: str,
@@ -367,6 +373,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_step_messages(
         self,
         run_id: str,
@@ -447,6 +454,7 @@ class JobManager:
         return job
 
     @enforce_types
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def record_ttft(self, job_id: str, ttft_ns: int, actor: PydanticUser) -> None:
         """Record time to first token for a run"""
         try:
@@ -459,6 +467,7 @@ class JobManager:
             logger.warning(f"Failed to record TTFT for job {job_id}: {e}")
 
     @enforce_types
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def record_response_duration(self, job_id: str, total_duration_ns: int, actor: PydanticUser) -> None:
         """Record total response duration for a run"""
         try:
@@ -529,6 +538,7 @@ class JobManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
     async def get_job_steps(
         self,
         job_id: str,

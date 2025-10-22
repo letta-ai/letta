@@ -15,7 +15,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import FileProcessingStatus, PrimitiveType
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source_metadata import FileStats, OrganizationSourcesStats, SourceStats
@@ -23,6 +23,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import settings
 from letta.utils import enforce_types
+from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
@@ -93,6 +94,7 @@ class FileManager:
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
     # @async_redis_cache(
     #     key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
     #     prefix="file_content",
@@ -135,6 +137,7 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
     async def update_file_status(
         self,
         *,
@@ -171,7 +174,6 @@ class FileManager:
         * 1st round-trip → UPDATE with optional state validation
         * 2nd round-trip → SELECT fresh row (same as read_async) if update succeeded
         """
-
         if processing_status is None and error_message is None and total_chunks is None and chunks_embedded is None:
             raise ValueError("Nothing to update")
 
@@ -353,6 +355,7 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
     async def upsert_file_content(
         self,
         *,
@@ -398,6 +401,7 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
     async def list_files(
         self,
         source_id: str,
@@ -455,6 +459,7 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
     async def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
         async with db_registry.async_session() as session:
@@ -509,6 +514,7 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
     # @async_redis_cache(
     #     key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
     #     prefix="file_by_name",

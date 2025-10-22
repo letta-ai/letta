@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import SandboxType
+from letta.schemas.enums import PrimitiveType, SandboxType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.schemas.pip_requirement import PipRequirement
 from letta.services.tool_sandbox.modal_constants import DEFAULT_MODAL_TIMEOUT
@@ -92,7 +92,7 @@ class ModalSandboxConfig(BaseModel):
 
 
 class SandboxConfigBase(OrmMetadataBase):
-    __id_prefix__ = "sandbox"
+    __id_prefix__ = PrimitiveType.SANDBOX_CONFIG.value
 
 
 class SandboxConfig(SandboxConfigBase):

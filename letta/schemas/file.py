@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import Field
 
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import FileProcessingStatus, PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
@@ -20,7 +20,7 @@ class FileStatus(str, Enum):
 class FileMetadataBase(LettaBase):
     """Base class for FileMetadata schemas"""
 
-    __id_prefix__ = "file"
+    __id_prefix__ = PrimitiveType.FILE.value
 
     # Core file metadata fields
     source_id: str = Field(..., description="The unique identifier of the source associated with the document.")
@@ -61,7 +61,7 @@ class FileMetadata(FileMetadataBase):
 class FileAgentBase(LettaBase):
     """Base class for the FileMetadata-⇄-Agent association schemas"""
 
-    __id_prefix__ = "file_agent"
+    __id_prefix__ = PrimitiveType.FILE.value
 
     # Core file-agent association fields
     agent_id: str = Field(..., description="Unique identifier of the agent.")
