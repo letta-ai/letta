@@ -2,7 +2,7 @@ from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from letta.schemas.enums import RunStatus
+from letta.schemas.enums import ComparisonOperator, RunStatus
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.run import Run
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -39,6 +39,12 @@ async def list_runs(
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     template_family: Optional[str] = Query(None, description="Filter runs by template family (base_template_id)."),
+    step_count: Optional[int] = Query(None, description="Filter runs by step count. Must be provided with step_count_operator."),
+    step_count_operator: ComparisonOperator = Query(
+        ComparisonOperator.EQ,
+        description="Operator for step_count filter: 'eq' for equals, 'gte' for greater than or equal, 'lte' for less than or equal.",
+    ),
+    tools_used: Optional[List[str]] = Query(None, description="Filter runs that used any of the specified tools."),
     before: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order"
     ),
@@ -94,5 +100,8 @@ async def list_runs(
         stop_reason=stop_reason,
         background=background,
         template_family=template_family,
+        step_count=step_count,
+        step_count_operator=step_count_operator,
+        tools_used=tools_used,
     )
     return runs

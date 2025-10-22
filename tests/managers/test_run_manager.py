@@ -383,6 +383,96 @@ async def test_list_runs_by_stop_reason(server: SyncServer, sarah_agent, default
 
 
 @pytest.mark.asyncio
+async def test_list_runs_by_tools_used(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by tools used."""
+    # Seed tools first
+    from letta.services.tool_manager import ToolManager
+
+    tool_manager = ToolManager()
+    await tool_manager.upsert_base_tools_async(default_user)
+
+    web_search_tool_id = await tool_manager.get_tool_id_by_name_async("web_search", default_user)
+    run_code_tool_id = await tool_manager.get_tool_id_by_name_async("run_code", default_user)
+
+    if not web_search_tool_id or not run_code_tool_id:
+        pytest.skip("Required tools (web_search, run_code) are not available in the database")
+
+    # Create run with web_search tool
+    run_web = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id),
+        actor=default_user,
+    )
+    await server.message_manager.create_many_messages_async(
+        [
+            PydanticMessage(
+                agent_id=sarah_agent.id,
+                role=MessageRole.assistant,
+                content=[TextContent(text="Using web search")],
+                tool_calls=[
+                    OpenAIToolCall(
+                        id="call_web",
+                        type="function",
+                        function=OpenAIFunction(name="web_search", arguments="{}"),
+                    )
+                ],
+                run_id=run_web.id,
+            )
+        ],
+        actor=default_user,
+    )
+
+    # Create run with run_code tool
+    run_code = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id),
+        actor=default_user,
+    )
+    await server.message_manager.create_many_messages_async(
+        [
+            PydanticMessage(
+                agent_id=sarah_agent.id,
+                role=MessageRole.assistant,
+                content=[TextContent(text="Using run code")],
+                tool_calls=[
+                    OpenAIToolCall(
+                        id="call_code",
+                        type="function",
+                        function=OpenAIFunction(name="run_code", arguments="{}"),
+                    )
+                ],
+                run_id=run_code.id,
+            )
+        ],
+        actor=default_user,
+    )
+
+    # Complete runs to populate tools_used
+    await server.run_manager.update_run_by_id_async(
+        run_web.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    await server.run_manager.update_run_by_id_async(
+        run_code.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Test filtering by single tool
+    runs_web = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        tools_used=[web_search_tool_id],
+    )
+    assert len(runs_web) == 1
+    assert runs_web[0].id == run_web.id
+
+    # Test filtering by multiple tools
+    runs_multi = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        tools_used=[web_search_tool_id, run_code_tool_id],
+    )
+    assert len(runs_multi) == 2
+    assert {r.id for r in runs_multi} == {run_web.id, run_code.id}
+
+
+@pytest.mark.asyncio
 async def test_list_runs_by_step_count(server: SyncServer, sarah_agent, default_user):
     """Test listing runs filtered by step count."""
     from letta.schemas.enums import ComparisonOperator

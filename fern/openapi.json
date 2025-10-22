@@ -8998,6 +8998,56 @@
             "description": "Filter runs by template family (base_template_id)."
           },
           {
+            "name": "step_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by step count. Must be provided with step_count_operator.",
+              "title": "Step Count"
+            },
+            "description": "Filter runs by step count. Must be provided with step_count_operator."
+          },
+          {
+            "name": "step_count_operator",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ComparisonOperator",
+              "description": "Operator for step_count filter: 'eq' for equals, 'gte' for greater than or equal, 'lte' for less than or equal.",
+              "default": "eq"
+            },
+            "description": "Operator for step_count filter: 'eq' for equals, 'gte' for greater than or equal, 'lte' for less than or equal."
+          },
+          {
+            "name": "tools_used",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs that used any of the specified tools.",
+              "title": "Tools Used"
+            },
+            "description": "Filter runs that used any of the specified tools."
+          },
+          {
             "name": "before",
             "in": "query",
             "required": false,
@@ -26372,6 +26422,12 @@
         "type": "object",
         "required": ["code"],
         "title": "CodeInput"
+      },
+      "ComparisonOperator": {
+        "type": "string",
+        "enum": ["eq", "gte", "lte"],
+        "title": "ComparisonOperator",
+        "description": "Comparison operators for filtering numeric values"
       },
       "CompletionTokensDetails": {
         "properties": {

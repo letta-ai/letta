@@ -3,8 +3,6 @@ from pickletools import pyunicode
 from typing import List, Literal, Optional
 
 from httpx import AsyncClient
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
@@ -111,10 +109,11 @@ class RunManager:
         template_family: Optional[str] = None,
         step_count: Optional[int] = None,
         step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
+        tools_used: Optional[List[str]] = None,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
-            from sqlalchemy import select
+            from sqlalchemy import or_, select
 
             query = select(RunModel).filter(RunModel.organization_id == actor.organization_id)
 
@@ -140,17 +139,28 @@ class RunManager:
             if template_family:
                 query = query.filter(RunModel.base_template_id == template_family)
 
-            # Filter by step_count - join with run_metrics
-            if step_count is not None:
+            # Filter by step_count and/or tools_used - join with run_metrics
+            if step_count is not None or tools_used:
                 query = query.join(RunMetricsModel, RunModel.id == RunMetricsModel.id)
 
                 # Filter by step_count with the specified operator
-                if step_count_operator == ComparisonOperator.EQ:
-                    query = query.filter(RunMetricsModel.num_steps == step_count)
-                elif step_count_operator == ComparisonOperator.GTE:
-                    query = query.filter(RunMetricsModel.num_steps >= step_count)
-                elif step_count_operator == ComparisonOperator.LTE:
-                    query = query.filter(RunMetricsModel.num_steps <= step_count)
+                if step_count is not None:
+                    if step_count_operator == ComparisonOperator.EQ:
+                        query = query.filter(RunMetricsModel.num_steps == step_count)
+                    elif step_count_operator == ComparisonOperator.GTE:
+                        query = query.filter(RunMetricsModel.num_steps >= step_count)
+                    elif step_count_operator == ComparisonOperator.LTE:
+                        query = query.filter(RunMetricsModel.num_steps <= step_count)
+
+                # Filter by tools used ids
+                if tools_used:
+                    from sqlalchemy import String, cast as sa_cast, type_coerce
+                    from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+
+                    # Use ?| operator to check if any tool_id exists in the array (OR logic)
+                    jsonb_tools = sa_cast(RunMetricsModel.tools_used, JSONB)
+                    tools_array = type_coerce(tools_used, ARRAY(String))
+                    query = query.filter(jsonb_tools.op("?|")(tools_array))
 
             # Apply pagination
             from letta.services.helpers.run_manager_helper import _apply_pagination_async
@@ -234,7 +244,8 @@ class RunManager:
                         from letta.services.tool_manager import ToolManager
 
                         tool_manager = ToolManager()
-                        tool_id = await tool_manager.get_tool_id_by_name_async(tool_call.function.name, actor)
+                        tool_name = tool_call.function.name
+                        tool_id = await tool_manager.get_tool_id_by_name_async(tool_name, actor)
                         if tool_id:
                             tools_used.add(tool_id)
 
