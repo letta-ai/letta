@@ -179,17 +179,14 @@ class RunManager:
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
-    async def delete_run(self, run_id: str, actor: PydanticUser) -> PydanticRun:
+    async def delete_run(self, run_id: str, actor: PydanticUser) -> None:
         """Delete a run by its ID."""
         async with db_registry.async_session() as session:
             run = await RunModel.read_async(db_session=session, identifier=run_id, actor=actor, access_type=AccessType.ORGANIZATION)
             if not run:
                 raise NoResultFound(f"Run with id {run_id} not found")
 
-            pydantic_run = run.to_pydantic()
             await run.hard_delete_async(db_session=session, actor=actor)
-
-        return pydantic_run
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)

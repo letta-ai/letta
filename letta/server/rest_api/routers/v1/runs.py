@@ -265,7 +265,7 @@ async def list_run_steps(
     )
 
 
-@router.delete("/{run_id}", response_model=Run, operation_id="delete_run")
+@router.delete("/{run_id}", response_model=None, operation_id="delete_run")
 async def delete_run(
     run_id: str,
     headers: HeaderParams = Depends(get_headers),
