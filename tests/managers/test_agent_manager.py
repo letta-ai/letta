@@ -1063,6 +1063,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "metadata": (dict, type(None)),
         # Memory and tools
         "memory": Memory,
+        "blocks": list,
         "tools": list,
         "sources": list,
         "tags": list,
