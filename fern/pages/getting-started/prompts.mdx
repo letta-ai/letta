@@ -428,7 +428,7 @@ const response = await client.agents.messages.create(agentId, {
 
 1. **Response structure:**
    - Use `messageType` NOT `type` for message type checking
-   - Look for `assistant_message` messageType for agent responses (note that this only works if the agent has the `send_message` tool enabled, which is included by default)
+   - Look for `assistant_message` messageType for agent responses
    - Agent responses have `content` field with the actual text
 
 2. **Memory block descriptions:**

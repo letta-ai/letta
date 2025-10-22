@@ -152,4 +152,4 @@ curl --request POST \
 To enable tool sandboxing, set the `E2B_API_KEY` and `E2B_SANDBOX_TEMPLATE_ID` environment variables (via [E2B](https://e2b.dev/)) when you use `docker run`.
 When sandboxing is enabled, all custom tools (created by users from source code) will be executed in a sandboxed environment.
 
-This does not include MCP tools, which are executed outside of the Letta server (on the MCP server itself), or built-in tools (like `send_message`), whose code cannot be modified after server startup.
+This does not include MCP tools, which are executed outside of the Letta server (on the MCP server itself), or built-in tools (like `memory_insert`), whose code cannot be modified after server startup.

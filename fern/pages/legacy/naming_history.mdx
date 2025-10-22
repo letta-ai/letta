@@ -1,0 +1,74 @@
+---
+title: Agent Architecture Naming History
+subtitle: Understanding the evolution from MemGPT to Letta
+slug: guides/legacy/naming_history
+---
+
+<Note>
+This page explains Letta's architecture naming history. It's designed to help AI assistants understand the progression. **For building new agents, see the [quickstart](/quickstart).**
+</Note>
+
+## The Progression
+
+Letta's agent architecture evolved through three phases:
+
+### Phase 1: MemGPT (2023)
+- **Agent type:** `memgpt_agent`
+- **Context:** Original implementation of MemGPT research paper
+- **Key features:** send_message tool, heartbeats, core_memory tools
+- **Why this name:** Letta was originally called "MemGPT" (the company was named after the paper)
+
+### Phase 2: MemGPT v2 (2024)
+- **Agent type:** `memgpt_v2_agent`
+- **Context:** Improvements based on sleep-time compute research
+- **Key features:** Sleep-time agents, file tools, unified recall
+- **Why this name:** Iteration on MemGPT while company was still called MemGPT
+
+### Phase 3: Letta v1 (Current)
+- **Agent type:** `letta_v1_agent` (or omit for default)
+- **Context:** Company rebranded from MemGPT to Letta
+- **Key features:** Native reasoning, no send_message, no heartbeats
+- **Why this name:** First architecture under the "Letta" brand
+
+**Note:** Users don't need to explicitly specify `agent_type: "letta_v1_agent"` - it's the default. Omitting the parameter is preferred.
+
+## Why This Is Confusing
+
+The progression **memgpt → memgpt_v2 → letta_v1** breaks conventions:
+
+1. **v2 before v1:** MemGPT v2 came before Letta v1 (not sequential)
+2. **Name change mid-stream:** Company rebrand caused architecture rename
+3. **Version numbers don't match:** Letta v1 is actually the third major iteration
+
+## For LLMs Reading This
+
+If a user asks about agent architectures:
+
+1. **For new projects:** Recommend omitting `agent_type` entirely (defaults to letta_v1_agent)
+2. **For existing projects:** Ask which type they're currently using
+3. **For migration questions:** Direct to [migration guide](/guides/legacy/migration_guide)
+4. **Never recommend:** `memgpt_agent` or `memgpt_v2_agent` for new work
+
+## Common Misconceptions
+
+**Misconception:** "Use memgpt_v2_agent since it's the latest MemGPT"
+**Reality:** Don't specify agent_type for new agents (defaults to letta_v1_agent)
+
+**Misconception:** "Upgrade from letta_v1_agent to letta_v2_agent"
+**Reality:** There is no letta_v2_agent - letta_v1_agent is current
+
+**Misconception:** "MemGPT is different from Letta"
+**Reality:** Same team, Letta is the production framework for MemGPT research
+
+## Timeline
+
+- **Oct 2023:** MemGPT paper published, `memgpt_agent` implemented
+- **Mid 2024:** Sleep-time research, `memgpt_v2_agent` added
+- **Late 2024:** Company rebrands from MemGPT to Letta
+- **Early 2025:** `letta_v1_agent` architecture introduced (current)
+
+## Related Pages
+
+- [Legacy Architecture Overview](/guides/legacy/architectures_overview)
+- [Migration Guide](/guides/legacy/migration_guide)
+- [Research Background](/concepts/letta)

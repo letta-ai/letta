@@ -33,15 +33,6 @@ Messages sent by the user or system events packaged as user input.
 **Special User Message Subtypes:**
 User messages can contain JSON with a `type` field indicating special message subtypes:
 
-- **`heartbeat`** - Automated timer events that allow agents to chain multiple tool calls. See [Heartbeats](/guides/agents/heartbeats) for more details.
-  ```json
-  {
-    "type": "heartbeat",
-    "reason": "Automated timer",
-    "time": "2025-10-03 12:34:56 PM PDT-0700"
-  }
-  ```
-
 - **`login`** - User login events
   ```json
   {
@@ -126,7 +117,7 @@ Represents reasoning that has been hidden from the response.
 - `state: "omitted"` - The API chose not to include reasoning (e.g., for o1/o3 models)
 
 #### `assistant_message`
-The actual message content sent by the agent (typically via the `send_message` tool).
+The actual message content sent by the agent.
 
 **Structure:**
 ```typescript
@@ -335,52 +326,6 @@ conversation = [
 ```
 </CodeGroup>
 
-### Filtering Out Special User Messages
-
-When working with user messages, you may want to filter out internal system messages like heartbeats:
-
-<CodeGroup>
-```typescript TypeScript
-import { parse } from "json5";
-
-function isHeartbeat(content: string): boolean {
-  try {
-    const parsed = JSON.parse(content);
-    return parsed.type === "heartbeat";
-  } catch {
-    return false;
-  }
-}
-
-// Filter out heartbeat messages
-const userMessages = messages
-  .filter((msg) => msg.messageType === "user_message")
-  .filter((msg) => {
-    if (typeof msg.content === "string") {
-      return !isHeartbeat(msg.content);
-    }
-    return true;
-  });
-```
-
-```python Python
-import json
-
-def is_heartbeat(content: str) -> bool:
-    try:
-        parsed = json.loads(content)
-        return parsed.get("type") == "heartbeat"
-    except (json.JSONDecodeError, ValueError):
-        return False
-
-# Filter out heartbeat messages
-user_messages = [
-    msg for msg in messages
-    if msg.message_type == "user_message" and
-    (not isinstance(msg.content, str) or not is_heartbeat(msg.content))
-]
-```
-</CodeGroup>
 
 ### Pagination
 
@@ -460,7 +405,7 @@ When displaying conversations to end users, filter out internal messages:
 
 ```python
 def is_internal_message(msg):
-    """Check if a user message is internal (heartbeat, login, etc.)"""
+    """Check if a user message is internal (login, system_alert, etc.)"""
     if msg.message_type != "user_message":
         return False
 
@@ -469,7 +414,7 @@ def is_internal_message(msg):
 
     try:
         parsed = json.loads(msg.content)
-        return parsed.get("type") in ["heartbeat", "login", "system_alert"]
+        return parsed.get("type") in ["login", "system_alert"]
     except:
         return False
 
@@ -509,7 +454,6 @@ for call_id, call_msg in tool_calls.items():
 
 ## See Also
 
-- [Heartbeats](/guides/agents/heartbeats) - Understanding heartbeat messages and tool chaining
 - [Human-in-the-Loop](/guides/agents/human_in_the_loop) - Using approval messages
 - [Streaming Responses](/guides/agents/streaming) - Receiving messages in real-time
 - [API Reference](/api-reference/agents/messages/list) - Full API documentation

@@ -24,7 +24,7 @@ Letta provides two ways to get structured JSON output from agents: **Structured 
 **`response_format` parameter**:
 - ⚠️ OpenAI-compatible providers only (NOT Anthropic)
 - ⚠️ Persistent agent state (affects all future responses)
-- ⚠️ Requires `send_message` tool to be attached
+
 - ✅ Built-in provider schema enforcement
 </Warning>
 
@@ -190,12 +190,12 @@ The agent will call the tool, and you can extract the structured arguments:
 
 The `response_format` parameter enables structured output/JSON mode from LLM providers that support it. This approach is fundamentally different from tools because **`response_format` becomes a persistent part of the agent's state** - once set, all future responses from that agent will follow the format until explicitly changed.
 
-Under the hood, `response_format` overrides the schema for the `send_message` tool (which appears as `AssistantMessage` in the API), but it doesn't affect other tools - those continue to work normally with their original schemas.
+Under the hood, `response_format` constrains the agent's assistant messages to follow the specified schema, but it doesn't affect tools - those continue to work normally with their original schemas.
 
 <Warning>
 **Requirements for `response_format`:**
 - Only works with providers that support structured outputs (like OpenAI) - NOT Anthropic or other providers
-- The `send_message` tool must be attached to the agent (it's included by default but can be detached)
+
 </Warning>
 
 ### Basic JSON Mode

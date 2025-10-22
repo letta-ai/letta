@@ -50,8 +50,6 @@ tabs:
   leaderboard:
     display-name: Leaderboard
     skip-slug: true
-
-
 landing-page:
   page: home
   path: pages/index.mdx
@@ -99,25 +97,10 @@ navigation:
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
-          - section: Agent Architectures
-            path: pages/agents/architectures.mdx
-            contents:
-              - page: MemGPT Agents
-                path: pages/agents/memgpt_agents.mdx
-              - page: Low-latency (voice) Agents
-                path: pages/agents/low_latency_agents.mdx
-              - page: ReAct Agents
-                path: pages/agents/react_agents.mdx
-              - page: Workflows
-                path: pages/agents/workflows.mdx
-              - page: Stateful Workflows
-                path: pages/agents/stateful_workflows.mdx
           - page: Context Hierarchy
             path: pages/agents/context_hierarchy.mdx
           - page: Message Types
             path: pages/agents/message_types.mdx
-          - page: Heartbeats
-            path: pages/agents/heartbeats.mdx
 
       - section: Memory
         path: pages/agents/memory.mdx
@@ -222,6 +205,25 @@ navigation:
             path: pages/concepts/letta.mdx
           - page: MemGPT Paper Deep Dive
             path: pages/concepts/memgpt.mdx
+
+      - section: Legacy & Migration
+        contents:
+          - page: Legacy Architecture Overview
+            path: pages/legacy/architectures_overview.mdx
+          - page: Migration Guide
+            path: pages/legacy/migration_guide.mdx
+          - page: MemGPT Agents (Legacy)
+            path: pages/legacy/memgpt_agents_legacy.mdx
+          - page: Workflows (Legacy)
+            path: pages/legacy/workflows_legacy.mdx
+          - page: Low-latency Agents (Legacy)
+            path: pages/legacy/low_latency_agents_legacy.mdx
+          - page: ReAct Agents (Legacy)
+            path: pages/legacy/react_agents_legacy.mdx
+          - page: Heartbeats (Legacy)
+            path: pages/legacy/heartbeats_legacy.mdx
+          - page: Architecture Naming History
+            path: pages/legacy/naming_history.mdx
 
       #- section: Tool Execution
       #  contents:
@@ -721,7 +723,6 @@ navigation:
           - page: Contributing Results
             path: pages/leaderboard/contributing.mdx
 
-
   # - tab: cookbooks
   #   layout:
   #     - section: Cookbooks
@@ -899,3 +900,15 @@ redirects:
     destination: "/api-reference/agents/messages/cancel"
   - source: "/api-reference/messages/cancel-batch-run"
     destination: "/api-reference/batches/cancel"
+  - source: "/guides/agents/architectures"
+    destination: "/guides/legacy/architectures_overview"
+  - source: "/guides/agents/architectures/memgpt"
+    destination: "/guides/legacy/memgpt_agents_legacy"
+  - source: "/guides/agents/heartbeats"
+    destination: "/guides/legacy/heartbeats_legacy"
+  - source: "/guides/agents/architectures/react"
+    destination: "/guides/legacy/react_agents_legacy"
+  - source: "/guides/agents/architectures/workflows"
+    destination: "/guides/legacy/workflows_legacy"
+  - source: "/guides/agents/architectures/low-latency"
+    destination: "/guides/legacy/low_latency_agents_legacy"

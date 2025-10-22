@@ -1,10 +1,16 @@
 ---
-title: Workflows
+title: Workflows (Legacy)
 subtitle: Workflows are systems that execute tool calls in a sequence
-slug: guides/agents/architectures/workflows
+slug: guides/legacy/workflows_legacy
 ---
 
-Workflows execute predefined sequences of tool calls with LLM-driven decision making. Use the `workflow_agent` agent type for structured, sequential processes where you need deterministic execution paths.
+<Warning>
+**This documentation covers a legacy agent architecture.**
+
+For new projects, use the current Letta architecture with [tool rules](/guides/agents/tool-rules) to constrain behavior instead of the `workflow_agent` type.
+</Warning>
+
+Workflows execute predefined sequences of tool calls with LLM-driven decision making. The `workflow_agent` agent type provides structured, sequential processes where you need deterministic execution paths.
 
 Workflows are stateless by default but can branch and make decisions based on tool outputs and LLM reasoning.
 

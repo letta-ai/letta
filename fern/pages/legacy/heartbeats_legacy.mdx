@@ -1,14 +1,20 @@
 ---
-title: Heartbeats
-subtitle: Understanding heartbeats and chained tool execution in Letta
-slug: guides/agents/heartbeats
+title: Heartbeats (Legacy)
+subtitle: Understanding heartbeats and chained tool execution in legacy agents
+slug: guides/legacy/heartbeats_legacy
 ---
-Heartbeats are a mechanism that enables Letta agents to chain multiple tool calls together in a single execution loop.
-The term "heartbeat" was coined in the [MemGPT paper](https://arxiv.org/abs/2310.08560), and since the Letta codebase evolved from the original MemGPT codebase (same authors), **heartbeats** remain a core part of the default agent loop.
+
+<Warning>
+**Heartbeats are only supported in legacy agent architectures** (`memgpt_agent`, `memgpt_v2_agent`).
+
+The current architecture (`letta_v1_agent`) does not use heartbeats. For multi-step execution, use explicit prompting or tool rules. [See migration guide →](/guides/legacy/migration_guide)
+</Warning>
+Heartbeats are a mechanism that enables legacy Letta agents to chain multiple tool calls together in a single execution loop.
+The term "heartbeat" was coined in the [MemGPT paper](https://arxiv.org/abs/2310.08560), and since the Letta codebase evolved from the original MemGPT codebase (same authors), **heartbeats** were a core part of the early agent loop.
 
 ## How heartbeats work
 
-Every tool in Letta automatically receives an additional parameter called `request_heartbeat`, which defaults to `false`. When an agent sets this parameter to `true`, it signals to the Letta server that it wants to continue executing after the current tool call completes.
+Every tool in legacy agents automatically receives an additional parameter called `request_heartbeat`, which defaults to `false`. When an agent sets this parameter to `true`, it signals to the Letta server that it wants to continue executing after the current tool call completes.
 
 ## Technical implementation
 
@@ -32,7 +38,7 @@ This enables agents to perform complex, multi-step operations without requiring 
 
 ## Automatic heartbeats on failure
 
-If a tool call fails at runtime, Letta automatically generates a heartbeat.
+If a tool call fails at runtime, legacy agents automatically generate a heartbeat.
 This gives the agent an opportunity to handle the error and potentially retry the operation with different parameters or take alternative actions.
 
 ## Viewing heartbeats in the ADE

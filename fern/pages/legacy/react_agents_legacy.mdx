@@ -1,10 +1,16 @@
 ---
-title: ReAct Agents
+title: ReAct Agents (Legacy)
 subtitle: Agents that reason and call tools in a loop
-slug: guides/agents/architectures/react
+slug: guides/legacy/react_agents_legacy
 ---
 
-ReAct agents are based on the [ReAct research paper](https://arxiv.org/abs/2210.03629) and follow a "Reason then Act" pattern. In Letta, agents using the ReAct architecture can reason and call tools in a loop (using the same heartbeat mechanism from MemGPT), but lack the **long-term memory capabilities** of MemGPT agents.
+<Warning>
+**This documentation covers a legacy agent architecture.**
+
+For new projects, use the current Letta architecture which provides better memory management and reasoning capabilities. See [Agent Memory & Architecture](/guides/agents/architectures/memgpt).
+</Warning>
+
+ReAct agents are based on the [ReAct research paper](https://arxiv.org/abs/2210.03629) and follow a "Reason then Act" pattern. In Letta, agents using the ReAct architecture can reason and call tools in a loop but lack the **long-term memory capabilities** of standard Letta agents.
 
 ## Architecture
 

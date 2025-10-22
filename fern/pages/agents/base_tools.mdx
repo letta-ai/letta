@@ -131,28 +131,13 @@ Search archival memory using semantic (embedding-based) search.
 **Returns:**
 Matching passages with timestamps and content, ordered by semantic similarity.
 
-## Legacy Tools
-
-### send_message
-
-<Info>
-Only used by `memgpt_v1_agent` and `memgpt_v2_agent` architectures. The newer `letta_v1_agent` architecture does not use or need this tool.
-</Info>
-
-Sends a message to the user.
-
-**Parameters:**
-- `message`: The message text to send
-
-**What it does:**
-Displays a message to the user in the conversation.
-
 ## Deprecated Tools
 
 These tools are still available but deprecated:
 
 | Tool | Use Instead |
 |------|-------------|
+| `send_message` | Agent responses (no tool needed). See [legacy architectures](/guides/legacy/memgpt_agents_legacy) |
 | `core_memory_append` | `memory_insert` with `insert_line=-1` |
 | `core_memory_replace` | `memory_replace` |
 

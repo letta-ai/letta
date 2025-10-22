@@ -66,19 +66,11 @@ curl --request POST \
     "embedding_endpoint": "https://api.openai.com/v1",
     "embedding_model": "text-embedding-3-small",
     "embedding_dim": 8191
-  },
-  "tools": [
-    "send_message",
-    "core_memory_append",
-    "core_memory_replace",
-    "archival_memory_search",
-    "archival_memory_insert",
-    "conversation_search"
-  ]
+  }
 }'
 ```
 
-This will create an agent with two memory blocks, configured to use `gpt-4o-mini` as the LLM model, and `text-embedding-3-small` as the embedding model. We also include the base Letta tools in the request.
+This will create an agent with two memory blocks, configured to use `gpt-4o-mini` as the LLM model, and `text-embedding-3-small` as the embedding model.
 
 If the Letta server is not password protected, we can omit the `X-BARE-PASSWORD` header.
 

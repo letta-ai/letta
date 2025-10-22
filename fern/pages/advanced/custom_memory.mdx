@@ -67,7 +67,7 @@ task_agent_state = client.create_agent(
         + "Use the `task_queue_push` tool to write down tasks so you don't forget to do them." \
         + "If there are tasks in the task queue, you should call `task_queue_pop` to retrieve and remove them. " \
         + "Keep calling `task_queue_pop` until there are no more tasks in the queue. " \
-        + "Do *not* call `send_message` until you have completed all tasks in your queue. " \
+        + "Do *not* respond to the user until you have completed all tasks in your queue. " \
         + "If you call `task_queue_pop`, you must always do what the popped task specifies",
         tasks=["start calling yourself Bob", "tell me a haiku with my name"],
     )

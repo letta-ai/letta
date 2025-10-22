@@ -52,13 +52,11 @@ Letta currently supports the following tool rules (with more being added):
 
 ## Default tool rules
 
-By default, the `send_message` tool is marked with `TerminalToolRule`, since you usually do not want the agent to continue executing after it has sent a message to the user.
-
-Depending on your chosen [agent architecture](/guides/agents/architectures), there may be other default tool rules applied to improve the performance of your agent.
+Depending on your agent configuration, there may be default tool rules applied to improve performance.
 
 ## Tool rule examples
 
-For example, you can ensure that the agent will stop execution if either the `send_message` or `roll_d20` tool is called by specifying tool rules in the agent creation:
+For example, you can ensure that the agent will stop execution after the `roll_d20` tool is called by specifying tool rules in the agent creation:
 <CodeGroup>
 ```typescript TypeScript {6-11}
 // create a new agent
@@ -69,8 +67,6 @@ const agentState = await client.createAgent({
     toolRules: [
         // exit after roll_d20 is called
         {toolName: tool.name, type: "exit_loop"},
-        // exit after send_message is called (default behavior)
-        {toolName: "send_message", type: "exit_loop"},
     ],
 });
 
@@ -85,8 +81,6 @@ agent_state = client.create_agent(
     tool_rules=[
         # exit after roll_d20 is called
         TerminalToolRule(tool_name=tool.name, type="exit_loop"),
-        # exit after send_message is called (default behavior)
-        TerminalToolRule(tool_name="send_message", type="exit_loop"),
     ],
 )
 

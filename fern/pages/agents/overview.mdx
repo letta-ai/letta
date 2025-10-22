@@ -241,12 +241,15 @@ Since a `Message` can include multiple events like a chain-of-thought and functi
 * `reasoning_message`: The inner monologue (chain-of-thought) of the agent
 * `tool_call_message`: An agent's tool (function) call
 * `tool_call_return`: The result of executing an agent's tool (function) call
-* `assistant_message`: An agent calling the `send_message` tool to communicate with the user
+* `assistant_message`: An agent's response message (direct response in current architecture, or `send_message` tool call in legacy architectures)
 * `system_message`: A system message (for example, an alert about the user logging in)
 * `user_message`: A user message
 
-The `assistant_message` message type is a convenience wrapper around the `tool_call_message` when the tool call is the predefined `send_message` tool that makes it easier to parse agent messages.
-If you prefer to see the raw tool call even in the `send_message` case, you can set `use_assistant_message` to `false` in the request `config` (see the [endpoint documentation](/api-reference/agents/messages/create)).
+<Note>
+In current Letta agents, `assistant_message` represents the agent's direct response. In legacy architectures (`memgpt_agent`, `memgpt_v2_agent`), it wraps the `send_message` tool call.
+
+If you prefer to see the raw tool call format in legacy agents, you can set `use_assistant_message` to `false` in the request `config` (see the [endpoint documentation](/api-reference/agents/messages/create)).
+</Note>
 
 ## Common agent operations
 For more in-depth guide on the full set of Letta agent operations, check out our [API reference](/api-reference/overview), our extended [Python SDK](https://github.com/letta-ai/letta/blob/main/examples/docs/example.py) and [TypeScript SDK](https://github.com/letta-ai/letta/blob/main/examples/docs/node/example.ts) examples, as well as our other [cookbooks](/cookbooks).
