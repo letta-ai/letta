@@ -7158,9 +7158,9 @@
     "/v1/agents/{agent_id}/messages/preview-raw-payload": {
       "post": {
         "tags": ["agents"],
-        "summary": "Preview Raw Payload",
+        "summary": "Preview Model Request",
         "description": "Inspect the raw LLM request payload without sending it.\n\nThis endpoint processes the message through the agent loop up until\nthe LLM request, then returns the raw request payload that would\nbe sent to the LLM provider. Useful for debugging and inspection.",
-        "operationId": "preview_raw_payload",
+        "operationId": "preview_model_request",
         "parameters": [
           {
             "name": "agent_id",
@@ -7204,7 +7204,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Preview Raw Payload"
+                  "title": "Response Preview Model Request"
                 }
               }
             }

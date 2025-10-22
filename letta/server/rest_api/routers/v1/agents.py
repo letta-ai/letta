@@ -1635,9 +1635,9 @@ async def list_groups_for_agent(
 @router.post(
     "/{agent_id}/messages/preview-raw-payload",
     response_model=Dict[str, Any],
-    operation_id="preview_raw_payload",
+    operation_id="preview_model_request",
 )
-async def preview_raw_payload(
+async def preview_model_request(
     agent_id: AgentId,
     request: Union[LettaRequest, LettaStreamingRequest] = Body(...),
     server: SyncServer = Depends(get_letta_server),
