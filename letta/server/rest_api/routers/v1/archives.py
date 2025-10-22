@@ -116,3 +116,19 @@ async def modify_archive(
         description=archive.description,
         actor=actor,
     )
+
+
+@router.delete("/{archive_id}", response_model=PydanticArchive, operation_id="delete_archive")
+async def delete_archive(
+    archive_id: ArchiveId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Delete an archive by its ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.delete_archive_async(
+        archive_id=archive_id,
+        actor=actor,
+    )
