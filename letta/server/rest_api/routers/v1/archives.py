@@ -83,6 +83,22 @@ async def list_archives(
     return archives
 
 
+@router.get("/{archive_id}", response_model=PydanticArchive, operation_id="get_archive_by_id")
+async def get_archive_by_id(
+    archive_id: ArchiveId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get a single archive by its ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.get_archive_by_id_async(
+        archive_id=archive_id,
+        actor=actor,
+    )
+
+
 @router.patch("/{archive_id}", response_model=PydanticArchive, operation_id="modify_archive")
 async def modify_archive(
     archive_id: ArchiveId,
