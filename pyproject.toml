@@ -70,6 +70,7 @@ dependencies = [
     "trafilatura",
     "readability-lxml",
     "google-genai>=1.15.0",
+    "voyageai>=0.3.5",
 ]
 
 [project.scripts]

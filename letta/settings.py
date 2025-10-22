@@ -126,6 +126,9 @@ class ModelSettings(BaseSettings):
     # groq
     groq_api_key: Optional[str] = None
 
+    # voyageai
+    voyageai_api_key: Optional[str] = None
+
     # Bedrock
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None

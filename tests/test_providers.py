@@ -15,6 +15,7 @@ from letta.schemas.providers import (
     OpenAIProvider,
     TogetherProvider,
     VLLMProvider,
+    VoyageAIProvider,
 )
 from letta.settings import model_settings
 
@@ -382,3 +383,99 @@ def test_reasoning_toggle_by_provider(
     assert new_config.put_inner_thoughts_in_kwargs == expected_put_inner_thoughts_in_kwargs
     assert new_config.reasoning_effort == expected_reasoning_effort
     assert new_config.max_reasoning_tokens == expected_max_reasoning_tokens
+
+
+def test_voyageai():
+    """Test VoyageAI provider listing embedding models."""
+    provider = VoyageAIProvider(
+        name="voyageai",
+        api_key="test_api_key",  # API key not needed for listing hardcoded models
+    )
+
+    # VoyageAI doesn't provide LLM models, only embeddings
+    llm_models = provider.list_llm_models()
+    assert len(llm_models) == 0
+
+    # Test embedding models
+    embedding_models = provider.list_embedding_models()
+    assert len(embedding_models) > 0
+
+    # Verify all expected models are present
+    model_names = [m.embedding_model for m in embedding_models]
+
+    # Text models
+    assert "voyage-3" in model_names
+    assert "voyage-3-large" in model_names
+    assert "voyage-3.5" in model_names
+    assert "voyage-3.5-lite" in model_names
+    assert "voyage-code-3" in model_names
+    assert "voyage-finance-2" in model_names
+    assert "voyage-law-2" in model_names
+
+    # Contextual model
+    assert "voyage-context-3" in model_names
+
+    # Multimodal model
+    assert "voyage-multimodal-3" in model_names
+
+    # Verify handle format
+    for model in embedding_models:
+        assert model.handle == f"{provider.name}/{model.embedding_model}"
+        assert model.embedding_endpoint_type == "voyageai"
+        assert model.embedding_endpoint == "https://api.voyageai.com/v1"
+        assert model.embedding_dim in [512, 1024, 1536]  # Valid dimensions
+        assert model.batch_size > 0
+
+
+def test_voyageai_model_config():
+    """Test VoyageAI provider model configuration details."""
+    provider = VoyageAIProvider(
+        name="voyageai",
+        api_key="test_api_key",
+    )
+
+    embedding_models = provider.list_embedding_models()
+    model_dict = {m.embedding_model: m for m in embedding_models}
+
+    # Test voyage-3 configuration
+    voyage_3 = model_dict.get("voyage-3")
+    assert voyage_3 is not None
+    assert voyage_3.embedding_dim == 1024
+    assert voyage_3.batch_size == 120
+
+    # Test voyage-3.5-lite (high throughput model)
+    voyage_lite = model_dict.get("voyage-3.5-lite")
+    assert voyage_lite is not None
+    assert voyage_lite.embedding_dim == 512
+    assert voyage_lite.batch_size == 1000  # Higher batch size for lite model
+
+    # Test voyage-context-3 (contextual model with lower batch size)
+    voyage_context = model_dict.get("voyage-context-3")
+    assert voyage_context is not None
+    assert voyage_context.embedding_dim == 1024
+    assert voyage_context.batch_size == 32  # Lower batch size due to token limits
+
+    # Test voyage-multimodal-3
+    voyage_multimodal = model_dict.get("voyage-multimodal-3")
+    assert voyage_multimodal is not None
+    assert voyage_multimodal.embedding_dim == 1024
+    assert voyage_multimodal.batch_size == 120
+
+
+@pytest.mark.skipif(model_settings.voyageai_api_key is None, reason="Only run if VOYAGEAI_API_KEY is set.")
+@pytest.mark.asyncio
+async def test_voyageai_real_api():
+    """Test VoyageAI provider with real API (integration test)."""
+    provider = VoyageAIProvider(
+        name="voyageai",
+        api_key=model_settings.voyageai_api_key,
+    )
+
+    # Test that models are listed correctly
+    embedding_models = provider.list_embedding_models()
+    assert len(embedding_models) > 0
+
+    # All models should be configured with voyageai endpoint type
+    for model in embedding_models:
+        assert model.embedding_endpoint_type == "voyageai"
+        assert model.handle.startswith("voyageai/")
