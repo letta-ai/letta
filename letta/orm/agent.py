@@ -243,6 +243,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "memory": Memory(blocks=[]),
             "blocks": [],
             "identity_ids": [],
+            "identities": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
             "secrets": [],
@@ -265,6 +266,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             ),
             "blocks": lambda: [b.to_pydantic() for b in self.core_memory],
             "identity_ids": lambda: [i.id for i in self.identities],
+            "identities": lambda: [i.to_pydantic() for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
             "secrets": lambda: self.tool_exec_environment_variables,
@@ -338,6 +340,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "memory": Memory(blocks=[]),
             "blocks": [],
             "identity_ids": [],
+            "identities": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
             "secrets": [],
@@ -384,6 +387,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         )
         state["blocks"] = [m.to_pydantic() for m in memory]
         state["identity_ids"] = [i.id for i in identities]
+        state["identities"] = [i.to_pydantic() for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["tool_exec_environment_variables"] = tool_exec_environment_variables
         state["secrets"] = tool_exec_environment_variables

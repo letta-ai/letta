@@ -12,6 +12,7 @@ from letta.schemas.enums import PrimitiveType
 from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
+from letta.schemas.identity import Identity
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -104,7 +105,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
     deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
     entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
-    identity_ids: List[str] = Field([], description="The ids of the identities associated with this agent.")
+    identity_ids: List[str] = Field([], description="The ids of the identities associated with this agent.", deprecated=True)
+    identities: List[Identity] = Field([], description="The identities associated with this agent.")
 
     # An advanced configuration that makes it so this agent does not remember any previous messages
     message_buffer_autoclear: bool = Field(

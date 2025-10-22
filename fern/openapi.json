@@ -16692,6 +16692,16 @@
             "type": "array",
             "title": "Identity Ids",
             "description": "The ids of the identities associated with this agent.",
+            "default": [],
+            "deprecated": true
+          },
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/Identity"
+            },
+            "type": "array",
+            "title": "Identities",
+            "description": "The identities associated with this agent.",
             "default": []
           },
           "message_buffer_autoclear": {

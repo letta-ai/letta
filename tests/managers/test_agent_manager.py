@@ -1076,6 +1076,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "deployment_id": (str, type(None)),
         "entity_id": (str, type(None)),
         "identity_ids": list,
+        "identities": list,
         # Advanced configuration
         "message_buffer_autoclear": bool,
         "enable_sleeptime": (bool, type(None)),
