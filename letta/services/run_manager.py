@@ -16,7 +16,7 @@ from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import AgentType, MessageRole, RunStatus
+from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_response import LettaResponse
@@ -109,6 +109,8 @@ class RunManager:
         stop_reason: Optional[str] = None,
         background: Optional[bool] = None,
         template_family: Optional[str] = None,
+        step_count: Optional[int] = None,
+        step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
@@ -137,6 +139,18 @@ class RunManager:
             # Filter by template_family (base_template_id)
             if template_family:
                 query = query.filter(RunModel.base_template_id == template_family)
+
+            # Filter by step_count - join with run_metrics
+            if step_count is not None:
+                query = query.join(RunMetricsModel, RunModel.id == RunMetricsModel.id)
+
+                # Filter by step_count with the specified operator
+                if step_count_operator == ComparisonOperator.EQ:
+                    query = query.filter(RunMetricsModel.num_steps == step_count)
+                elif step_count_operator == ComparisonOperator.GTE:
+                    query = query.filter(RunMetricsModel.num_steps >= step_count)
+                elif step_count_operator == ComparisonOperator.LTE:
+                    query = query.filter(RunMetricsModel.num_steps <= step_count)
 
             # Apply pagination
             from letta.services.helpers.run_manager_helper import _apply_pagination_async

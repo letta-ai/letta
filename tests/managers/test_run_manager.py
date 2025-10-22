@@ -383,6 +383,140 @@ async def test_list_runs_by_stop_reason(server: SyncServer, sarah_agent, default
 
 
 @pytest.mark.asyncio
+async def test_list_runs_by_step_count(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by step count."""
+    from letta.schemas.enums import ComparisonOperator
+
+    # Create runs with different numbers of steps
+    runs_data = []
+
+    # Run with 0 steps
+    run_0 = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            agent_id=sarah_agent.id,
+            metadata={"steps": 0},
+        ),
+        actor=default_user,
+    )
+    runs_data.append((run_0, 0))
+
+    # Run with 2 steps
+    run_2 = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            agent_id=sarah_agent.id,
+            metadata={"steps": 2},
+        ),
+        actor=default_user,
+    )
+    for i in range(2):
+        await server.step_manager.log_step_async(
+            agent_id=sarah_agent.id,
+            provider_name="openai",
+            provider_category="base",
+            model="gpt-4o-mini",
+            model_endpoint="https://api.openai.com/v1",
+            context_window_limit=8192,
+            usage=UsageStatistics(
+                completion_tokens=100,
+                prompt_tokens=50,
+                total_tokens=150,
+            ),
+            run_id=run_2.id,
+            actor=default_user,
+            project_id=sarah_agent.project_id,
+        )
+    runs_data.append((run_2, 2))
+
+    # Run with 5 steps
+    run_5 = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(
+            agent_id=sarah_agent.id,
+            metadata={"steps": 5},
+        ),
+        actor=default_user,
+    )
+    for i in range(5):
+        await server.step_manager.log_step_async(
+            agent_id=sarah_agent.id,
+            provider_name="openai",
+            provider_category="base",
+            model="gpt-4o-mini",
+            model_endpoint="https://api.openai.com/v1",
+            context_window_limit=8192,
+            usage=UsageStatistics(
+                completion_tokens=100,
+                prompt_tokens=50,
+                total_tokens=150,
+            ),
+            run_id=run_5.id,
+            actor=default_user,
+            project_id=sarah_agent.project_id,
+        )
+    runs_data.append((run_5, 5))
+
+    # Update all runs to trigger metrics update
+    for run, _ in runs_data:
+        await server.run_manager.update_run_by_id_async(
+            run.id,
+            RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn),
+            actor=default_user,
+        )
+
+    # Test EQ operator - exact match
+    runs_eq_2 = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        step_count=2,
+        step_count_operator=ComparisonOperator.EQ,
+    )
+    assert len(runs_eq_2) == 1
+    assert runs_eq_2[0].id == run_2.id
+
+    # Test GTE operator - greater than or equal
+    runs_gte_2 = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        step_count=2,
+        step_count_operator=ComparisonOperator.GTE,
+    )
+    assert len(runs_gte_2) == 2
+    run_ids_gte = {run.id for run in runs_gte_2}
+    assert run_2.id in run_ids_gte
+    assert run_5.id in run_ids_gte
+
+    # Test LTE operator - less than or equal
+    runs_lte_2 = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        step_count=2,
+        step_count_operator=ComparisonOperator.LTE,
+    )
+    assert len(runs_lte_2) == 2
+    run_ids_lte = {run.id for run in runs_lte_2}
+    assert run_0.id in run_ids_lte
+    assert run_2.id in run_ids_lte
+
+    # Test GTE with 0 - should return all runs
+    runs_gte_0 = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        step_count=0,
+        step_count_operator=ComparisonOperator.GTE,
+    )
+    assert len(runs_gte_0) == 3
+
+    # Test LTE with 0 - should return only run with 0 steps
+    runs_lte_0 = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        step_count=0,
+        step_count_operator=ComparisonOperator.LTE,
+    )
+    assert len(runs_lte_0) == 1
+    assert runs_lte_0[0].id == run_0.id
+
+
+@pytest.mark.asyncio
 async def test_list_runs_by_base_template_id(server: SyncServer, sarah_agent, default_user):
     """Test listing runs by template family."""
     run_data = PydanticRun(
