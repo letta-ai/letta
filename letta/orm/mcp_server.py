@@ -56,3 +56,12 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
     metadata_: Mapped[Optional[dict]] = mapped_column(
         JSON, default=lambda: {}, doc="A dictionary of additional metadata for the MCP server."
     )
+
+
+class MCPTools(SqlalchemyBase, OrganizationMixin):
+    """Represents a mapping of MCP server ID to tool ID"""
+
+    __tablename__ = "mcp_tools"
+
+    mcp_server_id: Mapped[str] = mapped_column(String, doc="The ID of the MCP server")
+    tool_id: Mapped[str] = mapped_column(String, doc="The ID of the tool")

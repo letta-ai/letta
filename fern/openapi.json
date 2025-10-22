@@ -1283,13 +1283,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/UpdateStdioMCPServer"
+                    "$ref": "#/components/schemas/letta__schemas__mcp__UpdateStdioMCPServer"
                   },
                   {
-                    "$ref": "#/components/schemas/UpdateSSEMCPServer"
+                    "$ref": "#/components/schemas/letta__schemas__mcp__UpdateSSEMCPServer"
                   },
                   {
-                    "$ref": "#/components/schemas/UpdateStreamableHTTPMCPServer"
+                    "$ref": "#/components/schemas/letta__schemas__mcp__UpdateStreamableHTTPMCPServer"
                   }
                 ],
                 "title": "Request"
@@ -1519,7 +1519,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MCPToolExecuteRequest"
+                "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest"
               }
             }
           }
@@ -9512,6 +9512,521 @@
                   },
                   "title": "Response List Embedding Models"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/": {
+      "post": {
+        "tags": ["mcp-servers"],
+        "summary": "Create Mcp Server",
+        "description": "Add a new MCP server to the Letta MCP server config",
+        "operationId": "mcp_create_mcp_server",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateStdioMCPServer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateSSEMCPServer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateStreamableHTTPMCPServer"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StdioMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SSEMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StreamableHTTPMCPServer"
+                    }
+                  ],
+                  "title": "Response Mcp Create Mcp Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["mcp-servers"],
+        "summary": "List Mcp Servers",
+        "description": "Get a list of all configured MCP servers",
+        "operationId": "mcp_list_mcp_servers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/StdioMCPServer"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SSEMCPServer"
+                      },
+                      {
+                        "$ref": "#/components/schemas/StreamableHTTPMCPServer"
+                      }
+                    ]
+                  },
+                  "title": "Response Mcp List Mcp Servers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/{mcp_server_id}": {
+      "get": {
+        "tags": ["mcp-servers"],
+        "summary": "Get Mcp Server",
+        "description": "Get a specific MCP server",
+        "operationId": "mcp_get_mcp_server",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StdioMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SSEMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StreamableHTTPMCPServer"
+                    }
+                  ],
+                  "title": "Response Mcp Get Mcp Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["mcp-servers"],
+        "summary": "Delete Mcp Server",
+        "description": "Delete an MCP server by its ID",
+        "operationId": "mcp_delete_mcp_server",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["mcp-servers"],
+        "summary": "Update Mcp Server",
+        "description": "Update an existing MCP server configuration",
+        "operationId": "mcp_update_mcp_server",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StdioMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SSEMCPServer"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StreamableHTTPMCPServer"
+                    }
+                  ],
+                  "title": "Response Mcp Update Mcp Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/{mcp_server_id}/tools": {
+      "get": {
+        "tags": ["mcp-servers"],
+        "summary": "List Mcp Tools By Server",
+        "description": "Get a list of all tools for a specific MCP server",
+        "operationId": "mcp_list_mcp_tools_by_server",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tool"
+                  },
+                  "title": "Response Mcp List Mcp Tools By Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/{mcp_server_id}/tools/{tool_id}": {
+      "get": {
+        "tags": ["mcp-servers"],
+        "summary": "Get Mcp Tool",
+        "description": "Get a specific MCP tool by its ID",
+        "operationId": "mcp_get_mcp_tool",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          },
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/{mcp_server_id}/tools/{tool_id}/run": {
+      "post": {
+        "tags": ["mcp-servers"],
+        "summary": "Run Mcp Tool",
+        "description": "Execute a specific MCP tool\n\nThe request body should contain the tool arguments in the MCPToolExecuteRequest format.",
+        "operationId": "mcp_run_tool",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          },
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__MCPToolExecuteRequest",
+                "default": {
+                  "args": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolExecutionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/{mcp_server_id}/refresh": {
+      "patch": {
+        "tags": ["mcp-servers"],
+        "summary": "Refresh Mcp Server Tools",
+        "description": "Refresh tools for an MCP server by:\n1. Fetching current tools from the MCP server\n2. Deleting tools that no longer exist on the server\n3. Updating schemas for existing tools\n4. Adding new tools from the server\n\nReturns a summary of changes made.",
+        "operationId": "mcp_refresh_mcp_server_tools",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp-servers/connect/{mcp_server_id}": {
+      "get": {
+        "tags": ["mcp-servers"],
+        "summary": "Connect Mcp Server",
+        "description": "Connect to an MCP server with support for OAuth via SSE.\nReturns a stream of events handling authorization state and exchange if OAuth is required.",
+        "operationId": "mcp_connect_mcp_server",
+        "parameters": [
+          {
+            "name": "mcp_server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
               }
             }
           },
@@ -27618,6 +28133,173 @@
         "title": "CreateBlock",
         "description": "Create a block"
       },
+      "CreateSSEMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "sse"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url",
+            "description": "The URL of the server"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom HTTP headers to include with requests"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "server_url"],
+        "title": "CreateSSEMCPServer",
+        "description": "Create a new SSE MCP server"
+      },
+      "CreateStdioMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "stdio"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "description": "The command to run (MCP 'local' client will run this command)"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Args",
+            "description": "The arguments to pass to the command"
+          },
+          "env": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env",
+            "description": "Environment variables to set"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "command", "args"],
+        "title": "CreateStdioMCPServer",
+        "description": "Create a new Stdio MCP server"
+      },
+      "CreateStreamableHTTPMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "streamable_http"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url",
+            "description": "The URL of the server"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom HTTP headers to include with requests"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "server_url"],
+        "title": "CreateStreamableHTTPMCPServer",
+        "description": "Create a new Streamable HTTP MCP server"
+      },
       "Custom-Input": {
         "properties": {
           "input": {
@@ -32208,18 +32890,6 @@
         "title": "MCPTool",
         "description": "A simple wrapper around MCP's tool definition (to avoid conflict with our own)"
       },
-      "MCPToolExecuteRequest": {
-        "properties": {
-          "args": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Args",
-            "description": "Arguments to pass to the MCP tool"
-          }
-        },
-        "type": "object",
-        "title": "MCPToolExecuteRequest"
-      },
       "MCPToolHealth": {
         "properties": {
           "status": {
@@ -34661,6 +35331,74 @@
         "title": "RunStatus",
         "description": "Status of the run."
       },
+      "SSEMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "sse"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url",
+            "description": "The URL of the server"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom HTTP headers to include with requests"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^mcp_server-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Mcp_server",
+            "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "server_url"],
+        "title": "SSEMCPServer",
+        "description": "An SSE MCP server"
+      },
       "SSEServerConfig": {
         "properties": {
           "server_name": {
@@ -35495,6 +36233,58 @@
         "title": "SourceUpdate",
         "description": "Schema for updating an existing Source."
       },
+      "StdioMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "stdio"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "description": "The command to run (MCP 'local' client will run this command)"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Args",
+            "description": "The arguments to pass to the command"
+          },
+          "env": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env",
+            "description": "Environment variables to set"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^mcp_server-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Mcp_server",
+            "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "command", "args"],
+        "title": "StdioMCPServer",
+        "description": "A Stdio MCP server"
+      },
       "StdioServerConfig": {
         "properties": {
           "server_name": {
@@ -35991,6 +36781,74 @@
           "requires_approval"
         ],
         "title": "StopReasonType"
+      },
+      "StreamableHTTPMCPServer": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "streamable_http"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url",
+            "description": "The URL of the server"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom HTTP headers to include with requests"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^mcp_server-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Mcp_server",
+            "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "server_url"],
+        "title": "StreamableHTTPMCPServer",
+        "description": "A Streamable HTTP MCP server"
       },
       "StreamableHTTPServerConfig": {
         "properties": {
@@ -37028,6 +37886,82 @@
         "type": "object",
         "required": ["created_at", "description", "key", "updated_at", "value"],
         "title": "ToolEnvVarSchema"
+      },
+      "ToolExecutionResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "title": "Status",
+            "description": "The status of the tool execution and return object"
+          },
+          "func_return": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Func Return",
+            "description": "The function return object"
+          },
+          "agent_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent state"
+          },
+          "stdout": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdout",
+            "description": "Captured stdout (prints, logs) from function invocation"
+          },
+          "stderr": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stderr",
+            "description": "Captured stderr from the function invocation"
+          },
+          "sandbox_config_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox Config Fingerprint",
+            "description": "The fingerprint of the config for the sandbox"
+          }
+        },
+        "type": "object",
+        "required": ["status"],
+        "title": "ToolExecutionResult"
       },
       "ToolJSONSchema": {
         "properties": {
@@ -38089,131 +39023,6 @@
         "type": "object",
         "required": ["reasoning"],
         "title": "UpdateReasoningMessage"
-      },
-      "UpdateSSEMCPServer": {
-        "properties": {
-          "server_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Url",
-            "description": "The URL of the server (MCP SSE client will connect to this URL)"
-          },
-          "token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Token",
-            "description": "The access token or API key for the MCP server (used for SSE authentication)"
-          },
-          "custom_headers": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Headers",
-            "description": "Custom authentication headers as key-value pairs"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "UpdateSSEMCPServer",
-        "description": "Update an SSE MCP server"
-      },
-      "UpdateStdioMCPServer": {
-        "properties": {
-          "stdio_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/StdioServerConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The configuration for the server (MCP 'local' client will run this command)"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "UpdateStdioMCPServer",
-        "description": "Update a Stdio MCP server"
-      },
-      "UpdateStreamableHTTPMCPServer": {
-        "properties": {
-          "server_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Url",
-            "description": "The URL path for the streamable HTTP server (e.g., 'example/mcp')"
-          },
-          "auth_header": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Header",
-            "description": "The name of the authentication header (e.g., 'Authorization')"
-          },
-          "auth_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Token",
-            "description": "The authentication token or API key value"
-          },
-          "custom_headers": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Headers",
-            "description": "Custom authentication headers as key-value pairs"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "UpdateStreamableHTTPMCPServer",
-        "description": "Update a Streamable HTTP MCP server"
       },
       "UpdateSystemMessage": {
         "properties": {
@@ -39807,6 +40616,325 @@
         "required": ["tool_return", "status", "tool_call_id"],
         "title": "ToolReturn"
       },
+      "letta__schemas__mcp__UpdateSSEMCPServer": {
+        "properties": {
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Url",
+            "description": "The URL of the server (MCP SSE client will connect to this URL)"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "The access token or API key for the MCP server (used for SSE authentication)"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom authentication headers as key-value pairs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateSSEMCPServer",
+        "description": "Update an SSE MCP server"
+      },
+      "letta__schemas__mcp__UpdateStdioMCPServer": {
+        "properties": {
+          "stdio_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StdioServerConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The configuration for the server (MCP 'local' client will run this command)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateStdioMCPServer",
+        "description": "Update a Stdio MCP server"
+      },
+      "letta__schemas__mcp__UpdateStreamableHTTPMCPServer": {
+        "properties": {
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Url",
+            "description": "The URL path for the streamable HTTP server (e.g., 'example/mcp')"
+          },
+          "auth_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Header",
+            "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom authentication headers as key-value pairs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateStreamableHTTPMCPServer",
+        "description": "Update a Streamable HTTP MCP server"
+      },
+      "letta__schemas__mcp_server__MCPToolExecuteRequest": {
+        "properties": {
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args",
+            "description": "Arguments to pass to the MCP tool"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MCPToolExecuteRequest",
+        "description": "Request to execute an MCP tool by IDs."
+      },
+      "letta__schemas__mcp_server__UpdateSSEMCPServer": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the MCP server"
+          },
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Url",
+            "description": "The URL of the SSE MCP server"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "The authentication token"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom headers to send with requests"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateSSEMCPServer",
+        "description": "Update schema for SSE MCP server - all fields optional"
+      },
+      "letta__schemas__mcp_server__UpdateStdioMCPServer": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the MCP server"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command",
+            "description": "The command to run the MCP server"
+          },
+          "args": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args",
+            "description": "The arguments to pass to the command"
+          },
+          "env": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env",
+            "description": "Environment variables to set"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateStdioMCPServer",
+        "description": "Update schema for Stdio MCP server - all fields optional"
+      },
+      "letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the MCP server"
+          },
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Url",
+            "description": "The URL of the Streamable HTTP MCP server"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "The authentication token"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Headers",
+            "description": "Custom headers to send with requests"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateStreamableHTTPMCPServer",
+        "description": "Update schema for Streamable HTTP MCP server - all fields optional"
+      },
       "letta__schemas__message__ToolReturn": {
         "properties": {
           "tool_call_id": {
@@ -40205,6 +41333,18 @@
           "updated_at"
         ],
         "title": "ToolSchema"
+      },
+      "letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest": {
+        "properties": {
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args",
+            "description": "Arguments to pass to the MCP tool"
+          }
+        },
+        "type": "object",
+        "title": "MCPToolExecuteRequest"
       },
       "openai__types__chat__chat_completion_message_function_tool_call__Function": {
         "properties": {

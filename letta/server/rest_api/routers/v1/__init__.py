@@ -11,6 +11,7 @@ from letta.server.rest_api.routers.v1.internal_runs import router as internal_ru
 from letta.server.rest_api.routers.v1.internal_templates import router as internal_templates_router
 from letta.server.rest_api.routers.v1.jobs import router as jobs_router
 from letta.server.rest_api.routers.v1.llms import router as llm_router
+from letta.server.rest_api.routers.v1.mcp_servers import router as mcp_servers_router
 from letta.server.rest_api.routers.v1.messages import router as messages_router
 from letta.server.rest_api.routers.v1.providers import router as providers_router
 from letta.server.rest_api.routers.v1.runs import router as runs_router
@@ -34,6 +35,7 @@ ROUTERS = [
     internal_runs_router,
     internal_templates_router,
     llm_router,
+    mcp_servers_router,
     blocks_router,
     jobs_router,
     health_router,

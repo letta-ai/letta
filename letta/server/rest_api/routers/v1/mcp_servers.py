@@ -1,8 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from httpx import HTTPStatusError
 from starlette.responses import StreamingResponse
 
+from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.log import get_logger
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.mcp_server import (
@@ -13,12 +15,17 @@ from letta.schemas.mcp_server import (
     convert_generic_to_union,
 )
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.server.rest_api.dependencies import (
     HeaderParams,
     get_headers,
     get_letta_server,
 )
+from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
+from letta.services.mcp.oauth_utils import drill_down_exception, oauth_stream_event
+from letta.services.mcp.stdio_client import AsyncStdioMCPClient
+from letta.services.mcp.types import OauthStreamEvent
 from letta.settings import tool_settings
 
 router = APIRouter(prefix="/mcp-servers", tags=["mcp-servers"])
@@ -39,6 +46,7 @@ async def create_mcp_server(
     """
     Add a new MCP server to the Letta MCP server config
     """
+    # TODO: add the tools to the MCP server table we made.
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     new_server = await server.mcp_server_manager.create_mcp_server_from_config_with_tools(request, actor=actor)
     return convert_generic_to_union(new_server)
@@ -56,7 +64,6 @@ async def list_mcp_servers(
     """
     Get a list of all configured MCP servers
     """
-
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     mcp_servers = await server.mcp_server_manager.list_mcp_servers(actor=actor)
     return [convert_generic_to_union(mcp_server) for mcp_server in mcp_servers]
@@ -127,24 +134,10 @@ async def list_mcp_tools_by_server(
     """
     Get a list of all tools for a specific MCP server
     """
-    # TODO: implement this. We want to use the new tools table instead of going to the mcp server.
-    pass
-    # actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    # mcp_tools = await server.mcp_server_manager.list_mcp_server_tools(mcp_server_id, actor=actor)
-    # # Convert MCPTool objects to Tool objects
-    # tools = []
-    # for mcp_tool in mcp_tools:
-    #     from letta.schemas.tool import ToolCreate
-    #     tool_create = ToolCreate.from_mcp(mcp_server_name="", mcp_tool=mcp_tool)
-    #     tools.append(Tool(
-    #         id=f"mcp-tool-{mcp_tool.name}",  # Generate a temporary ID
-    #         name=mcp_tool.name,
-    #         description=tool_create.description,
-    #         json_schema=tool_create.json_schema,
-    #         source_code=tool_create.source_code,
-    #         tags=tool_create.tags,
-    #     ))
-    # return tools
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    # Use the new efficient method that queries from the database using MCPTools mapping
+    tools = await server.mcp_server_manager.list_tools_by_mcp_server_from_db(mcp_server_id, actor=actor)
+    return tools
 
 
 @router.get("/{mcp_server_id}/tools/{tool_id}", response_model=Tool, operation_id="mcp_get_mcp_tool")
@@ -158,13 +151,11 @@ async def get_mcp_tool(
     Get a specific MCP tool by its ID
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    # Use the tool_manager's existing method to get the tool by ID
-    # Verify the tool belongs to the MCP server (optional check)
-    tool = await server.tool_manager.get_tool_by_id_async(tool_id=tool_id, actor=actor)
+    tool = await server.mcp_server_manager.get_tool_by_mcp_server(mcp_server_id, tool_id, actor=actor)
     return tool
 
 
-@router.post("/{mcp_server_id}/tools/{tool_id}/run", response_model=ToolReturnMessage, operation_id="mcp_run_tool")
+@router.post("/{mcp_server_id}/tools/{tool_id}/run", response_model=ToolExecutionResult, operation_id="mcp_run_tool")
 async def run_mcp_tool(
     mcp_server_id: str,
     tool_id: str,
@@ -188,9 +179,10 @@ async def run_mcp_tool(
         actor=actor,
     )
 
-    # Create a ToolReturnMessage
-    return ToolReturnMessage(
-        id=f"tool-return-{tool_id}", tool_call_id=f"call-{tool_id}", tool_return=result, status="success" if success else "error"
+    # Create a ToolExecutionResult
+    return ToolExecutionResult(
+        status="success" if success else "error",
+        func_return=result,
     )
 
 
@@ -231,6 +223,7 @@ async def refresh_mcp_server_tools(
 )
 async def connect_mcp_server(
     mcp_server_id: str,
+    request: Request,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ) -> StreamingResponse:
@@ -238,72 +231,76 @@ async def connect_mcp_server(
     Connect to an MCP server with support for OAuth via SSE.
     Returns a stream of events handling authorization state and exchange if OAuth is required.
     """
-    pass
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    mcp_server = await server.mcp_server_manager.get_mcp_server_by_id_async(mcp_server_id=mcp_server_id, actor=actor)
 
-    # async def oauth_stream_generator(
-    #     request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
-    #     http_request: Request,
-    # ) -> AsyncGenerator[str, None]:
-    #     client = None
+    # Convert the MCP server to the appropriate config type
+    config = mcp_server.to_config(resolve_variables=False)
 
-    #     oauth_flow_attempted = False
-    #     try:
-    #         # Acknolwedge connection attempt
-    #         yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=request.server_name)
+    async def oauth_stream_generator(
+        mcp_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig],
+        http_request: Request,
+    ) -> AsyncGenerator[str, None]:
+        client = None
 
-    #         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        oauth_flow_attempted = False
+        try:
+            # Acknowledge connection attempt
+            yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=mcp_config.server_name)
 
-    #         # Create MCP client with respective transport type
-    #         try:
-    #             request.resolve_environment_variables()
-    #             client = await server.mcp_server_manager.get_mcp_client(request, actor)
-    #         except ValueError as e:
-    #             yield oauth_stream_event(OauthStreamEvent.ERROR, message=str(e))
-    #             return
+            # Create MCP client with respective transport type
+            try:
+                mcp_config.resolve_environment_variables()
+                client = await server.mcp_server_manager.get_mcp_client(mcp_config, actor)
+            except ValueError as e:
+                yield oauth_stream_event(OauthStreamEvent.ERROR, message=str(e))
+                return
 
-    #         # Try normal connection first for flows that don't require OAuth
-    #         try:
-    #             await client.connect_to_server()
-    #             tools = await client.list_tools(serialize=True)
-    #             yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
-    #             return
-    #         except ConnectionError:
-    #             # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
-    #             if isinstance(client, AsyncStdioMCPClient):
-    #                 logger.warning("OAuth not supported for stdio")
-    #                 yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
-    #                 return
-    #             # Continue to OAuth flow
-    #             logger.info(f"Attempting OAuth flow for {request}...")
-    #         except Exception as e:
-    #             yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
-    #             return
-    #         finally:
-    #             if client:
-    #                 try:
-    #                     await client.cleanup()
-    #                 # This is a workaround to catch the expected 401 Unauthorized from the official MCP SDK, see their streamable_http.py
-    #                 # For SSE transport types, we catch the ConnectionError above, but Streamable HTTP doesn't bubble up the exception
-    #                 except* HTTPStatusError:
-    #                     oauth_flow_attempted = True
-    #                     async for event in server.mcp_server_manager.handle_oauth_flow(request=request, actor=actor, http_request=http_request):
-    #                         yield event
+            # Try normal connection first for flows that don't require OAuth
+            try:
+                await client.connect_to_server()
+                tools = await client.list_tools(serialize=True)
+                yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
+                return
+            except ConnectionError:
+                # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
+                if isinstance(client, AsyncStdioMCPClient):
+                    logger.warning("OAuth not supported for stdio")
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
+                    return
+                # Continue to OAuth flow
+                logger.info(f"Attempting OAuth flow for {mcp_config}...")
+            except Exception as e:
+                yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
+                return
+            finally:
+                if client:
+                    try:
+                        await client.cleanup()
+                    # This is a workaround to catch the expected 401 Unauthorized from the official MCP SDK, see their streamable_http.py
+                    # For SSE transport types, we catch the ConnectionError above, but Streamable HTTP doesn't bubble up the exception
+                    except HTTPStatusError:
+                        oauth_flow_attempted = True
+                        async for event in server.mcp_server_manager.handle_oauth_flow(
+                            request=mcp_config, actor=actor, http_request=http_request
+                        ):
+                            yield event
 
-    #         # Failsafe to make sure we don't try to handle OAuth flow twice
-    #         if not oauth_flow_attempted:
-    #             async for event in server.mcp_server_manager.handle_oauth_flow(request=request, actor=actor, http_request=http_request):
-    #                 yield event
-    #         return
-    #     except Exception as e:
-    #         detailed_error = drill_down_exception(e)
-    #         logger.error(f"Error in OAuth stream:\n{detailed_error}")
-    #         yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Internal error: {detailed_error}")
+            # Failsafe to make sure we don't try to handle OAuth flow twice
+            if not oauth_flow_attempted:
+                async for event in server.mcp_server_manager.handle_oauth_flow(request=mcp_config, actor=actor, http_request=http_request):
+                    yield event
+            return
+        except Exception as e:
+            detailed_error = drill_down_exception(e)
+            logger.error(f"Error in OAuth stream:\n{detailed_error}")
+            yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Internal error: {detailed_error}")
 
-    #     finally:
-    #         if client:
-    #             try:
-    #                 await client.cleanup()
-    #             except Exception as cleanup_error:
-    #                 logger.warning(f"Error during temp MCP client cleanup: {cleanup_error}")
+        finally:
+            if client:
+                try:
+                    await client.cleanup()
+                except Exception as cleanup_error:
+                    logger.warning(f"Error during temp MCP client cleanup: {cleanup_error}")
 
-    # return StreamingResponseWithStatusCode(oauth_stream_generator(request, http_request), media_type="text/event-stream")
+    return StreamingResponseWithStatusCode(oauth_stream_generator(config, request), media_type="text/event-stream")
