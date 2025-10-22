@@ -94,7 +94,6 @@ from letta.services.mcp.base_client import AsyncBaseMCPClient
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp_manager import MCPManager
-from letta.services.mcp_server_manager import MCPServerManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
@@ -155,7 +154,6 @@ class SyncServer(object):
         self.user_manager = UserManager()
         self.tool_manager = ToolManager()
         self.mcp_manager = MCPManager()
-        self.mcp_server_manager = MCPServerManager()
         self.block_manager = BlockManager()
         self.source_manager = SourceManager()
         self.sandbox_config_manager = SandboxConfigManager()
