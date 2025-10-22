@@ -266,7 +266,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             ),
             "blocks": lambda: [b.to_pydantic() for b in self.core_memory],
             "identity_ids": lambda: [i.id for i in self.identities],
-            "identities": lambda: [i.to_pydantic() for i in self.identities],
+            "identities": lambda: [i.to_pydantic() for i in self.identities],  # TODO: fix this
             "multi_agent_group": lambda: self.multi_agent_group,
             "managed_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
@@ -389,7 +389,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         )
         state["blocks"] = [m.to_pydantic() for m in memory]
         state["identity_ids"] = [i.id for i in identities]
-        state["identities"] = [i.to_pydantic() for i in identities]
+        state["identities"] = []  # TODO: fix this
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
         state["tool_exec_environment_variables"] = tool_exec_environment_variables
