@@ -7225,9 +7225,9 @@
     "/v1/agents/{agent_id}/summarize": {
       "post": {
         "tags": ["agents"],
-        "summary": "Summarize Agent Conversation",
+        "summary": "Summarize Messages",
         "description": "Summarize an agent's conversation history to a target message length.\n\nThis endpoint summarizes the current message history for a given agent,\ntruncating and compressing it down to the specified `max_message_length`.",
-        "operationId": "summarize_agent_conversation",
+        "operationId": "summarize_messages",
         "parameters": [
           {
             "name": "agent_id",

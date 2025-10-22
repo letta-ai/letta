@@ -1681,8 +1681,8 @@ async def preview_raw_payload(
         )
 
 
-@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_agent_conversation")
-async def summarize_agent_conversation(
+@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_messages")
+async def summarize_messages(
     request_obj: Request,  # FastAPI Request
     agent_id: AgentId,
     max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
