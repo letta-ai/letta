@@ -265,6 +265,11 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
 
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
     """
+    DEPRECATED: This function is deprecated. Use the native 'memory_rethink' tool instead.
+
+    This function exists for backward compatibility and redirects to the native memory_rethink tool.
+    The native tool uses 'label' instead of 'target_block_label' as the parameter name.
+
     Rewrite memory block for the main agent, new_memory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
 
     Args:
@@ -274,7 +279,15 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
     Returns:
         None: None is always returned as this function does not produce a response.
     """
+    import warnings
 
+    warnings.warn(
+        "rethink_memory is deprecated. Use the native 'memory_rethink' tool instead with 'label' parameter.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    # we will still implement the function For backward compatibility to ensure existing agents using rethink_memory continue to work
     if agent_state.memory.get_block(target_block_label) is None:
         from letta.schemas.block import Block
 

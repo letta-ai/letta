@@ -398,11 +398,11 @@ class LettaAgentBatch(BaseAgent):
     @trace_method
     async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[tuple[str, ToolExecutionResult]]:
         sbx_cfg, sbx_env = await self._build_sandbox()
-        rethink_memory_tool_name = "rethink_memory"
+        # Native memory tool names that support batch optimization
+        memory_rethink_tool_names = {"memory_rethink", "rethink_memory"}  ##### Support both the old and new names
         tool_params = []
-        # TODO: This is a special case - we need to think about how to generalize this
-        # TODO: Rethink memory is a common op that is easily batchable, so we pull this logic out
-        rethink_memory_params = []
+        memory_rethink_params = []
+
         for aid in ctx.agent_ids:
             param = ToolExecutionParams(
                 agent_id=aid,
@@ -414,41 +414,77 @@ class LettaAgentBatch(BaseAgent):
                 sbx_env_vars=sbx_env,
             )
 
-            if ctx.tool_call_name_map[aid] == rethink_memory_tool_name:
-                rethink_memory_params.append(param)
+            # Check if this is a memory rethink operation (supporting both old and new names)
+            if ctx.tool_call_name_map[aid] in memory_rethink_tool_names:
+                memory_rethink_params.append(param)
             else:
                 tool_params.append(param)
 
-        if rethink_memory_params:
-            return await self._bulk_rethink_memory_async(rethink_memory_params)
+        if memory_rethink_params:
+            return await self._bulk_memory_rethink_async(memory_rethink_params)
 
         if tool_params:
             async with Pool() as pool:
                 return await pool.map(execute_tool_wrapper, tool_params)
 
     @trace_method
-    async def _bulk_rethink_memory_async(self, params: List[ToolExecutionParams]) -> Sequence[tuple[str, ToolExecutionResult]]:
+    async def _bulk_memory_rethink_async(self, params: List[ToolExecutionParams]) -> Sequence[tuple[str, ToolExecutionResult]]:
+        """
+        Bulk processing for memory_rethink tool calls.
+
+        This method processes multiple memory_rethink operations efficiently by:
+        1. Converting parameter names from old format to new format if needed
+        2. Batching all memory block updates
+        3. Executing them in a single database transaction
+        """
         updates = {}
         result = []
+
         for param in params:
-            # Sanity check
-            # TODO: This is very brittle and done quickly for performance
-            # TODO: If the end tool is changed, this will break
-            # TODO: Move 'rethink_memory' to a native Letta tool that we control
-            if "new_memory" not in param.tool_args or "target_block_label" not in param.tool_args:
-                raise ValueError(f"Missing either `new_memory` or `target_block_label` in the tool args: {param.tool_args}")
+            # Convert old parameter names to new format for backward compatibility
+            tool_args = param.tool_args.copy()
 
-            # Find the block id/update
-            block_id = param.agent_state.memory.get_block(label=param.tool_args.get("target_block_label")).id
-            new_value = param.tool_args.get("new_memory")
+            # Handle both old ('rethink_memory') and new ('memory_rethink') parameter names
+            if "target_block_label" in tool_args and "label" not in tool_args:
+                tool_args["label"] = tool_args.pop("target_block_label")
 
-            # This is sensitive to multiple agents overwriting the same memory block
-            updates[block_id] = new_value
+            # Validate required parameters
+            if "new_memory" not in tool_args or "label" not in tool_args:
+                error_msg = f"Missing required parameters. Expected 'new_memory' and 'label', got: {list(tool_args.keys())}"
+                result.append((param.agent_id, ToolExecutionResult(status="error", func_return=error_msg, stderr=[error_msg])))
+                continue
 
-            # TODO: This is quite ugly and confusing - this is mostly to align with the returns of other tools
-            result.append((param.agent_id, ToolExecutionResult(status="success")))
+            try:
+                # Get the block
+                block = param.agent_state.memory.get_block(label=tool_args["label"])
+                if not block:
+                    raise ValueError(f"Memory block with label '{tool_args['label']}' not found")
 
-        await self.block_manager.bulk_update_block_values_async(updates=updates, actor=self.actor)
+                if block.read_only:
+                    raise ValueError(f"Cannot edit read-only memory block '{tool_args['label']}'")
+
+                # Prepare the update
+                block_id = block.id
+                new_value = tool_args["new_memory"]
+
+                # This is sensitive to multiple agents overwriting the same memory block
+                updates[block_id] = new_value
+
+                # Alot of success !!!!!!!!!!
+                success_msg = (
+                    f"The core memory block with label `{tool_args['label']}` has been edited. "
+                    "Review the changes and make sure they are as expected (correct indentation, "
+                    "no duplicate lines, etc). Edit the memory block again if necessary."
+                )
+                result.append((param.agent_id, ToolExecutionResult(status="success", func_return=success_msg)))
+
+            except Exception as e:
+                error_msg = f"Failed to update memory block: {str(e)}"
+                result.append((param.agent_id, ToolExecutionResult(status="error", func_return=error_msg, stderr=[error_msg])))
+
+        # Execute all updates in a single batch if there are any successful updates
+        if updates:
+            await self.block_manager.bulk_update_block_values_async(updates=updates, actor=self.actor)
 
         return result
 
