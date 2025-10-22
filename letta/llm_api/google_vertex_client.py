@@ -128,7 +128,7 @@ class GoogleVertexClient(LLMClientBase):
                                         logger.warning(
                                             f"Modified heartbeat message with special character warning for retry {retry_count}/{self.MAX_RETRIES}"
                                         )
-                                except (json.JSONDecodeError, TypeError):
+                                except (json.JSONDecodeError, TypeError, AttributeError):
                                     # Not a JSON message or not a heartbeat, skip modification
                                     pass
 
