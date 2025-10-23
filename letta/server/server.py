@@ -482,8 +482,21 @@ class SyncServer(object):
         request: UpdateAgent,
         actor: User,
     ) -> AgentState:
-        if request.model is not None:
-            request.llm_config = await self.get_llm_config_from_handle_async(handle=request.model, actor=actor)
+        # Build llm_config from convenience fields if llm_config is not provided
+        if request.llm_config is None and (
+            request.model is not None or request.context_window_limit is not None or request.max_tokens is not None
+        ):
+            if request.model is None:
+                agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+                request.model = agent.llm_config.handle
+            config_params = {
+                "handle": request.model,
+                "context_window_limit": request.context_window_limit,
+                "max_tokens": request.max_tokens,
+            }
+            log_event(name="start get_cached_llm_config", attributes=config_params)
+            request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
+            log_event(name="end get_cached_llm_config", attributes=config_params)
 
         if request.embedding is not None:
             request.embedding_config = await self.get_embedding_config_from_handle_async(handle=request.embedding, actor=actor)

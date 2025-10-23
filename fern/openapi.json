@@ -31467,6 +31467,30 @@
             "title": "Embedding",
             "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
           },
+          "context_window_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Limit",
+            "description": "The context window limit used by the agent."
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+          },
           "reasoning": {
             "anyOf": [
               {

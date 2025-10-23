@@ -378,6 +378,11 @@ class UpdateAgent(BaseModel):
     embedding: Optional[str] = Field(
         None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
     )
+    context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
+    max_tokens: Optional[int] = Field(
+        None,
+        description="The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.",
+    )
     reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
