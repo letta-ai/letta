@@ -8,15 +8,15 @@ receivers:
   filelog:
     include:
       - /root/.letta/logs/Letta.log
-    multiline:
-      line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
     operators:
-      # Extract timestamp and other fields
-      - type: regex_parser
-        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+.*'
+      # Parse JSON logs
+      - type: json_parser
+        parse_from: body
+        parse_to: attributes
       - type: time_parser
         parse_from: attributes.timestamp
-        layout: '%Y-%m-%d %H:%M:%S,%L'
+        layout_type: gotime
+        layout: '2006-01-02T15:04:05.999999Z07:00'
 
 processors:
   memory_limiter:

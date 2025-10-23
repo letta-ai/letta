@@ -89,7 +89,10 @@ pinecone = ["pinecone[asyncio]>=7.3.0"]
 sqlite = ["aiosqlite>=0.21.0", "sqlite-vec>=0.1.7a2"]
 
 # ====== Server ======
-experimental = ["uvloop>=0.21.0", "granian[uvloop,reload]>=2.3.2", "google-cloud-profiler>=4.1.0"]
+experimental = [
+    "uvloop>=0.21.0",
+    "granian[uvloop,reload]>=2.3.2",
+]
 server = [
     "websockets",
     "fastapi>=0.115.6",
@@ -143,6 +146,10 @@ desktop = [
     "async-lru>=2.0.5",
     "magika>=0.6.2",
     #"pgserver>=0.1.4",
+]
+profiling = [
+    "ddtrace>=2.18.2",
+    "google-cloud-profiler>=4.1.0",
 ]
 
 [build-system]

@@ -379,15 +379,52 @@ class TestSettings(Settings):
 class LogSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_logging_", extra="ignore")
     debug: bool | None = Field(False, description="Enable debugging for logging")
-    json_logging: bool = Field(False, description="Enable json logging instead of text logging")
+    json_logging: bool = Field(
+        False,
+        description="Enable structured JSON logging (recommended).",
+    )
     log_level: str | None = Field("WARNING", description="Logging level")
     letta_log_path: Path | None = Field(Path.home() / ".letta" / "logs" / "Letta.log")
     verbose_telemetry_logging: bool = Field(False)
 
 
 class TelemetrySettings(BaseSettings):
+    """Configuration for telemetry and observability integrations."""
+
     model_config = SettingsConfigDict(env_prefix="letta_telemetry_", extra="ignore")
-    profiler: bool | None = Field(False, description="Enable use of the profiler.")
+
+    # Google Cloud Profiler
+    profiler: bool | None = Field(False, description="Enable Google Cloud Profiler.")
+
+    # Datadog APM and Profiling
+    enable_datadog: bool | None = Field(False, description="Enable Datadog profiling. Environment is pulled from settings.environment.")
+    datadog_agent_host: str = Field(
+        default="localhost",
+        description="Datadog agent hostname or IP address. Use service name for Kubernetes (e.g., 'datadog-cluster-agent').",
+    )
+    datadog_agent_port: int = Field(default=8126, ge=1, le=65535, description="Datadog trace agent port (typically 8126 for traces).")
+    datadog_service_name: str = Field(default="letta-server", description="Service name for Datadog profiling.")
+    datadog_profiling_memory_enabled: bool = Field(default=True, description="Enable memory profiling in Datadog.")
+    datadog_profiling_heap_enabled: bool = Field(default=True, description="Enable heap profiling in Datadog.")
+
+    # Datadog Source Code Integration (optional, tightly coupled with profiling)
+    # These settings link profiling data and traces to specific Git commits,
+    # enabling code navigation directly from Datadog UI to GitHub/GitLab.
+    datadog_git_repository_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DD_GIT_REPOSITORY_URL", "datadog_git_repository_url"),
+        description="Git repository URL (e.g., 'https://github.com/org/repo'). Set at build time.",
+    )
+    datadog_git_commit_sha: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DD_GIT_COMMIT_SHA", "datadog_git_commit_sha"),
+        description="Git commit SHA for the deployed code. Set at build time with 'git rev-parse HEAD'.",
+    )
+    datadog_main_package: str = Field(
+        default="letta",
+        validation_alias=AliasChoices("DD_MAIN_PACKAGE", "datadog_main_package"),
+        description="Primary Python package name for source code linking. Datadog uses this setting to determine which code is 'yours' vs. third-party dependencies.",
+    )
 
 
 # singleton
