@@ -3,10 +3,11 @@ from typing import TYPE_CHECKING, List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentRelationships, AgentState
 from letta.schemas.block import BaseBlock, Block, BlockUpdate, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.utils import is_1_0_sdk_version
 from letta.validators import BlockId
 
 if TYPE_CHECKING:
@@ -183,7 +184,12 @@ async def list_agents_for_block(
             "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
             "If not provided, all relationships are loaded by default. "
             "Using this can optimize performance by reducing unnecessary joins."
+            "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+    ),
+    include: List[AgentRelationships] = Query(
+        [],
+        description=("Specify which relational fields to include in the response. No relationships are included by default."),
     ),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -193,6 +199,8 @@ async def list_agents_for_block(
     Raises a 404 if the block does not exist.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    if include_relationships is None and is_1_0_sdk_version(headers):
+        include_relationships = []  # don't default include all if using new SDK version
     agents = await server.block_manager.get_agents_for_block_async(
         block_id=block_id,
         before=before,
@@ -200,6 +208,7 @@ async def list_agents_for_block(
         limit=limit,
         ascending=(order == "asc"),
         include_relationships=include_relationships,
+        include=include,
         actor=actor,
     )
     return agents

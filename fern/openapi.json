@@ -3915,10 +3915,34 @@
                   "type": "null"
                 }
               ],
-              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.",
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "agent.blocks",
+                  "agent.identities",
+                  "agent.managed_group",
+                  "agent.secrets",
+                  "agent.sources",
+                  "agent.tags",
+                  "agent.tools"
+                ],
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
           },
           {
             "name": "order",
@@ -4375,10 +4399,34 @@
                   "type": "null"
                 }
               ],
-              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.",
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "agent.blocks",
+                  "agent.identities",
+                  "agent.managed_group",
+                  "agent.secrets",
+                  "agent.sources",
+                  "agent.tags",
+                  "agent.tools"
+                ],
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
           }
         ],
         "responses": {
@@ -8953,6 +9001,30 @@
               "title": "Order By"
             },
             "description": "Field to sort by"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "agent.blocks",
+                  "agent.identities",
+                  "agent.managed_group",
+                  "agent.secrets",
+                  "agent.sources",
+                  "agent.tags",
+                  "agent.tools"
+                ],
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
           }
         ],
         "responses": {
@@ -10482,10 +10554,34 @@
                   "type": "null"
                 }
               ],
-              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.",
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "agent.blocks",
+                  "agent.identities",
+                  "agent.managed_group",
+                  "agent.secrets",
+                  "agent.sources",
+                  "agent.tags",
+                  "agent.tools"
+                ],
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
           }
         ],
         "responses": {

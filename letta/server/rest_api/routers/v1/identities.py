@@ -3,10 +3,11 @@ from typing import TYPE_CHECKING, List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, Header, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentRelationships, AgentState
 from letta.schemas.block import Block
 from letta.schemas.identity import Identity, IdentityBase, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
+from letta.utils import is_1_0_sdk_version
 from letta.validators import IdentityId
 
 if TYPE_CHECKING:
@@ -158,6 +159,10 @@ async def list_agents_for_identity(
         "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    include: List[AgentRelationships] = Query(
+        [],
+        description=("Specify which relational fields to include in the response. No relationships are included by default."),
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -171,6 +176,7 @@ async def list_agents_for_identity(
         after=after,
         limit=limit,
         ascending=(order == "asc"),
+        include=include,
         actor=actor,
     )
 

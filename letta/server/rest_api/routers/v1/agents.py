@@ -28,7 +28,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import BaseBlock, Block, BlockUpdate
 from letta.schemas.enums import AgentType, RunStatus
@@ -58,7 +58,7 @@ from letta.server.server import SyncServer
 from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
-from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
+from letta.utils import is_1_0_sdk_version, safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, ToolId
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
@@ -94,7 +94,12 @@ async def list_agents(
             "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
             "If not provided, all relationships are loaded by default. "
             "Using this can optimize performance by reducing unnecessary joins."
+            "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+    ),
+    include: List[AgentRelationships] = Query(
+        [],
+        description=("Specify which relational fields to include in the response. No relationships are included by default."),
     ),
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
@@ -126,6 +131,8 @@ async def list_agents(
     # Handle backwards compatibility - prefer new parameters over legacy ones
     final_ascending = (order == "asc") if order else ascending
     final_sort_by = order_by if order_by else sort_by
+    if include_relationships is None and is_1_0_sdk_version(headers):
+        include_relationships = []  # don't default include all if using new SDK version
 
     # Call list_agents directly without unnecessary dict handling
     return await server.agent_manager.list_agents_async(
@@ -143,6 +150,7 @@ async def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
+        include=include,
         ascending=final_ascending,
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
@@ -720,7 +728,12 @@ async def retrieve_agent(
             "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
             "If not provided, all relationships are loaded by default. "
             "Using this can optimize performance by reducing unnecessary joins."
+            "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+    ),
+    include: List[AgentRelationships] = Query(
+        [],
+        description=("Specify which relational fields to include in the response. No relationships are included by default."),
     ),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -731,7 +744,11 @@ async def retrieve_agent(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
+    if include_relationships is None and is_1_0_sdk_version(headers):
+        include_relationships = []  # don't default include all if using new SDK version
+    return await server.agent_manager.get_agent_by_id_async(
+        agent_id=agent_id, include_relationships=include_relationships, include=include, actor=actor
+    )
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
