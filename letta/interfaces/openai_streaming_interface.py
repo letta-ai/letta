@@ -678,7 +678,7 @@ class SimpleOpenAIStreamingInterface:
             if message_delta.content is not None and message_delta.content != "":
                 assistant_msg = AssistantMessage(
                     id=self.letta_message_id,
-                    content=[TextContent(text=message_delta.content)],
+                    content=message_delta.content,
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     run_id=self.run_id,

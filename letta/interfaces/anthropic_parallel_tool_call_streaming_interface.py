@@ -345,7 +345,6 @@ class SimpleAnthropicStreamingInterface:
 
                 assistant_msg = AssistantMessage(
                     id=self.letta_message_id,
-                    # content=[TextContent(text=delta.text)],
                     content=delta.text,
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),

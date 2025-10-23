@@ -454,7 +454,7 @@ class AnthropicStreamingInterface:
                             message_index += 1
                         assistant_msg = AssistantMessage(
                             id=self.letta_message_id,
-                            content=[TextContent(text=send_message_diff)],
+                            content=send_message_diff,
                             date=datetime.now(timezone.utc).isoformat(),
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             run_id=self.run_id,
@@ -836,7 +836,6 @@ class SimpleAnthropicStreamingInterface:
 
                 assistant_msg = AssistantMessage(
                     id=self.letta_message_id,
-                    # content=[TextContent(text=delta.text)],
                     content=delta.text,
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
