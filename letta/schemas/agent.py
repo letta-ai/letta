@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -41,6 +41,18 @@ class AgentType(str, Enum):
     sleeptime_agent = "sleeptime_agent"
     voice_convo_agent = "voice_convo_agent"
     voice_sleeptime_agent = "voice_sleeptime_agent"
+
+
+# Relationship field literal type for AgentState include field to join related objects
+AgentRelationships = Literal[
+    "agent.blocks",
+    "agent.identities",
+    "agent.managed_group",
+    "agent.secrets",
+    "agent.sources",
+    "agent.tags",
+    "agent.tools",
+]
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):

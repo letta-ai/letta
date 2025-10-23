@@ -51,6 +51,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import (
+    AgentRelationships,
     AgentState as PydanticAgentState,
     CreateAgent,
     InternalTemplateAgentCreate,
@@ -983,6 +984,7 @@ class AgentManager:
         agent_id: str,
         actor: PydanticUser,
         include_relationships: Optional[List[str]] = None,
+        include: List[str] = [],
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
 
@@ -991,7 +993,7 @@ class AgentManager:
                 query = select(AgentModel)
                 query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
                 query = query.where(AgentModel.id == agent_id)
-                query = _apply_relationship_filters(query, include_relationships)
+                query = _apply_relationship_filters(query, include_relationships, include)
 
                 result = await session.execute(query)
                 agent = result.scalar_one_or_none()
@@ -999,7 +1001,7 @@ class AgentManager:
                 if agent is None:
                     raise NoResultFound(f"Agent with ID {agent_id} not found")
 
-                return await agent.to_pydantic_async(include_relationships=include_relationships)
+                return await agent.to_pydantic_async(include_relationships=include_relationships, include=include)
             except NoResultFound:
                 # Re-raise NoResultFound without logging to preserve 404 handling
                 raise

@@ -775,22 +775,64 @@ def _apply_filters(
     return query
 
 
-def _apply_relationship_filters(query, include_relationships: Optional[List[str]] = None):
-    if include_relationships is None:
+def _apply_relationship_filters(
+    query,
+    include_relationships: Optional[List[str]] = None,
+    include: Optional[List[str]] = None,
+):
+    # legacy include_relationships
+    if include_relationships is None and not include:
         return query
 
-    if "memory" not in include_relationships:
-        query = query.options(noload(AgentModel.core_memory), noload(AgentModel.file_agents))
-    if "identity_ids" not in include_relationships:
-        query = query.options(noload(AgentModel.identities))
+    column_names = get_column_names_from_includes_params(include_relationships, include)
 
-    relationships = ["tool_exec_environment_variables", "tools", "sources", "tags", "multi_agent_group"]
+    relationships = [
+        "core_memory",
+        "file_agents",
+        "identities",
+        "tool_exec_environment_variables",
+        "tools",
+        "sources",
+        "tags",
+        "multi_agent_group",
+    ]
 
     for rel in relationships:
-        if rel not in include_relationships:
+        if rel not in column_names:
             query = query.options(noload(getattr(AgentModel, rel)))
 
     return query
+
+
+def get_column_names_from_includes_params(
+    include_relationships: Optional[List[str]] = None, includes: Optional[List[str]] = None
+) -> Set[str]:
+    include_mapping = {
+        "agent.blocks": ["core_memory"],
+        "agent.identities": ["identities"],
+        "agent.managed_group": ["multi_agent_group"],
+        "agent.secrets": ["tool_exec_environment_variables"],
+        "agent.sources": ["sources"],
+        "agent.tags": ["tags"],
+        "agent.tools": ["tools"],
+        # legacy
+        "memory": ["core_memory", "file_agents"],
+        "identity_ids": ["identities"],
+        "multi_agent_group": ["multi_agent_group"],
+        "tool_exec_environment_variables": ["tool_exec_environment_variables"],
+        "secrets": ["tool_exec_environment_variables"],
+        "sources": ["sources"],
+        "tags": ["tags"],
+        "tools": ["tools"],
+    }
+    column_names = set()
+    if includes:
+        for include in includes:
+            column_names.update(include_mapping.get(include, []))
+    else:
+        for include_relationship in include_relationships:
+            column_names.update(include_mapping.get(include_relationship, []))
+    return column_names
 
 
 async def build_passage_query(

@@ -1373,3 +1373,70 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
             f"Group schema changed. Expected fields: {expected_group_fields}, "
             f"Got: {actual_group_fields}. Schema changes must be intentional."
         )
+
+
+async def test_agent_state_relationship_loads(server: SyncServer, default_user, print_tool, default_block):
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    create_agent_request = CreateAgent(
+        name="test_default_source_agent",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[print_tool.id],
+        include_default_source=True,
+        include_base_tools=False,
+        tags=["test_tag"],
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Test legacy default include_relationships
+    agent_state = await server.agent_manager.get_agent_by_id_async(
+        agent_id=created_agent.id,
+        actor=default_user,
+    )
+    assert agent_state.blocks
+    assert agent_state.sources
+    assert agent_state.tags
+    assert agent_state.tools
+
+    # Test include_relationships override
+    agent_state = await server.agent_manager.get_agent_by_id_async(
+        agent_id=created_agent.id,
+        actor=default_user,
+        include_relationships=[],
+    )
+    assert not agent_state.blocks
+    assert not agent_state.sources
+    assert not agent_state.tags
+    assert not agent_state.tools
+
+    # Test include_relationships override with specific relationships
+    agent_state = await server.agent_manager.get_agent_by_id_async(
+        agent_id=created_agent.id,
+        actor=default_user,
+        include_relationships=["memory", "sources"],
+    )
+    assert agent_state.blocks
+    assert agent_state.sources
+    assert not agent_state.tags
+    assert not agent_state.tools
+
+    # Test include override with specific relationships
+    agent_state = await server.agent_manager.get_agent_by_id_async(
+        agent_id=created_agent.id,
+        actor=default_user,
+        include_relationships=[],
+        include=["agent.blocks", "agent.sources"],
+    )
+    assert agent_state.blocks
+    assert agent_state.sources
+    assert not agent_state.tags
+    assert not agent_state.tools
