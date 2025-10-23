@@ -348,3 +348,75 @@ class IdentityManager:
                 identity_id=identity.id,
             )
             return [block.to_pydantic() for block in blocks]
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    async def attach_agent_async(self, identity_id: str, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Attach an agent to an identity.
+        """
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Add agent to identity if not already attached
+            if agent not in identity.agents:
+                identity.agents.append(agent)
+                await identity.update_async(db_session=session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    async def detach_agent_async(self, identity_id: str, agent_id: str, actor: PydanticUser) -> None:
+        """
+        Detach an agent from an identity.
+        """
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Remove agent from identity if attached
+            if agent in identity.agents:
+                identity.agents.remove(agent)
+                await identity.update_async(db_session=session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    async def attach_block_async(self, identity_id: str, block_id: str, actor: PydanticUser) -> None:
+        """
+        Attach a block to an identity.
+        """
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            # Add block to identity if not already attached
+            if block not in identity.blocks:
+                identity.blocks.append(block)
+                await identity.update_async(db_session=session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    async def detach_block_async(self, identity_id: str, block_id: str, actor: PydanticUser) -> None:
+        """
+        Detach a block from an identity.
+        """
+        async with db_registry.async_session() as session:
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+
+            block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            # Remove block from identity if attached
+            if block in identity.blocks:
+                identity.blocks.remove(block)
+                await identity.update_async(db_session=session, actor=actor)

@@ -212,3 +212,41 @@ async def list_agents_for_block(
         actor=actor,
     )
     return agents
+
+
+@router.patch("/{block_id}/identities/attach/{identity_id}", response_model=Block, operation_id="attach_identity_to_block")
+async def attach_identity_to_block(
+    identity_id: str,
+    block_id: BlockId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attach an identity to a block.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.identity_manager.attach_block_async(
+        identity_id=identity_id,
+        block_id=block_id,
+        actor=actor,
+    )
+    return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
+
+
+@router.patch("/{block_id}/identities/detach/{identity_id}", response_model=Block, operation_id="detach_identity_from_block")
+async def detach_identity_from_block(
+    identity_id: str,
+    block_id: BlockId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Detach an identity from a block.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.identity_manager.detach_block_async(
+        identity_id=identity_id,
+        block_id=block_id,
+        actor=actor,
+    )
+    return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)

@@ -687,6 +687,74 @@ paths:
           required: true
           schema:
             type: string
+  /v1/agents/{agent_id}/archives/attach/{archive_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - archives
+      x-fern-sdk-method-name: attach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: archive_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/archives/detach/{archive_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - archives
+      x-fern-sdk-method-name: detach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: archive_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/identities/attach/{identity_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - identities
+      x-fern-sdk-method-name: attach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/identities/detach/{identity_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - identities
+      x-fern-sdk-method-name: detach
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: identity_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/import:
     post:
       x-fern-sdk-group-name:
@@ -767,6 +835,40 @@ paths:
         - blocks
         - agents
       x-fern-sdk-method-name: list
+  /v1/blocks/{block_id}/identities/attach/{identity_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - blocks
+        - identities
+      x-fern-sdk-method-name: attach
+      parameters:
+        - name: block_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: identity_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/blocks/{block_id}/identities/detach/{identity_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - blocks
+        - identities
+      x-fern-sdk-method-name: detach
+      parameters:
+        - name: block_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: identity_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/jobs/:
     get:
       x-fern-sdk-group-name:

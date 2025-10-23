@@ -1005,6 +1005,82 @@ async def detach_block_from_agent(
     return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
+@router.patch("/{agent_id}/archives/attach/{archive_id}", response_model=AgentState, operation_id="attach_archive_to_agent")
+async def attach_archive_to_agent(
+    archive_id: str,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attach an archive to an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent_id,
+        archive_id=archive_id,
+        actor=actor,
+    )
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
+@router.patch("/{agent_id}/archives/detach/{archive_id}", response_model=AgentState, operation_id="detach_archive_from_agent")
+async def detach_archive_from_agent(
+    archive_id: str,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Detach an archive from an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.archive_manager.detach_agent_from_archive_async(
+        agent_id=agent_id,
+        archive_id=archive_id,
+        actor=actor,
+    )
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
+@router.patch("/{agent_id}/identities/attach/{identity_id}", response_model=AgentState, operation_id="attach_identity_to_agent")
+async def attach_identity_to_agent(
+    identity_id: str,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attach an identity to an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.identity_manager.attach_agent_async(
+        identity_id=identity_id,
+        agent_id=agent_id,
+        actor=actor,
+    )
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
+@router.patch("/{agent_id}/identities/detach/{identity_id}", response_model=AgentState, operation_id="detach_identity_from_agent")
+async def detach_identity_from_agent(
+    identity_id: str,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Detach an identity from an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.identity_manager.detach_agent_async(
+        identity_id=identity_id,
+        agent_id=agent_id,
+        actor=actor,
+    )
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
 @router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages", deprecated=True)
 async def list_passages(
     agent_id: AgentId,
