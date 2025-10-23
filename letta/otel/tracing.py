@@ -87,6 +87,8 @@ async def _update_trace_attributes(request: Request):
         "x-template-id": "template.id",
         "x-base-template-id": "base_template.id",
         "user-agent": "client",
+        "x-stainless-package-version": "sdk.version",
+        "x-stainless-lang": "sdk.language",
     }
     for header_key, span_key in header_attributes.items():
         header_value = request.headers.get(header_key)
