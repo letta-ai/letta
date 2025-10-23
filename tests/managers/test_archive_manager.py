@@ -461,6 +461,314 @@ async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer,
 
 
 @pytest.mark.asyncio
+async def test_archive_manager_detach_agent_from_archive_async(server: SyncServer, default_user):
+    """Test detaching agents from archives."""
+    # create archive and agents
+    archive = await server.archive_manager.create_archive_async(
+        name="archive_for_detachment", description="Test archive for detachment", actor=default_user
+    )
+
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_detach_agent_1",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_detach_agent_2",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # attach both agents
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent1.id, archive_id=archive.id, is_owner=True, actor=default_user)
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive.id, is_owner=False, actor=default_user
+    )
+
+    # verify both are attached
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 2
+    assert agent1.id in agent_ids
+    assert agent2.id in agent_ids
+
+    # detach agent1
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive.id, actor=default_user)
+
+    # verify only agent2 remains
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 1
+    assert agent2.id in agent_ids
+    assert agent1.id not in agent_ids
+
+    # test idempotency - detach agent1 again (should not error)
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive.id, actor=default_user)
+
+    # verify still only agent2
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 1
+    assert agent2.id in agent_ids
+
+    # detach agent2
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent2.id, archive_id=archive.id, actor=default_user)
+
+    # verify archive has no agents
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 0
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent1.id, actor=default_user)
+    await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_attach_detach_idempotency(server: SyncServer, default_user):
+    """Test that attach and detach operations are idempotent."""
+    # create archive and agent
+    archive = await server.archive_manager.create_archive_async(name="idempotency_test_archive", actor=default_user)
+
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="idempotency_test_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # test multiple attachments - should be idempotent
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=False, actor=default_user)
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=False, actor=default_user)
+
+    # verify only one relationship exists
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 1
+    assert agent.id in agent_ids
+
+    # test ownership update through re-attachment
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=True, actor=default_user)
+
+    # still only one relationship
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 1
+
+    # test detaching non-existent relationship (should be idempotent)
+    non_existent_agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="never_attached_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # this should not error
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=non_existent_agent.id, archive_id=archive.id, actor=default_user)
+
+    # verify original agent still attached
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 1
+    assert agent.id in agent_ids
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
+    await server.agent_manager.delete_agent_async(non_existent_agent.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_detach_with_multiple_archives(server: SyncServer, default_user):
+    """Test detaching an agent from one archive doesn't affect others."""
+    # create two archives
+    archive1 = await server.archive_manager.create_archive_async(name="multi_archive_1", actor=default_user)
+    archive2 = await server.archive_manager.create_archive_async(name="multi_archive_2", actor=default_user)
+
+    # create two agents
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="multi_test_agent_1",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="multi_test_agent_2",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # Note: Due to unique constraint, each agent can only be attached to one archive
+    # So we'll attach different agents to different archives
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent1.id, archive_id=archive1.id, is_owner=True, actor=default_user
+    )
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive2.id, is_owner=True, actor=default_user
+    )
+
+    # verify initial state
+    agents_archive1 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    agents_archive2 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive2.id, actor=default_user)
+    assert agent1.id in agents_archive1
+    assert agent2.id in agents_archive2
+
+    # detach agent1 from archive1
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive1.id, actor=default_user)
+
+    # verify agent1 is detached from archive1
+    agents_archive1 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert agent1.id not in agents_archive1
+    assert len(agents_archive1) == 0
+
+    # verify agent2 is still attached to archive2
+    agents_archive2 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive2.id, actor=default_user)
+    assert agent2.id in agents_archive2
+    assert len(agents_archive2) == 1
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent1.id, actor=default_user)
+    await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive1.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_user):
+    """Test behavior when detaching a deleted agent."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(name="test_deleted_agent_archive", actor=default_user)
+
+    # create and attach agent
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_to_be_deleted",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=True, actor=default_user)
+
+    # save the agent id before deletion
+    agent_id = agent.id
+
+    # delete the agent (should cascade delete the relationship due to ondelete="CASCADE")
+    await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
+
+    # verify agent is no longer attached
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 0
+
+    # attempting to detach the deleted agent should be idempotent (no error)
+    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncServer, default_user):
+    """Test that deleting an archive cascades to delete relationships in archives_agents table."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="archive_to_be_deleted", description="This archive will be deleted to test CASCADE", actor=default_user
+    )
+
+    # create multiple agents and attach them to the archive
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="cascade_test_agent_1",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="cascade_test_agent_2",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # attach both agents to the archive
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent1.id, archive_id=archive.id, is_owner=True, actor=default_user)
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive.id, is_owner=False, actor=default_user
+    )
+
+    # verify both agents are attached
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agent_ids) == 2
+    assert agent1.id in agent_ids
+    assert agent2.id in agent_ids
+
+    # save archive id for later
+    archive_id = archive.id
+
+    # delete the archive (should cascade delete the relationships)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+    # verify archive is deleted
+    with pytest.raises(Exception):
+        await server.archive_manager.get_archive_by_id_async(archive_id=archive_id, actor=default_user)
+
+    # verify agents still exist but have no archives attached
+    # (agents should NOT be deleted, only the relationships)
+    agent1_still_exists = await server.agent_manager.get_agent_by_id_async(agent1.id, actor=default_user)
+    assert agent1_still_exists is not None
+    assert agent1_still_exists.id == agent1.id
+
+    agent2_still_exists = await server.agent_manager.get_agent_by_id_async(agent2.id, actor=default_user)
+    assert agent2_still_exists is not None
+    assert agent2_still_exists.id == agent2.id
+
+    # verify agents no longer have any archives
+    agent1_archives = await server.agent_manager.get_agent_archive_ids_async(agent_id=agent1.id, actor=default_user)
+    assert len(agent1_archives) == 0
+
+    agent2_archives = await server.agent_manager.get_agent_archive_ids_async(agent_id=agent2.id, actor=default_user)
+    assert len(agent2_archives) == 0
+
+    # cleanup agents
+    await server.agent_manager.delete_agent_async(agent1.id, actor=default_user)
+    await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
 async def test_archive_manager_get_default_archive_for_agent_async(server: SyncServer, default_user):
     """Test getting default archive for an agent."""
     # create agent without archive

@@ -346,6 +346,130 @@
         }
       }
     },
+    "/v1/archives/{archive_id}/attach/{agent_id}": {
+      "patch": {
+        "tags": ["archives"],
+        "summary": "Attach Agent To Archive",
+        "description": "Attach an agent to an archive.",
+        "operationId": "attach_agent_to_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Archive Id"
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/archives/{archive_id}/detach/{agent_id}": {
+      "patch": {
+        "tags": ["archives"],
+        "summary": "Detach Agent From Archive",
+        "description": "Detach an agent from an archive.",
+        "operationId": "detach_agent_from_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Archive Id"
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/{tool_id}": {
       "delete": {
         "tags": ["tools"],

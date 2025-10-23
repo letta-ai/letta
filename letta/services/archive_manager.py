@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
@@ -174,6 +174,33 @@ class ArchiveManager:
                 is_owner=is_owner,
             )
             session.add(archives_agents)
+            await session.commit()
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    async def detach_agent_from_archive_async(
+        self,
+        agent_id: str,
+        archive_id: str,
+        actor: PydanticUser = None,
+    ) -> None:
+        """Detach an agent from an archive."""
+        async with db_registry.async_session() as session:
+            # Delete the relationship directly
+            result = await session.execute(
+                delete(ArchivesAgents).where(
+                    ArchivesAgents.agent_id == agent_id,
+                    ArchivesAgents.archive_id == archive_id,
+                )
+            )
+
+            if result.rowcount == 0:
+                logger.warning(f"Attempted to detach unattached agent {agent_id} from archive {archive_id}")
+            else:
+                logger.info(f"Detached agent {agent_id} from archive {archive_id}")
+
             await session.commit()
 
     @enforce_types

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
-from letta.validators import ArchiveId
+from letta.validators import AgentId, ArchiveId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
 
@@ -129,6 +129,50 @@ async def delete_archive(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.archive_manager.delete_archive_async(
+        archive_id=archive_id,
+        actor=actor,
+    )
+
+
+@router.patch("/{archive_id}/attach/{agent_id}", response_model=PydanticArchive, operation_id="attach_agent_to_archive")
+async def attach_agent_to_archive(
+    archive_id: ArchiveId,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attach an agent to an archive.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent_id,
+        archive_id=archive_id,
+        actor=actor,
+    )
+    return await server.archive_manager.get_archive_by_id_async(
+        archive_id=archive_id,
+        actor=actor,
+    )
+
+
+@router.patch("/{archive_id}/detach/{agent_id}", response_model=PydanticArchive, operation_id="detach_agent_from_archive")
+async def detach_agent_from_archive(
+    archive_id: ArchiveId,
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Detach an agent from an archive.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.archive_manager.detach_agent_from_archive_async(
+        agent_id=agent_id,
+        archive_id=archive_id,
+        actor=actor,
+    )
+    return await server.archive_manager.get_archive_by_id_async(
         archive_id=archive_id,
         actor=actor,
     )
