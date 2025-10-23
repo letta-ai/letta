@@ -41,6 +41,7 @@ from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.log import get_logger
 from letta.otel.tracing import log_attributes, trace_method
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.server.rest_api.dependencies import HeaderParams
 
 logger = get_logger(__name__)
 
@@ -1400,3 +1401,51 @@ def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optio
 
     task.add_done_callback(callback)
     return task
+
+
+def is_1_0_sdk_version(headers: HeaderParams):
+    """
+    Check if the SDK version is 1.0.0 or above.
+    1. If sdk_version is provided from stainless (all stainless versions are 1.0.0+)
+    2. If user_agent is provided and in the format
+        @letta-ai/letta-client/version (node) or
+        letta-client/version (python)
+    """
+    sdk_version = headers.sdk_version
+    if sdk_version:
+        return True
+
+    client = headers.user_agent
+    if "/" not in client:
+        return False
+
+    # Split into parts to validate format
+    parts = client.split("/")
+
+    # Should have at least 2 parts (client-name/version)
+    if len(parts) < 2:
+        return False
+
+    if len(parts) == 3:
+        # Format: @letta-ai/letta-client/version
+        if parts[0] != "@letta-ai" or parts[1] != "letta-client":
+            return False
+    elif len(parts) == 2:
+        # Format: letta-client/version
+        if parts[0] != "letta-client":
+            return False
+    else:
+        return False
+
+    # Extract and validate version
+    maybe_version = parts[-1]
+    if "." not in maybe_version:
+        return False
+
+    # Extract major version (handle alpha/beta suffixes like 1.0.0-alpha.2 or 1.0.0a5)
+    version_base = maybe_version.split("-")[0].split("a")[0].split("b")[0]
+    if "." not in version_base:
+        return False
+
+    major_version = version_base.split(".")[0]
+    return major_version == "1"

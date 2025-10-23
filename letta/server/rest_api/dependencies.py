@@ -20,6 +20,7 @@ class HeaderParams(BaseModel):
     actor_id: Optional[str] = None
     user_agent: Optional[str] = None
     project_id: Optional[str] = None
+    sdk_version: Optional[str] = None
     experimental_params: Optional[ExperimentalParams] = None
 
 
@@ -27,6 +28,7 @@ def get_headers(
     actor_id: Optional[str] = Header(None, alias="user_id"),
     user_agent: Optional[str] = Header(None, alias="User-Agent"),
     project_id: Optional[str] = Header(None, alias="X-Project-Id"),
+    sdk_version: Optional[str] = Header(None, alias="X-Stainless-Package-Version"),
     message_async: Optional[str] = Header(None, alias="X-Experimental-Message-Async"),
     letta_v1_agent: Optional[str] = Header(None, alias="X-Experimental-Letta-V1-Agent"),
 ) -> HeaderParams:
@@ -35,6 +37,7 @@ def get_headers(
         actor_id=actor_id,
         user_agent=user_agent,
         project_id=project_id,
+        sdk_version=sdk_version,
         experimental_params=ExperimentalParams(
             message_async=(message_async == "true") if message_async else None,
             letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,

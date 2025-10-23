@@ -3,9 +3,10 @@ import pytest
 from letta.constants import MAX_FILENAME_LENGTH
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.schemas.file import FileMetadata
+from letta.server.rest_api.dependencies import HeaderParams
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.helpers.agent_manager_helper import safe_format
-from letta.utils import sanitize_filename, validate_function_response
+from letta.utils import is_1_0_sdk_version, sanitize_filename, validate_function_response
 
 CORE_MEMORY_VAR = "My core memory is that I like to eat bananas"
 VARS_DICT = {"CORE_MEMORY": CORE_MEMORY_VAR}
@@ -669,3 +670,15 @@ def test_validate_function_response_whitespace():
     """Test whitespace-only string handling"""
     response = validate_function_response("   \n\t  ", return_char_limit=100)
     assert response == "   \n\t  "
+
+
+def test_sdk_version_check():
+    """Test SDK version check"""
+    assert not is_1_0_sdk_version(HeaderParams(user_agent="letta-client/0.0.200"))
+    assert is_1_0_sdk_version(HeaderParams(user_agent="letta-client/1.0.0a5"))
+    assert not is_1_0_sdk_version(HeaderParams(user_agent="@letta-ai/letta-client/0.0.200"))
+    assert is_1_0_sdk_version(HeaderParams(user_agent="@letta-ai/letta-client/1.0.0-alpha.5"))
+    assert is_1_0_sdk_version(HeaderParams(sdk_version="v1.0.0"))
+    assert is_1_0_sdk_version(HeaderParams(sdk_version="v1.0.0-alpha.7"))
+    assert is_1_0_sdk_version(HeaderParams(sdk_version="v1.0.0a7"))
+    assert is_1_0_sdk_version(HeaderParams(sdk_version="v2.0.0"))

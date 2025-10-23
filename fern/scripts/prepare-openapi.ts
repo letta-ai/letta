@@ -102,6 +102,7 @@ for (const path of Object.keys(lettaAgentsAPI.paths)) {
             param.name !== 'user_id' &&
             param.name !== 'User-Agent' &&
             param.name !== 'X-Project-Id' &&
+            param.name !== 'X-Stainless-Package-Version' &&
             !param.name.startsWith('X-Experimental')
           ),
       );
