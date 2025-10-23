@@ -224,10 +224,10 @@ class LettaAgentV3(LettaAgentV2):
                     force=False,
                 )
 
-        except:
-            if self.stop_reason and not first_chunk:
-                yield f"data: {self.stop_reason.model_dump_json()}\n\n"
-            raise
+        except Exception as e:
+            self.logger.error("Error during agent stream", e)
+            if first_chunk:
+                raise  # only raise if first chunk has not been streamed yet
 
         if run_id:
             letta_messages = Message.to_letta_messages_from_list(
@@ -424,6 +424,7 @@ class LettaAgentV3(LettaAgentV2):
                                 force=True,
                             )
                         else:
+                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
                             raise e
 
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(
@@ -505,8 +506,6 @@ class LettaAgentV3(LettaAgentV2):
             # TODO should we be logging this even if persisted_messages is empty? Technically, there still was an LLM call
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
-            import traceback
-
             self.logger.warning(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
 
