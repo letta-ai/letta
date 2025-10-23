@@ -225,7 +225,7 @@ class LettaAgentV3(LettaAgentV2):
                 )
 
         except Exception as e:
-            self.logger.warning("Error during agent stream", e)
+            self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
             if first_chunk:
                 raise  # only raise if first chunk has not been streamed yet
 
