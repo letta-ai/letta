@@ -7,7 +7,6 @@ from pathlib import Path
 from sys import stdout
 from typing import Any, Optional
 
-from letta.log_context import get_log_context
 from letta.settings import log_settings, settings, telemetry_settings
 
 selected_log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -71,20 +70,6 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "dd.version"):
             log_data["dd.version"] = getattr(record, "dd.version")
 
-        # Add OpenTelemetry trace correlation (for OTEL → Datadog integration)
-        try:
-            from opentelemetry import trace
-
-            span = trace.get_current_span()
-            if span and span.get_span_context().is_valid:
-                ctx = span.get_span_context()
-                # Format trace_id and span_id as Datadog expects (decimal strings)
-                log_data["dd.trace_id"] = str(ctx.trace_id)
-                log_data["dd.span_id"] = str(ctx.span_id)
-        except Exception:
-            # Fail silently if OTEL is not available
-            pass
-
         # Add exception info if present
         if record.exc_info:
             log_data["exception"] = {
@@ -137,46 +122,12 @@ class DatadogEnvFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         """Add Datadog attributes to log record if Datadog is enabled."""
         if telemetry_settings.enable_datadog:
-            record.dd_env = settings.environment or "development"
-            record.dd_service = telemetry_settings.datadog_service_name
+            record.dd_env = telemetry_settings.datadog_env
+            record.dd_service = "letta-server"
         else:
             # Provide defaults to prevent attribute errors if filter is applied incorrectly
             record.dd_env = ""
             record.dd_service = ""
-        return True
-
-
-class LogContextFilter(logging.Filter):
-    """
-    Logging filter that enriches log records with request context.
-
-    Injects context-specific attributes like actor_id, agent_id, org_id, etc.
-    into log records. These attributes are stored in a context variable
-    and automatically included in all log messages within that context.
-
-    This enables correlation of logs with specific requests, agents, and users
-    in monitoring systems like Datadog.
-
-    Usage:
-        from letta.log_context import set_log_context, update_log_context
-
-        # Set a single context value
-        set_log_context("agent_id", "agent-123")
-
-        # Set multiple context values
-        update_log_context(agent_id="agent-123", actor_id="user-456")
-
-        # All subsequent logs will include these attributes
-        logger.info("Processing request")
-        # Output: {"message": "Processing request", "agent_id": "agent-123", "actor_id": "user-456", ...}
-    """
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Add request context attributes to log record."""
-        context = get_log_context()
-        for key, value in context.items():
-            if not hasattr(record, key):
-                setattr(record, key, value)
         return True
 
 
@@ -233,9 +184,6 @@ DEVELOPMENT_LOGGING = {
         "datadog_env": {
             "()": DatadogEnvFilter,
         },
-        "log_context": {
-            "()": LogContextFilter,
-        },
     },
     "handlers": {
         "console": {
@@ -243,7 +191,7 @@ DEVELOPMENT_LOGGING = {
             "class": "logging.StreamHandler",
             "stream": stdout,
             "formatter": _get_console_formatter(),
-            "filters": (["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else []) + ["log_context"],
+            "filters": ["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else [],
         },
         "file": {
             "level": "DEBUG",
@@ -252,7 +200,7 @@ DEVELOPMENT_LOGGING = {
             "maxBytes": 1024**2 * 10,  # 10 MB per file
             "backupCount": 3,  # Keep 3 backup files
             "formatter": _get_file_formatter(),
-            "filters": (["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else []) + ["log_context"],
+            "filters": ["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else [],
         },
     },
     "root": {  # Root logger handles all logs
