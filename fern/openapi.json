@@ -22962,7 +22962,8 @@
             },
             "type": "array",
             "title": "Agent Ids",
-            "description": "The IDs of the agents associated with the identity."
+            "description": "The IDs of the agents associated with the identity.",
+            "deprecated": true
           },
           "block_ids": {
             "items": {
@@ -22970,7 +22971,8 @@
             },
             "type": "array",
             "title": "Block Ids",
-            "description": "The IDs of the blocks associated with the identity."
+            "description": "The IDs of the blocks associated with the identity.",
+            "deprecated": true
           },
           "properties": {
             "items": {

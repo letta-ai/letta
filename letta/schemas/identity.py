@@ -46,8 +46,8 @@ class Identity(IdentityBase):
     name: str = Field(..., description="The name of the identity.")
     identity_type: IdentityType = Field(..., description="The type of the identity.")
     project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
-    agent_ids: List[str] = Field(..., description="The IDs of the agents associated with the identity.")
-    block_ids: List[str] = Field(..., description="The IDs of the blocks associated with the identity.")
+    agent_ids: List[str] = Field(..., description="The IDs of the agents associated with the identity.", deprecated=True)
+    block_ids: List[str] = Field(..., description="The IDs of the blocks associated with the identity.", deprecated=True)
     organization_id: Optional[str] = Field(None, description="The organization id of the user")
     properties: List[IdentityProperty] = Field(default_factory=list, description="List of properties associated with the identity")
 
