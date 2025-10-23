@@ -225,7 +225,7 @@ class LettaAgentV3(LettaAgentV2):
                 )
 
         except Exception as e:
-            self.logger.error("Error during agent stream", e)
+            self.logger.warning("Error during agent stream", e)
             if first_chunk:
                 raise  # only raise if first chunk has not been streamed yet
 
@@ -513,14 +513,14 @@ class LettaAgentV3(LettaAgentV2):
             if not self.stop_reason:
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
             elif self.stop_reason.stop_reason in (StopReasonType.end_turn, StopReasonType.max_steps, StopReasonType.tool_rule):
-                self.logger.error("Error occurred during step processing, with valid stop reason: %s", self.stop_reason.stop_reason)
+                self.logger.warning("Error occurred during step processing, with valid stop reason: %s", self.stop_reason.stop_reason)
             elif self.stop_reason.stop_reason not in (
                 StopReasonType.no_tool_call,
                 StopReasonType.invalid_tool_call,
                 StopReasonType.invalid_llm_response,
                 StopReasonType.llm_api_error,
             ):
-                self.logger.error("Error occurred during step processing, with unexpected stop reason: %s", self.stop_reason.stop_reason)
+                self.logger.warning("Error occurred during step processing, with unexpected stop reason: %s", self.stop_reason.stop_reason)
             raise e
         finally:
             self.logger.debug("Running cleanup for agent loop run: %s", run_id)
@@ -561,12 +561,12 @@ class LettaAgentV3(LettaAgentV2):
                         )
                 elif step_progression <= StepProgression.LOGGED_TRACE:
                     if self.stop_reason is None:
-                        self.logger.error("Error in step after logging step")
+                        self.logger.warning("Error in step after logging step")
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                     if logged_step:
                         await self.step_manager.update_step_stop_reason(self.actor, step_id, self.stop_reason.stop_reason)
                 else:
-                    self.logger.error("Invalid StepProgression value")
+                    self.logger.warning("Invalid StepProgression value")
 
                 # Do tracking for failure cases. Can consolidate with success conditions later.
                 if settings.track_stop_reason:
@@ -583,7 +583,7 @@ class LettaAgentV3(LettaAgentV2):
                         run_id=run_id,
                     )
             except Exception as e:
-                self.logger.error(f"Error during post-completion step tracking: {e}")
+                self.logger.warning(f"Error during post-completion step tracking: {e}")
 
     @trace_method
     async def _handle_ai_response(
