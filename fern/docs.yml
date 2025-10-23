@@ -50,6 +50,9 @@ tabs:
   leaderboard:
     display-name: Leaderboard
     skip-slug: true
+  evals:
+    display-name: Evals
+    slug: evals
 landing-page:
   page: home
   path: pages/index.mdx
@@ -722,6 +725,76 @@ navigation:
           #   path: pages/leaderboard/benchmarks.mdx
           - page: Contributing Results
             path: pages/leaderboard/contributing.mdx
+
+  - tab: evals
+    layout:
+      - link: Chat on Discord
+        icon: fa-brands fa-discord
+        href: https://discord.gg/letta
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
+      - link: DeepLearning.AI Course
+        icon: fa-sharp fa-light fa-building-columns
+        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - section: Get Started
+        contents:
+          - page: Overview
+            path: pages/evals/overview.mdx
+          - page: Getting Started
+            path: pages/evals/getting-started.mdx
+      - section: Core Concepts
+        contents:
+          - page: Concepts Overview
+            path: pages/evals/concepts/overview.mdx
+          - page: Suites
+            path: pages/evals/concepts/suites.mdx
+          - page: Datasets
+            path: pages/evals/concepts/datasets.mdx
+          - page: Targets
+            path: pages/evals/concepts/targets.mdx
+          - page: Graders
+            path: pages/evals/concepts/graders.mdx
+          - page: Extractors
+            path: pages/evals/concepts/extractors.mdx
+          - page: Gates
+            path: pages/evals/concepts/gates.mdx
+      - section: Configuration
+        contents:
+          - page: Suite YAML Reference
+            path: pages/evals/configuration/suite-yaml.mdx
+      - section: Graders
+        contents:
+          - page: Tool Graders
+            path: pages/evals/graders/tool-graders.mdx
+          - page: Rubric Graders
+            path: pages/evals/graders/rubric-graders.mdx
+          - page: Multi-Metric Grading
+            path: pages/evals/graders/multi-metric.mdx
+      - section: Extractors
+        contents:
+          - page: Built-in Extractors
+            path: pages/evals/extractors/builtin.mdx
+          - page: Custom Extractors
+            path: pages/evals/extractors/custom.mdx
+      - section: Advanced
+        contents:
+          - page: Custom Graders
+            path: pages/evals/advanced/custom-graders.mdx
+          - page: Multi-Turn Conversations
+            path: pages/evals/advanced/multi-turn-conversations.mdx
+      - section: CLI Reference
+        contents:
+          - page: Commands
+            path: pages/evals/cli/commands.mdx
+      - section: Results & Metrics
+        contents:
+          - page: Understanding Results
+            path: pages/evals/results/overview.mdx
+      - section: Troubleshooting
+        contents:
+          - page: Common Issues
+            path: pages/evals/troubleshooting.mdx
 
   # - tab: cookbooks
   #   layout:

@@ -1,0 +1,55 @@
+# Custom Extractors
+
+Create your own extractors to pull exactly what you need from agent trajectories.
+
+<Note>
+While built-in extractors cover common cases, custom extractors let you implement specialized extraction logic for your specific use case.
+</Note>
+
+## Why Custom Extractors?
+
+Use custom extractors when you need to:
+- **Extract structured data**: Parse JSON fields from agent responses
+- **Filter specific patterns**: Extract code blocks, URLs, or formatted content
+- **Combine data sources**: Merge information from multiple messages or memory blocks
+- **Count occurrences**: Track how many times something happened
+- **Complex logic**: Implement domain-specific extraction
+
+## Basic Structure
+
+```python
+from letta_evals.decorators import extractor
+from letta_client import LettaMessageUnion
+from typing import List
+
+@extractor
+def my_extractor(trajectory: List[List[LettaMessageUnion]], config: dict) -> str:
+    """Extract custom content from trajectory."""
+    # Your extraction logic here
+    return extracted_text
+```
+
+## Example: Extract Memory Insert
+
+```python
+from letta_evals.decorators import extractor
+
+@extractor
+def memory_insert_args(trajectory, config):
+    """Extract arguments from memory_insert tool calls."""
+    for turn in trajectory:
+        for message in turn:
+            if hasattr(message, 'tool_call') and message.tool_call:
+                if message.tool_call.name == "memory_insert":
+                    return str(message.tool_call.arguments)
+    return ""
+```
+
+## Registration
+
+Custom extractors are automatically registered when you import them in your suite's setup script or custom evaluators file.
+
+## Next Steps
+
+- [Built-in Extractors](/evals/extractors/built-in-extractors) - Available extractors
+- [Extractors Concept](/evals/core-concepts/extractors) - Understanding extractors

@@ -1,0 +1,94 @@
+# Multi-Turn Conversations
+
+Multi-turn conversations allow you to test how agents handle context across multiple exchanges.
+
+<Note>
+This is essential for stateful agents where behavior depends on conversation history.
+</Note>
+
+## Why Use Multi-Turn?
+
+Multi-turn conversations enable testing that single-turn prompts cannot:
+
+- **Memory storage**: Verify agents persist information to memory blocks
+- **Tool call sequences**: Test multi-step workflows
+- **Context retention**: Ensure agents remember details from earlier
+- **State evolution**: Track how agent state changes across interactions
+- **Conversational coherence**: Test if agents maintain context appropriately
+
+## Format
+
+### Single-Turn (Default)
+
+```jsonl
+{"input": "What is the capital of France?", "ground_truth": "Paris"}
+```
+
+### Multi-Turn
+
+```jsonl
+{"input": ["My name is Alice", "What's my name?"], "ground_truth": "Alice"}
+```
+
+The agent processes each input in sequence, with state carrying over between turns.
+
+## Example 1: Memory Recall Testing
+
+Test if the agent remembers information across turns:
+
+```jsonl
+{"input": ["Remember that my favorite color is blue", "What's my favorite color?"], "ground_truth": "blue"}
+```
+
+Suite configuration:
+```yaml
+graders:
+  response_check:
+    kind: tool
+    function: contains
+    extractor: last_assistant  # Check the agent's response
+```
+
+## Example 2: Memory Correction Testing
+
+Test if the agent correctly updates memory when users correct themselves:
+
+```jsonl
+{"input": ["Please remember that I like bananas.", "Actually, sorry, I meant I like apples."], "ground_truth": "apples"}
+```
+
+Suite configuration:
+```yaml
+graders:
+  memory_check:
+    kind: tool
+    function: contains
+    extractor: memory_block
+    extractor_config:
+      block_label: human  # Check the actual memory block, not just the response
+```
+
+<Note>
+**Key difference:** The `memory_block` extractor verifies the agent actually stored the corrected information in memory, not just that it responded correctly. This tests real memory persistence.
+</Note>
+
+## When to Test Memory Blocks vs. Responses
+
+**Use `last_assistant` or `all_assistant` extractors when:**
+- Testing what the agent says in conversation
+- Verifying response content and phrasing
+- Checking conversational coherence
+
+**Use `memory_block` extractor when:**
+- Verifying information was actually stored in memory
+- Testing memory updates and corrections
+- Validating persistent state changes
+- Ensuring the agent's internal state is correct
+
+See the [multiturn-memory-block-extractor example](https://github.com/letta-ai/letta-evals/tree/main/examples/multiturn-memory-block-extractor) for a complete working implementation.
+
+## Next Steps
+
+- [Datasets](/evals/core-concepts/datasets) - Creating test datasets
+- [Extractors](/evals/core-concepts/extractors) - Extracting from trajectories
+- [Targets](/evals/core-concepts/targets) - Agent lifecycle and testing behavior

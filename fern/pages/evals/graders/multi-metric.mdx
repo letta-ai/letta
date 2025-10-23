@@ -1,0 +1,58 @@
+# Multi-Metric Evaluation
+
+Evaluate multiple aspects of agent performance simultaneously in a single evaluation suite.
+
+<Note>
+Multi-metric evaluation allows you to define multiple graders, each measuring a different dimension of your agent's behavior.
+</Note>
+
+## Why Multiple Metrics?
+
+Agents are complex systems. You might want to evaluate:
+- **Correctness**: Does the answer match the expected output?
+- **Quality**: Is the explanation clear and complete?
+- **Tool usage**: Does the agent call the right tools with correct arguments?
+- **Memory**: Does the agent correctly update its memory blocks?
+- **Format**: Does the output follow required formatting rules?
+
+## Configuration
+
+```yaml
+graders:
+  accuracy:  # Check if answer is correct
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+
+  completeness:  # LLM judges response quality
+    kind: rubric
+    prompt_path: rubrics/completeness.txt
+    model: gpt-4o-mini
+    extractor: last_assistant
+
+  tool_usage:  # Verify correct tool was called
+    kind: tool
+    function: contains
+    extractor: tool_arguments
+    extractor_config:
+      tool_name: search
+```
+
+## Gating on One Metric
+
+The gate can check any of these metrics:
+
+```yaml
+gate:
+  metric_key: accuracy  # Gate on accuracy (others still computed)
+  op: gte
+  value: 0.9
+```
+
+Results will include scores for all graders, even if you only gate on one.
+
+## Next Steps
+
+- [Tool Graders](/evals/graders/tool-graders) - Deterministic evaluation
+- [Rubric Graders](/evals/graders/rubric-graders) - LLM-as-judge evaluation
+- [Gates](/evals/core-concepts/gates) - Setting pass/fail criteria

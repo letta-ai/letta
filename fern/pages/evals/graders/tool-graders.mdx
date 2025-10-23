@@ -1,0 +1,85 @@
+# Tool Graders
+
+Tool graders use Python functions to programmatically evaluate submissions. They're ideal for deterministic, rule-based evaluation.
+
+## Overview
+
+Tool graders:
+- Execute Python functions that take `(sample, submission)` and return a `GradeResult`
+- Are fast and deterministic
+- Don't require external API calls
+- Can implement any custom logic
+
+## Configuration
+
+```yaml
+graders:
+  my_metric:
+    kind: tool
+    function: exact_match  # Function name
+    extractor: last_assistant  # What to extract from trajectory
+```
+
+## Built-in Functions
+
+### exact_match
+
+Checks if submission exactly matches ground truth (case-sensitive, whitespace-trimmed).
+
+```yaml
+graders:
+  accuracy:
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+```
+
+**Requires**: `ground_truth` in dataset | **Score**: 1.0 if exact match, 0.0 otherwise
+
+### contains
+
+Checks if submission contains ground truth (case-insensitive).
+
+```yaml
+graders:
+  contains_answer:
+    kind: tool
+    function: contains
+    extractor: last_assistant
+```
+
+**Requires**: `ground_truth` in dataset | **Score**: 1.0 if found, 0.0 otherwise
+
+### regex_match
+
+Checks if submission matches a regex pattern in ground truth.
+
+```yaml
+graders:
+  pattern:
+    kind: tool
+    function: regex_match
+    extractor: last_assistant
+```
+
+**Score**: 1.0 if pattern matches, 0.0 otherwise
+
+### ascii_printable_only
+
+Validates that all characters are printable ASCII.
+
+```yaml
+graders:
+  ascii_check:
+    kind: tool
+    function: ascii_printable_only
+    extractor: last_assistant
+```
+
+**Score**: 1.0 if all characters are printable ASCII, 0.0 otherwise
+
+## Next Steps
+
+- [Rubric Graders](/evals/graders/rubric-graders) - LLM-as-judge evaluation
+- [Custom Graders](/evals/advanced/custom-graders) - Write your own grading functions
+- [Multi-Metric](/evals/graders/multi-metric-grading) - Combine multiple graders

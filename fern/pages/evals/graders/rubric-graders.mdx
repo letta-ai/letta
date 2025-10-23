@@ -1,0 +1,82 @@
+# Rubric Graders
+
+Rubric graders use language models to evaluate submissions based on custom criteria. They're ideal for subjective, nuanced evaluation.
+
+<Note>
+Rubric graders work by providing the LLM with a prompt that describes the evaluation criteria, then the language model generates a structured JSON response with a score and rationale.
+</Note>
+
+## Basic Configuration
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    prompt_path: quality_rubric.txt  # Evaluation criteria
+    model: gpt-4o-mini  # Judge model
+    temperature: 0.0  # Deterministic
+    extractor: last_assistant  # What to evaluate
+```
+
+## Rubric Prompt Format
+
+Your rubric file should describe the evaluation criteria. Use placeholders:
+
+- `{input}`: The original input from the dataset
+- `{submission}`: The extracted agent response
+- `{ground_truth}`: Ground truth from dataset (if available)
+
+Example `quality_rubric.txt`:
+```
+Evaluate the response for:
+1. Accuracy: Does it correctly answer the question?
+2. Completeness: Is the answer thorough?
+3. Clarity: Is it well-explained?
+
+Input: {input}
+Expected: {ground_truth}
+Response: {submission}
+
+Score from 0.0 to 1.0 where:
+
+- 1.0: Perfect response
+- 0.75: Good with minor issues
+- 0.5: Acceptable but incomplete
+- 0.25: Poor quality
+- 0.0: Completely wrong
+```
+
+## Model Configuration
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    prompt_path: rubric.txt
+    model: gpt-4o-mini  # Judge model
+    temperature: 0.0  # Deterministic
+    provider: openai  # LLM provider
+    max_retries: 5  # API retry attempts
+    timeout: 120.0  # Request timeout
+```
+
+## Agent-as-Judge
+
+Use a Letta agent as the judge instead of a direct LLM API call:
+
+```yaml
+graders:
+  agent_judge:
+    kind: rubric
+    agent_file: judge.af  # Judge agent with submit_grade tool
+    prompt_path: rubric.txt  # Evaluation criteria
+    extractor: last_assistant
+```
+
+**Requirements**: The judge agent must have a tool with signature `submit_grade(score: float, rationale: str)`.
+
+## Next Steps
+
+- [Tool Graders](/evals/graders/tool-graders) - Deterministic grading functions
+- [Multi-Metric](/evals/graders/multi-metric-grading) - Combine multiple graders
+- [Custom Graders](/evals/advanced/custom-graders) - Write your own grading logic

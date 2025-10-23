@@ -1,0 +1,96 @@
+# Built-in Extractors
+
+Letta Evals provides a set of built-in extractors that cover the most common extraction needs.
+
+<Note>
+**What are extractors?** Extractors determine what part of an agent's response gets evaluated. They take the full conversation trajectory and extract just the piece you want to grade.
+</Note>
+
+## Common Extractors
+
+### last_assistant
+
+Extracts the last assistant message content.
+
+```yaml
+extractor: last_assistant  # Most common - gets final response
+```
+
+### first_assistant
+
+Extracts the first assistant message content.
+
+```yaml
+extractor: first_assistant
+```
+
+### all_assistant
+
+Concatenates all assistant messages with a separator.
+
+```yaml
+extractor: all_assistant
+extractor_config:
+  separator: "\n\n"  # Join messages with double newline
+```
+
+### pattern
+
+Extracts content matching a regex pattern.
+
+```yaml
+extractor: pattern
+extractor_config:
+  pattern: 'Result: (\d+)'  # Regex pattern to match
+  group: 1  # Extract capture group 1
+```
+
+### tool_arguments
+
+Extracts arguments from a specific tool call.
+
+```yaml
+extractor: tool_arguments
+extractor_config:
+  tool_name: search  # Which tool to extract from
+```
+
+### tool_output
+
+Extracts the return value from a specific tool call.
+
+```yaml
+extractor: tool_output
+extractor_config:
+  tool_name: search
+```
+
+### memory_block
+
+Extracts content from a specific memory block.
+
+```yaml
+extractor: memory_block
+extractor_config:
+  block_label: human  # Which memory block to extract
+```
+
+<Warning>
+**Important**: This extractor requires the agent's final state, which adds overhead.
+</Warning>
+
+### after_marker
+
+Extracts content after a specific marker string.
+
+```yaml
+extractor: after_marker
+extractor_config:
+  marker: "ANSWER:"
+  include_marker: false
+```
+
+## Next Steps
+
+- [Custom Extractors](/evals/extractors/custom-extractors) - Write your own extractors
+- [Extractors Concept](/evals/core-concepts/extractors) - Understanding extractors

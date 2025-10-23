@@ -1,0 +1,374 @@
+# Extractors
+
+**Extractors** select what content to evaluate from an agent's response. They navigate the conversation trajectory and extract the specific piece you want to grade.
+
+<Note>
+**Quick overview:**
+- **Purpose**: Agent responses are complex (messages, tool calls, memory) - extractors isolate what to grade
+- **Built-in options**: last_assistant, tool_arguments, memory_block, pattern, and more
+- **Flexible**: Different graders can use different extractors in the same suite
+- **Automatic**: No setup needed - just specify in your grader config
+</Note>
+
+**Common patterns:**
+- `last_assistant` - Most common, gets the agent's final message (90% of use cases)
+- `tool_arguments` - Verify agent called the right tool with correct args
+- `memory_block` - Check if agent updated memory correctly
+- `pattern` - Extract structured data with regex
+
+Extractors determine what part of the agent's response gets graded. They pull out specific content from the conversation trajectory.
+
+## Why Extractors?
+
+An agent's response is complex - it includes assistant messages, tool calls, tool returns, memory updates, etc. Extractors let you focus on exactly what you want to evaluate.
+
+**The evaluation flow:**
+```
+Agent Response → Extractor → Submission Text → Grader → Score
+```
+
+For example:
+```
+Full trajectory:
+  UserMessage: "What's the capital of France?"
+  ToolCallMessage: search(query="capital of france")
+  ToolReturnMessage: "Paris is the capital..."
+  AssistantMessage: "The capital of France is Paris."
+
+↓ extractor: last_assistant ↓
+
+Extracted: "The capital of France is Paris."
+
+↓ grader: contains (ground_truth="Paris") ↓
+
+Score: 1.0
+```
+
+## Trajectory Structure
+
+A trajectory is a list of turns, where each turn is a list of Letta messages:
+
+```python
+[
+  [UserMessage(...), AssistantMessage(...), ToolCallMessage(...), ToolReturnMessage(...)],  # Turn 1
+  [AssistantMessage(...)]  # Turn 2
+]
+```
+
+Extractors navigate this structure to pull out the submission text.
+
+## Built-in Extractors
+
+### last_assistant
+
+Extracts the last assistant message content.
+
+```yaml
+graders:
+  quality:
+    kind: tool
+    function: contains
+    extractor: last_assistant  # Extract final agent message
+```
+
+Most common extractor - gets the agent's final response.
+
+### first_assistant
+
+Extracts the first assistant message content.
+
+```yaml
+graders:
+  initial_response:
+    kind: tool
+    function: contains
+    extractor: first_assistant  # Extract first agent message
+```
+
+Useful for testing immediate responses before tool usage.
+
+### all_assistant
+
+Concatenates all assistant messages with a separator.
+
+```yaml
+graders:
+  complete_response:
+    kind: rubric
+    prompt_path: rubric.txt
+    extractor: all_assistant  # Concatenate all agent messages
+    extractor_config:
+      separator: "\n\n"  # Join messages with double newline
+```
+
+Use when you need the full conversation context.
+
+### last_turn
+
+Extracts all assistant messages from the last turn only.
+
+```yaml
+graders:
+  final_turn:
+    kind: tool
+    function: contains
+    extractor: last_turn  # Messages from final turn only
+    extractor_config:
+      separator: " "  # Join with spaces
+```
+
+Useful when the agent makes multiple statements in the final turn.
+
+### pattern
+
+Extracts content matching a regex pattern from assistant messages.
+
+```yaml
+graders:
+  extract_number:
+    kind: tool
+    function: exact_match
+    extractor: pattern  # Extract using regex
+    extractor_config:
+      pattern: 'Result: (\d+)'  # Regex pattern to match
+      group: 1  # Extract capture group 1
+      search_all: false  # Only find first match
+```
+
+Example: Extract "42" from "The answer is Result: 42"
+
+### tool_arguments
+
+Extracts arguments from a specific tool call.
+
+```yaml
+graders:
+  search_query:
+    kind: tool
+    function: contains
+    extractor: tool_arguments  # Extract tool call arguments
+    extractor_config:
+      tool_name: search  # Which tool to extract from
+```
+
+Returns the JSON arguments as a string.
+
+Example: If agent calls `search(query="pandas", limit=10)`, extracts:
+```json
+{"query": "pandas", "limit": 10}
+```
+
+### tool_output
+
+Extracts the return value from a specific tool call.
+
+```yaml
+graders:
+  search_results:
+    kind: tool
+    function: contains
+    extractor: tool_output  # Extract tool return value
+    extractor_config:
+      tool_name: search  # Which tool's output to extract
+```
+
+Finds the tool call and its corresponding return message.
+
+### after_marker
+
+Extracts content after a specific marker string.
+
+```yaml
+graders:
+  answer_section:
+    kind: tool
+    function: contains
+    extractor: after_marker  # Extract content after marker
+    extractor_config:
+      marker: "ANSWER:"  # Marker string to find
+      include_marker: false  # Don't include "ANSWER:" in output
+```
+
+Example: From "Here's my analysis... ANSWER: Paris", extracts "Paris"
+
+### memory_block
+
+Extracts content from a specific memory block (requires agent_state).
+
+```yaml
+graders:
+  human_memory:
+    kind: tool
+    function: exact_match
+    extractor: memory_block  # Extract from agent memory
+    extractor_config:
+      block_label: human  # Which memory block to extract
+```
+
+<Warning>
+**Important**: This extractor requires the agent's final state, which adds overhead. The runner automatically fetches agent_state when this extractor is used.
+</Warning>
+
+Example use case: Verify the agent correctly updated its memory about the user.
+
+## Extractor Configuration
+
+Some extractors accept additional configuration via `extractor_config`:
+
+```yaml
+graders:
+  my_metric:
+    kind: tool
+    function: contains
+    extractor: pattern  # Use pattern extractor
+    extractor_config:  # Configuration for this extractor
+      pattern: 'Answer: (.*)'  # Regex pattern
+      group: 1  # Extract capture group 1
+```
+
+## Choosing an Extractor
+
+| Use Case | Recommended Extractor |
+|----------|---------------------|
+| Final agent response | `last_assistant` |
+| First response before tools | `first_assistant` |
+| Complete conversation | `all_assistant` |
+| Specific format extraction | `pattern` |
+| Tool usage validation | `tool_arguments` |
+| Tool result checking | `tool_output` |
+| Memory validation | `memory_block` |
+| Structured output | `after_marker` |
+
+## Content Flattening
+
+Assistant messages can contain multiple content parts. Extractors automatically flatten complex content to plain text.
+
+## Empty Extraction
+
+If an extractor finds no matching content, it returns an empty string `""`. This typically results in a score of 0.0 from the grader.
+
+## Custom Extractors
+
+You can write custom extractors. See [Custom Extractors](/evals/extractors/custom-extractors) for details.
+
+Example:
+
+```python
+from letta_evals.decorators import extractor
+from letta_client import LettaMessageUnion
+
+@extractor
+def my_extractor(trajectory: List[List[LettaMessageUnion]], config: dict) -> str:
+    # Custom extraction logic
+    return extracted_text
+```
+
+Register by importing in your suite's setup script or custom evaluators file.
+
+## Multi-Metric Extraction
+
+Different graders can use different extractors:
+
+```yaml
+graders:
+  response_quality:  # Evaluate final message quality
+    kind: rubric
+    prompt_path: quality.txt
+    extractor: last_assistant  # Extract final response
+
+  tool_usage:  # Check tool was called correctly
+    kind: tool
+    function: exact_match
+    extractor: tool_arguments  # Extract tool args
+    extractor_config:
+      tool_name: search  # From search tool
+
+  memory_update:  # Verify memory updated
+    kind: tool
+    function: contains
+    extractor: memory_block  # Extract from memory
+    extractor_config:
+      block_label: human  # Human memory block
+```
+
+Each grader independently extracts and evaluates different aspects.
+
+## Listing Extractors
+
+See all available extractors:
+
+```bash
+letta-evals list-extractors
+```
+
+## Examples
+
+### Extract Final Answer
+
+```yaml
+extractor: last_assistant  # Get final agent message
+```
+
+Agent: "Let me search... *uses tool* ... The answer is Paris."
+Extracted: "The answer is Paris."
+
+### Extract Tool Arguments
+
+```yaml
+extractor: tool_arguments  # Get tool call args
+extractor_config:
+  tool_name: search  # From search tool
+```
+
+Agent calls: `search(query="pandas", limit=5)`
+Extracted: `{"query": "pandas", "limit": 5}`
+
+### Extract Pattern
+
+```yaml
+extractor: pattern  # Extract with regex
+extractor_config:
+  pattern: 'RESULT: (\w+)'  # Match pattern
+  group: 1  # Extract capture group 1
+```
+
+Agent: "After calculation... RESULT: SUCCESS"
+Extracted: "SUCCESS"
+
+### Extract Memory
+
+```yaml
+extractor: memory_block  # Extract from agent memory
+extractor_config:
+  block_label: human  # Human memory block
+```
+
+Agent updates memory block "human" to: "User's name is Alice"
+Extracted: "User's name is Alice"
+
+## Troubleshooting
+
+<Warning>
+**Extractor returns empty string**
+
+**Problem**: Grader always gives score 0.0 because extractor finds nothing.
+
+**Common causes**:
+- **Wrong extractor**: Using `first_assistant` but agent doesn't respond until after tool use → use `last_assistant`
+- **Wrong tool name**: `tool_arguments` with `tool_name: "search"` but agent calls `"web_search"` → check actual tool name
+- **Wrong memory block**: `memory_block` with `block_label: "user"` but block is actually labeled `"human"` → check block labels
+- **Pattern doesn't match**: `pattern: "Answer: (.*)"` but agent says "The answer is..." → adjust regex
+</Warning>
+
+<Tip>
+**Debug tips**:
+1. Check the trajectory in results JSON to see actual agent output
+2. Use `last_assistant` first to see what's there
+3. Verify tool names with `letta-evals list-extractors`
+</Tip>
+
+## Next Steps
+
+- [Built-in Extractors Reference](/evals/extractors/built-in-extractors) - Complete extractor documentation
+- [Custom Extractors Guide](/evals/extractors/custom-extractors) - Write your own extractors
+- [Graders](/evals/core-concepts/graders) - How to use extractors with graders

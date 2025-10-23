@@ -1,0 +1,427 @@
+# Suite YAML Reference
+
+Complete reference for suite configuration files.
+
+A **suite** is a YAML file that defines an evaluation: what agent to test, what dataset to use, how to grade responses, and what criteria determine pass/fail. This is your evaluation specification.
+
+<Note>
+**Quick overview:**
+- **name**: Identifier for your evaluation
+- **dataset**: JSONL file with test cases
+- **target**: Which agent to evaluate (via file, ID, or script)
+- **graders**: How to score responses (tool or rubric graders)
+- **gate**: Pass/fail criteria
+</Note>
+
+See [Getting Started](/evals/get-started/getting-started) for a tutorial, or [Core Concepts](/evals/core-concepts/suites) for conceptual overview.
+
+## File Structure
+
+```yaml
+name: string (required)
+description: string (optional)
+dataset: path (required)
+max_samples: integer (optional)
+sample_tags: array (optional)
+num_runs: integer (optional)
+setup_script: string (optional)
+
+target: object (required)
+  kind: "agent"
+  base_url: string
+  api_key: string
+  timeout: float
+  project_id: string
+  agent_id: string (one of: agent_id, agent_file, agent_script)
+  agent_file: path
+  agent_script: string
+  model_configs: array
+  model_handles: array
+
+graders: object (required)
+  <metric_key>: object
+    kind: "tool" | "rubric"
+    display_name: string
+    extractor: string
+    extractor_config: object
+    # Tool grader fields
+    function: string
+    # Rubric grader fields (LLM API)
+    prompt: string
+    prompt_path: path
+    model: string
+    temperature: float
+    provider: string
+    max_retries: integer
+    timeout: float
+    rubric_vars: array
+    # Rubric grader fields (agent-as-judge)
+    agent_file: path
+    judge_tool_name: string
+
+gate: object (required)
+  metric_key: string
+  metric: "avg_score" | "accuracy"
+  op: "gte" | "gt" | "lte" | "lt" | "eq"
+  value: float
+  pass_op: "gte" | "gt" | "lte" | "lt" | "eq"
+  pass_value: float
+```
+
+## Top-Level Fields
+
+### name (required)
+
+Suite name, used in output and results.
+
+**Type**: string
+
+```yaml
+name: question-answering-eval
+```
+
+### description (optional)
+
+Human-readable description of what the suite tests.
+
+**Type**: string
+
+```yaml
+description: Tests agent's ability to answer factual questions accurately
+```
+
+### dataset (required)
+
+Path to JSONL dataset file. Relative paths are resolved from the suite YAML location.
+
+**Type**: path (string)
+
+```yaml
+dataset: ./datasets/qa.jsonl
+dataset: /absolute/path/to/dataset.jsonl
+```
+
+### max_samples (optional)
+
+Limit the number of samples to evaluate. Useful for quick tests.
+
+**Type**: integer | **Default**: All samples
+
+```yaml
+max_samples: 10  # Only evaluate first 10 samples
+```
+
+### sample_tags (optional)
+
+Filter samples by tags. Only samples with ALL specified tags are evaluated.
+
+**Type**: array of strings
+
+```yaml
+sample_tags: [math, easy]  # Only samples tagged with both
+```
+
+### num_runs (optional)
+
+Number of times to run the evaluation suite.
+
+**Type**: integer | **Default**: 1
+
+```yaml
+num_runs: 5  # Run the evaluation 5 times
+```
+
+### setup_script (optional)
+
+Path to Python script with setup function.
+
+**Type**: string (format: `path/to/script.py:function_name`)
+
+```yaml
+setup_script: setup.py:prepare_environment
+```
+
+## target (required)
+
+Configuration for the agent being evaluated.
+
+### kind (required)
+
+Type of target. Currently only `"agent"` is supported.
+
+```yaml
+target:
+  kind: agent
+```
+
+### base_url (optional)
+
+Letta server URL. **Default**: `http://localhost:8283`
+
+```yaml
+target:
+  base_url: http://localhost:8283
+  # or
+  base_url: https://api.letta.com
+```
+
+### api_key (optional)
+
+API key for Letta authentication. Can also be set via `LETTA_API_KEY` environment variable.
+
+```yaml
+target:
+  api_key: your-api-key-here
+```
+
+### timeout (optional)
+
+Request timeout in seconds. **Default**: 300.0
+
+```yaml
+target:
+  timeout: 600.0  # 10 minutes
+```
+
+### Agent Source (required, pick one)
+
+Exactly one of these must be specified:
+
+#### agent_id
+
+ID of existing agent on the server.
+
+```yaml
+target:
+  agent_id: agent-123-abc
+```
+
+#### agent_file
+
+Path to `.af` agent file.
+
+```yaml
+target:
+  agent_file: ./agents/my_agent.af
+```
+
+#### agent_script
+
+Path to Python script with agent factory.
+
+```yaml
+target:
+  agent_script: factory.py:MyAgentFactory
+```
+
+See [Targets](/evals/core-concepts/targets) for details on agent sources.
+
+### model_configs (optional)
+
+List of model configuration names to test. Cannot be used with `model_handles`.
+
+```yaml
+target:
+  model_configs: [gpt-4o-mini, claude-3-5-sonnet]
+```
+
+### model_handles (optional)
+
+List of model handles for cloud deployments. Cannot be used with `model_configs`.
+
+```yaml
+target:
+  model_handles: ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet"]
+```
+
+## graders (required)
+
+One or more graders, each with a unique key.
+
+### kind (required)
+
+Grader type: `"tool"` or `"rubric"`.
+
+```yaml
+graders:
+  my_metric:
+    kind: tool
+```
+
+### extractor (required)
+
+Name of the extractor to use.
+
+```yaml
+graders:
+  my_metric:
+    extractor: last_assistant
+```
+
+### Tool Grader Fields
+
+#### function (required for tool graders)
+
+Name of the grading function.
+
+```yaml
+graders:
+  accuracy:
+    kind: tool
+    function: exact_match
+```
+
+### Rubric Grader Fields
+
+#### prompt or prompt_path (required)
+
+Inline rubric prompt or path to rubric file.
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    prompt: |
+      Evaluate response quality from 0.0 to 1.0.
+```
+
+#### model (optional)
+
+LLM model for judging. **Default**: `gpt-4o-mini`
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    model: gpt-4o
+```
+
+#### temperature (optional)
+
+Temperature for LLM generation. **Default**: 0.0
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    temperature: 0.0
+```
+
+#### agent_file (agent-as-judge)
+
+Path to `.af` agent file to use as judge.
+
+```yaml
+graders:
+  agent_judge:
+    kind: rubric
+    agent_file: judge.af
+    prompt_path: rubric.txt
+```
+
+## gate (required)
+
+Pass/fail criteria for the evaluation.
+
+### metric_key (optional)
+
+Which grader to evaluate. If only one grader, this can be omitted.
+
+```yaml
+gate:
+  metric_key: accuracy
+```
+
+### metric (optional)
+
+Which aggregate to compare: `avg_score` or `accuracy`. **Default**: `avg_score`
+
+```yaml
+gate:
+  metric: avg_score
+```
+
+### op (required)
+
+Comparison operator: `gte`, `gt`, `lte`, `lt`, `eq`
+
+```yaml
+gate:
+  op: gte  # Greater than or equal
+```
+
+### value (required)
+
+Threshold value for comparison (0.0 to 1.0).
+
+```yaml
+gate:
+  value: 0.8  # Require >= 0.8
+```
+
+## Complete Examples
+
+### Minimal Suite
+
+```yaml
+name: basic-eval
+dataset: dataset.jsonl
+
+target:
+  kind: agent
+  agent_file: agent.af
+
+graders:
+  accuracy:
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+
+gate:
+  op: gte
+  value: 0.8
+```
+
+### Multi-Metric Suite
+
+```yaml
+name: comprehensive-eval
+description: Tests accuracy and quality
+dataset: test_data.jsonl
+
+target:
+  kind: agent
+  agent_file: agent.af
+
+graders:
+  accuracy:
+    kind: tool
+    function: contains
+    extractor: last_assistant
+
+  quality:
+    kind: rubric
+    prompt_path: rubrics/quality.txt
+    model: gpt-4o-mini
+    extractor: last_assistant
+
+gate:
+  metric_key: accuracy
+  op: gte
+  value: 0.85
+```
+
+## Validation
+
+Validate your suite before running:
+
+```bash
+letta-evals validate suite.yaml
+```
+
+## Next Steps
+
+- [Targets](/evals/core-concepts/targets) - Understanding agent sources and configuration
+- [Graders](/evals/core-concepts/graders) - Tool graders vs rubric graders
+- [Extractors](/evals/core-concepts/extractors) - What to extract from agent responses
+- [Gates](/evals/core-concepts/gates) - Setting pass/fail criteria

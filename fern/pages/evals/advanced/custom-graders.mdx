@@ -1,0 +1,66 @@
+# Custom Graders
+
+Write your own grading functions to implement custom evaluation logic.
+
+<Note>
+Custom graders let you implement domain-specific evaluation, parse complex formats, and apply custom scoring algorithms.
+</Note>
+
+## Basic Structure
+
+```python
+from letta_evals.decorators import grader
+from letta_evals.models import GradeResult, Sample
+
+@grader
+def my_custom_grader(sample: Sample, submission: str) -> GradeResult:
+    """Custom grading logic."""
+
+    # Your evaluation logic
+    score = calculate_score(submission, sample.ground_truth)
+
+    # Ensure score is between 0.0 and 1.0
+    score = max(0.0, min(1.0, score))
+
+    return GradeResult(
+        score=score,
+        rationale=f"Score based on custom logic: {score}"
+    )
+```
+
+## Example: JSON Validation
+
+```python
+import json
+from letta_evals.decorators import grader
+from letta_evals.models import GradeResult, Sample
+
+@grader
+def valid_json(sample: Sample, submission: str) -> GradeResult:
+    """Check if submission is valid JSON."""
+    try:
+        json.loads(submission)
+        return GradeResult(score=1.0, rationale="Valid JSON")
+    except json.JSONDecodeError as e:
+        return GradeResult(score=0.0, rationale=f"Invalid JSON: {e}")
+```
+
+## Registration
+
+Custom graders are automatically registered when you import them in your suite's setup script or custom evaluators file.
+
+## Configuration
+
+```yaml
+graders:
+  my_metric:
+    kind: tool
+    function: my_custom_grader  # Your function name
+    extractor: last_assistant
+```
+
+## Next Steps
+
+- [Tool Graders](/evals/graders/tool-graders) - Built-in grading functions
+- [Graders Concept](/evals/core-concepts/graders) - Understanding graders
+- [Example Custom Graders](https://github.com/letta-ai/letta-evals/tree/main/examples) - See examples in the letta-evals repo
