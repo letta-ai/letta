@@ -18,11 +18,13 @@ Voice agents support is experimental and may be unstable. For more information, 
  <img src="../../images/vapi_create_assistant.png" />
   </Step>
   <Step title="Connect your Letta agent">
-  Select "Custom LLM" for the model, and enter in the voice endpoint for your agent: https://api.letta.com/v1/voice-beta/{AGENT-ID}
+  Select "Custom LLM" for the model, and enter in the chat completions endpoint: https://api.letta.com/v1/chat/completions
+
+  In the request body, set the "model" field to your agent ID in the format `agent-{AGENT-ID}`.
 
  <img src="../../images/vapi_model_letta.png" />
 
- <Note>The "Model" field will be ignored (since your `agent_id` is already configured with a model in Letta), so can be any value. </Note>
+ <Note>The legacy `/v1/voice-beta/{AGENT-ID}` endpoint has been deprecated. Use `/v1/chat/completions` with the agent ID specified in the "model" field instead.</Note>
   </Step>
   <Step title="Talk to your agent">
   You can now interact with your agent through Vapi, including calling and texting your agent!
@@ -52,9 +54,11 @@ Now, you should have a forwarding URL like `https://{YOUR_FORWARDING_URL}.ngrok.
  <img src="../../images/vapi_create_assistant.png" />
   </Step>
   <Step title="Connect your Letta agent">
-  Select "Custom LLM" for the model, and enter in the voice endpoint for your agent: `https://{YOUR_FORWARDING_URL}.ngrok.app/v1/voice-beta/{AGENT_ID}`
+  Select "Custom LLM" for the model, and enter in the chat completions endpoint: `https://{YOUR_FORWARDING_URL}.ngrok.app/v1/chat/completions`
 
- <Note>The "Model" field will be ignored (since your `agent_id` is already configured with a model in Letta), so can be any value. </Note>
+  In the request body, set the "model" field to your agent ID in the format `agent-{AGENT_ID}`.
+
+ <Note>The legacy `/v1/voice-beta/{AGENT_ID}` endpoint has been deprecated. Use `/v1/chat/completions` with the agent ID specified in the "model" field instead.</Note>
   </Step>
   <Step title="Talk to your agent">
   You can now interact with your agent through Vapi, including calling and texting your agent!

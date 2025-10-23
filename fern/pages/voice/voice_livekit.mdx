@@ -27,7 +27,7 @@ CARTESIA_API_KEY=... # Cartesia API key
 ```
 
 ## Connecting to Letta Cloud
-To connect to LiveKit, you can use the Letta connector `openai.LLM.with_letta` and pass in the `agent_id` of your voice agent.
+To connect to LiveKit, you can use the Letta connector `openai.LLM.with_letta` and pass in the `agent_id` of your voice agent. The connector uses Letta's OpenAI-compatible streaming chat completions endpoint (`/v1/chat/completions`) under the hood.
 
 Below is an example defining an entrypoint for a Livekit agent with Letta:
 ```python

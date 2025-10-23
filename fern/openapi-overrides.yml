@@ -1124,6 +1124,12 @@ paths:
         - batches
         - messages
       x-fern-sdk-method-name: list
+  /v1/chat/completions:
+    post:
+      x-fern-sdk-group-name:
+        - chat
+        - completions
+      x-fern-sdk-method-name: create
   /v1/embeddings/total_storage_size:
     get:
       x-fern-ignore: true
