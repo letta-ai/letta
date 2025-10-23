@@ -7119,20 +7119,18 @@
               "title": "Agent Id"
             },
             "description": "The ID of the agent in the format 'agent-<uuid4>'"
-          },
-          {
-            "name": "add_default_initial_messages",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If true, adds the default initial messages after resetting.",
-              "default": false,
-              "title": "Add Default Initial Messages"
-            },
-            "description": "If true, adds the default initial messages after resetting."
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetMessagesRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -27565,6 +27563,19 @@
         "required": ["tool_name"],
         "title": "RequiresApprovalToolRule",
         "description": "Represents a tool rule configuration which requires approval before the tool can be invoked."
+      },
+      "ResetMessagesRequest": {
+        "properties": {
+          "add_default_initial_messages": {
+            "type": "boolean",
+            "title": "Add Default Initial Messages",
+            "description": "If true, adds the default initial messages after resetting.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ResetMessagesRequest",
+        "description": "Request body for resetting messages on an agent."
       },
       "RetrieveStreamRequest": {
         "properties": {

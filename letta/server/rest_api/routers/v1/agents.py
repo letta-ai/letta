@@ -1606,17 +1606,26 @@ async def send_message_async(
     return run
 
 
+class ResetMessagesRequest(BaseModel):
+    """Request body for resetting messages on an agent."""
+
+    add_default_initial_messages: bool = Field(
+        False,
+        description="If true, adds the default initial messages after resetting.",
+    )
+
+
 @router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
 async def reset_messages(
     agent_id: AgentId,
-    add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
+    request: ResetMessagesRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """Resets the messages for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.reset_messages_async(
-        agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages
+        agent_id=agent_id, actor=actor, add_default_initial_messages=request.add_default_initial_messages
     )
 
 
