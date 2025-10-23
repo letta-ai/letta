@@ -420,6 +420,7 @@ class BlockManager:
         block_id: str,
         actor: PydanticUser,
         include_relationships: Optional[List[str]] = None,
+        include: List[str] = [],
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -501,7 +502,9 @@ class BlockManager:
             result = await session.execute(query)
             agents_orm = result.scalars().all()
 
-            agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents_orm])
+            agents = await asyncio.gather(
+                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents_orm]
+            )
             return agents
 
     @enforce_types

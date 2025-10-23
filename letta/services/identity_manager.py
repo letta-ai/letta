@@ -294,6 +294,7 @@ class IdentityManager:
         after: Optional[str] = None,
         limit: Optional[int] = 50,
         ascending: bool = False,
+        include: List[str] = [],
         actor: PydanticUser = None,
     ) -> List[AgentState]:
         """
@@ -314,7 +315,7 @@ class IdentityManager:
                 ascending=ascending,
                 identity_id=identity.id,
             )
-            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents])
+            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents])
 
     @enforce_types
     @trace_method

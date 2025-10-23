@@ -871,6 +871,7 @@ class AgentManager:
         identity_id: Optional[str] = None,
         identifier_keys: Optional[List[str]] = None,
         include_relationships: Optional[List[str]] = None,
+        include: List[str] = [],
         ascending: bool = True,
         sort_by: Optional[str] = "created_at",
         show_hidden_agents: Optional[bool] = None,
@@ -908,7 +909,7 @@ class AgentManager:
             query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
-            query = _apply_relationship_filters(query, include_relationships)
+            query = _apply_relationship_filters(query, include_relationships, include)
 
             # Apply hidden filter
             if not show_hidden_agents:
@@ -919,7 +920,9 @@ class AgentManager:
                 query = query.limit(limit)
             result = await session.execute(query)
             agents = result.scalars().all()
-            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+            return await asyncio.gather(
+                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
+            )
 
     @enforce_types
     @trace_method
