@@ -18593,7 +18593,20 @@
             "type": "boolean",
             "title": "Append Copy Suffix",
             "description": "If set to True, appends \"_copy\" to the end of the agent name.",
-            "default": true
+            "default": true,
+            "deprecated": true
+          },
+          "override_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Name",
+            "description": "If provided, overrides the agent name with this value."
           },
           "override_existing_tools": {
             "type": "boolean",

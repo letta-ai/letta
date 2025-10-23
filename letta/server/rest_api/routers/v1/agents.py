@@ -234,6 +234,7 @@ async def _import_agent(
     actor: User,
     # TODO: Support these fields for new agent file
     append_copy_suffix: bool = True,
+    override_name: Optional[str] = None,
     override_existing_tools: bool = True,
     project_id: str | None = None,
     strip_messages: bool = False,
@@ -254,6 +255,7 @@ async def _import_agent(
         schema=agent_schema,
         actor=actor,
         append_copy_suffix=append_copy_suffix,
+        override_name=override_name,
         override_existing_tools=override_existing_tools,
         env_vars=env_vars,
         override_embedding_config=embedding_config_override,
@@ -274,7 +276,15 @@ async def import_agent(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     x_override_embedding_model: str | None = Header(None, alias="x-override-embedding-model"),
-    append_copy_suffix: bool = Form(True, description='If set to True, appends "_copy" to the end of the agent name.'),
+    append_copy_suffix: bool = Form(
+        True,
+        description='If set to True, appends "_copy" to the end of the agent name.',
+        deprecated=True,
+    ),
+    override_name: Optional[str] = Form(
+        None,
+        description="If provided, overrides the agent name with this value.",
+    ),
     override_existing_tools: bool = Form(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
@@ -327,6 +337,7 @@ async def import_agent(
             server=server,
             actor=actor,
             append_copy_suffix=append_copy_suffix,
+            override_name=override_name,
             override_existing_tools=override_existing_tools,
             project_id=project_id,
             strip_messages=strip_messages,

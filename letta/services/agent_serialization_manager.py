@@ -452,6 +452,7 @@ class AgentSerializationManager:
         schema: AgentFileSchema,
         actor: User,
         append_copy_suffix: bool = False,
+        override_name: Optional[str] = None,
         override_existing_tools: bool = True,
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
@@ -658,7 +659,11 @@ class AgentSerializationManager:
 
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
-                if append_copy_suffix:
+
+                # Handle agent name override: override_name takes precedence over append_copy_suffix
+                if override_name:
+                    agent_data["name"] = override_name
+                elif append_copy_suffix:
                     agent_data["name"] = agent_data.get("name") + "_copy"
 
                 # Remap tool_ids from file IDs to database IDs
