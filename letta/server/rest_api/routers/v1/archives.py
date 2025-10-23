@@ -8,7 +8,7 @@ from letta.schemas.agent import AgentRelationships
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
-from letta.validators import AgentId, ArchiveId
+from letta.validators import AgentId, ArchiveId, PassageId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
 
@@ -215,3 +215,24 @@ async def list_agents_for_archive(
         include=include,
         ascending=(order == "asc"),
     )
+
+
+@router.delete("/{archive_id}/passages/{passage_id}", status_code=204, operation_id="delete_passage_from_archive")
+async def delete_passage_from_archive(
+    archive_id: ArchiveId,
+    passage_id: PassageId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Delete a passage from an archive.
+
+    This permanently removes the passage from both the database and vector storage (if applicable).
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.archive_manager.delete_passage_from_archive_async(
+        archive_id=archive_id,
+        passage_id=passage_id,
+        actor=actor,
+    )
+    return None

@@ -20,6 +20,7 @@ class PrimitiveType(str, Enum):
     SOURCE = "source"
     TOOL = "tool"
     ARCHIVE = "archive"
+    PASSAGE = "passage"
     PROVIDER = "provider"
     SANDBOX_CONFIG = "sandbox"  # Note: sandbox_config IDs use "sandbox" prefix
     STEP = "step"

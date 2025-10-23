@@ -954,3 +954,141 @@ async def test_archive_manager_get_agents_with_include_parameter(server: SyncSer
     # cleanup
     await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
     await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_delete_passage_from_archive_async(server: SyncServer, default_user):
+    """Test deleting a passage from an archive."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_passage_deletion_archive", description="Archive for testing passage deletion", actor=default_user
+    )
+
+    # create passages
+    passage1 = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="First test passage",
+            archive_id=archive.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1, 0.2],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    passage2 = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="Second test passage",
+            archive_id=archive.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.3, 0.4],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # verify both passages exist
+    retrieved_passage1 = await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage1.id, actor=default_user)
+    assert retrieved_passage1.id == passage1.id
+    assert retrieved_passage1.archive_id == archive.id
+
+    retrieved_passage2 = await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage2.id, actor=default_user)
+    assert retrieved_passage2.id == passage2.id
+
+    # delete passage1 from archive
+    await server.archive_manager.delete_passage_from_archive_async(archive_id=archive.id, passage_id=passage1.id, actor=default_user)
+
+    # verify passage1 is deleted
+    with pytest.raises(NoResultFound):
+        await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage1.id, actor=default_user)
+
+    # verify passage2 still exists
+    retrieved_passage2 = await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage2.id, actor=default_user)
+    assert retrieved_passage2.id == passage2.id
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(passage2.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_delete_passage_from_wrong_archive(server: SyncServer, default_user):
+    """Test that deleting a passage from the wrong archive raises an error."""
+    # create two archives
+    archive1 = await server.archive_manager.create_archive_async(name="archive_1", actor=default_user)
+    archive2 = await server.archive_manager.create_archive_async(name="archive_2", actor=default_user)
+
+    # create passage in archive1
+    passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="Passage in archive 1",
+            archive_id=archive1.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1, 0.2],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # attempt to delete passage from archive2 (wrong archive)
+    with pytest.raises(ValueError, match="does not belong to archive"):
+        await server.archive_manager.delete_passage_from_archive_async(archive_id=archive2.id, passage_id=passage.id, actor=default_user)
+
+    # verify passage still exists
+    retrieved_passage = await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage.id, actor=default_user)
+    assert retrieved_passage.id == passage.id
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive1.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_delete_nonexistent_passage(server: SyncServer, default_user):
+    """Test that deleting a non-existent passage raises an error."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(name="test_nonexistent_passage_archive", actor=default_user)
+
+    # attempt to delete non-existent passage (use valid UUID4 format)
+    fake_passage_id = f"passage-{uuid.uuid4()}"
+    with pytest.raises(NoResultFound):
+        await server.archive_manager.delete_passage_from_archive_async(
+            archive_id=archive.id, passage_id=fake_passage_id, actor=default_user
+        )
+
+    # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_delete_passage_from_nonexistent_archive(server: SyncServer, default_user):
+    """Test that deleting a passage from a non-existent archive raises an error."""
+    # create archive and passage
+    archive = await server.archive_manager.create_archive_async(name="temp_archive", actor=default_user)
+
+    passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="Test passage",
+            archive_id=archive.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1, 0.2],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    # attempt to delete passage from non-existent archive (use valid UUID4 format)
+    fake_archive_id = f"archive-{uuid.uuid4()}"
+    with pytest.raises(NoResultFound):
+        await server.archive_manager.delete_passage_from_archive_async(
+            archive_id=fake_archive_id, passage_id=passage.id, actor=default_user
+        )
+
+    # verify passage still exists
+    retrieved_passage = await server.passage_manager.get_agent_passage_by_id_async(passage_id=passage.id, actor=default_user)
+    assert retrieved_passage.id == passage.id
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)

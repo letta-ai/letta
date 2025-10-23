@@ -259,6 +259,46 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @raise_on_invalid_id(param_name="passage_id", expected_prefix=PrimitiveType.PASSAGE)
+    async def delete_passage_from_archive_async(
+        self,
+        archive_id: str,
+        passage_id: str,
+        actor: PydanticUser = None,
+        strict_mode: bool = False,
+    ) -> None:
+        """Delete a passage from an archive.
+
+        Args:
+            archive_id: ID of the archive containing the passage
+            passage_id: ID of the passage to delete
+            actor: User performing the operation
+            strict_mode: If True, raise errors on Turbopuffer failures
+
+        Raises:
+            NoResultFound: If archive or passage not found
+            ValueError: If passage does not belong to the specified archive
+        """
+        from letta.services.passage_manager import PassageManager
+
+        await self.get_archive_by_id_async(archive_id=archive_id, actor=actor)
+
+        passage_manager = PassageManager()
+        passage = await passage_manager.get_agent_passage_by_id_async(passage_id=passage_id, actor=actor)
+
+        if passage.archive_id != archive_id:
+            raise ValueError(f"Passage {passage_id} does not belong to archive {archive_id}")
+
+        await passage_manager.delete_agent_passage_by_id_async(
+            passage_id=passage_id,
+            actor=actor,
+            strict_mode=strict_mode,
+        )
+        logger.info(f"Deleted passage {passage_id} from archive {archive_id}")
+
+    @enforce_types
+    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_or_create_default_archive_for_agent_async(
         self,
