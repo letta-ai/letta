@@ -378,14 +378,14 @@ class TestSettings(Settings):
 
 class LogSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_logging_", extra="ignore")
-    debug: bool | None = Field(False, description="Enable debugging for logging")
+    debug: bool = Field(default=False, description="Enable debugging for logging")
     json_logging: bool = Field(
-        False,
+        default=False,
         description="Enable structured JSON logging (recommended).",
     )
     log_level: str | None = Field("WARNING", description="Logging level")
     letta_log_path: Path | None = Field(Path.home() / ".letta" / "logs" / "Letta.log")
-    verbose_telemetry_logging: bool = Field(False)
+    verbose_telemetry_logging: bool = Field(default=False)
 
 
 class TelemetrySettings(BaseSettings):
@@ -394,18 +394,18 @@ class TelemetrySettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_telemetry_", extra="ignore")
 
     # Google Cloud Profiler
-    profiler: bool | None = Field(False, description="Enable Google Cloud Profiler.")
+    profiler: bool = Field(default=False, description="Enable Google Cloud Profiler.")
 
     # Datadog APM and Profiling
-    enable_datadog: bool | None = Field(False, description="Enable Datadog profiling. Environment is pulled from settings.environment.")
+    enable_datadog: bool = Field(default=False, description="Enable Datadog profiling. Environment is pulled from settings.environment.")
     datadog_agent_host: str = Field(
         default="localhost",
         description="Datadog agent hostname or IP address. Use service name for Kubernetes (e.g., 'datadog-cluster-agent').",
     )
     datadog_agent_port: int = Field(default=8126, ge=1, le=65535, description="Datadog trace agent port (typically 8126 for traces).")
     datadog_service_name: str = Field(default="letta-server", description="Service name for Datadog profiling.")
-    datadog_profiling_memory_enabled: bool = Field(default=True, description="Enable memory profiling in Datadog.")
-    datadog_profiling_heap_enabled: bool = Field(default=True, description="Enable heap profiling in Datadog.")
+    datadog_profiling_memory_enabled: bool = Field(default=False, description="Enable memory profiling in Datadog.")
+    datadog_profiling_heap_enabled: bool = Field(default=False, description="Enable heap profiling in Datadog.")
 
     # Datadog Source Code Integration (optional, tightly coupled with profiling)
     # These settings link profiling data and traces to specific Git commits,
