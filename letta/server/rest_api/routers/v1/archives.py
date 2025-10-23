@@ -3,6 +3,8 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel
 
+from letta import AgentState
+from letta.schemas.agent import AgentRelationships
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
@@ -175,4 +177,41 @@ async def detach_agent_from_archive(
     return await server.archive_manager.get_archive_by_id_async(
         archive_id=archive_id,
         actor=actor,
+    )
+
+
+@router.get("/{archive_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_archive")
+async def list_agents_for_archive(
+    archive_id: ArchiveId,
+    before: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of agents to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    include: List[AgentRelationships] = Query(
+        [],
+        description=("Specify which relational fields to include in the response. No relationships are included by default."),
+    ),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get a list of agents that have access to an archive with pagination support.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive_id,
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        include=include,
+        ascending=(order == "asc"),
     )

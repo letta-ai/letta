@@ -54,7 +54,7 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentRelationships, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
@@ -147,9 +147,10 @@ async def test_archive_manager_get_agents_for_archive_async(server: SyncServer, 
         agent_id=agent2.id, archive_id=archive.id, is_owner=False, actor=default_user
     )
 
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
 
-    assert len(agent_ids) == 2
+    assert len(agents) == 2
+    agent_ids = [a.id for a in agents]
     assert sarah_agent.id in agent_ids
     assert agent2.id in agent_ids
 
@@ -433,17 +434,17 @@ async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer,
     )
 
     # verify attachment
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
-    assert sarah_agent.id in agent_ids
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert sarah_agent.id in [a.id for a in agents]
 
     # attach agent as non-owner
     await server.archive_manager.attach_agent_to_archive_async(
         agent_id=agent2.id, archive_id=archive1.id, is_owner=False, actor=default_user
     )
 
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
-    assert len(agent_ids) == 2
-    assert agent2.id in agent_ids
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert len(agents) == 2
+    assert agent2.id in [a.id for a in agents]
 
     # test updating ownership (attach again with different is_owner)
     await server.archive_manager.attach_agent_to_archive_async(
@@ -451,8 +452,8 @@ async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer,
     )
 
     # verify still only 2 agents (no duplicate)
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
-    assert len(agent_ids) == 2
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
+    assert len(agents) == 2
 
     # cleanup
     await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
@@ -497,8 +498,9 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     )
 
     # verify both are attached
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 2
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 2
+    agent_ids = [a.id for a in agents]
     assert agent1.id in agent_ids
     assert agent2.id in agent_ids
 
@@ -506,8 +508,9 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive.id, actor=default_user)
 
     # verify only agent2 remains
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 1
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 1
+    agent_ids = [a.id for a in agents]
     assert agent2.id in agent_ids
     assert agent1.id not in agent_ids
 
@@ -515,16 +518,16 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive.id, actor=default_user)
 
     # verify still only agent2
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 1
-    assert agent2.id in agent_ids
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 1
+    assert agent2.id in [a.id for a in agents]
 
     # detach agent2
     await server.archive_manager.detach_agent_from_archive_async(agent_id=agent2.id, archive_id=archive.id, actor=default_user)
 
     # verify archive has no agents
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 0
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 0
 
     # cleanup
     await server.agent_manager.delete_agent_async(agent1.id, actor=default_user)
@@ -554,16 +557,16 @@ async def test_archive_manager_attach_detach_idempotency(server: SyncServer, def
     await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=False, actor=default_user)
 
     # verify only one relationship exists
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 1
-    assert agent.id in agent_ids
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 1
+    assert agent.id in [a.id for a in agents]
 
     # test ownership update through re-attachment
     await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=True, actor=default_user)
 
     # still only one relationship
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 1
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 1
 
     # test detaching non-existent relationship (should be idempotent)
     non_existent_agent = await server.agent_manager.create_agent_async(
@@ -581,9 +584,9 @@ async def test_archive_manager_attach_detach_idempotency(server: SyncServer, def
     await server.archive_manager.detach_agent_from_archive_async(agent_id=non_existent_agent.id, archive_id=archive.id, actor=default_user)
 
     # verify original agent still attached
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 1
-    assert agent.id in agent_ids
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 1
+    assert agent.id in [a.id for a in agents]
 
     # cleanup
     await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
@@ -633,20 +636,20 @@ async def test_archive_manager_detach_with_multiple_archives(server: SyncServer,
     # verify initial state
     agents_archive1 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
     agents_archive2 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive2.id, actor=default_user)
-    assert agent1.id in agents_archive1
-    assert agent2.id in agents_archive2
+    assert agent1.id in [a.id for a in agents_archive1]
+    assert agent2.id in [a.id for a in agents_archive2]
 
     # detach agent1 from archive1
     await server.archive_manager.detach_agent_from_archive_async(agent_id=agent1.id, archive_id=archive1.id, actor=default_user)
 
     # verify agent1 is detached from archive1
     agents_archive1 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive1.id, actor=default_user)
-    assert agent1.id not in agents_archive1
+    assert agent1.id not in [a.id for a in agents_archive1]
     assert len(agents_archive1) == 0
 
     # verify agent2 is still attached to archive2
     agents_archive2 = await server.archive_manager.get_agents_for_archive_async(archive_id=archive2.id, actor=default_user)
-    assert agent2.id in agents_archive2
+    assert agent2.id in [a.id for a in agents_archive2]
     assert len(agents_archive2) == 1
 
     # cleanup
@@ -683,8 +686,8 @@ async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_
     await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
 
     # verify agent is no longer attached
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 0
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 0
 
     # attempting to detach the deleted agent should be idempotent (no error)
     await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
@@ -731,8 +734,9 @@ async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncSe
     )
 
     # verify both agents are attached
-    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
-    assert len(agent_ids) == 2
+    agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents) == 2
+    agent_ids = [a.id for a in agents]
     assert agent1.id in agent_ids
     assert agent2.id in agent_ids
 
@@ -766,6 +770,69 @@ async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncSe
     # cleanup agents
     await server.agent_manager.delete_agent_async(agent1.id, actor=default_user)
     await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_list_agents_with_pagination(server: SyncServer, default_user):
+    """Test listing agents for an archive with pagination support."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="pagination_test_archive", description="Archive for testing pagination", actor=default_user
+    )
+
+    # create multiple agents
+    agents = []
+    for i in range(5):
+        agent = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name=f"pagination_test_agent_{i}",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+        agents.append(agent)
+        # Attach to archive
+        await server.archive_manager.attach_agent_to_archive_async(
+            agent_id=agent.id, archive_id=archive.id, is_owner=(i == 0), actor=default_user
+        )
+
+    # Test basic listing (should get all 5)
+    all_agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user, limit=10)
+    assert len(all_agents) == 5
+    all_agent_ids = [a.id for a in all_agents]
+    for agent in agents:
+        assert agent.id in all_agent_ids
+
+    # Test with limit
+    limited_agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user, limit=3)
+    assert len(limited_agents) == 3
+
+    # Test that pagination parameters are accepted without errors
+    paginated = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user, limit=2)
+    assert len(paginated) == 2
+    assert all(a.id in all_agent_ids for a in paginated)
+
+    # Test ascending/descending order by checking we get all agents in both
+    ascending_agents = await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive.id, actor=default_user, ascending=True, limit=10
+    )
+    assert len(ascending_agents) == 5
+
+    descending_agents = await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive.id, actor=default_user, ascending=False, limit=10
+    )
+    assert len(descending_agents) == 5
+
+    # Verify both orders contain all agents
+    assert set([a.id for a in ascending_agents]) == set([a.id for a in descending_agents])
+
+    # Cleanup
+    for agent in agents:
+        await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
 
 
 @pytest.mark.asyncio
@@ -822,4 +889,68 @@ async def test_archive_manager_get_or_set_vector_db_namespace_async(server: Sync
     assert namespace == namespace2
 
     # cleanup
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_agents_with_include_parameter(server: SyncServer, default_user):
+    """Test getting agents for an archive with include parameter to load relationships."""
+    # create an archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_include_archive", description="Test archive for include parameter", actor=default_user
+    )
+
+    # create agent without base tools (to avoid needing tools in test DB)
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_include_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # attach agent to archive
+    await server.archive_manager.attach_agent_to_archive_async(agent_id=agent.id, archive_id=archive.id, is_owner=True, actor=default_user)
+
+    # test without include parameter (default - no relationships loaded)
+    agents_no_include = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+    assert len(agents_no_include) == 1
+    # By default, tools should be empty list (not loaded)
+    assert agents_no_include[0].tools == []
+    # By default, tags should also be empty (not loaded)
+    assert agents_no_include[0].tags == []
+
+    # test with include parameter to load tags
+    agents_with_tags = await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive.id, actor=default_user, include=["agent.tags"]
+    )
+    assert len(agents_with_tags) == 1
+    # With include, tags should be loaded (as a list, even if empty)
+    assert isinstance(agents_with_tags[0].tags, list)
+
+    # test with include parameter to load blocks
+    agents_with_blocks = await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive.id, actor=default_user, include=["agent.blocks"]
+    )
+    assert len(agents_with_blocks) == 1
+    # With include, blocks should be loaded
+    assert isinstance(agents_with_blocks[0].blocks, list)
+    # Agent should have blocks since we passed memory_blocks=[] which creates default blocks
+    assert len(agents_with_blocks[0].blocks) >= 0
+
+    # test with multiple includes
+    agents_with_multiple = await server.archive_manager.get_agents_for_archive_async(
+        archive_id=archive.id, actor=default_user, include=["agent.tags", "agent.blocks", "agent.tools"]
+    )
+    assert len(agents_with_multiple) == 1
+    # All requested relationships should be loaded
+    assert isinstance(agents_with_multiple[0].tags, list)
+    assert isinstance(agents_with_multiple[0].blocks, list)
+    assert isinstance(agents_with_multiple[0].tools, list)
+
+    # cleanup
+    await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
     await server.archive_manager.delete_archive_async(archive.id, actor=default_user)

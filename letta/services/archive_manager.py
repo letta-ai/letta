@@ -1,16 +1,19 @@
+import asyncio
+from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.archive import Archive as PydanticArchive
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
 
@@ -332,11 +335,81 @@ class ArchiveManager:
         self,
         archive_id: str,
         actor: PydanticUser,
-    ) -> List[str]:
-        """Get all agent IDs that have access to an archive."""
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = False,
+        include: List[str] = [],
+    ) -> List[PydanticAgentState]:
+        """Get agents that have access to an archive with pagination support.
+
+        Uses a subquery approach to avoid expensive JOINs.
+        """
+        from letta.orm import Agent as AgentModel
+
         async with db_registry.async_session() as session:
-            result = await session.execute(select(ArchivesAgents.agent_id).where(ArchivesAgents.archive_id == archive_id))
-            return [row[0] for row in result.fetchall()]
+            # Start with a basic query using subquery instead of JOIN
+            query = (
+                select(AgentModel)
+                .where(AgentModel.id.in_(select(ArchivesAgents.agent_id).where(ArchivesAgents.archive_id == archive_id)))
+                .where(AgentModel.organization_id == actor.organization_id)
+            )
+
+            # Apply pagination using cursor-based approach
+            if after:
+                result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after))).first()
+                if result:
+                    after_sort_value, after_id = result
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
+                        after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
+
+                    if ascending:
+                        query = query.where(
+                            AgentModel.created_at > after_sort_value,
+                            or_(AgentModel.created_at == after_sort_value, AgentModel.id > after_id),
+                        )
+                    else:
+                        query = query.where(
+                            AgentModel.created_at < after_sort_value,
+                            or_(AgentModel.created_at == after_sort_value, AgentModel.id < after_id),
+                        )
+
+            if before:
+                result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
+                if result:
+                    before_sort_value, before_id = result
+                    # SQLite does not support as granular timestamping, so we need to round the timestamp
+                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
+                        before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
+
+                    if ascending:
+                        query = query.where(
+                            AgentModel.created_at < before_sort_value,
+                            or_(AgentModel.created_at == before_sort_value, AgentModel.id < before_id),
+                        )
+                    else:
+                        query = query.where(
+                            AgentModel.created_at > before_sort_value,
+                            or_(AgentModel.created_at == before_sort_value, AgentModel.id > before_id),
+                        )
+
+            # Apply sorting
+            if ascending:
+                query = query.order_by(AgentModel.created_at.asc(), AgentModel.id.asc())
+            else:
+                query = query.order_by(AgentModel.created_at.desc(), AgentModel.id.desc())
+
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
+
+            # Execute the query
+            result = await session.execute(query)
+            agents_orm = result.scalars().all()
+
+            agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents_orm])
+            return agents
 
     @enforce_types
     @trace_method

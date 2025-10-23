@@ -470,6 +470,149 @@
         }
       }
     },
+    "/v1/archives/{archive_id}/agents": {
+      "get": {
+        "tags": ["archives"],
+        "summary": "List Agents For Archive",
+        "description": "Get a list of agents that have access to an archive with pagination support.",
+        "operationId": "list_agents_for_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Archive Id"
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "agent.blocks",
+                  "agent.identities",
+                  "agent.managed_group",
+                  "agent.secrets",
+                  "agent.sources",
+                  "agent.tags",
+                  "agent.tools"
+                ],
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "title": "Response List Agents For Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/{tool_id}": {
       "delete": {
         "tags": ["tools"],
