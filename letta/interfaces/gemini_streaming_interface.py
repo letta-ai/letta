@@ -26,6 +26,7 @@ from letta.schemas.letta_message_content import (
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
+from letta.server.rest_api.utils import decrement_message_uuid
 from letta.utils import get_tool_call_id
 
 logger = get_logger(__name__)
@@ -255,11 +256,9 @@ class SimpleGeminiStreamingInterface:
                 self.tool_call_args = arguments
 
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
-                    if prev_message_type and prev_message_type != "approval_request_message":
-                        message_index += 1
                     yield ApprovalRequestMessage(
-                        id=self.letta_message_id,
-                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        id=decrement_message_uuid(self.letta_message_id),
+                        otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         date=datetime.now(timezone.utc),
                         tool_call=ToolCallDelta(
                             name=name,
@@ -269,7 +268,6 @@ class SimpleGeminiStreamingInterface:
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
-                    prev_message_type = "approval_request_message"
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
