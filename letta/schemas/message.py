@@ -1855,6 +1855,9 @@ class Message(BaseMessage):
         """
         Convert message id to bits and change the list bit to the index
         """
+        if index == -1:
+            return message_id
+
         if not 0 <= index < 128:
             raise ValueError("Index must be between 0 and 127")
 

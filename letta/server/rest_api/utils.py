@@ -263,17 +263,17 @@ def create_approval_request_message_from_llm_response(
         run_id=run_id,
     )
     if pre_computed_assistant_message_id:
-        approval_message.id = increment_message_uuid(pre_computed_assistant_message_id)
+        approval_message.id = decrement_message_uuid(pre_computed_assistant_message_id)
     messages.append(approval_message)
     return messages
 
 
-def increment_message_uuid(message_id: str):
+def decrement_message_uuid(message_id: str):
     message_uuid = uuid.UUID(message_id.split("-", maxsplit=1)[1])
     uuid_as_int = message_uuid.int
-    incremented_int = uuid_as_int + 1
-    incremented_uuid = uuid.UUID(int=incremented_int)
-    return "message-" + str(incremented_uuid)
+    decremented_int = uuid_as_int - 1
+    decremented_uuid = uuid.UUID(int=decremented_int)
+    return "message-" + str(decremented_uuid)
 
 
 def create_letta_messages_from_llm_response(

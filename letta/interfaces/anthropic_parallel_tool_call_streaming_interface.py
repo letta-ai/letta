@@ -39,7 +39,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
-from letta.server.rest_api.utils import increment_message_uuid
+from letta.server.rest_api.utils import decrement_message_uuid
 
 logger = get_logger(__name__)
 
@@ -284,11 +284,11 @@ class SimpleAnthropicStreamingInterface:
                 # Initialize arguments from the start event's input (often {}) to avoid undefined in UIs
                 if name in self.requires_approval_tools:
                     tool_call_msg = ApprovalRequestMessage(
-                        id=increment_message_uuid(self.letta_message_id),
+                        id=decrement_message_uuid(self.letta_message_id),
                         # Do not emit placeholder arguments here to avoid UI duplicates
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id),
                         date=datetime.now(timezone.utc).isoformat(),
-                        otid=Message.generate_otid_from_id(increment_message_uuid(self.letta_message_id), message_index),
+                        otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
@@ -381,10 +381,10 @@ class SimpleAnthropicStreamingInterface:
 
                 if name in self.requires_approval_tools:
                     tool_call_msg = ApprovalRequestMessage(
-                        id=increment_message_uuid(self.letta_message_id),
+                        id=decrement_message_uuid(self.letta_message_id),
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
-                        otid=Message.generate_otid_from_id(increment_message_uuid(self.letta_message_id), message_index),
+                        otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
