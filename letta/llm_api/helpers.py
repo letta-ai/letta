@@ -8,10 +8,13 @@ import requests
 
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.helpers.json_helpers import json_dumps
+from letta.log import get_logger
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
 from letta.settings import summarizer_settings
 from letta.utils import count_tokens, printd
+
+logger = get_logger(__name__)
 
 
 def _convert_to_structured_output_helper(property: dict) -> dict:
@@ -323,8 +326,7 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
 
         except json.JSONDecodeError as e:
             warnings.warn(f"Failed to strip inner thoughts from kwargs: {e}")
-            print(f"\nFailed to strip inner thoughts from kwargs: {e}")
-            print(f"\nTool call arguments: {tool_call.function.arguments}")
+            logger.error(f"Failed to strip inner thoughts from kwargs: {e}, Tool call arguments: {tool_call.function.arguments}")
             raise e
     else:
         warnings.warn(f"Did not find tool call in message: {str(message)}")

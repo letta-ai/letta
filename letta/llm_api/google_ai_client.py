@@ -92,10 +92,7 @@ async def google_ai_get_model_list_async(
     except httpx.HTTPStatusError as http_err:
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         printd(f"Got HTTPError, exception={http_err}")
-        # Print the HTTP status code
-        print(f"HTTP Error: {http_err.response.status_code}")
-        # Print the response content (error message from server)
-        print(f"Message: {http_err.response.text}")
+        logger.error(f"HTTP Error: {http_err.response.status_code}, Message: {http_err.response.text}")
         raise http_err
 
     except httpx.RequestError as req_err:
@@ -136,10 +133,7 @@ def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_
     except httpx.HTTPStatusError as http_err:
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         printd(f"Got HTTPError, exception={http_err}")
-        # Print the HTTP status code
-        print(f"HTTP Error: {http_err.response.status_code}")
-        # Print the response content (error message from server)
-        print(f"Message: {http_err.response.text}")
+        logger.error(f"HTTP Error: {http_err.response.status_code}, Message: {http_err.response.text}")
         raise http_err
 
     except httpx.RequestError as req_err:
@@ -182,10 +176,7 @@ async def google_ai_get_model_details_async(
     except httpx.HTTPStatusError as http_err:
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         printd(f"Got HTTPError, exception={http_err}")
-        # Print the HTTP status code
-        print(f"HTTP Error: {http_err.response.status_code}")
-        # Print the response content (error message from server)
-        print(f"Message: {http_err.response.text}")
+        logger.error(f"HTTP Error: {http_err.response.status_code}, Message: {http_err.response.text}")
         raise http_err
 
     except httpx.RequestError as req_err:

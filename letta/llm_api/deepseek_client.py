@@ -9,10 +9,13 @@ from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.llm_api.openai_client import OpenAIClient
+from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
+
+logger = get_logger(__name__)
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -91,7 +94,7 @@ def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Messag
             merged_message = merge_tool_message(deepseek_messages[-1], message)
             deepseek_messages[-1] = merged_message
         else:
-            print(f"Skipping message: {message}")
+            logger.warning(f"Skipping message: {message}")
 
     # This needs to end on a user message, add a dummy message if the last was assistant
     if deepseek_messages[-1].role == "assistant":
@@ -308,7 +311,7 @@ def convert_deepseek_response_to_chatcompletion(
             )
         ]
     except (json.JSONDecodeError, TypeError, KeyError) as e:
-        print(e)
+        logger.error(f"Failed to parse DeepSeek response: {e}")
         tool_calls = response.choices[0].message.tool_calls
         raise ValueError(f"Failed to create valid JSON {content}")
 

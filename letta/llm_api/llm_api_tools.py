@@ -9,6 +9,9 @@ import requests
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.helpers import unpack_all_inner_thoughts_from_kwargs
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from letta.llm_api.openai import (
     build_openai_chat_completions_request,
     openai_chat_completions_process_stream,
@@ -95,7 +98,7 @@ def retry_with_exponential_backoff(
 
                     # Sleep for the delay
                     # printd(f"Got a rate limit error ('{http_err}') on LLM backend request, waiting {int(delay)}s then retrying...")
-                    print(
+                    logger.warning(
                         f"{CLI_WARNING_PREFIX}Got a rate limit error ('{http_err}') on LLM backend request, waiting {int(delay)}s then retrying..."
                     )
                     time.sleep(delay)

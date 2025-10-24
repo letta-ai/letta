@@ -83,10 +83,10 @@ class AsyncBaseMCPClient:
         for content_piece in result.content:
             if isinstance(content_piece, TextContent):
                 parsed_content.append(content_piece.text)
-                print("parsed_content (text)", parsed_content)
+                logger.debug(f"MCP tool result parsed content (text): {parsed_content}")
             else:
                 parsed_content.append(str(content_piece))
-                print("parsed_content (other)", parsed_content)
+                logger.debug(f"MCP tool result parsed content (other): {parsed_content}")
         if len(parsed_content) > 0:
             final_content = " ".join(parsed_content)
         else:

@@ -578,7 +578,7 @@ def openai_chat_completions_request_stream(
             # TODO: Use the native OpenAI objects here?
             yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
     except Exception as e:
-        print(f"Error request stream from /v1/chat/completions, url={url}, data={data}:\n{e}")
+        logger.error(f"Error request stream from /v1/chat/completions, url={url}, data={data}: {e}")
         raise e
 
 
