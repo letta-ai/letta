@@ -34,7 +34,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate
-from letta.schemas.enums import AgentType, MessageRole, RunStatus
+from letta.schemas.enums import AgentType, RunStatus
 from letta.schemas.file import AgentFileAttachment, FileMetadataBase, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import LettaRequestConfig

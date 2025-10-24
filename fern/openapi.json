@@ -10034,51 +10034,6 @@
         }
       }
     },
-    "/v1/_internal_agents/count": {
-      "get": {
-        "tags": ["_internal_agents"],
-        "summary": "Count Agents",
-        "description": "Get the total number of agents for a user, with option to exclude hidden agents.",
-        "operationId": "count_internal_agents",
-        "parameters": [
-          {
-            "name": "exclude_hidden",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If True, excludes hidden agents from the count. If False, includes all agents.",
-              "default": true,
-              "title": "Exclude Hidden"
-            },
-            "description": "If True, excludes hidden agents from the count. If False, includes all agents."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "title": "Response Count Internal Agents"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}": {
       "patch": {
         "tags": ["_internal_agents"],
@@ -10158,20 +10113,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Label to include (alphanumeric, hyphens, underscores only)",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "description": "Labels to include (e.g. human, persona)",
               "title": "Label"
             },
-            "description": "Label to include (alphanumeric, hyphens, underscores only)"
+            "description": "Labels to include (e.g. human, persona)"
           },
           {
             "name": "templates_only",
@@ -10192,20 +10143,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 100,
-                  "pattern": "^[a-zA-Z0-9 _-]+$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
-              "examples": ["My Agent", "test_tool", "default-config"],
+              "description": "Name of the block",
               "title": "Name"
             },
-            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
+            "description": "Name of the block"
           },
           {
             "name": "identity_id",
@@ -10214,20 +10161,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 45,
-                  "maxLength": 45,
-                  "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "The ID of the identity in the format 'identity-<uuid4>'",
-              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
+              "description": "Search agents by identifier id",
               "title": "Identity Id"
             },
-            "description": "The ID of the identity in the format 'identity-<uuid4>'"
+            "description": "Search agents by identifier id"
           },
           {
             "name": "identifier_keys",
@@ -10356,20 +10299,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
               "title": "Label Search"
             },
-            "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
+            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
           },
           {
             "name": "description_search",
@@ -10378,18 +10317,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 200
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
+              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
               "title": "Description Search"
             },
-            "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions."
+            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
           },
           {
             "name": "value_search",
@@ -10398,18 +10335,16 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 200
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
+              "description": "Search blocks by value. If provided, returns blocks that match this value.",
               "title": "Value Search"
             },
-            "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values."
+            "description": "Search blocks by value. If provided, returns blocks that match this value."
           },
           {
             "name": "connected_to_agents_count_gt",
@@ -10699,11 +10634,9 @@
                 }
               ],
               "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
-              "deprecated": true,
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
-            "deprecated": true
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
           },
           {
             "name": "include",
@@ -21970,6 +21903,210 @@
         },
         "type": "object",
         "required": ["value", "id"],
+        "title": "BlockResponse"
+      },
+      "BlockResponse": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 20000
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
+          "template_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Name",
+            "description": "(Deprecated) The name of the block template (if it is a template).",
+            "deprecated": true
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "(Deprecated) The id of the template.",
+            "deprecated": true
+          },
+          "base_template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Template Id",
+            "description": "(Deprecated) The base template id of the block.",
+            "deprecated": true
+          },
+          "deployment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployment Id",
+            "description": "(Deprecated) The id of the deployment.",
+            "deprecated": true
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id",
+            "description": "(Deprecated) The id of the entity within the template.",
+            "deprecated": true
+          },
+          "preserve_on_migration": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preserve On Migration",
+            "description": "(Deprecated) Preserve the block on template migration.",
+            "default": false,
+            "deprecated": true
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona') in the context window."
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "(Deprecated) Whether the agent has read-only access to the block.",
+            "default": false,
+            "deprecated": true
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "(Deprecated) If set to True, the block will be hidden.",
+            "deprecated": true
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^block-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Block",
+            "examples": ["block-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Block."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that last updated this Block."
+          }
+        },
+        "type": "object",
+        "required": ["value"],
         "title": "BlockResponse"
       },
       "BlockSchema": {
