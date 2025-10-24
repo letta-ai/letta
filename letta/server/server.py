@@ -938,11 +938,10 @@ class SyncServer(object):
                 async with asyncio.timeout(constants.GET_PROVIDERS_TIMEOUT_SECONDS):
                     return await provider.list_llm_models_async()
             except asyncio.TimeoutError:
-                warnings.warn(f"Timeout while listing LLM models for provider {provider}")
+                logger.warning(f"Timeout while listing LLM models for provider {provider}")
                 return []
             except Exception as e:
-                traceback.print_exc()
-                warnings.warn(f"Error while listing LLM models for provider {provider}: {e}")
+                logger.exception(f"Error while listing LLM models for provider {provider}: {e}")
                 return []
 
         # Execute all provider model listing tasks concurrently
@@ -981,10 +980,7 @@ class SyncServer(object):
                 # All providers now have list_embedding_models_async
                 return await provider.list_embedding_models_async()
             except Exception as e:
-                import traceback
-
-                traceback.print_exc()
-                warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
+                logger.exception(f"An error occurred while listing embedding models for provider {provider}: {e}")
                 return []
 
         # Execute all provider model listing tasks concurrently
@@ -1514,7 +1510,7 @@ class SyncServer(object):
             # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
             supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
-                warnings.warn(
+                logger.warning(
                     f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
                 )
                 stream_tokens = False
@@ -1616,10 +1612,7 @@ class SyncServer(object):
         except HTTPException:
             raise
         except Exception as e:
-            print(e)
-            import traceback
-
-            traceback.print_exc()
+            logger.exception(f"Error sending message to agent: {e}")
             raise HTTPException(status_code=500, detail=f"{e}")
 
     @trace_method
@@ -1649,7 +1642,7 @@ class SyncServer(object):
         llm_config = letta_multi_agent.agent_state.llm_config
         supports_token_streaming = ["openai", "anthropic", "deepseek"]
         if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
-            warnings.warn(
+            logger.warning(
                 f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
             )
             stream_tokens = False
