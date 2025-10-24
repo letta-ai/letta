@@ -1,5 +1,8 @@
-import warnings
 from typing import Literal
+
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 
 from pydantic import Field
 
@@ -49,7 +52,7 @@ class XAIProvider(OpenAIProvider):
                 context_window_size = self.get_model_context_window_size(model_name)
 
             if not context_window_size:
-                warnings.warn(f"Couldn't find context window size for model {model_name}")
+                logger.warning(f"Couldn't find context window size for model {model_name}")
                 continue
 
             configs.append(

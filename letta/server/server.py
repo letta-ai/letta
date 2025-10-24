@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import traceback
-import warnings
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -1149,9 +1148,9 @@ class SyncServer(object):
         #                        llm_config = LLMConfig(**config_data)
         #                        llm_models.append(llm_config)
         #                except (json.JSONDecodeError, ValueError) as e:
-        #                    warnings.warn(f"Error parsing LLM config file {filename}: {e}")
+        #                    logger.warning(f"Error parsing LLM config file {filename}: {e}")
         # except Exception as e:
-        #    warnings.warn(f"Error reading LLM configs directory: {e}")
+        #    logger.warning(f"Error reading LLM configs directory: {e}")
         return llm_models
 
     def get_local_embedding_configs(self):
@@ -1169,9 +1168,9 @@ class SyncServer(object):
         #                        embedding_config = EmbeddingConfig(**config_data)
         #                        embedding_models.append(embedding_config)
         #                except (json.JSONDecodeError, ValueError) as e:
-        #                    warnings.warn(f"Error parsing embedding config file {filename}: {e}")
+        #                    logger.warning(f"Error parsing embedding config file {filename}: {e}")
         # except Exception as e:
-        #    warnings.warn(f"Error reading embedding configs directory: {e}")
+        #    logger.warning(f"Error reading embedding configs directory: {e}")
         return embedding_models
 
     def add_llm_model(self, request: LLMConfig) -> LLMConfig:

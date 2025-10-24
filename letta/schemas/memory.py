@@ -4,6 +4,10 @@ from datetime import datetime
 from io import StringIO
 from typing import TYPE_CHECKING, List, Optional, Union
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 from pydantic import BaseModel, Field, field_validator
 
@@ -319,7 +323,7 @@ class Memory(BaseModel, validate_assignment=True):
         """Deprecated: use compile() instead."""
         import warnings
 
-        warnings.warn("compile_in_thread_async is deprecated; use compile()", DeprecationWarning, stacklevel=2)
+        logger.warning("compile_in_thread_async is deprecated; use compile()", stacklevel=2)
         return self.compile(tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open, llm_config=llm_config)
 
     def list_block_labels(self) -> List[str]:

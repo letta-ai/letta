@@ -1,6 +1,5 @@
 import copy
 import json
-import warnings
 from collections import OrderedDict
 from typing import Any, List, Union
 
@@ -300,7 +299,7 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
 
     if message.role == "assistant" and message.tool_calls and len(message.tool_calls) >= 1:
         if len(message.tool_calls) > 1:
-            warnings.warn(f"Unpacking inner thoughts from more than one tool call ({len(message.tool_calls)}) is not supported")
+            logger.warning(f"Unpacking inner thoughts from more than one tool call ({len(message.tool_calls)}) is not supported")
         # TODO support multiple tool calls
         tool_call = message.tool_calls[0]
 
@@ -316,20 +315,20 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
                 new_choice.message.tool_calls[0].function.arguments = json_dumps(func_args)
                 # also replace the message content
                 if new_choice.message.content is not None:
-                    warnings.warn(f"Overwriting existing inner monologue ({new_choice.message.content}) with kwarg ({inner_thoughts})")
+                    logger.warning(f"Overwriting existing inner monologue ({new_choice.message.content}) with kwarg ({inner_thoughts})")
                 new_choice.message.content = inner_thoughts
 
                 # update the choice object
                 rewritten_choice = new_choice
             else:
-                warnings.warn(f"Did not find inner thoughts in tool call: {str(tool_call)}")
+                logger.warning(f"Did not find inner thoughts in tool call: {str(tool_call)}")
 
         except json.JSONDecodeError as e:
-            warnings.warn(f"Failed to strip inner thoughts from kwargs: {e}")
+            logger.warning(f"Failed to strip inner thoughts from kwargs: {e}")
             logger.error(f"Failed to strip inner thoughts from kwargs: {e}, Tool call arguments: {tool_call.function.arguments}")
             raise e
     else:
-        warnings.warn(f"Did not find tool call in message: {str(message)}")
+        logger.warning(f"Did not find tool call in message: {str(message)}")
 
     return rewritten_choice
 

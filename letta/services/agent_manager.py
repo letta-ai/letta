@@ -1954,9 +1954,8 @@ class AgentManager:
         """
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "list_passages_async is deprecated. Use query_source_passages_async or query_agent_passages_async instead.",
-            DeprecationWarning,
             stacklevel=2,
         )
 

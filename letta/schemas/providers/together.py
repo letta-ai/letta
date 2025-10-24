@@ -4,6 +4,10 @@ Note: this supports completions (deprecated by openai) and chat completions via 
 
 from typing import Literal, Optional
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 from pydantic import Field
 
 from letta.constants import MIN_CONTEXT_WINDOW
@@ -33,7 +37,7 @@ class TogetherProvider(OpenAIProvider):
     async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "Letta does not currently support listing embedding models for Together. Please "
             "contact support or reach out via GitHub or Discord to get support."
         )

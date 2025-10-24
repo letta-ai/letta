@@ -1,5 +1,8 @@
-import warnings
 from typing import Literal
+
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 
 import anthropic
 from pydantic import Field
@@ -149,7 +152,7 @@ class AnthropicProvider(Provider):
                     model["context_window"] = model_library[model["id"]]
                 else:
                     # On fallback, we can set 200k (generally safe), but we should warn the user
-                    warnings.warn(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
+                    logger.warning(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
                     model["context_window"] = 200000
 
             # Optional override: enable 1M context for Sonnet 4/4.5 when flag is set

@@ -1,5 +1,8 @@
-import warnings
 from typing import Literal
+
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 
 from pydantic import Field
 
@@ -27,14 +30,14 @@ class LMStudioOpenAIProvider(OpenAIProvider):
         response = await openai_get_model_list_async(self.model_endpoint_url)
 
         if "data" not in response:
-            warnings.warn(f"LMStudio OpenAI model query response missing 'data' field: {response}")
+            logger.warning(f"LMStudio OpenAI model query response missing 'data' field: {response}")
             return []
 
         configs = []
         for model in response["data"]:
             model_type = model.get("type")
             if not model_type:
-                warnings.warn(f"LMStudio OpenAI model missing 'type' field: {model}")
+                logger.warning(f"LMStudio OpenAI model missing 'type' field: {model}")
                 continue
             if model_type not in ("vlm", "llm"):
                 continue
@@ -48,7 +51,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
             if "compatibility_type" in model:
                 compatibility_type = model["compatibility_type"]
             else:
-                warnings.warn(f"LMStudio OpenAI model missing 'compatibility_type' field: {model}")
+                logger.warning(f"LMStudio OpenAI model missing 'compatibility_type' field: {model}")
                 continue
 
             configs.append(
@@ -72,14 +75,14 @@ class LMStudioOpenAIProvider(OpenAIProvider):
         response = await openai_get_model_list_async(self.model_endpoint_url)
 
         if "data" not in response:
-            warnings.warn(f"LMStudio OpenAI model query response missing 'data' field: {response}")
+            logger.warning(f"LMStudio OpenAI model query response missing 'data' field: {response}")
             return []
 
         configs = []
         for model in response["data"]:
             model_type = model.get("type")
             if not model_type:
-                warnings.warn(f"LMStudio OpenAI model missing 'type' field: {model}")
+                logger.warning(f"LMStudio OpenAI model missing 'type' field: {model}")
                 continue
             if model_type not in ("embeddings"):
                 continue

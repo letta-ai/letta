@@ -2,6 +2,10 @@ import uuid
 from datetime import datetime
 from typing import List, Literal, Optional, Set
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 import numpy as np
 from sqlalchemy import Select, and_, asc, desc, func, literal, nulls_last, or_, select, union_all
 from sqlalchemy.orm import noload
@@ -304,7 +308,7 @@ def compile_system_message(
         if append_icm_if_missing:
             if memory_variable_string not in system_prompt:
                 # In this case, append it to the end to make sure memory is still injected
-                # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
+                # logger.warning(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
                 system_prompt += "\n\n" + memory_variable_string
 
         # render the variables using the built-in templater

@@ -1,5 +1,4 @@
 import inspect
-import warnings
 from typing import Any, Dict, List, Optional, Tuple, Type, Union, get_args, get_origin
 
 from docstring_parser import parse
@@ -101,7 +100,7 @@ def type_to_json_schema_type(py_type) -> dict:
         args = get_args(py_type)
         if len(args) == 0:
             # is this correct
-            warnings.warn("Defaulting to string type for untyped List")
+            logger.warning("Defaulting to string type for untyped List")
             return {
                 "type": "array",
                 "items": {"type": "string"},

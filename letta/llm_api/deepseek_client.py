@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import warnings
 from typing import List, Optional
 
 from openai import AsyncOpenAI, AsyncStream, OpenAI
@@ -130,7 +129,7 @@ def build_deepseek_chat_completions_request(
     if llm_config.model:
         model = llm_config.model
     else:
-        warnings.warn(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
+        logger.warning(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
         model = None
     if use_tool_naming:
         if function_call is None:

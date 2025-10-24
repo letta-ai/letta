@@ -1,6 +1,9 @@
 import json
 import re
-import warnings
+
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 
 from letta.errors import LLMJSONParsingError
 from letta.helpers.json_helpers import json_loads
@@ -83,7 +86,7 @@ def clean_and_interpret_send_message_json(json_string):
 
     kwarg = model_settings.inner_thoughts_kwarg
     if kwarg not in VALID_INNER_THOUGHTS_KWARGS:
-        warnings.warn(f"INNER_THOUGHTS_KWARG is not valid: {kwarg}")
+        logger.warning(f"INNER_THOUGHTS_KWARG is not valid: {kwarg}")
         kwarg = INNER_THOUGHTS_KWARG
 
     # If normal parsing fails, attempt to clean and extract manually

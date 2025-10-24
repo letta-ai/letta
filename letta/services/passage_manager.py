@@ -120,12 +120,8 @@ class PassageManager:
     @trace_method
     async def get_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> Optional[PydanticPassage]:
         """DEPRECATED: Use get_agent_passage_by_id_async() or get_source_passage_by_id_async() instead."""
-        import warnings
-
-        warnings.warn(
-            "get_passage_by_id_async is deprecated. Use get_agent_passage_by_id_async() or get_source_passage_by_id_async() instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        logger.warning(
+            "get_passage_by_id_async is deprecated. Use get_agent_passage_by_id_async() or get_source_passage_by_id_async() instead."
         )
 
         async with db_registry.async_session() as session:
@@ -231,13 +227,7 @@ class PassageManager:
     @trace_method
     async def create_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """DEPRECATED: Use create_agent_passage_async() or create_source_passage_async() instead."""
-        import warnings
-
-        warnings.warn(
-            "create_passage_async is deprecated. Use create_agent_passage_async() or create_source_passage_async() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+        logger.warning("create_passage_async is deprecated. Use create_agent_passage_async() or create_source_passage_async() instead.")
 
         # Common fields for both passage types
         passage = self._preprocess_passage_for_creation(pydantic_passage=pydantic_passage)
@@ -365,9 +355,8 @@ class PassageManager:
         """DEPRECATED: Use create_many_agent_passages() or create_many_source_passages() instead."""
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "create_many_passages is deprecated. Use create_many_agent_passages() or create_many_source_passages() instead.",
-            DeprecationWarning,
             stacklevel=2,
         )
         return [self.create_passage(p, actor) for p in passages]
@@ -378,9 +367,8 @@ class PassageManager:
         """DEPRECATED: Use create_many_agent_passages_async() or create_many_source_passages_async() instead."""
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "create_many_passages_async is deprecated. Use create_many_agent_passages_async() or create_many_source_passages_async() instead.",
-            DeprecationWarning,
             stacklevel=2,
         )
 
@@ -651,9 +639,8 @@ class PassageManager:
         """DEPRECATED: Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead."""
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "delete_passage_by_id_async is deprecated. Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead.",
-            DeprecationWarning,
             stacklevel=2,
         )
 
@@ -765,9 +752,8 @@ class PassageManager:
         """DEPRECATED: Use delete_agent_passages() or delete_source_passages() instead."""
         import warnings
 
-        warnings.warn(
+        logger.warning(
             "delete_passages is deprecated. Use delete_agent_passages() or delete_source_passages() instead.",
-            DeprecationWarning,
             stacklevel=2,
         )
         # TODO: This is very inefficient
@@ -787,7 +773,7 @@ class PassageManager:
         """DEPRECATED: Use agent_passage_size() instead (this only counted agent passages anyway)."""
         import warnings
 
-        warnings.warn("size is deprecated. Use agent_passage_size() instead.", DeprecationWarning, stacklevel=2)
+        logger.warning("size is deprecated. Use agent_passage_size() instead.", stacklevel=2)
         return self.agent_passage_size(actor=actor, agent_id=agent_id)
 
     @enforce_types

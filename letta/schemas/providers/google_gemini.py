@@ -1,6 +1,10 @@
 import asyncio
 from typing import Literal
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 from pydantic import Field
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_TOKENS
@@ -88,7 +92,7 @@ class GoogleAIProvider(Provider):
     def get_model_context_window(self, model_name: str) -> int | None:
         import warnings
 
-        warnings.warn("This is deprecated, use get_model_context_window_async when possible.", DeprecationWarning)
+        logger.warning("This is deprecated, use get_model_context_window_async when possible.")
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window
 
         if model_name in LLM_MAX_TOKENS:

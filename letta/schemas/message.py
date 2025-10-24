@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 import copy
 import json
 import re
 import uuid
-import warnings
 from collections import OrderedDict
 from datetime import datetime, timezone
 from enum import Enum
@@ -72,7 +75,7 @@ def add_inner_thoughts_to_tool_call(
         updated_tool_call.function.arguments = json_dumps(ordered_args)
         return updated_tool_call
     except json.JSONDecodeError as e:
-        warnings.warn(f"Failed to put inner thoughts in kwargs: {e}")
+        logger.warning(f"Failed to put inner thoughts in kwargs: {e}")
         raise e
 
 
@@ -510,7 +513,7 @@ class Message(BaseMessage):
                 )
 
             else:
-                warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
+                logger.warning(f"Unrecognized content part in assistant message: {content_part}")
 
         return messages
 
@@ -1193,7 +1196,7 @@ class Message(BaseMessage):
             if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
                 openai_message["name"] = self.name
             else:
-                warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
+                logger.warning(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
         if parse_content_parts and self.content is not None:
             for content in self.content:
@@ -1260,7 +1263,7 @@ class Message(BaseMessage):
                 if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
                     user_dict["name"] = self.name
                 else:
-                    warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
+                    logger.warning(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
             message_dicts.append(user_dict)
 
@@ -1597,7 +1600,7 @@ class Message(BaseMessage):
             text_content = None
 
         if self.role != "tool" and self.name is not None:
-            warnings.warn(f"Using Google AI with non-null 'name' field (name={self.name} role={self.role}), not yet supported.")
+            logger.warning(f"Using Google AI with non-null 'name' field (name={self.name} role={self.role}), not yet supported.")
 
         if self.role == "system":
             # NOTE: Gemini API doesn't have a 'system' role, use 'user' instead
@@ -1717,7 +1720,7 @@ class Message(BaseMessage):
             assert self.tool_call_id is not None, vars(self)
 
             if self.name is None:
-                warnings.warn("Couldn't find function name on tool call, defaulting to tool ID instead.")
+                logger.warning("Couldn't find function name on tool call, defaulting to tool ID instead.")
                 function_name = self.tool_call_id
             else:
                 function_name = self.name
@@ -1750,7 +1753,7 @@ class Message(BaseMessage):
         if "parts" not in google_ai_message or not google_ai_message["parts"]:
             # If parts is empty, add a default text part
             google_ai_message["parts"] = [{"text": "empty message"}]
-            warnings.warn(
+            logger.warning(
                 f"Empty 'parts' detected in message with role '{self.role}'. Added default empty text part. Full message:\n{vars(self)}"
             )
 

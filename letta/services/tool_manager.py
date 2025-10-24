@@ -1,5 +1,4 @@
 import importlib
-import warnings
 from typing import List, Optional, Set, Union
 
 from sqlalchemy import and_, func, or_, select
@@ -636,7 +635,7 @@ class ToolManager:
                 module = importlib.import_module(module_name)
                 functions_to_schema.update(load_function_set(module))
             except ValueError as e:
-                warnings.warn(f"Error loading function set '{module_name}': {e}")
+                logger.warning(f"Error loading function set '{module_name}': {e}")
             except Exception as e:
                 raise e
 

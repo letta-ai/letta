@@ -1,5 +1,4 @@
 import os
-import warnings
 from typing import List, Union
 
 import requests
@@ -84,11 +83,11 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
         function_tokens = len(encoding.encode(function["name"]))
         if function["description"]:
             if not isinstance(function["description"], str):
-                warnings.warn(f"Function {function['name']} has non-string description: {function['description']}")
+                logger.warning(f"Function {function['name']} has non-string description: {function['description']}")
             else:
                 function_tokens += len(encoding.encode(function["description"]))
         else:
-            warnings.warn(f"Function {function['name']} has no description, function: {function}")
+            logger.warning(f"Function {function['name']} has no description, function: {function}")
 
         if "parameters" in function:
             parameters = function["parameters"]

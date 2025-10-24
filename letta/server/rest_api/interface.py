@@ -1,7 +1,10 @@
 import asyncio
 import json
 import queue
-import warnings
+
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from collections import deque
 from datetime import datetime
 from typing import AsyncGenerator, Literal, Optional, Union
@@ -503,7 +506,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         data: {"function_return": "None", "status": "success", "date": "2024-02-29T06:07:50.847262+00:00"}
         """
         if not chunk.choices or len(chunk.choices) == 0:
-            warnings.warn(f"No choices in chunk: {chunk}")
+            logger.warning(f"No choices in chunk: {chunk}")
             return None
 
         choice = chunk.choices[0]
@@ -1028,7 +1031,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 # created=1713216662
                 # model='gpt-4o-mini-2024-07-18'
                 # object='chat.completion.chunk'
-                warnings.warn(f"Couldn't find delta in chunk: {chunk}")
+                logger.warning(f"Couldn't find delta in chunk: {chunk}")
             return None
 
         return processed_chunk
@@ -1255,7 +1258,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     try:
                         func_args = parse_json(function_call.function.arguments)
                     except:
-                        warnings.warn(f"Failed to parse function arguments: {function_call.function.arguments}")
+                        logger.warning(f"Failed to parse function arguments: {function_call.function.arguments}")
                         func_args = {}
 
                     if (

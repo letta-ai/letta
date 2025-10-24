@@ -1,4 +1,3 @@
-import warnings
 from typing import Generator, List, Optional, Union
 
 import httpx
@@ -70,9 +69,10 @@ def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool
     # In Letta config the address for vLLM is w/o a /v1 suffix for simplicity
     # However if we're treating the server as an OpenAI proxy we want the /v1 suffix on our model hit
 
-    import warnings
-
-    warnings.warn("The synchronous version of openai_get_model_list function is deprecated. Use the async one instead.", DeprecationWarning)
+    logger.warning(
+        "The synchronous version of openai_get_model_list function is deprecated. Use the async one instead.",
+        stacklevel=2,
+    )
 
     if fix_url:
         if not url.endswith("/v1"):
@@ -224,7 +224,7 @@ def build_openai_chat_completions_request(
     if llm_config.model:
         model = llm_config.model
     else:
-        warnings.warn(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
+        logger.warning(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
         model = None
 
     if use_tool_naming:
@@ -285,7 +285,7 @@ def build_openai_chat_completions_request(
                     structured_output_version = convert_to_structured_output(tool.function.model_dump())
                     tool.function = FunctionSchema(**structured_output_version)
                 except ValueError as e:
-                    warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+                    logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
     return data
 
 
@@ -377,7 +377,7 @@ def openai_chat_completions_process_stream(
         ):
             assert isinstance(chat_completion_chunk, ChatCompletionChunkResponse), type(chat_completion_chunk)
             if chat_completion_chunk.choices is None or len(chat_completion_chunk.choices) == 0:
-                warnings.warn(f"No choices in chunk: {chat_completion_chunk}")
+                logger.warning(f"No choices in chunk: {chat_completion_chunk}")
                 continue
 
             # NOTE: this assumes that the tool call ID will only appear in one of the chunks during the stream
@@ -472,7 +472,7 @@ def openai_chat_completions_process_stream(
                             try:
                                 accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
                             except IndexError:
-                                warnings.warn(
+                                logger.warning(
                                     f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                 )
                                 # force index 0
@@ -486,14 +486,14 @@ def openai_chat_completions_process_stream(
                                         tool_call_delta.index
                                     ].function.name += tool_call_delta.function.name  # TODO check for parallel tool calls
                                 except IndexError:
-                                    warnings.warn(
+                                    logger.warning(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
                             if tool_call_delta.function.arguments is not None:
                                 try:
                                     accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
                                 except IndexError:
-                                    warnings.warn(
+                                    logger.warning(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
 
@@ -642,7 +642,7 @@ def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
     #         try:
     #             tool["function"] = convert_to_structured_output(tool["function"])
     #         except ValueError as e:
-    #             warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+    #             logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
 
     if not supports_parallel_tool_calling(chat_completion_request.model):
         data.pop("parallel_tool_calls", None)

@@ -1,6 +1,10 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time_fast
@@ -137,7 +141,7 @@ class PromptGenerator:
             if append_icm_if_missing:
                 if memory_variable_string not in system_prompt:
                     # In this case, append it to the end to make sure memory is still injected
-                    # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
+                    # logger.warning(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
                     system_prompt += "\n\n" + memory_variable_string
 
             # render the variables using the built-in templater

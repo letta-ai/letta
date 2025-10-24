@@ -6,9 +6,12 @@ from typing import Optional
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from letta.local_llm.constants import DEFAULT_WRAPPER_NAME, INNER_THOUGHTS_KWARG
 from letta.schemas.enums import SandboxType
 from letta.services.summarizer.enums import SummarizationMode
+
+# Define constants here to avoid circular import with letta.log
+DEFAULT_WRAPPER_NAME = "chatml"
+INNER_THOUGHTS_KWARG = "thinking"
 
 
 class ToolSettings(BaseSettings):
