@@ -158,14 +158,14 @@ async def test_get_identities(server, default_user):
     )
 
     # Retrieve identities by different filters
-    all_identities = await server.identity_manager.list_identities_async(actor=default_user)
+    all_identities, _, _ = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(all_identities) == 2
 
-    user_identities = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.user)
+    user_identities, _, _ = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.user)
     assert len(user_identities) == 1
     assert user_identities[0].name == user.name
 
-    org_identities = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.org)
+    org_identities, _, _ = await server.identity_manager.list_identities_async(actor=default_user, identity_type=IdentityType.org)
     assert len(org_identities) == 1
     assert org_identities[0].name == org.name
 
@@ -218,7 +218,7 @@ async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
     # Verify that the identity was deleted
-    identities = await server.identity_manager.list_identities_async(actor=default_user)
+    identities, _, _ = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(identities) == 0
 
     # Check that block has been detached too
@@ -336,7 +336,7 @@ async def test_attach_detach_identity_from_block(server: SyncServer, default_blo
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
     # Verify that the identity was deleted
-    identities = await server.identity_manager.list_identities_async(actor=default_user)
+    identities, _, _ = await server.identity_manager.list_identities_async(actor=default_user)
     assert len(identities) == 0
 
     # Check that block has been detached too

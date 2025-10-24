@@ -79,3 +79,11 @@ class IdentityUpdate(LettaBase):
     agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
     block_ids: Optional[List[str]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
     properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
+
+
+class PaginatedIdentities(LettaBase):
+    """Paginated response for identities"""
+
+    data: List[Identity] = Field(..., description="List of identities")
+    next_cursor: Optional[str] = Field(None, description="Cursor for fetching the next page")
+    has_more: bool = Field(..., description="Whether more results exist after this page")

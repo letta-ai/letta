@@ -1,13 +1,19 @@
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, Header, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import AgentRelationships, AgentState
 from letta.schemas.block import Block
-from letta.schemas.identity import Identity, IdentityBase, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
+from letta.schemas.identity import (
+    Identity,
+    IdentityCreate,
+    IdentityProperty,
+    IdentityType,
+    IdentityUpdate,
+    IdentityUpsert,
+)
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
-from letta.utils import is_1_0_sdk_version
 from letta.validators import IdentityId
 
 if TYPE_CHECKING:
@@ -43,7 +49,7 @@ async def list_identities(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    identities = await server.identity_manager.list_identities_async(
+    identities, next_cursor, has_more = await server.identity_manager.list_identities_async(
         name=name,
         project_id=project_id,
         identifier_key=identifier_key,
@@ -54,6 +60,7 @@ async def list_identities(
         ascending=(order == "asc"),
         actor=actor,
     )
+
     return identities
 
 

@@ -42,7 +42,13 @@ class IdentityManager:
         limit: Optional[int] = 50,
         ascending: bool = False,
         actor: PydanticUser = None,
-    ) -> list[PydanticIdentity]:
+    ) -> tuple[list[PydanticIdentity], Optional[str], bool]:
+        """
+        List identities with pagination metadata.
+
+        Returns:
+            Tuple of (identities, next_cursor, has_more)
+        """
         async with db_registry.async_session() as session:
             filters = {"organization_id": actor.organization_id}
             if project_id:
@@ -51,16 +57,30 @@ class IdentityManager:
                 filters["identifier_key"] = identifier_key
             if identity_type:
                 filters["identity_type"] = identity_type
+
+            # Request one more than limit to check if there are more pages
+            query_limit = limit + 1 if limit else None
+
             identities = await IdentityModel.list_async(
                 db_session=session,
                 query_text=name,
                 before=before,
                 after=after,
-                limit=limit,
+                limit=query_limit,
                 ascending=ascending,
                 **filters,
             )
-            return [identity.to_pydantic() for identity in identities]
+
+            # Check if we got more records than requested (meaning there are more pages)
+            has_more = len(identities) > limit if limit else False
+            if has_more:
+                # Trim back to the requested limit
+                identities = identities[:limit]
+
+            # Get cursor for next page (ID of last item in current page)
+            next_cursor = identities[-1].id if identities else None
+
+            return [identity.to_pydantic() for identity in identities], next_cursor, has_more
 
     @enforce_types
     @trace_method
