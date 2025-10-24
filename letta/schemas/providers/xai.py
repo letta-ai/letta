@@ -16,6 +16,9 @@ MODEL_CONTEXT_WINDOWS = {
     "grok-3-mini": 131_072,
     "grok-3-mini-fast": 131_072,
     "grok-4-0709": 256_000,
+    "grok-4-fast-reasoning": 2_000_000,
+    "grok-4-fast-non-reasoning": 2_000_000,
+    "grok-code-fast-1": 256_000
 }
 
 
