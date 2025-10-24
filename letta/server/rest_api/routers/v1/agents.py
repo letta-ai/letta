@@ -443,7 +443,7 @@ async def list_tools_for_agent(
     )
 
 
-@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool_to_agent")
+@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=Optional[AgentState], operation_id="attach_tool_to_agent")
 async def attach_tool_to_agent(
     tool_id: ToolId,
     agent_id: AgentId,
@@ -455,11 +455,13 @@ async def attach_tool_to_agent(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    if is_1_0_sdk_version(headers):
+        return None
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool_from_agent")
+@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=Optional[AgentState], operation_id="detach_tool_from_agent")
 async def detach_tool_from_agent(
     tool_id: ToolId,
     agent_id: AgentId,
@@ -471,6 +473,8 @@ async def detach_tool_from_agent(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    if is_1_0_sdk_version(headers):
+        return None
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
@@ -483,7 +487,7 @@ class ModifyApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval_for_tool")
+@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=Optional[AgentState], operation_id="modify_approval_for_tool")
 async def modify_approval_for_tool(
     tool_name: str,
     agent_id: AgentId,
@@ -510,6 +514,8 @@ async def modify_approval_for_tool(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.modify_approvals_async(agent_id=agent_id, tool_name=tool_name, requires_approval=approval_value, actor=actor)
+    if is_1_0_sdk_version(headers):
+        return None
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
@@ -1005,7 +1011,7 @@ async def detach_block_from_agent(
     return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.patch("/{agent_id}/archives/attach/{archive_id}", response_model=AgentState, operation_id="attach_archive_to_agent")
+@router.patch("/{agent_id}/archives/attach/{archive_id}", response_model=None, operation_id="attach_archive_to_agent")
 async def attach_archive_to_agent(
     archive_id: str,
     agent_id: AgentId,
@@ -1021,10 +1027,10 @@ async def attach_archive_to_agent(
         archive_id=archive_id,
         actor=actor,
     )
-    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    return None
 
 
-@router.patch("/{agent_id}/archives/detach/{archive_id}", response_model=AgentState, operation_id="detach_archive_from_agent")
+@router.patch("/{agent_id}/archives/detach/{archive_id}", response_model=None, operation_id="detach_archive_from_agent")
 async def detach_archive_from_agent(
     archive_id: str,
     agent_id: AgentId,
@@ -1040,10 +1046,10 @@ async def detach_archive_from_agent(
         archive_id=archive_id,
         actor=actor,
     )
-    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    return None
 
 
-@router.patch("/{agent_id}/identities/attach/{identity_id}", response_model=AgentState, operation_id="attach_identity_to_agent")
+@router.patch("/{agent_id}/identities/attach/{identity_id}", response_model=None, operation_id="attach_identity_to_agent")
 async def attach_identity_to_agent(
     identity_id: str,
     agent_id: AgentId,
@@ -1059,10 +1065,10 @@ async def attach_identity_to_agent(
         agent_id=agent_id,
         actor=actor,
     )
-    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    return None
 
 
-@router.patch("/{agent_id}/identities/detach/{identity_id}", response_model=AgentState, operation_id="detach_identity_from_agent")
+@router.patch("/{agent_id}/identities/detach/{identity_id}", response_model=None, operation_id="detach_identity_from_agent")
 async def detach_identity_from_agent(
     identity_id: str,
     agent_id: AgentId,
@@ -1078,7 +1084,7 @@ async def detach_identity_from_agent(
         agent_id=agent_id,
         actor=actor,
     )
-    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    return None
 
 
 @router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages", deprecated=True)

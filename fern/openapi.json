@@ -4746,7 +4746,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Attach Tool To Agent"
                 }
               }
             }
@@ -4808,7 +4816,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Detach Tool From Agent"
                 }
               }
             }
@@ -4901,7 +4917,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Modify Approval For Tool"
                 }
               }
             }
@@ -6238,9 +6262,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentState"
-                }
+                "schema": {}
               }
             }
           },
@@ -6294,9 +6316,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentState"
-                }
+                "schema": {}
               }
             }
           },
@@ -6350,9 +6370,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentState"
-                }
+                "schema": {}
               }
             }
           },
@@ -6406,9 +6424,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentState"
-                }
+                "schema": {}
               }
             }
           },
