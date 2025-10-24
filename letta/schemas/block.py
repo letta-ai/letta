@@ -21,9 +21,9 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     project_id: Optional[str] = Field(None, description="The associated project id.")
     # template data (optional)
-    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
+    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
-    template_id: Optional[str] = Field(None, description="The id of the template.", alias="name")
+    template_id: Optional[str] = Field(None, description="The id of the template.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the block.")
     deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
     entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
@@ -102,6 +102,21 @@ class Block(BaseBlock):
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")
 
 
+class BlockResponse(Block):
+    template_name: Optional[str] = Field(
+        None, description="(Deprecated) The name of the block template (if it is a template).", deprecated=True
+    )
+    template_id: Optional[str] = Field(None, description="(Deprecated) The id of the template.", deprecated=True)
+    base_template_id: Optional[str] = Field(None, description="(Deprecated) The base template id of the block.", deprecated=True)
+    deployment_id: Optional[str] = Field(None, description="(Deprecated) The id of the deployment.", deprecated=True)
+    entity_id: Optional[str] = Field(None, description="(Deprecated) The id of the entity within the template.", deprecated=True)
+    preserve_on_migration: Optional[bool] = Field(
+        False, description="(Deprecated) Preserve the block on template migration.", deprecated=True
+    )
+    read_only: bool = Field(False, description="(Deprecated) Whether the agent has read-only access to the block.", deprecated=True)
+    hidden: Optional[bool] = Field(None, description="(Deprecated) If set to True, the block will be hidden.", deprecated=True)
+
+
 class FileBlock(Block):
     file_id: str = Field(..., description="Unique identifier of the file.")
     source_id: str = Field(..., description="Unique identifier of the source.")
@@ -149,7 +164,7 @@ class CreateBlock(BaseBlock):
     project_id: Optional[str] = Field(None, description="The associated project id.")
     # block templates
     is_template: bool = False
-    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
+    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
 
     @model_validator(mode="before")
     @classmethod

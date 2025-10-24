@@ -1,10 +1,9 @@
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Query
 
-from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentRelationships, AgentState
-from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate, CreateBlock
+from letta.schemas.agent import AgentState
+from letta.schemas.block import Block, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.utils import is_1_0_sdk_version
@@ -13,10 +12,10 @@ from letta.validators import BlockId
 if TYPE_CHECKING:
     pass
 
-router = APIRouter(prefix="/blocks", tags=["blocks"])
+router = APIRouter(prefix="/_internal_blocks", tags=["_internal_blocks"])
 
 
-@router.get("/", response_model=List[BlockResponse], operation_id="list_blocks")
+@router.get("/", response_model=List[Block], operation_id="list_internal_blocks")
 async def list_blocks(
     # query parameters
     label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
@@ -105,19 +104,7 @@ async def list_blocks(
     )
 
 
-@router.get("/count", response_model=int, operation_id="count_blocks")
-async def count_blocks(
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Count all blocks created by a user.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.block_manager.size_async(actor=actor)
-
-
-@router.post("/", response_model=BlockResponse, operation_id="create_block")
+@router.post("/", response_model=Block, operation_id="create_internal_block")
 async def create_block(
     create_block: CreateBlock = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -128,18 +115,7 @@ async def create_block(
     return await server.block_manager.create_or_update_block_async(actor=actor, block=block)
 
 
-@router.patch("/{block_id}", response_model=BlockResponse, operation_id="modify_block")
-async def modify_block(
-    block_id: BlockId,
-    block_update: BlockUpdate = Body(...),
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.block_manager.update_block_async(block_id=block_id, block_update=block_update, actor=actor)
-
-
-@router.delete("/{block_id}", operation_id="delete_block")
+@router.delete("/{block_id}", operation_id="delete_internal_block")
 async def delete_block(
     block_id: BlockId,
     server: SyncServer = Depends(get_letta_server),
@@ -149,20 +125,7 @@ async def delete_block(
     await server.block_manager.delete_block_async(block_id=block_id, actor=actor)
 
 
-@router.get("/{block_id}", response_model=BlockResponse, operation_id="retrieve_block")
-async def retrieve_block(
-    block_id: BlockId,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    block = await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
-    if block is None:
-        raise NoResultFound(f"Block with id '{block_id}' not found")
-    return block
-
-
-@router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
+@router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_internal_block")
 async def list_agents_for_block(
     block_id: BlockId,
     before: Optional[str] = Query(
@@ -187,7 +150,7 @@ async def list_agents_for_block(
             "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
     ),
-    include: List[AgentRelationships] = Query(
+    include: List[str] = Query(
         [],
         description=("Specify which relational fields to include in the response. No relationships are included by default."),
     ),
@@ -212,41 +175,3 @@ async def list_agents_for_block(
         actor=actor,
     )
     return agents
-
-
-@router.patch("/{block_id}/identities/attach/{identity_id}", response_model=BlockResponse, operation_id="attach_identity_to_block")
-async def attach_identity_to_block(
-    identity_id: str,
-    block_id: BlockId,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Attach an identity to a block.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    await server.identity_manager.attach_block_async(
-        identity_id=identity_id,
-        block_id=block_id,
-        actor=actor,
-    )
-    return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
-
-
-@router.patch("/{block_id}/identities/detach/{identity_id}", response_model=BlockResponse, operation_id="detach_identity_from_block")
-async def detach_identity_from_block(
-    identity_id: str,
-    block_id: BlockId,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Detach an identity from a block.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    await server.identity_manager.detach_block_async(
-        identity_id=identity_id,
-        block_id=block_id,
-        actor=actor,
-    )
-    return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
