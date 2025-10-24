@@ -54,7 +54,7 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import AgentRelationships, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
@@ -109,7 +109,10 @@ from tests.utils import random_string
 async def test_archive_manager_delete_archive_async(server: SyncServer, default_user):
     """Test the delete_archive_async function."""
     archive = await server.archive_manager.create_archive_async(
-        name="test_archive_to_delete", description="This archive will be deleted", actor=default_user
+        name="test_archive_to_delete",
+        description="This archive will be deleted",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     retrieved_archive = await server.archive_manager.get_archive_by_id_async(archive_id=archive.id, actor=default_user)
@@ -125,7 +128,10 @@ async def test_archive_manager_delete_archive_async(server: SyncServer, default_
 async def test_archive_manager_get_agents_for_archive_async(server: SyncServer, default_user, sarah_agent):
     """Test getting all agents that have access to an archive."""
     archive = await server.archive_manager.create_archive_async(
-        name="shared_archive", description="Archive shared by multiple agents", actor=default_user
+        name="shared_archive",
+        description="Archive shared by multiple agents",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     agent2 = await server.agent_manager.create_agent_async(
@@ -187,7 +193,10 @@ async def test_archive_manager_race_condition_handling(server: SyncServer, defau
 
     # First, create an archive that will be attached by a "concurrent" request
     concurrent_archive = await server.archive_manager.create_archive_async(
-        name=f"{agent.name}'s Archive", description="Default archive created automatically", actor=default_user
+        name=f"{agent.name}'s Archive",
+        description="Default archive created automatically",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     call_count = 0
@@ -206,9 +215,7 @@ async def test_archive_manager_race_condition_handling(server: SyncServer, defau
 
     with patch.object(server.archive_manager, "create_archive_async", side_effect=track_create):
         with patch.object(server.archive_manager, "attach_agent_to_archive_async", side_effect=failing_attach):
-            archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-                agent_id=agent.id, agent_name=agent.name, actor=default_user
-            )
+            archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=agent, actor=default_user)
 
     assert archive is not None
     assert archive.id == concurrent_archive.id  # Should return the existing archive
@@ -230,9 +237,7 @@ async def test_archive_manager_race_condition_handling(server: SyncServer, defau
 @pytest.mark.asyncio
 async def test_archive_manager_get_agent_from_passage_async(server: SyncServer, default_user, sarah_agent):
     """Test getting the agent ID that owns a passage through its archive."""
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     passage = await server.passage_manager.create_agent_passage_async(
         PydanticPassage(
@@ -250,7 +255,7 @@ async def test_archive_manager_get_agent_from_passage_async(server: SyncServer, 
     assert agent_id == sarah_agent.id
 
     orphan_archive = await server.archive_manager.create_archive_async(
-        name="orphan_archive", description="Archive with no agents", actor=default_user
+        name="orphan_archive", description="Archive with no agents", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
     )
 
     orphan_passage = await server.passage_manager.create_agent_passage_async(
@@ -278,7 +283,7 @@ async def test_archive_manager_create_archive_async(server: SyncServer, default_
     """Test creating a new archive with various parameters."""
     # test creating with name and description
     archive = await server.archive_manager.create_archive_async(
-        name="test_archive_basic", description="Test archive description", actor=default_user
+        name="test_archive_basic", description="Test archive description", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
     )
 
     assert archive.name == "test_archive_basic"
@@ -287,7 +292,9 @@ async def test_archive_manager_create_archive_async(server: SyncServer, default_
     assert archive.id is not None
 
     # test creating without description
-    archive2 = await server.archive_manager.create_archive_async(name="test_archive_no_desc", actor=default_user)
+    archive2 = await server.archive_manager.create_archive_async(
+        name="test_archive_no_desc", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     assert archive2.name == "test_archive_no_desc"
     assert archive2.description is None
@@ -303,7 +310,7 @@ async def test_archive_manager_get_archive_by_id_async(server: SyncServer, defau
     """Test retrieving an archive by its ID."""
     # create an archive
     archive = await server.archive_manager.create_archive_async(
-        name="test_get_by_id", description="Archive to test get_by_id", actor=default_user
+        name="test_get_by_id", description="Archive to test get_by_id", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
     )
 
     # retrieve the archive
@@ -327,7 +334,7 @@ async def test_archive_manager_update_archive_async(server: SyncServer, default_
     """Test updating archive name and description."""
     # create an archive
     archive = await server.archive_manager.create_archive_async(
-        name="original_name", description="original description", actor=default_user
+        name="original_name", description="original description", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
     )
 
     # update name only
@@ -370,7 +377,7 @@ async def test_archive_manager_list_archives_async(server: SyncServer, default_u
     archives = []
     for i in range(5):
         archive = await server.archive_manager.create_archive_async(
-            name=f"list_test_archive_{i}", description=f"Description {i}", actor=default_user
+            name=f"list_test_archive_{i}", description=f"Description {i}", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
         )
         archives.append(archive)
 
@@ -413,8 +420,12 @@ async def test_archive_manager_list_archives_async(server: SyncServer, default_u
 async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer, default_user, sarah_agent):
     """Test attaching agents to archives with ownership settings."""
     # create archives
-    archive1 = await server.archive_manager.create_archive_async(name="archive_for_attachment_1", actor=default_user)
-    archive2 = await server.archive_manager.create_archive_async(name="archive_for_attachment_2", actor=default_user)
+    archive1 = await server.archive_manager.create_archive_async(
+        name="archive_for_attachment_1", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
+    archive2 = await server.archive_manager.create_archive_async(
+        name="archive_for_attachment_2", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # create another agent
     agent2 = await server.agent_manager.create_agent_async(
@@ -466,7 +477,10 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     """Test detaching agents from archives."""
     # create archive and agents
     archive = await server.archive_manager.create_archive_async(
-        name="archive_for_detachment", description="Test archive for detachment", actor=default_user
+        name="archive_for_detachment",
+        description="Test archive for detachment",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     agent1 = await server.agent_manager.create_agent_async(
@@ -539,7 +553,9 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
 async def test_archive_manager_attach_detach_idempotency(server: SyncServer, default_user):
     """Test that attach and detach operations are idempotent."""
     # create archive and agent
-    archive = await server.archive_manager.create_archive_async(name="idempotency_test_archive", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="idempotency_test_archive", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -598,8 +614,12 @@ async def test_archive_manager_attach_detach_idempotency(server: SyncServer, def
 async def test_archive_manager_detach_with_multiple_archives(server: SyncServer, default_user):
     """Test detaching an agent from one archive doesn't affect others."""
     # create two archives
-    archive1 = await server.archive_manager.create_archive_async(name="multi_archive_1", actor=default_user)
-    archive2 = await server.archive_manager.create_archive_async(name="multi_archive_2", actor=default_user)
+    archive1 = await server.archive_manager.create_archive_async(
+        name="multi_archive_1", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
+    archive2 = await server.archive_manager.create_archive_async(
+        name="multi_archive_2", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # create two agents
     agent1 = await server.agent_manager.create_agent_async(
@@ -663,7 +683,9 @@ async def test_archive_manager_detach_with_multiple_archives(server: SyncServer,
 async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_user):
     """Test behavior when detaching a deleted agent."""
     # create archive
-    archive = await server.archive_manager.create_archive_async(name="test_deleted_agent_archive", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="test_deleted_agent_archive", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # create and attach agent
     agent = await server.agent_manager.create_agent_async(
@@ -701,7 +723,10 @@ async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncSe
     """Test that deleting an archive cascades to delete relationships in archives_agents table."""
     # create archive
     archive = await server.archive_manager.create_archive_async(
-        name="archive_to_be_deleted", description="This archive will be deleted to test CASCADE", actor=default_user
+        name="archive_to_be_deleted",
+        description="This archive will be deleted to test CASCADE",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     # create multiple agents and attach them to the archive
@@ -777,7 +802,10 @@ async def test_archive_manager_list_agents_with_pagination(server: SyncServer, d
     """Test listing agents for an archive with pagination support."""
     # create archive
     archive = await server.archive_manager.create_archive_async(
-        name="pagination_test_archive", description="Archive for testing pagination", actor=default_user
+        name="pagination_test_archive",
+        description="Archive for testing pagination",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     # create multiple agents
@@ -855,7 +883,9 @@ async def test_archive_manager_get_default_archive_for_agent_async(server: SyncS
     assert archive is None
 
     # create and attach an archive
-    created_archive = await server.archive_manager.create_archive_async(name="default_archive", actor=default_user)
+    created_archive = await server.archive_manager.create_archive_async(
+        name="default_archive", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     await server.archive_manager.attach_agent_to_archive_async(
         agent_id=agent.id, archive_id=created_archive.id, is_owner=True, actor=default_user
@@ -875,7 +905,9 @@ async def test_archive_manager_get_default_archive_for_agent_async(server: SyncS
 async def test_archive_manager_get_or_set_vector_db_namespace_async(server: SyncServer, default_user):
     """Test getting or setting vector database namespace for an archive."""
     # create an archive
-    archive = await server.archive_manager.create_archive_async(name="test_vector_namespace", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="test_vector_namespace", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # get/set namespace for the first time
     namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive_id=archive.id)
@@ -897,7 +929,10 @@ async def test_archive_manager_get_agents_with_include_parameter(server: SyncSer
     """Test getting agents for an archive with include parameter to load relationships."""
     # create an archive
     archive = await server.archive_manager.create_archive_async(
-        name="test_include_archive", description="Test archive for include parameter", actor=default_user
+        name="test_include_archive",
+        description="Test archive for include parameter",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     # create agent without base tools (to avoid needing tools in test DB)
@@ -961,7 +996,10 @@ async def test_archive_manager_delete_passage_from_archive_async(server: SyncSer
     """Test deleting a passage from an archive."""
     # create archive
     archive = await server.archive_manager.create_archive_async(
-        name="test_passage_deletion_archive", description="Archive for testing passage deletion", actor=default_user
+        name="test_passage_deletion_archive",
+        description="Archive for testing passage deletion",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
     )
 
     # create passages
@@ -1015,8 +1053,12 @@ async def test_archive_manager_delete_passage_from_archive_async(server: SyncSer
 async def test_archive_manager_delete_passage_from_wrong_archive(server: SyncServer, default_user):
     """Test that deleting a passage from the wrong archive raises an error."""
     # create two archives
-    archive1 = await server.archive_manager.create_archive_async(name="archive_1", actor=default_user)
-    archive2 = await server.archive_manager.create_archive_async(name="archive_2", actor=default_user)
+    archive1 = await server.archive_manager.create_archive_async(
+        name="archive_1", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
+    archive2 = await server.archive_manager.create_archive_async(
+        name="archive_2", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # create passage in archive1
     passage = await server.passage_manager.create_agent_passage_async(
@@ -1048,7 +1090,9 @@ async def test_archive_manager_delete_passage_from_wrong_archive(server: SyncSer
 async def test_archive_manager_delete_nonexistent_passage(server: SyncServer, default_user):
     """Test that deleting a non-existent passage raises an error."""
     # create archive
-    archive = await server.archive_manager.create_archive_async(name="test_nonexistent_passage_archive", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="test_nonexistent_passage_archive", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     # attempt to delete non-existent passage (use valid UUID4 format)
     fake_passage_id = f"passage-{uuid.uuid4()}"
@@ -1065,7 +1109,9 @@ async def test_archive_manager_delete_nonexistent_passage(server: SyncServer, de
 async def test_archive_manager_delete_passage_from_nonexistent_archive(server: SyncServer, default_user):
     """Test that deleting a passage from a non-existent archive raises an error."""
     # create archive and passage
-    archive = await server.archive_manager.create_archive_async(name="temp_archive", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="temp_archive", embedding_config=DEFAULT_EMBEDDING_CONFIG, actor=default_user
+    )
 
     passage = await server.passage_manager.create_agent_passage_async(
         PydanticPassage(

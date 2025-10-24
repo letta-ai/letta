@@ -189,7 +189,9 @@ def test_should_use_tpuf_with_settings():
 @pytest.mark.asyncio
 async def test_archive_creation_with_tpuf_enabled(server, default_user, enable_turbopuffer):
     """Test that archives are created with correct vector_db_provider when TPUF is enabled"""
-    archive = await server.archive_manager.create_archive_async(name="Test Archive with TPUF", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="Test Archive with TPUF", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
     assert archive.vector_db_provider == VectorDBProvider.TPUF
     # TODO: Add cleanup when delete_archive method is available
 
@@ -197,7 +199,9 @@ async def test_archive_creation_with_tpuf_enabled(server, default_user, enable_t
 @pytest.mark.asyncio
 async def test_archive_creation_with_tpuf_disabled(server, default_user, disable_turbopuffer):
     """Test that archives default to NATIVE when TPUF is disabled"""
-    archive = await server.archive_manager.create_archive_async(name="Test Archive without TPUF", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="Test Archive without TPUF", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
     assert archive.vector_db_provider == VectorDBProvider.NATIVE
     # TODO: Add cleanup when delete_archive method is available
 
@@ -208,7 +212,9 @@ async def test_dual_write_and_query_with_real_tpuf(server, default_user, sarah_a
     """Test that passages are written to both SQL and Turbopuffer with real connection and can be queried"""
 
     # Create a TPUF-enabled archive
-    archive = await server.archive_manager.create_archive_async(name="Test TPUF Archive for Real Dual Write", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="Test TPUF Archive for Real Dual Write", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
     assert archive.vector_db_provider == VectorDBProvider.TPUF
 
     # Attach the agent to the archive
@@ -351,9 +357,7 @@ async def test_native_only_operations(server, default_user, sarah_agent, disable
     """Test that operations work correctly when using only native PostgreSQL"""
 
     # Create archive (should be NATIVE since turbopuffer is disabled)
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
     assert archive.vector_db_provider == VectorDBProvider.NATIVE
 
     # Insert passages - should only write to SQL
@@ -1833,7 +1837,9 @@ async def test_message_date_filtering_with_real_tpuf(enable_message_embedding, d
 async def test_archive_namespace_tracking(server, default_user, enable_turbopuffer):
     """Test that archive namespaces are properly tracked in database"""
     # Create an archive
-    archive = await server.archive_manager.create_archive_async(name="Test Archive for Namespace", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="Test Archive for Namespace", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
 
     # Get namespace - should be generated and stored
     namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
@@ -1854,7 +1860,9 @@ async def test_archive_namespace_tracking(server, default_user, enable_turbopuff
 async def test_namespace_consistency_with_tpuf_client(server, default_user, enable_turbopuffer):
     """Test that the namespace from managers matches what tpuf_client would generate"""
     # Create archive and agent
-    archive = await server.archive_manager.create_archive_async(name="Test Consistency Archive", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        name="Test Consistency Archive", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
 
     # Get namespace from manager
     archive_namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
@@ -1875,14 +1883,18 @@ async def test_environment_namespace_variation(server, default_user):
     try:
         settings.environment = None
 
-        archive = await server.archive_manager.create_archive_async(name="No Env Archive", actor=default_user)
+        archive = await server.archive_manager.create_archive_async(
+            name="No Env Archive", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+        )
         namespace_no_env = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
         assert namespace_no_env == f"archive_{archive.id}"
 
         # Test with environment
         settings.environment = "TESTING"
 
-        archive2 = await server.archive_manager.create_archive_async(name="With Env Archive", actor=default_user)
+        archive2 = await server.archive_manager.create_archive_async(
+            name="With Env Archive", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+        )
         namespace_with_env = await server.archive_manager.get_or_set_vector_db_namespace_async(archive2.id)
         assert namespace_with_env == f"archive_{archive2.id}_testing"
 

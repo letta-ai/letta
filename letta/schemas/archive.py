@@ -3,6 +3,7 @@ from typing import Dict, Optional
 
 from pydantic import Field
 
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.letta_base import OrmMetadataBase
 
@@ -16,6 +17,7 @@ class ArchiveBase(OrmMetadataBase):
     vector_db_provider: VectorDBProvider = Field(
         default=VectorDBProvider.NATIVE, description="The vector database provider used for this archive's passages"
     )
+    embedding_config: EmbeddingConfig = Field(..., description="Embedding configuration for passages in this archive")
     metadata: Optional[Dict] = Field(default_factory=dict, validation_alias="metadata_", description="Additional metadata")
 
 

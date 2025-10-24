@@ -437,9 +437,7 @@ class PassageManager:
         )
 
         # Get or create the default archive for the agent
-        archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(
-            agent_id=agent_state.id, agent_name=agent_state.name, actor=actor
-        )
+        archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=agent_state, actor=actor)
 
         text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
 

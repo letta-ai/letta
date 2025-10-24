@@ -395,7 +395,9 @@ async def comprehensive_test_agent_fixture(server: SyncServer, default_user, pri
 @pytest.fixture
 async def default_archive(server: SyncServer, default_user):
     """Create and return a default archive."""
-    archive = await server.archive_manager.create_archive_async("test", actor=default_user)
+    archive = await server.archive_manager.create_archive_async(
+        "test", embedding_config=EmbeddingConfig.default_config(provider="openai"), actor=default_user
+    )
     yield archive
 
 
@@ -403,9 +405,7 @@ async def default_archive(server: SyncServer, default_user):
 async def agent_passage_fixture(server: SyncServer, default_user, sarah_agent):
     """Create an agent passage."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     passage = await server.passage_manager.create_agent_passage_async(
         PydanticPassage(

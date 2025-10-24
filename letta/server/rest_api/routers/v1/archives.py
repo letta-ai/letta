@@ -1,11 +1,14 @@
+from datetime import datetime
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from letta import AgentState
 from letta.schemas.agent import AgentRelationships
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
+from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.passage import Passage as PydanticPassage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import AgentId, ArchiveId, PassageId
@@ -20,6 +23,7 @@ class ArchiveCreateRequest(BaseModel):
     """
 
     name: str
+    embedding_config: EmbeddingConfig = Field(..., description="Embedding configuration for the archive")
     description: Optional[str] = None
 
 
@@ -45,6 +49,7 @@ async def create_archive(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.archive_manager.create_archive_async(
         name=archive.name,
+        embedding_config=archive.embedding_config,
         description=archive.description,
         actor=actor,
     )

@@ -18582,6 +18582,10 @@
             "description": "The vector database provider used for this archive's passages",
             "default": "native"
           },
+          "embedding_config": {
+            "$ref": "#/components/schemas/EmbeddingConfig",
+            "description": "Embedding configuration for passages in this archive"
+          },
           "metadata": {
             "anyOf": [
               {
@@ -18605,7 +18609,12 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["created_at", "name", "organization_id"],
+        "required": [
+          "created_at",
+          "name",
+          "organization_id",
+          "embedding_config"
+        ],
         "title": "Archive",
         "description": "Representation of an archive - a collection of archival passages that can be shared between agents.\n\nParameters:\n    id (str): The unique identifier of the archive.\n    name (str): The name of the archive.\n    description (str): A description of the archive.\n    organization_id (str): The organization this archive belongs to.\n    created_at (datetime): The creation date of the archive.\n    metadata (dict): Additional metadata for the archive."
       },
@@ -18614,6 +18623,10 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "embedding_config": {
+            "$ref": "#/components/schemas/EmbeddingConfig",
+            "description": "Embedding configuration for the archive"
           },
           "description": {
             "anyOf": [
@@ -18628,7 +18641,7 @@
           }
         },
         "type": "object",
-        "required": ["name"],
+        "required": ["name", "embedding_config"],
         "title": "ArchiveCreateRequest",
         "description": "Request model for creating an archive.\n\nIntentionally excludes vector_db_provider. These are derived internally (vector DB provider from env)."
       },

@@ -54,7 +54,7 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
@@ -245,9 +245,7 @@ async def test_agent_list_passages_vector_search(
     embed_model = mock_embed_model
 
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create passages with known embeddings
     passages = []
@@ -429,9 +427,7 @@ async def test_passage_cascade_deletion(
 async def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
     """Test creating an agent passage using the new agent-specific method."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     passage = await server.passage_manager.create_agent_passage_async(
         PydanticPassage(
@@ -494,9 +490,7 @@ async def test_create_agent_passage_validation(server: SyncServer, default_user,
         )
 
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Should fail if source_id is present
     with pytest.raises(ValueError, match="Agent passage cannot have source_id"):
@@ -530,9 +524,7 @@ async def test_create_source_passage_validation(server: SyncServer, default_user
         )
 
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Should fail if archive_id is present
     with pytest.raises(ValueError, match="Source passage cannot have archive_id"):
@@ -554,9 +546,7 @@ async def test_create_source_passage_validation(server: SyncServer, default_user
 async def test_get_agent_passage_by_id_specific(server: SyncServer, default_user, sarah_agent):
     """Test retrieving an agent passage using the new agent-specific method."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create an agent passage
     passage = await server.passage_manager.create_agent_passage_async(
@@ -608,9 +598,7 @@ async def test_get_wrong_passage_type_fails(server: SyncServer, default_user, sa
     """Test that trying to get the wrong passage type with specific methods fails."""
     # Create an agent passage
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     agent_passage = await server.passage_manager.create_agent_passage_async(
         PydanticPassage(
@@ -650,9 +638,7 @@ async def test_get_wrong_passage_type_fails(server: SyncServer, default_user, sa
 async def test_update_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
     """Test updating an agent passage using the new agent-specific method."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create an agent passage
     passage = await server.passage_manager.create_agent_passage_async(
@@ -724,9 +710,7 @@ async def test_update_source_passage_specific(server: SyncServer, default_user, 
 async def test_delete_agent_passage_specific(server: SyncServer, default_user, sarah_agent):
     """Test deleting an agent passage using the new agent-specific method."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create an agent passage
     passage = await server.passage_manager.create_agent_passage_async(
@@ -787,9 +771,7 @@ async def test_delete_source_passage_specific(server: SyncServer, default_user, 
 async def test_create_many_agent_passages_async(server: SyncServer, default_user, sarah_agent):
     """Test creating multiple agent passages using the new batch method."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     passages = [
         PydanticPassage(
@@ -846,9 +828,7 @@ async def test_agent_passage_size(server: SyncServer, default_user, sarah_agent)
     initial_size = await server.passage_manager.agent_passage_size_async(actor=default_user, agent_id=sarah_agent.id)
 
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create some agent passages
     for i in range(3):
@@ -873,9 +853,7 @@ async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServe
     from letta.schemas.enums import TagMatchMode
 
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create passages with different tag combinations
     test_passages = [
@@ -969,8 +947,7 @@ async def test_comprehensive_tag_functionality(disable_turbopuffer, server: Sync
 
     # Test 2: Verify unique tags for archive
     archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id,
-        agent_name=sarah_agent.name,
+        agent_state=sarah_agent,
         actor=default_user,
     )
 
@@ -1194,8 +1171,7 @@ async def test_tag_edge_cases(disable_turbopuffer, server: SyncServer, sarah_age
 
     # Verify unique tags includes all special character tags
     archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id,
-        agent_name=sarah_agent.name,
+        agent_state=sarah_agent,
         actor=default_user,
     )
 
@@ -1239,9 +1215,7 @@ async def test_tag_edge_cases(disable_turbopuffer, server: SyncServer, sarah_age
 async def test_search_agent_archival_memory_async(disable_turbopuffer, server: SyncServer, default_user, sarah_agent):
     """Test the search_agent_archival_memory_async method that powers both the agent tool and API endpoint."""
     # Get or create default archive for the agent
-    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
-        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
-    )
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=sarah_agent, actor=default_user)
 
     # Create test passages with various content and tags
     test_data = [

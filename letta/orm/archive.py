@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from letta.orm.custom_columns import EmbeddingConfigColumn
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.archive import Archive as PydanticArchive
@@ -44,6 +45,9 @@ class Archive(SqlalchemyBase, OrganizationMixin):
         nullable=False,
         default=VectorDBProvider.NATIVE,
         doc="The vector database provider used for this archive's passages",
+    )
+    embedding_config: Mapped[dict] = mapped_column(
+        EmbeddingConfigColumn, nullable=False, doc="Embedding configuration for passages in this archive"
     )
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Additional metadata for the archive")
     _vector_db_namespace: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Private field for vector database namespace")

@@ -10,6 +10,7 @@ from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.archive import Archive as PydanticArchive
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -28,6 +29,7 @@ class ArchiveManager:
     async def create_archive_async(
         self,
         name: str,
+        embedding_config: EmbeddingConfig,
         description: Optional[str] = None,
         actor: PydanticUser = None,
     ) -> PydanticArchive:
@@ -42,6 +44,7 @@ class ArchiveManager:
                     description=description,
                     organization_id=actor.organization_id,
                     vector_db_provider=vector_db_provider,
+                    embedding_config=embedding_config,
                 )
                 await archive.create_async(session, actor=actor)
                 return archive.to_pydantic()
@@ -299,11 +302,9 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
-    @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     async def get_or_create_default_archive_for_agent_async(
         self,
-        agent_id: str,
-        agent_name: Optional[str] = None,
+        agent_state: PydanticAgentState,
         actor: PydanticUser = None,
     ) -> PydanticArchive:
         """Get the agent's default archive, creating one if it doesn't exist."""
@@ -315,14 +316,14 @@ class ArchiveManager:
         agent_manager = AgentManager()
 
         archive_ids = await agent_manager.get_agent_archive_ids_async(
-            agent_id=agent_id,
+            agent_id=agent_state.id,
             actor=actor,
         )
 
         if archive_ids:
             # TODO: Remove this check once we support multiple archives per agent
             if len(archive_ids) > 1:
-                raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported")
+                raise ValueError(f"Agent {agent_state.id} has multiple archives, which is not yet supported")
             # Get the archive
             archive = await self.get_archive_by_id_async(
                 archive_id=archive_ids[0],
@@ -331,9 +332,10 @@ class ArchiveManager:
             return archive
 
         # Create a default archive for this agent
-        archive_name = f"{agent_name or f'Agent {agent_id}'}'s Archive"
+        archive_name = f"{agent_state.name}'s Archive"
         archive = await self.create_archive_async(
             name=archive_name,
+            embedding_config=agent_state.embedding_config,
             description="Default archive created automatically",
             actor=actor,
         )
@@ -341,7 +343,7 @@ class ArchiveManager:
         try:
             # Attach the agent to the archive as owner
             await self.attach_agent_to_archive_async(
-                agent_id=agent_id,
+                agent_id=agent_state.id,
                 archive_id=archive.id,
                 is_owner=True,
                 actor=actor,
@@ -350,12 +352,12 @@ class ArchiveManager:
         except IntegrityError:
             # race condition: another concurrent request already created and attached an archive
             # clean up the orphaned archive we just created
-            logger.info(f"Race condition detected for agent {agent_id}, cleaning up orphaned archive {archive.id}")
+            logger.info(f"Race condition detected for agent {agent_state.id}, cleaning up orphaned archive {archive.id}")
             await self.delete_archive_async(archive_id=archive.id, actor=actor)
 
             # fetch the existing archive that was created by the concurrent request
             archive_ids = await agent_manager.get_agent_archive_ids_async(
-                agent_id=agent_id,
+                agent_id=agent_state.id,
                 actor=actor,
             )
             if archive_ids:
