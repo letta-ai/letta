@@ -269,14 +269,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 if before_obj:
                     conditions.append(
                         or_(
-                            cls.created_at < before_obj.created_at,
+                            cls.created_at < before_obj.created_at if ascending else cls.created_at > before_obj.created_at,
                             and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
                         )
                     )
                 if after_obj:
                     conditions.append(
                         or_(
-                            cls.created_at > after_obj.created_at,
+                            cls.created_at > after_obj.created_at if ascending else cls.created_at < after_obj.created_at,
                             and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
                         )
                     )
