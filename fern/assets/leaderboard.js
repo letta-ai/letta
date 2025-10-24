@@ -8,7 +8,7 @@ import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 
 console.log('🏁 leaderboard.js loaded on', location.pathname);
 
-const COST_CAP = 20;
+const COST_CAP = 120;
 
 /* ---------- helpers ---------- */
 const pct = (v) => Number(v).toPrecision(3) + '%';
@@ -58,9 +58,8 @@ ready(async () => {
   //  const dataUrl = `${location.origin}/assets/leaderboard.yaml`;
   //  const dataUrl = `./assets/leaderboard.yaml`;   // one-liner, always right
   //   const dataUrl = `${location.origin}/data.yaml`; // one-liner, always right
-  //   const dataUrl = 'https://raw.githubusercontent.com/letta-ai/letta-leaderboard/main/data/letta_memory_leaderboard.yaml';
-  const dataUrl =
-    'https://cdn.jsdelivr.net/gh/letta-ai/letta-leaderboard@latest/data/letta_memory_leaderboard.yaml';
+  const dataUrl = 'https://raw.githubusercontent.com/letta-ai/letta-evals/refs/heads/main/letta-leaderboard/leaderboard_results.yaml';
+  // const dataUrl = 'https://cdn.jsdelivr.net/gh/letta-ai/letta-evals@latest/letta-leaderboard/leaderboard_results.yaml';
 
   console.log('LB-script: fetching', dataUrl);
 
