@@ -504,14 +504,43 @@ def deserialize_response_format(data: Optional[Dict]) -> Optional[ResponseFormat
 
 
 def serialize_mcp_stdio_config(config: Union[Optional[StdioServerConfig], Dict]) -> Optional[Dict]:
-    """Convert an StdioServerConfig object into a JSON-serializable dictionary."""
+    """Convert an StdioServerConfig object into a JSON-serializable dictionary.
+
+    Persist required fields for successful deserialization back into a
+    StdioServerConfig model (namely `server_name` and `type`). The
+    `to_dict()` helper intentionally omits these since they're not needed
+    by MCP transport, but our ORM deserializer reconstructs the pydantic
+    model and requires them.
+    """
     if config and isinstance(config, StdioServerConfig):
-        return config.to_dict()
+        data = config.to_dict()
+        # Preserve required fields for pydantic reconstruction
+        data["server_name"] = config.server_name
+        # Store enum as its value; pydantic will coerce on load
+        data["type"] = config.type.value if hasattr(config.type, "value") else str(config.type)
+        return data
     return config
 
 
 def deserialize_mcp_stdio_config(data: Optional[Dict]) -> Optional[StdioServerConfig]:
-    """Convert a dictionary back into an StdioServerConfig object."""
+    """Convert a dictionary back into an StdioServerConfig object.
+
+    Backwards-compatibility notes:
+    - Older rows may only include `transport`, `command`, `args`, `env`.
+      In that case, provide defaults for `server_name` and `type` to
+      satisfy the pydantic model requirements.
+    - If both `type` and `transport` are present, prefer `type`.
+    """
     if not data:
         return None
-    return StdioServerConfig(**data)
+
+    payload = dict(data)
+    # Map legacy `transport` field to required `type` if missing
+    if "type" not in payload and "transport" in payload:
+        payload["type"] = payload["transport"]
+
+    # Ensure required field exists; use a sensible placeholder when unknown
+    if "server_name" not in payload:
+        payload["server_name"] = payload.get("name", "unknown")
+
+    return StdioServerConfig(**payload)

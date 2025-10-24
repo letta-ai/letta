@@ -41,18 +41,21 @@ class StdioMCPServer(CreateStdioMCPServer):
     """A Stdio MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
+    type: MCPServerType = MCPServerType.STDIO
 
 
 class SSEMCPServer(CreateSSEMCPServer):
     """An SSE MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
+    type: MCPServerType = MCPServerType.SSE
 
 
 class StreamableHTTPMCPServer(CreateStreamableHTTPMCPServer):
     """A Streamable HTTP MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
+    type: MCPServerType = MCPServerType.STREAMABLE_HTTP
 
 
 MCPServerUnion = Union[StdioMCPServer, SSEMCPServer, StreamableHTTPMCPServer]
@@ -74,9 +77,10 @@ class UpdateSSEMCPServer(LettaBase):
 
     server_name: Optional[str] = Field(None, description="The name of the MCP server")
     server_url: Optional[str] = Field(None, description="The URL of the SSE MCP server")
-    # Note: auth_token is renamed to token to match the ORM field
-    token: Optional[str] = Field(None, description="The authentication token")
-    # auth_header is excluded as it's derived from the token
+    # Accept both `auth_token` (API surface) and `token` (internal ORM naming)
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    token: Optional[str] = Field(None, description="The authentication token (internal)")
+    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom headers to send with requests")
 
 
@@ -85,9 +89,10 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
 
     server_name: Optional[str] = Field(None, description="The name of the MCP server")
     server_url: Optional[str] = Field(None, description="The URL of the Streamable HTTP MCP server")
-    # Note: auth_token is renamed to token to match the ORM field
-    token: Optional[str] = Field(None, description="The authentication token")
-    # auth_header is excluded as it's derived from the token
+    # Accept both `auth_token` (API surface) and `token` (internal ORM naming)
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    token: Optional[str] = Field(None, description="The authentication token (internal)")
+    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom headers to send with requests")
 
 
@@ -296,3 +301,49 @@ def convert_generic_to_union(server) -> MCPServerUnion:
         )
     else:
         raise ValueError(f"Unknown server type: {server.server_type}")
+
+
+def convert_update_to_internal(request: Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer]):
+    """Convert external API update models to internal UpdateMCPServer union used by the manager.
+
+    - Flattens stdio fields into StdioServerConfig inside UpdateStdioMCPServer
+    - Maps `auth_token` to `token` for HTTP-based transports
+    - Ignores `auth_header` at update time (header is derived from token)
+    """
+    # Local import to avoid circulars
+    from letta.functions.mcp_client.types import MCPServerType as MCPType, StdioServerConfig as StdioCfg
+    from letta.schemas.mcp import (
+        UpdateSSEMCPServer as InternalUpdateSSE,
+        UpdateStdioMCPServer as InternalUpdateStdio,
+        UpdateStreamableHTTPMCPServer as InternalUpdateHTTP,
+    )
+
+    if isinstance(request, UpdateStdioMCPServer):
+        stdio_cfg = None
+        # Only build stdio_config if command and args are explicitly provided to avoid overwriting existing config
+        if request.command is not None and request.args is not None:
+            stdio_cfg = StdioCfg(
+                server_name=request.server_name or "",
+                type=MCPType.STDIO,
+                command=request.command,
+                args=request.args,
+                env=request.env,
+            )
+        kwargs: dict = {}
+        if request.server_name is not None:
+            kwargs["server_name"] = request.server_name
+        if stdio_cfg is not None:
+            kwargs["stdio_config"] = stdio_cfg
+        return InternalUpdateStdio(**kwargs)
+    elif isinstance(request, UpdateSSEMCPServer):
+        token_value = request.auth_token or request.token
+        return InternalUpdateSSE(
+            server_name=request.server_name, server_url=request.server_url, token=token_value, custom_headers=request.custom_headers
+        )
+    elif isinstance(request, UpdateStreamableHTTPMCPServer):
+        token_value = request.auth_token or request.token
+        return InternalUpdateHTTP(
+            server_name=request.server_name, server_url=request.server_url, auth_token=token_value, custom_headers=request.custom_headers
+        )
+    else:
+        raise TypeError(f"Unsupported update request type: {type(request)}")
