@@ -157,7 +157,7 @@ Now let's attach the block to our agent. Attached blocks are injected into the a
 ```typescript TypeScript
 // Attach memory block to agent
 // API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
-await client.agents.blocks.attach(agent.id, { blockId: block.id });
+await client.agents.blocks.attach(agent.id, block.id);
 
 console.log(`Attached block ${block.id} to agent ${agent.id}\n`);
 ```
@@ -284,7 +284,7 @@ Let's re-attach the block to restore the agent's access to the information.
 <CodeGroup>
 ```typescript TypeScript
 // Re-attach the block to the agent
-await client.agents.blocks.attach(agent.id, { blockId: block.id });
+await client.agents.blocks.attach(agent.id, block.id);
 
 console.log(`Re-attached block ${block.id} to agent ${agent.id}\n`);
 
@@ -338,60 +338,64 @@ Here's the full code in one place that you can run:
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
-// Initialize client
-const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+async function main() {
+    // Initialize client
+    const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 
-// Create agent
-const agent = await client.agents.create({
-    name: "hello_world_assistant",
-    model: "openai/gpt-4o-mini",
-});
+    // Create agent
+    const agent = await client.agents.create({
+        name: "hello_world_assistant",
+        model: "openai/gpt-4o-mini",
+    });
 
-console.log(`Created agent: ${agent.id}\n`);
+    console.log(`Created agent: ${agent.id}\n`);
 
-// Create standalone memory block
-const block = await client.blocks.create({
-    label: "organization",
-    value: `Organization: Letta
+    // Create standalone memory block
+    const block = await client.blocks.create({
+        label: "organization",
+        value: `Organization: Letta
 Website: https://www.letta.com
 Description: Letta is a platform for building and running stateful agents.
 Code: TimberTheDog1234!
 
 When users provide a code, you should check if it matches the code you have
 available. If it matches, you should respond with "Access granted".`
-});
+    });
 
-console.log(`Created block: ${block.id}\n`);
+    console.log(`Created block: ${block.id}\n`);
 
-// Attach block to agent
-await client.agents.blocks.attach(agent.id, { blockId: block.id });
-console.log(`Attached block to agent\n`);
+    // Attach block to agent
+    await client.agents.blocks.attach(agent.id, block.id);
+    console.log(`Attached block to agent\n`);
 
-// Test agent with block attached
-let response = await client.agents.messages.create(agent.id, {
-    messages: [{ role: "user", content: "What is Letta?" }]
-});
-console.log(`Agent response: ${response.messages[0].content}\n`);
+    // Test agent with block attached
+    let response = await client.agents.messages.create(agent.id, {
+        messages: [{ role: "user", content: "What is Letta?" }]
+    });
+    console.log(`Agent response: ${response.messages[0].content}\n`);
 
-// Detach block
-await client.agents.blocks.detach(agent.id, block.id);
-console.log(`Detached block from agent\n`);
+    // Detach block
+    await client.agents.blocks.detach(agent.id, block.id);
+    console.log(`Detached block from agent\n`);
 
-// Test agent without block
-response = await client.agents.messages.create(agent.id, {
-    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
-});
-console.log(`Agent response: ${response.messages[0].content}\n`);
+    // Test agent without block
+    response = await client.agents.messages.create(agent.id, {
+        messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+    });
+    console.log(`Agent response: ${response.messages[0].content}\n`);
 
-// Re-attach block
-await client.agents.blocks.attach(agent.id, { blockId: block.id });
-console.log(`Re-attached block to agent\n`);
+    // Re-attach block
+    await client.agents.blocks.attach(agent.id, block.id);
+    console.log(`Re-attached block to agent\n`);
 
-// Test agent with block re-attached
-response = await client.agents.messages.create(agent.id, {
-    messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
-});
-console.log(`Agent response: ${response.messages[0].content}\n`);
+    // Test agent with block re-attached
+    response = await client.agents.messages.create(agent.id, {
+        messages: [{ role: "user", content: "The code is TimberTheDog1234!" }]
+    });
+    console.log(`Agent response: ${response.messages[0].content}\n`);
+}
+
+main();
 ```
 ```python Python
 from letta_client import Letta

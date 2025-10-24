@@ -279,64 +279,68 @@ Here's the full code in one place that you can run:
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
-// Initialize client using LETTA_API_KEY environment variable
-const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+async function main() {
+    // Initialize client using LETTA_API_KEY environment variable
+    const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 
-// If self-hosting, specify the base URL:
-// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+    // If self-hosting, specify the base URL:
+    // const client = new LettaClient({ baseUrl: "http://localhost:8283" });
 
-// Create agent
-const agent = await client.agents.create({
-    name: "hello_world_assistant",
-    memoryBlocks: [
-        {
-            label: "persona",
-            value: "I am a friendly AI assistant here to help you learn about Letta."
-        },
-        {
-            label: "human",
-            value: "Name: User\nFirst interaction: Learning about Letta"
+    // Create agent
+    const agent = await client.agents.create({
+        name: "hello_world_assistant",
+        memoryBlocks: [
+            {
+                label: "persona",
+                value: "I am a friendly AI assistant here to help you learn about Letta."
+            },
+            {
+                label: "human",
+                value: "Name: User\nFirst interaction: Learning about Letta"
+            }
+        ],
+        model: "openai/gpt-4o-mini",
+        // embedding: "openai/text-embedding-3-small", // Only set this if self-hosting
+    });
+
+    console.log(`Created agent: ${agent.id}\n`);
+
+    // Send first message
+    let response = await client.agents.messages.create(agent.id, {
+        messages: [{ role: "user", content: "Hello! What's your purpose?" }]
+    });
+
+    for (const msg of response.messages) {
+        if (msg.messageType === "assistant_message") {
+            console.log(`Assistant: ${msg.content}\n`);
         }
-    ],
-    model: "openai/gpt-4o-mini",
-    // embedding: "openai/text-embedding-3-small", // Only set this if self-hosting
-});
+    }
 
-console.log(`Created agent: ${agent.id}\n`);
+    // Send information about yourself
+    response = await client.agents.messages.create(agent.id, {
+        messages: [{ role: "user", content: "My name is Cameron. Please store this information in your memory." }]
+    });
 
-// Send first message
-let response = await client.agents.messages.create(agent.id, {
-    messages: [{ role: "user", content: "Hello! What's your purpose?" }]
-});
+    // Print out tool calls and the assistant's response
+    for (const msg of response.messages) {
+        if (msg.messageType === "assistant_message") {
+            console.log(`Assistant: ${msg.content}\n`);
+        }
+        if (msg.messageType === "tool_call_message") {
+            console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
+        }
+    }
 
-for (const msg of response.messages) {
-    if (msg.messageType === "assistant_message") {
-        console.log(`Assistant: ${msg.content}\n`);
+    // Inspect memory
+    const blocks = await client.agents.blocks.list(agent.id);
+    console.log("Current Memory:");
+    for (const block of blocks) {
+        console.log(`  ${block.label}: ${block.value.length}/${block.limit} chars`);
+        console.log(`  ${block.value}\n`);
     }
 }
 
-// Send information about yourself
-response = await client.agents.messages.create(agent.id, {
-    messages: [{ role: "user", content: "My name is Cameron. Please store this information in your memory." }]
-});
-
-// Print out tool calls and the assistant's response
-for (const msg of response.messages) {
-    if (msg.messageType === "assistant_message") {
-        console.log(`Assistant: ${msg.content}\n`);
-    }
-    if (msg.messageType === "tool_call_message") {
-        console.log(`Tool call: ${msg.toolCall.name}(${JSON.stringify(msg.toolCall.arguments)})`);
-    }
-}
-
-// Inspect memory
-const blocks = await client.agents.blocks.list(agent.id);
-console.log("Current Memory:");
-for (const block of blocks) {
-    console.log(`  ${block.label}: ${block.value.length}/${block.limit} chars`);
-    console.log(`  ${block.value}\n`);
-}
+main();
 ```
 ```python Python
 from letta_client import Letta

@@ -128,7 +128,7 @@ console.log(`Created agent2: ${agent2.id}`);
 
 // Attach the shared block to agent2
 // API Reference: https://docs.letta.com/api-reference/agents/blocks/attach
-await client.agents.blocks.attach(agent2.id, { blockId: block.id });
+await client.agents.blocks.attach(agent2.id, block.id);
 console.log(`Attached block to agent2\n`);
 ```
 ```python Python
@@ -179,6 +179,8 @@ const response1 = await client.agents.messages.create(agent1.id, {
         content: `Find information about the connection between memory blocks and Letta.
 Insert what you learn into the memory block, prepended with "Agent1: ".`
     }]
+}, {
+    timeoutInSeconds: 120 // Web search can take time
 });
 
 for (const msg of response1.messages) {
@@ -197,6 +199,8 @@ const response2 = await client.agents.messages.create(agent2.id, {
         content: `Find information about the origin of Letta.
 Insert what you learn into the memory block, prepended with "Agent2: ".`
     }]
+}, {
+    timeoutInSeconds: 120 // Web search can take time
 });
 
 for (const msg of response2.messages) {
@@ -341,74 +345,82 @@ Here's the full code in one place that you can run:
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
-// Initialize client
-const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+async function main() {
+    // Initialize client
+    const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 
-// Create shared block
-const block = await client.blocks.create({
-    label: "organization",
-    value: "Organization: Letta",
-    limit: 4000,
-});
+    // Create shared block
+    const block = await client.blocks.create({
+        label: "organization",
+        value: "Organization: Letta",
+        limit: 4000,
+    });
 
-console.log(`Created shared block: ${block.id}\n`);
+    console.log(`Created shared block: ${block.id}\n`);
 
-// Create agents with shared block
-const agent1 = await client.agents.create({
-    name: "agent1",
-    model: "openai/gpt-4o-mini",
-    blockIds: [block.id],
-    tools: ["web_search"],
-});
+    // Create agents with shared block
+    const agent1 = await client.agents.create({
+        name: "agent1",
+        model: "openai/gpt-4o-mini",
+        blockIds: [block.id],
+        tools: ["web_search"],
+    });
 
-const agent2 = await client.agents.create({
-    name: "agent2",
-    model: "openai/gpt-4o-mini",
-    tools: ["web_search"],
-});
+    const agent2 = await client.agents.create({
+        name: "agent2",
+        model: "openai/gpt-4o-mini",
+        tools: ["web_search"],
+    });
 
-await client.agents.blocks.attach(agent2.id, { blockId: block.id });
+    await client.agents.blocks.attach(agent2.id, block.id);
 
-console.log(`Created agents: ${agent1.id}, ${agent2.id}\n`);
+    console.log(`Created agents: ${agent1.id}, ${agent2.id}\n`);
 
-// Agent1 contributes information
-const response1 = await client.agents.messages.create(agent1.id, {
-    messages: [{
-        role: "user",
-        content: `Find information about the connection between memory blocks and Letta.
+    // Agent1 contributes information
+    const response1 = await client.agents.messages.create(agent1.id, {
+        messages: [{
+            role: "user",
+            content: `Find information about the connection between memory blocks and Letta.
 Insert what you learn into the memory block, prepended with "Agent1: ".`
-    }]
-});
+        }]
+    }, {
+        timeoutInSeconds: 120 // Web search can take time
+    });
 
-// Agent2 contributes information
-const response2 = await client.agents.messages.create(agent2.id, {
-    messages: [{
-        role: "user",
-        content: `Find information about the origin of Letta.
+    // Agent2 contributes information
+    const response2 = await client.agents.messages.create(agent2.id, {
+        messages: [{
+            role: "user",
+            content: `Find information about the origin of Letta.
 Insert what you learn into the memory block, prepended with "Agent2: ".`
-    }]
-});
+        }]
+    }, {
+        timeoutInSeconds: 120 // Web search can take time
+    });
 
-// Inspect the shared memory
-const updatedBlock = await client.blocks.retrieve(block.id);
-console.log("==== Updated block ====");
-console.log(updatedBlock.value);
-console.log("=======================\n");
+    // Inspect the shared memory
+    const updatedBlock = await client.blocks.retrieve(block.id);
+    console.log("==== Updated block ====");
+    console.log(updatedBlock.value);
+    console.log("=======================\n");
 
-// Create read-only block
-const readOnlyBlock = await client.blocks.create({
-    label: "policies",
-    value: "Company Policy: Always be helpful and respectful.",
-    readOnly: true,
-});
+    // Create read-only block
+    const readOnlyBlock = await client.blocks.create({
+        label: "policies",
+        value: "Company Policy: Always be helpful and respectful.",
+        readOnly: true,
+    });
 
-const readOnlyAgent = await client.agents.create({
-    name: "policy_agent",
-    model: "openai/gpt-4o-mini",
-    blockIds: [readOnlyBlock.id],
-});
+    const readOnlyAgent = await client.agents.create({
+        name: "policy_agent",
+        model: "openai/gpt-4o-mini",
+        blockIds: [readOnlyBlock.id],
+    });
 
-console.log(`Created read-only agent: ${readOnlyAgent.id}`);
+    console.log(`Created read-only agent: ${readOnlyAgent.id}`);
+}
+
+main();
 ```
 ```python Python
 from letta_client import Letta
