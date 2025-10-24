@@ -324,6 +324,23 @@ LLM_MAX_TOKENS = {
     "gemini-2.0-flash-thinking-exp-1219": 1048576,
     "gemini-2.5-flash-preview-tts": 32768,
     "gemini-2.5-pro-preview-tts": 65536,
+    # gemini 2.5 stable releases
+    "gemini-2.5-flash": 1048576,
+    "gemini-2.5-flash-lite": 1048576,
+    "gemini-2.5-pro": 1048576,
+    "gemini-2.5-pro-preview-06-05": 1048576,
+    "gemini-2.5-flash-lite-preview-06-17": 1048576,
+    "gemini-2.5-flash-image": 1048576,
+    "gemini-2.5-flash-image-preview": 1048576,
+    "gemini-2.5-flash-preview-09-2025": 1048576,
+    "gemini-2.5-flash-lite-preview-09-2025": 1048576,
+    "gemini-2.5-computer-use-preview-10-2025": 1048576,
+    # gemini latest aliases
+    "gemini-flash-latest": 1048576,
+    "gemini-flash-lite-latest": 1048576,
+    "gemini-pro-latest": 1048576,
+    # gemini specialized models
+    "gemini-robotics-er-1.5-preview": 1048576,
 }
 # The error message that Letta will receive
 # MESSAGE_SUMMARY_WARNING_STR = f"Warning: the conversation history will soon reach its maximum length and be trimmed. Make sure to save any important information from the conversation to your memory before it is removed."
