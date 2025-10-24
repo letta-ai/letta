@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, Header, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import AgentRelationships, AgentState
-from letta.schemas.block import Block
+from letta.schemas.block import Block, BlockResponse
 from letta.schemas.identity import (
     Identity,
     IdentityCreate,
@@ -188,7 +188,7 @@ async def list_agents_for_identity(
     )
 
 
-@router.get("/{identity_id}/blocks", response_model=List[Block], operation_id="list_blocks_for_identity")
+@router.get("/{identity_id}/blocks", response_model=List[BlockResponse], operation_id="list_blocks_for_identity")
 async def list_blocks_for_identity(
     identity_id: IdentityId,
     before: Optional[str] = Query(

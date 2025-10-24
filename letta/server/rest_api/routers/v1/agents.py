@@ -32,7 +32,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
-from letta.schemas.block import BaseBlock, Block, BlockUpdate
+from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate
 from letta.schemas.enums import AgentType, RunStatus
 from letta.schemas.file import AgentFileAttachment, FileMetadataBase, PaginatedAgentFiles
 from letta.schemas.group import Group
@@ -915,7 +915,7 @@ async def retrieve_agent_memory(
     return await server.get_agent_memory_async(agent_id=agent_id, actor=actor)
 
 
-@router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
+@router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=BlockResponse, operation_id="retrieve_core_memory_block")
 async def retrieve_block_for_agent(
     block_label: str,
     agent_id: AgentId,
@@ -930,7 +930,7 @@ async def retrieve_block_for_agent(
     return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
 
 
-@router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
+@router.get("/{agent_id}/core-memory/blocks", response_model=list[BlockResponse], operation_id="list_core_memory_blocks")
 async def list_blocks_for_agent(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -962,7 +962,7 @@ async def list_blocks_for_agent(
     )
 
 
-@router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
+@router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=BlockResponse, operation_id="modify_core_memory_block")
 async def modify_block_for_agent(
     block_label: str,
     agent_id: AgentId,

@@ -1258,6 +1258,20 @@ paths:
   /v1/_internal_runs/:
     get:
       x-fern-ignore: true
+  /v1/_internal_blocks/:
+    get:
+      x-fern-ignore: true
+    post:
+      x-fern-ignore: true
+  /v1/_internal_blocks/{block_id}:
+    delete:
+      x-fern-ignore: true
+  /v1/_internal_blocks/{block_id}/agents:
+    get:
+      x-fern-ignore: true
+  /v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}:
+    patch:
+      x-fern-ignore: true
   /v1/projects:
     get:
       x-fern-sdk-group-name:
