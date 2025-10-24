@@ -135,6 +135,19 @@
             "description": "Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first"
           },
           {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "name",
             "in": "query",
             "required": false,

@@ -69,6 +69,7 @@ async def list_archives(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     name: Optional[str] = Query(None, description="Filter by archive name (exact match)"),
     agent_id: Optional[str] = Query(None, description="Only archives attached to this agent ID"),
     server: "SyncServer" = Depends(get_letta_server),
