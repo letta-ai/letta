@@ -1,0 +1,638 @@
+---
+title: "Talk to Your PDF"
+subtitle: Upload PDFs and query them with an AI agent
+slug: tutorials/pdf-chat
+---
+
+## Overview
+
+This tutorial demonstrates how to build a PDF chat application using Letta. You'll learn how to upload PDF documents to the [Letta Filesystem](/guides/agents/filesystem), attach them to an agent, and query the agent about the content. Letta automatically extracts text from PDFs using OCR, making the content accessible to your agents.
+
+By the end of this guide, you'll understand how to create document analysis workflows where agents can read, understand, and answer questions about PDF files.
+
+<Note>
+**This tutorial uses Letta Cloud.** Generate an API key at [app.letta.com/api-keys](https://app.letta.com/api-keys) and set it as `LETTA_API_KEY` in your environment. Self-hosted servers only need an API key if authentication is enabled. You can learn more about self-hosting [here](/guides/selfhosting).
+</Note>
+
+## What You'll Learn
+
+- Creating folders to organize documents
+- Uploading PDF files to Letta
+- Creating agents configured for document analysis
+- Attaching folders to give agents access to files
+- Querying agents about PDF content
+- Understanding how Letta processes PDFs
+
+## Prerequisites
+
+Install the required dependencies:
+
+<CodeGroup>
+```sh TypeScript
+npm install @letta-ai/letta-client
+```
+```sh Python
+pip install letta-client requests
+```
+</CodeGroup>
+
+## Steps
+
+### Step 1: Initialize Client
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+// Initialize the Letta client using LETTA_API_KEY environment variable
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+// If self-hosting, specify the base URL:
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+```
+```python Python
+from letta_client import Letta
+import os
+
+# Initialize the Letta client using LETTA_API_KEY environment variable
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# If self-hosting, specify the base URL:
+# client = Letta(base_url="http://localhost:8283")
+```
+</CodeGroup>
+
+### Step 2: Create a Folder for PDFs
+
+[Folders](/guides/agents/filesystem) in the Letta Filesystem organize files and make them accessible to agents. Create a folder specifically for storing PDF documents:
+
+<CodeGroup>
+```typescript TypeScript
+// Create a folder to store PDF documents (or use existing one)
+// API Reference: https://docs.letta.com/api-reference/folders/create
+let folderId: string;
+try {
+    // Try to retrieve existing folder by name
+    folderId = await client.folders.retrieveByName("PDF Documents");
+    console.log(`Using existing folder: ${folderId}\n`);
+} catch (error: any) {
+    // If folder doesn't exist (404), create it
+    if (error.statusCode === 404) {
+        const folder = await client.folders.create({
+            name: "PDF Documents",
+            description: "A folder containing PDF files for the agent to read",
+        });
+        folderId = folder.id;
+        console.log(`Created folder: ${folderId}\n`);
+    } else {
+        throw error;
+    }
+}
+```
+```python Python
+# Create a folder to store PDF documents (or use existing one)
+# API Reference: https://docs.letta.com/api-reference/folders/create
+from letta_client.core.api_error import ApiError
+
+try:
+    # Try to retrieve existing folder by name
+    folder_id = client.folders.retrieve_by_name("PDF Documents")
+    print(f"Using existing folder: {folder_id}\n")
+except ApiError as e:
+    # If folder doesn't exist (404), create it
+    if e.status_code == 404:
+        folder = client.folders.create(
+            name="PDF Documents",
+            description="A folder containing PDF files for the agent to read",
+        )
+        folder_id = folder.id
+        print(f"Created folder: {folder_id}\n")
+    else:
+        raise
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Created folder: folder-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+If the folder already exists, you'll see:
+```
+Using existing folder: folder-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+### Step 3: Download and Upload a PDF
+
+Let's download a sample PDF (the MemGPT research paper) and upload it to the folder. Letta will automatically extract the text content using OCR.
+
+<CodeGroup>
+```typescript TypeScript
+import * as fs from 'fs';
+import * as https from 'https';
+
+// Download the PDF if it doesn't exist locally
+const pdfFilename = "memgpt.pdf";
+
+if (!fs.existsSync(pdfFilename)) {
+    console.log(`Downloading ${pdfFilename}...`);
+
+    await new Promise<void>((resolve, reject) => {
+        const file = fs.createWriteStream(pdfFilename);
+        https.get("https://arxiv.org/pdf/2310.08560", (response) => {
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                console.log("Download complete\n");
+                resolve();
+            });
+            file.on('error', reject);
+        }).on('error', reject);
+    });
+}
+
+// Upload the PDF to the folder
+// API Reference: https://docs.letta.com/api-reference/folders/files/upload
+const uploadedFile = await client.folders.files.upload(
+    fs.createReadStream(pdfFilename),
+    folderId,
+    { duplicateHandling: "skip" }
+);
+
+console.log(`Uploaded PDF: ${uploadedFile.id}\n`);
+```
+```python Python
+import requests
+
+# Download the PDF if it doesn't exist locally
+pdf_filename = "memgpt.pdf"
+
+if not os.path.exists(pdf_filename):
+    print(f"Downloading {pdf_filename}...")
+    response = requests.get("https://arxiv.org/pdf/2310.08560")
+    with open(pdf_filename, "wb") as f:
+        f.write(response.content)
+    print("Download complete\n")
+
+# Upload the PDF to the folder
+# API Reference: https://docs.letta.com/api-reference/folders/files/upload
+with open(pdf_filename, "rb") as f:
+    file = client.folders.files.upload(
+        folder_id=folder_id,
+        file=f,
+        duplicate_handling="skip",
+    )
+
+print(f"Uploaded PDF: {file.id}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Downloading memgpt.pdf...
+Download complete
+
+Uploaded PDF: file-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+<Note>
+**PDF Processing**: Letta extracts text from PDFs using OCR automatically during upload. The extracted text becomes searchable and accessible to agents attached to the folder.
+</Note>
+
+### Step 4: Create an Agent for Document Analysis
+
+Create an [agent](/guides/agents/overview) with a persona configured for analyzing documents. The agent's [memory blocks](/guides/agents/memory-blocks) define its purpose and capabilities:
+
+<CodeGroup>
+```typescript TypeScript
+// Create an agent configured to analyze documents
+// API Reference: https://docs.letta.com/api-reference/agents/create
+const agent = await client.agents.create({
+    name: "pdf_assistant",
+    model: "openai/gpt-4o-mini",
+    memoryBlocks: [
+        {
+            label: "persona",
+            value: "I am a helpful research assistant that analyzes PDF documents and answers questions about their content."
+        },
+        {
+            label: "human",
+            value: "Name: User\nTask: Analyzing PDF documents"
+        }
+    ],
+});
+
+console.log(`Created agent: ${agent.id}\n`);
+```
+```python Python
+# Create an agent configured to analyze documents
+# API Reference: https://docs.letta.com/api-reference/agents/create
+agent = client.agents.create(
+    name="pdf_assistant",
+    model="openai/gpt-4o-mini",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am a helpful research assistant that analyzes PDF documents and answers questions about their content."
+        },
+        {
+            "label": "human",
+            "value": "Name: User\nTask: Analyzing PDF documents"
+        }
+    ],
+)
+
+print(f"Created agent: {agent.id}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Created agent: agent-a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</Accordion>
+
+### Step 5: Attach the Folder to the Agent
+
+Attach the folder containing the PDF to the agent. This gives the agent the ability to search through all files in the folder:
+
+<CodeGroup>
+```typescript TypeScript
+// Attach the folder to the agent
+// API Reference: https://docs.letta.com/api-reference/agents/folders/attach
+await client.agents.folders.attach(agent.id, folderId);
+
+console.log(`Attached folder to agent\n`);
+```
+```python Python
+# Attach the folder to the agent
+# API Reference: https://docs.letta.com/api-reference/agents/folders/attach
+client.agents.folders.attach(
+    agent_id=agent.id,
+    folder_id=folder_id,
+)
+
+print(f"Attached folder to agent\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Attached folder to agent
+```
+</Accordion>
+
+<Note>
+Once a folder is attached, the agent can use search tools to retrieve relevant content from files in the folder. Learn more in the [Letta Filesystem guide](/guides/agents/filesystem).
+</Note>
+
+### Step 6: Query the PDF Content
+
+Now ask the agent questions about the PDF. The agent will search through the document content to find relevant information:
+
+<CodeGroup>
+```typescript TypeScript
+// Ask the agent to summarize the PDF
+// API Reference: https://docs.letta.com/api-reference/agents/messages/create
+const response = await client.agents.messages.create(agent.id, {
+    messages: [{
+        role: "user",
+        content: "Can you summarize the main ideas from the MemGPT paper?"
+    }]
+});
+
+for (const msg of response.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Assistant: ${msg.content}\n`);
+    }
+}
+```
+```python Python
+# Ask the agent to summarize the PDF
+# API Reference: https://docs.letta.com/api-reference/agents/messages/create
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Can you summarize the main ideas from the MemGPT paper?"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Assistant: The MemGPT paper introduces a system that enables LLMs to manage their own
+memory hierarchy, similar to how operating systems manage memory. It addresses the limited
+context window problem in large language models by introducing a memory management system
+inspired by traditional operating systems. The key innovation is allowing LLMs to explicitly
+move information between main context (limited) and external storage (unlimited), enabling
+extended conversations and document analysis that exceed typical context limits.
+```
+</Accordion>
+
+### Step 7: Ask Specific Questions
+
+You can continue the conversation to ask more specific questions about the document:
+
+<CodeGroup>
+```typescript TypeScript
+// Ask a specific question about the PDF content
+const response2 = await client.agents.messages.create(agent.id, {
+    messages: [{
+        role: "user",
+        content: "What problem does MemGPT solve?"
+    }]
+});
+
+for (const msg of response2.messages) {
+    if (msg.messageType === "assistant_message") {
+        console.log(`Assistant: ${msg.content}\n`);
+    }
+}
+```
+```python Python
+# Ask a specific question about the PDF content
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "What problem does MemGPT solve?"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+```
+</CodeGroup>
+
+<Accordion title="Expected Output">
+```
+Assistant: MemGPT addresses the limited context window problem in large language models.
+Traditional LLMs can only process a fixed amount of text at once (their context window),
+which makes it difficult to maintain long conversations or analyze large documents. MemGPT
+solves this by introducing a memory management system that allows the model to intelligently
+move information between its limited context and unlimited external storage, enabling
+extended conversations and document analysis beyond typical context limits.
+```
+</Accordion>
+
+## Complete Example
+
+Here's the full code in one place that you can run:
+
+<CodeGroup>
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+import * as fs from 'fs';
+import * as https from 'https';
+
+async function main() {
+    // Initialize client
+    const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+
+    // Create folder (or use existing one)
+    let folderId: string;
+    try {
+        folderId = await client.folders.retrieveByName("PDF Documents");
+        console.log(`Using existing folder: ${folderId}\n`);
+    } catch (error: any) {
+        if (error.statusCode === 404) {
+            const folder = await client.folders.create({
+                name: "PDF Documents",
+                description: "A folder containing PDF files for the agent to read",
+            });
+            folderId = folder.id;
+            console.log(`Created folder: ${folderId}\n`);
+        } else {
+            throw error;
+        }
+    }
+
+    // Download and upload PDF
+    const pdfFilename = "memgpt.pdf";
+
+    if (!fs.existsSync(pdfFilename)) {
+        console.log(`Downloading ${pdfFilename}...`);
+        await new Promise<void>((resolve, reject) => {
+            const file = fs.createWriteStream(pdfFilename);
+            https.get("https://arxiv.org/pdf/2310.08560", (response) => {
+                response.pipe(file);
+                file.on('finish', () => {
+                    file.close();
+                    console.log("Download complete\n");
+                    resolve();
+                });
+                file.on('error', reject);
+            }).on('error', reject);
+        });
+    }
+
+    const uploadedFile = await client.folders.files.upload(
+        fs.createReadStream(pdfFilename),
+        folderId,
+        { duplicateHandling: "skip" }
+    );
+
+    console.log(`Uploaded PDF: ${uploadedFile.id}\n`);
+
+    // Create agent
+    const agent = await client.agents.create({
+        name: "pdf_assistant",
+        model: "openai/gpt-4o-mini",
+        memoryBlocks: [
+            {
+                label: "persona",
+                value: "I am a helpful research assistant that analyzes PDF documents and answers questions about their content."
+            },
+            {
+                label: "human",
+                value: "Name: User\nTask: Analyzing PDF documents"
+            }
+        ],
+    });
+
+    console.log(`Created agent: ${agent.id}\n`);
+
+    // Attach folder to agent
+    await client.agents.folders.attach(agent.id, folderId);
+
+    console.log(`Attached folder to agent\n`);
+
+    // Query the PDF
+    const response = await client.agents.messages.create(agent.id, {
+        messages: [{
+            role: "user",
+            content: "Can you summarize the main ideas from the MemGPT paper?"
+        }]
+    });
+
+    for (const msg of response.messages) {
+        if (msg.messageType === "assistant_message") {
+            console.log(`Assistant: ${msg.content}\n`);
+        }
+    }
+
+    // Ask specific question
+    const response2 = await client.agents.messages.create(agent.id, {
+        messages: [{
+            role: "user",
+            content: "What problem does MemGPT solve?"
+        }]
+    });
+
+    for (const msg of response2.messages) {
+        if (msg.messageType === "assistant_message") {
+            console.log(`Assistant: ${msg.content}\n`);
+        }
+    }
+}
+
+main();
+```
+```python Python
+from letta_client import Letta
+from letta_client.core.api_error import ApiError
+import os
+import requests
+
+# Initialize client
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# Create folder (or use existing one)
+try:
+    folder_id = client.folders.retrieve_by_name("PDF Documents")
+    print(f"Using existing folder: {folder_id}\n")
+except ApiError as e:
+    if e.status_code == 404:
+        folder = client.folders.create(
+            name="PDF Documents",
+            description="A folder containing PDF files for the agent to read",
+        )
+        folder_id = folder.id
+        print(f"Created folder: {folder_id}\n")
+    else:
+        raise
+
+# Download and upload PDF
+pdf_filename = "memgpt.pdf"
+
+if not os.path.exists(pdf_filename):
+    print(f"Downloading {pdf_filename}...")
+    response = requests.get("https://arxiv.org/pdf/2310.08560")
+    with open(pdf_filename, "wb") as f:
+        f.write(response.content)
+    print("Download complete\n")
+
+with open(pdf_filename, "rb") as f:
+    file = client.folders.files.upload(
+        folder_id=folder_id,
+        file=f,
+        duplicate_handling="skip",
+    )
+
+print(f"Uploaded PDF: {file.id}\n")
+
+# Create agent
+agent = client.agents.create(
+    name="pdf_assistant",
+    model="openai/gpt-4o-mini",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": "I am a helpful research assistant that analyzes PDF documents and answers questions about their content."
+        },
+        {
+            "label": "human",
+            "value": "Name: User\nTask: Analyzing PDF documents"
+        }
+    ],
+)
+
+print(f"Created agent: {agent.id}\n")
+
+# Attach folder to agent
+client.agents.folders.attach(
+    agent_id=agent.id,
+    folder_id=folder_id,
+)
+
+print(f"Attached folder to agent\n")
+
+# Query the PDF
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Can you summarize the main ideas from the MemGPT paper?"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+
+# Ask specific question
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "What problem does MemGPT solve?"}],
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Assistant: {msg.content}\n")
+```
+</CodeGroup>
+
+## Key Concepts
+
+<CardGroup cols={2}>
+<Card title="Folder Organization" icon="folder">
+Folders in the Letta Filesystem organize and group files, making them easy to manage and attach to agents
+</Card>
+
+<Card title="Automatic OCR" icon="file-pdf">
+PDFs are automatically processed using OCR to extract searchable text content during upload
+</Card>
+
+<Card title="Document Access" icon="link">
+Attaching folders gives agents search capabilities to retrieve relevant content from files
+</Card>
+
+<Card title="Contextual Search" icon="magnifying-glass">
+Agents use search tools to find relevant passages in documents when answering questions
+</Card>
+</CardGroup>
+
+## Use Cases
+
+<AccordionGroup>
+<Accordion title="Research Paper Analysis">
+Upload academic papers and have agents summarize findings, extract key concepts, or compare methodologies.
+</Accordion>
+
+<Accordion title="Document Q&A">
+Build customer support systems that answer questions based on product documentation or manuals.
+</Accordion>
+
+<Accordion title="Legal Document Review">
+Analyze contracts, agreements, or legal documents to extract clauses, identify risks, or summarize terms.
+</Accordion>
+
+<Accordion title="Knowledge Base Creation">
+Process multiple PDFs to build a searchable knowledge base that agents can query for information.
+</Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="Letta Filesystem" icon="folder" href="/guides/agents/filesystem">
+Learn more about the Letta Filesystem, folders, and managing file uploads
+</Card>
+
+<Card title="Agent Overview" icon="robot" href="/guides/agents/overview">
+Deep dive into building stateful agents with Letta
+</Card>
+
+<Card title="Memory Blocks" icon="brain" href="/guides/agents/memory-blocks">
+Understand how memory blocks shape agent behavior and knowledge
+</Card>
+</CardGroup>

@@ -697,6 +697,8 @@ navigation:
             path: pages/tutorials/attaching_detaching_blocks.mdx
           - page: Shared Memory Blocks
             path: pages/tutorials/shared-memory-blocks.mdx
+          - page: Talk to Your PDF
+            path: pages/tutorials/pdf_chat.mdx
       - section: Multi-Agent
         contents:
           - page: Async Multi-Agent
