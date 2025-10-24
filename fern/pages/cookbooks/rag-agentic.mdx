@@ -1242,10 +1242,12 @@ This function takes a query, connects to your database, retrieves the most relev
 
 ## Step 3: Configure an Agentic Research Assistant
 
-Next, we'll create a new agent. This agent will have a specific persona that instructs it on how to behave and, most importantly, it will be equipped with our new search tool.
+Next, we'll create a new agent. This agent will have a specific persona that instructs it on how to behave and, most importantly, it will be equipped with our new search tool with dependencies configured programmatically.
 
 Create a file named `create_agentic_agent.py` (Python) or `create_agentic_agent.ts` (TypeScript):
 
+<Tabs>
+  <Tab title="ChromaDB" language="chromadb">
 <CodeBlocks>
 ```python title="Python"
 import os
@@ -1258,13 +1260,16 @@ load_dotenv()
 # Initialize the Letta client
 client = Letta(token=os.getenv("LETTA_API_KEY"))
 
-# Create a tool from our Python function
-search_tool = client.tools.create_from_function(func=search_research_papers)
+# Create a tool from our Python function with dependencies configured
+search_tool = client.tools.create_from_function(
+    func=search_research_papers,
+    pip_requirements=[{"name": "chromadb"}]
+)
 
 # Define the agent's persona
 persona = """You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the `search_research_papers` tool to find relevant information. Then, answer the user's question based on the information returned by the tool."""
 
-# Create the agent with the tool attached
+# Create the agent with the tool and environment variables
 agent = client.agents.create(
     name="Agentic RAG Assistant",
     description="A smart agent that can search a vector database to answer questions.",
@@ -1274,7 +1279,12 @@ agent = client.agents.create(
             "value": persona
         }
     ],
-    tools=[search_tool.name]
+    tools=[search_tool.name],
+    tool_exec_environment_variables={
+        "CHROMA_API_KEY": os.getenv("CHROMA_API_KEY"),
+        "CHROMA_TENANT": os.getenv("CHROMA_TENANT"),
+        "CHROMA_DATABASE": os.getenv("CHROMA_DATABASE")
+    }
 )
 
 print(f"Agent '{agent.name}' created with ID: {agent.id}")
@@ -1293,10 +1303,11 @@ async function main() {
         token: process.env.LETTA_API_KEY || ''
     });
 
-    // Create the tool from the Python code imported from tools.ts
+    // Create the tool from the Python code with dependencies configured
     const searchTool = await client.tools.create({
         sourceCode: searchResearchPapersToolCode,
-        sourceType: 'python'
+        sourceType: 'python',
+        pipRequirements: [{ name: 'chromadb' }]
     });
 
     console.log(`Tool '${searchTool.name}' created with ID: ${searchTool.id}`);
@@ -1304,7 +1315,7 @@ async function main() {
     // Define the agent's persona
     const persona = `You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the \`search_research_papers\` tool to find relevant information. Then, answer the user's question based on the information returned by the tool.`;
 
-    // Create the agent with the tool attached
+    // Create the agent with the tool and environment variables
     const agent = await client.agents.create({
         name: 'Agentic RAG Assistant',
         description: 'A smart agent that can search a vector database to answer questions.',
@@ -1314,7 +1325,12 @@ async function main() {
                 value: persona
             }
         ],
-        toolIds: [searchTool.id]
+        toolIds: [searchTool.id],
+        toolExecEnvironmentVariables: {
+            CHROMA_API_KEY: process.env.CHROMA_API_KEY || '',
+            CHROMA_TENANT: process.env.CHROMA_TENANT || '',
+            CHROMA_DATABASE: process.env.CHROMA_DATABASE || ''
+        }
     });
 
     console.log(`Agent '${agent.name}' created with ID: ${agent.id}`);
@@ -1323,6 +1339,212 @@ async function main() {
 main().catch(console.error);
 ```
 </CodeBlocks>
+  </Tab>
+
+  <Tab title="MongoDB Atlas" language="mongo">
+<CodeBlocks>
+```python title="Python"
+import os
+from letta_client import Letta
+from dotenv import load_dotenv
+from tools import search_research_papers
+
+load_dotenv()
+
+# Initialize the Letta client
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# Create a tool from our Python function with dependencies configured
+search_tool = client.tools.create_from_function(
+    func=search_research_papers,
+    pip_requirements=[
+        {"name": "pymongo"},
+        {"name": "requests"},
+        {"name": "certifi"},
+        {"name": "dnspython"}
+    ]
+)
+
+# Define the agent's persona
+persona = """You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the `search_research_papers` tool to find relevant information. Then, answer the user's question based on the information returned by the tool."""
+
+# Create the agent with the tool and environment variables
+agent = client.agents.create(
+    name="Agentic RAG Assistant",
+    description="A smart agent that can search a vector database to answer questions.",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": persona
+        }
+    ],
+    tools=[search_tool.name],
+    tool_exec_environment_variables={
+        "MONGODB_URI": os.getenv("MONGODB_URI"),
+        "MONGODB_DB_NAME": os.getenv("MONGODB_DB_NAME"),
+        "HF_API_KEY": os.getenv("HF_API_KEY")
+    }
+)
+
+print(f"Agent '{agent.name}' created with ID: {agent.id}")
+```
+
+```typescript title="TypeScript"
+import { LettaClient } from '@letta-ai/letta-client';
+import * as dotenv from 'dotenv';
+import { searchResearchPapersToolCode } from './tools.js';
+
+dotenv.config();
+
+async function main() {
+    // Initialize the Letta client
+    const client = new LettaClient({
+        token: process.env.LETTA_API_KEY || ''
+    });
+
+    // Create the tool from the Python code with dependencies configured
+    const searchTool = await client.tools.create({
+        sourceCode: searchResearchPapersToolCode,
+        sourceType: 'python',
+        pipRequirements: [
+            { name: 'pymongo' },
+            { name: 'requests' },
+            { name: 'certifi' },
+            { name: 'dnspython' }
+        ]
+    });
+
+    console.log(`Tool '${searchTool.name}' created with ID: ${searchTool.id}`);
+
+    // Define the agent's persona
+    const persona = `You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the \`search_research_papers\` tool to find relevant information. Then, answer the user's question based on the information returned by the tool.`;
+
+    // Create the agent with the tool and environment variables
+    const agent = await client.agents.create({
+        name: 'Agentic RAG Assistant',
+        description: 'A smart agent that can search a vector database to answer questions.',
+        memoryBlocks: [
+            {
+                label: 'persona',
+                value: persona
+            }
+        ],
+        toolIds: [searchTool.id],
+        toolExecEnvironmentVariables: {
+            MONGODB_URI: process.env.MONGODB_URI || '',
+            MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || '',
+            HF_API_KEY: process.env.HF_API_KEY || ''
+        }
+    });
+
+    console.log(`Agent '${agent.name}' created with ID: ${agent.id}`);
+}
+
+main().catch(console.error);
+```
+</CodeBlocks>
+  </Tab>
+
+  <Tab title="Qdrant" language="qdrant">
+<CodeBlocks>
+```python title="Python"
+import os
+from letta_client import Letta
+from dotenv import load_dotenv
+from tools import search_research_papers
+
+load_dotenv()
+
+# Initialize the Letta client
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
+# Create a tool from our Python function with dependencies configured
+search_tool = client.tools.create_from_function(
+    func=search_research_papers,
+    pip_requirements=[
+        {"name": "qdrant-client"},
+        {"name": "requests"}
+    ]
+)
+
+# Define the agent's persona
+persona = """You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the `search_research_papers` tool to find relevant information. Then, answer the user's question based on the information returned by the tool."""
+
+# Create the agent with the tool and environment variables
+agent = client.agents.create(
+    name="Agentic RAG Assistant",
+    description="A smart agent that can search a vector database to answer questions.",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": persona
+        }
+    ],
+    tools=[search_tool.name],
+    tool_exec_environment_variables={
+        "QDRANT_URL": os.getenv("QDRANT_URL"),
+        "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
+        "HF_API_KEY": os.getenv("HF_API_KEY")
+    }
+)
+
+print(f"Agent '{agent.name}' created with ID: {agent.id}")
+```
+
+```typescript title="TypeScript"
+import { LettaClient } from '@letta-ai/letta-client';
+import * as dotenv from 'dotenv';
+import { searchResearchPapersToolCode } from './tools.js';
+
+dotenv.config();
+
+async function main() {
+    // Initialize the Letta client
+    const client = new LettaClient({
+        token: process.env.LETTA_API_KEY || ''
+    });
+
+    // Create the tool from the Python code with dependencies configured
+    const searchTool = await client.tools.create({
+        sourceCode: searchResearchPapersToolCode,
+        sourceType: 'python',
+        pipRequirements: [
+            { name: 'qdrant-client' },
+            { name: 'requests' }
+        ]
+    });
+
+    console.log(`Tool '${searchTool.name}' created with ID: ${searchTool.id}`);
+
+    // Define the agent's persona
+    const persona = `You are a world-class research assistant. Your goal is to answer questions accurately by searching through a database of research papers. When a user asks a question, first use the \`search_research_papers\` tool to find relevant information. Then, answer the user's question based on the information returned by the tool.`;
+
+    // Create the agent with the tool and environment variables
+    const agent = await client.agents.create({
+        name: 'Agentic RAG Assistant',
+        description: 'A smart agent that can search a vector database to answer questions.',
+        memoryBlocks: [
+            {
+                label: 'persona',
+                value: persona
+            }
+        ],
+        toolIds: [searchTool.id],
+        toolExecEnvironmentVariables: {
+            QDRANT_URL: process.env.QDRANT_URL || '',
+            QDRANT_API_KEY: process.env.QDRANT_API_KEY || '',
+            HF_API_KEY: process.env.HF_API_KEY || ''
+        }
+    });
+
+    console.log(`Agent '${agent.name}' created with ID: ${agent.id}`);
+}
+
+main().catch(console.error);
+```
+</CodeBlocks>
+  </Tab>
+</Tabs>
 
 <Note>
 **TypeScript users:** Notice how the TypeScript version imports `searchResearchPapersToolCode` from `tools.ts` (the file you created in Step 2). This keeps the code organized, just like the Python version imports from `tools.py`.
@@ -1341,86 +1563,7 @@ npx tsx create_agentic_agent.ts
 ```
 </CodeBlocks>
 
-### Configure Tool Dependencies and Environment Variables
-
-For the tool to work within Letta's environment, we need to configure its dependencies and environment variables through the Letta dashboard.
-
-<Steps>
-  <Step title="Find your agent">
-    Navigate to your Letta dashboard and find the "Agentic RAG Assistant" agent you just created.
-  </Step>
-  <Step title="Access the ADE">
-    Click on your agent to open the Agent Development Environment (ADE).
-  </Step>
-  <Step title="Configure Dependencies">
-    In the ADE, select **Tools** from the sidebar, find and click on the `search_research_papers` tool, then click on the **Dependencies** tab.
-
-    Add the following dependencies based on your database:
-
-    <Tabs>
-      <Tab title="ChromaDB" language="chromadb">
-    ```txt
-    chromadb
-    ```
-      </Tab>
-
-      <Tab title="MongoDB Atlas" language="mongo">
-    ```txt
-    pymongo
-    requests
-    certifi
-    dnspython
-    ```
-      </Tab>
-
-      <Tab title="Qdrant" language="qdrant">
-    ```txt
-    qdrant-client
-    requests
-    ```
-      </Tab>
-    </Tabs>
-
-    ![Letta Dependencies Configuration](/images/letta-dep-config.png)
-  </Step>
-  <Step title="Configure Environment Variables">
-    In the same tool configuration, navigate to **Simulator** > **Environment**.
-
-    Add the following environment variables with their corresponding values from your `.env` file:
-
-    <Tabs>
-      <Tab title="ChromaDB" language="chromadb">
-    ```txt
-    CHROMA_API_KEY
-    CHROMA_TENANT
-    CHROMA_DATABASE
-    ```
-      </Tab>
-
-      <Tab title="MongoDB Atlas" language="mongo">
-    ```txt
-    MONGODB_URI
-    MONGODB_DB_NAME
-    HF_API_KEY
-    ```
-      </Tab>
-
-      <Tab title="Qdrant" language="qdrant">
-    ```txt
-    QDRANT_URL
-    QDRANT_API_KEY
-    HF_API_KEY
-    ```
-      </Tab>
-    </Tabs>
-
-    Make sure to click upload button next to the environment variable to update the agent with the variable.
-
-    ![Letta Tool Configuration](/images/letta-tool-config.png)
-  </Step>
-</Steps>
-
-Now, when the agent calls this tool, Letta's execution environment will know to install the necessary dependencies and will have access to the necessary credentials to connect to your database.
+Your agent is now fully configured! Both the tool dependencies and environment variables are set programmatically.
 
 ## Step 4: Let the Agent Lead the Conversation
 
