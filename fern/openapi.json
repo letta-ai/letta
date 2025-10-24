@@ -8698,6 +8698,114 @@
         }
       }
     },
+    "/v1/groups/{group_id}/blocks/attach/{block_id}": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Attach Block To Group",
+        "description": "Attach a block to a group.\nThis will add the block to the group and all agents within the group.",
+        "operationId": "attach_block_to_group",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Group Id"
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/blocks/detach/{block_id}": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Detach Block From Group",
+        "description": "Detach a block from a group.\nThis will remove the block from the group and all agents within the group.",
+        "operationId": "detach_block_from_group",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Group Id"
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/identities/": {
       "get": {
         "tags": ["identities", "identities"],
@@ -24536,7 +24644,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "manager_agent_id": {
             "anyOf": [
@@ -24720,7 +24829,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [
@@ -24807,7 +24917,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [
@@ -24924,7 +25035,8 @@
               }
             ],
             "title": "Shared Block Ids",
-            "description": ""
+            "description": "",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -26390,7 +26502,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [

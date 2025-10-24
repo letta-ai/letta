@@ -284,3 +284,43 @@ async def reset_group_messages(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.group_manager.reset_messages_async(group_id=group_id, actor=actor)
+
+
+@router.patch("/{group_id}/blocks/attach/{block_id}", response_model=None, operation_id="attach_block_to_group")
+async def attach_block_to_group(
+    block_id: str,
+    group_id: GroupId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attach a block to a group.
+    This will add the block to the group and all agents within the group.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.group_manager.attach_block_async(
+        group_id=group_id,
+        block_id=block_id,
+        actor=actor,
+    )
+    return None
+
+
+@router.patch("/{group_id}/blocks/detach/{block_id}", response_model=None, operation_id="detach_block_from_group")
+async def detach_block_from_group(
+    block_id: str,
+    group_id: GroupId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Detach a block from a group.
+    This will remove the block from the group and all agents within the group.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    await server.group_manager.detach_block_async(
+        group_id=group_id,
+        block_id=block_id,
+        actor=actor,
+    )
+    return None

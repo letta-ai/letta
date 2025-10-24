@@ -5,8 +5,10 @@ from sqlalchemy import and_, asc, delete, desc, or_, select
 from sqlalchemy.orm import Session
 
 from letta.orm.agent import Agent as AgentModel
+from letta.orm.block import Block
 from letta.orm.errors import NoResultFound
 from letta.orm.group import Group as GroupModel
+from letta.orm.groups_blocks import GroupsBlocks
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import PrimitiveType
@@ -409,6 +411,48 @@ class GroupManager:
             if manager_agent:
                 for block in blocks:
                     session.add(BlocksAgents(agent_id=manager_agent.id, block_id=block.id, block_label=block.label))
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    async def attach_block_async(self, group_id: str, block_id: str, actor: PydanticUser) -> None:
+        """Attach a block to a group."""
+        async with db_registry.async_session() as session:
+            # Verify group exists and user has access
+            await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+
+            # Verify block exists AND user has access to it
+            await Block.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            # Check if block is already attached to the group
+            check_query = select(GroupsBlocks).where(and_(GroupsBlocks.group_id == group_id, GroupsBlocks.block_id == block_id))
+            result = await session.execute(check_query)
+            if result.scalar_one_or_none():
+                # Block already attached, no-op
+                return
+
+            # Add block to group
+            session.add(GroupsBlocks(group_id=group_id, block_id=block_id))
+            await session.commit()
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    async def detach_block_async(self, group_id: str, block_id: str, actor: PydanticUser) -> None:
+        """Detach a block from a group."""
+        async with db_registry.async_session() as session:
+            # Verify group exists and user has access
+            await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+
+            # Verify block exists AND user has access to it
+            await Block.read_async(db_session=session, identifier=block_id, actor=actor)
+
+            # Remove block from group
+            delete_group_block = delete(GroupsBlocks).where(and_(GroupsBlocks.group_id == group_id, GroupsBlocks.block_id == block_id))
+            await session.execute(delete_group_block)
+            await session.commit()
 
     @staticmethod
     def ensure_buffer_length_range_valid(

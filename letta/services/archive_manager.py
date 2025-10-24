@@ -14,6 +14,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
@@ -157,6 +158,12 @@ class ArchiveManager:
     ) -> None:
         """Attach an agent to an archive."""
         async with db_registry.async_session() as session:
+            # Verify agent exists and user has access to it
+            await validate_agent_exists_async(session, agent_id, actor)
+
+            # Verify archive exists and user has access to it
+            await ArchiveModel.read_async(db_session=session, identifier=archive_id, actor=actor)
+
             # Check if relationship already exists
             existing = await session.execute(
                 select(ArchivesAgents).where(
@@ -194,6 +201,12 @@ class ArchiveManager:
     ) -> None:
         """Detach an agent from an archive."""
         async with db_registry.async_session() as session:
+            # Verify agent exists and user has access to it
+            await validate_agent_exists_async(session, agent_id, actor)
+
+            # Verify archive exists and user has access to it
+            await ArchiveModel.read_async(db_session=session, identifier=archive_id, actor=actor)
+
             # Delete the relationship directly
             result = await session.execute(
                 delete(ArchivesAgents).where(
