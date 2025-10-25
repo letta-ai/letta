@@ -707,6 +707,14 @@ navigation:
         contents:
           - page: Building customer-specific relationship agents
             path: pages/tutorials/customer-specific-agents.mdx
+      - section: RAG
+        contents:
+          - page: RAG Overview
+            path: pages/cookbooks/rag-overview.mdx
+          - page: Connect a Vector DB to Letta
+            path: pages/cookbooks/rag-simple.mdx
+          - page: Agentic RAG
+            path: pages/cookbooks/rag-agentic.mdx
 
   - tab: leaderboard
     layout:
