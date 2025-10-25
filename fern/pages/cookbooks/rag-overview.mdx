@@ -1,0 +1,59 @@
+---
+title: RAG with Letta
+subtitle: Connect your custom RAG pipeline to Letta agents
+slug: guides/rag/overview
+---
+
+If you have an existing Retrieval-Augmented Generation (RAG) pipeline, you can connect it to your Letta agents. While Letta provides built-in features like archival memory, you can integrate your own RAG pipeline just as you would with any LLM API. This gives you full control over your data and retrieval methods.
+
+## What is RAG?
+
+Retrieval-Augmented Generation (RAG) enhances LLM responses by retrieving relevant information from external data sources before generating an answer. Instead of relying on the model's training data, a RAG system:
+
+1. Takes a user query.
+2. Searches a vector database for relevant documents.
+3. Includes those documents in the LLM's context.
+4. Generates an informed response based on the retrieved information.
+
+## Choosing Your RAG Approach
+
+Letta supports two approaches for integrating RAG, depending on how much control you want over the retrieval process.
+
+| Aspect | Simple RAG | Agentic RAG |
+|--------|------------|-------------|
+| **Who Controls Retrieval** | Your application controls when retrieval happens and what the retrieval query is. | The agent decides when to retrieve and what query to use. |
+| **Context Inclusion** | You can always include retrieval results in the context. | Retrieval happens only when the agent determines it's needed. |
+| **Latency** | Lower – typically single-hop, as the agent doesn't need to do a tool call. | Higher – requires tool calls for retrieval. |
+| **Client Code** | More complex, as it handles retrieval logic. | Simpler, as it just sends the user query. |
+| **Customization** | You have full control via your retrieval function. | You have full control via your custom tool definition. |
+
+Both approaches work with any vector database. Our tutorials include examples for **ChromaDB**, **MongoDB Atlas**, and **Qdrant**.
+
+## Next Steps
+
+Ready to integrate RAG with your Letta agents?
+
+<CardGroup cols={2}>
+  <Card
+    title="Simple RAG Tutorial"
+    icon="fa-sharp fa-light fa-magnifying-glass"
+    href="/guides/rag/simple"
+    iconPosition="left"
+  >
+    Learn how to manage retrieval on the client-side and inject context directly into your agent's messages.
+  </Card>
+  <Card
+    title="Agentic RAG Tutorial"
+    icon="fa-sharp fa-light fa-robot"
+    href="/guides/rag/agentic"
+    iconPosition="left"
+  >
+    Learn how to empower your agent with custom search tools for autonomous retrieval.
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Custom Tools](/guides/agents/custom-tools) - Learn more about creating custom tools for your agents.
+- [Memory Management](/guides/agents/memory) - Understand how Letta's built-in memory works.
+- [Agent Development Environment](/guides/ade) - Configure and test your agents in the web interface.
