@@ -6,7 +6,7 @@ from letta.orm.group import Group
 from letta.orm.user import User
 from letta.schemas.agent import AgentState
 from letta.schemas.group import ManagerType
-from letta.schemas.letta_message_content import ImageContent, TextContent
+from letta.schemas.letta_message_content import ImageContent, ReasoningContent, TextContent
 from letta.schemas.message import Message
 from letta.services.mcp.base_client import AsyncBaseMCPClient
 
