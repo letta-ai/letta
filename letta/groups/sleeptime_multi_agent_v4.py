@@ -59,8 +59,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             request_start_timestamp_ns=request_start_timestamp_ns,
         )
 
-        await self.run_sleeptime_agents()
-        response.usage.run_ids = self.run_ids
+        run_ids = await self.run_sleeptime_agents()
+        response.usage.run_ids = run_ids
         return response
 
     @trace_method
@@ -94,7 +94,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         await self.run_sleeptime_agents()
 
     @trace_method
-    async def run_sleeptime_agents(self):
+    async def run_sleeptime_agents(self) -> list[str]:
         # Get response messages
         last_response_messages = self.response_messages
 
@@ -122,6 +122,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                     # Individual task failures
                     print(f"Sleeptime agent processing failed: {e!s}")
                     raise e
+            return self.run_ids
 
     @trace_method
     async def _issue_background_task(
