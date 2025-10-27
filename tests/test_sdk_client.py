@@ -2331,7 +2331,7 @@ def test_create_agent(client: LettaSDKClient) -> None:
                 label="human",
             )
         ],
-        model="anthropic/claude-3-5-sonnet-20241022",
+        model="anthropic/claude-sonnet-4-20250514",
         embedding="openai/text-embedding-ada-002",
     )
     assert agent is not None

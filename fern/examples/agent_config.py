@@ -32,7 +32,7 @@ azure_openai_agent = client.agents.create(
 
 # anthropic
 anthropic_agent = client.agents.create(
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-20250514",
     # note: anthropic does not support embeddings so you will need another provider
     embedding="openai/text-embedding-3-small",
     # optional configuration

@@ -26,6 +26,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     BedrockPermissionError,
+    HandleNotFoundError,
     LettaAgentNotFoundError,
     LettaExpiredError,
     LettaInvalidArgumentError,
@@ -369,6 +370,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
     app.add_exception_handler(AgentNotFoundForExportError, _error_handler_404)
+    app.add_exception_handler(HandleNotFoundError, _error_handler_404)
 
     # 410 Expired errors
     app.add_exception_handler(LettaExpiredError, _error_handler_410)

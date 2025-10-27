@@ -10,7 +10,7 @@ try:
         memory_blocks=[
             {"label": "persona", "value": "I am the supervisor, and I can communicate with worker agents with the tag `worker`"}
         ],
-        model="anthropic/claude-3-5-sonnet-20241022",
+        model="anthropic/claude-sonnet-4-20250514",
         embedding="openai/text-embedding-3-small",
         tags=["supervisor"],
         tools=["send_message_to_agents_matching_all_tags"],
@@ -28,7 +28,7 @@ try:
     worker_agent = client.agents.create(
         name="worker_agent",
         memory_blocks=[{"label": "persona", "value": f"I am the worker, my supervisor agent has ID {supervisor_agent.id}"}],
-        model="anthropic/claude-3-5-sonnet-20241022",
+        model="anthropic/claude-sonnet-4-20250514",
         embedding="openai/text-embedding-3-small",
         tool_ids=[tool.id],
         tags=["worker"],

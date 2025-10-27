@@ -17,7 +17,7 @@ def llm_config():
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=32000,
-        handle="anthropic/claude-3-5-sonnet-20241022",
+        handle="anthropic/claude-sonnet-4-20250514",
         put_inner_thoughts_in_kwargs=False,
         max_tokens=4096,
         enable_reasoner=True,

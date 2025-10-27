@@ -8,7 +8,7 @@ agent = client.agents.create(
         {"label": "persona", "value": "I am a memory agent"},
         {"label": "human", "value": "Name: Bob", "limit": 10000},
     ],
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-20250514",
     embedding="openai/text-embedding-3-small",
     tags=["worker"],
 )
@@ -25,7 +25,7 @@ block = client.blocks.create(
 shared_block_agent = client.agents.create(
     name="shared_block_agent",
     memory_blocks=[block.id],
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-20250514",
     embedding="openai/text-embedding-3-small",
     tags=["worker"],
 )
