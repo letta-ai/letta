@@ -1181,12 +1181,24 @@ class Message(BaseMessage):
                         tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
-            openai_message = {
-                "content": text_content,
-                "role": self.role,
-                "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-            }
+            # Handle tool returns - if tool_returns exists, use the first one
+            if self.tool_returns and len(self.tool_returns) > 0:
+                tool_return = self.tool_returns[0]
+                if not tool_return.tool_call_id:
+                    raise TypeError("OpenAI API requires tool_call_id to be set.")
+                openai_message = {
+                    "content": tool_return.func_response,
+                    "role": self.role,
+                    "tool_call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
+                }
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+                openai_message = {
+                    "content": text_content,
+                    "role": self.role,
+                    "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                }
 
         else:
             raise ValueError(self.role)
@@ -1306,15 +1318,29 @@ class Message(BaseMessage):
                     )
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
-            assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
-            message_dicts.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-                    "output": self.content[0].text,
-                }
-            )
+            # Handle tool returns - similar pattern to Anthropic
+            if self.tool_returns:
+                for tool_return in self.tool_returns:
+                    if not tool_return.tool_call_id:
+                        raise TypeError("OpenAI Responses API requires tool_call_id to be set.")
+                    message_dicts.append(
+                        {
+                            "type": "function_call_output",
+                            "call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
+                            "output": tool_return.func_response,
+                        }
+                    )
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+                assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+                message_dicts.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                        "output": self.content[0].text,
+                    }
+                )
 
         else:
             raise ValueError(self.role)
@@ -1717,34 +1743,69 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             # NOTE: Significantly different tool calling format, more similar to function calling format
-            assert self.tool_call_id is not None, vars(self)
 
-            if self.name is None:
-                logger.warning("Couldn't find function name on tool call, defaulting to tool ID instead.")
-                function_name = self.tool_call_id
-            else:
-                function_name = self.name
+            # Handle tool returns - similar pattern to Anthropic
+            if self.tool_returns:
+                parts = []
+                for tool_return in self.tool_returns:
+                    if not tool_return.tool_call_id:
+                        raise TypeError("Google AI API requires tool_call_id to be set.")
 
-            # NOTE: Google AI API wants the function response as JSON only, no string
-            try:
-                function_response = parse_json(text_content)
-            except:
-                function_response = {"function_response": text_content}
+                    # Use the function name if available, otherwise use tool_call_id
+                    function_name = self.name if self.name else tool_return.tool_call_id
 
-            google_ai_message = {
-                "role": "function",
-                "parts": [
-                    {
-                        "functionResponse": {
-                            "name": function_name,
-                            "response": {
-                                "name": function_name,  # NOTE: name twice... why?
-                                "content": function_response,
-                            },
+                    # NOTE: Google AI API wants the function response as JSON only, no string
+                    try:
+                        function_response = parse_json(tool_return.func_response)
+                    except:
+                        function_response = {"function_response": tool_return.func_response}
+
+                    parts.append(
+                        {
+                            "functionResponse": {
+                                "name": function_name,
+                                "response": {
+                                    "name": function_name,  # NOTE: name twice... why?
+                                    "content": function_response,
+                                },
+                            }
                         }
-                    }
-                ],
-            }
+                    )
+
+                google_ai_message = {
+                    "role": "function",
+                    "parts": parts,
+                }
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+
+                if self.name is None:
+                    logger.warning("Couldn't find function name on tool call, defaulting to tool ID instead.")
+                    function_name = self.tool_call_id
+                else:
+                    function_name = self.name
+
+                # NOTE: Google AI API wants the function response as JSON only, no string
+                try:
+                    function_response = parse_json(text_content)
+                except:
+                    function_response = {"function_response": text_content}
+
+                google_ai_message = {
+                    "role": "function",
+                    "parts": [
+                        {
+                            "functionResponse": {
+                                "name": function_name,
+                                "response": {
+                                    "name": function_name,  # NOTE: name twice... why?
+                                    "content": function_response,
+                                },
+                            }
+                        }
+                    ],
+                }
 
         else:
             raise ValueError(self.role)
