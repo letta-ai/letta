@@ -37,7 +37,7 @@ async def _apply_pagination_async(
                     RunModel.id,
                     after_sort_value,
                     after_id,
-                    forward=ascending,
+                    forward=not ascending,
                     nulls_last=sort_nulls_last,
                 )
             )
@@ -55,7 +55,7 @@ async def _apply_pagination_async(
                     RunModel.id,
                     before_sort_value,
                     before_id,
-                    forward=not ascending,
+                    forward=ascending,
                     nulls_last=sort_nulls_last,
                 )
             )
