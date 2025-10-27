@@ -62,6 +62,7 @@ async def list_runs(
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
         deprecated=True,
     ),
+    project_id: Optional[str] = Query(None, description="Filter runs by project ID."),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -103,5 +104,6 @@ async def list_runs(
         step_count=step_count,
         step_count_operator=step_count_operator,
         tools_used=tools_used,
+        project_id=project_id,
     )
     return runs

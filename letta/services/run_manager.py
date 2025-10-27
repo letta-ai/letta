@@ -14,7 +14,7 @@ from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, RunStatus, PrimitiveType
+from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, PrimitiveType, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_response import LettaResponse
@@ -112,12 +112,17 @@ class RunManager:
         step_count: Optional[int] = None,
         step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
         tools_used: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
             from sqlalchemy import or_, select
 
             query = select(RunModel).filter(RunModel.organization_id == actor.organization_id)
+
+            # Filter by project_id if provided
+            if project_id:
+                query = query.filter(RunModel.project_id == project_id)
 
             # Handle agent filtering
             if agent_id:

@@ -10549,6 +10549,24 @@
             },
             "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
             "deprecated": true
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by project ID.",
+              "title": "Project Id"
+            },
+            "description": "Filter runs by project ID."
           }
         ],
         "responses": {
