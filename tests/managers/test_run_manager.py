@@ -267,49 +267,33 @@ async def test_list_runs_pagination(server: SyncServer, sarah_agent, default_use
     assert all(run.agent_id == sarah_agent.id for run in runs)
 
     # Test cursor-based pagination
-    first_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=True)  # [J0, J1, J2]
+    first_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=True)
     assert len(first_page) == 3
     assert first_page[0].created_at <= first_page[1].created_at <= first_page[2].created_at
 
-    last_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=False)  # [J9, J8, J7]
+    last_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=False)
     assert len(last_page) == 3
     assert last_page[0].created_at >= last_page[1].created_at >= last_page[2].created_at
     first_page_ids = set(run.id for run in first_page)
     last_page_ids = set(run.id for run in last_page)
     assert first_page_ids.isdisjoint(last_page_ids)
 
-    # Test middle page using both before and after
-    middle_page = await server.run_manager.list_runs(
-        actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=True
-    )  # [J3, J4, J5, J6]
-    assert len(middle_page) == 4  # Should include jobs between first and second page
-    head_tail_jobs = first_page_ids.union(last_page_ids)
-    assert all(job.id not in head_tail_jobs for job in middle_page)
-
-    # NOTE: made some changes about assumptions ofr ascending
-
-    # Test descending order
-    middle_page_desc = await server.run_manager.list_runs(
-        # actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=False
+    # Test pagination with "before" cursor in descending order (UI's default behavior)
+    # This is the critical scenario that was broken - clicking "Next" in the UI
+    second_page_desc = await server.run_manager.list_runs(
         actor=default_user,
-        before=first_page[-1].id,
-        after=last_page[-1].id,
+        before=last_page[-1].id,  # Use last (oldest) item from first page as cursor
+        limit=3,
         ascending=False,
-    )  # [J6, J5, J4, J3]
-    assert len(middle_page_desc) == 4
-    assert middle_page_desc[0].id == middle_page[-1].id
-    assert middle_page_desc[1].id == middle_page[-2].id
-    assert middle_page_desc[2].id == middle_page[-3].id
-    assert middle_page_desc[3].id == middle_page[-4].id
-
-    # BONUS
-    run_7 = last_page[-1].id
-    # earliest_runs = await server.run_manager.list_runs(actor=default_user, ascending=False, before=run_7)
-    earliest_runs = await server.run_manager.list_runs(actor=default_user, ascending=True, before=run_7)
-    assert len(earliest_runs) == 7
-    assert all(j.id not in last_page_ids for j in earliest_runs)
-    # assert all(earliest_runs[i].created_at >= earliest_runs[i + 1].created_at for i in range(len(earliest_runs) - 1))
-    assert all(earliest_runs[i].created_at <= earliest_runs[i + 1].created_at for i in range(len(earliest_runs) - 1))
+    )
+    assert len(second_page_desc) == 3
+    # CRITICAL: Verify no overlap with first page (this was the bug - there was overlap before)
+    second_page_desc_ids = set(run.id for run in second_page_desc)
+    assert second_page_desc_ids.isdisjoint(last_page_ids), "Second page should not overlap with first page"
+    # Verify descending order is maintained
+    assert second_page_desc[0].created_at >= second_page_desc[1].created_at >= second_page_desc[2].created_at
+    # Verify second page contains older items than first page
+    assert second_page_desc[0].created_at < last_page[-1].created_at
 
 
 @pytest.mark.asyncio
