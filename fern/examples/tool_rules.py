@@ -16,7 +16,7 @@ client = Letta(base_url="http://localhost:8283")
 search_agent = client.agents.create(
     name="search_agent",
     memory_blocks=[],
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-20250514",
     embedding="openai/text-embedding-3-small",
     tags=["worker"],
     tool_rules=[

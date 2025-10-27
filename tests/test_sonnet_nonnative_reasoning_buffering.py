@@ -126,7 +126,7 @@ def detect_burst_chunks(chunks: List[Tuple[float, any]], burst_threshold: float 
 @pytest.mark.parametrize(
     "model,expected_buffering",
     [
-        ("anthropic/claude-3-5-sonnet-20241022", False),  # With fine-grained streaming beta, should stream better
+        ("anthropic/claude-sonnet-4-20250514", False),  # With fine-grained streaming beta, should stream better
         ("anthropic/claude-sonnet-4-20250514", False),  # Sonnet 4 should NOT show buffering (has native reasoning)
         ("openai/gpt-4.1", False),  # GPT-4.1 should NOT show buffering (uses native reasoning)
     ],

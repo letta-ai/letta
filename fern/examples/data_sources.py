@@ -50,7 +50,7 @@ print(f"Passages in source: {passages}")
 agent = client.agents.create(
     name="my_agent",
     memory_blocks=[],
-    model="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-sonnet-4-20250514",
     embedding=embedding_configs[0].handle,
     tags=["worker"],
 )
