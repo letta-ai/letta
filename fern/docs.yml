@@ -117,6 +117,8 @@ navigation:
                 path: pages/agents/archival_search.mdx
               - page: Best Practices
                 path: pages/agents/archival_best_practices.mdx
+              - page: Exporting Archival Memories
+                path: pages/agents/archival_export.mdx
           - page: Agentic Context Engineering
             path: pages/agents/context_engineering.mdx
 
