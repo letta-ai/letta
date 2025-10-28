@@ -238,6 +238,92 @@ async def test_list_attached_agents_nonexistent_source(server: SyncServer, defau
         await server.source_manager.list_attached_agents(source_id="nonexistent-source-id", actor=default_user)
 
 
+@pytest.mark.asyncio
+async def test_get_agents_for_source_id_pagination(server: SyncServer, default_source, default_user):
+    """Test pagination functionality of get_agents_for_source_id."""
+    # Create multiple agents
+    agents = []
+    for i in range(5):
+        agent = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name=f"Test Agent {i}",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+        agents.append(agent)
+        # Add delay for SQLite to ensure distinct created_at timestamps
+        if USING_SQLITE and i < 4:
+            time.sleep(CREATE_DELAY_SQLITE)
+
+    # Attach all agents to the source
+    for agent in agents:
+        await server.agent_manager.attach_source_async(agent_id=agent.id, source_id=default_source.id, actor=default_user)
+
+    # Test 1: Get all agents (no pagination)
+    all_agent_ids = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+    )
+    assert len(all_agent_ids) == 5
+
+    # Test 2: Pagination with limit
+    first_page = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+        limit=2,
+    )
+    assert len(first_page) == 2
+
+    # Test 3: Get next page using 'after' cursor
+    second_page = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+        after=first_page[-1],
+        limit=2,
+    )
+    assert len(second_page) == 2
+    # Verify no overlap between pages
+    assert first_page[-1] not in second_page
+    assert first_page[0] not in second_page
+
+    # Test 4: Get previous page using 'before' cursor
+    prev_page = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+        before=second_page[0],
+        limit=2,
+    )
+    assert len(prev_page) == 2
+    # The previous page should contain agents from first_page
+    assert any(agent_id in first_page for agent_id in prev_page)
+
+    # Test 5: Ascending order (oldest first)
+    ascending_ids = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+        ascending=True,
+    )
+    assert len(ascending_ids) == 5
+
+    # Test 6: Descending order (newest first)
+    descending_ids = await server.source_manager.get_agents_for_source_id(
+        source_id=default_source.id,
+        actor=default_user,
+        ascending=False,
+    )
+    assert len(descending_ids) == 5
+    # Descending should be reverse of ascending
+    assert descending_ids == list(reversed(ascending_ids))
+
+    # Test 7: Verify all agent IDs are correct
+    created_agent_ids = {agent.id for agent in agents}
+    assert set(all_agent_ids) == created_agent_ids
+
+
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
