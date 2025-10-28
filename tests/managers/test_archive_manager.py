@@ -711,8 +711,10 @@ async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_
     agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
     assert len(agents) == 0
 
-    # attempting to detach the deleted agent should be idempotent (no error)
-    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
+    # attempting to detach the deleted agent
+    # 2025-10-27: used to be idempotent (no error) but now we raise an error
+    with pytest.raises(LettaAgentNotFoundError):
+        await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
 
     # cleanup
     await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
