@@ -1,5 +1,5 @@
 from conftest import create_test_module
-from letta_client.errors import UnprocessableEntityError
+from letta_client import UnprocessableEntityError
 
 from letta.constants import CORE_MEMORY_HUMAN_CHAR_LIMIT, CORE_MEMORY_PERSONA_CHAR_LIMIT
 
