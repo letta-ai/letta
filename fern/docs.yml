@@ -462,25 +462,6 @@ navigation:
                 path: pages/concepts/memgpt.mdx
           - section: Legacy & migration
             contents:
-<<<<<<< HEAD
-              - page: Legacy architecture overview
-                path: pages/legacy/architectures_overview.mdx
-              - page: Migration guide
-                path: pages/legacy/migration_guide.mdx
-              - page: MemGPT agents (legacy)
-                path: pages/legacy/memgpt_agents_legacy.mdx
-              - page: Workflows (legacy)
-                path: pages/legacy/workflows_legacy.mdx
-              - page: Low-latency agents (legacy)
-                path: pages/legacy/low_latency_agents_legacy.mdx
-              - page: ReAct agents (legacy)
-                path: pages/legacy/react_agents_legacy.mdx
-              - page: Heartbeats (legacy)
-                path: pages/legacy/heartbeats_legacy.mdx
-              - page: Architecture naming history
-                path: pages/legacy/naming_history.mdx
-
-=======
               - page: Railway
                 path: pages/deployment/railway.mdx
           #- page: Deploying with Docker
@@ -594,7 +575,6 @@ navigation:
             path: pages/cloud/monitoring.mdx
           - page: Responses & Tracing
             path: pages/cloud/responses.mdx
->>>>>>> fa58a418b (docs: pricing docs fix (#5791))
   - tab: ref
     layout:
       - link: Chat on Discord

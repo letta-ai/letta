@@ -460,15 +460,6 @@ class SyncServer(object):
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
                 )
 
-        # update with model_settings
-        if request.model_settings is not None:
-            update_llm_config_params = request.model_settings._to_legacy_config_params()
-            request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
-
-        # Copy parallel_tool_calls from request to llm_config if provided
-        if request.parallel_tool_calls is not None:
-            request.llm_config.parallel_tool_calls = request.parallel_tool_calls
-
         if request.reasoning is None:
             request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
 
@@ -1144,32 +1135,20 @@ class SyncServer(object):
         max_reasoning_tokens: Optional[int] = None,
         enable_reasoner: Optional[bool] = None,
     ) -> LLMConfig:
-        try:
-            provider_name, model_name = handle.split("/", 1)
-            provider = await self.get_provider_from_name_async(provider_name, actor)
-
-            all_llm_configs = await provider.list_llm_models_async()
-            llm_configs = [config for config in all_llm_configs if config.handle == handle]
-            if not llm_configs:
-                llm_configs = [config for config in all_llm_configs if config.model == model_name]
-            if not llm_configs:
-                available_handles = [config.handle for config in all_llm_configs]
-                raise HandleNotFoundError(handle, available_handles)
-        except ValueError as e:
-            llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
-            if not llm_configs:
-                llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
-            if not llm_configs:
-                raise e
-
-        if len(llm_configs) == 1:
-            llm_config = llm_configs[0]
-        elif len(llm_configs) > 1:
-            raise LettaInvalidArgumentError(
-                f"Multiple LLM models with name {model_name} supported by {provider_name}", argument_name="model_name"
-            )
-        else:
-            llm_config = llm_configs[0]
+        """String match the `handle` to the available configs"""
+        matched_llm_config = None
+        available_handles = []
+        # Get all enabled providers (including BYOK providers from database)
+        providers = await self.get_enabled_providers_async(actor=actor)
+        for provider in providers:
+            llm_configs = await provider.list_llm_models_async()
+            for llm_config in llm_configs:
+                available_handles.append(llm_config.handle)
+                if llm_config.handle == handle:
+                    matched_llm_config = llm_config
+                    break
+        if not matched_llm_config:
+            raise HandleNotFoundError(handle, available_handles)
 
         if context_window_limit is not None:
             if context_window_limit > llm_config.context_window:
@@ -1201,30 +1180,17 @@ class SyncServer(object):
     async def get_embedding_config_from_handle_async(
         self, actor: User, handle: str, embedding_chunk_size: int = constants.DEFAULT_EMBEDDING_CHUNK_SIZE
     ) -> EmbeddingConfig:
-        try:
-            provider_name, model_name = handle.split("/", 1)
-            provider = await self.get_provider_from_name_async(provider_name, actor)
-
-            all_embedding_configs = await provider.list_embedding_models_async()
-            embedding_configs = [config for config in all_embedding_configs if config.handle == handle]
-            if not embedding_configs:
-                raise LettaInvalidArgumentError(
-                    f"Embedding model {model_name} is not supported by {provider_name}", argument_name="model_name"
-                )
-        except LettaInvalidArgumentError as e:
-            # search local configs
-            embedding_configs = [config for config in self.get_local_embedding_configs() if config.handle == handle]
-            if not embedding_configs:
-                raise e
-
-        if len(embedding_configs) == 1:
-            embedding_config = embedding_configs[0]
-        elif len(embedding_configs) > 1:
-            raise LettaInvalidArgumentError(
-                f"Multiple embedding models with name {model_name} supported by {provider_name}", argument_name="model_name"
-            )
-        else:
-            embedding_config = embedding_configs[0]
+        matched_embedding_config = None
+        available_handles = []
+        # Get all enabled providers (including BYOK providers from database)
+        providers = await self.get_enabled_providers_async(actor=actor)
+        for provider in providers:
+            embedding_configs = await provider.list_embedding_models_async()
+            for embedding_config in embedding_configs:
+                available_handles.append(embedding_config.handle)
+                if embedding_config.handle == handle:
+                    matched_embedding_config = embedding_config
+                    break
 
         if embedding_chunk_size:
             embedding_config.embedding_chunk_size = embedding_chunk_size

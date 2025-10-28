@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from letta.orm.passage import ArchivalPassage, SourcePassage
     from letta.orm.passage_tag import PassageTag
     from letta.orm.provider import Provider
-    from letta.orm.provider_model import ProviderModel
     from letta.orm.provider_trace import ProviderTrace
     from letta.orm.run import Run
     from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, SandboxEnvironmentVariable
