@@ -5,7 +5,7 @@ from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndi
 from pydantic import BaseModel, Field
 
 from letta.helpers import ToolRulesSolver
-from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
+from letta.schemas.enums import AgentStepStatus, JobStatus, PrimitiveType, ProviderType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 
@@ -16,7 +16,7 @@ class AgentStepState(BaseModel):
 
 
 class LLMBatchItemBase(OrmMetadataBase, validate_assignment=True):
-    __id_prefix__ = "batch_item"
+    __id_prefix__ = PrimitiveType.BATCH_ITEM.value
 
 
 class LLMBatchItem(LLMBatchItemBase, validate_assignment=True):
@@ -47,7 +47,7 @@ class LLMBatchJob(OrmMetadataBase, validate_assignment=True):
     Each job corresponds to one API call that sends multiple messages to the LLM provider, and aggregates responses across all agent submissions.
     """
 
-    __id_prefix__ = "batch_req"
+    __id_prefix__ = PrimitiveType.BATCH_REQUEST.value
 
     id: Optional[str] = Field(None, description="The id of the batch job. Assigned by the database.")
     status: JobStatus = Field(..., description="The current status of the batch (e.g., created, in_progress, done).")

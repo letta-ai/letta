@@ -13,12 +13,13 @@ from letta.functions.mcp_client.types import (
     StreamableHTTPServerConfig,
 )
 from letta.orm.mcp_oauth import OAuthSessionStatus
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.secret import Secret
 
 
 class BaseMCPServer(LettaBase):
-    __id_prefix__ = "mcp_server"
+    __id_prefix__ = PrimitiveType.MCP_SERVER.value
 
 
 # Create Schemas (for POST requests)
@@ -101,7 +102,7 @@ UpdateMCPServerUnion = Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStr
 
 # OAuth-related schemas
 class BaseMCPOAuth(LettaBase):
-    __id_prefix__ = "mcp-oauth"
+    __id_prefix__ = PrimitiveType.MCP_OAUTH.value
 
 
 class MCPOAuthSession(BaseMCPOAuth):

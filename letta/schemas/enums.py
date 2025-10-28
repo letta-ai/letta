@@ -26,6 +26,27 @@ class PrimitiveType(str, Enum):
     STEP = "step"
     IDENTITY = "identity"
 
+    # Infrastructure types
+    MCP_SERVER = "mcp_server"
+    MCP_OAUTH = "mcp-oauth"
+    FILE_AGENT = "file_agent"
+
+    # Configuration types
+    SANDBOX_ENV = "sandbox-env"
+    AGENT_ENV = "agent-env"
+
+    # Core entity types
+    USER = "user"
+    ORGANIZATION = "org"
+    TOOL_RULE = "tool_rule"
+
+    # Batch processing types
+    BATCH_ITEM = "batch_item"
+    BATCH_REQUEST = "batch_req"
+
+    # Telemetry types
+    PROVIDER_TRACE = "provider_trace"
+
 
 class ProviderType(str, Enum):
     anthropic = "anthropic"

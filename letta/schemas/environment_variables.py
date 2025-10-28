@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.schemas.secret import Secret
 from letta.settings import settings
@@ -52,7 +53,7 @@ class EnvironmentVariableUpdateBase(LettaBase):
 
 # Environment Variable
 class SandboxEnvironmentVariableBase(EnvironmentVariableBase):
-    __id_prefix__ = "sandbox-env"
+    __id_prefix__ = PrimitiveType.SANDBOX_ENV.value
     sandbox_config_id: str = Field(..., description="The ID of the sandbox config this environment variable belongs to.")
 
 
@@ -70,7 +71,7 @@ class SandboxEnvironmentVariableUpdate(EnvironmentVariableUpdateBase):
 
 # Agent-Specific Environment Variable
 class AgentEnvironmentVariableBase(EnvironmentVariableBase):
-    __id_prefix__ = "agent-env"
+    __id_prefix__ = PrimitiveType.AGENT_ENV.value
     agent_id: str = Field(..., description="The ID of the agent this environment variable belongs to.")
 
 
