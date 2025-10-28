@@ -464,6 +464,7 @@ navigation:
             # path: pages/cloud/models.mdx
           - page: Custom API Keys
             path: pages/cloud/api_keys.mdx
+            hidden: true
           - page: Role-Based Access Control
             path: pages/cloud/rbac.mdx
       - section: Deploying Agents
