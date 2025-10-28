@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from letta_client import LettaMessageUnion
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.responses import ResponseReasoningItem
 from pydantic import BaseModel, Field, field_validator, model_validator
