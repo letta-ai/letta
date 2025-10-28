@@ -867,12 +867,22 @@ async def generate_tool_from_prompt(
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
     output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
     pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
+
+    # Derive JSON schema from the generated source code
+    try:
+        json_schema = derive_openai_json_schema(source_code=output["raw_source_code"])
+    except Exception as e:
+        raise LettaInvalidArgumentError(
+            message=f"Failed to generate JSON schema for tool '{request.tool_name}': {e}", argument_name="tool_name"
+        )
+
     return GenerateToolOutput(
         tool=Tool(
             name=request.tool_name,
             source_type="python",
             source_code=output["raw_source_code"],
             pip_requirements=pip_requirements,
+            json_schema=json_schema,
         ),
         sample_args=json.loads(output["sample_args_json"]),
         response=response.choices[0].message.content,
