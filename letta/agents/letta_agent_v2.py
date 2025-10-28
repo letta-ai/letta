@@ -911,6 +911,10 @@ class LettaAgentV2(BaseAgentV2):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
+            for message in messages_to_persist:
+                message.step_id = step_id
+                message.run_id = run_id
+
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist,
                 actor=self.actor,
@@ -1027,6 +1031,10 @@ class LettaAgentV2(BaseAgentV2):
                 is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
+
+        for message in messages_to_persist:
+            message.step_id = step_id
+            message.run_id = run_id
 
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
