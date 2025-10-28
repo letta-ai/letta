@@ -278,15 +278,14 @@ class StepManager:
         ascending: bool = False,
     ) -> List[PydanticMessage]:
         async with db_registry.async_session() as session:
-            messages = MessageModel.list(
+            messages = await MessageModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
                 ascending=ascending,
                 limit=limit,
                 actor=actor,
-                join_model=StepModel,
-                join_conditions=[MessageModel.step.id == step_id],
+                step_id=step_id,
             )
             return [message.to_pydantic() for message in messages]
 
