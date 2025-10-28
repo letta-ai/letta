@@ -462,6 +462,7 @@ navigation:
                 path: pages/concepts/memgpt.mdx
           - section: Legacy & migration
             contents:
+<<<<<<< HEAD
               - page: Legacy architecture overview
                 path: pages/legacy/architectures_overview.mdx
               - page: Migration guide
@@ -479,6 +480,121 @@ navigation:
               - page: Architecture naming history
                 path: pages/legacy/naming_history.mdx
 
+=======
+              - page: Railway
+                path: pages/deployment/railway.mdx
+          #- page: Deploying with Docker
+          #  icon: fa-brands fa-docker
+          #  path: pages/server/docker.mdx
+          #- page: Install Letta via pip
+          #  icon: fa-brands fa-python
+          #  path: pages/server/pip.mdx
+      - section: Connecting Model Providers
+        contents:
+          - page: Supported Models
+            path: pages/selfhosting/supported-models.mdx
+          - page: OpenAI
+            path: pages/models/openai.mdx
+          - page: Anthropic
+            path: pages/models/anthropic.mdx
+          - page: Gemini (Google AI)
+            path: pages/models/google.mdx
+          - page: LM Studio
+            path: pages/models/lmstudio.mdx
+          - section: See More Providers
+            icon: fa-sharp fa-light fa-caret-down
+            contents:
+              - page: OpenAI proxy
+                path: pages/models/openai_proxy.mdx
+              - page: DeepSeek
+                path: pages/models/deepseek.mdx
+              - page: AWS Bedrock
+                path: pages/models/aws_bedrock.mdx
+              - page: Groq
+                path: pages/models/groq.mdx
+              - page: xAI (Grok)
+                path: pages/models/xai.mdx
+              - page: Together
+                path: pages/models/together.mdx
+              - page: Google Vertex
+                path: pages/models/google_vertex.mdx
+              - page: Azure OpenAI
+                path: pages/models/azure.mdx
+              - page: Ollama
+                path: pages/models/ollama.mdx
+              - page: vLLM
+                path: pages/models/vllm.mdx
+      #- section: Remote Deployments
+      #  contents:
+      #    - page: Overview
+      #      path: pages/deployment/remote.mdx
+      #    - page: Example - Deploy on Railway
+      #      path: pages/deployment/railway.mdx
+      - section: Advanced
+        contents:
+        #- page: Install with pip
+        #  path: pages/server/pip.mdx
+        - page: Database Configuration
+          path: pages/selfhosting/postgres.mdx
+        - page: Performance
+          path: pages/selfhosting/performance.mdx
+        - page: pgadmin
+          path: pages/selfhosting/pgadmin.mdx
+        - page: Installing from Source
+          path: pages/server/source.mdx
+  - tab: cloud
+    layout:
+      - link: Chat on Discord
+        icon: fa-brands fa-discord
+        href: https://discord.gg/letta
+      - link: Developer Forum
+        icon: fa-sharp fa-light fa-comments
+        href: https://forum.letta.com
+      - link: DeepLearning.AI Course
+        icon: fa-sharp fa-light fa-building-columns
+        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - section: Get started
+        contents:
+          - page: Overview
+            path: pages/cloud/overview.mdx
+          #- page: Quickstart
+          #  path: pages/getting-started/quickstart_cloud.mdx
+          - page: Get a Letta Cloud API key
+            path: pages/cloud/api_key.mdx
+      - section: Account
+        contents:
+          - page: Plans & Pricing
+            path: pages/cloud/pricing.mdx
+          # - page: Available Models
+            # path: pages/cloud/models.mdx
+          - page: Custom API Keys
+            path: pages/cloud/api_keys.mdx
+            hidden: true
+          - page: Role-Based Access Control
+            path: pages/cloud/rbac.mdx
+      - section: Deploying Agents
+        contents:
+          - page: Agent Templates Overview
+            path: pages/cloud/templates.mdx
+          - page: Template Versioning
+            path: pages/cloud/versions.mdx
+          - page: Memory Variables
+            path: pages/cloud/variables.mdx
+          - page: Client-Side Access Tokens
+            path: pages/cloud/client-side-tokens.mdx
+          # - page: Deploying via the SDK
+            # path: pages/cloud/variables.mdx
+          # - page: Deploying via the ADE
+            # path: pages/cloud/versions.mdx
+      - section: Observability
+        contents:
+          - page: Overview
+            path: pages/cloud/observability.mdx
+          - page: Monitoring
+            path: pages/cloud/monitoring.mdx
+          - page: Responses & Tracing
+            path: pages/cloud/responses.mdx
+>>>>>>> fa58a418b (docs: pricing docs fix (#5791))
   - tab: ref
     layout:
       - link: Chat on Discord
