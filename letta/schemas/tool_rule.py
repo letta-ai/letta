@@ -4,14 +4,14 @@ from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from letta.schemas.enums import ToolRuleType
+from letta.schemas.enums import PrimitiveType, ToolRuleType
 from letta.schemas.letta_base import LettaBase
 
 logger = logging.getLogger(__name__)
 
 
 class BaseToolRule(LettaBase):
-    __id_prefix__ = "tool_rule"
+    __id_prefix__ = PrimitiveType.TOOL_RULE.value
     tool_name: str = Field(..., description="The name of the tool. Must exist in the database for the user's organization.")
     type: ToolRuleType = Field(..., description="The type of the message.")
     prompt_template: Optional[str] = Field(

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
 from letta.schemas.group import Group, GroupCreate
 from letta.schemas.letta_message import ApprovalReturn
@@ -42,7 +42,7 @@ class ImportResult:
 class MessageSchema(MessageCreate):
     """Message with human-readable ID for agent file"""
 
-    __id_prefix__ = "message"
+    __id_prefix__ = PrimitiveType.MESSAGE.value
     id: str = Field(..., description="Human-readable identifier for this message in the file")
 
     # Override the role field to accept all message roles, not just user/system/assistant
@@ -96,7 +96,7 @@ class MessageSchema(MessageCreate):
 class FileAgentSchema(FileAgentBase):
     """File-Agent relationship with human-readable ID for agent file"""
 
-    __id_prefix__ = "file_agent"
+    __id_prefix__ = PrimitiveType.FILE_AGENT.value
     id: str = Field(..., description="Human-readable identifier for this file-agent relationship in the file")
 
     @classmethod
@@ -120,7 +120,7 @@ class FileAgentSchema(FileAgentBase):
 class AgentSchema(CreateAgent):
     """Agent with human-readable ID for agent file"""
 
-    __id_prefix__ = "agent"
+    __id_prefix__ = PrimitiveType.AGENT.value
     id: str = Field(..., description="Human-readable identifier for this agent in the file")
     in_context_message_ids: List[str] = Field(
         default_factory=list, description="List of message IDs that are currently in the agent's context"
@@ -198,7 +198,7 @@ class AgentSchema(CreateAgent):
 class GroupSchema(GroupCreate):
     """Group with human-readable ID for agent file"""
 
-    __id_prefix__ = "group"
+    __id_prefix__ = PrimitiveType.GROUP.value
     id: str = Field(..., description="Human-readable identifier for this group in the file")
 
     @classmethod
@@ -220,7 +220,7 @@ class GroupSchema(GroupCreate):
 class BlockSchema(CreateBlock):
     """Block with human-readable ID for agent file"""
 
-    __id_prefix__ = "block"
+    __id_prefix__ = PrimitiveType.BLOCK.value
     id: str = Field(..., description="Human-readable identifier for this block in the file")
 
     @classmethod
@@ -246,7 +246,7 @@ class BlockSchema(CreateBlock):
 class FileSchema(FileMetadataBase):
     """File with human-readable ID for agent file"""
 
-    __id_prefix__ = "file"
+    __id_prefix__ = PrimitiveType.FILE.value
     id: str = Field(..., description="Human-readable identifier for this file in the file")
 
     @classmethod
@@ -276,7 +276,7 @@ class FileSchema(FileMetadataBase):
 class SourceSchema(SourceCreate):
     """Source with human-readable ID for agent file"""
 
-    __id_prefix__ = "source"
+    __id_prefix__ = PrimitiveType.SOURCE.value
     id: str = Field(..., description="Human-readable identifier for this source in the file")
 
     @classmethod
@@ -299,7 +299,7 @@ class SourceSchema(SourceCreate):
 class ToolSchema(Tool):
     """Tool with human-readable ID for agent file"""
 
-    __id_prefix__ = "tool"
+    __id_prefix__ = PrimitiveType.TOOL.value
     id: str = Field(..., description="Human-readable identifier for this tool in the file")
 
     @classmethod
@@ -311,7 +311,7 @@ class ToolSchema(Tool):
 class MCPServerSchema(BaseModel):
     """MCP server schema for agent files with remapped ID."""
 
-    __id_prefix__ = "mcp_server"
+    __id_prefix__ = PrimitiveType.MCP_SERVER.value
 
     id: str = Field(..., description="Human-readable MCP server ID")
     server_type: str

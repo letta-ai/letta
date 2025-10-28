@@ -4,11 +4,12 @@ from typing import Optional
 from pydantic import Field
 
 from letta.constants import DEFAULT_ORG_ID
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
 class UserBase(LettaBase):
-    __id_prefix__ = "user"
+    __id_prefix__ = PrimitiveType.USER.value
 
 
 class User(UserBase):

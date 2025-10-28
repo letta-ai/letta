@@ -2,11 +2,12 @@ from typing import List, Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
 class RunMetricsBase(LettaBase):
-    __id_prefix__ = "run"
+    __id_prefix__ = PrimitiveType.RUN.value
 
 
 class RunMetrics(RunMetricsBase):

@@ -6,11 +6,12 @@ from pydantic import Field, field_validator
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
 
 
 class PassageBase(OrmMetadataBase):
-    __id_prefix__ = "passage"
+    __id_prefix__ = PrimitiveType.PASSAGE.value
 
     is_deleted: bool = Field(False, description="Whether this passage is deleted or not.")
 
