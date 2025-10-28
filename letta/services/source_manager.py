@@ -326,13 +326,25 @@ class SourceManager:
     @enforce_types
     @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
-    async def get_agents_for_source_id(self, source_id: str, actor: PydanticUser) -> List[str]:
+    async def get_agents_for_source_id(
+        self,
+        source_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+    ) -> List[str]:
         """
         Get all agent IDs associated with a given source ID.
 
         Args:
             source_id: ID of the source to find agents for
             actor: User performing the action
+            before: Agent ID cursor for pagination (upper bound)
+            after: Agent ID cursor for pagination (lower bound)
+            limit: Maximum number of agent IDs to return
+            ascending: Sort direction by creation time
 
         Returns:
             List[str]: List of agent IDs that have this source attached
@@ -341,8 +353,84 @@ class SourceManager:
             # Verify source exists and user has permission to access it
             await self._validate_source_exists_async(session, source_id, actor)
 
-            # Query the junction table directly for performance
-            query = select(SourcesAgents.agent_id).where(SourcesAgents.source_id == source_id)
+            # Get reference objects for pagination
+            before_obj = None
+            after_obj = None
+
+            if before:
+                before_obj = await session.get(AgentModel, before)
+                if not before_obj:
+                    from letta.orm.errors import NoResultFound
+
+                    raise NoResultFound(f"No Agent found with id {before}")
+
+            if after:
+                after_obj = await session.get(AgentModel, after)
+                if not after_obj:
+                    from letta.orm.errors import NoResultFound
+
+                    raise NoResultFound(f"No Agent found with id {after}")
+
+            # Build query with join to AgentModel for ordering and pagination
+            query = (
+                select(AgentModel.id)
+                .join(SourcesAgents, AgentModel.id == SourcesAgents.agent_id)
+                .where(
+                    SourcesAgents.source_id == source_id,
+                    AgentModel.organization_id == actor.organization_id,
+                    AgentModel.is_deleted == False,
+                )
+            )
+
+            # Apply pagination conditions
+            if before_obj or after_obj:
+                from sqlalchemy import and_, or_
+
+                conditions = []
+
+                if before_obj and after_obj:
+                    # Window-based query
+                    conditions.append(
+                        or_(
+                            AgentModel.created_at < before_obj.created_at,
+                            and_(AgentModel.created_at == before_obj.created_at, AgentModel.id < before_obj.id),
+                        )
+                    )
+                    conditions.append(
+                        or_(
+                            AgentModel.created_at > after_obj.created_at,
+                            and_(AgentModel.created_at == after_obj.created_at, AgentModel.id > after_obj.id),
+                        )
+                    )
+                else:
+                    if before_obj:
+                        conditions.append(
+                            or_(
+                                AgentModel.created_at < before_obj.created_at
+                                if ascending
+                                else AgentModel.created_at > before_obj.created_at,
+                                and_(AgentModel.created_at == before_obj.created_at, AgentModel.id < before_obj.id),
+                            )
+                        )
+                    if after_obj:
+                        conditions.append(
+                            or_(
+                                AgentModel.created_at > after_obj.created_at if ascending else AgentModel.created_at < after_obj.created_at,
+                                and_(AgentModel.created_at == after_obj.created_at, AgentModel.id > after_obj.id),
+                            )
+                        )
+
+                if conditions:
+                    query = query.where(and_(*conditions))
+
+            # Apply ordering
+            if ascending:
+                query = query.order_by(AgentModel.created_at.asc(), AgentModel.id.asc())
+            else:
+                query = query.order_by(AgentModel.created_at.desc(), AgentModel.id.desc())
+
+            # Apply limit
+            query = query.limit(limit)
 
             result = await session.execute(query)
             agent_ids = result.scalars().all()
