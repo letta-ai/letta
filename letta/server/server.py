@@ -434,7 +434,6 @@ class SyncServer(object):
                 assert request.llm_config.handle == request.model, (
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
                 )
-        print("GOT LLM CONFIG", request.llm_config)
 
         if request.reasoning is None:
             request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
@@ -1039,7 +1038,9 @@ class SyncServer(object):
         """String match the `handle` to the available configs"""
         matched_llm_config = None
         available_handles = []
-        for provider in self._enabled_providers:
+        # Get all enabled providers (including BYOK providers from database)
+        providers = await self.get_enabled_providers_async(actor=actor)
+        for provider in providers:
             llm_configs = await provider.list_llm_models_async()
             for llm_config in llm_configs:
                 available_handles.append(llm_config.handle)
@@ -1081,7 +1082,9 @@ class SyncServer(object):
     ) -> EmbeddingConfig:
         matched_embedding_config = None
         available_handles = []
-        for provider in self._enabled_providers:
+        # Get all enabled providers (including BYOK providers from database)
+        providers = await self.get_enabled_providers_async(actor=actor)
+        for provider in providers:
             embedding_configs = await provider.list_embedding_models_async()
             for embedding_config in embedding_configs:
                 available_handles.append(embedding_config.handle)
