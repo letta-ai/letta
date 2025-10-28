@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from letta.constants import LETTA_MODEL_ENDPOINT
+from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import AgentType, ProviderCategory
 
@@ -163,6 +164,24 @@ class LLMConfig(BaseModel):
 
         return values
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_codex_reasoning_effort(cls, values):
+        """
+        Validate that gpt-5-codex models do not use 'minimal' reasoning effort.
+        Codex models require at least 'low' reasoning effort.
+        """
+        from letta.llm_api.openai_client import does_not_support_minimal_reasoning
+
+        model = values.get("model")
+        reasoning_effort = values.get("reasoning_effort")
+
+        if model and does_not_support_minimal_reasoning(model) and reasoning_effort == "minimal":
+            raise LettaInvalidArgumentError(
+                f"Model '{model}' does not support 'minimal' reasoning effort. Please use 'low', 'medium', or 'high' instead."
+            )
+        return values
+
     @classmethod
     def default_config(cls, model_name: str):
         """
@@ -277,6 +296,8 @@ class LLMConfig(BaseModel):
         - Google Gemini (2.5 family): force disabled until native reasoning supported
         - All others: disabled (no simulated reasoning via kwargs)
         """
+        from letta.llm_api.openai_client import does_not_support_minimal_reasoning
+
         # V1 agent policy: do not allow simulated reasoning for non-native models
         if agent_type is not None and agent_type == AgentType.letta_v1_agent:
             # OpenAI native reasoning models: always on
@@ -284,7 +305,8 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"
@@ -324,7 +346,8 @@ class LLMConfig(BaseModel):
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
                     # GPT-5 models default to minimal, others to medium
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"
@@ -357,7 +380,8 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
                     # GPT-5 models default to minimal, others to medium
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"

@@ -64,6 +64,14 @@ def is_openai_reasoning_model(model: str) -> bool:
     return is_reasoning
 
 
+def does_not_support_minimal_reasoning(model: str) -> bool:
+    """Check if the model does not support minimal reasoning effort.
+
+    Currently, models that contain codex don't support minimal reasoning.
+    """
+    return "codex" in model.lower()
+
+
 def is_openai_5_model(model: str) -> bool:
     """Utility function to check if the model is a '5' model"""
     return model.startswith("gpt-5")
