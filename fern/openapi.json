@@ -15952,6 +15952,11 @@
                     "type": "boolean",
                     "description": "If true, the core memories will be preserved in the template version when migrating agents"
                   },
+                  "block_reconciliation_strategy": {
+                    "type": "string",
+                    "enum": ["reconcile-all", "preserve-deleted"],
+                    "description": "Strategy for reconciling memory blocks during migration: \"reconcile-all\" deletes blocks not in the template, \"preserve-deleted\" keeps them. Defaults to \"preserve-deleted\"."
+                  },
                   "migrate_agents": {
                     "type": "boolean",
                     "description": "If true, existing agents attached to this template will be migrated to the new template version"
