@@ -121,12 +121,29 @@ navigation:
             path: pages/agents/tools.mdx
           - section: Tool types
             contents:
+<<<<<<< HEAD
             - page: Base tools
               path: pages/agents/base_tools.mdx
             - page: Custom tools
               path: pages/agents/custom_tools.mdx
             - page: Built-in tools
               path: pages/agents/prebuilt_tools.mdx
+=======
+              - page: Web Search
+                path: pages/agents/web_search.mdx
+              - page: Code Interpreter
+                path: pages/agents/run_code.mdx
+              - page: Fetch Webpage
+                path: pages/agents/fetch_webpage.mdx
+          - page: Custom Tools
+            path: pages/agents/custom_tools.mdx
+          - page: Tool Rules
+            path: pages/agents/tool_rules.mdx
+          - page: Tool Variables
+            path: pages/agents/tool_variables.mdx
+          - page: Human-in-the-Loop
+            path: pages/agents/human_in_the_loop.mdx
+>>>>>>> a1b67f5b7 (docs: move Human-in-the-Loop out of experimental section (#5828))
           - section: Model Context Protocol
             contents:
               - page: MCP overview
@@ -349,7 +366,11 @@ navigation:
         contents:
           - page: Groups
             path: pages/agents/groups.mdx
+<<<<<<< HEAD
           - page: Sleep-time agents
+=======
+          - page: Sleep-time Agents
+>>>>>>> a1b67f5b7 (docs: move Human-in-the-Loop out of experimental section (#5828))
             path: pages/agents/sleep_time_agents.mdx
           - section: Voice agents
             contents:
