@@ -41,7 +41,7 @@ from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
@@ -1396,7 +1396,7 @@ async def send_message(
 # noinspection PyInconsistentReturns
 @router.post(
     "/{agent_id}/messages/stream",
-    response_model=None,
+    response_model=LettaStreamingResponse,
     operation_id="create_agent_message_stream",
     responses={
         200: {

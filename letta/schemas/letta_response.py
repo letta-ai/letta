@@ -4,11 +4,24 @@ import re
 from datetime import datetime
 from typing import List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.enums import JobStatus, MessageStreamStatus
-from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_message import (
+    ApprovalRequestMessage,
+    ApprovalResponseMessage,
+    AssistantMessage,
+    HiddenReasoningMessage,
+    LettaMessage,
+    LettaMessageUnion,
+    LettaPing,
+    ReasoningMessage,
+    SystemMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
+    UserMessage,
+)
 from letta.schemas.letta_stop_reason import LettaStopReason
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
@@ -170,8 +183,27 @@ class LettaResponse(BaseModel):
         return html_output
 
 
-# The streaming response is either [DONE], [DONE_STEP], [DONE], an error, or a LettaMessage
-LettaStreamingResponse = Union[LettaMessage, MessageStreamStatus, LettaStopReason, LettaUsageStatistics]
+# The streaming response can be any of the individual message types, plus metadata types
+class LettaStreamingResponse(RootModel):
+    """
+    Streaming response type for Server-Sent Events (SSE) endpoints.
+    Each event in the stream will be one of these types.
+    """
+
+    root: Union[
+        SystemMessage,
+        UserMessage,
+        ReasoningMessage,
+        HiddenReasoningMessage,
+        ToolCallMessage,
+        ToolReturnMessage,
+        AssistantMessage,
+        ApprovalRequestMessage,
+        ApprovalResponseMessage,
+        LettaPing,
+        LettaStopReason,
+        LettaUsageStatistics,
+    ] = Field(..., discriminator="message_type")
 
 
 class LettaBatchResponse(BaseModel):

@@ -7293,7 +7293,9 @@
             "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LettaStreamingResponse"
+                }
               },
               "text/event-stream": {
                 "description": "Server-Sent Events stream"
@@ -27280,6 +27282,21 @@
         "required": ["file_id"],
         "title": "LettaImage"
       },
+      "LettaPing": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "ping",
+            "title": "Message Type",
+            "description": "The type of the message.",
+            "default": "ping"
+          }
+        },
+        "type": "object",
+        "required": ["message_type"],
+        "title": "LettaPing",
+        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests."
+      },
       "LettaRequest": {
         "properties": {
           "messages": {
@@ -27520,6 +27537,65 @@
         "type": "object",
         "required": ["messages"],
         "title": "LettaStreamingRequest"
+      },
+      "LettaStreamingResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SystemMessage"
+          },
+          {
+            "$ref": "#/components/schemas/UserMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ReasoningMessage"
+          },
+          {
+            "$ref": "#/components/schemas/HiddenReasoningMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ToolCallMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ToolReturnMessage"
+          },
+          {
+            "$ref": "#/components/schemas/AssistantMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ApprovalRequestMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ApprovalResponseMessage"
+          },
+          {
+            "$ref": "#/components/schemas/LettaPing"
+          },
+          {
+            "$ref": "#/components/schemas/LettaStopReason"
+          },
+          {
+            "$ref": "#/components/schemas/LettaUsageStatistics"
+          }
+        ],
+        "title": "LettaStreamingResponse",
+        "description": "Streaming response type for Server-Sent Events (SSE) endpoints.\nEach event in the stream will be one of these types.",
+        "discriminator": {
+          "propertyName": "message_type",
+          "mapping": {
+            "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+            "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+            "assistant_message": "#/components/schemas/AssistantMessage",
+            "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+            "ping": "#/components/schemas/LettaPing",
+            "reasoning_message": "#/components/schemas/ReasoningMessage",
+            "stop_reason": "#/components/schemas/LettaStopReason",
+            "system_message": "#/components/schemas/SystemMessage",
+            "tool_call_message": "#/components/schemas/ToolCallMessage",
+            "tool_return_message": "#/components/schemas/ToolReturnMessage",
+            "usage_statistics": "#/components/schemas/LettaUsageStatistics",
+            "user_message": "#/components/schemas/UserMessage"
+          }
+        }
       },
       "LettaUsageStatistics": {
         "properties": {
@@ -36518,21 +36594,6 @@
             "image": "#/components/schemas/ImageContent"
           }
         }
-      },
-      "LettaPing": {
-        "properties": {
-          "message_type": {
-            "type": "string",
-            "const": "ping",
-            "title": "Message Type",
-            "description": "The type of the message.",
-            "default": "ping"
-          }
-        },
-        "type": "object",
-        "required": ["message_type"],
-        "title": "LettaPing",
-        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests."
       }
     },
     "securitySchemes": {
