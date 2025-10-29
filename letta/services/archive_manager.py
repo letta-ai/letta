@@ -131,6 +131,9 @@ class ArchiveManager:
             ]
 
         async with db_registry.async_session() as session:
+            if agent_id:
+                await validate_agent_exists_async(session, agent_id, actor)
+
             archives = await ArchiveModel.list_async(
                 db_session=session,
                 before=before,
