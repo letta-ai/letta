@@ -304,9 +304,8 @@ class SyncServer(object):
         if model_settings.openrouter_api_key:
             self._enabled_providers.append(
                 OpenRouterProvider(
-                    name="openrouter",
+                    name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
                     api_key=model_settings.openrouter_api_key,
-                    handle_base=model_settings.openrouter_handle_base,
                 )
             )
 
@@ -1041,7 +1040,7 @@ class SyncServer(object):
         # Get all enabled providers (including BYOK providers from database)
         providers = await self.get_enabled_providers_async(actor=actor)
         for provider in providers:
-            llm_configs = await provider.list_llm_models_async()
+            llm_configs = await self.list_llm_models_async(actor=actor)
             for llm_config in llm_configs:
                 available_handles.append(llm_config.handle)
                 if llm_config.handle == handle:
@@ -1085,7 +1084,7 @@ class SyncServer(object):
         # Get all enabled providers (including BYOK providers from database)
         providers = await self.get_enabled_providers_async(actor=actor)
         for provider in providers:
-            embedding_configs = await provider.list_embedding_models_async()
+            embedding_configs = await self.list_embedding_models_async(actor=actor)
             for embedding_config in embedding_configs:
                 available_handles.append(embedding_config.handle)
                 if embedding_config.handle == handle:
