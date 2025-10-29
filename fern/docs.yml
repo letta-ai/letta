@@ -156,6 +156,8 @@ navigation:
             path: pages/agents/tool_rules.mdx
           - page: Tool Variables
             path: pages/agents/tool_variables.mdx
+          - page: Human-in-the-Loop
+            path: pages/agents/human_in_the_loop.mdx
           - section: Model Context Protocol
             path: pages/mcp/overview.mdx
             contents:
@@ -187,8 +189,6 @@ navigation:
         contents:
           - page: Groups
             path: pages/agents/groups.mdx
-          - page: Human-in-the-Loop
-            path: pages/agents/human_in_the_loop.mdx
           - page: Sleep-time Agents
             path: pages/agents/sleep_time_agents.mdx
           - section: Voice Agents
