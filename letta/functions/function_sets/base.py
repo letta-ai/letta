@@ -24,7 +24,6 @@ def memory(
 
     Args:
         command (str): The sub-command to execute. Supported commands:
-            - "view": List memory blocks or view specific block content
             - "create": Create a new memory block
             - "str_replace": Replace text in a memory block
             - "insert": Insert text at a specific line in a memory block
@@ -39,21 +38,11 @@ def memory(
         insert_text (Optional[str]): Text to insert (for insert)
         old_path (Optional[str]): Old path for rename operation
         new_path (Optional[str]): New path for rename operation
-        view_range (Optional[int]): Range of lines to view (for view)
 
     Returns:
         Optional[str]: Success message or error description
 
     Examples:
-        # List all memory blocks
-        memory(agent_state, "view", path="/memories")
-
-        # View specific memory block content
-        memory(agent_state, "view", path="/memories/user_preferences")
-
-        # View first 10 lines of a memory block
-        memory(agent_state, "view", path="/memories/user_preferences", view_range=10)
-
         # Replace text in a memory block
         memory(agent_state, "str_replace", path="/memories/user_preferences", old_str="theme: dark", new_str="theme: light")
 
