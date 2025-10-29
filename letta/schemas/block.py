@@ -103,6 +103,10 @@ class Block(BaseBlock):
 
 
 class BlockResponse(Block):
+    id: str = Field(
+        ...,
+        description="The id of the block.",
+    )
     template_name: Optional[str] = Field(
         None, description="(Deprecated) The name of the block template (if it is a template).", deprecated=True
     )
