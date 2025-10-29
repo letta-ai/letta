@@ -23,7 +23,6 @@ from anthropic.types.beta import (
     BetaThinkingDelta,
     BetaToolUseBlock,
 )
-from letta_client.types import assistant_message
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
