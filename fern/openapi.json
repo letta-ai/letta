@@ -20258,10 +20258,8 @@
           },
           "id": {
             "type": "string",
-            "pattern": "^block-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The human-friendly ID of the Block",
-            "examples": ["block-123e4567-e89b-12d3-a456-426614174000"]
+            "description": "The id of the block."
           },
           "created_by_id": {
             "anyOf": [
@@ -20289,7 +20287,7 @@
           }
         },
         "type": "object",
-        "required": ["value"],
+        "required": ["value", "id"],
         "title": "BlockResponse"
       },
       "BlockSchema": {
