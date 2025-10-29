@@ -271,7 +271,7 @@ def create_application() -> "FastAPI":
         return JSONResponse(
             status_code=500,
             content={
-                "detail": "An internal server error occurred",
+                "detail": "An unknown error occurred",
                 # Only include error details in debug/development mode
                 # "debug_info": str(exc) if settings.debug else None
             },
