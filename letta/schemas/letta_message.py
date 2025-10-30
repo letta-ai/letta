@@ -5,7 +5,6 @@ from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
-from letta.schemas.letta_base import LoggingBaseModel
 from letta.schemas.letta_message_content import (
     LettaAssistantMessageContentUnion,
     LettaUserMessageContentUnion,
@@ -23,7 +22,7 @@ class MessageReturnType(str, Enum):
     tool = "tool"
 
 
-class MessageReturn(LoggingBaseModel):
+class MessageReturn(BaseModel):
     type: MessageReturnType = Field(..., description="The message type to be created.")
 
 
