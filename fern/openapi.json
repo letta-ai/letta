@@ -10518,7 +10518,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "const": "created_at",
+              "enum": ["created_at", "duration"],
               "type": "string",
               "description": "Field to sort by",
               "default": "created_at",
@@ -10569,6 +10569,99 @@
               "title": "Project Id"
             },
             "description": "Filter runs by project ID."
+          },
+          {
+            "name": "duration_percentile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by duration percentile (1-100). Returns runs slower than this percentile.",
+              "title": "Duration Percentile"
+            },
+            "description": "Filter runs by duration percentile (1-100). Returns runs slower than this percentile."
+          },
+          {
+            "name": "duration_value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Duration value in nanoseconds for filtering. Must be used with duration_operator.",
+              "title": "Duration Value"
+            },
+            "description": "Duration value in nanoseconds for filtering. Must be used with duration_operator."
+          },
+          {
+            "name": "duration_operator",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["gt", "lt", "eq"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comparison operator for duration filter: 'gt' (greater than), 'lt' (less than), 'eq' (equals).",
+              "title": "Duration Operator"
+            },
+            "description": "Comparison operator for duration filter: 'gt' (greater than), 'lt' (less than), 'eq' (equals)."
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs created on or after this date (ISO 8601 format).",
+              "title": "Start Date"
+            },
+            "description": "Filter runs created on or after this date (ISO 8601 format)."
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs created on or before this date (ISO 8601 format).",
+              "title": "End Date"
+            },
+            "description": "Filter runs created on or before this date (ISO 8601 format)."
           }
         ],
         "responses": {

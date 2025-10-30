@@ -1775,3 +1775,242 @@ async def test_list_runs_with_no_status_filter_returns_all(server: SyncServer, s
     assert RunStatus.completed in statuses_found
     assert RunStatus.failed in statuses_found
     assert RunStatus.cancelled in statuses_found
+
+
+# ======================================================================================================================
+# RunManager Tests - Duration Filtering
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_gt(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration greater than a threshold."""
+    import asyncio
+
+    # Create runs with different durations
+    runs_data = []
+
+    # Fast run (< 100ms)
+    run_fast = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "fast"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.05)  # 50ms
+    await server.run_manager.update_run_by_id_async(
+        run_fast.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_fast)
+
+    # Medium run (~150ms)
+    run_medium = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "medium"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.15)  # 150ms
+    await server.run_manager.update_run_by_id_async(
+        run_medium.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_medium)
+
+    # Slow run (~250ms)
+    run_slow = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "slow"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.25)  # 250ms
+    await server.run_manager.update_run_by_id_async(
+        run_slow.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_slow)
+
+    # Filter runs with duration > 100ms (100,000,000 ns)
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_filter={"value": 100_000_000, "operator": "gt"},
+    )
+
+    # Should return medium and slow runs
+    assert len(filtered_runs) >= 2
+    run_ids = {run.id for run in filtered_runs}
+    assert run_medium.id in run_ids
+    assert run_slow.id in run_ids
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_lt(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration less than a threshold."""
+    import asyncio
+
+    # Create runs with different durations
+    # Fast run
+    run_fast = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "fast"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.05)  # 50ms
+    await server.run_manager.update_run_by_id_async(
+        run_fast.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Slow run
+    run_slow = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "slow"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.30)  # 300ms
+    await server.run_manager.update_run_by_id_async(
+        run_slow.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Get actual durations to set a threshold between them
+    fast_metrics = await server.run_manager.get_run_metrics_async(run_id=run_fast.id, actor=default_user)
+    slow_metrics = await server.run_manager.get_run_metrics_async(run_id=run_slow.id, actor=default_user)
+
+    # Set threshold between the two durations
+    threshold = (fast_metrics.run_ns + slow_metrics.run_ns) // 2
+
+    # Filter runs with duration < threshold
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_filter={"value": threshold, "operator": "lt"},
+    )
+
+    # Should return only the fast run
+    assert len(filtered_runs) >= 1
+    assert run_fast.id in [run.id for run in filtered_runs]
+    # Verify slow run is not included
+    assert run_slow.id not in [run.id for run in filtered_runs]
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_percentile(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration percentile."""
+    import asyncio
+
+    # Create runs with varied durations
+    run_ids = []
+    durations_ms = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+
+    for i, duration_ms in enumerate(durations_ms):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)  # Convert to seconds
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        run_ids.append(run.id)
+
+    # Filter runs in top 20% (80th percentile)
+    # This should return approximately the slowest 20% of runs
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_percentile=80,
+    )
+
+    # Should return at least 2 runs (approximately 20% of 10)
+    assert len(filtered_runs) >= 2
+    # Verify the slowest run is definitely included
+    filtered_ids = {run.id for run in filtered_runs}
+    assert run_ids[-1] in filtered_ids  # Slowest run (500ms)
+
+    # Verify that filtered runs are among the slower runs
+    # At least one should be from the slowest 3
+    slowest_3_ids = set(run_ids[-3:])
+    assert len(filtered_ids & slowest_3_ids) >= 2, "Expected at least 2 of the slowest 3 runs"
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_with_order_by(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration with different order_by options."""
+    import asyncio
+
+    # Create runs with different durations
+    runs = []
+    for i, duration_ms in enumerate([100, 200, 300]):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        runs.append(run)
+
+    # Test order_by="duration" with ascending order
+    filtered_runs_asc = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        order_by="duration",
+        ascending=True,
+    )
+
+    # Should be ordered from fastest to slowest
+    assert len(filtered_runs_asc) >= 3
+    # Get metrics to verify ordering
+    metrics_asc = []
+    for run in filtered_runs_asc[:3]:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        metrics_asc.append(metrics.run_ns)
+    # Verify ascending order
+    assert metrics_asc[0] <= metrics_asc[1] <= metrics_asc[2]
+
+    # Test order_by="duration" with descending order (default)
+    filtered_runs_desc = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        order_by="duration",
+        ascending=False,
+    )
+
+    # Should be ordered from slowest to fastest
+    assert len(filtered_runs_desc) >= 3
+    # Get metrics to verify ordering
+    metrics_desc = []
+    for run in filtered_runs_desc[:3]:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        metrics_desc.append(metrics.run_ns)
+    # Verify descending order
+    assert metrics_desc[0] >= metrics_desc[1] >= metrics_desc[2]
+
+
+@pytest.mark.asyncio
+async def test_list_runs_combined_duration_filter_and_percentile(server: SyncServer, sarah_agent, default_user):
+    """Test combining duration filter with percentile filter."""
+    import asyncio
+
+    # Create runs with varied durations
+    runs = []
+    for i, duration_ms in enumerate([50, 100, 150, 200, 250, 300, 350, 400]):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        runs.append(run)
+
+    # Filter runs that are:
+    # 1. In top 50% slowest (duration_percentile=50)
+    # 2. AND greater than 200ms (duration_filter > 200_000_000 ns)
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_percentile=50,
+        duration_filter={"value": 200_000_000, "operator": "gt"},
+    )
+
+    # Should return runs that satisfy both conditions
+    assert len(filtered_runs) >= 2
+    # Verify all returned runs meet both criteria
+    for run in filtered_runs:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        # Should be greater than 200ms
+        assert metrics.run_ns > 200_000_000
