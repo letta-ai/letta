@@ -45,7 +45,7 @@ def generate_schema_for_tool_creation(
 
             return derive_typescript_json_schema(source_code=tool.source_code)
         except Exception as e:
-            logger.error(f"Failed to derive TypeScript json schema: {e}")
+            logger.warning(f"Failed to derive TypeScript json schema: {e}")
             raise ValueError(f"Failed to derive TypeScript json schema: {e}")
 
     # Python tools (default if not specified for backwards compatibility)
@@ -65,7 +65,7 @@ def generate_schema_for_tool_creation(
             try:
                 return derive_openai_json_schema(source_code=tool.source_code)
             except Exception as e:
-                logger.error(f"Failed to derive json schema: {e}")
+                logger.warning(f"Failed to derive json schema: {e}")
                 raise ValueError(f"Failed to derive json schema: {e}")
     else:
         # TODO: convert to explicit error
