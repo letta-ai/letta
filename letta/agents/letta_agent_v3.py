@@ -424,7 +424,8 @@ class LettaAgentV3(LettaAgentV2):
                                 force=True,
                             )
                         else:
-                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
+                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+                            self.logger.error(f"Unknown error occured for run {run_id}: {e}")
                             raise e
 
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(
