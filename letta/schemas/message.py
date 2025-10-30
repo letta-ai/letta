@@ -1138,8 +1138,14 @@ class Message(BaseMessage):
                 assert self.tool_calls is not None or text_content is not None, vars(self)
             except AssertionError as e:
                 # relax check if this message only contains reasoning content
-                if self.content is not None and len(self.content) > 0 and isinstance(self.content[0], ReasoningContent):
-                    return None
+                if self.content is not None and len(self.content) > 0:
+                    # Check if all non-empty content is reasoning-related
+                    all_reasoning = all(
+                        isinstance(c, (ReasoningContent, SummarizedReasoningContent, OmittedReasoningContent, RedactedReasoningContent))
+                        for c in self.content
+                    )
+                    if all_reasoning:
+                        return None
                 raise e
 
             # if native content, then put it directly inside the content
@@ -1228,15 +1234,32 @@ class Message(BaseMessage):
         use_developer_message: bool = False,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
-        result = [
-            m.to_openai_dict(
+        result: List[dict] = []
+
+        for m in messages:
+            # Special case: OpenAI Chat Completions requires a separate tool message per tool_call_id
+            # If we have multiple explicit tool_returns on a single Message, expand into one dict per return
+            if m.role == MessageRole.tool and m.tool_returns and len(m.tool_returns) > 0:
+                for tr in m.tool_returns:
+                    if not tr.tool_call_id:
+                        raise TypeError("ToolReturn came back without a tool_call_id.")
+                    result.append(
+                        {
+                            "content": tr.func_response,
+                            "role": "tool",
+                            "tool_call_id": tr.tool_call_id[:max_tool_id_length] if max_tool_id_length else tr.tool_call_id,
+                        }
+                    )
+                continue
+
+            d = m.to_openai_dict(
                 max_tool_id_length=max_tool_id_length,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
             )
-            for m in messages
-        ]
-        result = [m for m in result if m is not None]
+            if d is not None:
+                result.append(d)
+
         return result
 
     def to_openai_responses_dicts(

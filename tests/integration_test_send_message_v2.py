@@ -533,15 +533,18 @@ async def test_greeting(
 )
 @pytest.mark.parametrize("send_type", ["step", "stream_steps", "stream_tokens", "stream_tokens_background", "async"])
 @pytest.mark.asyncio(loop_scope="function")
-async def test_parallel_tool_call_anthropic(
+async def test_parallel_tool_calls(
     disable_e2b_api_key: Any,
     client: AsyncLetta,
     agent_state: AgentState,
     llm_config: LLMConfig,
     send_type: str,
 ) -> None:
-    if llm_config.model_endpoint_type != "anthropic":
-        pytest.skip("Parallel tool calling test only applies to Anthropic models.")
+    if llm_config.model_endpoint_type != "anthropic" and llm_config.model_endpoint_type != "openai":
+        pytest.skip("Parallel tool calling test only applies to Anthropic and OpenAI models.")
+
+    if llm_config.model_endpoint_type == "openai" and send_type not in {"step", "stream_steps"}:
+        pytest.skip(f"OpenAI reasoning model {llm_config.model} does not support streaming parallel tool calling for now.")
 
     # change llm_config to support parallel tool calling
     llm_config.parallel_tool_calls = True
@@ -587,7 +590,10 @@ async def test_parallel_tool_call_anthropic(
     # verify each tool call
     for tc in tool_call_msg.tool_calls:
         assert tc["name"] == "roll_dice"
-        assert tc["tool_call_id"].startswith("toolu_")
+        # Support both Anthropic (toolu_) and OpenAI (call_) tool call ID formats
+        assert tc["tool_call_id"].startswith("toolu_") or tc["tool_call_id"].startswith("call_"), (
+            f"Unexpected tool call ID format: {tc['tool_call_id']}"
+        )
         assert "num_sides" in tc["arguments"]
 
     # assert tool returns match the tool calls
