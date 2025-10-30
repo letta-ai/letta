@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import re
@@ -384,25 +385,53 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
-        # Detect presence of reasoning blocks anywhere in the final assistant message.
-        # Interleaved thinking is not guaranteed to be the first content part.
+        # Convert final thinking blocks to text to work around token counting endpoint limitation.
+        # The token counting endpoint rejects messages where the final content block is thinking,
+        # even though the main API supports this with the interleaved-thinking beta.
+        # We convert (not strip) to preserve accurate token counts.
+        # TODO: Remove this workaround if Anthropic fixes the token counting endpoint.
         thinking_enabled = False
+        messages_for_counting = messages
+
         if messages and len(messages) > 0:
-            last_assistant_message = next((m for m in reversed(messages) if m.get("role") == "assistant"), None)
-            if last_assistant_message:
-                content = last_assistant_message.get("content")
-                if isinstance(content, list):
-                    for part in content:
-                        if isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"}:
+            messages_for_counting = copy.deepcopy(messages)
+
+            # Scan all assistant messages and convert any final thinking blocks to text
+            for message in messages_for_counting:
+                if message.get("role") == "assistant":
+                    content = message.get("content")
+
+                    # Check for thinking in any format
+                    if isinstance(content, list) and len(content) > 0:
+                        # Check if message has any thinking blocks (to enable thinking mode)
+                        has_thinking = any(
+                            isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"} for part in content
+                        )
+                        if has_thinking:
                             thinking_enabled = True
-                            break
-                elif isinstance(content, str) and "<thinking>" in content:
-                    thinking_enabled = True
+
+                        # If final block is thinking, handle it
+                        last_block = content[-1]
+                        if isinstance(last_block, dict) and last_block.get("type") in {"thinking", "redacted_thinking"}:
+                            if len(content) == 1:
+                                # Thinking-only message: add text at end (don't convert the thinking)
+                                # API requires first block to be thinking when thinking is enabled
+                                content.append({"type": "text", "text": "."})
+                            else:
+                                # Multiple blocks: convert final thinking to text
+                                if last_block["type"] == "thinking":
+                                    content[-1] = {"type": "text", "text": last_block.get("thinking", "")}
+                                elif last_block["type"] == "redacted_thinking":
+                                    content[-1] = {"type": "text", "text": last_block.get("data", "[redacted]")}
+
+                    elif isinstance(content, str) and "<thinking>" in content:
+                        # Handle XML-style thinking in string content
+                        thinking_enabled = True
 
         try:
             count_params = {
                 "model": model or "claude-3-7-sonnet-20250219",
-                "messages": messages or [{"role": "user", "content": "hi"}],
+                "messages": messages_for_counting or [{"role": "user", "content": "hi"}],
                 "tools": anthropic_tools or [],
             }
 
