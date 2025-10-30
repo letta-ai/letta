@@ -280,6 +280,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             if resolver:
                 state[field_name] = resolver()
 
+        state["model"] = self.llm_config._to_model() if self.llm_config else None
+
         return self.__pydantic_model__(**state)
 
     async def to_pydantic_async(
@@ -417,5 +419,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["managed_group"] = multi_agent_group
         state["tool_exec_environment_variables"] = tool_exec_environment_variables
         state["secrets"] = tool_exec_environment_variables
+        state["model"] = self.llm_config._to_model() if self.llm_config else None
 
         return self.__pydantic_model__(**state)
