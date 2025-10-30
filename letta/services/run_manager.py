@@ -63,14 +63,16 @@ class RunManager:
 
             run = RunModel(**run_data)
             run.organization_id = organization_id
-            run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
-
-            # Create run metrics with start timestamp
-            import time
 
             # Get the project_id from the agent
             agent = await session.get(AgentModel, agent_id)
             project_id = agent.project_id if agent else None
+            run.project_id = project_id
+
+            run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+
+            # Create run metrics with start timestamp
+            import time
 
             metrics = RunMetricsModel(
                 id=run.id,
@@ -328,8 +330,8 @@ class RunManager:
             logger.error(error_message)
             result["callback_error"] = error_message
             # Continue silently - callback failures should not affect run completion
-        finally:
-            return result
+
+        return result
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
