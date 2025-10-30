@@ -19,6 +19,7 @@ from letta.errors import (
     LLMConnectionError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
+    LLMProviderOverloaded,
     LLMRateLimitError,
     LLMServerError,
     LLMTimeoutError,
@@ -513,6 +514,11 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.APIStatusError):
             logger.warning(f"[Anthropic] API status error: {str(e)}")
+            if "overloaded" in str(e).lower():
+                return LLMProviderOverloaded(
+                    message=f"Anthropic API is overloaded: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
             return LLMServerError(
                 message=f"Anthropic API error: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
