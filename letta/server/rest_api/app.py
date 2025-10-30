@@ -40,6 +40,7 @@ from letta.errors import (
     LettaUserNotFoundError,
     LLMAuthenticationError,
     LLMError,
+    LLMProviderOverloaded,
     LLMRateLimitError,
     LLMTimeoutError,
     PendingApprovalError,
@@ -398,6 +399,7 @@ def create_application() -> "FastAPI":
     # 503 Service Unavailable errors
     app.add_exception_handler(OperationalError, _error_handler_503)
     app.add_exception_handler(LettaServiceUnavailableError, _error_handler_503)
+    app.add_exception_handler(LLMProviderOverloaded, _error_handler_503)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):

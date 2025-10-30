@@ -202,6 +202,10 @@ class LLMTimeoutError(LLMError):
     """Error when LLM request times out"""
 
 
+class LLMProviderOverloaded(LLMError):
+    """Error when LLM provider is overloaded"""
+
+
 class BedrockPermissionError(LettaError):
     """Exception raised for errors in the Bedrock permission process."""
 
