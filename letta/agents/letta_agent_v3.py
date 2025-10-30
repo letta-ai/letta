@@ -364,13 +364,15 @@ class LettaAgentV3(LettaAgentV2):
                             requires_subsequent_tool_call=self._require_tool_call,
                         )
                         # TODO: Extend to more providers, and also approval tool rules
-                        # Enable Anthropic parallel tool use when no tool rules are attached
+                        # Enable parallel tool use when no tool rules are attached
                         try:
+                            no_tool_rules = (
+                                not self.agent_state.tool_rules
+                                or len([t for t in self.agent_state.tool_rules if t.type != "requires_approval"]) == 0
+                            )
+
+                            # Anthropic/Bedrock parallel tool use
                             if self.agent_state.llm_config.model_endpoint_type in ["anthropic", "bedrock"]:
-                                no_tool_rules = (
-                                    not self.agent_state.tool_rules
-                                    or len([t for t in self.agent_state.tool_rules if t.type != "requires_approval"]) == 0
-                                )
                                 if (
                                     isinstance(request_data.get("tool_choice"), dict)
                                     and "disable_parallel_tool_use" in request_data["tool_choice"]
@@ -381,6 +383,16 @@ class LettaAgentV3(LettaAgentV2):
                                     else:
                                         # Explicitly disable when tool rules present or llm_config toggled off
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = True
+
+                            # OpenAI parallel tool use
+                            elif self.agent_state.llm_config.model_endpoint_type == "openai":
+                                # For OpenAI, we control parallel tool calling via parallel_tool_calls field
+                                # Only allow parallel tool calls when no tool rules and enabled in config
+                                if "parallel_tool_calls" in request_data:
+                                    if no_tool_rules and self.agent_state.llm_config.parallel_tool_calls:
+                                        request_data["parallel_tool_calls"] = True
+                                    else:
+                                        request_data["parallel_tool_calls"] = False
                         except Exception:
                             # if this fails, we simply don't enable parallel tool use
                             pass
@@ -435,11 +447,13 @@ class LettaAgentV3(LettaAgentV2):
                 self._update_global_usage_stats(llm_adapter.usage)
 
                 # Handle the AI response with the extracted data (supports multiple tool calls)
-                # Gather tool calls. Approval paths specify a single tool call.
+                # Gather tool calls - check for multi-call API first, then fall back to single
                 if hasattr(llm_adapter, "tool_calls") and llm_adapter.tool_calls:
                     tool_calls = llm_adapter.tool_calls
                 elif llm_adapter.tool_call is not None:
                     tool_calls = [llm_adapter.tool_call]
+                else:
+                    tool_calls = []
 
             aggregated_persisted: list[Message] = []
             persisted_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
@@ -931,15 +945,25 @@ class LettaAgentV3(LettaAgentV2):
         )
 
         # 5g. Aggregate continuation decisions
-        # For multiple tools: continue if ANY says continue, use last non-None stop_reason
-        # For single tool: use its decision directly
         aggregate_continue = any(persisted_continue_flags) if persisted_continue_flags else False
-        aggregate_continue = aggregate_continue or tool_call_denials or tool_returns  # continue if any tool call was denied or returned
+        aggregate_continue = aggregate_continue or tool_call_denials or tool_returns
+
+        # Determine aggregate stop reason
         aggregate_stop_reason = None
         for sr in persisted_stop_reasons:
             if sr is not None:
                 aggregate_stop_reason = sr
 
+        # For parallel tool calls, always continue to allow the agent to process/summarize results
+        # unless a terminal tool was called or we hit max steps
+        if len(exec_specs) > 1:
+            has_terminal = any(sr and sr.stop_reason == StopReasonType.tool_rule.value for sr in persisted_stop_reasons)
+            is_max_steps = any(sr and sr.stop_reason == StopReasonType.max_steps.value for sr in persisted_stop_reasons)
+
+            if not has_terminal and not is_max_steps:
+                # Force continuation for parallel tool execution
+                aggregate_continue = True
+                aggregate_stop_reason = None
         return persisted_messages, aggregate_continue, aggregate_stop_reason
 
     @trace_method

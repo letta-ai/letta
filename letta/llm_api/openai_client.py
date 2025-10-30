@@ -324,7 +324,7 @@ class OpenAIClient(LLMClientBase):
             tool_choice=tool_choice,
             max_output_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
-            parallel_tool_calls=False,
+            parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
         # Add verbosity control for GPT-5 models
@@ -349,7 +349,7 @@ class OpenAIClient(LLMClientBase):
 
         # Add parallel tool calling
         if tools and supports_parallel_tool_calling(model):
-            data.parallel_tool_calls = False
+            data.parallel_tool_calls = llm_config.parallel_tool_calls
 
         # always set user id for openai requests
         if self.actor:

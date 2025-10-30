@@ -624,8 +624,8 @@ def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
     data = chat_completion_request.model_dump(exclude_none=True)
 
     # add check otherwise will cause error: "Invalid value for 'parallel_tool_calls': 'parallel_tool_calls' is only allowed when 'tools' are specified."
-    if chat_completion_request.tools is not None:
-        data["parallel_tool_calls"] = False
+    if chat_completion_request.tools is not None and chat_completion_request.parallel_tool_calls is not None:
+        data["parallel_tool_calls"] = chat_completion_request.parallel_tool_calls
 
     # If functions == None, strip from the payload
     if "functions" in data and data["functions"] is None:
