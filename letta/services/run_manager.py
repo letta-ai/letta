@@ -115,12 +115,22 @@ class RunManager:
         step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
         tools_used: Optional[List[str]] = None,
         project_id: Optional[str] = None,
+        order_by: Literal["created_at", "duration"] = "created_at",
+        duration_percentile: Optional[int] = None,
+        duration_filter: Optional[dict] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
-            from sqlalchemy import or_, select
+            from sqlalchemy import func, or_, select
 
-            query = select(RunModel).filter(RunModel.organization_id == actor.organization_id)
+            # Always join with run_metrics to get duration data
+            query = (
+                select(RunModel, RunMetricsModel.run_ns)
+                .outerjoin(RunMetricsModel, RunModel.id == RunMetricsModel.id)
+                .filter(RunModel.organization_id == actor.organization_id)
+            )
 
             # Filter by project_id if provided
             if project_id:
@@ -148,41 +158,107 @@ class RunManager:
             if template_family:
                 query = query.filter(RunModel.base_template_id == template_family)
 
-            # Filter by step_count and/or tools_used - join with run_metrics
-            if step_count is not None or tools_used:
-                query = query.join(RunMetricsModel, RunModel.id == RunMetricsModel.id)
+            # Filter by date range
+            if start_date:
+                query = query.filter(RunModel.created_at >= start_date)
+            if end_date:
+                query = query.filter(RunModel.created_at <= end_date)
 
-                # Filter by step_count with the specified operator
-                if step_count is not None:
-                    if step_count_operator == ComparisonOperator.EQ:
-                        query = query.filter(RunMetricsModel.num_steps == step_count)
-                    elif step_count_operator == ComparisonOperator.GTE:
-                        query = query.filter(RunMetricsModel.num_steps >= step_count)
-                    elif step_count_operator == ComparisonOperator.LTE:
-                        query = query.filter(RunMetricsModel.num_steps <= step_count)
+            # Filter by step_count with the specified operator
+            if step_count is not None:
+                if step_count_operator == ComparisonOperator.EQ:
+                    query = query.filter(RunMetricsModel.num_steps == step_count)
+                elif step_count_operator == ComparisonOperator.GTE:
+                    query = query.filter(RunMetricsModel.num_steps >= step_count)
+                elif step_count_operator == ComparisonOperator.LTE:
+                    query = query.filter(RunMetricsModel.num_steps <= step_count)
 
-                # Filter by tools used ids
-                if tools_used:
-                    from sqlalchemy import String, cast as sa_cast, type_coerce
-                    from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+            # Filter by tools used ids
+            if tools_used:
+                from sqlalchemy import String, cast as sa_cast, type_coerce
+                from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-                    # Use ?| operator to check if any tool_id exists in the array (OR logic)
-                    jsonb_tools = sa_cast(RunMetricsModel.tools_used, JSONB)
-                    tools_array = type_coerce(tools_used, ARRAY(String))
-                    query = query.filter(jsonb_tools.op("?|")(tools_array))
+                # Use ?| operator to check if any tool_id exists in the array (OR logic)
+                jsonb_tools = sa_cast(RunMetricsModel.tools_used, JSONB)
+                tools_array = type_coerce(tools_used, ARRAY(String))
+                query = query.filter(jsonb_tools.op("?|")(tools_array))
 
-            # Apply pagination
-            from letta.services.helpers.run_manager_helper import _apply_pagination_async
+            # Ensure run_ns is not null when working with duration
+            if order_by == "duration" or duration_percentile is not None or duration_filter is not None:
+                query = query.filter(RunMetricsModel.run_ns.isnot(None))
 
-            query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
+            # Apply duration filter if requested
+            if duration_filter is not None:
+                duration_value = duration_filter.get("value") if isinstance(duration_filter, dict) else duration_filter.value
+                duration_operator = duration_filter.get("operator") if isinstance(duration_filter, dict) else duration_filter.operator
+
+                if duration_operator == "gt":
+                    query = query.filter(RunMetricsModel.run_ns > duration_value)
+                elif duration_operator == "lt":
+                    query = query.filter(RunMetricsModel.run_ns < duration_value)
+                elif duration_operator == "eq":
+                    query = query.filter(RunMetricsModel.run_ns == duration_value)
+
+            # Apply duration percentile filter if requested
+            if duration_percentile is not None:
+                # Calculate the percentile threshold
+                percentile_query = (
+                    select(func.percentile_cont(duration_percentile / 100.0).within_group(RunMetricsModel.run_ns))
+                    .select_from(RunMetricsModel)
+                    .join(RunModel, RunModel.id == RunMetricsModel.id)
+                    .filter(RunModel.organization_id == actor.organization_id)
+                    .filter(RunMetricsModel.run_ns.isnot(None))
+                )
+
+                # Apply same filters to percentile calculation
+                if project_id:
+                    percentile_query = percentile_query.filter(RunModel.project_id == project_id)
+                if agent_ids:
+                    percentile_query = percentile_query.filter(RunModel.agent_id.in_(agent_ids))
+                if statuses:
+                    percentile_query = percentile_query.filter(RunModel.status.in_(statuses))
+
+                # Execute percentile query
+                percentile_result = await session.execute(percentile_query)
+                percentile_threshold = percentile_result.scalar()
+
+                # Filter by percentile threshold (runs slower than the percentile)
+                if percentile_threshold is not None:
+                    query = query.filter(RunMetricsModel.run_ns >= percentile_threshold)
+
+            # Apply sorting based on order_by
+            if order_by == "duration":
+                # Sort by duration
+                if ascending:
+                    query = query.order_by(RunMetricsModel.run_ns.asc())
+                else:
+                    query = query.order_by(RunMetricsModel.run_ns.desc())
+            else:
+                # Apply pagination for created_at ordering
+                from letta.services.helpers.run_manager_helper import _apply_pagination_async
+
+                query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
 
             # Apply limit
             if limit:
                 query = query.limit(limit)
 
             result = await session.execute(query)
-            runs = result.scalars().all()
-            return [run.to_pydantic() for run in runs]
+            rows = result.all()
+
+            # Populate total_duration_ns from run_metrics.run_ns
+            pydantic_runs = []
+            for row in rows:
+                run_model = row[0]
+                run_ns = row[1]
+
+                pydantic_run = run_model.to_pydantic()
+                if run_ns is not None:
+                    pydantic_run.total_duration_ns = run_ns
+
+                pydantic_runs.append(pydantic_run)
+
+            return pydantic_runs
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
