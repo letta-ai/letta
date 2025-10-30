@@ -47,9 +47,6 @@ tabs:
   showcase:
     display-name: Examples
     skip-slug: true
-  leaderboard:
-    display-name: Leaderboard
-    skip-slug: true
   evals:
     display-name: Evals
     slug: evals
@@ -69,6 +66,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: Get Started
         contents:
           - page: Letta Overview
@@ -315,6 +315,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: ADE Guide
         contents:
           - page: ADE Overview
@@ -362,6 +365,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       #- page: Install Letta Desktop
       #  icon: fa-sharp fa-light fa-download
       #  path: pages/install.mdx
@@ -448,6 +454,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: Get started
         contents:
           - page: Overview
@@ -500,6 +509,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: API Reference
         contents:
           - page: API and SDK Overview
@@ -690,6 +702,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: Examples
         contents:
           - page: Overview
@@ -719,26 +734,6 @@ navigation:
           - page: Agentic RAG
             path: pages/cookbooks/rag-agentic.mdx
 
-  - tab: leaderboard
-    layout:
-      - link: Chat on Discord
-        icon: fa-brands fa-discord
-        href: https://discord.gg/letta
-      - link: Developer Forum
-        icon: fa-sharp fa-light fa-comments
-        href: https://forum.letta.com
-      - link: DeepLearning.AI Course
-        icon: fa-sharp fa-light fa-building-columns
-        href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
-      - section: Letta Leaderboard
-        contents:
-          - page: Overview
-            path: pages/leaderboard/overview.mdx
-          # - page: Benchmark Information
-          #   path: pages/leaderboard/benchmarks.mdx
-          - page: Contributing Results
-            path: pages/leaderboard/contributing.mdx
-
   - tab: evals
     layout:
       - link: Chat on Discord
@@ -750,6 +745,9 @@ navigation:
       - link: DeepLearning.AI Course
         icon: fa-sharp fa-light fa-building-columns
         href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456
+      - link: Model Leaderboard
+        icon: fa-sharp fa-light fa-trophy
+        href: https://leaderboard.letta.com
       - section: Get Started
         contents:
           - page: Overview
@@ -998,3 +996,9 @@ redirects:
     destination: "/guides/legacy/workflows_legacy"
   - source: "/guides/agents/architectures/low-latency"
     destination: "/guides/legacy/low_latency_agents_legacy"
+  - source: "/leaderboard"
+    destination: "https://leaderboard.letta.com"
+  - source: "/leaderboard/overview"
+    destination: "https://leaderboard.letta.com"
+  - source: "/leaderboard/contributing"
+    destination: "https://leaderboard.letta.com"
