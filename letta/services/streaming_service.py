@@ -304,6 +304,7 @@ class StreamingService:
                 run_status = RunStatus.failed
                 error_data = {"error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": str(e)}}
                 stop_reason = StopReasonType.llm_api_error
+                logger.error(f"Run {run_id} stopped with LLM timeout error: {e}, error_data: {error_data}")
                 yield (f"data: {json.dumps(error_data)}\n\n", 504)
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
@@ -317,6 +318,7 @@ class StreamingService:
                     }
                 }
                 stop_reason = StopReasonType.llm_api_error
+                logger.warning(f"Run {run_id} stopped with LLM rate limit error: {e}, error_data: {error_data}")
                 yield (f"data: {json.dumps(error_data)}\n\n", 429)
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
@@ -329,6 +331,7 @@ class StreamingService:
                         "detail": str(e),
                     }
                 }
+                logger.warning(f"Run {run_id} stopped with LLM authentication error: {e}, error_data: {error_data}")
                 stop_reason = StopReasonType.llm_api_error
                 yield (f"data: {json.dumps(error_data)}\n\n", 401)
                 # Send [DONE] marker to properly close the stream
@@ -336,6 +339,7 @@ class StreamingService:
             except LLMError as e:
                 run_status = RunStatus.failed
                 error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
+                logger.error(f"Run {run_id} stopped with LLM error: {e}, error_data: {error_data}")
                 yield (f"data: {json.dumps(error_data)}\n\n", 502)
                 # Send [DONE] marker to properly close the stream
                 stop_reason = StopReasonType.llm_api_error
@@ -349,6 +353,7 @@ class StreamingService:
                         "detail": str(e),
                     }
                 }
+                logger.error(f"Run {run_id} stopped with unknown error: {e}, error_data: {error_data}")
                 stop_reason = StopReasonType.error
                 yield (f"data: {json.dumps(error_data)}\n\n", 500)
                 # Re-raise to ensure proper error handling and Sentry capture

@@ -196,6 +196,43 @@ async def test_update_run_by_id(server: SyncServer, sarah_agent, default_user):
 
 
 @pytest.mark.asyncio
+async def test_update_run_metadata_persistence(server: SyncServer, sarah_agent, default_user):
+    """Test that metadata is properly persisted when updating a run."""
+    # Create a run with initial metadata
+    run_data = PydanticRun(
+        metadata={"type": "test", "initial": "value"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Verify initial metadata
+    assert created_run.metadata == {"type": "test", "initial": "value"}
+
+    # Update the run with error metadata (simulating what happens in streaming service)
+    error_data = {
+        "error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": "Timeout after 30s"}
+    }
+    updated_run = await server.run_manager.update_run_by_id_async(
+        created_run.id,
+        RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.llm_api_error, metadata=error_data),
+        actor=default_user,
+    )
+
+    # Verify metadata was properly updated
+    assert updated_run.status == RunStatus.failed
+    assert updated_run.stop_reason == StopReasonType.llm_api_error
+    assert updated_run.metadata == error_data
+    assert "error" in updated_run.metadata
+    assert updated_run.metadata["error"]["type"] == "llm_timeout"
+
+    # Fetch the run again to ensure it's persisted in DB
+    fetched_run = await server.run_manager.get_run_by_id(created_run.id, actor=default_user)
+    assert fetched_run.metadata == error_data
+    assert "error" in fetched_run.metadata
+    assert fetched_run.metadata["error"]["type"] == "llm_timeout"
+
+
+@pytest.mark.asyncio
 async def test_delete_run_by_id(server: SyncServer, sarah_agent, default_user):
     """Test deleting a run by its ID."""
     # Create a run
