@@ -9,6 +9,7 @@ from sqlalchemy import Sequence, String, and_, delete, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.orm.interfaces import ORMOption
 
 from letta.log import get_logger
@@ -625,6 +626,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             if not no_refresh:
                 await db_session.refresh(self)
             return self
+        except StaleDataError as e:
+            # This can occur when using optimistic locking (version_id_col) and:
+            # 1. The row doesn't exist (0 rows matched)
+            # 2. The version has changed (concurrent update)
+            # We convert this to NoResultFound to return a proper 404 error
+            raise NoResultFound(f"{self.__class__.__name__} with id '{self.id}' not found or was updated by another transaction") from e
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 

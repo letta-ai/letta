@@ -484,6 +484,19 @@ async def test_update_block_limit_does_not_reset(server: SyncServer, default_use
 
 
 @pytest.mark.asyncio
+async def test_update_nonexistent_block(server: SyncServer, default_user):
+    """Test that updating a non-existent block raises NoResultFound (which maps to 404)."""
+    block_manager = BlockManager()
+
+    # Try to update a block that doesn't exist
+    nonexistent_block_id = "block-7d73d0a7-6e86-4db7-b53a-411c11ed958a"
+    update_data = BlockUpdate(value="Updated Content")
+
+    with pytest.raises(NoResultFound):
+        await block_manager.update_block_async(block_id=nonexistent_block_id, block_update=update_data, actor=default_user)
+
+
+@pytest.mark.asyncio
 async def test_delete_block(server: SyncServer, default_user):
     block_manager = BlockManager()
 
