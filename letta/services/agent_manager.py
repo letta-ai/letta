@@ -1568,13 +1568,16 @@ class AgentManager:
             actor: User performing the action
 
         Raises:
-            ValueError: If either agent or source doesn't exist
+            NoResultFound: If either agent or source doesn't exist or actor lacks permission to access them
             IntegrityError: If the source is already attached to the agent
         """
 
         async with db_registry.async_session() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Verify the actor has permission to access the source
+            await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
 
             # The _process_relationship helper already handles duplicate checking via unique constraint
             await _process_relationship_async(
