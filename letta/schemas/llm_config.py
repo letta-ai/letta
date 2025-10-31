@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -6,9 +6,6 @@ from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import AgentType, ProviderCategory
-
-if TYPE_CHECKING:
-    from letta.schemas.model import ModelSettings
 
 logger = get_logger(__name__)
 
@@ -254,98 +251,6 @@ class LLMConfig(BaseModel):
             + (f" [type={self.model_endpoint_type}]" if self.model_endpoint_type else "")
             + (f" [ip={self.model_endpoint}]" if self.model_endpoint else "")
         )
-
-    def _to_model(self) -> "ModelSettings":
-        """
-        Convert LLMConfig back into a Model schema (OpenAIModel, AnthropicModel, etc.).
-        This is the inverse of the _to_legacy_config_params() methods in model.py.
-        """
-        from letta.schemas.model import (
-            AnthropicModel,
-            AnthropicThinking,
-            AzureModel,
-            BedrockModel,
-            DeepseekModel,
-            GeminiThinkingConfig,
-            GoogleAIModel,
-            GoogleVertexModel,
-            GroqModel,
-            Model,
-            OpenAIModel,
-            OpenAIReasoning,
-            TogetherModel,
-            XAIModel,
-        )
-
-        if self.model_endpoint_type == "openai":
-            return OpenAIModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-                reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
-            )
-        elif self.model_endpoint_type == "anthropic":
-            thinking_type = "enabled" if self.enable_reasoner else "disabled"
-            return AnthropicModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-                thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
-                verbosity=self.verbosity,
-            )
-        elif self.model_endpoint_type == "google_ai":
-            return GoogleAIModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 65536,
-                temperature=self.temperature,
-                thinking_config=GeminiThinkingConfig(
-                    include_thoughts=self.max_reasoning_tokens > 0, thinking_budget=self.max_reasoning_tokens or 1024
-                ),
-            )
-        elif self.model_endpoint_type == "google_vertex":
-            return GoogleVertexModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 65536,
-                temperature=self.temperature,
-                thinking_config=GeminiThinkingConfig(
-                    include_thoughts=self.max_reasoning_tokens > 0, thinking_budget=self.max_reasoning_tokens or 1024
-                ),
-            )
-        elif self.model_endpoint_type == "azure":
-            return AzureModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-            )
-        elif self.model_endpoint_type == "xai":
-            return XAIModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-            )
-        elif self.model_endpoint_type == "groq":
-            return GroqModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-            )
-        elif self.model_endpoint_type == "deepseek":
-            return DeepseekModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-            )
-        elif self.model_endpoint_type == "together":
-            return TogetherModel(
-                model=self.model,
-                max_output_tokens=self.max_tokens or 4096,
-                temperature=self.temperature,
-            )
-        elif self.model_endpoint_type == "bedrock":
-            return Model(model=self.model, max_output_tokens=self.max_tokens or 4096)
-        else:
-            # If we don't know the model type, use the default Model schema
-            return Model(model=self.model, max_output_tokens=self.max_tokens or 4096)
 
     @classmethod
     def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:

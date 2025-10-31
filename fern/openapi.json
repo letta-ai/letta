@@ -18571,82 +18571,11 @@
           },
           "llm_config": {
             "$ref": "#/components/schemas/LLMConfig",
-            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
-            "deprecated": true
+            "description": "The LLM configuration used by the agent."
           },
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
-            "deprecated": true
-          },
-          "model": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModel"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModel",
-                    "azure": "#/components/schemas/AzureModel",
-                    "bedrock": "#/components/schemas/BedrockModel",
-                    "deepseek": "#/components/schemas/DeepseekModel",
-                    "google_ai": "#/components/schemas/GoogleAIModel",
-                    "google_vertex": "#/components/schemas/GoogleVertexModel",
-                    "groq": "#/components/schemas/GroqModel",
-                    "openai": "#/components/schemas/OpenAIModel",
-                    "together": "#/components/schemas/TogetherModel",
-                    "xai": "#/components/schemas/XAIModel"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model",
-            "description": "The model used by the agent."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding model used by the agent."
+            "description": "The embedding configuration used by the agent."
           },
           "response_format": {
             "anyOf": [
@@ -18676,7 +18605,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format used by the agent"
+            "description": "The response format used by the agent when returning from `send_message`."
           },
           "description": {
             "anyOf": [
@@ -18705,7 +18634,7 @@
           },
           "memory": {
             "$ref": "#/components/schemas/Memory",
-            "description": "Deprecated: Use `blocks` field instead. The in-context memory of the agent.",
+            "description": "The in-context memory of the agent.",
             "deprecated": true
           },
           "blocks": {
@@ -18823,7 +18752,7 @@
             },
             "type": "array",
             "title": "Identity Ids",
-            "description": "Deprecated: Use `identities` field instead. The ids of the identities associated with this agent.",
+            "description": "The ids of the identities associated with this agent.",
             "default": [],
             "deprecated": true
           },
@@ -18863,7 +18792,7 @@
                 "type": "null"
               }
             ],
-            "description": "Deprecated: Use `managed_group` field instead. The multi-agent group that this agent manages.",
+            "description": "The multi-agent group that this agent manages",
             "deprecated": true
           },
           "managed_group": {
@@ -19024,77 +18953,6 @@
         "type": "object",
         "required": ["end_index", "start_index", "title", "url"],
         "title": "AnnotationURLCitation"
-      },
-      "AnthropicModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "anthropic",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "anthropic"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 1
-          },
-          "thinking": {
-            "$ref": "#/components/schemas/AnthropicThinking",
-            "description": "The thinking configuration for the model.",
-            "default": {
-              "type": "enabled",
-              "budget_tokens": 1024
-            }
-          },
-          "verbosity": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["low", "medium", "high"]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Verbosity",
-            "description": "Soft control for how verbose model output should be, used for GPT-5 models."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "AnthropicModel"
-      },
-      "AnthropicThinking": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["enabled", "disabled"],
-            "title": "Type",
-            "description": "The type of thinking to use.",
-            "default": "enabled"
-          },
-          "budget_tokens": {
-            "type": "integer",
-            "title": "Budget Tokens",
-            "description": "The maximum number of tokens the model can use for extended thinking.",
-            "default": 1024
-          }
-        },
-        "type": "object",
-        "title": "AnthropicThinking"
       },
       "ApprovalCreate": {
         "properties": {
@@ -19882,68 +19740,6 @@
         "required": ["uuid"],
         "title": "AuthResponse"
       },
-      "AzureModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "azure",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "azure"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "AzureModel",
-        "description": "Azure OpenAI model configuration (OpenAI-compatible)."
-      },
       "Base64Image": {
         "properties": {
           "type": {
@@ -20194,68 +19990,6 @@
         "additionalProperties": false,
         "type": "object",
         "title": "BatchJob"
-      },
-      "BedrockModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "bedrock",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "bedrock"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "BedrockModel",
-        "description": "AWS Bedrock model configuration."
       },
       "Block": {
         "properties": {
@@ -22710,6 +22444,28 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -22753,8 +22509,7 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false,
-            "deprecated": true
+            "default": false
           },
           "description": {
             "anyOf": [
@@ -22781,98 +22536,22 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
-            "deprecated": true
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
-            "deprecated": true
-          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModel"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModel",
-                    "azure": "#/components/schemas/AzureModel",
-                    "bedrock": "#/components/schemas/BedrockModel",
-                    "deepseek": "#/components/schemas/DeepseekModel",
-                    "google_ai": "#/components/schemas/GoogleAIModel",
-                    "google_vertex": "#/components/schemas/GoogleVertexModel",
-                    "groq": "#/components/schemas/GroqModel",
-                    "openai": "#/components/schemas/OpenAIModel",
-                    "together": "#/components/schemas/TogetherModel",
-                    "xai": "#/components/schemas/XAIModel"
-                  }
-                }
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
-              },
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -22903,9 +22582,8 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
-            "default": 300,
-            "deprecated": true
+            "description": "The embedding chunk size used by the agent.",
+            "default": 300
           },
           "max_tokens": {
             "anyOf": [
@@ -22917,8 +22595,7 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -22930,8 +22607,7 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
           },
           "enable_reasoner": {
             "anyOf": [
@@ -22943,9 +22619,8 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true,
-            "deprecated": true
+            "description": "Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true
           },
           "reasoning": {
             "anyOf": [
@@ -22957,8 +22632,7 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
-            "deprecated": true
+            "description": "Whether to enable reasoning for this agent."
           },
           "from_template": {
             "anyOf": [
@@ -22970,15 +22644,13 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used.",
-            "default": false,
-            "deprecated": true
+            "description": "Deprecated: No longer used",
+            "default": false
           },
           "project": {
             "anyOf": [
@@ -22990,7 +22662,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -23006,8 +22678,7 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
-            "deprecated": true
+            "description": "Deprecated: use `secrets` field instead."
           },
           "secrets": {
             "anyOf": [
@@ -23037,8 +22708,7 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "The variables that should be set for the agent."
           },
           "project_id": {
             "anyOf": [
@@ -23050,8 +22720,7 @@
               }
             ],
             "title": "Project Id",
-            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
-            "deprecated": true
+            "description": "The id of the project the agent belongs to."
           },
           "template_id": {
             "anyOf": [
@@ -23063,8 +22732,7 @@
               }
             ],
             "title": "Template Id",
-            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
-            "deprecated": true
+            "description": "The id of the template the agent belongs to."
           },
           "base_template_id": {
             "anyOf": [
@@ -23076,8 +22744,7 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "Deprecated: No longer used. The base template id of the agent.",
-            "deprecated": true
+            "description": "The base template id of the agent."
           },
           "identity_ids": {
             "anyOf": [
@@ -23188,8 +22855,7 @@
               }
             ],
             "title": "Hidden",
-            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
-            "deprecated": true
+            "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -23201,9 +22867,8 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
-            "deprecated": true
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           }
         },
         "type": "object",
@@ -23636,68 +23301,6 @@
         "required": ["input", "name"],
         "title": "Custom"
       },
-      "DeepseekModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "deepseek",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "deepseek"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "DeepseekModel",
-        "description": "Deepseek model configuration (OpenAI-compatible)."
-      },
       "DeleteDeploymentResponse": {
         "properties": {
           "deleted_blocks": {
@@ -24058,24 +23661,6 @@
         ],
         "title": "EmbeddingConfig",
         "description": "Configuration for embedding model connection and processing parameters."
-      },
-      "EmbeddingModelSettings": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["openai", "ollama"],
-            "title": "Provider",
-            "description": "The provider of the model."
-          }
-        },
-        "type": "object",
-        "required": ["model", "provider"],
-        "title": "EmbeddingModelSettings"
       },
       "FeedbackType": {
         "type": "string",
@@ -25025,24 +24610,6 @@
         "required": ["function", "type"],
         "title": "FunctionTool"
       },
-      "GeminiThinkingConfig": {
-        "properties": {
-          "include_thoughts": {
-            "type": "boolean",
-            "title": "Include Thoughts",
-            "description": "Whether to include thoughts in the model's response.",
-            "default": true
-          },
-          "thinking_budget": {
-            "type": "integer",
-            "title": "Thinking Budget",
-            "description": "The thinking budget for the model.",
-            "default": 1024
-          }
-        },
-        "type": "object",
-        "title": "GeminiThinkingConfig"
-      },
       "GenerateToolInput": {
         "properties": {
           "tool_name": {
@@ -25113,206 +24680,6 @@
         "type": "object",
         "required": ["tool", "sample_args", "response"],
         "title": "GenerateToolOutput"
-      },
-      "GoogleAIModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 65536
-          },
-          "provider": {
-            "type": "string",
-            "const": "google_ai",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "google_ai"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "thinking_config": {
-            "$ref": "#/components/schemas/GeminiThinkingConfig",
-            "description": "The thinking configuration for the model.",
-            "default": {
-              "include_thoughts": true,
-              "thinking_budget": 1024
-            }
-          },
-          "response_schema": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Schema",
-            "description": "The response schema for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "GoogleAIModel"
-      },
-      "GoogleVertexModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 65536
-          },
-          "provider": {
-            "type": "string",
-            "const": "google_vertex",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "google_vertex"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "thinking_config": {
-            "$ref": "#/components/schemas/GeminiThinkingConfig",
-            "description": "The thinking configuration for the model.",
-            "default": {
-              "include_thoughts": true,
-              "thinking_budget": 1024
-            }
-          },
-          "response_schema": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Schema",
-            "description": "The response schema for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "GoogleVertexModel"
-      },
-      "GroqModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "groq",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "groq"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "GroqModel",
-        "description": "Groq model configuration (OpenAI-compatible)."
       },
       "Group": {
         "properties": {
@@ -26613,6 +25980,28 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -26656,8 +26045,7 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false,
-            "deprecated": true
+            "default": false
           },
           "description": {
             "anyOf": [
@@ -26684,98 +26072,22 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
-            "deprecated": true
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
-            "deprecated": true
-          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModel"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModel",
-                    "azure": "#/components/schemas/AzureModel",
-                    "bedrock": "#/components/schemas/BedrockModel",
-                    "deepseek": "#/components/schemas/DeepseekModel",
-                    "google_ai": "#/components/schemas/GoogleAIModel",
-                    "google_vertex": "#/components/schemas/GoogleVertexModel",
-                    "groq": "#/components/schemas/GroqModel",
-                    "openai": "#/components/schemas/OpenAIModel",
-                    "together": "#/components/schemas/TogetherModel",
-                    "xai": "#/components/schemas/XAIModel"
-                  }
-                }
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
-              },
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -26806,9 +26118,8 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
-            "default": 300,
-            "deprecated": true
+            "description": "The embedding chunk size used by the agent.",
+            "default": 300
           },
           "max_tokens": {
             "anyOf": [
@@ -26820,8 +26131,7 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -26833,8 +26143,7 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
           },
           "enable_reasoner": {
             "anyOf": [
@@ -26846,9 +26155,8 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true,
-            "deprecated": true
+            "description": "Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true
           },
           "reasoning": {
             "anyOf": [
@@ -26860,8 +26168,7 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
-            "deprecated": true
+            "description": "Whether to enable reasoning for this agent."
           },
           "from_template": {
             "anyOf": [
@@ -26873,15 +26180,13 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used.",
-            "default": false,
-            "deprecated": true
+            "description": "Deprecated: No longer used",
+            "default": false
           },
           "project": {
             "anyOf": [
@@ -26893,7 +26198,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -26909,8 +26214,7 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
-            "deprecated": true
+            "description": "Deprecated: use `secrets` field instead."
           },
           "secrets": {
             "anyOf": [
@@ -26940,8 +26244,7 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "The variables that should be set for the agent."
           },
           "project_id": {
             "anyOf": [
@@ -26953,8 +26256,7 @@
               }
             ],
             "title": "Project Id",
-            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
-            "deprecated": true
+            "description": "The id of the project the agent belongs to."
           },
           "template_id": {
             "type": "string",
@@ -27075,8 +26377,7 @@
               }
             ],
             "title": "Hidden",
-            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
-            "deprecated": true
+            "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -27088,9 +26389,8 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
-            "deprecated": true
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           },
           "deployment_id": {
             "type": "string",
@@ -29541,87 +28841,6 @@
         "type": "object",
         "title": "OmittedReasoningContent",
         "description": "A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)"
-      },
-      "OpenAIModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "openai",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "openai"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "reasoning": {
-            "$ref": "#/components/schemas/OpenAIReasoning",
-            "description": "The reasoning configuration for the model.",
-            "default": {
-              "reasoning_effort": "high"
-            }
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "OpenAIModel"
-      },
-      "OpenAIReasoning": {
-        "properties": {
-          "reasoning_effort": {
-            "type": "string",
-            "enum": ["minimal", "low", "medium", "high"],
-            "title": "Reasoning Effort",
-            "description": "The reasoning effort to use when generating text reasoning models",
-            "default": "minimal"
-          }
-        },
-        "type": "object",
-        "title": "OpenAIReasoning"
       },
       "Organization": {
         "properties": {
@@ -33077,68 +32296,6 @@
         "title": "TextResponseFormat",
         "description": "Response format for plain text responses."
       },
-      "TogetherModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "together",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "together"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "TogetherModel",
-        "description": "Together AI model configuration (OpenAI-compatible)."
-      },
       "Tool": {
         "properties": {
           "id": {
@@ -34595,6 +33752,28 @@
             "title": "Tool Rules",
             "description": "The tool rules governing the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
           "message_ids": {
             "anyOf": [
               {
@@ -34734,68 +33913,16 @@
                 "type": "string"
               },
               {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModel"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModel",
-                    "azure": "#/components/schemas/AzureModel",
-                    "bedrock": "#/components/schemas/BedrockModel",
-                    "deepseek": "#/components/schemas/DeepseekModel",
-                    "google_ai": "#/components/schemas/GoogleAIModel",
-                    "google_vertex": "#/components/schemas/GoogleVertexModel",
-                    "groq": "#/components/schemas/GroqModel",
-                    "openai": "#/components/schemas/OpenAIModel",
-                    "together": "#/components/schemas/TogetherModel",
-                    "xai": "#/components/schemas/XAIModel"
-                  }
-                }
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model used by the agent, specified either by a handle or an object. See the model schema for more information."
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
-              },
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -34816,6 +33943,18 @@
             "title": "Context Window Limit",
             "description": "The context window limit used by the agent."
           },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+          },
           "reasoning": {
             "anyOf": [
               {
@@ -34826,33 +33965,9 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
-            "deprecated": true
+            "description": "Whether to enable reasoning for this agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
-            "deprecated": true
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
-          "parallel_tool_calls": {
+          "enable_sleeptime": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -34861,10 +33976,8 @@
                 "type": "null"
               }
             ],
-            "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
-            "deprecated": true
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread."
           },
           "response_format": {
             "anyOf": [
@@ -34894,33 +34007,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
-            "deprecated": true
-          },
-          "max_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Tokens",
-            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
-            "deprecated": true
-          },
-          "enable_sleeptime": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Sleeptime",
-            "description": "If set to True, memory management will move to a background agent thread."
+            "description": "The response format for the agent."
           },
           "last_run_completion": {
             "anyOf": [
@@ -34994,6 +34081,19 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           }
         },
         "type": "object",
@@ -35506,68 +34606,6 @@
         "type": "object",
         "title": "VoiceSleeptimeManagerUpdate"
       },
-      "XAIModel": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "provider": {
-            "type": "string",
-            "const": "xai",
-            "title": "Provider",
-            "description": "The provider of the model.",
-            "default": "xai"
-          },
-          "temperature": {
-            "type": "number",
-            "title": "Temperature",
-            "description": "The temperature of the model.",
-            "default": 0.7
-          },
-          "response_format": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/TextResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
-                  },
-                  {
-                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "type",
-                  "mapping": {
-                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
-                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
-                    "text": "#/components/schemas/TextResponseFormat"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Format",
-            "description": "The response format for the model."
-          }
-        },
-        "type": "object",
-        "required": ["model"],
-        "title": "XAIModel",
-        "description": "xAI model configuration (OpenAI-compatible)."
-      },
       "letta__schemas__agent_file__AgentSchema": {
         "properties": {
           "name": {
@@ -35738,6 +34776,28 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -35781,8 +34841,7 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false,
-            "deprecated": true
+            "default": false
           },
           "description": {
             "anyOf": [
@@ -35809,98 +34868,22 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
-            "deprecated": true
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
-            "deprecated": true
-          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModel"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModel"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModel",
-                    "azure": "#/components/schemas/AzureModel",
-                    "bedrock": "#/components/schemas/BedrockModel",
-                    "deepseek": "#/components/schemas/DeepseekModel",
-                    "google_ai": "#/components/schemas/GoogleAIModel",
-                    "google_vertex": "#/components/schemas/GoogleVertexModel",
-                    "groq": "#/components/schemas/GroqModel",
-                    "openai": "#/components/schemas/OpenAIModel",
-                    "together": "#/components/schemas/TogetherModel",
-                    "xai": "#/components/schemas/XAIModel"
-                  }
-                }
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
-              },
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -35931,9 +34914,8 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
-            "default": 300,
-            "deprecated": true
+            "description": "The embedding chunk size used by the agent.",
+            "default": 300
           },
           "max_tokens": {
             "anyOf": [
@@ -35945,8 +34927,7 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -35958,8 +34939,7 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
-            "deprecated": true
+            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
           },
           "enable_reasoner": {
             "anyOf": [
@@ -35971,9 +34951,8 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true,
-            "deprecated": true
+            "description": "Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true
           },
           "reasoning": {
             "anyOf": [
@@ -35985,8 +34964,7 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
-            "deprecated": true
+            "description": "Whether to enable reasoning for this agent."
           },
           "from_template": {
             "anyOf": [
@@ -35998,15 +34976,13 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used.",
-            "default": false,
-            "deprecated": true
+            "description": "Deprecated: No longer used",
+            "default": false
           },
           "project": {
             "anyOf": [
@@ -36018,7 +34994,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -36034,8 +35010,7 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
-            "deprecated": true
+            "description": "Deprecated: use `secrets` field instead."
           },
           "secrets": {
             "anyOf": [
@@ -36065,8 +35040,7 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
-            "deprecated": true
+            "description": "The variables that should be set for the agent."
           },
           "project_id": {
             "anyOf": [
@@ -36078,8 +35052,7 @@
               }
             ],
             "title": "Project Id",
-            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
-            "deprecated": true
+            "description": "The id of the project the agent belongs to."
           },
           "template_id": {
             "anyOf": [
@@ -36091,8 +35064,7 @@
               }
             ],
             "title": "Template Id",
-            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
-            "deprecated": true
+            "description": "The id of the template the agent belongs to."
           },
           "base_template_id": {
             "anyOf": [
@@ -36104,8 +35076,7 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "Deprecated: No longer used. The base template id of the agent.",
-            "deprecated": true
+            "description": "The base template id of the agent."
           },
           "identity_ids": {
             "anyOf": [
@@ -36216,8 +35187,7 @@
               }
             ],
             "title": "Hidden",
-            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
-            "deprecated": true
+            "description": "If set to True, the agent will be hidden."
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -36229,9 +35199,8 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
-            "deprecated": true
+            "description": "If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false
           },
           "id": {
             "type": "string",
