@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import threading
 import time
@@ -14,7 +15,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import APIError, AsyncLetta, Letta
-from letta_client.types import ToolReturnMessage
+from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
 from letta_client.types.agents import (
     AssistantMessage,
     HiddenReasoningMessage,
@@ -24,21 +25,16 @@ from letta_client.types.agents import (
     ToolCallMessage,
     UserMessage,
 )
-from letta_client.types.agents.image_content_param import ImageContentParam, SourceBase64Image, SourceURLImage
+from letta_client.types.agents.image_content_param import ImageContentParam, SourceBase64Image
 from letta_client.types.agents.letta_streaming_response import LettaPing, LettaStopReason, LettaUsageStatistics
 from letta_client.types.agents.text_content_param import TextContentParam
 
 from letta.errors import LLMError
 from letta.helpers.reasoning_helper import is_reasoning_completely_disabled
 from letta.llm_api.openai_client import is_openai_reasoning_model
-from letta.log import get_logger
-from letta.schemas.agent import AgentState
-from letta.schemas.letta_message_content import Base64Image, ImageContent, TextContent, UrlImage
-from letta.schemas.letta_request import LettaRequest
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import MessageCreate
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 # ------------------------------
 # Helper Functions and Constants
@@ -68,8 +64,8 @@ def roll_dice(num_sides: int) -> int:
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
 USER_MESSAGE_RESPONSE: str = "Teamwork makes the dream work"
-USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_FORCE_REPLY: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
         otid=USER_MESSAGE_OTID,
@@ -85,29 +81,29 @@ USER_MESSAGE_LONG_RESPONSE: str = (
     "Successful teams celebrate victories together and learn from failures as a unit, creating a culture of continuous improvement. "
     "Together, we can overcome challenges that would be insurmountable alone, achieving extraordinary results through the power of collaboration."
 )
-USER_MESSAGE_FORCE_LONG_REPLY: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_FORCE_LONG_REPLY: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=f"This is an automated test message. Call the send_message tool with exactly this message: '{USER_MESSAGE_LONG_RESPONSE}'",
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_GREETING: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_GREETING: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content="Hi!",
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_ROLL_DICE: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content="This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome.",
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=(
             "This is an automated test message. Call the roll_dice tool with 16 sides and send me a very detailed, comprehensive message about the outcome. "
@@ -123,8 +119,8 @@ USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_ROLL_DICE_GEMINI_FLASH: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_ROLL_DICE_GEMINI_FLASH: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=(
             'This is an automated test message. First, call the roll_dice tool with exactly this JSON: {"num_sides": 16, "request_heartbeat": true}. '
@@ -134,8 +130,8 @@ USER_MESSAGE_ROLL_DICE_GEMINI_FLASH: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=(
             "This is an automated test message. First, think long and hard about about why you're here, and your creator. "
@@ -158,8 +154,8 @@ USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
 BASE64_IMAGE = base64.standard_b64encode(
     httpx.get("https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg").content
 ).decode("utf-8")
-USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_BASE64_IMAGE: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=[
             ImageContentParam(type="image", source=SourceBase64Image(type="base64", data=BASE64_IMAGE, media_type="image/jpeg")),
@@ -1951,7 +1947,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
         try:
             client.agents.messages.send(
                 agent_id=temp_agent_state.id,
-                messages=[MessageCreate(role="user", content=philosophical_question)],
+                messages=[MessageCreateParam(role="user", content=philosophical_question)],
             )
         except Exception as e:
             # if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
