@@ -4,7 +4,13 @@ import traceback
 from typing import List, Optional, Tuple, Union
 
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, MESSAGE_SUMMARY_REQUEST_ACK
+from letta.constants import (
+    DEFAULT_MESSAGE_TOOL,
+    DEFAULT_MESSAGE_TOOL_KWARG,
+    MESSAGE_SUMMARY_REQUEST_ACK,
+    TOOL_RETURN_TRUNCATION_CHARS,
+)
+from letta.errors import ContextWindowExceededError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -394,7 +400,27 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
         response_data = await llm_client.request_async(request_data, summarizer_llm_config)
     except Exception as e:
         # handle LLM error (likely a context window exceeded error)
-        raise llm_client.handle_llm_error(e)
+        try:
+            raise llm_client.handle_llm_error(e)
+        except ContextWindowExceededError as context_error:
+            logger.warning(
+                f"Context window exceeded during summarization, falling back to truncated tool returns. Original error: {context_error}"
+            )
+
+            # Fallback: rebuild request with truncated tool returns
+            request_data = llm_client.build_request_data(
+                AgentType.letta_v1_agent,
+                input_messages_obj,
+                summarizer_llm_config,
+                tools=[],
+                tool_return_truncation_chars=TOOL_RETURN_TRUNCATION_CHARS,
+            )
+
+            try:
+                response_data = await llm_client.request_async(request_data, summarizer_llm_config)
+            except Exception as fallback_error:
+                logger.error(f"Fallback summarization also failed: {fallback_error}")
+                raise llm_client.handle_llm_error(fallback_error)
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")

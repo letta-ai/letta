@@ -340,6 +340,7 @@ class DeepseekClient(OpenAIClient):
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         # Override put_inner_thoughts_in_kwargs to False for DeepSeek
         llm_config.put_inner_thoughts_in_kwargs = False

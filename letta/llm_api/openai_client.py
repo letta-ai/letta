@@ -229,6 +229,7 @@ class OpenAIClient(LLMClientBase):
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI Responses API.
@@ -236,7 +237,9 @@ class OpenAIClient(LLMClientBase):
         if llm_config.put_inner_thoughts_in_kwargs:
             raise ValueError("Inner thoughts in kwargs are not supported for the OpenAI Responses API")
 
-        openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(messages)
+        openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(
+            messages, tool_return_truncation_chars=tool_return_truncation_chars
+        )
         # Add multi-modal support for Responses API by rewriting user messages
         # into input_text/input_image parts.
         openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, messages)
@@ -377,6 +380,7 @@ class OpenAIClient(LLMClientBase):
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
@@ -390,6 +394,7 @@ class OpenAIClient(LLMClientBase):
                 tools=tools,
                 force_tool_call=force_tool_call,
                 requires_subsequent_tool_call=requires_subsequent_tool_call,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
 
         if agent_type == AgentType.letta_v1_agent:
@@ -419,6 +424,7 @@ class OpenAIClient(LLMClientBase):
                 messages,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
         ]
 

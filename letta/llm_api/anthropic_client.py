@@ -231,6 +231,7 @@ class AnthropicClient(LLMClientBase):
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
@@ -336,6 +337,7 @@ class AnthropicClient(LLMClientBase):
             # if react, use native content + strip heartbeats
             native_content=is_v1,
             strip_request_heartbeat=is_v1,
+            tool_return_truncation_chars=tool_return_truncation_chars,
         )
 
         # Ensure first message is user
@@ -474,6 +476,14 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
+        # make sure to check for overflow errors, regardless of error type
+        error_str = str(e).lower()
+        if "prompt is too long" in error_str or "exceed context limit" in error_str or "exceeds context" in error_str:
+            logger.warning(f"[Anthropic] Context window exceeded: {str(e)}")
+            return ContextWindowExceededError(
+                message=f"Context window exceeded for Anthropic: {str(e)}",
+            )
+
         if isinstance(e, anthropic.APITimeoutError):
             logger.warning(f"[Anthropic] Request timeout: {e}")
             return LLMTimeoutError(

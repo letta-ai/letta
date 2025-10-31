@@ -56,6 +56,14 @@ from letta.system import unpack_message
 from letta.utils import parse_json, validate_function_response
 
 
+def truncate_tool_return(content: Optional[str], limit: Optional[int]) -> Optional[str]:
+    if limit is None or content is None:
+        return content
+    if len(content) <= limit:
+        return content
+    return content[:limit] + f"... [truncated {len(content) - limit} chars]"
+
+
 def add_inner_thoughts_to_tool_call(
     tool_call: OpenAIToolCall,
     inner_thoughts: str,
@@ -1090,6 +1098,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
         assert not (native_content and put_inner_thoughts_in_kwargs), "native_content and put_inner_thoughts_in_kwargs cannot both be true"
@@ -1191,16 +1200,18 @@ class Message(BaseMessage):
                 tool_return = self.tool_returns[0]
                 if not tool_return.tool_call_id:
                     raise TypeError("OpenAI API requires tool_call_id to be set.")
+                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
                 openai_message = {
-                    "content": tool_return.func_response,
+                    "content": func_response,
                     "role": self.role,
                     "tool_call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
                 }
             else:
                 # Legacy fallback for old message format
                 assert self.tool_call_id is not None, vars(self)
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
                 openai_message = {
-                    "content": text_content,
+                    "content": legacy_content,
                     "role": self.role,
                     "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
                 }
@@ -1232,6 +1243,7 @@ class Message(BaseMessage):
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
         result: List[dict] = []
@@ -1256,6 +1268,7 @@ class Message(BaseMessage):
                 max_tool_id_length=max_tool_id_length,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
             if d is not None:
                 result.append(d)
@@ -1265,6 +1278,7 @@ class Message(BaseMessage):
     def to_openai_responses_dicts(
         self,
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         """Go from Message class to ChatCompletion message object"""
 
@@ -1345,22 +1359,24 @@ class Message(BaseMessage):
                 for tool_return in self.tool_returns:
                     if not tool_return.tool_call_id:
                         raise TypeError("OpenAI Responses API requires tool_call_id to be set.")
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
                     message_dicts.append(
                         {
                             "type": "function_call_output",
                             "call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
-                            "output": tool_return.func_response,
+                            "output": func_response,
                         }
                     )
             else:
                 # Legacy fallback for old message format
                 assert self.tool_call_id is not None, vars(self)
                 assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+                legacy_output = truncate_tool_return(self.content[0].text, tool_return_truncation_chars)
                 message_dicts.append(
                     {
                         "type": "function_call_output",
                         "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-                        "output": self.content[0].text,
+                        "output": legacy_output,
                     }
                 )
 
@@ -1373,11 +1389,16 @@ class Message(BaseMessage):
     def to_openai_responses_dicts_from_list(
         messages: List[Message],
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
         result = []
         for message in messages:
-            result.extend(message.to_openai_responses_dicts(max_tool_id_length=max_tool_id_length))
+            result.extend(
+                message.to_openai_responses_dicts(
+                    max_tool_id_length=max_tool_id_length, tool_return_truncation_chars=tool_return_truncation_chars
+                )
+            )
         return result
 
     def to_anthropic_dict(
@@ -1388,6 +1409,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """
         Convert to an Anthropic message dictionary
@@ -1563,11 +1585,12 @@ class Message(BaseMessage):
             for tool_return in self.tool_returns:
                 if not tool_return.tool_call_id:
                     raise TypeError("Anthropic API requires tool_use_id to be set.")
+                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
                 content.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": tool_return.tool_call_id,
-                        "content": tool_return.func_response,
+                        "content": func_response,
                     }
                 )
             if content:
@@ -1580,6 +1603,7 @@ class Message(BaseMessage):
                     raise TypeError("Anthropic API requires tool_use_id to be set.")
 
                 # This is for legacy reasons
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
                 anthropic_message = {
                     "role": "user",  # NOTE: diff
                     "content": [
@@ -1587,7 +1611,7 @@ class Message(BaseMessage):
                         {
                             "type": "tool_result",
                             "tool_use_id": self.tool_call_id,
-                            "content": text_content,
+                            "content": legacy_content,
                         }
                     ],
                 }
@@ -1606,6 +1630,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
         result = [
@@ -1615,6 +1640,7 @@ class Message(BaseMessage):
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
                 strip_request_heartbeat=strip_request_heartbeat,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
             for m in messages
         ]
@@ -1628,6 +1654,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """
         Go from Message class to Google AI REST message object
@@ -1776,11 +1803,14 @@ class Message(BaseMessage):
                     # Use the function name if available, otherwise use tool_call_id
                     function_name = self.name if self.name else tool_return.tool_call_id
 
+                    # Truncate the tool return if needed
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+
                     # NOTE: Google AI API wants the function response as JSON only, no string
                     try:
-                        function_response = parse_json(tool_return.func_response)
+                        function_response = parse_json(func_response)
                     except:
-                        function_response = {"function_response": tool_return.func_response}
+                        function_response = {"function_response": func_response}
 
                     parts.append(
                         {
@@ -1808,11 +1838,14 @@ class Message(BaseMessage):
                 else:
                     function_name = self.name
 
+                # Truncate the legacy content if needed
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
+
                 # NOTE: Google AI API wants the function response as JSON only, no string
                 try:
-                    function_response = parse_json(text_content)
+                    function_response = parse_json(legacy_content)
                 except:
-                    function_response = {"function_response": text_content}
+                    function_response = {"function_response": legacy_content}
 
                 google_ai_message = {
                     "role": "function",
@@ -1848,6 +1881,7 @@ class Message(BaseMessage):
         current_model: str,
         put_inner_thoughts_in_kwargs: bool = True,
         native_content: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ):
         messages = Message.filter_messages_for_llm_api(messages)
         result = [
@@ -1855,6 +1889,7 @@ class Message(BaseMessage):
                 current_model=current_model,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
             for m in messages
         ]
