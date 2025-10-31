@@ -2014,3 +2014,114 @@ async def test_list_runs_combined_duration_filter_and_percentile(server: SyncSer
         metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
         # Should be greater than 200ms
         assert metrics.run_ns > 200_000_000
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_no_lettuce(server: SyncServer, sarah_agent, default_user):
+    """Test getting a run without Lettuce metadata."""
+    # Create a run without Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"type": "test"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Get run with status
+    fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify run is returned correctly without Lettuce status check
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.created
+    assert fetched_run.metadata == {"type": "test"}
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_success(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test getting a run with Lettuce metadata and successful status fetch."""
+    # Create a run with Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.running,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient
+    mock_client = AsyncMock()
+    mock_client.get_status = AsyncMock(return_value="COMPLETED")
+
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(return_value=mock_client)
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify status was updated from Lettuce
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.completed
+    mock_client.get_status.assert_called_once_with(run_id=created_run.id)
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_failure(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test getting a run when Lettuce status fetch fails."""
+    # Create a run with Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.running,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient to raise an exception
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(side_effect=Exception("Lettuce connection failed"))
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status - should gracefully handle error
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify run is returned with DB status (error was logged but not raised)
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.running  # Original status from DB
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_terminal_status(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test that Lettuce status is not fetched for runs with terminal status."""
+    # Create a run with Lettuce metadata but terminal status
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.completed,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient - should not be called
+    mock_client = AsyncMock()
+    mock_client.get_status = AsyncMock()
+
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(return_value=mock_client)
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify status remains unchanged and Lettuce was not called
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.completed
+    mock_client.get_status.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_not_found(server: SyncServer, default_user):
+    """Test getting a non-existent run with get_run_with_status."""
+    # Use properly formatted run ID that doesn't exist
+    non_existent_run_id = f"run-{uuid.uuid4()}"
+    with pytest.raises(NoResultFound):
+        await server.run_manager.get_run_with_status(run_id=non_existent_run_id, actor=default_user)

@@ -105,7 +105,7 @@ class RunManager:
         use_lettuce = run.metadata and run.metadata.get("lettuce")
         if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
             try:
-                from letta.services.lettuce_client import LettuceClient
+                from letta.services.lettuce import LettuceClient
 
                 lettuce_client = await LettuceClient.create()
                 status = await lettuce_client.get_status(run_id=run_id)
