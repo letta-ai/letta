@@ -51,6 +51,11 @@ DEFAULT_MAX_STEPS = 50
 MIN_CONTEXT_WINDOW = 4096
 DEFAULT_CONTEXT_WINDOW = 32000
 
+# Summarization trigger threshold (multiplier of context_window limit)
+# Summarization triggers when step usage > context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+# Set to 0.9 (90%) to provide buffer before hitting hard limit
+SUMMARIZATION_TRIGGER_MULTIPLIER = 0.9
+
 # number of concurrent embedding requests to sent
 EMBEDDING_BATCH_SIZE = 200
 

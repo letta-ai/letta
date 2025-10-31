@@ -19,7 +19,7 @@ from letta.agents.helpers import (
     merge_and_validate_prefilled_args,
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM, SUMMARIZATION_TRIGGER_MULTIPLIER
 from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -37,6 +37,7 @@ from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
+from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.utils import (
     create_approval_request_message_from_llm_response,
     create_letta_messages_from_llm_response,
@@ -67,6 +68,13 @@ class LettaAgentV3(LettaAgentV2):
     def _initialize_state(self):
         super()._initialize_state()
         self._require_tool_call = False
+        self.last_step_usage = None
+        self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
+
+    def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
+        """Override to track per-step usage for context limit checks"""
+        self.last_step_usage = step_usage_stats
+        super()._update_global_usage_stats(step_usage_stats)
 
     @trace_method
     async def step(
@@ -115,19 +123,46 @@ class LettaAgentV3(LettaAgentV2):
             async for chunk in response:
                 response_letta_messages.append(chunk)
 
+            # Proactive summarization if approaching context limit
+            if (
+                self.last_step_usage
+                and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                and not self.agent_state.message_buffer_autoclear
+            ):
+                self.logger.warning(
+                    f"Step usage ({self.last_step_usage.total_tokens} tokens) approaching "
+                    f"context limit ({self.agent_state.llm_config.context_window}), triggering summarization."
+                )
+
+                in_context_messages = await self.summarize_conversation_history(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=self.response_messages,
+                    total_tokens=self.last_step_usage.total_tokens,
+                    force=True,
+                )
+
+                # Clear to avoid duplication in next iteration
+                self.response_messages = []
+
             if not self.should_continue:
                 break
 
             input_messages_to_persist = []
 
-        # Rebuild context window after stepping
+        # Rebuild context window after stepping (safety net)
         if not self.agent_state.message_buffer_autoclear:
-            await self.summarize_conversation_history(
-                in_context_messages=in_context_messages,
-                new_letta_messages=self.response_messages,
-                total_tokens=self.usage.total_tokens,
-                force=False,
-            )
+            if self.last_step_usage:
+                await self.summarize_conversation_history(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=self.response_messages,
+                    total_tokens=self.last_step_usage.total_tokens,
+                    force=False,
+                )
+            else:
+                self.logger.warning(
+                    "Post-loop summarization skipped: last_step_usage is None. "
+                    "No step completed successfully or usage stats were not updated."
+                )
 
         if self.stop_reason is None:
             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
@@ -211,18 +246,45 @@ class LettaAgentV3(LettaAgentV2):
                     yield f"data: {chunk.model_dump_json()}\n\n"
                     first_chunk = False
 
+                # Proactive summarization if approaching context limit
+                if (
+                    self.last_step_usage
+                    and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                    and not self.agent_state.message_buffer_autoclear
+                ):
+                    self.logger.warning(
+                        f"Step usage ({self.last_step_usage.total_tokens} tokens) approaching "
+                        f"context limit ({self.agent_state.llm_config.context_window}), triggering summarization."
+                    )
+
+                    in_context_messages = await self.summarize_conversation_history(
+                        in_context_messages=in_context_messages,
+                        new_letta_messages=self.response_messages,
+                        total_tokens=self.last_step_usage.total_tokens,
+                        force=True,
+                    )
+
+                    # Clear to avoid duplication in next iteration
+                    self.response_messages = []
+
                 if not self.should_continue:
                     break
 
                 input_messages_to_persist = []
 
             if not self.agent_state.message_buffer_autoclear:
-                await self.summarize_conversation_history(
-                    in_context_messages=in_context_messages,
-                    new_letta_messages=self.response_messages,
-                    total_tokens=self.usage.total_tokens,
-                    force=False,
-                )
+                if self.last_step_usage:
+                    await self.summarize_conversation_history(
+                        in_context_messages=in_context_messages,
+                        new_letta_messages=self.response_messages,
+                        total_tokens=self.last_step_usage.total_tokens,
+                        force=False,
+                    )
+                else:
+                    self.logger.warning(
+                        "Post-loop summarization skipped: last_step_usage is None. "
+                        "No step completed successfully or usage stats were not updated."
+                    )
 
         except Exception as e:
             self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
@@ -231,7 +293,7 @@ class LettaAgentV3(LettaAgentV2):
 
         if run_id:
             letta_messages = Message.to_letta_messages_from_list(
-                self.response_messages,
+                self.response_messages_for_metadata,  # Use separate accumulator to preserve all messages
                 use_assistant_message=False,  # NOTE: set to false
                 reverse=False,
                 # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
@@ -432,7 +494,6 @@ class LettaAgentV3(LettaAgentV2):
                             messages = await self.summarize_conversation_history(
                                 in_context_messages=messages,
                                 new_letta_messages=self.response_messages,
-                                llm_config=self.agent_state.llm_config,
                                 force=True,
                             )
                         else:
@@ -483,6 +544,7 @@ class LettaAgentV3(LettaAgentV2):
 
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(aggregated_persisted[new_message_idx:])
+            self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
             if llm_adapter.supports_token_streaming():
                 # Stream each tool return if tools were executed
