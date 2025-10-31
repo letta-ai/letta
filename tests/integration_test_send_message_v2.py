@@ -543,9 +543,6 @@ async def test_parallel_tool_calls(
     if llm_config.model_endpoint_type != "anthropic" and llm_config.model_endpoint_type != "openai":
         pytest.skip("Parallel tool calling test only applies to Anthropic and OpenAI models.")
 
-    if llm_config.model_endpoint_type == "openai" and send_type not in {"step", "stream_steps"}:
-        pytest.skip(f"OpenAI reasoning model {llm_config.model} does not support streaming parallel tool calling for now.")
-
     # change llm_config to support parallel tool calling
     llm_config.parallel_tool_calls = True
     agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)

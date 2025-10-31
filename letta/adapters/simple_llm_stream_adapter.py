@@ -78,12 +78,6 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             use_responses = "input" in request_data and "messages" not in request_data
             # No support for Responses API proxy
             is_proxy = self.llm_config.provider_name == "lmstudio_openai"
-            # Use parallel tool calling interface if enabled in config
-            use_parallel = self.llm_config.parallel_tool_calls and tools and not use_responses and not is_proxy
-
-            # TODO: Temp, remove
-            if use_parallel:
-                raise RuntimeError("Parallel tool calling not supported for OpenAI streaming")
 
             if use_responses and not is_proxy:
                 self.interface = SimpleOpenAIResponsesStreamingInterface(
