@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import json
+import logging
 import os
 import threading
 import time
@@ -11,17 +12,13 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta
-from letta_client.types import ToolReturnMessage
+from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
 from letta_client.types.agents import AssistantMessage, ReasoningMessage, Run, ToolCallMessage, UserMessage
 from letta_client.types.agents.letta_streaming_response import LettaPing, LettaStopReason, LettaUsageStatistics
 
-from letta.log import get_logger
-from letta.schemas.agent import AgentState
-from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import MessageCreate
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------
@@ -77,22 +74,22 @@ def roll_dice(num_sides: int) -> int:
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
 USER_MESSAGE_RESPONSE: str = "Teamwork makes the dream work"
-USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_FORCE_REPLY: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=f"This is an automated test message. Reply with the message '{USER_MESSAGE_RESPONSE}'.",
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_ROLL_DICE: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content="This is an automated test message. Call the roll_dice tool with 16 sides and reply back to me with the outcome.",
         otid=USER_MESSAGE_OTID,
     )
 ]
-USER_MESSAGE_PARALLEL_TOOL_CALL: List[MessageCreate] = [
-    MessageCreate(
+USER_MESSAGE_PARALLEL_TOOL_CALL: List[MessageCreateParam] = [
+    MessageCreateParam(
         role="user",
         content=("This is an automated test message. Please call the roll_dice tool three times in parallel."),
         otid=USER_MESSAGE_OTID,
@@ -501,7 +498,7 @@ async def agent_state(client: AsyncLetta) -> AgentState:
     dice_tool = await client.tools.upsert_from_function(func=roll_dice)
 
     agent_state_instance = await client.agents.create(
-        agent_type=AgentType.letta_v1_agent,
+        agent_type="letta_v1_agent",
         name="test_agent",
         include_base_tools=False,
         tool_ids=[dice_tool.id],
