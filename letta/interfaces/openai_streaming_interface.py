@@ -6,6 +6,7 @@ from typing import Optional
 from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from openai.types.responses import (
+    ParsedResponse,
     ResponseCompletedEvent,
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
@@ -811,7 +812,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
         self.model = model
-        self.final_response = None
+        self.final_response: Optional[ParsedResponse] = None
 
     def get_content(self) -> list[TextContent | SummarizedReasoningContent]:
         """This includes both SummarizedReasoningContent and TextContent"""
@@ -842,31 +843,35 @@ class SimpleOpenAIResponsesStreamingInterface:
 
         return content
 
-    def get_tool_call_object(self) -> ToolCall:
-        """Useful for agent loop"""
+    def get_tool_call_objects(self) -> list[ToolCall]:
+        """Return finalized tool calls (parallel supported) from final response."""
         if self.final_response is None:
-            raise ValueError("No final response available")
+            return []
 
-        tool_calls = []
-        for response in self.final_response.output:
-            # TODO make sure this shouldn't be ResponseCustomToolCall?
-            if isinstance(response, ResponseFunctionToolCall):
-                tool_calls.append(
-                    ToolCall(
-                        id=response.call_id,
-                        function=FunctionCall(
-                            name=response.name,
-                            arguments=response.arguments,
-                        ),
+        tool_calls: list[ToolCall] = []
+        for item in self.final_response.output:
+            if isinstance(item, ResponseFunctionToolCall):
+                call_id = item.call_id
+                name = item.name
+                arguments = item.arguments
+                if call_id and name is not None:
+                    tool_calls.append(
+                        ToolCall(
+                            id=call_id,
+                            function=FunctionCall(
+                                name=name,
+                                arguments=arguments,
+                            ),
+                        )
                     )
-                )
 
-        if len(tool_calls) == 0:
+        return tool_calls
+
+    def get_tool_call_object(self) -> ToolCall:
+        calls = self.get_tool_call_objects()
+        if not calls:
             raise ValueError("No tool calls available")
-        if len(tool_calls) > 1:
-            raise ValueError(f"Got {len(tool_calls)} tool calls, expected 1")
-
-        return tool_calls[0]
+        return calls[0]
 
     async def process(
         self,
