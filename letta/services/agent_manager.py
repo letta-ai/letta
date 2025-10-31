@@ -411,9 +411,6 @@ class AgentManager:
         if agent_create.include_multi_agent_tools:
             tool_names |= calculate_multi_agent_tools()
 
-        # take out the deprecated tool names
-        tool_names.difference_update(set(DEPRECATED_LETTA_TOOLS))
-
         supplied_ids = set(agent_create.tool_ids or [])
 
         source_ids = agent_create.source_ids or []
