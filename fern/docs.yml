@@ -152,6 +152,8 @@ navigation:
                 path: pages/agents/fetch_webpage.mdx
           - page: Custom Tools
             path: pages/agents/custom_tools.mdx
+          - page: Parallel Tool Calling
+            path: pages/agents/parallel_tool_calling.mdx
           - page: Tool Rules
             path: pages/agents/tool_rules.mdx
           - page: Tool Variables
