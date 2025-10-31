@@ -38,8 +38,8 @@ class AsyncBaseMCPClient:
             raise e
         except Exception as e:
             # MCP connection failures are often due to user misconfiguration, not system errors
-            # Log at info level to help with debugging without triggering Sentry alerts
-            logger.info(
+            # Log as warning for visibility in monitoring
+            logger.warning(
                 f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
             )
             if hasattr(self.server_config, "server_url") and self.server_config.server_url:
@@ -78,7 +78,13 @@ class AsyncBaseMCPClient:
 
     async def execute_tool(self, tool_name: str, tool_args: dict) -> Tuple[str, bool]:
         self._check_initialized()
-        result = await self.session.call_tool(tool_name, tool_args)
+        try:
+            result = await self.session.call_tool(tool_name, tool_args)
+        except Exception as e:
+            if e.__class__.__name__ == "McpError":
+                logger.warning(f"MCP tool '{tool_name}' execution failed: {str(e)}")
+            raise
+
         parsed_content = []
         for content_piece in result.content:
             if isinstance(content_piece, TextContent):

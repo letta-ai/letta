@@ -98,6 +98,34 @@ class RunManager:
             return run.to_pydantic()
 
     @enforce_types
+    async def get_run_with_status(self, run_id: str, actor: PydanticUser) -> PydanticRun:
+        """Get a run by its ID and update status from Lettuce if applicable."""
+        run = await self.get_run_by_id(run_id=run_id, actor=actor)
+
+        use_lettuce = run.metadata and run.metadata.get("lettuce")
+        if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
+            try:
+                from letta.services.lettuce_client import LettuceClient
+
+                lettuce_client = await LettuceClient.create()
+                status = await lettuce_client.get_status(run_id=run_id)
+
+                # Map the status to our enum
+                if status == "RUNNING":
+                    run.status = RunStatus.running
+                elif status == "COMPLETED":
+                    run.status = RunStatus.completed
+                elif status == "FAILED":
+                    run.status = RunStatus.failed
+                elif status == "CANCELLED":
+                    run.status = RunStatus.cancelled
+            except Exception as e:
+                logger.error(f"Failed to get status from Lettuce for run {run_id}: {str(e)}")
+                # Return run with current status from DB if Lettuce fails
+
+        return run
+
+    @enforce_types
     async def list_runs(
         self,
         actor: PydanticUser,
