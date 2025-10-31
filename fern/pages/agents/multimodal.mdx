@@ -45,15 +45,15 @@ const response = await client.agents.messages.create(
                 role: "user",
                 content: [
                     {
+                        type: "text",
+                        text: "Describe this image."
+                    },
+                    {
                         type: "image",
                         source: {
                             type: "url",
                             url: "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
                         },
-                    },
-                    {
-                        type: "text",
-                        text: "Describe this image."
                     }
                 ],
             }
@@ -73,15 +73,15 @@ response = client.agents.messages.create(
             "role": "user",
             "content": [
                 {
+                    "type": "text",
+                    "text": "Describe this image."
+                },
+                {
                     "type": "image",
                     "source": {
                         "type": "url",
                         "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
                     },
-                },
-                {
-                    "type": "text",
-                    "text": "Describe this image."
                 }
             ],
         }
@@ -110,16 +110,16 @@ const response = await client.agents.messages.create(
                 role: "user",
                 content: [
                     {
+                        type: "text",
+                        text: "Describe this image."
+                    },
+                    {
                         type: "image",
                         source: {
                             type: "base64",
-                            media_type: "image/jpeg",
+                            mediaType: "image/jpeg",
                             data: imageData,
                         },
-                    },
-                    {
-                        type: "text",
-                        text: "Describe this image."
                     }
                 ],
             }
@@ -144,16 +144,16 @@ response = client.agents.messages.create(
             "role": "user",
             "content": [
                 {
+                    "type": "text",
+                    "text": "Describe this image."
+                },
+                {
                     "type": "image",
                     "source": {
                         "type": "base64",
                         "media_type": "image/jpeg",
                         "data": image_data,
                     },
-                },
-                {
-                    "type": "text",
-                    "text": "Describe this image."
                 }
             ],
         }
