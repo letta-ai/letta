@@ -414,31 +414,18 @@ class SyncServer(object):
         actor: User,
     ) -> AgentState:
         if request.llm_config is None:
-            additional_config_params = {}
             if request.model is None:
                 if settings.default_llm_handle is None:
                     raise LettaInvalidArgumentError("Must specify either model or llm_config in request", argument_name="model")
                 else:
-                    handle = settings.default_llm_handle
-            else:
-                if isinstance(request.model, str):
-                    handle = request.model
-                elif isinstance(request.model, list):
-                    raise LettaInvalidArgumentError("Multiple models are not supported yet")
-                else:
-                    # EXTREMELEY HACKY, TEMPORARY WORKAROUND
-                    handle = f"{request.model.provider}/{request.model.model}"
-                    # TODO: figure out how to override various params
-                    additional_config_params = request.model._to_legacy_config_params()
-
+                    request.model = settings.default_llm_handle
             config_params = {
-                "handle": handle,
+                "handle": request.model,
                 "context_window_limit": request.context_window_limit,
                 "max_tokens": request.max_tokens,
                 "max_reasoning_tokens": request.max_reasoning_tokens,
                 "enable_reasoner": request.enable_reasoner,
             }
-            config_params.update(additional_config_params)
             log_event(name="start get_cached_llm_config", attributes=config_params)
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
