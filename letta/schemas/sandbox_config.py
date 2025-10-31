@@ -102,7 +102,9 @@ class SandboxConfig(SandboxConfigBase):
     config: Dict = Field(default_factory=lambda: {}, description="The JSON sandbox settings data.")
 
     def get_e2b_config(self) -> E2BSandboxConfig:
-        return E2BSandboxConfig(**self.config)
+        config_dict = self.config.copy()
+        config_dict["template"] = tool_settings.e2b_sandbox_template_id
+        return E2BSandboxConfig(**config_dict)
 
     def get_local_config(self) -> LocalSandboxConfig:
         return LocalSandboxConfig(**self.config)
