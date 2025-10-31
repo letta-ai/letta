@@ -47,13 +47,22 @@ class LLMClientBase:
         force_tool_call: Optional[str] = None,
         telemetry_manager: Optional["TelemetryManager"] = None,
         step_id: Optional[str] = None,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> Union[ChatCompletionResponse, Stream[ChatCompletionChunk]]:
         """
         Issues a request to the downstream model endpoint and parses response.
         If stream=True, returns a Stream[ChatCompletionChunk] that can be iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(agent_type, messages, llm_config, tools, force_tool_call)
+        request_data = self.build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call=False,
+            tool_return_truncation_chars=tool_return_truncation_chars,
+        )
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -128,9 +137,14 @@ class LLMClientBase:
         tools: List[dict],
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
+
+        Args:
+            tool_return_truncation_chars: If set, truncates tool return content to this many characters.
+                                         Used during summarization to avoid context window issues.
         """
         raise NotImplementedError
 

@@ -378,6 +378,9 @@ FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 50000  # same as regular function limit
 FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
+# Tool return truncation limit for LLM context window management
+TOOL_RETURN_TRUNCATION_CHARS = 5000
+
 MAX_PAUSE_HEARTBEATS = 360  # in min
 
 MESSAGE_CHATGPT_FUNCTION_MODEL = "gpt-3.5-turbo"

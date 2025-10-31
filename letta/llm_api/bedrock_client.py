@@ -71,6 +71,7 @@ class BedrockClient(AnthropicClient):
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
         # remove disallowed fields
