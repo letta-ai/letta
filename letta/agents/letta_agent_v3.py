@@ -455,6 +455,13 @@ class LettaAgentV3(LettaAgentV2):
                                         request_data["parallel_tool_calls"] = True
                                     else:
                                         request_data["parallel_tool_calls"] = False
+
+                            # Gemini (Google AI/Vertex) parallel tool use
+                            elif self.agent_state.llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+                                # Gemini supports parallel tool calling natively through multiple parts in the response
+                                # We just need to ensure the config flag is set for tracking purposes
+                                # The actual handling happens in GoogleVertexClient.convert_response_to_chat_completion
+                                pass  # No specific request_data field needed for Gemini
                         except Exception:
                             # if this fails, we simply don't enable parallel tool use
                             pass

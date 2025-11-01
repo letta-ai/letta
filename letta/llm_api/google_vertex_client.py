@@ -444,14 +444,14 @@ class GoogleVertexClient(LLMClientBase):
                 # NOTE(Apr 9, 2025): there's a very strange bug on 2.5 where the response has a part with broken text
                 # {'candidates': [{'content': {'parts': [{'functionCall': {'name': 'send_message', 'args': {'request_heartbeat': False, 'message': 'Hello! How can I make your day better?', 'inner_thoughts': 'User has initiated contact. Sending a greeting.'}}}], 'role': 'model'}, 'finishReason': 'STOP', 'avgLogprobs': -0.25891534213362066}], 'usageMetadata': {'promptTokenCount': 2493, 'candidatesTokenCount': 29, 'totalTokenCount': 2522, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 2493}], 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 29}]}, 'modelVersion': 'gemini-1.5-pro-002'}
                 # To patch this, if we have multiple parts we can take the last one
-                if len(parts) > 1 and not llm_config.enable_reasoner:
+                # Unless parallel tool calling is enabled, in which case multiple parts may be intentional
+                if len(parts) > 1 and not llm_config.enable_reasoner and not llm_config.parallel_tool_calls:
                     logger.warning(f"Unexpected multiple parts in response from Google AI: {parts}")
-                    # only truncate if reasoning is off
+                    # only truncate if reasoning is off and parallel tool calls are disabled
                     parts = [parts[-1]]
 
                 # TODO support parts / multimodal
-                # TODO support parallel tool calling natively
-                # TODO Alternative here is to throw away everything else except for the first part
+                # Parallel tool calling is now supported when llm_config.parallel_tool_calls is enabled
                 openai_response_message = None
                 for response_message in parts:
                     # Convert the actual message style to OpenAI style

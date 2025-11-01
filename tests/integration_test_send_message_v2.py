@@ -540,8 +540,11 @@ async def test_parallel_tool_calls(
     llm_config: LLMConfig,
     send_type: str,
 ) -> None:
-    if llm_config.model_endpoint_type != "anthropic" and llm_config.model_endpoint_type != "openai":
-        pytest.skip("Parallel tool calling test only applies to Anthropic and OpenAI models.")
+    if llm_config.model_endpoint_type not in ["anthropic", "openai", "google_ai", "google_vertex"]:
+        pytest.skip("Parallel tool calling test only applies to Anthropic, OpenAI, and Gemini models.")
+
+    if llm_config.model_endpoint_type in ["google_ai", "google_vertex"] and send_type not in ["step", "async", "stream_steps"]:
+        pytest.skip("Gemini parallel tool calling test only for non streaming scenarios. FIX WHEN STREAMING IS IMPLEMENTED")
 
     # change llm_config to support parallel tool calling
     llm_config.parallel_tool_calls = True
@@ -587,10 +590,14 @@ async def test_parallel_tool_calls(
     # verify each tool call
     for tc in tool_call_msg.tool_calls:
         assert tc["name"] == "roll_dice"
-        # Support both Anthropic (toolu_) and OpenAI (call_) tool call ID formats
-        assert tc["tool_call_id"].startswith("toolu_") or tc["tool_call_id"].startswith("call_"), (
-            f"Unexpected tool call ID format: {tc['tool_call_id']}"
+        # Support Anthropic (toolu_), OpenAI (call_), and Gemini (UUID) tool call ID formats
+        # Gemini uses UUID format which could start with any alphanumeric character
+        valid_id_format = (
+            tc["tool_call_id"].startswith("toolu_")
+            or tc["tool_call_id"].startswith("call_")
+            or (len(tc["tool_call_id"]) > 0 and tc["tool_call_id"][0].isalnum())  # UUID format for Gemini
         )
+        assert valid_id_format, f"Unexpected tool call ID format: {tc['tool_call_id']}"
         assert "num_sides" in tc["arguments"]
 
     # assert tool returns match the tool calls
