@@ -504,6 +504,11 @@ def create_parallel_tool_messages_from_llm_response(
             )
         )
 
+    if not content and tool_returns:
+        primary_return = tool_returns[0]
+        if primary_return.func_response is not None:
+            content.append(TextContent(text=primary_return.func_response))
+
     tool_message = Message(
         role=MessageRole.tool,
         content=content,

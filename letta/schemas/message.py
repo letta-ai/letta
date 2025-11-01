@@ -1181,11 +1181,24 @@ class Message(BaseMessage):
                         tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
+            tool_call_id = self.tool_call_id
+            if text_content is None and self.tool_returns:
+                aggregated_outputs = [tr.func_response for tr in self.tool_returns if tr.func_response]
+                if aggregated_outputs:
+                    text_content = "\n".join(aggregated_outputs)
+                if tool_call_id is None:
+                    for tr in self.tool_returns:
+                        if tr.tool_call_id:
+                            tool_call_id = tr.tool_call_id
+                            break
+
+            assert tool_call_id is not None, vars(self)
+            assert text_content is not None, vars(self)
+
             openai_message = {
                 "content": text_content,
                 "role": self.role,
-                "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                "tool_call_id": tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_call_id,
             }
 
         else:
@@ -1306,15 +1319,27 @@ class Message(BaseMessage):
                     )
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
-            assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
-            message_dicts.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-                    "output": self.content[0].text,
-                }
-            )
+            if self.tool_returns:
+                for tool_return in self.tool_returns:
+                    call_id = tool_return.tool_call_id or self.tool_call_id
+                    assert call_id is not None, vars(self)
+                    message_dicts.append(
+                        {
+                            "type": "function_call_output",
+                            "call_id": call_id[:max_tool_id_length] if max_tool_id_length else call_id,
+                            "output": tool_return.func_response or "",
+                        }
+                    )
+            else:
+                assert self.tool_call_id is not None, vars(self)
+                assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+                message_dicts.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                        "output": self.content[0].text,
+                    }
+                )
 
         else:
             raise ValueError(self.role)
