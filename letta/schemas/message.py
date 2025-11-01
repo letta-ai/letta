@@ -1255,9 +1255,11 @@ class Message(BaseMessage):
                 for tr in m.tool_returns:
                     if not tr.tool_call_id:
                         raise TypeError("ToolReturn came back without a tool_call_id.")
+                    # Ensure explicit tool_returns are truncated for Chat Completions
+                    func_response = truncate_tool_return(tr.func_response, tool_return_truncation_chars)
                     result.append(
                         {
-                            "content": tr.func_response,
+                            "content": func_response,
                             "role": "tool",
                             "tool_call_id": tr.tool_call_id[:max_tool_id_length] if max_tool_id_length else tr.tool_call_id,
                         }

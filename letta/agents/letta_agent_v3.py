@@ -71,6 +71,18 @@ class LettaAgentV3(LettaAgentV2):
         self.last_step_usage = None
         self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
 
+    def _compute_tool_return_truncation_chars(self) -> int:
+        """Compute a dynamic cap for tool returns in requests.
+
+        Heuristic: ~20% of context window × 4 chars/token, minimum 5k chars.
+        This prevents any single tool return from consuming too much context.
+        """
+        try:
+            cap = int(self.agent_state.llm_config.context_window * 0.2 * 4)  # 20% of tokens → chars
+        except Exception:
+            cap = 5000
+        return max(5000, cap)
+
     def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
         """Override to track per-step usage for context limit checks"""
         self.last_step_usage = step_usage_stats
@@ -424,6 +436,7 @@ class LettaAgentV3(LettaAgentV2):
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
                             requires_subsequent_tool_call=self._require_tool_call,
+                            tool_return_truncation_chars=self._compute_tool_return_truncation_chars(),
                         )
                         # TODO: Extend to more providers, and also approval tool rules
                         # Enable parallel tool use when no tool rules are attached
@@ -801,6 +814,39 @@ class LettaAgentV3(LettaAgentV2):
 
         # 3. Handle client side tool execution
         if tool_returns:
+            # Clamp client-side tool returns before persisting (JSON-aware: truncate only the 'message' field)
+            try:
+                cap = self._compute_tool_return_truncation_chars()
+            except Exception:
+                cap = 5000
+
+            for tr in tool_returns:
+                try:
+                    if tr.func_response and isinstance(tr.func_response, str):
+                        parsed = json.loads(tr.func_response)
+                        if isinstance(parsed, dict) and "message" in parsed and isinstance(parsed["message"], str):
+                            msg = parsed["message"]
+                            if len(msg) > cap:
+                                original_len = len(msg)
+                                parsed["message"] = msg[:cap] + f"... [truncated {original_len - cap} chars]"
+                                tr.func_response = json.dumps(parsed)
+                                self.logger.warning(f"Truncated client-side tool return message from {original_len} to {cap} chars")
+                        else:
+                            # Fallback to raw string truncation if not a dict with 'message'
+                            if len(tr.func_response) > cap:
+                                original_len = len(tr.func_response)
+                                tr.func_response = tr.func_response[:cap] + f"... [truncated {original_len - cap} chars]"
+                                self.logger.warning(f"Truncated client-side tool return (raw) from {original_len} to {cap} chars")
+                except json.JSONDecodeError:
+                    # Non-JSON or unexpected shape; truncate as raw string
+                    if tr.func_response and len(tr.func_response) > cap:
+                        original_len = len(tr.func_response)
+                        tr.func_response = tr.func_response[:cap] + f"... [truncated {original_len - cap} chars]"
+                        self.logger.warning(f"Truncated client-side tool return (non-JSON) from {original_len} to {cap} chars")
+                except Exception as e:
+                    # Unexpected error; log and skip truncation for this return
+                    self.logger.warning(f"Failed to truncate client-side tool return: {e}")
+
             continue_stepping = True
             stop_reason = None
             result_tool_returns = tool_returns
