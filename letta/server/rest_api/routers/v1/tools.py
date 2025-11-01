@@ -7,6 +7,7 @@ from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
+from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE
 from letta.errors import (
     LettaInvalidArgumentError,
     LettaInvalidMCPSchemaError,
@@ -817,7 +818,7 @@ async def generate_tool_from_prompt(
     Generate a tool from the given user prompt.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or "anthropic/claude-3-5-sonnet-20240620")
+    llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or DEFAULT_GENERATE_TOOL_MODEL_HANDLE)
     formatted_prompt = (
         f"Generate a python function named {request.tool_name} using the instructions below "
         + (f"based on this starter code: \n\n```\n{request.starter_code}\n```\n\n" if request.starter_code else "\n")

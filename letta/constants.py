@@ -439,3 +439,6 @@ WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE = "gpt-4.1-mini-2025-04-14"
 EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES = ["claude-4-sonnet", "claude-3-5-sonnet", "gpt-5", "gemini-2.5-pro"]
 # But include models with these keywords in base tool rules (overrides exclusion)
 INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES = ["mini"]
+
+# Default handle for model used to generate tools
+DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"
