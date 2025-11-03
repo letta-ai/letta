@@ -406,6 +406,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             logger.warning(
                 f"Context window exceeded during summarization, falling back to truncated tool returns. Original error: {context_error}"
             )
+            logger.debug(f"Full summarization payload: {request_data}")
 
             # Fallback: rebuild request with truncated tool returns
             request_data = llm_client.build_request_data(
@@ -420,7 +421,9 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
                 response_data = await llm_client.request_async(request_data, summarizer_llm_config)
             except Exception as fallback_error:
                 logger.error(f"Fallback summarization also failed: {fallback_error}")
+                logger.debug(f"Full fallback summarization payload: {request_data}")
                 raise llm_client.handle_llm_error(fallback_error)
+
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")
