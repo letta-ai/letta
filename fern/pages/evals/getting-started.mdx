@@ -1,0 +1,264 @@
+# Getting Started
+
+Run your first Letta agent evaluation in 5 minutes.
+
+## Prerequisites
+
+- Python 3.11 or higher
+- A running Letta server (local or Letta Cloud)
+- A Letta agent to test, either in agent file format or by ID (see [Targets](/evals/core-concepts/targets) for more details)
+
+## Installation
+
+```bash
+pip install letta-evals
+```
+
+Or with uv:
+
+```bash
+uv pip install letta-evals
+```
+
+## Getting an Agent to Test
+
+Export an existing agent to a file using the Letta SDK:
+
+```python
+from letta_client import Letta
+import os
+
+client = Letta(
+    base_url="http://localhost:8283",  # or https://api.letta.com for Letta Cloud
+    token=os.getenv("LETTA_API_KEY")  # required for Letta Cloud
+)
+
+# Export an agent to a file
+agent_file = client.agents.export_file(agent_id="agent-123")
+
+# Save to disk
+with open("my_agent.af", "w") as f:
+    f.write(agent_file)
+```
+
+Or export via the Agent Development Environment (ADE) by selecting "Export Agent".
+
+Then reference it in your suite:
+
+```yaml
+target:
+  kind: agent
+  agent_file: my_agent.af
+```
+
+<Note>
+**Other options:** You can also use existing agents by ID or programmatically generate agents. See [Targets](/evals/core-concepts/targets) for all agent configuration options.
+</Note>
+
+## Quick Start
+
+Let's create your first evaluation in 3 steps:
+
+### 1. Create a Test Dataset
+
+Create a file named `dataset.jsonl`:
+
+```jsonl
+{"input": "What's the capital of France?", "ground_truth": "Paris"}
+{"input": "Calculate 2+2", "ground_truth": "4"}
+{"input": "What color is the sky?", "ground_truth": "blue"}
+```
+
+Each line is a JSON object with:
+- `input`: The prompt to send to your agent
+- `ground_truth`: The expected answer (used for grading)
+
+<Note>
+`ground_truth` is optional for some graders (like rubric graders), but required for tool graders like `contains` and `exact_match`.
+</Note>
+
+Read more about [Datasets](/evals/core-concepts/datasets) for details on how to create your dataset.
+
+### 2. Create a Suite Configuration
+
+Create a file named `suite.yaml`:
+
+```yaml
+name: my-first-eval
+dataset: dataset.jsonl
+
+target:
+  kind: agent
+  agent_file: my_agent.af  # Path to your agent file
+  base_url: http://localhost:8283  # Your Letta server
+
+graders:
+  quality:
+    kind: tool
+    function: contains  # Check if response contains the ground truth
+    extractor: last_assistant  # Use the last assistant message
+
+gate:
+  metric_key: quality
+  op: gte
+  value: 0.75  # Require 75% pass rate
+```
+
+The suite configuration defines:
+- The [dataset](/evals/core-concepts/datasets) to use
+- The [agent](/evals/core-concepts/targets) to test
+- The [graders](/evals/core-concepts/graders) to use
+- The [gate](/evals/core-concepts/gates) criteria
+
+Read more about [Suites](/evals/core-concepts/suites) for details on how to configure your evaluation.
+
+### 3. Run the Evaluation
+
+Run your evaluation with the following command:
+
+```bash
+letta-evals run suite.yaml
+```
+
+You'll see real-time progress as your evaluation runs:
+
+```
+Running evaluation: my-first-eval
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3/3 100%
+✓ PASSED (2.25/3.00 avg, 75.0% pass rate)
+```
+
+Read more about [CLI Commands](/evals/cli-reference/commands) for details about the available commands and options.
+
+## Understanding the Results
+
+The core evaluation flow is:
+
+**Dataset → Target (Agent) → Extractor → Grader → Gate → Result**
+
+The evaluation runner:
+1. Loads your dataset
+2. Sends each input to your agent (Target)
+3. Extracts the relevant information (using the Extractor)
+4. Grades the response (using the Grader function)
+5. Computes aggregate metrics
+6. Checks if metrics pass the Gate criteria
+
+The output shows:
+- **Average score**: Mean score across all samples
+- **Pass rate**: Percentage of samples that passed
+- **Gate status**: Whether the evaluation passed or failed overall
+
+## Next Steps
+
+Now that you've run your first evaluation, explore more advanced features:
+
+- [Core Concepts](/evals/core-concepts/concepts-overview) - Understand suites, datasets, graders, and extractors
+- [Grader Types](/evals/core-concepts/graders) - Learn about tool graders vs rubric graders
+- [Multi-Metric Evaluation](/evals/graders/multi-metric-grading) - Test multiple aspects simultaneously
+- [Custom Graders](/evals/advanced/custom-graders) - Write custom grading functions
+- [Multi-Turn Conversations](/evals/advanced/multi-turn-conversations) - Test conversational memory
+
+## Common Use Cases
+
+### Strict Answer Checking
+
+Use exact matching for cases where the answer must be precisely correct:
+
+```yaml
+graders:
+  accuracy:
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+```
+
+### Subjective Quality Evaluation
+
+Use an LLM judge to evaluate subjective qualities like helpfulness or tone:
+
+```yaml
+graders:
+  quality:
+    kind: rubric
+    prompt_path: rubric.txt
+    model: gpt-4o-mini
+    extractor: last_assistant
+```
+
+Then create `rubric.txt`:
+```
+Rate the helpfulness and accuracy of the response.
+- Score 1.0 if helpful and accurate
+- Score 0.5 if partially helpful
+- Score 0.0 if unhelpful or wrong
+```
+
+### Testing Tool Calls
+
+Verify that your agent calls specific tools with expected arguments:
+
+```yaml
+graders:
+  tool_check:
+    kind: tool
+    function: contains
+    extractor: tool_arguments
+    extractor_config:
+      tool_name: search
+```
+
+### Testing Memory Persistence
+
+Check if the agent correctly updates its memory blocks:
+
+```yaml
+graders:
+  memory_check:
+    kind: tool
+    function: contains
+    extractor: memory_block
+    extractor_config:
+      block_label: human
+```
+
+## Troubleshooting
+
+<Warning>
+**"Agent file not found"**
+
+Make sure your `agent_file` path is correct. Paths are relative to the suite YAML file location. Use absolute paths if needed:
+
+```yaml
+target:
+  agent_file: /absolute/path/to/my_agent.af
+```
+</Warning>
+
+<Warning>
+**"Connection refused"**
+
+Your Letta server isn't running or isn't accessible. Start it using Docker:
+
+```bash
+docker run -p 8283:8283 -e OPENAI_API_KEY="your_api_key" letta/letta:latest
+```
+
+By default, it runs at `http://localhost:8283`. See the [self-hosting guide](/guides/selfhosting) for more information.
+</Warning>
+
+<Warning>
+**"No ground_truth provided"**
+
+Tool graders like `exact_match` and `contains` require `ground_truth` in your dataset. Either:
+- Add `ground_truth` to your samples, or
+- Use a rubric grader which doesn't require ground truth
+</Warning>
+
+<Tip>
+**Agent didn't respond as expected**
+
+Try testing your agent manually first using the Letta SDK or Agent Development Environment (ADE) to see how it behaves before running evaluations. See the [Letta documentation](https://docs.letta.com) for more information.
+</Tip>
+
+For more help, see the [Troubleshooting Guide](/evals/troubleshooting/common-issues).

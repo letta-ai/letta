@@ -1,0 +1,23 @@
+---
+title: Groq
+slug: guides/server/providers/groq
+---
+
+
+<Tip>To use Letta with Groq, set the environment variable `GROQ_API_KEY=...`</Tip>
+
+You can use Letta with Groq if you have a Groq account and API key. Once you have set your `GROQ_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+## Enabling Groq with Docker
+
+To enable Groq models when running the Letta server with Docker, set your `GROQ_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e GROQ_API_KEY="your_groq_api_key" \
+  letta/letta:latest
+```
+
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.

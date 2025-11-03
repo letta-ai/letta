@@ -1,0 +1,40 @@
+---
+title: OpenAI-compatible endpoint
+slug: guides/server/providers/openai-proxy
+---
+
+<Warning>
+OpenAI proxy endpoints are not officially supported and you are likely to encounter errors.
+We strongly recommend using providers directly instead of via proxy endpoints (for example, using the Anthropic API directly instead of Claude through OpenRouter).
+For questions and support you can chat with the dev team and community on our [Discord server](https://discord.gg/letta).
+</Warning>
+
+<Note>
+To use OpenAI-compatible (`/v1/chat/completions`) endpoints with Letta, those endpoints must support function/tool calling.
+</Note>
+
+You can configure Letta to use OpenAI-compatible `ChatCompletions` endpoints by setting `OPENAI_API_BASE` in your environment variables (in addition to setting `OPENAI_API_KEY`).
+
+## OpenRouter example
+
+Create an account on [OpenRouter](https://openrouter.ai), then [create an API key](https://openrouter.ai/settings/keys).
+
+Once you have your API key, set both `OPENAI_API_KEY` and `OPENAI_API_BASE` in your environment variables.
+
+## Using with Docker
+Set the environment variables when you use `docker run`:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_BASE="https://openrouter.ai/api/v1" \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
+
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
+
+Once the Letta server is running, you can select OpenRouter models from the ADE dropdown or via the Python SDK.
+
+For information on how to configure agents to use OpenRouter or other OpenAI-compatible endpoints providers, refer to [our guide on using OpenAI](/models/openai).
