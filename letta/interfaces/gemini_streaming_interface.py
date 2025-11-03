@@ -58,6 +58,8 @@ class SimpleGeminiStreamingInterface:
         self.tool_call_name: str | None = None
         self.tool_call_args: dict | None = None  # NOTE: Not a str!
 
+        self.collected_tool_calls: list[ToolCall] = []
+
         # NOTE: signature only is included if tools are present
         self.thinking_signature: str | None = None
 
@@ -81,6 +83,9 @@ class SimpleGeminiStreamingInterface:
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
+        if self.collected_tool_calls:
+            return self.collected_tool_calls[-1]
+
         if self.tool_call_id is None:
             raise ValueError("No tool call ID available")
         if self.tool_call_name is None:
@@ -88,17 +93,12 @@ class SimpleGeminiStreamingInterface:
         if self.tool_call_args is None:
             raise ValueError("No tool call arguments available")
 
-        # TODO use json_dumps?
         tool_call_args_str = json.dumps(self.tool_call_args)
+        return ToolCall(id=self.tool_call_id, function=FunctionCall(name=self.tool_call_name, arguments=tool_call_args_str))
 
-        return ToolCall(
-            id=self.tool_call_id,
-            type="function",
-            function=FunctionCall(
-                name=self.tool_call_name,
-                arguments=tool_call_args_str,
-            ),
-        )
+    def get_tool_call_objects(self) -> list[ToolCall]:
+        """Return all finalized tool calls collected during this message (parallel supported)."""
+        return list(self.collected_tool_calls)
 
     async def process(
         self,
@@ -254,6 +254,8 @@ class SimpleGeminiStreamingInterface:
                 self.tool_call_id = call_id
                 self.tool_call_name = name
                 self.tool_call_args = arguments
+
+                self.collected_tool_calls.append(ToolCall(id=call_id, function=FunctionCall(name=name, arguments=arguments_str)))
 
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
                     yield ApprovalRequestMessage(

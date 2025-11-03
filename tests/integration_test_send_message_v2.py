@@ -543,9 +543,6 @@ async def test_parallel_tool_calls(
     if llm_config.model_endpoint_type not in ["anthropic", "openai", "google_ai", "google_vertex"]:
         pytest.skip("Parallel tool calling test only applies to Anthropic, OpenAI, and Gemini models.")
 
-    if llm_config.model_endpoint_type in ["google_ai", "google_vertex"] and send_type not in ["step", "async", "stream_steps"]:
-        pytest.skip("Gemini parallel tool calling test only for non streaming scenarios. FIX WHEN STREAMING IS IMPLEMENTED")
-
     # change llm_config to support parallel tool calling
     llm_config.parallel_tool_calls = True
     agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
