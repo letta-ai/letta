@@ -104,11 +104,6 @@ services:
       - ~/.letta/.persist/pgdata:/var/lib/postgresql/data
 ```
 
-```bash Python Server
-export EXA_API_KEY="your_exa_api_key"
-letta server
-```
-
 ```python Per-Agent Configuration
 agent = client.agents.create(
     model="openai/gpt-4o",

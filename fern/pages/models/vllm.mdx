@@ -19,10 +19,9 @@ python -m vllm.entrypoints.openai.api_server \
 
 vLLM will automatically download the model (if it's not already downloaded) and store it in your [HuggingFace cache directory](https://huggingface.co/docs/datasets/cache).
 
-## Enabling vLLM as a provider
-To enable the vLLM provider, you must set the `VLLM_API_BASE` environment variable. When this is set, Letta will use available LLM and embedding models running on vLLM.
+## Enabling vLLM with Docker
 
-### Using the `docker run` server with vLLM
+To enable vLLM models when running the Letta server with Docker, set the `VLLM_API_BASE` environment variable.
 
 **macOS/Windows:**
 Since vLLM is running on the host network, you will need to use `host.docker.internal` to connect to the vLLM server instead of `localhost`.
@@ -45,17 +44,4 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with vLLM
-To chat with an agent, run:
-```bash
-export VLLM_API_BASE="http://localhost:8000"
-letta run
-```
-To run the Letta server, run:
-```bash
-export VLLM_API_BASE="http://localhost:8000"
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.

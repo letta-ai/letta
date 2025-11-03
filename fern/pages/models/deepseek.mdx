@@ -27,11 +27,9 @@ curl https://api.deepseek.com/v1/chat/completions \
 ```
 </Warning>
 
-## Enabling DeepSeek as a provider
-To enable the DeepSeek provider, you must set the `DEEPSEEK_API_KEY` environment variable. When this is set, Letta will use available LLM models running on DeepSeek.
+## Enabling DeepSeek with Docker
 
-### Using the `docker run` server with DeepSeek
-To enable DeepSeek models, simply set your `DEEPSEEK_API_KEY` as an environment variable:
+To enable DeepSeek models when running the Letta server with Docker, set your `DEEPSEEK_API_KEY` as an environment variable:
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
@@ -41,17 +39,4 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with DeepSeek
-To chat with an agent, run:
-```bash
-export DEEPSEEK_API_KEY="..."
-letta run
-```
-To run the Letta server, run:
-```bash
-export DEEPSEEK_API_KEY="..."
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.

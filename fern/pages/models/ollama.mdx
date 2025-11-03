@@ -38,10 +38,9 @@ removing any unused layers
 success
 ```
 
-## Enabling Ollama as a provider
-To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama.
+## Enabling Ollama with Docker
 
-### Using the `docker run` server with Ollama
+To enable Ollama models when running the Letta server with Docker, set the `OLLAMA_BASE_URL` environment variable.
 
 **macOS/Windows:**
 Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
@@ -64,20 +63,7 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with Ollama
-To chat with an agent, run:
-```bash
-export OLLAMA_BASE_URL="http://localhost:11434"
-letta run
-```
-To run the Letta server, run:
-```bash
-export OLLAMA_BASE_URL="http://localhost:11434"
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
 ## Specifying agent models
 When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).

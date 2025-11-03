@@ -16,19 +16,9 @@ Currently, Letta supports the following OpenAI models:
 - `gpt-3.5-turbo` (*not* recommended, should use `gpt-4o-mini` instead)
 
 
-## Enabling Azure OpenAI models
-To enable the Azure provider, set your key as an environment variable:
-```bash
-export AZURE_API_KEY="..."
-export AZURE_BASE_URL="..."
+## Enabling Azure OpenAI with Docker
 
-# Optional: specify API version (default is 2024-09-01-preview)
-export AZURE_API_VERSION="2024-09-01-preview"
-```
-Now, Azure OpenAI models will be enabled with you run `letta run` or the letta service.
-
-### Using the `docker run` server with OpenAI
-To enable Azure OpenAI models, simply set your `AZURE_API_KEY` and `AZURE_BASE_URL` as an environment variables:
+To enable Azure OpenAI models when running the Letta server with Docker, set your `AZURE_API_KEY` and `AZURE_BASE_URL` as environment variables:
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
@@ -40,22 +30,12 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with Azure OpenAI
-To chat with an agent, run:
+Optionally, you can specify the API version (default is 2024-09-01-preview):
 ```bash
-export AZURE_API_KEY="..."
-export AZURE_BASE_URL="..."
-letta run
+-e AZURE_API_VERSION="2024-09-01-preview"
 ```
-To run the Letta server, run:
-```bash
-export AZURE_API_KEY="..."
-export AZURE_BASE_URL="..."
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
 ## Specifying agent models
 When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).

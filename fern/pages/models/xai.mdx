@@ -9,10 +9,9 @@ To enable the xAI provider, set your key as an environment variable:
 ```bash
 export XAI_API_KEY="..."
 ```
-Now, xAI models will be enabled with you run `letta run` or start the Letta server.
+## Enabling xAI with Docker
 
-### Using the `docker run` server with xAI
-To enable xAI models, simply set your `XAI_API_KEY` as an environment variable:
+To enable xAI models when running the Letta server with Docker, set your `XAI_API_KEY` as an environment variable:
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
@@ -22,26 +21,7 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with xAI
-To chat with an agent, run:
-```bash
-export XAI_API_KEY="sk-ant-..."
-letta run
-```
-This will prompt you to select an xAI model.
-```
-? Select LLM model: (Use arrow keys)
- » letta-free [type=openai] [ip=https://inference.letta.com]
-   grok-2-1212 [type=xai] [ip=https://api.x.ai/v1]
-```
-To run the Letta server, run:
-```bash
-export XAI_API_KEY="..."
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
 ## Configuring xAI (Grok) models
 

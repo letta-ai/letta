@@ -21,8 +21,8 @@ Create an account on [OpenRouter](https://openrouter.ai), then [create an API ke
 
 Once you have your API key, set both `OPENAI_API_KEY` and `OPENAI_API_BASE` in your environment variables.
 
-## Using Letta Server via Docker
-Simply set the environment variables when you use `docker run`:
+## Using with Docker
+Set the environment variables when you use `docker run`:
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
@@ -33,43 +33,8 @@ docker run \
   letta/letta:latest
 ```
 
-## Using the Letta CLI
-First we need to export the variables into our environment:
-```sh
-export OPENAI_API_KEY="sk-..."  # your OpenRouter API key
-export OPENAI_API_BASE="https://openrouter.ai/api/v1"  # the OpenRouter OpenAI-compatible endpoint URL
-```
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
-Now, when we run `letta run` in the CLI, we can select OpenRouter models from the list of available models:
-```
-% letta run
+Once the Letta server is running, you can select OpenRouter models from the ADE dropdown or via the Python SDK.
 
-? Would you like to select an existing agent? No
-
-🧬 Creating new agent...
-? Select LLM model: (Use arrow keys)
- » letta-free [type=openai] [ip=https://inference.letta.com]
-   google/gemini-pro-1.5-exp [type=openai] [ip=https://openrouter.ai/api/v1]
-   google/gemini-flash-1.5-exp [type=openai] [ip=https://openrouter.ai/api/v1]
-   google/gemini-flash-1.5-8b-exp [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-11b-vision-instruct:free [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-1b-instruct:free [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-3b-instruct:free [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.1-8b-instruct:free [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-1b-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-3b-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   google/gemini-flash-1.5-8b [type=openai] [ip=https://openrouter.ai/api/v1]
-   mistralai/mistral-7b-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   mistralai/mistral-7b-instruct-v0.3 [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3-8b-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.1-8b-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   meta-llama/llama-3.2-11b-vision-instruct [type=openai] [ip=https://openrouter.ai/api/v1]
-   google/gemini-flash-1.5 [type=openai] [ip=https://openrouter.ai/api/v1]
-   deepseek/deepseek-chat [type=openai] [ip=https://openrouter.ai/api/v1]
-   openai/gpt-4o-mini [type=openai] [ip=https://openrouter.ai/api/v1]
-   openai/gpt-4o-mini-2024-07-18 [type=openai] [ip=https://openrouter.ai/api/v1]
-   mistralai/mistral-nemo [type=openai] [ip=https://openrouter.ai/api/v1]
-   ...
-```
-
-For information on how to configure the Letta server or Letta Python SDK to use OpenRouter or other OpenAI-compatible endpoints providers, refer to [our guide on using OpenAI](/models/openai).
+For information on how to configure agents to use OpenRouter or other OpenAI-compatible endpoints providers, refer to [our guide on using OpenAI](/models/openai).

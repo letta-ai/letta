@@ -8,14 +8,11 @@ slug: guides/selfhosting
 The recommended way to use Letta locally is with Docker.
 To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/).
 For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/).
-You can also install Letta using `pip`.
 </Note>
 
 ## Running the Letta Server
-You can run a Letta server with Docker (recommended) or pip.
-<AccordionGroup>
-  <Accordion icon="docker" title="Running with Docker (recommended)" defaultOpen="true">
-  To run the server with Docker, run the command:
+
+To run the server with Docker, run the command:
 ```sh
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
@@ -35,24 +32,6 @@ docker run \
   --env-file .env \
   letta/letta:latest
 ```
-
-  </Accordion>
-  <Accordion icon="file-code" title="Running with pip">
-  You can install the Letta server via `pip` under the `letta` package:
-  ```sh
-  pip install -U letta
-  ```
-
-  To run the server once installed, simply run the `letta server` command:
-  To add LLM API providers, make sure that the environment variables are present in your environment.
-  ```sh
-  export OPENAI_API_KEY=...
-  letta server
-  ```
-
-  Note that the `letta` package only installs the server - if you would like to use the Python SDK (to create and interact with agents on the server in your Python code), then you will also need to install `letta-client` package (see the [quickstart](/quickstart) for an example).
-  </Accordion>
-</AccordionGroup>
 
 Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the [Letta ADE](/guides/ade) to access and manage your agents in a web interface.
 

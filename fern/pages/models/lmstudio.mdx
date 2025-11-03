@@ -16,10 +16,9 @@ Models marked as ["native tool use"](https://lmstudio.ai/docs/advanced/tool-use#
 1. Download + install [LM Studio](https://lmstudio.ai) and the model you want to test with
 2. Make sure to start the [LM Studio server](https://lmstudio.ai/docs/api/server)
 
-## Enabling LM Studio as a provider
-To enable the LM Studio provider, you must set the `LMSTUDIO_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on LM Studio.
+## Enabling LM Studio with Docker
 
-### Using the `docker run` server with LM Studio
+To enable LM Studio models when running the Letta server with Docker, set the `LMSTUDIO_BASE_URL` environment variable.
 
 **macOS/Windows:**
 Since LM Studio is running on the host network, you will need to use `host.docker.internal` to connect to the LM Studio server instead of `localhost`.
@@ -42,20 +41,7 @@ docker run \
   letta/letta:latest
 ```
 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-### Using `letta run` and `letta server` with LM Studio
-To chat with an agent, run:
-```bash
-export LMSTUDIO_BASE_URL="http://localhost:1234"
-letta run
-```
-To run the Letta server, run:
-```bash
-export LMSTIUDIO_BASE_URL="http://localhost:1234"
-letta server
-```
-To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
 ## Model support
 

@@ -238,13 +238,13 @@ target:
 <Warning>
 **"Connection refused"**
 
-Your Letta server isn't running or isn't accessible. Start it with:
+Your Letta server isn't running or isn't accessible. Start it using Docker:
 
 ```bash
-letta server
+docker run -p 8283:8283 -e OPENAI_API_KEY="your_api_key" letta/letta:latest
 ```
 
-By default, it runs at `http://localhost:8283`.
+By default, it runs at `http://localhost:8283`. See the [self-hosting guide](/guides/selfhosting) for more information.
 </Warning>
 
 <Warning>
