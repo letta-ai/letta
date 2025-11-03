@@ -37,7 +37,11 @@ from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
-from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
+from letta.server.rest_api.streaming_response import (
+    StreamingResponseWithStatusCode,
+    add_keepalive_to_stream,
+    cancellation_aware_stream_wrapper,
+)
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -130,9 +134,19 @@ class StreamingService:
                             service_name="redis",
                         )
 
+                    # Wrap the agent loop stream with cancellation awareness for background task
+                    background_stream = raw_stream
+                    if settings.enable_cancellation_aware_streaming and run:
+                        background_stream = cancellation_aware_stream_wrapper(
+                            stream_generator=raw_stream,
+                            run_manager=self.runs_manager,
+                            run_id=run.id,
+                            actor=actor,
+                        )
+
                     safe_create_task(
                         create_background_stream_processor(
-                            stream_generator=raw_stream,
+                            stream_generator=background_stream,
                             redis_client=redis_client,
                             run_id=run.id,
                             run_manager=self.server.run_manager,
@@ -146,11 +160,19 @@ class StreamingService:
                         run_id=run.id,
                     )
 
+                # wrap client stream with cancellation awareness if enabled and tracking runs
+                stream = raw_stream
+                if settings.enable_cancellation_aware_streaming and settings.track_agent_run and run and not request.background:
+                    stream = cancellation_aware_stream_wrapper(
+                        stream_generator=raw_stream,
+                        run_manager=self.runs_manager,
+                        run_id=run.id,
+                        actor=actor,
+                    )
+
                 # conditionally wrap with keepalive based on request parameter
                 if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
-                else:
-                    stream = raw_stream
+                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
 
                 result = StreamingResponseWithStatusCode(
                     stream,

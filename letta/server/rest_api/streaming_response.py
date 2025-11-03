@@ -144,7 +144,7 @@ async def cancellation_aware_stream_wrapper(
             current_time = asyncio.get_event_loop().time()
             if current_time - last_cancellation_check >= cancellation_check_interval:
                 try:
-                    run = await run_manager.get_run_by_id_async(run_id=run_id, actor=actor)
+                    run = await run_manager.get_run_by_id(run_id=run_id, actor=actor)
                     if run.status == RunStatus.cancelled:
                         logger.info(f"Stream cancelled for run {run_id}, interrupting stream")
                         # Send cancellation event to client
@@ -152,6 +152,9 @@ async def cancellation_aware_stream_wrapper(
                         yield f"data: {json.dumps(cancellation_event)}\n\n"
                         # Raise custom exception for explicit run cancellation
                         raise RunCancelledException(run_id, f"Run {run_id} was cancelled")
+                except RunCancelledException:
+                    # Re-raise cancellation immediately, don't catch it
+                    raise
                 except Exception as e:
                     # Log warning but don't fail the stream if cancellation check fails
                     logger.warning(f"Failed to check run cancellation for run {run_id}: {e}")

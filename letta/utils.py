@@ -1114,6 +1114,10 @@ def safe_create_task(coro, label: str = "background task"):
         try:
             await coro
         except Exception as e:
+            # Don't log RunCancelledException as an error - it's expected when streams are cancelled
+            if e.__class__.__name__ == "RunCancelledException":
+                logger.info(f"{label} was cancelled (RunCancelledException)")
+                return
             logger.exception(f"{label} failed with {type(e).__name__}: {e}")
 
     task = asyncio.create_task(wrapper())
