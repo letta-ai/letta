@@ -258,6 +258,10 @@ class LettaAgentV3(LettaAgentV2):
                     yield f"data: {chunk.model_dump_json()}\n\n"
                     first_chunk = False
 
+                # Check if step was cancelled - break out of the step loop
+                if not self.should_continue:
+                    break
+
                 # Proactive summarization if approaching context limit
                 if (
                     self.last_step_usage

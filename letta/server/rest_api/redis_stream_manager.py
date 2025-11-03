@@ -12,6 +12,7 @@ from letta.schemas.enums import RunStatus
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.run import RunUpdate
 from letta.schemas.user import User
+from letta.server.rest_api.streaming_response import RunCancelledException
 from letta.services.run_manager import RunManager
 from letta.utils import safe_create_task
 
@@ -242,6 +243,11 @@ async def create_background_stream_processor(
             except:
                 pass
 
+    except RunCancelledException as e:
+        # Handle cancellation gracefully - don't write error chunk, cancellation event was already sent
+        logger.info(f"Stream processing stopped due to cancellation for run {run_id}")
+        # The cancellation event was already yielded by cancellation_aware_stream_wrapper
+        # Just mark as complete, don't write additional error chunks
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
@@ -250,9 +256,8 @@ async def create_background_stream_processor(
         if run_manager and actor:
             await run_manager.update_run_by_id_async(
                 run_id=run_id,
-                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value),
+                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
-                metadata={"error": str(e)},
             )
 
         error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
