@@ -283,8 +283,8 @@ class LettaAgentV3(LettaAgentV2):
                     # Clear to avoid duplication in next iteration
                     self.response_messages = []
 
-                if not self.should_continue:
-                    break
+                # if not self.should_continue:
+                #    break
 
                 input_messages_to_persist = []
 
@@ -394,18 +394,24 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Get tool calls that are pending
                 backfill_tool_call_id = approval_request.tool_calls[0].id  # legacy case
-                approved_tool_call_ids = {
-                    backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
-                    for a in approval_response.approvals
-                    if isinstance(a, ApprovalReturn) and a.approve
-                }
+                if approval_response.approvals:
+                    approved_tool_call_ids = {
+                        backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
+                        for a in approval_response.approvals
+                        if isinstance(a, ApprovalReturn) and a.approve
+                    }
+                else:
+                    approved_tool_call_ids = {}
                 tool_calls = [tool_call for tool_call in approval_request.tool_calls if tool_call.id in approved_tool_call_ids]
                 pending_tool_call_message = _maybe_get_pending_tool_call_message(messages)
                 if pending_tool_call_message:
                     tool_calls.extend(pending_tool_call_message.tool_calls)
 
                 # Get tool calls that were denied
-                denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
+                if approval_response.approvals:
+                    denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
+                else:
+                    denies = {}
                 tool_call_denials = [
                     ToolCallDenial(**t.model_dump(), reason=denies.get(t.id).reason) for t in approval_request.tool_calls if t.id in denies
                 ]
