@@ -247,7 +247,8 @@ async def create_background_stream_processor(
         # Handle cancellation gracefully - don't write error chunk, cancellation event was already sent
         logger.info(f"Stream processing stopped due to cancellation for run {run_id}")
         # The cancellation event was already yielded by cancellation_aware_stream_wrapper
-        # Just mark as complete, don't write additional error chunks
+        # Write [DONE] marker to properly close the stream for clients reading from Redis
+        await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
