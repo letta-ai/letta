@@ -283,8 +283,8 @@ class LettaAgentV3(LettaAgentV2):
                     # Clear to avoid duplication in next iteration
                     self.response_messages = []
 
-                # if not self.should_continue:
-                #    break
+                if not self.should_continue:
+                    break
 
                 input_messages_to_persist = []
 
@@ -305,7 +305,18 @@ class LettaAgentV3(LettaAgentV2):
         except Exception as e:
             self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
             if first_chunk:
-                raise  # only raise if first chunk has not been streamed yet
+                # Raise if no chunks sent yet (response not started, can return error status code)
+                raise
+            else:
+                # Mid-stream error: yield error event to client in SSE format
+                error_chunk = {
+                    "error": {
+                        "type": "internal_error",
+                        "message": "An error occurred during agent execution.",
+                        "detail": str(e),
+                    }
+                }
+                yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
 
         if run_id:
             letta_messages = Message.to_letta_messages_from_list(

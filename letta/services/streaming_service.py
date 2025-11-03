@@ -42,6 +42,7 @@ from letta.server.rest_api.streaming_response import (
     add_keepalive_to_stream,
     cancellation_aware_stream_wrapper,
 )
+from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -327,7 +328,7 @@ class StreamingService:
                 error_data = {"error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": str(e)}}
                 stop_reason = StopReasonType.llm_api_error
                 logger.error(f"Run {run_id} stopped with LLM timeout error: {e}, error_data: {error_data}")
-                yield (f"data: {json.dumps(error_data)}\n\n", 504)
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except LLMRateLimitError as e:
@@ -341,7 +342,7 @@ class StreamingService:
                 }
                 stop_reason = StopReasonType.llm_api_error
                 logger.warning(f"Run {run_id} stopped with LLM rate limit error: {e}, error_data: {error_data}")
-                yield (f"data: {json.dumps(error_data)}\n\n", 429)
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except LLMAuthenticationError as e:
@@ -355,16 +356,16 @@ class StreamingService:
                 }
                 logger.warning(f"Run {run_id} stopped with LLM authentication error: {e}, error_data: {error_data}")
                 stop_reason = StopReasonType.llm_api_error
-                yield (f"data: {json.dumps(error_data)}\n\n", 401)
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except LLMError as e:
                 run_status = RunStatus.failed
                 error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
                 logger.error(f"Run {run_id} stopped with LLM error: {e}, error_data: {error_data}")
-                yield (f"data: {json.dumps(error_data)}\n\n", 502)
-                # Send [DONE] marker to properly close the stream
                 stop_reason = StopReasonType.llm_api_error
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except Exception as e:
                 run_status = RunStatus.failed
@@ -377,9 +378,11 @@ class StreamingService:
                 }
                 logger.error(f"Run {run_id} stopped with unknown error: {e}, error_data: {error_data}")
                 stop_reason = StopReasonType.error
-                yield (f"data: {json.dumps(error_data)}\n\n", 500)
-                # Re-raise to ensure proper error handling and Sentry capture
-                raise
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
+                # Capture for Sentry but don't re-raise to allow stream to complete gracefully
+                capture_sentry_exception(e)
             finally:
                 # always update run status, whether success or failure
                 if run_id and self.runs_manager and run_status:
