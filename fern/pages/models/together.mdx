@@ -1,0 +1,23 @@
+---
+title: Together
+slug: guides/server/providers/together
+---
+
+
+<Tip>To use Letta with Together.AI, set the environment variable `TOGETHER_API_KEY=...`</Tip>
+
+You can use Letta with Together.AI if you have an account and API key. Once you have set your `TOGETHER_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+## Enabling Together.AI with Docker
+
+To enable Together.AI models when running the Letta server with Docker, set your `TOGETHER_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e TOGETHER_API_KEY="your_together_api_key" \
+  letta/letta:latest
+```
+
+See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
