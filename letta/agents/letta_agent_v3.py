@@ -610,18 +610,9 @@ class LettaAgentV3(LettaAgentV2):
                     if include_return_message_types is None or message.message_type in include_return_message_types:
                         yield message
 
-            # Persist approval responses immediately to prevent agent from getting into a bad state
-            if (
-                len(input_messages_to_persist) == 1
-                and input_messages_to_persist[0].role == "approval"
-                and persisted_messages[0].role == "approval"
-                and persisted_messages[1].role == "tool"
-            ):
-                self.agent_state.message_ids = self.agent_state.message_ids + [m.id for m in persisted_messages[:2]]
-                await self.agent_manager.update_message_ids_async(
-                    agent_id=self.agent_state.id, message_ids=self.agent_state.message_ids, actor=self.actor
-                )
-            # TODO should we be logging this even if persisted_messages is empty? Technically, there still was an LLM call
+            # Note: message_ids update for approval responses now happens immediately after
+            # persistence in _handle_ai_response (line ~1093-1107) to prevent desync when
+            # the stream is interrupted and this generator is abandoned before being fully consumed
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             self.logger.warning(f"Error during step processing: {e}")
@@ -1079,6 +1070,22 @@ class LettaAgentV3(LettaAgentV2):
             project_id=agent_state.project_id,
             template_id=agent_state.template_id,
         )
+
+        # Update message_ids immediately after persistence to prevent desync
+        # This handles approval responses where we need to keep message_ids in sync
+        if (
+            is_approval_response
+            and initial_messages
+            and len(initial_messages) == 1
+            and initial_messages[0].role == "approval"
+            and len(persisted_messages) >= 2
+            and persisted_messages[0].role == "approval"
+            and persisted_messages[1].role == "tool"
+        ):
+            agent_state.message_ids = agent_state.message_ids + [m.id for m in persisted_messages[:2]]
+            await self.agent_manager.update_message_ids_async(
+                agent_id=agent_state.id, message_ids=agent_state.message_ids, actor=self.actor
+            )
 
         # 5g. Aggregate continuation decisions
         aggregate_continue = any(persisted_continue_flags) if persisted_continue_flags else False
