@@ -15851,6 +15851,132 @@
         }
       }
     },
+    "/v1/templates/{template_version}/agents": {
+      "post": {
+        "description": "Creates an Agent or multiple Agents from a template",
+        "summary": "Create agents from a template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+          }
+        ],
+        "operationId": "templates.createAgentsFromTemplateWithHeader",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9-_ ]*$"
+                    },
+                    "description": "The tags to assign to the agent"
+                  },
+                  "agent_name": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-_ ]*$",
+                    "description": "The name of the agent, optional otherwise a random one will be assigned"
+                  },
+                  "initial_message_sequence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "system", "assistant"]
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "otid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sender_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "batch_item_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "group_id": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": ["role", "content"]
+                    },
+                    "description": "Set an initial sequence of messages, if not provided, the agent will start with the default message sequence, if an empty array is provided, the agent will start with no messages"
+                  },
+                  "memory_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The memory variables to assign to the agent"
+                  },
+                  "tool_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The tool variables to assign to the agent"
+                  },
+                  "identity_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The identity ids to assign to the agent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201"
+          },
+          "402": {
+            "description": "402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["message", "limit"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/templates": {
       "get": {
         "description": "List all templates",
