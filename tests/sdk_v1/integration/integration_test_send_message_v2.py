@@ -174,6 +174,10 @@ def assert_tool_call_response(
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
+    # If cancellation happened and no messages were persisted (early cancellation), return early
+    if with_cancellation and len(messages) == 0:
+        return
+
     if not with_cancellation:
         expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
             llm_config, tool_call=True, streaming=streaming, from_db=from_db
@@ -186,6 +190,10 @@ def assert_tool_call_response(
         assert isinstance(messages[index], UserMessage)
         assert messages[index].otid == USER_MESSAGE_OTID
         index += 1
+
+    # If cancellation happened after user message but before any response, return early
+    if with_cancellation and index >= len(messages):
+        return
 
     # Reasoning message if reasoning enabled
     otid_suffix = 0
@@ -210,10 +218,15 @@ def assert_tool_call_response(
         otid_suffix += 1
 
     # Tool call message (may be skipped if cancelled early)
-    if with_cancellation and isinstance(messages[index], AssistantMessage):
+    if with_cancellation and index < len(messages) and isinstance(messages[index], AssistantMessage):
         # If cancelled early, model might respond with text instead of making tool call
         assert "roll" in messages[index].content.lower() or "die" in messages[index].content.lower()
         return  # Skip tool call assertions for early cancellation
+
+    # If cancellation happens before tool call, we might get LettaStopReason directly
+    if with_cancellation and index < len(messages) and isinstance(messages[index], LettaStopReason):
+        assert messages[index].stop_reason == "cancelled"
+        return  # Skip remaining assertions for very early cancellation
 
     assert isinstance(messages[index], ToolCallMessage)
     assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
@@ -540,7 +553,7 @@ async def test_greeting(
             messages=USER_MESSAGE_FORCE_REPLY,
         )
         messages = response.messages
-        run_id = messages[0].run_id
+        run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
     elif send_type == "async":
         run = await client.agents.messages.send_async(
             agent_id=agent_state.id,
@@ -558,7 +571,12 @@ async def test_greeting(
             background=(send_type == "stream_tokens_background"),
         )
         messages = await accumulate_chunks(response)
-        run_id = messages[0].run_id
+        run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
+
+    # If run_id is not in messages (e.g., due to early cancellation), get the most recent run
+    if run_id is None:
+        runs = await client.runs.list(agent_ids=[agent_state.id])
+        run_id = runs[0].id if runs else None
 
     assert_greeting_response(
         messages, streaming=("stream" in send_type), token_streaming=(send_type == "stream_tokens"), llm_config=llm_config
@@ -716,7 +734,7 @@ async def test_tool_call(
             messages=USER_MESSAGE_ROLL_DICE,
         )
         messages = response.messages
-        run_id = messages[0].run_id
+        run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
     elif send_type == "async":
         run = await client.agents.messages.send_async(
             agent_id=agent_state.id,
@@ -734,7 +752,12 @@ async def test_tool_call(
             background=(send_type == "stream_tokens_background"),
         )
         messages = await accumulate_chunks(response)
-        run_id = messages[0].run_id
+        run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
+
+    # If run_id is not in messages (e.g., due to early cancellation), get the most recent run
+    if run_id is None:
+        runs = await client.runs.list(agent_ids=[agent_state.id])
+        run_id = runs[0].id if runs else None
 
     assert_tool_call_response(
         messages, streaming=("stream" in send_type), llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
