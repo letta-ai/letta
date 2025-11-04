@@ -2334,3 +2334,141 @@ def test_inner_thoughts_toggle_interleaved(
     #     # Google uses 'contents' instead of 'messages'
     #     contents = response.get("contents", response.get("messages", []))
     #     validate_google_format_scrubbing(contents)
+
+
+# ============================
+# Input Parameter Tests
+# ============================
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_input_parameter_basic(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a message using the input parameter instead of messages.
+    Verifies that input is properly converted to a user message.
+    """
+    last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    last_message = last_message_page.items[0] if last_message_page.items else None
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    # Use input parameter instead of messages
+    response = client.agents.messages.send(
+        agent_id=agent_state.id,
+        input=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
+    )
+
+    assert_contains_run_id(response.messages)
+    assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
+    messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
+    messages_from_db = messages_from_db_page.items
+    assert_first_message_is_user_message(messages_from_db)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_input_parameter_streaming(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message using the input parameter.
+    """
+    last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    last_message = last_message_page.items[0] if last_message_page.items else None
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    response = client.agents.messages.stream(
+        agent_id=agent_state.id,
+        input=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
+    )
+
+    chunks = list(response)
+    assert_contains_step_id(chunks)
+    assert_contains_run_id(chunks)
+    messages = accumulate_chunks(chunks)
+    assert_greeting_with_assistant_message_response(messages, streaming=True, llm_config=llm_config)
+    messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
+    messages_from_db = messages_from_db_page.items
+    assert_contains_run_id(messages_from_db)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_input_parameter_async(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending an async message using the input parameter.
+    """
+    last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    last_message = last_message_page.items[0] if last_message_page.items else None
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    run = client.agents.messages.send_async(
+        agent_id=agent_state.id,
+        input=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
+    )
+    run = wait_for_run_completion(client, run.id, timeout=60.0)
+
+    messages_page = client.runs.messages.list(run_id=run.id)
+    messages = messages_page.items
+    assert_greeting_with_assistant_message_response(messages, from_db=True, llm_config=llm_config)
+    messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
+    messages_from_db = messages_from_db_page.items
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+def test_input_and_messages_both_provided_error(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+) -> None:
+    """
+    Tests that providing both input and messages raises a validation error.
+    """
+    with pytest.raises(APIError) as exc_info:
+        client.agents.messages.send(
+            agent_id=agent_state.id,
+            input="This is a test message",
+            messages=USER_MESSAGE_FORCE_REPLY,
+        )
+    # Should get a 422 validation error
+    assert exc_info.value.status_code == 422
+
+
+def test_input_and_messages_neither_provided_error(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+) -> None:
+    """
+    Tests that providing neither input nor messages raises a validation error.
+    """
+    with pytest.raises(APIError) as exc_info:
+        client.agents.messages.send(
+            agent_id=agent_state.id,
+        )
+    # Should get a 422 validation error
+    assert exc_info.value.status_code == 422

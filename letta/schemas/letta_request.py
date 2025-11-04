@@ -1,14 +1,18 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
-from letta.schemas.message import MessageCreateUnion
+from letta.schemas.letta_message_content import LettaMessageContentUnion
+from letta.schemas.message import MessageCreate, MessageCreateUnion, MessageRole
 
 
 class LettaRequest(BaseModel):
-    messages: List[MessageCreateUnion] = Field(..., description="The messages to be sent to the agent.")
+    messages: Optional[List[MessageCreateUnion]] = Field(None, description="The messages to be sent to the agent.")
+    input: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(
+        None, description="Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
+    )
     max_steps: int = Field(
         default=DEFAULT_MAX_STEPS,
         description="Maximum number of steps the agent should take to process the request.",
@@ -56,6 +60,22 @@ class LettaRequest(BaseModel):
                             # Default to message
                             item["type"] = "message"
         return v
+
+    @model_validator(mode="after")
+    def validate_input_or_messages(self):
+        """Ensure exactly one of input or messages is set, and convert input to messages if needed"""
+        if self.input is not None and self.messages is not None:
+            raise ValueError("Cannot specify both 'input' and 'messages'. Use one or the other.")
+        if self.input is None and self.messages is None:
+            raise ValueError("Must specify either 'input' or 'messages'.")
+
+        # Convert input to messages format
+        # input can be either a string or List[LettaMessageContentUnion]
+        if self.input is not None:
+            # Both str and List[LettaMessageContentUnion] are valid content types for MessageCreate
+            self.messages = [MessageCreate(role=MessageRole.user, content=self.input)]
+
+        return self
 
 
 class LettaStreamingRequest(LettaRequest):
