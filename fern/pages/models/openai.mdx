@@ -29,18 +29,24 @@ docker run \
 
 See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
-## Configuring OpenAI models in the Python SDK
-When creating agents, you must specify the LLM and embedding models to use. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
+## Specifying agent models
+When creating agents on your self-hosted server, you must specify both the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
 
 ```python
 from letta_client import Letta
+import os
 
+# Connect to your self-hosted server
 client = Letta(base_url="http://localhost:8283")
 
 openai_agent = client.agents.create(
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
+    embedding="openai/text-embedding-3-small",  # An embedding model is required for self-hosted
     # optional configuration
     context_window_limit=16000
 )
 ```
+
+<Note>
+For Letta Cloud usage, see the [quickstart guide](/quickstart). Cloud deployments manage embeddings automatically and don't require provider configuration.
+</Note>
