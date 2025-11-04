@@ -484,6 +484,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             except Exception as fallback_error_a:
                 # Fallback B: hard-truncate the user transcript to fit a conservative char budget
                 logger.warning(f"Clamped tool returns still overflowed ({fallback_error_a}). Falling back to transcript truncation.")
+                logger.info(f"Full fallback summarization payload: {request_data}")
 
                 # Compute a conservative char budget for the transcript based on context window
                 try:
@@ -519,7 +520,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
                     response_data = await llm_client.request_async(request_data, summarizer_llm_config)
                 except Exception as fallback_error_b:
                     logger.error(f"Transcript truncation fallback also failed: {fallback_error_b}. Propagating error.")
-                    logger.debug(f"Full fallback summarization payload: {request_data}")
+                    logger.info(f"Full fallback summarization payload: {request_data}")
                     raise llm_client.handle_llm_error(fallback_error_b)
 
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
