@@ -33008,6 +33008,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
@@ -33497,6 +33499,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
@@ -34111,7 +34115,9 @@
           "return_char_limit": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 1000000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -36191,6 +36197,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
