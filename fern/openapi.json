@@ -7221,6 +7221,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApprovalResponseMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummaryMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventMessage"
                     }
                   ],
                   "discriminator": {
@@ -7234,7 +7240,9 @@
                       "tool_return_message": "#/components/schemas/ToolReturnMessage",
                       "assistant_message": "#/components/schemas/AssistantMessage",
                       "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                      "summary": "#/components/schemas/SummaryMessage",
+                      "event": "#/components/schemas/EventMessage"
                     }
                   },
                   "title": "Response Modify Message"
@@ -8621,6 +8629,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApprovalResponseMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummaryMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventMessage"
                     }
                   ],
                   "discriminator": {
@@ -8634,7 +8648,9 @@
                       "tool_return_message": "#/components/schemas/ToolReturnMessage",
                       "assistant_message": "#/components/schemas/AssistantMessage",
                       "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                      "summary": "#/components/schemas/SummaryMessage",
+                      "event": "#/components/schemas/EventMessage"
                     }
                   },
                   "title": "Response Modify Group Message"
@@ -14760,6 +14776,12 @@
                       },
                       {
                         "$ref": "#/components/schemas/ApprovalResponseMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SummaryMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/EventMessage"
                       }
                     ],
                     "discriminator": {
@@ -14773,7 +14795,9 @@
                         "tool_return_message": "#/components/schemas/ToolReturnMessage",
                         "assistant_message": "#/components/schemas/AssistantMessage",
                         "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                        "summary": "#/components/schemas/SummaryMessage",
+                        "event": "#/components/schemas/EventMessage"
                       }
                     }
                   },
@@ -23788,6 +23812,116 @@
         "title": "EmbeddingConfig",
         "description": "Configuration for embedding model connection and processing parameters."
       },
+      "EventMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message_type": {
+            "type": "string",
+            "const": "event",
+            "title": "Message Type",
+            "default": "event_message"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "event_type": {
+            "type": "string",
+            "const": "compaction",
+            "title": "Event Type"
+          },
+          "event_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Event Data"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "event_type", "event_data"],
+        "title": "EventMessage",
+        "description": "A message for notifying the developer that an event that has occured (e.g. a compaction). Events are NOT part of the context window."
+      },
       "FeedbackType": {
         "type": "string",
         "enum": ["positive", "negative"],
@@ -32183,6 +32317,110 @@
         "required": ["index", "text"],
         "title": "SummarizedReasoningContentPart"
       },
+      "SummaryMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message_type": {
+            "type": "string",
+            "const": "summary",
+            "title": "Message Type",
+            "default": "summary_message"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "summary"],
+        "title": "SummaryMessage",
+        "description": "A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider."
+      },
       "SupervisorManager": {
         "properties": {
           "manager_type": {
@@ -36735,6 +36973,12 @@
           },
           {
             "$ref": "#/components/schemas/ApprovalResponseMessage"
+          },
+          {
+            "$ref": "#/components/schemas/SummaryMessage"
+          },
+          {
+            "$ref": "#/components/schemas/EventMessage"
           }
         ],
         "discriminator": {
@@ -36748,7 +36992,9 @@
             "tool_return_message": "#/components/schemas/ToolReturnMessage",
             "assistant_message": "#/components/schemas/AssistantMessage",
             "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-            "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+            "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+            "summary": "#/components/schemas/SummaryMessage",
+            "event": "#/components/schemas/EventMessage"
           }
         }
       },
