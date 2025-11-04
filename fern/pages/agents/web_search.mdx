@@ -4,13 +4,13 @@ subtitle: Search the internet in real-time with AI-powered search
 slug: guides/agents/web-search
 ---
 
-The `web_search` tool enables Letta agents to search the internet for current information, research, and general knowledge using [Exa](https://exa.ai)'s AI-powered search engine.
+The `web_search` and `fetch_webpage` tools enables Letta agents to search the internet for current information, research, and general knowledge using [Exa](https://exa.ai)'s AI-powered search engine.
 
 <Info>
-On [Letta Cloud](/guides/cloud/overview), this tool works out of the box. For self-hosted deployments, you'll need to [configure an Exa API key](#self-hosted-setup).
+On [Letta Cloud](/guides/cloud/overview), these tools work out of the box. For self-hosted deployments, you'll need to [configure an Exa API key](#self-hosted-setup).
 </Info>
 
-## Quick Start
+## Web Search
 
 ### Adding Web Search to an Agent
 
@@ -203,7 +203,7 @@ agent = client.agents.create(
 )
 ```
 
-See the [Archival Memory documentation](/guides/agents/archival-memory-overview) for more information.
+See the [Archival Memory documentation](/guides/agents/archival-memory) for more information.
 
 ### 3. Craft Effective Search Queries
 
@@ -329,9 +329,152 @@ docker run -e EXA_API_KEY="your_exa_api_key" letta/letta:latest
 | User preferences | Memory blocks | In-context, instant |
 | General knowledge | Pre-trained model | No search needed |
 
+## Fetch Webpage
+
+<CodeGroup>
+```python Python
+from letta import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["fetch_webpage"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I can fetch and read webpages to answer questions about online content."
+    }]
+)
+```
+
+```typescript TypeScript
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+const agent = await client.agents.create({
+  model: "openai/gpt-4o",
+  tools: ["fetch_webpage"],
+  memoryBlocks: [{
+    label: "persona",
+    value: "I can fetch and read webpages to answer questions about online content."
+  }]
+});
+```
+</CodeGroup>
+
+## Tool Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | `str` | The URL of the webpage to fetch |
+
+## Return Format
+
+The tool returns webpage content as text/markdown.
+
+**With Exa API (if configured):**
+```json
+{
+  "title": "Page title",
+  "published_date": "2025-01-15",
+  "author": "Author name",
+  "text": "Full page content in markdown"
+}
+```
+
+**Fallback (without Exa):**
+Returns markdown-formatted text extracted from the HTML.
+
+## How It Works
+
+The tool uses a multi-tier approach:
+
+1. **Exa API** (if `EXA_API_KEY` is configured): Uses Exa's content extraction
+2. **Trafilatura** (fallback): Open-source text extraction to markdown
+3. **Readability + html2text** (final fallback): HTML cleaning and conversion
+
+## Self-Hosted Setup
+
+For enhanced fetching on self-hosted servers, optionally configure an Exa API key. Without it, the tool still works using open-source extraction.
+
+### Optional: Configure Exa
+
+<CodeGroup>
+```bash Docker
+docker run \
+  -e EXA_API_KEY="your_exa_api_key" \
+  letta/letta:latest
+```
+
+```yaml Docker Compose
+services:
+  letta:
+    environment:
+      - EXA_API_KEY=your_exa_api_key
+```
+
+```python Per-Agent
+agent = client.agents.create(
+    tools=["fetch_webpage"],
+    tool_env_vars={
+        "EXA_API_KEY": "your_exa_api_key"
+    }
+)
+```
+</CodeGroup>
+
+## Common Patterns
+
+### Documentation Reader
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["fetch_webpage", "web_search"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I search for documentation with web_search and read it with fetch_webpage."
+    }]
+)
+```
+
+### Research Assistant
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["fetch_webpage", "archival_memory_insert"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I fetch articles and store key insights in archival memory for later reference."
+    }]
+)
+```
+
+### Content Summarizer
+```python
+agent = client.agents.create(
+    model="openai/gpt-4o",
+    tools=["fetch_webpage"],
+    memory_blocks=[{
+        "label": "persona",
+        "value": "I fetch webpages and provide summaries of their content."
+    }]
+)
+```
+
+## When to Use
+
+| Use Case | Tool | Why |
+|----------|------|-----|
+| Read specific webpage | `fetch_webpage` | Direct URL access |
+| Find webpages to read | `web_search` | Discovery first |
+| Read + search in one | `web_search` with `include_text=true` | Combined operation |
+| Multiple pages | `fetch_webpage` | Iterate over URLs |
+
 ## Related Documentation
 
 - [Utilities Overview](/guides/agents/prebuilt-tools)
+- [Web Search](/guides/agents/web-search)
+- [Run Code](/guides/agents/run-code)
 - [Custom Tools](/guides/agents/custom-tools)
 - [Tool Variables](/guides/agents/tool-variables)
-- [Archival Memory](/guides/agents/archival-memory-overview)
