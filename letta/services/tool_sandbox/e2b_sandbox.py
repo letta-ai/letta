@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from e2b.sandbox.commands.command_handle import CommandExitException
@@ -72,25 +73,31 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                 "e2b_execution_started",
                 {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": envs},
             )
+            start_time = time.perf_counter()
             try:
                 execution = await e2b_sandbox.run_code(code, envs=envs)
             except asyncio.CancelledError:
-                logger.info(f"E2B execution cancelled for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+                execution_time = time.perf_counter() - start_time
+                logger.info(f"E2B execution cancelled for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
                 log_event(
                     "e2b_execution_cancelled",
-                    {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id},
+                    {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "execution_time_seconds": execution_time},
                 )
                 raise Exception("Execution cancelled. Transient failure, please retry.")
 
+            execution_time = time.perf_counter() - start_time
+            logger.info(f"E2B execution completed in {execution_time:.2f}s for sandbox {e2b_sandbox.sandbox_id}, tool: {self.tool_name}")
+
             if execution.results:
                 func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
-                logger.info(f"E2B execution succeeded for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+                logger.info(f"E2B execution succeeded for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
                 log_event(
                     "e2b_execution_succeeded",
                     {
                         "tool": self.tool_name,
                         "sandbox_id": e2b_sandbox.sandbox_id,
                         "func_return": func_return,
+                        "execution_time_seconds": execution_time,
                     },
                 )
             elif execution.error:
@@ -102,7 +109,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                     function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
                 )
                 execution.logs.stderr.append(execution.error.traceback)
-                logger.info(f"E2B execution failed for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+                logger.warning(f"E2B execution failed for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
                 log_event(
                     "e2b_execution_failed",
                     {
@@ -111,16 +118,18 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                         "error_type": execution.error.name,
                         "error_message": execution.error.value,
                         "func_return": func_return,
+                        "execution_time_seconds": execution_time,
                     },
                 )
             else:
-                logger.info(f"E2B execution empty for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+                logger.warning(f"E2B execution empty for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
                 log_event(
                     "e2b_execution_empty",
                     {
                         "tool": self.tool_name,
                         "sandbox_id": e2b_sandbox.sandbox_id,
                         "status": "no_results_no_error",
+                        "execution_time_seconds": execution_time,
                     },
                 )
                 raise ValueError(f"Tool {self.tool_name} returned execution with None")
