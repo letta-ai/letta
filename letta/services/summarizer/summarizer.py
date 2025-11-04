@@ -300,13 +300,58 @@ class Summarizer:
         return [all_in_context_messages[0]] + updated_in_context_messages, True
 
 
-def simple_formatter(messages: List[Message], include_system: bool = False) -> str:
-    """Go from an OpenAI-style list of messages to a concatenated string"""
+def simple_formatter(
+    messages: List[Message],
+    include_system: bool = False,
+    tool_return_truncation_chars: int | None = None,
+) -> str:
+    """Go from an OpenAI-style list of messages to a concatenated string.
+
+    Optionally clamps tool-return content to avoid ballooning the summarizer transcript.
+    """
 
     parsed_messages = Message.to_openai_dicts_from_list(
-        [message for message in messages if message.role != MessageRole.system or include_system]
+        [message for message in messages if message.role != MessageRole.system or include_system],
+        tool_return_truncation_chars=tool_return_truncation_chars,
     )
     return "\n".join(json.dumps(msg) for msg in parsed_messages)
+
+
+def middle_truncate_text(
+    text: str,
+    budget_chars: int,
+    head_frac: float = 0.3,
+    tail_frac: float = 0.3,
+) -> tuple[str, int]:
+    """Middle-truncate a string to fit within a character budget.
+
+    Keeps the first `head_frac` and last `tail_frac` portions (by budget chars)
+    and drops the middle. Returns (truncated_text, dropped_char_count).
+
+    Fractions are relative to budget, not original text length.
+    """
+    if budget_chars <= 0 or len(text) <= budget_chars:
+        return text, 0
+
+    head_len = max(0, int(budget_chars * head_frac))
+    tail_len = max(0, int(budget_chars * tail_frac))
+    # Ensure head + tail <= budget; allocate remainder to tail preferentially
+    if head_len + tail_len > budget_chars:
+        tail_len = max(0, budget_chars - head_len)
+
+    head = text[:head_len]
+    tail = text[-tail_len:] if tail_len > 0 else ""
+    dropped = max(0, len(text) - (len(head) + len(tail)))
+
+    marker = f"\n[TRUNCATED: dropped {dropped} middle chars due to context budget]\n"
+    # If marker would overflow budget, shrink tail to fit marker
+    available_for_marker = budget_chars - (len(head) + len(tail))
+    if available_for_marker < len(marker):
+        # reduce tail to free up space
+        over = len(marker) - available_for_marker
+        tail = tail[:-over] if over < len(tail) else ""
+
+    return head + marker + tail, dropped
 
 
 def build_summary_request_text(retain_count: int, evicted_messages: List[str], in_context_messages: List[str]) -> str:
@@ -376,6 +421,8 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
 
     # Prepare the messages payload to send to the LLM
     system_prompt = gpt_summarize.SYSTEM
+    # Build the initial transcript without clamping to preserve fidelity
+    # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
 
     if include_ack:
@@ -403,26 +450,77 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
         try:
             raise llm_client.handle_llm_error(e)
         except ContextWindowExceededError as context_error:
-            logger.warning(
-                f"Context window exceeded during summarization, falling back to truncated tool returns. Original error: {context_error}"
+            logger.warning(f"Context window exceeded during summarization. Applying clamping fallbacks. Original error: {context_error}")
+
+            # Fallback A: rebuild transcript with clamped tool returns to shrink payload
+            summary_transcript = simple_formatter(
+                messages,
+                tool_return_truncation_chars=TOOL_RETURN_TRUNCATION_CHARS,
             )
             logger.debug(f"Full summarization payload: {request_data}")
 
-            # Fallback: rebuild request with truncated tool returns
+            if include_ack:
+                input_messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
+                    {"role": "user", "content": summary_transcript},
+                ]
+            else:
+                input_messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": summary_transcript},
+                ]
+            input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
+
             request_data = llm_client.build_request_data(
                 AgentType.letta_v1_agent,
                 input_messages_obj,
                 summarizer_llm_config,
                 tools=[],
-                tool_return_truncation_chars=TOOL_RETURN_TRUNCATION_CHARS,
             )
 
             try:
                 response_data = await llm_client.request_async(request_data, summarizer_llm_config)
-            except Exception as fallback_error:
-                logger.error(f"Fallback summarization also failed: {fallback_error}")
-                logger.debug(f"Full fallback summarization payload: {request_data}")
-                raise llm_client.handle_llm_error(fallback_error)
+            except Exception as fallback_error_a:
+                # Fallback B: hard-truncate the user transcript to fit a conservative char budget
+                logger.warning(f"Clamped tool returns still overflowed ({fallback_error_a}). Falling back to transcript truncation.")
+
+                # Compute a conservative char budget for the transcript based on context window
+                try:
+                    budget_chars = int(summarizer_llm_config.context_window * 0.6 * 4)
+                except Exception:
+                    budget_chars = 48000
+
+                overhead = len(system_prompt) + (len(MESSAGE_SUMMARY_REQUEST_ACK) if include_ack else 0) + 1024
+                budget_chars = max(2000, budget_chars - overhead)
+
+                truncated_transcript, _ = middle_truncate_text(summary_transcript, budget_chars=budget_chars, head_frac=0.3, tail_frac=0.3)
+
+                if include_ack:
+                    input_messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
+                        {"role": "user", "content": truncated_transcript},
+                    ]
+                else:
+                    input_messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": truncated_transcript},
+                    ]
+                input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
+
+                request_data = llm_client.build_request_data(
+                    AgentType.letta_v1_agent,
+                    input_messages_obj,
+                    summarizer_llm_config,
+                    tools=[],
+                )
+                try:
+                    response_data = await llm_client.request_async(request_data, summarizer_llm_config)
+                except Exception as fallback_error_b:
+                    logger.error(f"Transcript truncation fallback also failed: {fallback_error_b}. Propagating error.")
+                    logger.debug(f"Full fallback summarization payload: {request_data}")
+                    raise llm_client.handle_llm_error(fallback_error_b)
 
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
@@ -465,6 +563,11 @@ def format_transcript(messages: List[Message], include_system: bool = False) -> 
                 continue
 
             text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
+            # Append a compact placeholder for any images
+            image_count = len([c for c in msg.content if isinstance(c, ImageContent)])
+            if image_count > 0:
+                placeholder = "[Image omitted]" if image_count == 1 else f"[{image_count} images omitted]"
+                text = (text + (" " if text else "")) + placeholder
 
         # 2) Otherwise, try extracting from function calls
         elif msg.tool_calls:
