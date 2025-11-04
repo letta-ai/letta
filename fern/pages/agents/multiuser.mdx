@@ -46,7 +46,6 @@ agent = client.agents.create(
     memory_blocks=[],
     model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
-    embedding="openai/text-embedding-3-small",
     identity_ids=[identity.id]
 )
 ```
@@ -62,7 +61,6 @@ const agent = await client.agents.create({
     memoryBlocks: [],
     model: "anthropic/claude-3-5-sonnet-20241022",
     contextWindowLimit: 200000,
-    embedding: "openai/text-embedding-3-small",
     identityIds: [identity.id]
 });
 ```
@@ -129,8 +127,8 @@ This example assumes that you have a self-hosted Letta server running on localho
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
-// in this example we'll connect to a self-hosted Letta server
-const client = new LettaClient({baseUrl: "http://localhost:8283"});
+// Connect to Letta Cloud
+const client = new LettaClient({token: process.env.LETTA_API_KEY});
 const userId = "my_uuid";
 
 // create an agent with the userId tag
@@ -138,7 +136,6 @@ const agent = await client.agents.create({
     memoryBlocks: [],
     model: "anthropic/claude-3-5-sonnet-20241022",
     contextWindowLimit: 200000,
-    embedding: "openai/text-embedding-3-small",
     tags: [userId]
 });
 console.log(`Created agent with id ${agent.id}, tags ${agent.tags}`);
@@ -151,8 +148,9 @@ console.log(`Found matching agents ${agentIds}`);
 ```python Python
 from letta_client import Letta
 
-# in this example we'll connect to a self-hosted Letta server
-client = Letta(base_url="http://localhost:8283")
+# Connect to Letta Cloud
+import os
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 user_id = "my_uuid"
 
 # create an agent with the user_id tag
@@ -160,7 +158,6 @@ agent = client.agents.create(
     memory_blocks=[],
     model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
-    embedding="openai/text-embedding-3-small",
     tags=[user_id]
 )
 print(f"Created agent with id {agent.id}, tags {agent.tags}")

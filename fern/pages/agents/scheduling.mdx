@@ -28,7 +28,7 @@ The most straightforward approach for development and testing:
 ```typescript TypeScript
 import { LettaClient } from '@letta-ai/letta-client';
 
-const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 const agentId = "your_agent_id";
 
 while (true) {
@@ -45,10 +45,11 @@ while (true) {
 
 ```python title="python"
 import time
+import os
 from letta_client import Letta
 from datetime import datetime
 
-client = Letta(base_url="http://localhost:8283")
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 agent_id = "your_agent_id"
 
 while True:
@@ -78,7 +79,7 @@ import { LettaClient } from '@letta-ai/letta-client';
 
 async function sendMessage() {
     try {
-        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+        const client = new LettaClient({ token: process.env.LETTA_API_KEY });
         const response = await client.agents.messages.create("your_agent_id", {
             messages: [{
                 role: "user",
@@ -100,7 +101,8 @@ from letta_client import Letta
 from datetime import datetime
 
 try:
-    client = Letta(base_url="http://localhost:8283")
+    import os
+    client = Letta(token=os.getenv("LETTA_API_KEY"))
     response = client.agents.messages.create(
         agent_id="your_agent_id",
         messages=[{
@@ -142,7 +144,7 @@ import { LettaClient } from '@letta-ai/letta-client';
 
 async function runMaintenance() {
     try {
-        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+        const client = new LettaClient({ token: process.env.LETTA_API_KEY });
         const agentId = "your_agent_id";
 
         const response = await client.agents.messages.create(agentId, {
@@ -183,7 +185,8 @@ logging.basicConfig(
 
 def run_maintenance():
     try:
-        client = Letta(base_url="http://localhost:8283")
+        import os
+    client = Letta(token=os.getenv("LETTA_API_KEY"))
         agent_id = "your_agent_id"
 
         response = client.agents.messages.create(

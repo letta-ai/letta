@@ -90,7 +90,7 @@ function updateSupervisorBlock(blockLabel: string, newValue: string): void {
     const { LettaClient } = require('@letta-ai/letta-client');
 
     const client = new LettaClient({
-        baseUrl: "http://localhost:8283"
+        token: process.env.LETTA_API_KEY
     });
 
     await client.agents.blocks.modify(
@@ -113,9 +113,10 @@ def update_supervisor_block(block_label: str, new_value: str) -> None:
         None: None is always returned as this function does not produce a response.
     """
     from letta_client import Letta
+    import os
 
     client = Letta(
-        base_url="http://localhost:8283"
+        token=os.getenv("LETTA_API_KEY")
     )
 
     client.agents.blocks.modify(

@@ -74,7 +74,7 @@ letta-evals run suite.yaml --api-key your-key
 Letta server base URL (overrides suite config and environment variable).
 
 ```bash
-letta-evals run suite.yaml --base-url http://localhost:8283
+letta-evals run suite.yaml --base-url https://api.letta.com
 ```
 
 #### --project-id
@@ -233,7 +233,7 @@ export LETTA_API_KEY=your-key-here
 Letta server base URL.
 
 ```bash
-export LETTA_BASE_URL=http://localhost:8283
+export LETTA_BASE_URL=https://api.letta.com
 ```
 
 ### LETTA_PROJECT_ID
@@ -322,7 +322,7 @@ ls -la path/to/agent.af
 
 ```bash
 # Verify Letta server is running
-curl http://localhost:8283/v1/health
+curl https://api.letta.com/v1/health
 ```
 </Warning>
 

@@ -29,7 +29,7 @@ dataset: path/to/dataset.jsonl  # Test cases
 target:  # What agent to evaluate
   kind: agent
   agent_file: agent.af  # Agent to test
-  base_url: http://localhost:8283  # Letta server
+  base_url: https://api.letta.com  # Letta server
 
 graders:  # How to evaluate responses
   my_metric:
@@ -185,7 +185,7 @@ dataset: questions.jsonl  # Test questions
 target:
   kind: agent
   agent_file: qa_agent.af  # Pre-configured agent
-  base_url: http://localhost:8283  # Local server
+  base_url: https://api.letta.com  # Local server
 
 graders:
   accuracy:  # Single metric
@@ -236,7 +236,7 @@ dataset: test.jsonl  # Same test for all models
 target:
   kind: agent
   agent_file: agent.af  # Same agent configuration
-  base_url: http://localhost:8283  # Local server
+  base_url: https://api.letta.com  # Local server
   model_configs: [gpt-4o-mini, claude-3-5-sonnet]  # Test both models
 
 graders:

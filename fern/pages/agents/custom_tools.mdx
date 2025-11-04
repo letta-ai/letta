@@ -23,6 +23,7 @@ from letta_client import Letta
 from letta_client.client import BaseTool
 from pydantic import BaseModel
 from typing import List, Type
+import os
 
 class InventoryItem(BaseModel):
     sku: str  # Unique product identifier
@@ -50,10 +51,10 @@ class ManageInventoryTool(BaseTool):
         print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
         return True
 
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
+# create a client connected to Letta Cloud
+# Get your API key at https://app.letta.com/api-keys
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+
 # create the tool
 tool_from_class = client.tools.add(
     tool=ManageInventoryTool(),
@@ -100,9 +101,9 @@ You can create a tool by passing in a function with a [Google Style Python docst
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client';
 
-// create a client to connect to your local Letta server
+// create a client connected to Letta Cloud
 const client = new LettaClient({
-  baseUrl: "http://localhost:8283"
+  token: process.env.LETTA_API_KEY
 });
 
 // define a function
@@ -121,11 +122,10 @@ const tool = await client.tools.createFromFunction({
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
+import os
 
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
+# create a client connected to Letta Cloud
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 # define a function with a docstring
 def roll_dice() -> str:

@@ -66,17 +66,23 @@ docker run \
 See the [self-hosting guide](/guides/selfhosting) for more information on running Letta with Docker.
 
 ## Specifying agent models
-When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
+When creating agents on your self-hosted server, you must specify both the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
 
 ```python
 from letta_client import Letta
+import os
 
+# Connect to your self-hosted server
 client = Letta(base_url="http://localhost:8283")
 
 ollama_agent = client.agents.create(
     model="ollama/thewindmom/hermes-3-llama-3.1-8b:latest",
-    embedding="ollama/mxbai-embed-large:latest",
+    embedding="ollama/mxbai-embed-large",  # An embedding model is required for self-hosted
     # optional configuration
-    context_window_limit=16000,
+    context_window_limit=16000
 )
 ```
+
+<Note>
+For Letta Cloud usage, see the [quickstart guide](/quickstart). Cloud deployments manage embeddings automatically and don't require provider configuration.
+</Note>

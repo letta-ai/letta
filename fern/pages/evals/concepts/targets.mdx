@@ -39,7 +39,7 @@ Path to a `.af` (Agent File) to upload:
 target:
   kind: agent
   agent_file: path/to/agent.af  # Path to .af file
-  base_url: http://localhost:8283  # Letta server URL
+  base_url: https://api.letta.com  # Letta server URL
 ```
 
 The agent file will be uploaded to the Letta server and a new agent created for the evaluation.
@@ -52,7 +52,7 @@ ID of an existing agent on the server:
 target:
   kind: agent
   agent_id: agent-123-abc  # ID of existing agent
-  base_url: http://localhost:8283  # Letta server URL
+  base_url: https://api.letta.com  # Letta server URL
 ```
 
 <Warning>
@@ -67,7 +67,7 @@ Path to a Python script with an agent factory function for programmatic agent cr
 target:
   kind: agent
   agent_script: create_agent.py:create_inventory_agent  # script.py:function_name
-  base_url: http://localhost:8283  # Letta server URL
+  base_url: https://api.letta.com  # Letta server URL
 ```
 
 Format: `path/to/script.py:function_name`
@@ -122,12 +122,12 @@ Letta server URL:
 
 ```yaml
 target:
-  base_url: http://localhost:8283  # Local Letta server
+  base_url: https://api.letta.com  # Local Letta server
   # or
   base_url: https://api.letta.com  # Letta Cloud
 ```
 
-Default: `http://localhost:8283`
+Default: `https://api.letta.com`
 
 ### api_key
 
@@ -210,7 +210,7 @@ Use this for Letta Cloud deployments.
 target:
   kind: agent
   agent_file: ./agents/my_agent.af  # Pre-configured agent
-  base_url: http://localhost:8283  # Local server
+  base_url: https://api.letta.com  # Local server
 ```
 
 ### Letta Cloud
@@ -230,7 +230,7 @@ target:
 target:
   kind: agent
   agent_file: agent.af  # Same agent configuration
-  base_url: http://localhost:8283  # Local server
+  base_url: https://api.letta.com  # Local server
   model_configs: [gpt-4o-mini, gpt-4o, claude-3-5-sonnet]  # Test 3 models
 ```
 
@@ -247,7 +247,7 @@ Model: claude-3-5-sonnet - Avg: 0.88, Pass: 88.0%
 target:
   kind: agent
   agent_script: setup.py:CustomAgentFactory  # Programmatic creation
-  base_url: http://localhost:8283  # Local server
+  base_url: https://api.letta.com  # Local server
 ```
 
 ## Environment Variable Precedence

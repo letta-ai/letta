@@ -154,7 +154,7 @@ While the ADE provides a user-friendly interface for most common settings, the L
 from letta import RESTClient
 
 # Initialize client
-client = RESTClient(base_url="http://localhost:8283/v1")
+client = RESTClient(base_url="https://api.letta.com/v1")
 
 # Update advanced settings not available in the ADE UI
 response = client.agents.modify_agent(

@@ -21,12 +21,12 @@ Once in the **Environment Variables** viewer, click **+** to add a new tool vari
 You can also assign tool variables on agent creation in the API with the `tool_exec_environment_variables` parameter:
 <CodeGroup>
 ```curl title="curl" {7-9}
-curl -X POST http://localhost:8283/v1/agents/ \
+curl -X POST https://api.letta.com/v1/agents \
+     -H "Authorization: Bearer $LETTA_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
   "memory_blocks": [],
   "llm":"openai/gpt-4o-mini",
-  "embedding":"openai/text-embedding-3-small",
   "tool_exec_environment_variables": {
       "API_KEY": "your-api-key-here"
   }
@@ -36,7 +36,6 @@ curl -X POST http://localhost:8283/v1/agents/ \
 agent_state = client.agents.create(
     memory_blocks=[],
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
     tool_exec_environment_variables={
         "API_KEY": "your-api-key-here"
     }
@@ -46,7 +45,6 @@ agent_state = client.agents.create(
 const agentState = await client.agents.create({
     memoryBlocks: [],
     model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
     toolExecEnvironmentVariables: {
         "API_KEY": "your-api-key-here"
     }

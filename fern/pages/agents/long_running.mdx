@@ -28,7 +28,8 @@ Background mode decouples agent execution from your client connection. The agent
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [
@@ -49,7 +50,7 @@ data: {"run_id":"run-123","seq_id":2,"message_type":"tool_call","tool_call":{...
 
 # Step 2: If disconnected, resume from last received seq_id
 curl --request GET \
-  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --url https://api.letta.com/v1/runs/$RUN_ID/stream \
   --header 'Accept: text/event-stream' \
   --data '{
   "starting_after": 57
@@ -216,7 +217,8 @@ Approval responses in background mode emit the `tool_return_message` on the appr
 ```curl curl maxLines=70
 # 1) Start background stream; capture approval request
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [{"role": "user", "content": "Do a sensitive operation"}],
@@ -230,7 +232,8 @@ data: {"run_id":"run-abc","seq_id":1,"message_type":"approval_request_message","
 
 # 2) Approve in background; capture approval stream cursor (this creates a new run)
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [{"type": "approval", "approve": true, "approval_request_id": "message-abc"}],
@@ -243,7 +246,7 @@ data: {"run_id":"run-new","seq_id":0,"message_type":"tool_return_message","statu
 
 # 3) Resume the approval stream's run to continue
 curl --request GET \
-  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --url https://api.letta.com/v1/runs/$RUN_ID/stream \
   --header 'Accept: text/event-stream' \
   --data '{
   "starting_after": 0
@@ -352,7 +355,8 @@ When your application starts or recovers from a crash, you can check for any act
 ```curl curl maxLines=50
 # Step 1: Find active background streams for your agents
 curl --request GET \
-  --url http://localhost:8283/v1/runs/active \
+  --url https://api.letta.com/v1/runs/active \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "agent_ids": [
@@ -365,7 +369,7 @@ curl --request GET \
 
 # Step 2: Resume streaming from the beginning (or any specified seq_id)
 curl --request GET \
-  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --url https://api.letta.com/v1/runs/$RUN_ID/stream \
   --header 'Accept: text/event-stream' \
   --data '{
   "starting_after": 0, # Start from beginning
@@ -431,7 +435,8 @@ Ideal for batch processing, scheduled jobs, or when you don't need real-time upd
 ```curl curl maxLines=50
 # Start async operation (returns immediately with run ID)
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/async \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/async \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [
@@ -444,7 +449,7 @@ curl --request POST \
 
 # Poll for results using the returned run ID
 curl --request GET \
-  --url http://localhost:8283/v1/runs/$RUN_ID
+  --url https://api.letta.com/v1/runs/$RUN_ID
 ```
 ```python python maxLines=50
 # Start async operation (returns immediately with run ID)
@@ -512,7 +517,8 @@ For operations under 10 minutes that need real-time updates without the complexi
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [
@@ -527,9 +533,10 @@ curl --request POST \
 ```python python
 # Configure client with extended timeout
 from letta_client import Letta
+import os
 
 client = Letta(
-    base_url="http://localhost:8283",
+    token=os.getenv("LETTA_API_KEY")
 )
 
 # Enable pings to prevent timeout during long operations
@@ -557,7 +564,7 @@ for chunk in stream:
 import { Letta } from '@letta/sdk';
 
 const client = new Letta({
-    baseUrl: 'http://localhost:8283',
+    token: process.env.LETTA_API_KEY
 });
 
 // Enable pings to prevent timeout during long operations

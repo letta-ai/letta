@@ -43,13 +43,14 @@ In the example below, we'll create a stateful agent with two memory blocks, one 
 ### Python
 ```python
 from letta_client import Letta
+import os
 
-client = Letta(token="LETTA_API_KEY")
-# client = Letta(base_url="http://localhost:8283")  # if self-hosting, set your base_url
+# Connect to Letta Cloud (get your API key at https://app.letta.com/api-keys)
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+# client = Letta(base_url="http://localhost:8283", embedding="openai/text-embedding-3-small")  # if self-hosting, set base_url and embedding
 
 agent_state = client.agents.create(
     model="openai/gpt-4.1",
-    embedding="openai/text-embedding-3-small",
     memory_blocks=[
         {
           "label": "human",
@@ -85,12 +86,12 @@ for message in response.messages:
 ```typescript
 import { LettaClient } from '@letta-ai/letta-client'
 
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-// const client = new LettaClient({ baseUrl: "http://localhost:8283" });  // if self-hosting, set your baseUrl
+// Connect to Letta Cloud (get your API key at https://app.letta.com/api-keys)
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
+// const client = new LettaClient({ baseUrl: "http://localhost:8283", embedding: "openai/text-embedding-3-small" });  // if self-hosting
 
 const agentState = await client.agents.create({
     model: "openai/gpt-4.1",
-    embedding: "openai/text-embedding-3-small",
     memoryBlocks: [
         {
           label: "human",
@@ -150,7 +151,6 @@ shared_block = client.blocks.create(
 # create a supervisor agent
 supervisor_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
-    embedding="openai/text-embedding-3-small",
     # blocks created for this agent
     memory_blocks=[{"label": "persona", "value": "I am a supervisor"}],
     # pre-existing shared block that is "attached" to this agent
@@ -160,7 +160,6 @@ supervisor_agent = client.agents.create(
 # create a worker agent
 worker_agent = client.agents.create(
     model="openai/gpt-4.1-mini",
-    embedding="openai/text-embedding-3-small",
     # blocks created for this agent
     memory_blocks=[{"label": "persona", "value": "I am a worker"}],
     # pre-existing shared block that is "attached" to this agent
@@ -180,7 +179,6 @@ const sharedBlock = await client.blocks.create({
 // create a supervisor agent
 const supervisorAgent = await client.agents.create({
     model: "anthropic/claude-3-5-sonnet-20241022",
-    embedding: "openai/text-embedding-3-small",
     // blocks created for this agent
     memoryBlocks: [{ label: "persona", value: "I am a supervisor" }],
     // pre-existing shared block that is "attached" to this agent
@@ -190,7 +188,6 @@ const supervisorAgent = await client.agents.create({
 // create a worker agent
 const workerAgent = await client.agents.create({
     model: "openai/gpt-4.1-mini",
-    embedding: "openai/text-embedding-3-small",
     // blocks created for this agent
     memoryBlocks: [{ label: "persona", value: "I am a worker" }],
     // pre-existing shared block that is "attached" to this agent
@@ -277,7 +274,6 @@ tool = client.tools.add_mcp_tool(
 # Create agent with MCP tool attached
 agent_state = client.agents.create(
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
     tool_ids=[tool.id]
 )
 
@@ -310,7 +306,6 @@ const tool = await client.tools.addMcpTool("weather-server", "get_weather");
 // Create agent with MCP tool
 const agentState = await client.agents.create({
     model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
     toolIds: [tool.id]
 });
 
@@ -333,17 +328,12 @@ Once you attach a folder to an agent, the agent will be able to use filesystem t
 
 <details>
 <summary>View code snippets</summary>
-  
+
 ### Python
 ```python
-# get an available embedding_config
-embedding_configs = client.embedding_models.list()
-embedding_config = embedding_configs[0]
-
-# create the folder
+# create the folder (embeddings managed automatically by Letta Cloud)
 folder = client.folders.create(
-    name="my_folder",
-    embedding_config=embedding_config
+    name="my_folder"
 )
 
 # upload a file into the folder
@@ -381,14 +371,9 @@ for message in response.messages:
 
 ### TypeScript / Node.js
 ```typescript
-// get an available embedding_config
-const embeddingConfigs = await client.embeddingModels.list()
-const embeddingConfig = embeddingConfigs[0];
-
-// create the folder
+// create the folder (embeddings managed automatically by Letta Cloud)
 const folder = await client.folders.create({
-    name: "my_folder",
-    embeddingConfig: embeddingConfig
+    name: "my_folder"
 });
 
 // upload a file into the folder
@@ -445,7 +430,7 @@ When agents need to execute multiple tool calls or perform complex operations (l
 
 <details>
 <summary>View code snippets</summary>
-  
+
 ### Python
 ```python
 stream = client.agents.messages.create_stream(
@@ -530,7 +515,7 @@ Letta is an open source project built by over a hundred contributors. There are 
 
 * [**Join the Discord**](https://discord.gg/letta): Chat with the Letta devs and other AI developers.
 * [**Chat on our forum**](https://forum.letta.com/): If you're not into Discord, check out our developer forum.
-* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai) 
+* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai)
 
 ---
 
