@@ -322,6 +322,8 @@ async def import_agent(
 
     try:
         serialized_data = file.file.read()
+        file_size_mb = len(serialized_data) / (1024 * 1024)
+        logger.info(f"Agent import: loaded {file_size_mb:.2f} MB into memory")
         agent_json = json.loads(serialized_data)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
