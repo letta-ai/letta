@@ -371,6 +371,8 @@ class SyncServer(object):
                 logger.error(e)
                 self.mcp_clients.pop(server_name)
 
+        logger.info(f"MCP clients initialized: {len(self.mcp_clients)} active connections")
+
         # Print out the tools that are connected
         for server_name, client in self.mcp_clients.items():
             logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
@@ -383,6 +385,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(actor=actor, **kwargs)
+            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
         return self._llm_config_cache[key]
 
     @trace_method
@@ -390,6 +393,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = await self.get_llm_config_from_handle_async(actor=actor, **kwargs)
+            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
         return self._llm_config_cache[key]
 
     @trace_method
@@ -397,6 +401,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._embedding_config_cache:
             self._embedding_config_cache[key] = self.get_embedding_config_from_handle(actor=actor, **kwargs)
+            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
         return self._embedding_config_cache[key]
 
     # @async_redis_cache(key_func=lambda (actor, **kwargs): actor.id + hash(kwargs))
@@ -405,6 +410,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._embedding_config_cache:
             self._embedding_config_cache[key] = await self.get_embedding_config_from_handle_async(actor=actor, **kwargs)
+            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
         return self._embedding_config_cache[key]
 
     @trace_method

@@ -141,6 +141,17 @@ class ToolManager:
             tool_data["organization_id"] = actor.organization_id
 
             tool = ToolModel(**tool_data)
+
+            # Log tool creation with memory footprint
+            import sys
+
+            tool_size_kb = sys.getsizeof(tool_data) / 1024
+            source_code_size_kb = len(pydantic_tool.source_code or "") / 1024
+            schema_size_kb = len(str(pydantic_tool.json_schema or "")) / 1024
+            logger.info(
+                f"Creating tool '{pydantic_tool.name}': total {tool_size_kb:.2f} KB (source: {source_code_size_kb:.2f} KB, schema: {schema_size_kb:.2f} KB)"
+            )
+
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
             return tool.to_pydantic()
 
@@ -192,6 +203,10 @@ class ToolManager:
         for tool in pydantic_tools:
             if tool.description is None:
                 tool.description = tool.json_schema.get("description", None)
+
+        # Log bulk tool operation
+        total_source_code_kb = sum(len(t.source_code or "") for t in pydantic_tools) / 1024
+        logger.info(f"Bulk upserting {len(pydantic_tools)} tools: total source code {total_source_code_kb:.2f} KB")
 
         if settings.letta_pg_uri_no_default:
             # use optimized postgresql bulk upsert

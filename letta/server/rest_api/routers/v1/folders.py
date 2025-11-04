@@ -274,6 +274,11 @@ async def upload_file_to_folder(
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
 
     content = await file.read()
+    file_size_mb = len(content) / (1024 * 1024)
+    from letta.log import get_logger
+
+    logger = get_logger(__name__)
+    logger.info(f"File upload to folder: loaded {file_size_mb:.2f} MB into memory, filename: {file.filename}")
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name

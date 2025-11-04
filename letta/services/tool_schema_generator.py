@@ -38,12 +38,20 @@ def generate_schema_for_tool_creation(
         logger.error("Custom tool is missing source_code field")
         raise ValueError("Custom tool is missing source_code field.")
 
+    source_code_size_kb = len(tool.source_code) / 1024
+    logger.info(f"Generating schema for tool '{tool.name}': source code {source_code_size_kb:.2f} KB")
+
     # TypeScript tools
     if tool.source_type == ToolSourceType.typescript:
         try:
             from letta.functions.typescript_parser import derive_typescript_json_schema
 
-            return derive_typescript_json_schema(source_code=tool.source_code)
+            schema = derive_typescript_json_schema(source_code=tool.source_code)
+            import json
+
+            schema_size_kb = len(json.dumps(schema)) / 1024
+            logger.info(f"Generated TypeScript schema for '{tool.name}': {schema_size_kb:.2f} KB")
+            return schema
         except Exception as e:
             logger.warning(f"Failed to derive TypeScript json schema: {e}")
             raise ValueError(f"Failed to derive TypeScript json schema: {e}")
@@ -54,16 +62,26 @@ def generate_schema_for_tool_creation(
         if tool.args_json_schema:
             name, description = get_function_name_and_docstring(tool.source_code, tool.name)
             args_schema = generate_model_from_args_json_schema(tool.args_json_schema)
-            return generate_schema_from_args_schema_v2(
+            schema = generate_schema_from_args_schema_v2(
                 args_schema=args_schema,
                 name=name,
                 description=description,
                 append_heartbeat=False,
             )
+            import json
+
+            schema_size_kb = len(json.dumps(schema)) / 1024
+            logger.info(f"Generated Python schema from args_json for '{tool.name}': {schema_size_kb:.2f} KB")
+            return schema
         # Otherwise, attempt to parse from docstring with best effort
         else:
             try:
-                return derive_openai_json_schema(source_code=tool.source_code)
+                schema = derive_openai_json_schema(source_code=tool.source_code)
+                import json
+
+                schema_size_kb = len(json.dumps(schema)) / 1024
+                logger.info(f"Generated Python schema from docstring for '{tool.name}': {schema_size_kb:.2f} KB")
+                return schema
             except Exception as e:
                 logger.warning(f"Failed to derive json schema: {e}")
                 raise ValueError(f"Failed to derive json schema: {e}")
