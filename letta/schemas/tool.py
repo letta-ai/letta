@@ -58,7 +58,12 @@ class Tool(BaseTool):
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
 
     # tool configuration
-    return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
+    return_char_limit: int = Field(
+        FUNCTION_RETURN_CHAR_LIMIT,
+        description="The maximum number of characters in the response.",
+        ge=1,
+        le=1_000_000,
+    )
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     default_requires_approval: Optional[bool] = Field(
@@ -118,7 +123,12 @@ class ToolCreate(LettaBase):
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
-    return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
+    return_char_limit: int = Field(
+        FUNCTION_RETURN_CHAR_LIMIT,
+        description="The maximum number of characters in the response.",
+        ge=1,
+        le=1_000_000,
+    )
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
@@ -175,7 +185,12 @@ class ToolUpdate(LettaBase):
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
-    return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
+    return_char_limit: Optional[int] = Field(
+        None,
+        description="The maximum number of characters in the response.",
+        ge=1,
+        le=1_000_000,
+    )
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     metadata_: Optional[Dict[str, Any]] = Field(None, description="A dictionary of additional metadata for the tool.")
