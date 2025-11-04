@@ -72,13 +72,14 @@ For multi-users applications, we recommend creating an agent per-user, though yo
 
 ## Create an agent
 <Note>
-To start creating agents, you can run a Letta server locally using **Letta Desktop**, deploy a server locally + remotely with **Docker**, or use **Letta Cloud**. See our [quickstart guide](/quickstart) for more information.
+To start creating agents with Letta Cloud, [create an API key](https://app.letta.com/api-keys) and set it as `LETTA_API_KEY` in your environment. For self-hosted deployments, see our [self-hosting guide](/guides/selfhosting/overview).
 </Note>
 
-Assuming we're running a Letta server locally at `http://localhost:8283`, we can create a new agent via the REST API, Python SDK, or TypeScript SDK:
+You can create a new agent via the REST API, Python SDK, or TypeScript SDK:
 <CodeGroup>
 ```curl curl
-curl -X POST http://localhost:8283/v1/agents/ \
+curl -X POST https://api.letta.com/v1/agents \
+     -H "Authorization: Bearer $LETTA_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
   "memory_blocks": [
@@ -92,18 +93,16 @@ curl -X POST http://localhost:8283/v1/agents/ \
     }
   ],
   "model": "openai/gpt-4o-mini",
-  "context_window_limit": 16000,
-  "embedding": "openai/text-embedding-3-small"
+  "context_window_limit": 16000
 }'
 ```
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
+import os
 
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
+# create a client connected to Letta Cloud (uses api.letta.com by default)
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 # create an agent with two basic self-editing memory blocks
 agent_state = client.agents.create(
@@ -118,8 +117,7 @@ agent_state = client.agents.create(
         }
     ],
     model="openai/gpt-4o-mini",
-    context_window_limit=16000,
-    embedding="openai/text-embedding-3-small"
+    context_window_limit=16000
 )
 
 # the AgentState object contains all the information about the agent
@@ -129,9 +127,9 @@ print(agent_state)
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
-// create a client to connect to your local Letta server
+// create a client connected to Letta Cloud (uses api.letta.com by default)
 const client = new LettaClient({
-  baseUrl: "http://localhost:8283"
+  token: process.env.LETTA_API_KEY
 });
 
 // create an agent with two basic self-editing memory blocks
@@ -147,8 +145,7 @@ const agentState = await client.agents.create({
         }
     ],
     model: "openai/gpt-4o-mini",
-    contextWindowLimit: 16000,
-    embedding: "openai/text-embedding-3-small"
+    contextWindowLimit: 16000
 });
 
 // the AgentState object contains all the information about the agent
@@ -171,7 +168,8 @@ Once an agent is created, you can message it:
 <CodeGroup>
 ```curl curl
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [

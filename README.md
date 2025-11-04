@@ -46,7 +46,11 @@ from letta_client import Letta
 import os
 
 # Connect to Letta Cloud (get your API key at https://app.letta.com/api-keys)
+<<<<<<< HEAD
 client = Letta(api_key=os.getenv("LETTA_API_KEY"))
+=======
+client = Letta(token=os.getenv("LETTA_API_KEY"))
+>>>>>>> bcf74d3b0 (docs: migrate documentation to cloud-first approach (#5928))
 # client = Letta(base_url="http://localhost:8283", embedding="openai/text-embedding-3-small")  # if self-hosting, set base_url and embedding
 
 agent_state = client.agents.create(

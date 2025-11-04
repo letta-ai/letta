@@ -1,0 +1,267 @@
+# Troubleshooting
+
+Common issues and solutions when using Letta Evals.
+
+## Installation Issues
+
+<Warning>
+**"Command not found: letta-evals"**
+
+**Problem**: CLI not available after installation
+
+**Solution**:
+```bash
+# Verify installation
+pip list | grep letta-evals
+
+# Reinstall if needed
+pip install --upgrade letta-evals
+```
+</Warning>
+
+<Warning>
+**Import errors**
+
+**Problem**: `ModuleNotFoundError: No module named 'letta_evals'`
+
+**Solution**:
+```bash
+# Ensure you're in the right environment
+which python
+
+# Install in correct environment
+source .venv/bin/activate
+pip install letta-evals
+```
+</Warning>
+
+## Configuration Issues
+
+<Warning>
+**"Agent file not found"**
+
+**Problem**: `FileNotFoundError: agent.af`
+
+**Solution**:
+- Check the path is correct relative to the suite YAML
+- Use absolute paths if needed
+- Verify file exists: `ls -la path/to/agent.af`
+
+```yaml
+# Correct relative path
+target:
+  agent_file: ./agents/my_agent.af
+```
+</Warning>
+
+<Warning>
+**"Dataset not found"**
+
+**Problem**: Cannot load dataset file
+
+**Solution**:
+- Verify dataset path in YAML
+- Check file exists: `ls -la dataset.jsonl`
+- Ensure proper JSONL format (one JSON object per line)
+
+```bash
+# Validate JSONL format
+cat dataset.jsonl | jq .
+```
+</Warning>
+
+<Warning>
+**"Validation failed: unknown function"**
+
+**Problem**: Grader function not found
+
+**Solution**:
+```bash
+# List available graders
+letta-evals list-graders
+
+# Check spelling in suite.yaml
+graders:
+  my_metric:
+    function: exact_match  # Correct
+```
+</Warning>
+
+## Connection Issues
+
+<Warning>
+**"Connection refused"**
+
+**Problem**: Cannot connect to Letta server
+
+**Solution**:
+```bash
+# Verify server is running
+curl https://api.letta.com/v1/health
+
+# Check base_url in suite.yaml
+target:
+  base_url: https://api.letta.com
+```
+</Warning>
+
+<Warning>
+**"Unauthorized" or "Invalid API key"**
+
+**Problem**: Authentication failed
+
+**Solution**:
+```bash
+# Set API key
+export LETTA_API_KEY=your-key-here
+
+# Verify key is correct
+echo $LETTA_API_KEY
+```
+</Warning>
+
+## Runtime Issues
+
+<Warning>
+**"No ground_truth provided"**
+
+**Problem**: Grader requires ground truth but sample doesn't have it
+
+**Solution**:
+- Add ground_truth to dataset samples:
+```jsonl
+{"input": "What is 2+2?", "ground_truth": "4"}
+```
+
+- Or use a grader that doesn't require ground truth:
+```yaml
+graders:
+  quality:
+    kind: rubric  # Doesn't require ground_truth
+    prompt_path: rubric.txt
+```
+</Warning>
+
+## Performance Issues
+
+<Tip>
+**Evaluation is very slow**
+
+**Solutions**:
+
+1. Increase concurrency:
+```bash
+letta-evals run suite.yaml --max-concurrent 20
+```
+
+2. Reduce samples for testing:
+```yaml
+max_samples: 10  # Test with small subset first
+```
+
+3. Use tool graders instead of rubric graders:
+```yaml
+graders:
+  accuracy:
+    kind: tool  # Much faster than rubric
+    function: exact_match
+```
+</Tip>
+
+<Tip>
+**High API costs**
+
+**Solutions**:
+
+1. Use cheaper models:
+```yaml
+graders:
+  quality:
+    model: gpt-4o-mini  # Cheaper than gpt-4o
+```
+
+2. Test with small sample first:
+```yaml
+max_samples: 5  # Verify before running full suite
+```
+</Tip>
+
+## Results Issues
+
+<Warning>
+**"All scores are 0.0"**
+
+**Solutions**:
+
+1. Verify extractor is getting content
+2. Check grader logic
+3. Test agent manually first
+</Warning>
+
+<Warning>
+**"Gates failed but scores look good"**
+
+**Solution**:
+- Check gate configuration:
+```yaml
+gate:
+  metric_key: accuracy  # Correct metric?
+  metric: avg_score  # Or accuracy?
+  op: gte  # Correct operator?
+  value: 0.8  # Correct threshold?
+```
+</Warning>
+
+## Debug Tips
+
+### Enable verbose output
+
+Run without `--quiet` to see detailed progress:
+```bash
+letta-evals run suite.yaml
+```
+
+### Examine output files
+
+```bash
+letta-evals run suite.yaml --output debug/
+
+# Check summary
+cat debug/summary.json | jq .
+
+# Check individual results
+cat debug/results.jsonl | jq .
+```
+
+### Validate configuration
+
+```bash
+letta-evals validate suite.yaml
+```
+
+### Check component availability
+
+```bash
+letta-evals list-graders
+letta-evals list-extractors
+```
+
+## Getting Help
+
+If you're still stuck:
+
+1. Check the [Getting Started guide](/evals/get-started/getting-started)
+2. Review the [Core Concepts](/evals/core-concepts/concepts-overview)
+3. Report issues at the [Letta Evals GitHub repository](https://github.com/letta-ai/letta-evals)
+
+When reporting issues, include:
+- Suite YAML configuration
+- Dataset sample (if not sensitive)
+- Error message and full stack trace
+- Environment info (OS, Python version)
+
+```bash
+# Get environment info
+python --version
+pip show letta-evals
+```

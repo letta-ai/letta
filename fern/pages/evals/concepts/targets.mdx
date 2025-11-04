@@ -1,0 +1,329 @@
+# Targets
+
+A **target** is the agent you're evaluating. In Letta Evals, the target configuration determines how agents are created, accessed, and tested.
+
+<Note>
+**Quick overview:**
+- **Three ways to specify agents**: agent file (`.af`), existing agent ID, or programmatic creation script
+- **Critical distinction**: `agent_file`/`agent_script` create fresh agents per sample (isolated tests), while `agent_id` uses one agent for all samples (stateful conversation)
+- **Multi-model support**: Test the same agent configuration across different LLM models
+- **Flexible connection**: Connect to local Letta servers or Letta Cloud
+</Note>
+
+**When to use each approach:**
+- `agent_file` - Pre-configured agents saved as `.af` files (most common)
+- `agent_id` - Testing existing agents or multi-turn conversations with state
+- `agent_script` - Dynamic agent creation with per-sample customization
+
+The target configuration specifies how to create or access the agent for evaluation.
+
+## Target Configuration
+
+All targets have a `kind` field (currently only `agent` is supported):
+
+```yaml
+target:
+  kind: agent  # Currently only "agent" is supported
+  # ... agent-specific configuration
+```
+
+## Agent Sources
+
+You must specify exactly ONE of these:
+
+### agent_file
+
+Path to a `.af` (Agent File) to upload:
+
+```yaml
+target:
+  kind: agent
+  agent_file: path/to/agent.af  # Path to .af file
+  base_url: https://api.letta.com  # Letta server URL
+```
+
+The agent file will be uploaded to the Letta server and a new agent created for the evaluation.
+
+### agent_id
+
+ID of an existing agent on the server:
+
+```yaml
+target:
+  kind: agent
+  agent_id: agent-123-abc  # ID of existing agent
+  base_url: https://api.letta.com  # Letta server URL
+```
+
+<Warning>
+**Modifies agent in-place:** Using `agent_id` will modify your agent's state, memory, and message history during evaluation. The same agent instance is used for all samples, processing them sequentially. **Do not use production agents or agents you don't want to modify.** Use `agent_file` or `agent_script` for reproducible, isolated testing.
+</Warning>
+
+### agent_script
+
+Path to a Python script with an agent factory function for programmatic agent creation:
+
+```yaml
+target:
+  kind: agent
+  agent_script: create_agent.py:create_inventory_agent  # script.py:function_name
+  base_url: https://api.letta.com  # Letta server URL
+```
+
+Format: `path/to/script.py:function_name`
+
+The function must be decorated with `@agent_factory` and have the signature `async (client: AsyncLetta, sample: Sample) -> str`:
+
+```python
+from letta_client import AsyncLetta, CreateBlock
+from letta_evals.decorators import agent_factory
+from letta_evals.models import Sample
+
+@agent_factory
+async def create_inventory_agent(client: AsyncLetta, sample: Sample) -> str:
+    """Create and return agent ID for this sample."""
+    # Access custom arguments from the dataset
+    item = sample.agent_args.get("item", {})
+
+    # Create agent with sample-specific configuration
+    agent = await client.agents.create(
+        name="inventory-assistant",
+        memory_blocks=[
+            CreateBlock(
+                label="item_context",
+                value=f"Item: {item.get('name', 'Unknown')}"
+            )
+        ],
+        agent_type="letta_v1_agent",
+        model="openai/gpt-4.1-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    return agent.id
+```
+
+**Key features:**
+- Creates a fresh agent for each sample
+- Can customize agents using `sample.agent_args` from the dataset
+- Allows testing agent creation logic itself
+- Useful when you don't have pre-saved agent files
+
+**When to use:**
+- Testing agent creation workflows
+- Dynamic per-sample agent configuration
+- Agents that need sample-specific memory or tools
+- Programmatic agent testing
+
+## Connection Configuration
+
+### base_url
+
+Letta server URL:
+
+```yaml
+target:
+  base_url: https://api.letta.com  # Local Letta server
+  # or
+  base_url: https://api.letta.com  # Letta Cloud
+```
+
+Default: `https://api.letta.com`
+
+### api_key
+
+API key for authentication (required for Letta Cloud):
+
+```yaml
+target:
+  api_key: your-api-key-here  # Required for Letta Cloud
+```
+
+Or set via environment variable:
+```bash
+export LETTA_API_KEY=your-api-key-here
+```
+
+### project_id
+
+Letta project ID (for Letta Cloud):
+
+```yaml
+target:
+  project_id: proj_abc123  # Letta Cloud project
+```
+
+Or set via environment variable:
+```bash
+export LETTA_PROJECT_ID=proj_abc123
+```
+
+### timeout
+
+Request timeout in seconds:
+
+```yaml
+target:
+  timeout: 300.0  # Request timeout (5 minutes)
+```
+
+Default: 300 seconds
+
+## Multi-Model Evaluation
+
+Test the same agent across different models:
+
+### model_configs
+
+List of model configuration names from JSON files:
+
+```yaml
+target:
+  kind: agent
+  agent_file: agent.af
+  model_configs: [gpt-4o-mini, claude-3-5-sonnet]  # Test with both models
+```
+
+The evaluation will run once for each model config. Model configs are JSON files in `letta_evals/llm_model_configs/`.
+
+### model_handles
+
+List of model handles (cloud-compatible identifiers):
+
+```yaml
+target:
+  kind: agent
+  agent_file: agent.af
+  model_handles: ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet"]  # Cloud model identifiers
+```
+
+Use this for Letta Cloud deployments.
+
+<Warning>
+**Note**: You cannot specify both `model_configs` and `model_handles`.
+</Warning>
+
+## Complete Examples
+
+### Local Development
+
+```yaml
+target:
+  kind: agent
+  agent_file: ./agents/my_agent.af  # Pre-configured agent
+  base_url: https://api.letta.com  # Local server
+```
+
+### Letta Cloud
+
+```yaml
+target:
+  kind: agent
+  agent_id: agent-cloud-123  # Existing cloud agent
+  base_url: https://api.letta.com  # Letta Cloud
+  api_key: ${LETTA_API_KEY}  # From environment variable
+  project_id: proj_abc  # Your project ID
+```
+
+### Multi-Model Testing
+
+```yaml
+target:
+  kind: agent
+  agent_file: agent.af  # Same agent configuration
+  base_url: https://api.letta.com  # Local server
+  model_configs: [gpt-4o-mini, gpt-4o, claude-3-5-sonnet]  # Test 3 models
+```
+
+Results will include per-model metrics:
+```
+Model: gpt-4o-mini    - Avg: 0.85, Pass: 85.0%
+Model: gpt-4o         - Avg: 0.92, Pass: 92.0%
+Model: claude-3-5-sonnet - Avg: 0.88, Pass: 88.0%
+```
+
+### Programmatic Agent Creation
+
+```yaml
+target:
+  kind: agent
+  agent_script: setup.py:CustomAgentFactory  # Programmatic creation
+  base_url: https://api.letta.com  # Local server
+```
+
+## Environment Variable Precedence
+
+Configuration values are resolved in this order (highest priority first):
+
+1. CLI arguments (`--api-key`, `--base-url`, `--project-id`)
+2. Suite YAML configuration
+3. Environment variables (`LETTA_API_KEY`, `LETTA_BASE_URL`, `LETTA_PROJECT_ID`)
+
+## Agent Lifecycle and Testing Behavior
+
+The way your agent is specified fundamentally changes how the evaluation runs:
+
+### With agent_file or agent_script: Independent Testing
+
+**Agent lifecycle:**
+1. A fresh agent instance is created for each sample
+2. Agent processes the sample input(s)
+3. Agent remains on the server after the sample completes
+
+**Testing behavior:** Each sample is an independent, isolated test. Agent state (memory, message history) does not carry over between samples. This enables parallel execution and ensures reproducible results.
+
+**Use cases:**
+- Testing how the agent responds to various independent inputs
+- Ensuring consistent behavior across different scenarios
+- Regression testing where each case should be isolated
+- Evaluating agent responses without prior context
+
+<Note>
+**Example:** If you have 10 test cases, 10 separate agent instances will be created (one per test case), and they can run in parallel.
+</Note>
+
+### With agent_id: Sequential Script Testing
+
+**Agent lifecycle:**
+1. The same agent instance is used for all samples
+2. Agent processes each sample in sequence
+3. Agent state persists throughout the entire evaluation
+
+**Testing behavior:** The dataset becomes a conversation script where each sample builds on previous ones. Agent memory and message history accumulate, and earlier interactions affect later responses. Samples must execute sequentially.
+
+**Use cases:**
+- Testing multi-turn conversations with context
+- Evaluating how agent memory evolves over time
+- Simulating a single user session with multiple interactions
+- Testing scenarios where context should accumulate
+
+<Note>
+**Example:** If you have 10 test cases, they all run against the same agent instance in order, with state carrying over between each test.
+</Note>
+
+### Critical Differences
+
+| Aspect | agent_file / agent_script | agent_id |
+|--------|---------------------------|----------|
+| **Agent instances** | New agent per sample | Same agent for all samples |
+| **State isolation** | Fully isolated | State carries over |
+| **Execution** | Can run in parallel | Must run sequentially |
+| **Memory** | Fresh for each sample | Accumulates across samples |
+| **Use case** | Independent test cases | Conversation scripts |
+| **Reproducibility** | Highly reproducible | Depends on execution order |
+
+<Tip>
+**Best practice:** Use `agent_file` or `agent_script` for most evaluations to ensure reproducible, isolated tests. Use `agent_id` only when you specifically need to test how agent state evolves across multiple interactions.
+</Tip>
+
+## Validation
+
+The runner validates:
+- Exactly one of `agent_file`, `agent_id`, or `agent_script` is specified
+- Agent files have `.af` extension
+- Agent script paths are valid
+
+## Next Steps
+
+- [Suite YAML Reference](/evals/configuration/suite-yaml-reference) - Complete target configuration options
+- [Datasets](/evals/core-concepts/datasets) - Using agent_args for sample-specific configuration
+- [Getting Started](/evals/get-started/getting-started) - Complete tutorial with target examples

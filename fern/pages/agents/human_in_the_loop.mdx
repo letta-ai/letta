@@ -82,7 +82,8 @@ Set approval requirements at the tool level when creating or upserting a tool. T
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/tools \
+  --url https://api.letta.com/v1/tools \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "name": "sensitive_operation",
@@ -99,7 +100,8 @@ curl --request POST \
 
 # All agents using this tool will require approval
 curl --request POST \
-  --url http://localhost:8283/v1/agents \
+  --url https://api.letta.com/v1/agents \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
    "tools": ["sensitive_operation"],
@@ -153,7 +155,8 @@ For an already existing tool, you can modify the tool to set approval requiremen
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request PATCH \
-  --url http://localhost:8283/v1/tools/$TOOL_ID \
+  --url https://api.letta.com/v1/tools/$TOOL_ID \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "default_requires_approval": true
@@ -161,7 +164,8 @@ curl --request PATCH \
 
 # All agents using this tool will require approval
 curl --request POST \
-  --url http://localhost:8283/v1/agents \
+  --url https://api.letta.com/v1/agents \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
    "tools": ["sensitive_operation"],
@@ -209,7 +213,8 @@ Use the following endpoints to modify approval settings for existing agent-tool 
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request PATCH \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/tools/$TOOL_NAME/approval \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/tools/$TOOL_NAME/approval \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "requires_approval": true
@@ -263,7 +268,8 @@ This format matches the ToolCallMessage format intentionally, so that we can han
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "messages": [{
@@ -369,7 +375,8 @@ To approve a tool call, send an approval message with `approve: true` and the ap
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "messages": [{
@@ -478,7 +485,8 @@ When denying a tool call, you can provide a reason that helps the agent understa
 <CodeGroup>
 ```curl curl maxLines=50
 curl --request POST \
-  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages \
+  --header 'Authorization: Bearer $LETTA_API_KEY' \
   --header 'Content-Type: application/json' \
   --data '{
     "messages": [{
@@ -603,7 +611,7 @@ Do not assume the `tool_return_message` will repeat after you resume. Treat the 
 <CodeGroup>
 ```curl curl maxLines=70
 # Approve in background after receiving approval_request_message
-curl --request POST   --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream   --header 'Content-Type: application/json'   --data '{
+curl --request POST   --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream   --header 'Content-Type: application/json'   --data '{
   "messages": [{"type": "approval", "approve": true, "approval_request_id": "message-abc"}],
   "stream_tokens": true,
   "background": true
@@ -613,7 +621,7 @@ curl --request POST   --url http://localhost:8283/v1/agents/$AGENT_ID/messages/s
 data: {"run_id":"run-new","seq_id":0,"message_type":"tool_return_message","status":"success","tool_return":"..."}
 
 # Continue by resuming the approval stream's run
-curl --request GET   --url http://localhost:8283/v1/runs/$RUN_ID/stream   --header 'Accept: text/event-stream'   --data '{
+curl --request GET   --url https://api.letta.com/v1/runs/$RUN_ID/stream   --header 'Accept: text/event-stream'   --data '{
   "starting_after": 0
 }'
 ```

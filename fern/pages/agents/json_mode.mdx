@@ -38,11 +38,8 @@ Create a tool that defines your desired response format. The tool arguments beco
 ```typescript TypeScript maxLines=100
 import { LettaClient } from '@letta-ai/letta-client'
 
-// Create client (Letta Cloud)
-const client = new LettaClient({ token: "LETTA_API_KEY" });
-
-// Or for self-hosted
-// const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+// Create client connected to Letta Cloud
+const client = new LettaClient({ token: process.env.LETTA_API_KEY });
 
 // First create the tool
 const toolCode = `def generate_rank(rank: int, reason: str):
@@ -63,8 +60,7 @@ const tool = await client.tools.create({
 // Create agent with the structured generation tool
 const agentState = await client.agents.create({
     model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
-    memoryBlocks: [
+        memoryBlocks: [
         {
             label: "human",
             value: "The human's name is Chad. They are a food enthusiast who enjoys trying different cuisines."
@@ -81,11 +77,9 @@ const agentState = await client.agents.create({
 ```python title="python" maxLines=100
 from letta_client import Letta
 
-# Create client (Letta Cloud)
-client = Letta(token="LETTA_API_KEY")
-
-# Or for self-hosted
-# client = Letta(base_url="http://localhost:8283")
+# Create client connected to Letta Cloud
+import os
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 def generate_rank(rank: int, reason: str):
     """Generate a ranking with explanation.
@@ -210,8 +204,7 @@ const client = new LettaClient({ token: "LETTA_API_KEY" });
 // Create agent with basic JSON mode (OpenAI/compatible providers only)
 const agentState = await client.agents.create({
     model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
-    memoryBlocks: [
+        memoryBlocks: [
         {
             label: "human",
             value: "The human's name is Chad. They work as a data analyst and prefer clear, organized information."
@@ -329,8 +322,7 @@ const responseFormat = {
 // Create agent
 const agentState = await client.agents.create({
     model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small",
-    memoryBlocks: []
+        memoryBlocks: []
 });
 
 // Update agent with response format

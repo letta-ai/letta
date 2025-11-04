@@ -65,9 +65,9 @@ When you create an agent, you can specify memory blocks to also be created with 
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
-// create a client to connect to your local Letta server
+// create a client connected to Letta Cloud
 const client = new LettaClient({
-  baseUrl: "http://localhost:8283"
+  token: process.env.LETTA_API_KEY
 });
 
 // create an agent with two basic self-editing memory blocks
@@ -84,18 +84,16 @@ const agentState = await client.agents.create({
           limit: 5000
         }
     ],
-    model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small"
+    model: "openai/gpt-4o-mini"
 });
 ```
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
+import os
 
-# create a client to connect to your local Letta server
-client = Letta(
-  base_url="http://localhost:8283"
-)
+# create a client connected to Letta Cloud
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 # create an agent with two basic self-editing memory blocks
 agent_state = client.agents.create(
@@ -111,8 +109,7 @@ agent_state = client.agents.create(
           "limit": 5000
         }
     ],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
+    model="openai/gpt-4o-mini"
 )
 ```
 </CodeGroup>
@@ -142,12 +139,10 @@ const sharedBlockAgent1 = await client.agents.create({
         },
     ],
     blockIds: [block.id],
-    model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small"
-
+    model: "openai/gpt-4o-mini"
 });
 
-// create another agent sharing the block
+// create another agent with the same shared block
 const sharedBlockAgent2 = await client.agents.create({
     name: "shared_block_agent2",
     memoryBlocks: [
@@ -157,8 +152,7 @@ const sharedBlockAgent2 = await client.agents.create({
         },
     ],
     blockIds: [block.id],
-    model: "openai/gpt-4o-mini",
-    embedding: "openai/text-embedding-3-small"
+    model: "openai/gpt-4o-mini"
 });
 ```
 ```python title="python" maxLines=50
@@ -180,8 +174,7 @@ shared_block_agent1 = client.agents.create(
         },
     ],
     block_ids=[block.id],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
+    model="openai/gpt-4o-mini"
 )
 
 # create another agent sharing the block
@@ -194,8 +187,7 @@ shared_block_agent2 = client.agents.create(
         },
     ],
     block_ids=[block.id],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small"
+    model="openai/gpt-4o-mini"
 )
 ```
 </CodeGroup>

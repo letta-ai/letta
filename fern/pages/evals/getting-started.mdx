@@ -28,10 +28,8 @@ Export an existing agent to a file using the Letta SDK:
 from letta_client import Letta
 import os
 
-client = Letta(
-    base_url="http://localhost:8283",  # or https://api.letta.com for Letta Cloud
-    token=os.getenv("LETTA_API_KEY")  # required for Letta Cloud
-)
+# Connect to Letta Cloud
+client = Letta(token=os.getenv("LETTA_API_KEY"))
 
 # Export an agent to a file
 agent_file = client.agents.export_file(agent_id="agent-123")
@@ -90,7 +88,8 @@ dataset: dataset.jsonl
 target:
   kind: agent
   agent_file: my_agent.af  # Path to your agent file
-  base_url: http://localhost:8283  # Your Letta server
+  base_url: https://api.letta.com  # Letta Cloud (default)
+  token: ${LETTA_API_KEY}  # Your API key
 
 graders:
   quality:
