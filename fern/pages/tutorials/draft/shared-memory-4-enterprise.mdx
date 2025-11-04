@@ -1,0 +1,1975 @@
+---
+title: "Shared Memory Part 4: Enterprise Multi-Team System"
+subtitle: Build a complete enterprise system with departments and hierarchies
+slug: cookbooks/shared-memory-enterprise
+---
+
+This tutorial demonstrates how to build a complete enterprise multi-agent system with multiple departments, hierarchical block architecture, and cross-team coordination.
+
+## What You'll Learn
+
+- Creating hierarchical block architectures (company → department → team)
+- Implementing department-level isolation
+- Building cross-department coordination mechanisms
+- Managing executive-level aggregation and oversight
+- Scaling shared memory to 10+ agents with complex access patterns
+
+## Prerequisites
+
+```bash
+pip install letta-client
+```
+
+Set your Letta API key:
+```bash
+export LETTA_API_KEY="your-api-key-here"
+```
+
+## Architecture Overview
+
+This tutorial creates a complete enterprise system with:
+- **3 Departments**: Sales, Engineering, HR
+- **10 Agents**: 1 CEO, 3 Directors, 6 Workers
+- **12 Memory Blocks**: Company-wide, department-specific, cross-department, executive, and private blocks
+
+```
+TechCorp AI Solutions
+├── CEO (Executive Dashboard)
+├── Sales Department
+│   ├── Sales Director
+│   ├── Sales Rep 1
+│   └── Sales Rep 2
+├── Engineering Department
+│   ├── Engineering Director
+│   ├── Engineer 1
+│   └── Engineer 2
+└── HR Department
+    ├── HR Director
+    └── HR Rep 1
+```
+
+## Part 1: Company-Wide Blocks
+
+```python
+"""
+Tutorial 4: Enterprise Multi-Team System
+========================================
+
+Build a complete enterprise with departments and hierarchies.
+"""
+
+from letta import Letta
+
+# Initialize client
+client = Letta()
+
+print("=" * 70)
+print("TUTORIAL 4: Enterprise Multi-Team System")
+print("=" * 70)
+print()
+
+# ============================================================================
+# STEP 1: Create Company-Wide Blocks (Read-Only, All Agents)
+# ============================================================================
+print("STEP 1: Creating company-wide blocks (all agents, read-only)...\n")
+
+company_mission = client.blocks.create(
+    label="company_mission",
+    description="Company mission, values, and vision. Read-only for all agents.",
+    value="""
+=== TECHCORP AI SOLUTIONS ===
+Company Mission & Values
+
+MISSION:
+Building ethical AI systems that empower businesses and respect user privacy.
+
+CORE VALUES:
+1. Transparency - Clear about AI capabilities and limitations
+2. Privacy - User data protection is paramount
+3. Accuracy - Rigorous testing and validation
+4. Collaboration - Cross-functional teamwork
+5. Innovation - Pushing boundaries responsibly
+
+VISION 2025:
+Become the most trusted AI solutions provider for enterprise customers.
+
+COMPANY GUIDELINES:
+- Always prioritize ethical considerations
+- Maintain open communication across departments
+- Customer success is our success
+- Continuous learning and improvement
+""",
+    limit=4000
+)
+
+print(f"✓ Created company_mission: {company_mission.id}")
+print(f"  Access: ALL 10 agents (read-only)")
+print()
+
+company_policies = client.blocks.create(
+    label="company_policies",
+    description="Company-wide policies and procedures. Read-only for all agents.",
+    value="""
+=== COMPANY POLICIES ===
+
+COMMUNICATION POLICY:
+- Respond to customer inquiries within 24 hours
+- Internal team communication: Slack preferred
+- Cross-department coordination: Use shared project blocks
+
+DATA SECURITY POLICY:
+- Never share customer data across departments without consent
+- HR data is strictly confidential (HR department only)
+- Financial data requires executive approval to share
+
+WORK HOURS:
+- Core hours: 10 AM - 4 PM (all time zones)
+- Flexible scheduling outside core hours
+- Respect work-life balance
+
+ESCALATION POLICY:
+- Team member → Department Director → CEO
+- Cross-department issues → Use cross_dept_projects block
+- Urgent matters → CEO direct escalation
+""",
+    limit=5000
+)
+
+print(f"✓ Created company_policies: {company_policies.id}")
+print(f"  Access: ALL 10 agents (read-only)")
+print()
+
+# ============================================================================
+# STEP 2: Create Department-Specific Blocks (Read/Write, Department Only)
+# ============================================================================
+print("STEP 2: Creating department-specific blocks...\n")
+
+sales_knowledge = client.blocks.create(
+    label="sales_knowledge",
+    description="Sales team knowledge base. Sales department only.",
+    value="""
+=== SALES KNOWLEDGE BASE ===
+Last Updated: 2024-10-08
+
+PRODUCT PRICING:
+- Starter Plan: $99/month
+- Professional Plan: $299/month
+- Enterprise Plan: Custom pricing (contact sales)
+
+SALES PLAYBOOK:
+- Lead qualification: BANT framework (Budget, Authority, Need, Timeline)
+- Demo best practices: Focus on customer pain points
+- Closing techniques: Trial close, assumptive close
+
+CUSTOMER ACCOUNTS:
+- Total Active Customers: 247
+- Pipeline Value: $2.3M
+- Avg Deal Size: $15,000
+
+COMPETITIVE INTELLIGENCE:
+- Main competitors: CompetitorX, CompetitorY
+- Our advantages: Better privacy features, faster implementation
+- Price positioning: Premium but justified by ROI
+
+SALES TARGETS Q4:
+- Team Target: $1.5M in new revenue
+- Rep 1 Target: $600K
+- Rep 2 Target: $600K
+- Director Target: Strategic accounts $300K
+""",
+    limit=10000
+)
+
+print(f"✓ Created sales_knowledge: {sales_knowledge.id}")
+print(f"  Access: Sales Director, Sales Rep 1, Sales Rep 2 (read/write)")
+print()
+
+engineering_specs = client.blocks.create(
+    label="engineering_specs",
+    description="Engineering specifications and technical docs. Engineering department only.",
+    value="""
+=== ENGINEERING SPECIFICATIONS ===
+Last Updated: 2024-10-08
+
+CURRENT SPRINT (Oct 8-22):
+- Story Points: 42
+- Completed: 18
+- In Progress: 12
+- Blocked: 0
+
+ACTIVE PROJECTS:
+1. API v3.0 Migration
+   Status: 60% complete
+   Owner: Engineer 1
+   Priority: HIGH
+
+2. Performance Optimization
+   Status: 30% complete
+   Owner: Engineer 2
+   Priority: MEDIUM
+
+3. Security Audit Remediation
+   Status: In Planning
+   Owner: Engineering Director
+   Priority: HIGH
+
+TECHNICAL STACK:
+- Backend: Python, FastAPI
+- Frontend: React, TypeScript
+- Database: PostgreSQL, Redis
+- Infrastructure: AWS, Kubernetes
+
+ENGINEERING STANDARDS:
+- Code review required for all PRs
+- 80% test coverage minimum
+- Documentation required for new features
+- Weekly architecture reviews
+
+KNOWN ISSUES:
+- API latency on large datasets (Engineer 1 investigating)
+- Mobile app occasional crashes (Engineer 2 working on fix)
+""",
+    limit=12000
+)
+
+print(f"✓ Created engineering_specs: {engineering_specs.id}")
+print(f"  Access: Engineering Director, Engineer 1, Engineer 2 (read/write)")
+print()
+
+hr_employee_data = client.blocks.create(
+    label="hr_employee_data",
+    description="HR employee data and records. HR department only - CONFIDENTIAL.",
+    value="""
+=== HR EMPLOYEE DATA ===
+Last Updated: 2024-10-08
+CONFIDENTIAL - HR DEPARTMENT ONLY
+
+EMPLOYEE HEADCOUNT:
+- Total Employees: 47
+- Sales: 12
+- Engineering: 18
+- HR: 4
+- Operations: 8
+- Executive: 5
+
+ACTIVE HR CASES:
+1. Employee ID #2847 - Performance improvement plan
+   Status: Week 2 of 6
+   Handler: HR Rep 1
+
+2. Employee ID #1923 - Parental leave request
+   Status: Approved, starts Oct 15
+   Handler: HR Director
+
+RECRUITING:
+- Open Positions: 5
+  * Senior Engineer (2 openings)
+  * Sales Rep (1 opening)
+  * HR Coordinator (1 opening)
+  * Product Manager (1 opening)
+- Interviews This Week: 8 scheduled
+
+BENEFITS & COMPENSATION:
+- Annual review cycle: November
+- Benefits enrollment: Open now through Oct 31
+- 401k match: 5%
+
+COMPANY CULTURE:
+- Employee satisfaction: 4.2/5 (recent survey)
+- Retention rate: 92%
+- Diversity initiatives: On track
+""",
+    limit=10000
+)
+
+print(f"✓ Created hr_employee_data: {hr_employee_data.id}")
+print(f"  Access: HR Director, HR Rep 1 ONLY (read/write)")
+print(f"  ⚠️  CONFIDENTIAL - Other departments CANNOT access")
+print()
+
+# ============================================================================
+# STEP 3: Create Cross-Department Coordination Block
+# ============================================================================
+print("STEP 3: Creating cross-department coordination block...\n")
+
+cross_dept_projects = client.blocks.create(
+    label="cross_dept_projects",
+    description="Cross-department projects and coordination. All directors + CEO.",
+    value="""
+=== CROSS-DEPARTMENT PROJECTS ===
+Last Updated: 2024-10-08
+
+ACTIVE CROSS-DEPT PROJECTS:
+----------------------------
+
+PROJECT: Enterprise Customer Onboarding Improvement
+Teams: Sales + Engineering
+Status: Planning Phase
+Priority: HIGH
+
+Background:
+- Sales is closing large enterprise deals
+- Engineering needs to improve onboarding experience
+- Customer feedback: Onboarding takes too long
+
+Action Items:
+- [ ] Sales: Provide customer feedback summary (Due: Oct 10)
+- [ ] Engineering: Audit current onboarding flow (Due: Oct 12)
+- [ ] Joint meeting scheduled: Oct 15
+
+PROJECT: Recruiting Pipeline for Engineering
+Teams: HR + Engineering
+Status: Active
+Priority: MEDIUM
+
+Background:
+- 2 senior engineer positions open
+- Need technical interview process improvement
+
+Action Items:
+- [x] HR: Post job descriptions (Completed)
+- [ ] Engineering: Review candidates (Ongoing)
+- [ ] HR + Engineering: Interview coordination
+
+COMPLETED PROJECTS:
+----------------------------
+- Q3 Sales Enablement Training (Sales + Engineering) - Sep 2024
+""",
+    limit=8000
+)
+
+print(f"✓ Created cross_dept_projects: {cross_dept_projects.id}")
+print(f"  Access: CEO, Sales Director, Engineering Director, HR Director (read/write)")
+print(f"  Purpose: Coordinate work across departments")
+print()
+
+# ============================================================================
+# STEP 4: Create Executive Dashboard Block (CEO Only)
+# ============================================================================
+print("STEP 4: Creating executive dashboard block (CEO only)...\n")
+
+executive_dashboard = client.blocks.create(
+    label="executive_dashboard",
+    description="Executive dashboard with company-wide metrics. CEO only.",
+    value="""
+=== EXECUTIVE DASHBOARD ===
+Last Updated: 2024-10-08
+CEO EYES ONLY
+
+COMPANY HEALTH METRICS:
+------------------------
+Revenue (Q4 to date): $3.2M / $4.5M target (71%)
+Customer Satisfaction: 4.3/5
+Employee Satisfaction: 4.2/5
+Churn Rate: 3% (target: <5%)
+
+DEPARTMENT PERFORMANCE:
+------------------------
+Sales:
+- Pipeline: $2.3M (healthy)
+- Q4 Target: $1.5M new revenue
+- On track: Yes
+
+Engineering:
+- Sprint velocity: Steady
+- Critical projects: 2 on track, 1 needs attention
+- Technical debt: Manageable
+
+HR:
+- Headcount: 47 (target: 50 by EOY)
+- Open positions: 5
+- Retention: 92% (excellent)
+
+STRATEGIC PRIORITIES:
+------------------------
+1. Close 3 enterprise deals by EOQ (Sales + Engineering)
+2. Complete API v3.0 migration (Engineering)
+3. Hire 2 senior engineers (HR + Engineering)
+4. Maintain >90% employee retention (HR)
+
+RISK FACTORS:
+------------------------
+- Competition increasing in enterprise segment
+- Engineering team at capacity
+- Need to scale customer support
+""",
+    limit=8000
+)
+
+print(f"✓ Created executive_dashboard: {executive_dashboard.id}")
+print(f"  Access: CEO ONLY (read/write)")
+print(f"  ⚠️  Executive-level metrics not visible to departments")
+print()
+
+print("=" * 70)
+print("BLOCK ARCHITECTURE CREATED")
+print("=" * 70)
+print("""
+BLOCK HIERARCHY:
+================
+
+TIER 1: Company-Wide (Read-Only, All 10 agents)
+  - company_mission
+  - company_policies
+
+TIER 2: Department-Specific (Read/Write, Department only)
+  - sales_knowledge (Sales dept: 3 agents)
+  - engineering_specs (Engineering dept: 3 agents)
+  - hr_employee_data (HR dept: 2 agents)
+
+TIER 3: Cross-Department (Read/Write, Directors + CEO)
+  - cross_dept_projects (4 agents: CEO + 3 Directors)
+
+TIER 4: Executive (Read/Write, CEO only)
+  - executive_dashboard (1 agent: CEO)
+
+Total Shared Blocks: 7
+Private Blocks per Agent: 1 each (10 total)
+""")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+TUTORIAL 4: Enterprise Multi-Team System
+======================================================================
+
+STEP 1: Creating company-wide blocks (all agents, read-only)...
+
+✓ Created company_mission: block-p1q2r3s4-t5u6-7890-pqrs-tu1234567890
+  Access: ALL 10 agents (read-only)
+
+✓ Created company_policies: block-q2r3s4t5-u6v7-8901-qrst-uv2345678901
+  Access: ALL 10 agents (read-only)
+
+STEP 2: Creating department-specific blocks...
+
+✓ Created sales_knowledge: block-r3s4t5u6-v7w8-9012-rstu-vw3456789012
+  Access: Sales Director, Sales Rep 1, Sales Rep 2 (read/write)
+
+✓ Created engineering_specs: block-s4t5u6v7-w8x9-0123-stuv-wx4567890123
+  Access: Engineering Director, Engineer 1, Engineer 2 (read/write)
+
+✓ Created hr_employee_data: block-t5u6v7w8-x9y0-1234-tuvw-xy5678901234
+  Access: HR Director, HR Rep 1 ONLY (read/write)
+  ⚠️  CONFIDENTIAL - Other departments CANNOT access
+
+STEP 3: Creating cross-department coordination block...
+
+✓ Created cross_dept_projects: block-u6v7w8x9-y0z1-2345-uvwx-yz6789012345
+  Access: CEO, Sales Director, Engineering Director, HR Director (read/write)
+  Purpose: Coordinate work across departments
+
+STEP 4: Creating executive dashboard block (CEO only)...
+
+✓ Created executive_dashboard: block-v7w8x9y0-z1a2-3456-vwxy-za7890123456
+  Access: CEO ONLY (read/write)
+  ⚠️  Executive-level metrics not visible to departments
+
+======================================================================
+BLOCK ARCHITECTURE CREATED
+======================================================================
+...
+```
+</Accordion>
+
+## Part 2: Agent Creation
+
+### Executive Layer
+
+```python
+# ============================================================================
+# STEP 5: Create CEO Agent
+# ============================================================================
+print("\nSTEP 5: Creating CEO Agent (access to all cross-dept and executive blocks)...\n")
+
+ceo_notes = client.blocks.create(
+    label="ceo_executive_notes",
+    description="Private CEO notes and strategic planning.",
+    value="""
+=== CEO EXECUTIVE NOTES ===
+
+STRATEGIC FOCUS Q4:
+- Enterprise market expansion
+- Team scaling (controlled growth)
+- Product-market fit validation
+
+KEY RELATIONSHIPS:
+- Board meeting: Monthly
+- Investor updates: Quarterly
+- All-hands: Bi-weekly
+
+DECISION LOG:
+(None yet)
+""",
+    limit=5000
+)
+
+ceo = client.agents.create(
+    name="CEO",
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the CEO of TechCorp AI Solutions.
+
+My role:
+- Set company vision and strategy
+- Monitor overall company health
+- Coordinate cross-department initiatives
+- Make executive decisions
+- Support department directors
+
+My access:
+- Company-wide blocks: company_mission, company_policies (read-only)
+- Cross-department: cross_dept_projects (read/write)
+- Executive: executive_dashboard (read/write, private)
+- CEO notes (private)
+
+Note: I do NOT have direct access to department-specific blocks (sales_knowledge,
+engineering_specs, hr_employee_data). I rely on directors to surface relevant
+information through cross_dept_projects.
+
+My style:
+- Strategic and big-picture focused
+- Empowering to directors
+- Data-driven decision making
+- Transparent communication
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Board/Stakeholder\nRole: Company oversight"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, cross_dept_projects.id, executive_dashboard.id, ceo_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created CEO: {ceo.id}")
+print(f"  Shared blocks: company_mission, company_policies, cross_dept_projects, executive_dashboard")
+print(f"  Private blocks: ceo_executive_notes")
+print(f"  Note: NO direct access to department blocks")
+print()
+
+### Sales Department
+
+print("STEP 6: Creating Sales Department agents...\n")
+
+# Sales Director
+sales_director_notes = client.blocks.create(
+    label="sales_director_notes",
+    description="Private sales director notes and strategy.",
+    value="""
+=== SALES DIRECTOR NOTES ===
+
+STRATEGIC ACCOUNTS:
+- 3 enterprise deals in pipeline
+- Total value: $850K
+
+TEAM MANAGEMENT:
+- Rep 1: Strong performer, on track
+- Rep 2: Ramping up, needs coaching
+
+PRIORITIES:
+- Close Acme Corp deal ($300K)
+- Coordinate with Engineering on onboarding
+""",
+    limit=5000
+)
+
+sales_director = client.agents.create(
+    name="Sales_Director",
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Sales Director at TechCorp AI Solutions.
+
+My role:
+- Lead sales team and strategy
+- Manage strategic accounts
+- Coordinate with other departments (Engineering, HR)
+- Report to CEO on sales performance
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: sales_knowledge (read/write, shared with team)
+- Cross-dept: cross_dept_projects (read/write, coordinate with other directors)
+- Private: sales_director_notes
+
+My style:
+- Results-oriented and strategic
+- Collaborative with Engineering
+- Supportive of sales reps
+- Customer-focused
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: CEO or Sales Team\nRole: Sales leadership"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, sales_knowledge.id, cross_dept_projects.id, sales_director_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Sales Director: {sales_director.id}")
+print()
+
+# Sales Rep 1
+sales_rep1_notes = client.blocks.create(
+    label="sales_rep1_notes",
+    description="Private sales rep 1 notes and leads.",
+    value="=== SALES REP 1 NOTES ===\n\nActive Leads: 12\nQ4 Target: $600K\nClosed This Quarter: $420K\n",
+    limit=4000
+)
+
+sales_rep1 = client.agents.create(
+    name="Sales_Rep_1",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am Sales Rep 1 at TechCorp AI Solutions.
+
+My role:
+- Manage sales pipeline
+- Close deals
+- Coordinate with Sales Director
+- Reference sales playbook and pricing
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: sales_knowledge (read/write, shared with sales team)
+- Private: sales_rep1_notes
+
+My style:
+- Customer-focused and consultative
+- Data-driven
+- Team player
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sales Director or Customer\nRole: Sales execution"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, sales_knowledge.id, sales_rep1_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Sales Rep 1: {sales_rep1.id}")
+print()
+
+# Sales Rep 2
+sales_rep2_notes = client.blocks.create(
+    label="sales_rep2_notes",
+    description="Private sales rep 2 notes and leads.",
+    value="=== SALES REP 2 NOTES ===\n\nActive Leads: 15\nQ4 Target: $600K\nClosed This Quarter: $380K\n",
+    limit=4000
+)
+
+sales_rep2 = client.agents.create(
+    name="Sales_Rep_2",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am Sales Rep 2 at TechCorp AI Solutions.
+
+My role:
+- Manage sales pipeline
+- Close deals
+- Coordinate with Sales Director
+- Reference sales playbook and pricing
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: sales_knowledge (read/write, shared with sales team)
+- Private: sales_rep2_notes
+
+My style:
+- Relationship-focused
+- Strategic account management
+- Collaborative
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sales Director or Customer\nRole: Sales execution"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, sales_knowledge.id, sales_rep2_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Sales Rep 2: {sales_rep2.id}")
+print()
+
+### Engineering Department
+
+print("STEP 7: Creating Engineering Department agents...\n")
+
+# Engineering Director
+eng_director_notes = client.blocks.create(
+    label="eng_director_notes",
+    description="Private engineering director notes and planning.",
+    value="""
+=== ENGINEERING DIRECTOR NOTES ===
+
+TECHNICAL STRATEGY:
+- API v3.0 migration: Top priority
+- Security audit: Must complete Q4
+- Performance optimization: Ongoing
+
+TEAM CAPACITY:
+- Need 2 senior engineers
+- Current team at 85% capacity
+- Considering contractors for peak load
+
+CROSS-DEPT COORDINATION:
+- Sales asking for faster onboarding
+- HR coordinating on hiring
+""",
+    limit=5000
+)
+
+eng_director = client.agents.create(
+    name="Engineering_Director",
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Engineering Director at TechCorp AI Solutions.
+
+My role:
+- Lead engineering team and technical strategy
+- Manage engineering projects and sprints
+- Coordinate with Sales and HR departments
+- Report to CEO on technical progress
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: engineering_specs (read/write, shared with engineers)
+- Cross-dept: cross_dept_projects (read/write, coordinate with other directors)
+- Private: eng_director_notes
+
+My style:
+- Technical and strategic
+- Quality-focused
+- Collaborative with Sales (understand customer needs)
+- Supportive of engineering team
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: CEO or Engineering Team\nRole: Engineering leadership"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, engineering_specs.id, cross_dept_projects.id, eng_director_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Engineering Director: {eng_director.id}")
+print()
+
+# Engineer 1
+engineer1_notes = client.blocks.create(
+    label="engineer1_notes",
+    description="Private engineer 1 notes and tasks.",
+    value="=== ENGINEER 1 NOTES ===\n\nCurrent Project: API v3.0 Migration (60% complete)\nBlockers: None\nNext: Database schema updates\n",
+    limit=4000
+)
+
+engineer1 = client.agents.create(
+    name="Engineer_1",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am Engineer 1 at TechCorp AI Solutions.
+
+My role:
+- Develop and maintain software
+- Work on assigned projects (currently: API v3.0 migration)
+- Follow engineering standards
+- Coordinate with Engineering Director
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: engineering_specs (read/write, shared with engineering team)
+- Private: engineer1_notes
+
+My style:
+- Detail-oriented and thorough
+- Quality-focused (testing, documentation)
+- Collaborative with team
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Engineering Director or Team\nRole: Software development"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, engineering_specs.id, engineer1_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Engineer 1: {engineer1.id}")
+print()
+
+# Engineer 2
+engineer2_notes = client.blocks.create(
+    label="engineer2_notes",
+    description="Private engineer 2 notes and tasks.",
+    value="=== ENGINEER 2 NOTES ===\n\nCurrent Project: Performance Optimization (30% complete)\nBlockers: None\nNext: Query optimization for large datasets\n",
+    limit=4000
+)
+
+engineer2 = client.agents.create(
+    name="Engineer_2",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am Engineer 2 at TechCorp AI Solutions.
+
+My role:
+- Develop and maintain software
+- Work on assigned projects (currently: Performance optimization)
+- Follow engineering standards
+- Coordinate with Engineering Director
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: engineering_specs (read/write, shared with engineering team)
+- Private: engineer2_notes
+
+My style:
+- Performance-focused
+- Data-driven optimization
+- Pragmatic problem-solving
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Engineering Director or Team\nRole: Software development"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, engineering_specs.id, engineer2_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Engineer 2: {engineer2.id}")
+print()
+
+### HR Department
+
+print("STEP 8: Creating HR Department agents...\n")
+
+# HR Director
+hr_director_notes = client.blocks.create(
+    label="hr_director_notes",
+    description="Private HR director notes and planning.",
+    value="""
+=== HR DIRECTOR NOTES ===
+
+RECRUITING PRIORITIES:
+- 2 Senior Engineers (urgent for Engineering)
+- 1 Sales Rep (Sales scaling)
+- 1 HR Coordinator (team growth)
+
+EMPLOYEE RELATIONS:
+- 1 performance improvement plan (ongoing)
+- Annual review prep (November)
+- Benefits enrollment (ends Oct 31)
+
+CROSS-DEPT COORDINATION:
+- Engineering: Hiring coordination
+- Sales: New rep onboarding planning
+""",
+    limit=5000
+)
+
+hr_director = client.agents.create(
+    name="HR_Director",
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the HR Director at TechCorp AI Solutions.
+
+My role:
+- Lead HR strategy and operations
+- Manage recruiting, employee relations, benefits
+- Coordinate with other departments on hiring
+- Maintain confidential employee data
+- Report to CEO on HR metrics
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: hr_employee_data (read/write, CONFIDENTIAL, HR only)
+- Cross-dept: cross_dept_projects (read/write, coordinate with other directors)
+- Private: hr_director_notes
+
+My style:
+- People-focused and empathetic
+- Confidentiality is paramount
+- Strategic about talent and culture
+- Collaborative with all departments
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: CEO or HR Team\nRole: HR leadership"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, hr_employee_data.id, cross_dept_projects.id, hr_director_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created HR Director: {hr_director.id}")
+print()
+
+# HR Rep 1
+hr_rep1_notes = client.blocks.create(
+    label="hr_rep1_notes",
+    description="Private HR rep 1 notes and cases.",
+    value="=== HR REP 1 NOTES ===\n\nActive Cases: 2\n- Performance improvement plan (Employee #2847)\n- Benefits questions (3 employees)\n",
+    limit=4000
+)
+
+hr_rep1 = client.agents.create(
+    name="HR_Rep_1",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am HR Rep 1 at TechCorp AI Solutions.
+
+My role:
+- Handle employee relations cases
+- Support recruiting efforts
+- Manage benefits administration
+- Maintain confidentiality
+- Coordinate with HR Director
+
+My access:
+- Company-wide: company_mission, company_policies (read-only)
+- Department: hr_employee_data (read/write, CONFIDENTIAL, HR only)
+- Private: hr_rep1_notes
+
+My style:
+- Empathetic and supportive
+- Confidentiality is critical
+- Detail-oriented with cases
+- Helpful and responsive
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: HR Director or Employees\nRole: HR operations"
+        }
+    ],
+    block_ids=[company_mission.id, company_policies.id, hr_employee_data.id, hr_rep1_notes.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created HR Rep 1: {hr_rep1.id}")
+print()
+
+print("=" * 70)
+print("ENTERPRISE ORGANIZATION CREATED - 10 AGENTS")
+print("=" * 70)
+print("""
+ORGANIZATION STRUCTURE:
+=======================
+
+CEO (1 agent)
+  └── Access: company_mission, company_policies, cross_dept_projects, executive_dashboard
+
+Sales Department (3 agents)
+  ├── Sales Director
+  │   └── Access: company blocks + sales_knowledge + cross_dept_projects
+  ├── Sales Rep 1
+  │   └── Access: company blocks + sales_knowledge
+  └── Sales Rep 2
+      └── Access: company blocks + sales_knowledge
+
+Engineering Department (3 agents)
+  ├── Engineering Director
+  │   └── Access: company blocks + engineering_specs + cross_dept_projects
+  ├── Engineer 1
+  │   └── Access: company blocks + engineering_specs
+  └── Engineer 2
+      └── Access: company blocks + engineering_specs
+
+HR Department (2 agents)
+  ├── HR Director
+  │   └── Access: company blocks + hr_employee_data + cross_dept_projects
+  └── HR Rep 1
+      └── Access: company blocks + hr_employee_data
+
+BLOCK ACCESS SUMMARY:
+=====================
+- 10 agents total
+- 7 shared blocks
+- 10 private blocks (1 per agent)
+- Department isolation enforced
+- Cross-department coordination via cross_dept_projects
+- Executive oversight via executive_dashboard
+""")```
+
+## Part 3: Message Flow Scenarios
+
+### Scenario 1: Company-Wide Policy Check (Vertical Consistency)
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 1: Company-Wide Policy Check Across All Departments")
+print("=" * 70)
+
+# Test that all departments see the same company mission
+print("\nTesting that Sales Rep, Engineer, and HR Rep all see same company mission...\n")
+
+print("User → Sales Rep 1: 'What is our company mission?'\n")
+response_sales = client.agents.messages.create(
+    agent_id=sales_rep1.id,
+    messages=[{
+        "role": "user",
+        "content": "What is our company's mission?"
+    }]
+)
+
+for msg in response_sales.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Rep 1: {msg.content}\n")
+
+print("User → Engineer 1: 'What is our company mission?'\n")
+response_eng = client.agents.messages.create(
+    agent_id=engineer1.id,
+    messages=[{
+        "role": "user",
+        "content": "What is our company's mission?"
+    }]
+)
+
+for msg in response_eng.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Engineer 1: {msg.content}\n")
+
+print("User → HR Rep 1: 'What is our company mission?'\n")
+response_hr = client.agents.messages.create(
+    agent_id=hr_rep1.id,
+    messages=[{
+        "role": "user",
+        "content": "What is our company's mission?"
+    }]
+)
+
+for msg in response_hr.messages:
+    if msg.message_type == "assistant_message":
+        print(f"HR Rep 1: {msg.content}\n")
+
+print("Analysis:")
+print("- All three agents from different departments accessed company_mission")
+print("- All provided identical mission statement")
+print("- Demonstrates vertical consistency across entire organization")
+print("- Company-wide blocks ensure unified messaging")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 1: Company-Wide Policy Check Across All Departments
+======================================================================
+
+Testing that Sales Rep, Engineer, and HR Rep all see same company mission...
+
+User → Sales Rep 1: 'What is our company mission?'
+
+Sales Rep 1: Our company mission at TechCorp AI Solutions is "Building ethical AI
+systems that empower businesses and respect user privacy." We focus on transparency,
+privacy, accuracy, collaboration, and innovation as our core values.
+
+User → Engineer 1: 'What is our company mission?'
+
+Engineer 1: TechCorp's mission is to build ethical AI systems that empower businesses
+while respecting user privacy. Our core values are transparency, privacy, accuracy,
+collaboration, and innovation.
+
+User → HR Rep 1: 'What is our company mission?'
+
+HR Rep 1: Our mission is building ethical AI systems that empower businesses and
+respect user privacy. We prioritize transparency, privacy, accuracy, collaboration,
+and innovation in everything we do.
+
+Analysis:
+- All three agents from different departments accessed company_mission
+- All provided identical mission statement
+- Demonstrates vertical consistency across entire organization
+- Company-wide blocks ensure unified messaging
+```
+</Accordion>
+
+### Scenario 2: Department-Isolated Knowledge
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 2: Department Isolation - Sales Cannot Access Engineering Data")
+print("=" * 70)
+print("\nUser → Sales Rep 1: 'What engineering projects are currently in progress?'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_rep1.id,
+    messages=[{
+        "role": "user",
+        "content": "I need to know what engineering projects are currently in progress. What's the status of the API v3.0 migration?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Rep 1: {msg.content}\n")
+
+print("Analysis:")
+print("- Sales Rep 1 does NOT have access to engineering_specs")
+print("- Cannot answer specific engineering project questions")
+print("- Should suggest asking Engineering Director or using cross_dept_projects")
+print("- Demonstrates department isolation working correctly")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 2: Department Isolation - Sales Cannot Access Engineering Data
+======================================================================
+
+User → Sales Rep 1: 'What engineering projects are currently in progress?'
+
+Sales Rep 1: I don't have direct access to Engineering's project details or the
+engineering_specs block. For specific information about the API v3.0 migration status,
+you should:
+
+1. Ask the Engineering Director directly
+2. Check the cross_dept_projects block if there's a related cross-department initiative
+3. Our Sales Director can coordinate with Engineering leadership
+
+I can tell you about our sales pipeline and customer needs, which might help inform
+engineering priorities if needed. Would that be helpful?
+
+Analysis:
+- Sales Rep 1 does NOT have access to engineering_specs
+- Cannot answer specific engineering project questions
+- Should suggest asking Engineering Director or using cross_dept_projects
+- Demonstrates department isolation working correctly
+```
+</Accordion>
+
+<Warning>
+Department isolation is critical for security and information compartmentalization. Agents correctly recognize their access boundaries and direct users to appropriate channels.
+</Warning>
+
+### Scenario 3: Cross-Department Coordination (Directors)
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 3: Sales Director Coordinates with Engineering via Cross-Dept Block")
+print("=" * 70)
+print("\nUser → Sales Director: 'Update the cross-department projects: Sales is hearing from customers that onboarding takes too long. We need Engineering's help to streamline it.'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_director.id,
+    messages=[{
+        "role": "user",
+        "content": "We're getting feedback from customers that the onboarding process takes too long. This is affecting deal closures. Can you update the cross-department projects block to coordinate with Engineering on improving the onboarding experience?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Director: {msg.content}\n")
+
+# Check updated cross_dept_projects
+updated_cross_dept = client.blocks.retrieve(block_id=cross_dept_projects.id)
+print("Updated cross_dept_projects block:")
+print("-" * 70)
+print(updated_cross_dept.value[:800] + "...")
+print("-" * 70)
+
+print("\nAnalysis:")
+print("- Sales Director has access to cross_dept_projects")
+print("- Updated block with customer feedback and action items")
+print("- Engineering Director will see this update")
+print("- Demonstrates director-level cross-department coordination")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 3: Sales Director Coordinates with Engineering via Cross-Dept Block
+======================================================================
+
+User → Sales Director: 'Update the cross-department projects...'
+
+Sales Director: I've updated the cross_dept_projects block with this critical
+customer feedback. Here's what I've documented:
+
+**Added to Enterprise Customer Onboarding Improvement Project:**
+- Priority escalated to HIGH (affecting deal closures)
+- Customer feedback: Onboarding takes too long
+- Impact: Customers hesitating on large deals
+- Sales action item: Compile specific customer feedback with timeline expectations
+
+The Engineering Director will see this update and can respond with their technical
+assessment. This is exactly the kind of cross-functional coordination we need to
+maintain our competitive edge.
+
+Updated cross_dept_projects block:
+----------------------------------------------------------------------
+=== CROSS-DEPARTMENT PROJECTS ===
+Last Updated: 2024-10-08 14:45 PM
+
+ACTIVE CROSS-DEPT PROJECTS:
+----------------------------
+
+PROJECT: Enterprise Customer Onboarding Improvement
+Teams: Sales + Engineering
+Status: Planning Phase → ESCALATED
+Priority: HIGH → CRITICAL
+
+Background:
+- Sales is closing large enterprise deals
+- Engineering needs to improve onboarding experience
+- Customer feedback: Onboarding takes too long (affecting deal closures)
+- Sales reporting: Multiple customers citing onboarding as concern
+
+Action Items:
+- [x] Sales: Provide customer feedback summary (Sales Director - Completed)
+- [ ] Engineering: Audit current onboarding flow (Due: Oct 12)
+...
+----------------------------------------------------------------------
+
+Analysis:
+- Sales Director has access to cross_dept_projects
+- Updated block with customer feedback and action items
+- Engineering Director will see this update
+- Demonstrates director-level cross-department coordination
+```
+</Accordion>
+
+### Scenario 4: Engineering Director Sees Sales Update
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 4: Engineering Director Responds to Sales Request")
+print("=" * 70)
+print("\nUser → Engineering Director: 'Check the cross-department projects block. Any updates from other teams?'\n")
+
+response = client.agents.messages.create(
+    agent_id=eng_director.id,
+    messages=[{
+        "role": "user",
+        "content": "Check the cross-department projects block for any updates from other teams that need our attention."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Engineering Director: {msg.content}\n")
+
+print("Analysis:")
+print("- Engineering Director read cross_dept_projects")
+print("- Saw Sales Director's escalation")
+print("- Can now respond and coordinate internally")
+print("- Demonstrates asynchronous cross-department communication via shared blocks")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 4: Engineering Director Responds to Sales Request
+======================================================================
+
+User → Engineering Director: 'Check the cross-department projects block...'
+
+Engineering Director: I see an important escalation from the Sales Director:
+
+**Enterprise Customer Onboarding Improvement - Now CRITICAL Priority**
+
+The Sales team is reporting that onboarding delays are affecting deal closures. This
+is serious and needs immediate attention.
+
+Here's my response:
+
+1. **Immediate Action**: I'll have Engineer 1 conduct an onboarding flow audit this week
+2. **Technical Assessment**: We'll identify bottlenecks (likely account provisioning and initial setup)
+3. **Timeline**: Preliminary findings by Oct 12, implementation plan by Oct 15
+4. **Resource Allocation**: This takes priority over non-critical performance optimization work
+
+I'll update the cross_dept_projects block with our technical assessment once Engineer 1
+completes the audit. Let me also update the engineering_specs block to reflect this
+new priority for my team.
+
+This is excellent cross-department coordination - exactly what we need to stay customer-focused.
+
+Analysis:
+- Engineering Director read cross_dept_projects
+- Saw Sales Director's escalation
+- Can now respond and coordinate internally
+- Demonstrates asynchronous cross-department communication via shared blocks
+```
+</Accordion>
+
+<Tip>
+The `cross_dept_projects` block acts as an **asynchronous coordination channel** between directors, eliminating the need for explicit messaging or meetings for routine coordination.
+</Tip>
+
+### Scenario 5: HR Data Confidentiality
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 5: Testing HR Data Confidentiality")
+print("=" * 70)
+print("\nUser → Sales Director: 'Who is currently on a performance improvement plan?'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_director.id,
+    messages=[{
+        "role": "user",
+        "content": "I heard someone in the company is on a performance improvement plan. Who is it and what's the situation?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Director: {msg.content}\n")
+
+print("Analysis:")
+print("- Sales Director does NOT have access to hr_employee_data")
+print("- Cannot access confidential HR information")
+print("- Should redirect to HR Director")
+print("- Demonstrates HR confidentiality protection")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 5: Testing HR Data Confidentiality
+======================================================================
+
+User → Sales Director: 'Who is currently on a performance improvement plan?'
+
+Sales Director: I don't have access to confidential HR employee data, including
+information about performance improvement plans. That information is restricted to
+the HR department only, as per our company policies on data security and employee
+privacy.
+
+If you have a legitimate need to know about a specific employee situation (for example,
+if it affects your team), you should:
+1. Contact the HR Director directly
+2. They'll assess whether sharing that information is appropriate
+3. Any discussions will be handled confidentially
+
+Is there a specific business concern I can help you with regarding team performance?
+
+Analysis:
+- Sales Director does NOT have access to hr_employee_data
+- Cannot access confidential HR information
+- Should redirect to HR Director
+- Demonstrates HR confidentiality protection
+```
+</Accordion>
+
+### Scenario 6: CEO Strategic Overview
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 6: CEO Reviews Company Status")
+print("=" * 70)
+print("\nUser → CEO: 'Give me a company-wide status update. What's happening across all departments?'\n")
+
+response = client.agents.messages.create(
+    agent_id=ceo.id,
+    messages=[{
+        "role": "user",
+        "content": "I need a comprehensive company update. What's the status across Sales, Engineering, and HR? Any cross-department issues I should be aware of?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"CEO: {msg.content}\n")
+
+print("Analysis:")
+print("- CEO accessed executive_dashboard (company-wide metrics)")
+print("- CEO accessed cross_dept_projects (coordination status)")
+print("- CEO does NOT have direct access to department-specific blocks")
+print("- CEO provides high-level overview based on aggregated data")
+print("- Demonstrates executive oversight without micromanagement")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 6: CEO Reviews Company Status
+======================================================================
+
+User → CEO: 'Give me a company-wide status update...'
+
+CEO: Here's the company-wide status based on my executive dashboard and cross-department
+coordination:
+
+**OVERALL COMPANY HEALTH:**
+- Revenue: $3.2M / $4.5M Q4 target (71% - on track)
+- Customer Satisfaction: 4.3/5 (strong)
+- Employee Satisfaction: 4.2/5 (healthy)
+- Churn Rate: 3% (below 5% target ✓)
+
+**DEPARTMENT STATUS:**
+
+*Sales*
+✓ Pipeline: $2.3M (healthy)
+✓ On track for $1.5M Q4 target
+⚠️ Issue: Customer feedback on slow onboarding (being addressed)
+
+*Engineering*
+✓ Sprint velocity steady
+✓ API v3.0 migration: 60% complete
+⚠️ Team at capacity - coordinating with HR on hiring
+
+*HR*
+✓ Employee retention: 92% (excellent)
+⚠️ 5 open positions (2 senior engineers critical for Engineering)
+✓ Recruiting pipeline active
+
+**CROSS-DEPARTMENT COORDINATION:**
+Active: Onboarding improvement (Sales + Engineering) - escalated to CRITICAL priority
+Active: Engineering hiring (HR + Engineering) - ongoing
+
+**STRATEGIC ASSESSMENT:**
+We're generally healthy, but the onboarding issue needs immediate attention as it's
+affecting deal closures. The fact that Sales and Engineering are already coordinating
+through cross_dept_projects is exactly the collaboration we need.
+
+Recommendation: I'll monitor the onboarding improvement project closely. If they need
+resources or executive intervention, I'm ready to support.
+
+Analysis:
+- CEO accessed executive_dashboard (company-wide metrics)
+- CEO accessed cross_dept_projects (coordination status)
+- CEO does NOT have direct access to department-specific blocks
+- CEO provides high-level overview based on aggregated data
+- Demonstrates executive oversight without micromanagement
+```
+</Accordion>
+
+<Note>
+The CEO has **strategic oversight** without micromanaging. The executive_dashboard provides aggregated metrics, while cross_dept_projects shows coordination, but the CEO doesn't see day-to-day department operations.
+</Note>
+
+### Scenario 7: Hierarchical Reporting (Bottom-Up)
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 7: Sales Rep Reports to Director (Bottom-Up Communication)")
+print("=" * 70)
+print("\nUser → Sales Rep 1: 'Log that you closed the Acme Corp deal for $300K in the sales knowledge base'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_rep1.id,
+    messages=[{
+        "role": "user",
+        "content": "Great news! I just closed the Acme Corp deal for $300K. Update the sales knowledge base with this win and update my personal Q4 numbers."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Rep 1: {msg.content}\n")
+
+# Check updated sales_knowledge
+updated_sales = client.blocks.retrieve(block_id=sales_knowledge.id)
+print("Updated sales_knowledge block (excerpt):")
+print("-" * 70)
+print(updated_sales.value[:600] + "...")
+print("-" * 70)
+
+print("\nNow Sales Director checks the shared sales_knowledge...")
+print("User → Sales Director: 'Any wins from the team today?'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_director.id,
+    messages=[{
+        "role": "user",
+        "content": "Check the sales knowledge base - any wins from the team today?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Director: {msg.content}\n")
+
+print("Analysis:")
+print("- Sales Rep 1 updated shared sales_knowledge block")
+print("- Sales Director immediately sees the update")
+print("- Demonstrates bottom-up information flow within department")
+print("- Director has visibility into team performance without explicit reporting")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 7: Sales Rep Reports to Director (Bottom-Up Communication)
+======================================================================
+
+User → Sales Rep 1: 'Log that you closed the Acme Corp deal for $300K...'
+
+Sales Rep 1: Excellent! I've updated the sales knowledge base with the Acme Corp win:
+
+**Deal Details Logged:**
+- Customer: Acme Corp
+- Deal Size: $300K
+- Close Date: Oct 8, 2024
+- Plan: Enterprise (custom pricing)
+- Rep: Sales Rep 1
+
+**Updated Q4 Numbers:**
+- My Q4 closed: $420K → $720K
+- Target: $600K
+- Achievement: 120% of target ✓
+
+This is a significant win! I've also updated my personal notes with next steps for
+Acme's onboarding.
+
+Updated sales_knowledge block (excerpt):
+----------------------------------------------------------------------
+=== SALES KNOWLEDGE BASE ===
+Last Updated: 2024-10-08 15:30 PM
+
+RECENT WINS:
+- Acme Corp: $300K Enterprise deal (Sales Rep 1) - Oct 8, 2024
+
+CUSTOMER ACCOUNTS:
+- Total Active Customers: 248 (was 247)
+- Pipeline Value: $2.0M (was $2.3M, Acme converted)
+- Avg Deal Size: $15,100
+
+SALES TARGETS Q4:
+- Team Target: $1.5M in new revenue
+- Rep 1 Target: $600K → Actual: $720K (120% ✓)
+...
+----------------------------------------------------------------------
+
+Now Sales Director checks the shared sales_knowledge...
+User → Sales Director: 'Any wins from the team today?'
+
+Sales Director: Yes! Great news from the team:
+
+**🎉 Major Win: Acme Corp - $300K Enterprise Deal**
+Closed by: Sales Rep 1
+Date: Today (Oct 8)
+
+This is fantastic - Sales Rep 1 has now hit 120% of their Q4 target ($720K / $600K).
+This was one of our strategic accounts, and the $300K deal size is well above our
+average.
+
+**Team Status:**
+- Rep 1: $720K closed (120% of target) - exceeding expectations
+- Rep 2: $380K closed (63% of target) - on track
+- Team total: $1.1M / $1.5M (73%)
+
+We're in great shape for Q4. I should recognize Rep 1's performance and make sure
+we have a smooth onboarding for Acme.
+
+Analysis:
+- Sales Rep 1 updated shared sales_knowledge block
+- Sales Director immediately sees the update
+- Demonstrates bottom-up information flow within department
+- Director has visibility into team performance without explicit reporting
+```
+</Accordion>
+
+### Scenario 8: Information Cascade (Top-Down)
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 8: CEO Decision Cascades Down")
+print("=" * 70)
+print("\nUser → CEO: 'The board wants us to prioritize the enterprise segment. Update the strategy and make sure all departments know.'\n")
+
+response = client.agents.messages.create(
+    agent_id=ceo.id,
+    messages=[{
+        "role": "user",
+        "content": "The board meeting went well. Key decision: We're doubling down on the enterprise segment. Update the executive dashboard and coordinate with department directors via the cross-department projects block."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"CEO: {msg.content}\n")
+
+print("Now check if Directors see the update...")
+print("\nUser → Sales Director: 'Any strategic updates from leadership?'\n")
+
+response = client.agents.messages.create(
+    agent_id=sales_director.id,
+    messages=[{
+        "role": "user",
+        "content": "Check the cross-department projects block - any strategic updates from the CEO?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Sales Director: {msg.content}\n")
+
+print("Analysis:")
+print("- CEO updated executive_dashboard (private) and cross_dept_projects (directors)")
+print("- Directors see strategic directive in cross_dept_projects")
+print("- CEO doesn't need to message each director individually")
+print("- Demonstrates top-down information cascade through shared blocks")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 8: CEO Decision Cascades Down
+======================================================================
+
+User → CEO: 'The board wants us to prioritize the enterprise segment...'
+
+CEO: I've updated our strategic direction based on the board meeting:
+
+**STRATEGIC PRIORITY UPDATE: Enterprise Segment Focus**
+
+Updated in executive_dashboard:
+- Strategic Priority #1: Enterprise market expansion (elevated priority)
+- Target: 5 new enterprise customers by EOY (was 3)
+- Investment: Increased focus on enterprise features
+
+Updated in cross_dept_projects:
+- Added strategic directive for all directors
+- Each department should align their work with enterprise focus
+
+**Department Implications:**
+- Sales: Prioritize enterprise pipeline, target larger deals
+- Engineering: Fast-track enterprise features, improve onboarding
+- HR: Hire profiles with enterprise SaaS experience
+
+I've coordinated this through cross_dept_projects so all directors are aligned.
+They can now cascade this down to their teams and update their department priorities
+accordingly.
+
+Now check if Directors see the update...
+
+User → Sales Director: 'Any strategic updates from leadership?'
+
+Sales Director: Yes, I see a significant strategic update from the CEO in the
+cross-department projects block:
+
+**NEW STRATEGIC PRIORITY: Enterprise Segment Focus**
+
+The CEO has communicated that we're doubling down on enterprise customers. This affects
+my sales strategy immediately:
+
+**Sales Implications:**
+✓ Align perfectly with our current focus (Acme Corp win today)
+✓ Prioritize enterprise pipeline ($2M+ deal sizes)
+✓ Adjust messaging and positioning for larger organizations
+✓ May need to shift resources from SMB deals to enterprise
+
+**Action Items for My Team:**
+1. Brief Rep 1 and Rep 2 on enterprise prioritization
+2. Review pipeline and identify enterprise opportunities
+3. Coordinate with Engineering on enterprise feature roadmap
+4. Update sales_knowledge with enterprise-focused playbook
+
+This is great strategic clarity from leadership. Our Enterprise Customer Onboarding
+project with Engineering just became even more critical.
+
+Analysis:
+- CEO updated executive_dashboard (private) and cross_dept_projects (directors)
+- Directors see strategic directive in cross_dept_projects
+- CEO doesn't need to message each director individually
+- Demonstrates top-down information cascade through shared blocks
+```
+</Accordion>
+
+## Part 4: Block Access Matrix and Summary
+
+```python
+print("\n" + "=" * 70)
+print("COMPREHENSIVE BLOCK ACCESS MATRIX")
+print("=" * 70)
+
+# Create comprehensive access report
+blocks_to_check = [
+    (company_mission, "company_mission"),
+    (company_policies, "company_policies"),
+    (sales_knowledge, "sales_knowledge"),
+    (engineering_specs, "engineering_specs"),
+    (hr_employee_data, "hr_employee_data"),
+    (cross_dept_projects, "cross_dept_projects"),
+    (executive_dashboard, "executive_dashboard"),
+]
+
+for block, name in blocks_to_check:
+    print(f"\n{name}:")
+    block_info = client.blocks.retrieve(block_id=block.id)
+    print(f"  Agents with access: {len(block_info.agent_ids)}")
+    for agent_id in block_info.agent_ids:
+        agent_info = client.agents.retrieve(agent_id=agent_id)
+        print(f"    - {agent_info.name}")
+
+print("\n" + "=" * 70)
+print("TUTORIAL 4 COMPLETE: Key Takeaways")
+print("=" * 70)
+
+print("""
+✓ Created complete enterprise system with 10 agents across 4 organizational levels
+✓ Implemented 4-tier block hierarchy (company → department → cross-dept → executive)
+✓ Demonstrated department isolation (Sales/Eng/HR cannot see each other's data)
+✓ Showed cross-department coordination via cross_dept_projects
+✓ Demonstrated executive oversight via executive_dashboard
+✓ Showed bidirectional information flow (top-down and bottom-up)
+✓ Demonstrated HR confidentiality protection
+✓ Showed asynchronous coordination eliminating explicit messaging
+
+COMPLETE BLOCK ACCESS MATRIX:
+==============================
+                        company_ company_ sales_   engineering_ hr_      cross_   executive_
+                        mission  policies knowledge specs       employee_ dept_    dashboard
+                                                                data      projects
+CEO                     R        R        -        -            -         R/W      R/W
+Sales Director          R        R        R/W      -            -         R/W      -
+Sales Rep 1             R        R        R/W      -            -         -        -
+Sales Rep 2             R        R        R/W      -            -         -        -
+Engineering Director    R        R        -        R/W          -         R/W      -
+Engineer 1              R        R        -        R/W          -         -        -
+Engineer 2              R        R        -        R/W          -         -        -
+HR Director             R        R        -        -            R/W       R/W      -
+HR Rep 1                R        R        -        -            R/W       -        -
+
+R = Read-only | R/W = Read/Write | - = No Access
+
+ARCHITECTURAL PATTERNS DEMONSTRATED:
+====================================
+1. **Company-wide blocks** (read-only): Universal access, consistent messaging
+2. **Department isolation**: Each dept has private knowledge base
+3. **Cross-department coordination**: Directors collaborate via shared block
+4. **Executive aggregation**: CEO sees metrics without micromanaging
+5. **Hierarchical information flow**: Top-down (strategy) and bottom-up (reporting)
+6. **Confidentiality boundaries**: HR data strictly protected
+7. **Asynchronous coordination**: No explicit messaging needed between departments
+
+SCALING INSIGHTS:
+=================
+- 10 agents with 17 total blocks (7 shared + 10 private)
+- Each agent has 3-5 block access on average
+- Complex access patterns scale well
+- Department boundaries maintain security
+- Cross-functional work enabled without breaking isolation
+
+REAL-WORLD USE CASES:
+=====================
+✓ Enterprise organizational structures
+✓ Regulated industries (HIPAA, GDPR compliance via block isolation)
+✓ Multi-team product development
+✓ Customer support with specialized teams
+✓ Educational institutions (departments, admin)
+✓ Government agencies (clearance levels, department boundaries)
+
+COMPARISON ACROSS ALL TUTORIALS:
+=================================
+Tutorial 1: Hierarchical access (3 tiers, read-only knowledge)
+Tutorial 2: Uniform team access (task coordination, read/write)
+Tutorial 3: Overlapping access (5 specialists, mixed blocks)
+Tutorial 4: Organizational hierarchy (10 agents, 4-tier blocks, department isolation)
+
+KEY TAKEAWAY:
+=============
+Shared memory blocks enable enterprise-scale multi-agent systems with:
+- Appropriate information boundaries
+- Asynchronous coordination
+- Hierarchical oversight
+- Department autonomy
+- Cross-functional collaboration
+
+All without explicit agent-to-agent messaging or centralized control!
+""")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+COMPREHENSIVE BLOCK ACCESS MATRIX
+======================================================================
+
+company_mission:
+  Agents with access: 10
+    - CEO
+    - Sales_Director
+    - Sales_Rep_1
+    - Sales_Rep_2
+    - Engineering_Director
+    - Engineer_1
+    - Engineer_2
+    - HR_Director
+    - HR_Rep_1
+
+company_policies:
+  Agents with access: 10
+    - CEO
+    - Sales_Director
+    - Sales_Rep_1
+    - Sales_Rep_2
+    - Engineering_Director
+    - Engineer_1
+    - Engineer_2
+    - HR_Director
+    - HR_Rep_1
+
+sales_knowledge:
+  Agents with access: 3
+    - Sales_Director
+    - Sales_Rep_1
+    - Sales_Rep_2
+
+engineering_specs:
+  Agents with access: 3
+    - Engineering_Director
+    - Engineer_1
+    - Engineer_2
+
+hr_employee_data:
+  Agents with access: 2
+    - HR_Director
+    - HR_Rep_1
+
+cross_dept_projects:
+  Agents with access: 4
+    - CEO
+    - Sales_Director
+    - Engineering_Director
+    - HR_Director
+
+executive_dashboard:
+  Agents with access: 1
+    - CEO
+
+======================================================================
+TUTORIAL 4 COMPLETE: Key Takeaways
+======================================================================
+... (full summary as shown above)
+```
+</Accordion>
+
+## Key Takeaways
+
+<CardGroup cols={2}>
+<Card title="4-Tier Hierarchy" icon="layer-group">
+Company → Department → Cross-Dept → Executive blocks create organizational structure
+</Card>
+
+<Card title="Department Isolation" icon="shield-halved">
+Each department maintains private knowledge bases invisible to other departments
+</Card>
+
+<Card title="Asynchronous Coordination" icon="arrows-spin">
+Directors coordinate via cross_dept_projects without explicit messaging
+</Card>
+
+<Card title="Executive Oversight" icon="eye">
+CEO sees aggregated metrics and coordination without micromanaging
+</Card>
+</CardGroup>
+
+### Architectural Patterns
+
+| Pattern | Description | Blocks |
+|---|---|---|
+| **Universal Access** | All agents see | `company_mission`, `company_policies` |
+| **Department Silos** | Department-only access | `sales_knowledge`, `engineering_specs`, `hr_employee_data` |
+| **Director Coordination** | Directors + CEO | `cross_dept_projects` |
+| **Executive Private** | CEO only | `executive_dashboard` |
+
+### Comparison Across All 4 Tutorials
+
+| Aspect | Tutorial 1 | Tutorial 2 | Tutorial 3 | Tutorial 4 |
+|---|---|---|---|---|
+| **Agents** | 4 | 4 | 5 | 10 |
+| **Shared Blocks** | 3 | 3 | 5 | 7 |
+| **Access Pattern** | Hierarchical tiers | Uniform team | Overlapping | Organizational hierarchy |
+| **Complexity** | Low | Medium | High | Very High |
+| **Read/Write Mix** | Read-only | Read/Write | Mixed | Mixed |
+| **Use Case** | Support tiers | Task coordination | Personal assistant | Enterprise org |
+
+## Series Conclusion
+
+You've now completed all 4 shared memory block tutorials! Here
+'s what you've learned:
+
+### Tutorial Progression
+
+**Part 1: Read-Only Knowledge** → Foundation
+- Hierarchical access control
+- Read-only blocks for policies
+- Information consistency
+
+**Part 2: Task Coordination** → Collaboration
+- Read/write shared blocks
+- Worker coordination patterns
+- Knowledge sharing
+
+**Part 3: User Assistant** → Specialization
+- Overlapping access patterns
+- Privacy boundaries
+- Zero-handoff workflows
+
+**Part 4: Enterprise System** → Scale
+- Organizational hierarchies
+- Department isolation
+- Cross-functional coordination
+- Executive oversight
+
+### Universal Principles
+
+Across all tutorials, these principles hold:
+
+1. **Appropriate Access**: Agents only access blocks they need (least privilege)
+2. **Real-Time Sync**: Updates to shared blocks immediately visible to all agents with access
+3. **No Explicit Coordination**: Shared blocks eliminate need for agent-to-agent messaging
+4. **Privacy Boundaries**: Sensitive data restricted to appropriate agents
+5. **Scalability**: Patterns work from 2 agents to 10+ agents
+
+## Next Steps
+
+<CardGroup cols={2}>
+<Card title="API Reference" icon="code" href="/api-reference/agents/core-memory">
+Complete API documentation for blocks and memory management
+</Card>
+
+<Card title="Multi-Agent Guide" icon="users" href="/guides/agents/multi-agent">
+High-level overview of multi-agent system architectures
+</Card>
+
+<Card title="Shared Memory Guide" icon="database" href="/guides/agents/shared-memory">
+Comprehensive guide to shared memory blocks (coming soon based on these tutorials!)
+</Card>
+
+<Card title="Discord Community" icon="discord" href="https://discord.gg/letta">
+Get help and share your multi-agent implementations
+</Card>
+</CardGroup>

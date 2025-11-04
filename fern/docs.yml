@@ -26,6 +26,7 @@ tabs:
     display-name: Discord
     icon: fa-brands fa-discord
     href: https://discord.gg/letta
+<<<<<<< HEAD
   community:
     display-name: Developer Community
     icon: fa-sharp fa-light fa-user-astronaut
@@ -40,6 +41,8 @@ tabs:
   leaderboard:
     display-name: Leaderboard
     skip-slug: true
+=======
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))
 landing-page:
   page: home
   path: pages/index.mdx
@@ -77,18 +80,9 @@ navigation:
         contents:
           - page: Agent basics
             path: pages/agents/overview.mdx
-          - page: Context Hierarchy
+          - page: Context hierarchy
             path: pages/agents/context_hierarchy.mdx
-          - page: Message Types
-            path: pages/agents/message_types.mdx
-
-      - section: Memory
-        path: pages/agents/memory.mdx
-        contents:
-          - page: Memory Blocks
-            path: pages/agents/memory_blocks.mdx
-          - section: Archival Memory
-            path: pages/agents/archival_memory_overview.mdx
+          - section: Memory
             contents:
               - page: Memory overview
                 path: pages/agents/memory.mdx
@@ -121,6 +115,7 @@ navigation:
             path: pages/agents/tools.mdx
           - section: Tool types
             contents:
+<<<<<<< HEAD
               - page: Web Search
                 path: pages/agents/web_search.mdx
               - page: Code Interpreter
@@ -135,6 +130,14 @@ navigation:
             path: pages/agents/tool_variables.mdx
           - page: Human-in-the-Loop
             path: pages/agents/human_in_the_loop.mdx
+=======
+            - page: Base tools
+              path: pages/agents/base_tools.mdx
+            - page: Custom tools
+              path: pages/agents/custom_tools.mdx
+            - page: Built-in tools
+              path: pages/agents/prebuilt_tools.mdx
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))
           - section: Model Context Protocol
             contents:
               - page: MCP overview
@@ -357,7 +360,7 @@ navigation:
         contents:
           - page: Groups
             path: pages/agents/groups.mdx
-          - page: Sleep-time Agents
+          - page: Sleep-time agents
             path: pages/agents/sleep_time_agents.mdx
           - section: Voice agents
             contents:
@@ -368,6 +371,7 @@ navigation:
               - page: Vapi integration
                 path: pages/voice/voice_vapi.mdx
 
+<<<<<<< HEAD
 
       - section: Legacy & Migration
         contents:
@@ -387,6 +391,8 @@ navigation:
             path: pages/legacy/heartbeats_legacy.mdx
           - page: Architecture Naming History
             path: pages/legacy/naming_history.mdx
+=======
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))
 
       #- section: Tool Execution
       #  contents:
@@ -470,6 +476,7 @@ navigation:
                 path: pages/concepts/memgpt.mdx
           - section: Legacy & migration
             contents:
+<<<<<<< HEAD
               - page: Railway
                 path: pages/deployment/railway.mdx
           #- page: Deploying with Docker
@@ -583,6 +590,25 @@ navigation:
             path: pages/cloud/monitoring.mdx
           - page: Responses & Tracing
             path: pages/cloud/responses.mdx
+=======
+              - page: Legacy architecture overview
+                path: pages/legacy/architectures_overview.mdx
+              - page: Migration guide
+                path: pages/legacy/migration_guide.mdx
+              - page: MemGPT agents (legacy)
+                path: pages/legacy/memgpt_agents_legacy.mdx
+              - page: Workflows (legacy)
+                path: pages/legacy/workflows_legacy.mdx
+              - page: Low-latency agents (legacy)
+                path: pages/legacy/low_latency_agents_legacy.mdx
+              - page: ReAct agents (legacy)
+                path: pages/legacy/react_agents_legacy.mdx
+              - page: Heartbeats (legacy)
+                path: pages/legacy/heartbeats_legacy.mdx
+              - page: Architecture naming history
+                path: pages/legacy/naming_history.mdx
+
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))
   - tab: ref
     layout:
       - link: Chat on Discord
@@ -819,6 +845,10 @@ navigation:
           - page: Agentic RAG
             path: pages/cookbooks/rag-agentic.mdx
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))
   # - tab: cookbooks
   #   layout:
   #     - section: Cookbooks
@@ -1008,3 +1038,14 @@ redirects:
     destination: "/guides/legacy/workflows_legacy"
   - source: "/guides/agents/architectures/low-latency"
     destination: "/guides/legacy/low_latency_agents_legacy"
+<<<<<<< HEAD
+=======
+  - source: "/leaderboard"
+    destination: "https://leaderboard.letta.com"
+  - source: "/leaderboard/overview"
+    destination: "https://leaderboard.letta.com"
+  - source: "/leaderboard/contributing"
+    destination: "https://leaderboard.letta.com"
+  - source: "/guides/agents/fetch-webpage"
+    destination: "/guides/agents/web-search"
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))

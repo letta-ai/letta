@@ -1,0 +1,375 @@
+# Gates
+
+**Gates** are the pass/fail criteria for your evaluation. They determine whether your agent meets the required performance threshold by checking aggregate metrics.
+
+**Quick overview:**
+- **Single decision**: One gate per suite determines pass/fail
+- **Two metrics**: `avg_score` (average of all scores) or `accuracy` (percentage passing threshold)
+- **Flexible operators**: >=, >, <=, <, == for threshold comparison
+- **Customizable pass criteria**: Define what counts as "passing" for accuracy calculations
+- **Exit codes**: Suite exits 0 for pass, 1 for fail
+
+**Common patterns:**
+- `avg_score >= 0.8` - Average score must be 80%+
+- `accuracy >= 0.9` - 90%+ of samples must pass
+- Custom threshold - Define per-sample pass criteria with `pass_value`
+
+Gates define the pass/fail criteria for your evaluation. They check if aggregate metrics meet a threshold.
+
+## Basic Structure
+
+```yaml
+gate:
+  metric_key: accuracy  # Which grader to evaluate
+  metric: avg_score  # Use average score (default)
+  op: gte  # Greater than or equal
+  value: 0.8  # 80% threshold
+```
+
+## Why Use Gates?
+
+Gates provide **automated pass/fail decisions** for your evaluations, which is essential for:
+
+**CI/CD Integration**: Gates let you block deployments if agent performance drops:
+```bash
+letta-evals run suite.yaml
+# Exit code 0 = pass (continue deployment)
+# Exit code 1 = fail (block deployment)
+```
+
+**Regression Testing**: Set a baseline threshold and ensure new changes don't degrade performance:
+```yaml
+gate:
+  metric: avg_score
+  op: gte
+  value: 0.85  # Must maintain 85%+ to pass
+```
+
+**Quality Enforcement**: Require agents meet minimum standards before production:
+```yaml
+gate:
+  metric: accuracy
+  op: gte
+  value: 0.95  # 95% of test cases must pass
+```
+
+### What Happens When Gates Fail?
+
+When a gate condition is not met:
+
+1. **Console output** shows failure message:
+   ```
+   ✗ FAILED (0.72/1.00 avg, 72.0% pass rate)
+   Gate check failed: avg_score (0.72) not >= 0.80
+   ```
+
+2. **Exit code** is 1 (non-zero indicates failure):
+   ```bash
+   letta-evals run suite.yaml
+   echo $?  # Prints 1 if gate failed
+   ```
+
+3. **Results JSON** includes `gate_passed: false`:
+   ```json
+   {
+     "gate_passed": false,
+     "gate_check": {
+       "metric": "avg_score",
+       "value": 0.72,
+       "threshold": 0.80,
+       "operator": "gte",
+       "passed": false
+     },
+     "metrics": { ... }
+   }
+   ```
+
+4. **All other data is preserved** - you still get full results, scores, and trajectories even when gating fails
+
+**Common use case in CI**:
+```bash
+#!/bin/bash
+letta-evals run suite.yaml --output results.json
+
+if [ $? -ne 0 ]; then
+  echo "❌ Agent evaluation failed - blocking merge"
+  exit 1
+else
+  echo "✅ Agent evaluation passed - safe to merge"
+fi
+```
+
+## Required Fields
+
+### metric_key
+
+Which grader to evaluate. Must match a key in your `graders` section:
+
+```yaml
+graders:
+  accuracy:  # Grader name
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+
+gate:
+  metric_key: accuracy  # Must match grader name above
+  op: gte  # >=
+  value: 0.8  # 80% threshold
+```
+
+If you only have one grader, `metric_key` can be omitted - it will default to your single grader.
+
+### metric
+
+Which aggregate statistic to compare. Two options:
+
+#### avg_score
+
+Average score across all samples (0.0 to 1.0):
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: avg_score  # Use average of all scores
+  op: gte  # >=
+  value: 0.7  # Must average 70%+
+```
+
+Example: If scores are [0.8, 0.9, 0.6], avg_score = 0.77
+
+#### accuracy
+
+Pass rate as a percentage (0.0 to 1.0):
+
+```yaml
+gate:
+  metric_key: accuracy  # Check accuracy grader
+  metric: accuracy  # Use pass rate, not average
+  op: gte  # >=
+  value: 0.8  # 80% of samples must pass
+```
+
+By default, samples with score >= 1.0 are considered "passing".
+
+You can customize the per-sample threshold with `pass_op` and `pass_value` (see below).
+
+**Note**: The default `metric` is `avg_score`, so you can omit it if that's what you want:
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  op: gte  # >=
+  value: 0.7  # 70% threshold (defaults to avg_score)
+```
+
+### op
+
+Comparison operator:
+
+- `gte`: Greater than or equal (>=)
+- `gt`: Greater than (>)
+- `lte`: Less than or equal (<=)
+- `lt`: Less than (<)
+- `eq`: Equal (==)
+
+Most common: `gte` (at least X)
+
+### value
+
+Threshold value for comparison:
+
+- For `avg_score`: 0.0 to 1.0
+- For `accuracy`: 0.0 to 1.0 (representing percentage)
+
+```yaml
+gate:
+  metric: avg_score  # Average score
+  op: gte  # >=
+  value: 0.75  # 75% threshold
+```
+
+```yaml
+gate:
+  metric: accuracy  # Pass rate
+  op: gte  # >=
+  value: 0.9  # 90% must pass
+```
+
+## Optional Fields
+
+### pass_op and pass_value
+
+Customize when individual samples are considered "passing" (used for accuracy calculation):
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: accuracy  # Use pass rate
+  op: gte  # >=
+  value: 0.8  # 80% must pass
+  pass_op: gte  # Sample passes if >=
+  pass_value: 0.7  # This threshold (70%)
+```
+
+Default behavior:
+- If `metric` is `avg_score`: samples pass if score >= the gate value
+- If `metric` is `accuracy`: samples pass if score >= 1.0 (perfect)
+
+## Examples
+
+### Require 80% Average Score
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: avg_score  # Use average
+  op: gte  # >=
+  value: 0.8  # 80% average
+```
+
+Passes if the average score across all samples is >= 0.8
+
+### Require 90% Pass Rate (Perfect Scores)
+
+```yaml
+gate:
+  metric_key: accuracy  # Check accuracy grader
+  metric: accuracy  # Use pass rate
+  op: gte  # >=
+  value: 0.9  # 90% must pass (default: score >= 1.0 to pass)
+```
+
+Passes if 90% of samples have score = 1.0
+
+### Require 75% Pass Rate (Score >= 0.7)
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: accuracy  # Use pass rate
+  op: gte  # >=
+  value: 0.75  # 75% must pass
+  pass_op: gte  # Sample passes if >=
+  pass_value: 0.7  # 70% threshold per sample
+```
+
+Passes if 75% of samples have score >= 0.7
+
+### Maximum Error Rate
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: accuracy  # Use pass rate
+  op: gte  # >=
+  value: 0.95  # 95% must pass (allows 5% failures)
+  pass_op: gt  # Sample passes if >
+  pass_value: 0.0  # 0.0 (any non-zero score)
+```
+
+Allows up to 5% failures.
+
+### Exact Pass Rate
+
+```yaml
+gate:
+  metric_key: quality  # Check quality grader
+  metric: accuracy  # Use pass rate
+  op: eq  # Exactly equal
+  value: 1.0  # 100% (all samples must pass)
+```
+
+All samples must pass.
+
+## Multi-Metric Gating
+
+When you have multiple graders, you can only gate on one metric:
+
+```yaml
+graders:
+  accuracy:  # First metric
+    kind: tool
+    function: exact_match
+    extractor: last_assistant
+
+  completeness:  # Second metric
+    kind: rubric
+    prompt_path: completeness.txt
+    model: gpt-4o-mini
+    extractor: last_assistant
+
+gate:
+  metric_key: accuracy  # Only gate on accuracy (completeness still computed)
+  metric: avg_score  # Use average
+  op: gte  # >=
+  value: 0.8  # 80% threshold
+```
+
+The evaluation passes/fails based on the gated metric, but results include scores for all metrics.
+
+## Understanding avg_score vs accuracy
+
+### avg_score
+- Arithmetic mean of all scores
+- Sensitive to partial credit
+- Good for continuous evaluation
+
+Example:
+- Scores: [1.0, 0.8, 0.6]
+- avg_score = (1.0 + 0.8 + 0.6) / 3 = 0.8
+
+### accuracy
+- Percentage of samples meeting a threshold
+- Binary pass/fail per sample
+- Good for strict requirements
+
+Example:
+- Scores: [1.0, 0.8, 0.6]
+- pass_value: 0.7
+- Passing: [1.0, 0.8] = 2 out of 3
+- accuracy = 2/3 = 0.667 (66.7%)
+
+## Errors and Attempted Samples
+
+If a sample fails (error during evaluation), it:
+- Gets a score of 0.0
+- Counts toward `total` but not `total_attempted`
+- Included in `avg_score_total` but not `avg_score_attempted`
+
+You can gate on either:
+- `avg_score_total`: Includes errors as 0.0
+- `avg_score_attempted`: Excludes errors (only successfully attempted samples)
+
+**Note**: The `metric` field currently only supports `avg_score` and `accuracy`. By default, gates use `avg_score_attempted`.
+
+## Gate Results
+
+After evaluation, you'll see:
+
+```
+✓ PASSED (2.25/3.00 avg, 75.0% pass rate)
+```
+
+or
+
+```
+✗ FAILED (1.80/3.00 avg, 60.0% pass rate)
+```
+
+The evaluation exit code reflects the gate result:
+- 0: Passed
+- 1: Failed
+
+## Advanced Gating
+
+For complex gating logic (e.g., "pass if accuracy >= 80% OR avg_score >= 0.9"), you'll need to:
+1. Run evaluation with one gate
+2. Examine the results JSON
+3. Apply custom logic in a post-processing script
+
+## Next Steps
+
+- [Understanding Results](../results/overview.md) - Interpreting evaluation output
+- [Multi-Metric Evaluation](../graders/multi-metric.md) - Using multiple graders
+- [Suite YAML Reference](../configuration/suite-yaml.md) - Complete gate configuration

@@ -1,4 +1,9 @@
 {
   "organization": "letta",
+<<<<<<< HEAD
   "version": "0.72.0"
 }
+=======
+  "version": "0.107.3"
+}
+>>>>>>> 018a45364 (Simplify docs navigation to 3 tabs (#5940))

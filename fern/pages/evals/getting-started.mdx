@@ -6,7 +6,7 @@ Run your first Letta agent evaluation in 5 minutes.
 
 - Python 3.11 or higher
 - A running Letta server (local or Letta Cloud)
-- A Letta agent to test, either in agent file format or by ID (see [Targets](/evals/core-concepts/targets) for more details)
+- A Letta agent to test, either in agent file format or by ID (see [Targets](/guides/evals/concepts/targets) for more details)
 
 ## Installation
 
@@ -50,7 +50,7 @@ target:
 ```
 
 <Note>
-**Other options:** You can also use existing agents by ID or programmatically generate agents. See [Targets](/evals/core-concepts/targets) for all agent configuration options.
+**Other options:** You can also use existing agents by ID or programmatically generate agents. See [Targets](/guides/evals/concepts/targets) for all agent configuration options.
 </Note>
 
 ## Quick Start
@@ -75,7 +75,7 @@ Each line is a JSON object with:
 `ground_truth` is optional for some graders (like rubric graders), but required for tool graders like `contains` and `exact_match`.
 </Note>
 
-Read more about [Datasets](/evals/core-concepts/datasets) for details on how to create your dataset.
+Read more about [Datasets](/guides/evals/concepts/datasets) for details on how to create your dataset.
 
 ### 2. Create a Suite Configuration
 
@@ -104,12 +104,12 @@ gate:
 ```
 
 The suite configuration defines:
-- The [dataset](/evals/core-concepts/datasets) to use
-- The [agent](/evals/core-concepts/targets) to test
-- The [graders](/evals/core-concepts/graders) to use
-- The [gate](/evals/core-concepts/gates) criteria
+- The [dataset](/guides/evals/concepts/datasets) to use
+- The [agent](/guides/evals/concepts/targets) to test
+- The [graders](/guides/evals/concepts/graders) to use
+- The [gate](/guides/evals/concepts/gates) criteria
 
-Read more about [Suites](/evals/core-concepts/suites) for details on how to configure your evaluation.
+Read more about [Suites](/guides/evals/concepts/suites) for details on how to configure your evaluation.
 
 ### 3. Run the Evaluation
 
@@ -127,7 +127,7 @@ Running evaluation: my-first-eval
 ✓ PASSED (2.25/3.00 avg, 75.0% pass rate)
 ```
 
-Read more about [CLI Commands](/evals/cli-reference/commands) for details about the available commands and options.
+Read more about [CLI Commands](/guides/evals/cli/commands) for details about the available commands and options.
 
 ## Understanding the Results
 
@@ -152,11 +152,11 @@ The output shows:
 
 Now that you've run your first evaluation, explore more advanced features:
 
-- [Core Concepts](/evals/core-concepts/concepts-overview) - Understand suites, datasets, graders, and extractors
-- [Grader Types](/evals/core-concepts/graders) - Learn about tool graders vs rubric graders
-- [Multi-Metric Evaluation](/evals/graders/multi-metric-grading) - Test multiple aspects simultaneously
-- [Custom Graders](/evals/advanced/custom-graders) - Write custom grading functions
-- [Multi-Turn Conversations](/evals/advanced/multi-turn-conversations) - Test conversational memory
+- [Core Concepts](/guides/evals/concepts/overview) - Understand suites, datasets, graders, and extractors
+- [Grader Types](/guides/evals/concepts/graders) - Learn about tool graders vs rubric graders
+- [Multi-Metric Evaluation](/guides/guides/evals/graders/multi-metric) - Test multiple aspects simultaneously
+- [Custom Graders](/guides/evals/advanced/custom-graders) - Write custom grading functions
+- [Multi-Turn Conversations](/guides/evals/advanced/multi-turn-conversations) - Test conversational memory
 
 ## Common Use Cases
 
@@ -260,4 +260,4 @@ Tool graders like `exact_match` and `contains` require `ground_truth` in your da
 Try testing your agent manually first using the Letta SDK or Agent Development Environment (ADE) to see how it behaves before running evaluations. See the [Letta documentation](https://docs.letta.com) for more information.
 </Tip>
 
-For more help, see the [Troubleshooting Guide](/evals/troubleshooting/common-issues).
+For more help, see the [Troubleshooting Guide](/guides/evals/troubleshooting).

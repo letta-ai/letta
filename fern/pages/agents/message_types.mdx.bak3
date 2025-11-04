@@ -202,7 +202,7 @@ A request for human approval before executing a tool.
 }
 ```
 
-See [Human-in-the-Loop](/guides/agents/human-in-the-loop) for more information on this experimental feature.
+See [Human-in-the-Loop](/guides/agents/human_in_the_loop) for more information on this experimental feature.
 
 #### `approval_response_message`
 The user's response to an approval request.
@@ -405,7 +405,7 @@ When displaying conversations to end users, filter out internal messages:
 
 ```python
 def is_internal_message(msg):
-    """Check if a user message is internal (login, system_alert, etc.)"""
+    """Check if a user message is internal (heartbeat, login, etc.)"""
     if msg.message_type != "user_message":
         return False
 
@@ -454,6 +454,6 @@ for call_id, call_msg in tool_calls.items():
 
 ## See Also
 
-- [Human-in-the-Loop](/guides/agents/human-in-the-loop) - Using approval messages
+- [Human-in-the-Loop](/guides/agents/human_in_the_loop) - Using approval messages
 - [Streaming Responses](/guides/agents/streaming) - Receiving messages in real-time
 - [API Reference](/api-reference/agents/messages/list) - Full API documentation
