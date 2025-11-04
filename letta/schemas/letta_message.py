@@ -368,6 +368,25 @@ class LettaPing(LettaMessage):
     )
 
 
+class SummaryMessage(LettaMessage):
+    """
+    A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider.
+    """
+
+    message_type: Literal["summary"] = "summary_message"
+    summary: str
+
+
+class EventMessage(LettaMessage):
+    """
+    A message for notifying the developer that an event that has occured (e.g. a compaction). Events are NOT part of the context window.
+    """
+
+    message_type: Literal["event"] = "event_message"
+    event_type: Literal["compaction"]
+    event_data: dict
+
+
 # NOTE: use Pydantic's discriminated unions feature: https://docs.pydantic.dev/latest/concepts/unions/#discriminated-unions
 LettaMessageUnion = Annotated[
     Union[
@@ -380,6 +399,8 @@ LettaMessageUnion = Annotated[
         AssistantMessage,
         ApprovalRequestMessage,
         ApprovalResponseMessage,
+        SummaryMessage,
+        EventMessage,
     ],
     Field(discriminator="message_type"),
 ]
@@ -397,6 +418,8 @@ def create_letta_message_union_schema():
             {"$ref": "#/components/schemas/AssistantMessage"},
             {"$ref": "#/components/schemas/ApprovalRequestMessage"},
             {"$ref": "#/components/schemas/ApprovalResponseMessage"},
+            {"$ref": "#/components/schemas/SummaryMessage"},
+            {"$ref": "#/components/schemas/EventMessage"},
         ],
         "discriminator": {
             "propertyName": "message_type",
@@ -410,6 +433,8 @@ def create_letta_message_union_schema():
                 "assistant_message": "#/components/schemas/AssistantMessage",
                 "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
                 "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                "summary": "#/components/schemas/SummaryMessage",
+                "event": "#/components/schemas/EventMessage",
             },
         },
     }
