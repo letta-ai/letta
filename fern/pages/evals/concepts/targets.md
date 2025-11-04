@@ -2,13 +2,11 @@
 
 A **target** is the agent you're evaluating. In Letta Evals, the target configuration determines how agents are created, accessed, and tested.
 
-<Note>
 **Quick overview:**
 - **Three ways to specify agents**: agent file (`.af`), existing agent ID, or programmatic creation script
 - **Critical distinction**: `agent_file`/`agent_script` create fresh agents per sample (isolated tests), while `agent_id` uses one agent for all samples (stateful conversation)
 - **Multi-model support**: Test the same agent configuration across different LLM models
 - **Flexible connection**: Connect to local Letta servers or Letta Cloud
-</Note>
 
 **When to use each approach:**
 - `agent_file` - Pre-configured agents saved as `.af` files (most common)
@@ -39,7 +37,7 @@ Path to a `.af` (Agent File) to upload:
 target:
   kind: agent
   agent_file: path/to/agent.af  # Path to .af file
-  base_url: https://api.letta.com  # Letta server URL
+  base_url: http://localhost:8283  # Letta server URL
 ```
 
 The agent file will be uploaded to the Letta server and a new agent created for the evaluation.
@@ -52,12 +50,10 @@ ID of an existing agent on the server:
 target:
   kind: agent
   agent_id: agent-123-abc  # ID of existing agent
-  base_url: https://api.letta.com  # Letta server URL
+  base_url: http://localhost:8283  # Letta server URL
 ```
 
-<Warning>
-**Modifies agent in-place:** Using `agent_id` will modify your agent's state, memory, and message history during evaluation. The same agent instance is used for all samples, processing them sequentially. **Do not use production agents or agents you don't want to modify.** Use `agent_file` or `agent_script` for reproducible, isolated testing.
-</Warning>
+The existing agent will be used directly. Note: this agent's memory will be modified during evaluation.
 
 ### agent_script
 
@@ -67,7 +63,7 @@ Path to a Python script with an agent factory function for programmatic agent cr
 target:
   kind: agent
   agent_script: create_agent.py:create_inventory_agent  # script.py:function_name
-  base_url: https://api.letta.com  # Letta server URL
+  base_url: http://localhost:8283  # Letta server URL
 ```
 
 Format: `path/to/script.py:function_name`
@@ -114,6 +110,8 @@ async def create_inventory_agent(client: AsyncLetta, sample: Sample) -> str:
 - Agents that need sample-specific memory or tools
 - Programmatic agent testing
 
+See [`examples/programmatic-agent-creation/`](https://github.com/letta-ai/letta-evals/tree/main/examples/programmatic-agent-creation) for a complete working example.
+
 ## Connection Configuration
 
 ### base_url
@@ -122,12 +120,12 @@ Letta server URL:
 
 ```yaml
 target:
-  base_url: https://api.letta.com  # Local Letta server
+  base_url: http://localhost:8283  # Local Letta server
   # or
   base_url: https://api.letta.com  # Letta Cloud
 ```
 
-Default: `https://api.letta.com`
+Default: `http://localhost:8283`
 
 ### api_key
 
@@ -198,9 +196,7 @@ target:
 
 Use this for Letta Cloud deployments.
 
-<Warning>
 **Note**: You cannot specify both `model_configs` and `model_handles`.
-</Warning>
 
 ## Complete Examples
 
@@ -210,7 +206,7 @@ Use this for Letta Cloud deployments.
 target:
   kind: agent
   agent_file: ./agents/my_agent.af  # Pre-configured agent
-  base_url: https://api.letta.com  # Local server
+  base_url: http://localhost:8283  # Local server
 ```
 
 ### Letta Cloud
@@ -230,7 +226,7 @@ target:
 target:
   kind: agent
   agent_file: agent.af  # Same agent configuration
-  base_url: https://api.letta.com  # Local server
+  base_url: http://localhost:8283  # Local server
   model_configs: [gpt-4o-mini, gpt-4o, claude-3-5-sonnet]  # Test 3 models
 ```
 
@@ -247,7 +243,7 @@ Model: claude-3-5-sonnet - Avg: 0.88, Pass: 88.0%
 target:
   kind: agent
   agent_script: setup.py:CustomAgentFactory  # Programmatic creation
-  base_url: https://api.letta.com  # Local server
+  base_url: http://localhost:8283  # Local server
 ```
 
 ## Environment Variable Precedence
@@ -277,9 +273,7 @@ The way your agent is specified fundamentally changes how the evaluation runs:
 - Regression testing where each case should be isolated
 - Evaluating agent responses without prior context
 
-<Note>
 **Example:** If you have 10 test cases, 10 separate agent instances will be created (one per test case), and they can run in parallel.
-</Note>
 
 ### With agent_id: Sequential Script Testing
 
@@ -296,9 +290,7 @@ The way your agent is specified fundamentally changes how the evaluation runs:
 - Simulating a single user session with multiple interactions
 - Testing scenarios where context should accumulate
 
-<Note>
 **Example:** If you have 10 test cases, they all run against the same agent instance in order, with state carrying over between each test.
-</Note>
 
 ### Critical Differences
 
@@ -311,9 +303,7 @@ The way your agent is specified fundamentally changes how the evaluation runs:
 | **Use case** | Independent test cases | Conversation scripts |
 | **Reproducibility** | Highly reproducible | Depends on execution order |
 
-<Tip>
 **Best practice:** Use `agent_file` or `agent_script` for most evaluations to ensure reproducible, isolated tests. Use `agent_id` only when you specifically need to test how agent state evolves across multiple interactions.
-</Tip>
 
 ## Validation
 
@@ -324,6 +314,6 @@ The runner validates:
 
 ## Next Steps
 
-- [Suite YAML Reference](/guides/evals/configuration/suite-yaml) - Complete target configuration options
-- [Datasets](/guides/evals/concepts/datasets) - Using agent_args for sample-specific configuration
-- [Getting Started](/guides/evals/getting-started) - Complete tutorial with target examples
+- [Suite YAML Reference](../configuration/suite-yaml.md) - Complete target configuration options
+- [Datasets](./datasets.md) - Using agent_args for sample-specific configuration
+- [Getting Started](../getting-started.md) - Complete tutorial with target examples

@@ -146,8 +146,8 @@ Range: 0.0 to 1.0
 Number of samples that passed/failed the gate's per-sample criteria.
 
 By default:
-- If gate metric is `accuracy`: sample passes if score `>= 1.0`
-- If gate metric is `avg_score`: sample passes if score `>=` gate value
+- If gate metric is `accuracy`: sample passes if score >= 1.0
+- If gate metric is `avg_score`: sample passes if score >= gate value
 
 Can be customized with `pass_op` and `pass_value` in gate config.
 
@@ -342,52 +342,46 @@ The `aggregate_stats.json` includes statistics across all runs:
 {
   "num_runs": 10,
   "runs_passed": 8,
-  "mean_avg_score_attempted": 0.847,
-  "std_avg_score_attempted": 0.042,
-  "mean_avg_score_total": 0.847,
-  "std_avg_score_total": 0.042,
-  "mean_scores": {
-    "accuracy": 0.89,
-    "quality": 0.82
+  "runs_failed": 2,
+  "pass_rate": 80.0,
+  "avg_score_attempted": {
+    "mean": 0.847,
+    "std": 0.042,
+    "min": 0.78,
+    "max": 0.91
   },
-  "std_scores": {
-    "accuracy": 0.035,
-    "quality": 0.051
+  "avg_score_total": {
+    "mean": 0.847,
+    "std": 0.042,
+    "min": 0.78,
+    "max": 0.91
   },
-  "individual_run_metrics": [
-    {
-      "avg_score_attempted": 0.85,
-      "avg_score_total": 0.85,
-      "pass_rate": 0.85,
-      "by_metric": {
-        "accuracy": {
-          "avg_score_attempted": 0.90,
-          "avg_score_total": 0.90,
-          "pass_rate": 0.90
-        }
+  "per_metric": {
+    "accuracy": {
+      "avg_score_attempted": {
+        "mean": 0.89,
+        "std": 0.035,
+        "min": 0.82,
+        "max": 0.95
+      },
+      "pass_rate": {
+        "mean": 89.0,
+        "std": 4.2,
+        "min": 80.0,
+        "max": 95.0
       }
     }
-    // ... metrics from runs 2-10
-  ]
+  }
 }
 ```
-
-**Key fields**:
-- `num_runs`: Total number of runs executed
-- `runs_passed`: Number of runs that passed the gate
-- `mean_avg_score_attempted`: Mean score across runs (only attempted samples)
-- `std_avg_score_attempted`: Standard deviation (measures consistency)
-- `mean_scores`: Mean for each metric (e.g., `{"accuracy": 0.89}`)
-- `std_scores`: Standard deviation for each metric (e.g., `{"accuracy": 0.035}`)
-- `individual_run_metrics`: Full metrics object from each individual run
 
 ### Use Cases
 
 **Measure consistency of non-deterministic agents:**
 ```bash
 letta-evals run suite.yaml --num-runs 20 --output results/
-# Check std_avg_score_attempted in aggregate_stats.json
-# Low std = consistent, high std = variable
+# Check stddev in aggregate_stats.json
+# Low stddev = consistent, high stddev = variable
 ```
 
 **Get confidence intervals:**
@@ -398,24 +392,13 @@ import math
 with open("results/aggregate_stats.json") as f:
     stats = json.load(f)
 
-mean = stats["mean_avg_score_attempted"]
-std = stats["std_avg_score_attempted"]
+mean = stats["avg_score_attempted"]["mean"]
+std = stats["avg_score_attempted"]["std"]
 n = stats["num_runs"]
 
 # 95% confidence interval (assuming normal distribution)
 margin = 1.96 * (std / math.sqrt(n))
 print(f"Score: {mean:.3f} ± {margin:.3f}")
-```
-
-**Compare metric consistency:**
-```python
-with open("results/aggregate_stats.json") as f:
-    stats = json.load(f)
-
-for metric_name, mean in stats["mean_scores"].items():
-    std = stats["std_scores"][metric_name]
-    consistency = "consistent" if std < 0.05 else "variable"
-    print(f"{metric_name}: {mean:.3f} ± {std:.3f} ({consistency})")
 ```
 
 ## Error Handling
@@ -480,5 +463,6 @@ failures = [
 
 ## Next Steps
 
-- [Gates](/guides/evals/concepts/gates) - Setting pass/fail criteria
-- [CLI Commands](/guides/evals/cli/commands) - Running evaluations
+- [Metrics Reference](./metrics.md)
+- [Output Formats](./output-formats.md)
+- [Best Practices](../best-practices/writing-tests.md)

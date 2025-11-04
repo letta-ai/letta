@@ -2,14 +2,12 @@
 
 **Datasets** are the test cases that define what your agent will be evaluated on. Each sample in your dataset represents one evaluation scenario.
 
-<Note>
 **Quick overview:**
 - **Two formats**: JSONL (flexible, powerful) or CSV (simple, spreadsheet-friendly)
 - **Required field**: `input` - the prompt(s) to send to the agent
 - **Common fields**: `ground_truth` (expected answer), `tags` (for filtering), `metadata` (extra info)
 - **Advanced fields**: `agent_args` (customize agent per sample), `rubric_vars` (per-sample rubric context)
 - **Multi-turn support**: Send multiple messages in sequence using arrays
-</Note>
 
 **Typical workflow:**
 1. Create a JSONL or CSV file with test cases
@@ -142,7 +140,7 @@ input,agent_args
 
 Your agent factory function can access these values via `sample.agent_args` to customize agent configuration.
 
-See [Targets - agent_script](/guides/evals/concepts/targets#agent_script) for details on programmatic agent creation.
+See [Targets - agent_script](./targets.md#agent_script) for details on programmatic agent creation.
 
 #### rubric_vars
 
@@ -191,7 +189,7 @@ Score on correctness (0.6) and code quality (0.4).
 
 This lets you customize evaluation criteria per sample using the same rubric template.
 
-See [Rubric Graders](/guides/evals/graders/rubric-graders) for details on rubric templates.
+See [Rubric Graders](../graders/rubric-graders.md) for details on rubric templates.
 
 #### id
 Sample ID is automatically assigned (0-based index) if not provided. You can override:
@@ -214,19 +212,15 @@ Sample ID is automatically assigned (0-based index) if not provided. You can ove
 
 Make ground truth specific enough to grade but flexible enough to match valid responses:
 
-<Tip>
 Good:
 ```json
 {"input": "What's the largest planet?", "ground_truth": "Jupiter"}
 ```
-</Tip>
 
-<Warning>
 Too strict (might miss valid answers):
 ```json
 {"input": "What's the largest planet?", "ground_truth": "Jupiter is the largest planet in our solar system."}
 ```
-</Warning>
 
 ### 2. Diverse Test Cases
 
@@ -250,17 +244,18 @@ Organize samples by type, difficulty, or feature:
 
 ### 4. Multi-Turn Conversations
 
-Test conversational context and memory updates:
+Test conversational context:
 
-```jsonl
-{"input": ["My name is Alice", "What's my name?"], "ground_truth": "Alice", "tags": ["memory", "recall"]}
-{"input": ["Please remember that I like bananas.", "Actually, sorry, I meant I like apples."], "ground_truth": "apples", "tags": ["memory", "correction"]}
-{"input": ["I work at Google", "Update my workplace to Microsoft", "Where do I work?"], "ground_truth": "Microsoft", "tags": ["memory", "multi_step"]}
+```json
+{
+  "input": [
+    "My name is Alice",
+    "What's my name?"
+  ],
+  "ground_truth": "Alice",
+  "tags": ["memory", "context"]
+}
 ```
-
-<Tip>
-**Testing memory corrections:** Use multi-turn inputs to test if agents properly update memory when users correct themselves. Combine with the `memory_block` extractor to verify the final memory state, not just the response.
-</Tip>
 
 ### 5. No Ground Truth for LLM Judges
 
@@ -414,12 +409,10 @@ input,rubric_vars
 "Write a story","{""max_length"": 500, ""genre"": ""sci-fi""}"
 ```
 
-<Note>
 **Note:** Complex data structures require JSON encoding in CSV. If you're frequently using these advanced features, JSONL may be easier to read and maintain.
-</Note>
 
 ## Next Steps
 
-- [Suite YAML Reference](/guides/evals/configuration/suite-yaml) - Complete configuration options including filtering
-- [Graders](/guides/evals/concepts/graders) - How to evaluate agent responses
-- [Multi-Turn Conversations](/guides/evals/advanced/multi-turn-conversations) - Testing conversational flows
+- [Suite YAML Reference](../configuration/suite-yaml.md) - Complete configuration options including filtering
+- [Graders](./graders.md) - How to evaluate agent responses
+- [Multi-Turn Conversations](../advanced/multi-turn-conversations.md) - Testing conversational flows

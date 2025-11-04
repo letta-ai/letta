@@ -2,19 +2,17 @@
 
 **Gates** are the pass/fail criteria for your evaluation. They determine whether your agent meets the required performance threshold by checking aggregate metrics.
 
-<Note>
 **Quick overview:**
 - **Single decision**: One gate per suite determines pass/fail
 - **Two metrics**: `avg_score` (average of all scores) or `accuracy` (percentage passing threshold)
-- **Flexible operators**: `>=`, `>`, `<=`, `<`, `==` for threshold comparison
+- **Flexible operators**: >=, >, <=, <, == for threshold comparison
 - **Customizable pass criteria**: Define what counts as "passing" for accuracy calculations
 - **Exit codes**: Suite exits 0 for pass, 1 for fail
-</Note>
 
 **Common patterns:**
-- Average score must be 80%+: `avg_score >= 0.8`
-- 90%+ of samples must pass: `accuracy >= 0.9`
-- Custom threshold: Define per-sample pass criteria with `pass_value`
+- `avg_score >= 0.8` - Average score must be 80%+
+- `accuracy >= 0.9` - 90%+ of samples must pass
+- Custom threshold - Define per-sample pass criteria with `pass_value`
 
 Gates define the pass/fail criteria for your evaluation. They check if aggregate metrics meet a threshold.
 
@@ -60,7 +58,7 @@ gate:
 When a gate condition is not met:
 
 1. **Console output** shows failure message:
-   ```text
+   ```
    ✗ FAILED (0.72/1.00 avg, 72.0% pass rate)
    Gate check failed: avg_score (0.72) not >= 0.80
    ```
@@ -88,9 +86,7 @@ When a gate condition is not met:
 
 4. **All other data is preserved** - you still get full results, scores, and trajectories even when gating fails
 
-<Tip>
 **Common use case in CI**:
-
 ```bash
 #!/bin/bash
 letta-evals run suite.yaml --output results.json
@@ -102,7 +98,6 @@ else
   echo "✅ Agent evaluation passed - safe to merge"
 fi
 ```
-</Tip>
 
 ## Required Fields
 
@@ -155,11 +150,10 @@ gate:
   value: 0.8  # 80% of samples must pass
 ```
 
-By default, samples with score `>= 1.0` are considered "passing".
+By default, samples with score >= 1.0 are considered "passing".
 
 You can customize the per-sample threshold with `pass_op` and `pass_value` (see below).
 
-<Note>
 **Note**: The default `metric` is `avg_score`, so you can omit it if that's what you want:
 
 ```yaml
@@ -168,17 +162,16 @@ gate:
   op: gte  # >=
   value: 0.7  # 70% threshold (defaults to avg_score)
 ```
-</Note>
 
 ### op
 
 Comparison operator:
 
-- `gte`: Greater than or equal (`>=`)
-- `gt`: Greater than (`>`)
-- `lte`: Less than or equal (`<=`)
-- `lt`: Less than (`<`)
-- `eq`: Equal (`==`)
+- `gte`: Greater than or equal (>=)
+- `gt`: Greater than (>)
+- `lte`: Less than or equal (<=)
+- `lt`: Less than (<)
+- `eq`: Equal (==)
 
 Most common: `gte` (at least X)
 
@@ -220,8 +213,8 @@ gate:
 ```
 
 Default behavior:
-- If `metric` is `avg_score`: samples pass if score `>=` the gate value
-- If `metric` is `accuracy`: samples pass if score `>= 1.0` (perfect)
+- If `metric` is `avg_score`: samples pass if score >= the gate value
+- If `metric` is `accuracy`: samples pass if score >= 1.0 (perfect)
 
 ## Examples
 
@@ -235,7 +228,7 @@ gate:
   value: 0.8  # 80% average
 ```
 
-Passes if the average score across all samples is `>= 0.8`
+Passes if the average score across all samples is >= 0.8
 
 ### Require 90% Pass Rate (Perfect Scores)
 
@@ -249,7 +242,7 @@ gate:
 
 Passes if 90% of samples have score = 1.0
 
-### Require 75% Pass Rate (Score `>= 0.7`)
+### Require 75% Pass Rate (Score >= 0.7)
 
 ```yaml
 gate:
@@ -261,7 +254,7 @@ gate:
   pass_value: 0.7  # 70% threshold per sample
 ```
 
-Passes if 75% of samples have score `>= 0.7`
+Passes if 75% of samples have score >= 0.7
 
 ### Maximum Error Rate
 
@@ -348,21 +341,19 @@ You can gate on either:
 - `avg_score_total`: Includes errors as 0.0
 - `avg_score_attempted`: Excludes errors (only successfully attempted samples)
 
-<Note>
 **Note**: The `metric` field currently only supports `avg_score` and `accuracy`. By default, gates use `avg_score_attempted`.
-</Note>
 
 ## Gate Results
 
 After evaluation, you'll see:
 
-```text
+```
 ✓ PASSED (2.25/3.00 avg, 75.0% pass rate)
 ```
 
 or
 
-```text
+```
 ✗ FAILED (1.80/3.00 avg, 60.0% pass rate)
 ```
 
@@ -372,13 +363,13 @@ The evaluation exit code reflects the gate result:
 
 ## Advanced Gating
 
-For complex gating logic (e.g., "pass if accuracy `>= 80%` OR avg_score `>= 0.9`"), you'll need to:
+For complex gating logic (e.g., "pass if accuracy >= 80% OR avg_score >= 0.9"), you'll need to:
 1. Run evaluation with one gate
 2. Examine the results JSON
 3. Apply custom logic in a post-processing script
 
 ## Next Steps
 
-- [Understanding Results](/evals/results-metrics/understanding-results) - Interpreting evaluation output
-- [Multi-Metric Evaluation](/guides/guides/evals/graders/multi-metric) - Using multiple graders
-- [Suite YAML Reference](/guides/evals/configuration/suite-yaml) - Complete gate configuration
+- [Understanding Results](../results/overview.md) - Interpreting evaluation output
+- [Multi-Metric Evaluation](../graders/multi-metric.md) - Using multiple graders
+- [Suite YAML Reference](../configuration/suite-yaml.md) - Complete gate configuration

@@ -2,14 +2,12 @@
 
 **Graders** are the scoring functions that evaluate agent responses. They take the extracted submission (from an extractor) and assign a score between 0.0 (complete failure) and 1.0 (perfect success).
 
-<Note>
 **Quick overview:**
 - **Two types**: Tool graders (deterministic Python functions) and Rubric graders (LLM-as-judge)
 - **Built-in functions**: exact_match, contains, regex_match, ascii_printable_only
 - **Custom graders**: Write your own grading logic
 - **Multi-metric**: Combine multiple graders in one suite
 - **Flexible extraction**: Each grader can use a different extractor
-</Note>
 
 **When to use each:**
 - **Tool graders**: Fast, deterministic, free - perfect for exact matching, patterns, tool validation
@@ -282,11 +280,11 @@ graders:
       tool_name: search  # Which tool to extract from
 ```
 
-See [Extractors](/guides/evals/concepts/extractors) for all available extractors.
+See [Extractors](./extractors.md) for all available extractors.
 
 ## Custom Graders
 
-You can write custom grading functions. See [Custom Graders](/guides/evals/advanced/custom-graders) for details.
+You can write custom grading functions. See [Custom Graders](../advanced/custom-graders.md) for details.
 
 ## Grader Selection Guide
 
@@ -324,7 +322,7 @@ This ensures evaluations can continue even with individual failures.
 
 ## Next Steps
 
-- [Tool Graders](/guides/evals/graders/tool-graders) - Built-in and custom functions
-- [Rubric Graders](/guides/evals/graders/rubric-graders) - LLM-as-judge details
-- [Multi-Metric Evaluation](/guides/guides/evals/graders/multi-metric) - Using multiple graders
-- [Extractors](/guides/evals/concepts/extractors) - Selecting what to grade
+- [Tool Graders](../graders/tool-graders.md) - Built-in and custom functions
+- [Rubric Graders](../graders/rubric-graders.md) - LLM-as-judge details
+- [Multi-Metric Evaluation](../graders/multi-metric.md) - Using multiple graders
+- [Extractors](./extractors.md) - Selecting what to grade

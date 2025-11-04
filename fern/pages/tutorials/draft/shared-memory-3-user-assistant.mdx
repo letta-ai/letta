@@ -1,0 +1,1465 @@
+---
+title: "Shared Memory Part 3: Multi-Agent User Assistant Network"
+subtitle: Build a personal AI assistant network with overlapping block access
+slug: cookbooks/shared-memory-user-assistant
+---
+
+This tutorial demonstrates how to build a personal AI assistant network where specialized agents share user context but maintain separate expertise domains through overlapping block access patterns.
+
+## What You'll Learn
+
+- Creating complex overlapping block access patterns
+- Sharing user context across specialized agents
+- Implementing privacy boundaries (financial data isolation)
+- Building seamless agent handoffs through shared memory
+- Combining universal blocks with domain-specific blocks
+
+## Prerequisites
+
+```bash
+pip install letta-client
+```
+
+Set your Letta API key:
+```bash
+export LETTA_API_KEY="your-api-key-here"
+```
+
+## Part 1: Setup and Block Architecture
+
+This tutorial features the most complex block architecture yet, with 5 shared blocks and overlapping access patterns.
+
+```python
+"""
+Tutorial 3: Multi-Agent User Assistant Network
+==============================================
+
+Build a personal AI assistant network with overlapping block access.
+"""
+
+from letta import Letta
+
+# Initialize client
+client = Letta()
+
+print("=" * 70)
+print("TUTORIAL 3: Multi-Agent User Assistant Network")
+print("=" * 70)
+print()
+
+# ============================================================================
+# STEP 1: Create Universal Blocks (All Agents)
+# ============================================================================
+print("STEP 1: Creating universal blocks (accessible to all agents)...\n")
+
+user_profile = client.blocks.create(
+    label="user_profile",
+    description="Core user information shared across all agents.",
+    value="""
+=== USER PROFILE ===
+
+Name: Sarah Johnson
+User ID: user-12345
+Member Since: 2023-06-15
+Timezone: PST (UTC-8)
+
+Contact Information:
+- Email: sarah.johnson@email.com
+- Phone: +1 (555) 123-4567
+- Preferred Contact: Email
+
+Account Type: Premium
+Status: Active
+""",
+    limit=4000
+)
+
+print(f"✓ Created user_profile: {user_profile.id}")
+print(f"  Accessible by: ALL agents")
+print()
+
+user_preferences = client.blocks.create(
+    label="user_preferences",
+    description="User preferences and communication style.",
+    value="""
+=== USER PREFERENCES ===
+
+Communication Style:
+- Tone: Direct and concise
+- Detail Level: High-level summaries with drill-down option
+- Response Format: Bullet points preferred
+- Language: English
+
+Work Preferences:
+- Working Hours: 9 AM - 6 PM PST
+- Preferred Meeting Times: Mornings (9-11 AM)
+- Calendar Buffer: 15 minutes between meetings
+- Focus Time: Block 2-4 PM daily (no interruptions)
+
+Notification Preferences:
+- Email: High priority only
+- SMS: Urgent only
+- In-app: All updates
+""",
+    limit=5000
+)
+
+print(f"✓ Created user_preferences: {user_preferences.id}")
+print(f"  Accessible by: ALL agents")
+print()
+
+# ============================================================================
+# STEP 2: Create Domain-Specific Shared Blocks
+# ============================================================================
+print("STEP 2: Creating domain-specific shared blocks...\n")
+
+interaction_history = client.blocks.create(
+    label="interaction_history",
+    description="Recent interactions and context across agents. Coordinator, Email, and Research access.",
+    value="""
+=== INTERACTION HISTORY ===
+Last Updated: 2024-10-08
+
+RECENT INTERACTIONS:
+--------------------
+(No interactions yet)
+
+ONGOING PROJECTS:
+--------------------
+(No active projects)
+
+PENDING FOLLOW-UPS:
+--------------------
+(No pending items)
+""",
+    limit=8000
+)
+
+print(f"✓ Created interaction_history: {interaction_history.id}")
+print(f"  Accessible by: Coordinator, Email, Research agents")
+print()
+
+calendar_data = client.blocks.create(
+    label="calendar_data",
+    description="Calendar and scheduling information. Coordinator, Calendar, and Email access.",
+    value="""
+=== CALENDAR DATA ===
+Current Week: 2024-10-08 to 2024-10-14
+
+UPCOMING EVENTS:
+--------------------
+- No events scheduled
+
+RECURRING MEETINGS:
+--------------------
+- Team Standup: Mon/Wed/Fri 9:30 AM (30 min)
+- 1-on-1 with Manager: Thursdays 10:00 AM (45 min)
+
+AVAILABILITY:
+--------------------
+- Monday: Available 11 AM - 6 PM
+- Tuesday: Available 9 AM - 6 PM
+- Wednesday: Available 11 AM - 6 PM
+- Thursday: Available 11 AM - 6 PM
+- Friday: Available 9 AM - 6 PM
+""",
+    limit=6000
+)
+
+print(f"✓ Created calendar_data: {calendar_data.id}")
+print(f"  Accessible by: Coordinator, Calendar, Email agents")
+print()
+
+financial_data = client.blocks.create(
+    label="financial_data",
+    description="Financial information and budget tracking. Coordinator and Finance only.",
+    value="""
+=== FINANCIAL DATA ===
+Last Updated: 2024-10-08
+
+BUDGET OVERVIEW:
+--------------------
+Monthly Budget: $5,000
+Current Month Spent: $3,200
+Remaining: $1,800 (36% remaining)
+
+EXPENSE CATEGORIES:
+--------------------
+- Software/Tools: $1,200 (24%)
+- Travel: $800 (16%)
+- Education: $600 (12%)
+- Misc: $600 (12%)
+
+UPCOMING EXPENSES:
+--------------------
+- Conference Registration: $500 (Due Oct 15)
+- Annual Software Renewal: $300 (Due Oct 20)
+
+FINANCIAL NOTES:
+--------------------
+User is budget-conscious. Always check budget before approving expenses.
+""",
+    limit=7000
+)
+
+print(f"✓ Created financial_data: {financial_data.id}")
+print(f"  Accessible by: Coordinator, Finance agents ONLY")
+print(f"  ⚠️  Privacy boundary: Other agents CANNOT access")
+print()
+
+print("=" * 70)
+print("BLOCK ARCHITECTURE CREATED")
+print("=" * 70)
+print("""
+BLOCK ACCESS PATTERN (5 shared blocks):
+                        user_    user_      interaction_  calendar_  financial_
+                        profile  prefs      history       data       data
+Coordinator             ✓        ✓          ✓             ✓          ✓
+Email Agent             ✓        ✓          ✓             ✓          ✗
+Research Agent          ✓        ✓          ✓             ✗          ✗
+Calendar Agent          ✓        ✓          ✗             ✓          ✗
+Finance Agent           ✓        ✓          ✗             ✗          ✓
+
+BLOCK TIERS:
+- Universal (all agents): user_profile, user_preferences
+- Cross-functional (3 agents): interaction_history
+- Domain-specific (2-3 agents): calendar_data
+- Restricted (2 agents): financial_data
+""")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+TUTORIAL 3: Multi-Agent User Assistant Network
+======================================================================
+
+STEP 1: Creating universal blocks (accessible to all agents)...
+
+✓ Created user_profile: block-i1j2k3l4-m5n6-7890-ijkl-mn1234567890
+  Accessible by: ALL agents
+
+✓ Created user_preferences: block-j2k3l4m5-n6o7-8901-jklm-no2345678901
+  Accessible by: ALL agents
+
+STEP 2: Creating domain-specific shared blocks...
+
+✓ Created interaction_history: block-k3l4m5n6-o7p8-9012-klmn-op3456789012
+  Accessible by: Coordinator, Email, Research agents
+
+✓ Created calendar_data: block-l4m5n6o7-p8q9-0123-lmno-pq4567890123
+  Accessible by: Coordinator, Calendar, Email agents
+
+✓ Created financial_data: block-m5n6o7p8-q9r0-1234-mnop-qr5678901234
+  Accessible by: Coordinator, Finance agents ONLY
+  ⚠️  Privacy boundary: Other agents CANNOT access
+
+======================================================================
+BLOCK ARCHITECTURE CREATED
+======================================================================
+
+BLOCK ACCESS PATTERN (5 shared blocks):
+...
+```
+</Accordion>
+
+<Note>
+This architecture demonstrates **overlapping access patterns**. Unlike Tutorial 1 (hierarchical) and Tutorial 2 (uniform team access), here each agent has a unique combination of block access based on their role.
+</Note>
+
+## Part 2: Agent Creation
+
+```python
+# ============================================================================
+# STEP 3: Create Coordinator Agent (Master Agent - All Blocks)
+# ============================================================================
+print("\nSTEP 3: Creating Coordinator Agent (access to ALL blocks)...\n")
+
+coordination_notes = client.blocks.create(
+    label="coordination_notes",
+    description="Private coordinator notes for managing agent handoffs.",
+    value="""
+=== COORDINATION NOTES ===
+
+AGENT SPECIALIZATIONS:
+- Email Agent: Email management, scheduling coordination
+- Research Agent: Information gathering, analysis
+- Calendar Agent: Scheduling, availability management
+- Finance Agent: Budget tracking, expense management
+
+HANDOFF PROTOCOL:
+When delegating to specialized agents, provide relevant context from shared blocks.
+Track which agent is handling which requests to avoid duplication.
+""",
+    limit=4000
+)
+
+coordinator = client.agents.create(
+    name="Coordinator_Agent",
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Coordinator Agent, the central hub for Sarah's AI assistant network.
+
+My role:
+- Route requests to specialized agents
+- Maintain context across agent interactions
+- Coordinate complex multi-agent tasks
+- Update user profile and preferences
+- Track interaction history
+
+My access:
+- ALL shared blocks (user_profile, user_preferences, interaction_history, calendar_data, financial_data)
+- Private coordination_notes for agent management
+
+My style:
+- Efficient and organized
+- Clear delegation to specialists
+- Context-aware handoffs
+- Proactive coordination
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sarah Johnson\nRole: Primary user"
+        }
+    ],
+    block_ids=[user_profile.id, user_preferences.id, interaction_history.id, calendar_data.id, financial_data.id, coordination_notes.id],
+    tools=["core_memory_append", "core_memory_replace", "send_message_to_agent_async"],
+)
+
+print(f"✓ Created Coordinator: {coordinator.id}")
+print(f"  Shared blocks: ALL (5 blocks)")
+print(f"  Private blocks: coordination_notes")
+print(f"  Special capability: Can communicate with all other agents")
+print()
+
+# ============================================================================
+# STEP 4: Create Email Agent
+# ============================================================================
+print("STEP 4: Creating Email Agent...\n")
+
+email_drafts = client.blocks.create(
+    label="email_drafts",
+    description="Private email drafts and templates.",
+    value="""
+=== EMAIL DRAFTS ===
+
+ACTIVE DRAFTS:
+(None)
+
+TEMPLATES:
+- Meeting Request
+- Follow-up
+- Project Update
+""",
+    limit=5000
+)
+
+email_agent = client.agents.create(
+    name="Email_Assistant",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Email Assistant, specializing in email management and communication.
+
+My role:
+- Draft and manage emails
+- Schedule meetings via email
+- Track email-based interactions
+- Follow Sarah's communication style preferences
+
+My access:
+- user_profile (contact info, account details)
+- user_preferences (communication style)
+- interaction_history (context for emails)
+- calendar_data (scheduling context)
+- email_drafts (private drafts)
+
+My style:
+- Professional and concise (matching Sarah's preference)
+- Calendar-aware (check availability before scheduling)
+- Context-aware (reference interaction_history)
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sarah Johnson\nRole: Primary user"
+        }
+    ],
+    block_ids=[user_profile.id, user_preferences.id, interaction_history.id, calendar_data.id, email_drafts.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Email Agent: {email_agent.id}")
+print(f"  Shared blocks: user_profile, user_preferences, interaction_history, calendar_data")
+print(f"  Private blocks: email_drafts")
+print(f"  NO access to: financial_data")
+print()
+
+# ============================================================================
+# STEP 5: Create Research Agent
+# ============================================================================
+print("STEP 5: Creating Research Agent...\n")
+
+research_notes = client.blocks.create(
+    label="research_notes",
+    description="Private research notes and sources.",
+    value="""
+=== RESEARCH NOTES ===
+
+ONGOING RESEARCH:
+(None)
+
+SAVED SOURCES:
+(None)
+
+RESEARCH METHODOLOGY:
+- Verify sources
+- Provide citations
+- Synthesize findings
+- Connect to user context
+""",
+    limit=6000
+)
+
+research_agent = client.agents.create(
+    name="Research_Assistant",
+    model="anthropic/claude-3-5-sonnet-20241022",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Research Assistant, specializing in information gathering and analysis.
+
+My role:
+- Conduct research on requested topics
+- Synthesize findings into actionable insights
+- Track research in interaction_history
+- Provide well-sourced recommendations
+
+My access:
+- user_profile (understand user's context)
+- user_preferences (tailor research depth)
+- interaction_history (connect to ongoing projects)
+- research_notes (private research tracking)
+
+My style:
+- Thorough and well-sourced
+- Context-aware (leverage interaction_history)
+- Concise summaries (matching Sarah's preference)
+- Strategic insights
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sarah Johnson\nRole: Primary user"
+        }
+    ],
+    block_ids=[user_profile.id, user_preferences.id, interaction_history.id, research_notes.id],
+    tools=["core_memory_append", "core_memory_replace", "web_search"],
+)
+
+print(f"✓ Created Research Agent: {research_agent.id}")
+print(f"  Shared blocks: user_profile, user_preferences, interaction_history")
+print(f"  Private blocks: research_notes")
+print(f"  NO access to: calendar_data, financial_data")
+print()
+
+# ============================================================================
+# STEP 6: Create Calendar Agent
+# ============================================================================
+print("STEP 6: Creating Calendar Agent...\n")
+
+scheduling_buffer = client.blocks.create(
+    label="scheduling_buffer",
+    description="Private scheduling calculations and conflicts.",
+    value="""
+=== SCHEDULING BUFFER ===
+
+PENDING SCHEDULING REQUESTS:
+(None)
+
+CONFLICT DETECTION:
+(None)
+
+SCHEDULING RULES:
+- Respect focus time (2-4 PM daily)
+- 15-minute buffer between meetings
+- Morning preference for meetings
+- Check user_preferences before confirming
+""",
+    limit=4000
+)
+
+calendar_agent = client.agents.create(
+    name="Calendar_Agent",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Calendar Agent, specializing in scheduling and time management.
+
+My role:
+- Manage calendar and availability
+- Schedule meetings respecting preferences
+- Detect and resolve conflicts
+- Maintain calendar_data block
+
+My access:
+- user_profile (timezone, contact info)
+- user_preferences (scheduling preferences, focus time)
+- calendar_data (events, availability)
+- scheduling_buffer (private conflict detection)
+
+My style:
+- Respectful of focus time
+- Proactive conflict detection
+- Preference-aware scheduling
+- Clear availability communication
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sarah Johnson\nRole: Primary user"
+        }
+    ],
+    block_ids=[user_profile.id, user_preferences.id, calendar_data.id, scheduling_buffer.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Calendar Agent: {calendar_agent.id}")
+print(f"  Shared blocks: user_profile, user_preferences, calendar_data")
+print(f"  Private blocks: scheduling_buffer")
+print(f"  NO access to: interaction_history, financial_data")
+print()
+
+# ============================================================================
+# STEP 7: Create Finance Agent
+# ============================================================================
+print("STEP 7: Creating Finance Agent...\n")
+
+calculation_workspace = client.blocks.create(
+    label="calculation_workspace",
+    description="Private financial calculations and analysis.",
+    value="""
+=== CALCULATION WORKSPACE ===
+
+PENDING CALCULATIONS:
+(None)
+
+BUDGET ALERTS:
+(None)
+
+FINANCIAL RULES:
+- Flag expenses over $200
+- Check remaining budget before approvals
+- Track monthly spending trends
+- Align with user's budget-conscious preference
+""",
+    limit=5000
+)
+
+finance_agent = client.agents.create(
+    name="Finance_Agent",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+            "label": "persona",
+            "value": """I am the Finance Agent, specializing in budget and expense management.
+
+My role:
+- Track expenses and budget
+- Provide spending insights
+- Flag over-budget situations
+- Maintain financial_data block
+
+My access:
+- user_profile (account info)
+- user_preferences (budget-conscious preference)
+- financial_data (budget, expenses)
+- calculation_workspace (private calculations)
+
+My style:
+- Budget-conscious (matching Sarah's preference)
+- Proactive alerts for overspending
+- Clear financial summaries
+- Data-driven recommendations
+
+Privacy note:
+Financial_data is restricted to Coordinator and myself only.
+Other agents cannot see budget or expense information.
+"""
+        },
+        {
+            "label": "human",
+            "value": "Name: Sarah Johnson\nRole: Primary user"
+        }
+    ],
+    block_ids=[user_profile.id, user_preferences.id, financial_data.id, calculation_workspace.id],
+    tools=["core_memory_append", "core_memory_replace"],
+)
+
+print(f"✓ Created Finance Agent: {finance_agent.id}")
+print(f"  Shared blocks: user_profile, user_preferences, financial_data")
+print(f"  Private blocks: calculation_workspace")
+print(f"  NO access to: interaction_history, calendar_data")
+print()
+
+print("=" * 70)
+print("ASSISTANT NETWORK CREATED")
+print("=" * 70)
+print("""
+5 specialized agents with overlapping block access:
+- Coordinator: ALL blocks (master agent)
+- Email: 4 shared blocks (no financial access)
+- Research: 3 shared blocks (no calendar or financial access)
+- Calendar: 3 shared blocks (no interaction history or financial access)
+- Finance: 3 shared blocks (no interaction history or calendar access)
+
+This creates a privacy-preserving network where:
+✓ All agents share user profile and preferences
+✓ Some agents share cross-functional context (interaction_history, calendar_data)
+✓ Sensitive data is restricted (financial_data: Coordinator + Finance only)
+""")
+```
+
+<Tip>
+Notice how each agent has exactly the blocks they need for their domain, no more and no less. This follows the **principle of least privilege** for AI systems.
+</Tip>
+
+## Part 3: Message Flow Scenarios
+
+### Scenario 1: User Onboarding - Coordinator Updates Profile
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 1: User Onboarding - Profile Creation")
+print("=" * 70)
+print("\nUser → Coordinator: 'Update my profile: I prefer detailed explanations actually, not summaries. Also add that I'm working on a machine learning project.'\n")
+
+response = client.agents.messages.create(
+    agent_id=coordinator.id,
+    messages=[{
+        "role": "user",
+        "content": "Update my communication preferences: I actually prefer detailed explanations, not high-level summaries. Also, add to my profile that I'm currently working on a machine learning project for customer segmentation."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Finance Agent: {msg.content}\n")
+
+# Check updated financial_data
+updated_financial = client.blocks.retrieve(block_id=financial_data.id)
+print("Financial data block (Finance Agent perspective):")
+print("-" * 70)
+print(updated_financial.value[:600] + "...")
+print("-" * 70)
+
+print("\nAnalysis:")
+print("- Finance agent HAS access to financial_data")
+print("- Finance agent can provide budget analysis")
+print("- Finance agent updated financial_data with conference expense")
+print("- This information is NOT visible to Research, Email, or Calendar agents")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 5: Finance Agent with Financial Access
+======================================================================
+
+User → Finance Agent: 'Can I afford a $1,200 ML conference ticket? Check my budget.'
+
+Finance Agent: Let me check your budget situation:
+
+**Current Budget Status:**
+- Monthly Budget: $5,000
+- Current Spent: $3,200
+- Remaining: $1,800 (36%)
+
+**Analysis for $1,200 Conference:**
+⚠️ This would consume 67% of your remaining budget ($1,200 / $1,800)
+
+**Upcoming Committed Expenses:**
+- Conference Registration: $500 (Due Oct 15)
+- Software Renewal: $300 (Due Oct 20)
+- Total committed: $800
+
+**Recommendation:**
+The $1,200 conference ticket would leave you with only $600 for the rest of the month after accounting for committed expenses ($1,800 - $1,200 = $600, minus $800 committed = -$200 shortfall).
+
+Given that you're budget-conscious, I recommend either:
+1. Wait until next month when budget resets
+2. Look for early-bird or group discounts
+3. Check if your company will cover it as professional development
+
+Would you like me to track this as a potential future expense?
+
+Financial data block (Finance Agent perspective):
+----------------------------------------------------------------------
+=== FINANCIAL DATA ===
+Last Updated: 2024-10-08 14:30 PM
+
+BUDGET OVERVIEW:
+--------------------
+Monthly Budget: $5,000
+Current Month Spent: $3,200
+Remaining: $1,800 (36% remaining)
+
+EXPENSE CATEGORIES:
+--------------------
+- Software/Tools: $1,200 (24%)
+- Travel: $800 (16%)
+- Education: $600 (12%)
+- Misc: $600 (12%)
+
+UPCOMING EXPENSES:
+--------------------
+- Conference Registration: $500 (Due Oct 15)
+- Annual Software Renewal: $300 (Due Oct 20)
+
+POTENTIAL EXPENSES:
+--------------------
+- ML Conference Ticket: $1,200 (User inquiring, not yet approved)
+...
+----------------------------------------------------------------------
+
+Analysis:
+- Finance agent HAS access to financial_data
+- Finance agent can provide budget analysis
+- Finance agent updated financial_data with conference expense
+- This information is NOT visible to Research, Email, or Calendar agents
+```
+</Accordion>
+
+### Scenario 6: Coordinator Sees Financial Update
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 6: Coordinator Sees Finance Agent's Update")
+print("=" * 70)
+print("\nUser → Coordinator: 'The Finance agent said I'm low on budget. Should I still attend the conference?'\n")
+
+response = client.agents.messages.create(
+    agent_id=coordinator.id,
+    messages=[{
+        "role": "user",
+        "content": "I just talked to the Finance agent about a $1,200 ML conference. They said I'm low on budget. But this conference would really help my customer segmentation project. What do you think?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Coordinator: {msg.content}\n")
+
+print("Analysis:")
+print("- Coordinator has access to BOTH financial_data AND interaction_history")
+print("- Coordinator can see the ML project context (interaction_history)")
+print("- Coordinator can see the budget constraint (financial_data)")
+print("- Coordinator provides holistic recommendation combining both contexts")
+print("- Demonstrates Coordinator's role as the master agent with full context")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 6: Coordinator Sees Finance Agent's Update
+======================================================================
+
+User → Coordinator: 'The Finance agent said I'm low on budget. Should I still attend the conference?'
+
+Coordinator: I can see the full picture here. Let me provide a comprehensive recommendation:
+
+**Project Context** (from interaction_history):
+- You're actively working on a customer segmentation ML project
+- You've reached out to Dr. Emily Chen for collaboration
+- Research agent found relevant recent papers on the topic
+
+**Financial Context** (from financial_data):
+- Current remaining budget: $1,800
+- Conference cost: $1,200 (67% of remaining budget)
+- Committed expenses: $800
+- This would create a $200 shortfall
+
+**My Recommendation:**
+Given that this conference directly supports your active ML project and you're already collaborating with experts, the professional value is high. However, the budget constraint is real.
+
+**Options:**
+1. **Check employer sponsorship:** Many companies cover conference costs for active projects
+2. **Virtual attendance:** Many conferences offer discounted virtual tickets ($300-500)
+3. **Defer to next month:** Your budget resets then, giving you full capacity
+
+I recommend checking with your employer first, as this is directly work-related (customer segmentation project). If that doesn't work, virtual attendance would give you 80% of the value at 40% of the cost.
+
+Would you like me to have the Email agent draft a request to your manager for conference sponsorship?
+
+Analysis:
+- Coordinator has access to BOTH financial_data AND interaction_history
+- Coordinator can see the ML project context (interaction_history)
+- Coordinator can see the budget constraint (financial_data)
+- Coordinator provides holistic recommendation combining both contexts
+- Demonstrates Coordinator's role as the master agent with full context
+```
+</Accordion>
+
+<Tip>
+The Coordinator agent demonstrates the power of **full context visibility**. It can make nuanced decisions by combining information from multiple domains that individual specialists don't see.
+</Tip>
+
+### Scenario 7: Calendar Agent Uses Updated Preferences
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 7: Calendar Agent Schedules with Updated Preferences")
+print("=" * 70)
+print("\nUser → Calendar Agent: 'Schedule the meeting with Dr. Emily Chen for Tuesday morning'\n")
+
+response = client.agents.messages.create(
+    agent_id=calendar_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "Dr. Emily Chen agreed to meet. Schedule our meeting for Tuesday, October 10 at 9:00 AM for 45 minutes. Add it to my calendar."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Calendar Agent: {msg.content}\n")
+
+# Check updated calendar_data
+updated_calendar = client.blocks.retrieve(block_id=calendar_data.id)
+print("Updated calendar_data block:")
+print("-" * 70)
+print(updated_calendar.value)
+print("-" * 70)
+
+print("\nAnalysis:")
+print("- Calendar agent updated calendar_data with new meeting")
+print("- Email agent can now see this meeting in calendar_data")
+print("- Calendar agent respected user_preferences (45-min meeting, morning time)")
+print("- Demonstrates shared calendar_data enabling coordination")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 7: Calendar Agent Schedules with Updated Preferences
+======================================================================
+
+User → Calendar Agent: 'Schedule the meeting with Dr. Emily Chen for Tuesday morning'
+
+Calendar Agent: I've scheduled your meeting with Dr. Emily Chen:
+
+**Meeting Details:**
+- Date: Tuesday, October 10, 2024
+- Time: 9:00 - 9:45 AM PST
+- Duration: 45 minutes
+- Attendee: Dr. Emily Chen
+
+This aligns with your preferences:
+✓ Morning meeting (your preferred time)
+✓ 15-minute buffer before your 10:00 AM 1-on-1 with manager
+✓ Outside your focus time (2-4 PM)
+
+I've updated the calendar_data block so the Email agent can reference this when sending confirmations or follow-ups.
+
+Updated calendar_data block:
+----------------------------------------------------------------------
+=== CALENDAR DATA ===
+Current Week: 2024-10-08 to 2024-10-14
+
+UPCOMING EVENTS:
+--------------------
+- Tuesday, Oct 10: Meeting with Dr. Emily Chen (9:00-9:45 AM)
+  Topic: ML Customer Segmentation Project Discussion
+
+- Thursday, Oct 12: 1-on-1 with Manager (10:00-10:45 AM)
+  Recurring weekly meeting
+
+RECURRING MEETINGS:
+--------------------
+- Team Standup: Mon/Wed/Fri 9:30 AM (30 min)
+- 1-on-1 with Manager: Thursdays 10:00 AM (45 min)
+
+AVAILABILITY:
+--------------------
+- Monday: Available 11 AM - 6 PM
+- Tuesday: Available 9:45 AM - 6 PM (meeting 9:00-9:45 AM)
+- Wednesday: Available 11 AM - 6 PM
+- Thursday: Available 11 AM - 6 PM
+- Friday: Available 9 AM - 6 PM
+----------------------------------------------------------------------
+
+Analysis:
+- Calendar agent updated calendar_data with new meeting
+- Email agent can now see this meeting in calendar_data
+- Calendar agent respected user_preferences (45-min meeting, morning time)
+- Demonstrates shared calendar_data enabling coordination
+```
+</Accordion>
+
+### Scenario 8: Email Agent Sees Calendar Update
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 8: Email Agent Sees Calendar Update (Cross-Agent Coordination)")
+print("=" * 70)
+print("\nUser → Email Agent: 'Send a meeting confirmation to Dr. Chen with the details'\n")
+
+response = client.agents.messages.create(
+    agent_id=email_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "Send a meeting confirmation email to Dr. Emily Chen with all the details."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Email Agent: {msg.content}\n")
+
+print("Analysis:")
+print("- Email agent read calendar_data (saw Calendar agent's update)")
+print("- Email agent read interaction_history (knows meeting is about ML project)")
+print("- Email agent read user_preferences (knows communication style)")
+print("- NO explicit handoff needed - shared blocks enable seamless coordination")
+print("- Demonstrates cross-agent workflow through shared memory")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 8: Email Agent Sees Calendar Update (Cross-Agent Coordination)
+======================================================================
+
+User → Email Agent: 'Send a meeting confirmation to Dr. Chen with the details'
+
+Email Agent: Here's the meeting confirmation email:
+
+---
+Subject: Meeting Confirmed - Tuesday, Oct 10 at 9:00 AM PST
+
+Hi Emily,
+
+This confirms our meeting:
+
+**Date:** Tuesday, October 10, 2024
+**Time:** 9:00 - 9:45 AM PST
+**Duration:** 45 minutes
+**Topic:** Machine Learning Customer Segmentation Project
+
+Looking forward to discussing the project and getting your insights.
+
+Best,
+Sarah Johnson
+
+---
+
+I pulled the meeting details from your calendar and the project context from our interaction history. The email matches your direct and concise communication style.
+
+Ready to send when you confirm.
+
+Analysis:
+- Email agent read calendar_data (saw Calendar agent's update)
+- Email agent read interaction_history (knows meeting is about ML project)
+- Email agent read user_preferences (knows communication style)
+- NO explicit handoff needed - shared blocks enable seamless coordination
+- Demonstrates cross-agent workflow through shared memory
+```
+</Accordion>
+
+<Note>
+This scenario showcases **zero-handoff coordination**. The Calendar agent updated `calendar_data`, and the Email agent immediately had access to it—no message passing or explicit coordination required.
+</Note>
+
+## Part 4: Block Inspection and Summary
+
+```python
+print("\n" + "=" * 70)
+print("INSPECTION: Block Usage Across Agent Network")
+print("=" * 70)
+
+# Create a comprehensive block access report
+blocks_to_check = [
+    (user_profile, "user_profile"),
+    (user_preferences, "user_preferences"),
+    (interaction_history, "interaction_history"),
+    (calendar_data, "calendar_data"),
+    (financial_data, "financial_data"),
+]
+
+for block, name in blocks_to_check:
+    print(f"\n{name}:")
+    block_info = client.blocks.retrieve(block_id=block.id)
+    print(f"  Agents with access: {len(block_info.agent_ids)}")
+    for agent_id in block_info.agent_ids:
+        agent_info = client.agents.retrieve(agent_id=agent_id)
+        print(f"    - {agent_info.name}")
+
+print("\n" + "=" * 70)
+print("TUTORIAL 3 COMPLETE: Key Takeaways")
+print("=" * 70)
+
+print("""
+✓ Created 5 shared blocks with overlapping access patterns
+✓ Created 5 specialized agents with unique block combinations
+✓ Demonstrated seamless context handoff between agents
+✓ Showed privacy boundaries (financial_data restriction)
+✓ Demonstrated cross-agent coordination through shared blocks
+✓ Showed zero-handoff workflows (Calendar → Email)
+✓ Demonstrated Coordinator role with full context visibility
+
+BLOCK ACCESS MATRIX:
+                        user_    user_      interaction_  calendar_  financial_
+                        profile  prefs      history       data       data
+Coordinator             ✓        ✓          ✓             ✓          ✓
+Email Agent             ✓        ✓          ✓             ✓          ✗
+Research Agent          ✓        ✓          ✓             ✗          ✗
+Calendar Agent          ✓        ✓          ✗             ✓          ✗
+Finance Agent           ✓        ✓          ✗             ✗          ✓
+
+PATTERNS DEMONSTRATED:
+1. **Universal blocks** (user_profile, user_preferences): All agents share
+2. **Cross-functional blocks** (interaction_history): Enable project context sharing
+3. **Domain-specific blocks** (calendar_data): Shared by related agents
+4. **Restricted blocks** (financial_data): Privacy-sensitive, limited access
+5. **Overlapping access**: Each agent has unique combination of blocks
+6. **Zero-handoff coordination**: Shared blocks eliminate explicit coordination
+7. **Principle of least privilege**: Agents only access blocks they need
+
+ARCHITECTURE BENEFITS:
+✓ **Context preservation**: Changes in one agent visible to others
+✓ **Privacy boundaries**: Sensitive data restricted appropriately
+✓ **Seamless handoffs**: No explicit coordination needed
+✓ **Specialization**: Each agent focuses on their domain
+✓ **Coordinator oversight**: Master agent with full visibility
+
+USE CASES:
+- Personal assistant networks
+- Multi-domain customer support
+- Enterprise knowledge management
+- Collaborative research teams
+- Any system requiring specialized agents with shared context
+
+COMPARISON WITH PREVIOUS TUTORIALS:
+- Tutorial 1: Hierarchical access (Tier 1 < Tier 2 < Tier 3)
+- Tutorial 2: Uniform team access (all workers share same blocks)
+- Tutorial 3: Overlapping access (each agent has unique block combination)
+
+NEXT STEPS:
+- Tutorial 4: Enterprise multi-team system with department hierarchies
+""")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+INSPECTION: Block Usage Across Agent Network
+======================================================================
+
+user_profile:
+  Agents with access: 5
+    - Coordinator_Agent
+    - Email_Assistant
+    - Research_Assistant
+    - Calendar_Agent
+    - Finance_Agent
+
+user_preferences:
+  Agents with access: 5
+    - Coordinator_Agent
+    - Email_Assistant
+    - Research_Assistant
+    - Calendar_Agent
+    - Finance_Agent
+
+interaction_history:
+  Agents with access: 3
+    - Coordinator_Agent
+    - Email_Assistant
+    - Research_Assistant
+
+calendar_data:
+  Agents with access: 3
+    - Coordinator_Agent
+    - Email_Assistant
+    - Calendar_Agent
+
+financial_data:
+  Agents with access: 2
+    - Coordinator_Agent
+    - Finance_Agent
+
+======================================================================
+TUTORIAL 3 COMPLETE: Key Takeaways
+======================================================================
+... (full summary as shown above)
+```
+</Accordion>
+
+## Key Takeaways
+
+<CardGroup cols={2}>
+<Card title="Overlapping Access Patterns" icon="diagram-venn">
+Each agent has a unique combination of blocks based on their role and needs
+</Card>
+
+<Card title="Privacy Boundaries" icon="shield-halved">
+Sensitive data (financial) is restricted to only agents that need it
+</Card>
+
+<Card title="Zero-Handoff Coordination" icon="arrows-left-right">
+Shared blocks eliminate the need for explicit agent-to-agent messaging
+</Card>
+
+<Card title="Context Preservation" icon="clock-rotate-left">
+All agents see updates in real-time, maintaining consistent context
+</Card>
+</CardGroup>
+
+### Architecture Patterns
+
+| Pattern | Description | Example |
+|---|---|---|
+| **Universal Blocks** | All agents share | `user_profile`, `user_preferences` |
+| **Cross-Functional** | Multiple domains share | `interaction_history` (Email + Research) |
+| **Domain-Specific** | Related agents share | `calendar_data` (Calendar + Email) |
+| **Restricted** | Privacy-sensitive | `financial_data` (Coordinator + Finance only) |
+
+### Comparison Across Tutorials
+
+| Aspect | Tutorial 1 | Tutorial 2 | Tutorial 3 |
+|---|---|---|---|
+| **Access Pattern** | Hierarchical | Uniform team | Overlapping |
+| **Complexity** | Low | Medium | High |
+| **Use Case** | Org policies | Task coordination | Personal assistant |
+| **Block Types** | Read-only | Read/write | Mixed |
+| **Privacy** | Tier-based | Role-based | Domain-based |
+
+## Next Steps
+
+<Card title="Part 4: Enterprise Multi-Team System" icon="building" href="/cookbooks/shared-memory-enterprise">
+Learn how to build a complete enterprise system with multiple departments and hierarchical block architecture
+</Card> == "assistant_message":
+        print(f"Coordinator: {msg.content}\n")
+
+# Check updated blocks
+updated_prefs = client.blocks.retrieve(block_id=user_preferences.id)
+updated_history = client.blocks.retrieve(block_id=interaction_history.id)
+
+print("Updated user_preferences block:")
+print("-" * 70)
+print(updated_prefs.value[:500] + "...")
+print("-" * 70)
+
+print("\nUpdated interaction_history block:")
+print("-" * 70)
+print(updated_history.value[:500] + "...")
+print("-" * 70)
+
+print("\nAnalysis:")
+print("- Coordinator updated user_preferences (detail level changed)")
+print("- Coordinator updated interaction_history (added ML project)")
+print("- ALL agents will now see updated preferences")
+print("- Email, Research agents will see project context in interaction_history")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 1: User Onboarding - Profile Creation
+======================================================================
+
+User → Coordinator: 'Update my profile...'
+
+Coordinator: I've updated your preferences and profile:
+
+1. Communication Style Updated:
+   - Changed from "High-level summaries" to "Detailed explanations"
+   - All agents will now provide more thorough responses
+
+2. Project Added:
+   - Added "Machine Learning project - customer segmentation" to interaction history
+   - Research and Email agents can now reference this context
+
+These changes are immediately visible to all relevant agents in the network.
+
+Updated user_preferences block:
+----------------------------------------------------------------------
+=== USER PREFERENCES ===
+
+Communication Style:
+- Tone: Direct and concise
+- Detail Level: Detailed explanations with comprehensive context
+- Response Format: Bullet points preferred
+- Language: English
+...
+----------------------------------------------------------------------
+
+Updated interaction_history block:
+----------------------------------------------------------------------
+=== INTERACTION HISTORY ===
+Last Updated: 2024-10-08
+
+RECENT INTERACTIONS:
+--------------------
+- 2024-10-08: User onboarding, preferences updated
+
+ONGOING PROJECTS:
+--------------------
+- Machine Learning Project: Customer segmentation model development
+  Status: Active
+...
+----------------------------------------------------------------------
+
+Analysis:
+- Coordinator updated user_preferences (detail level changed)
+- Coordinator updated interaction_history (added ML project)
+- ALL agents will now see updated preferences
+- Email, Research agents will see project context in interaction_history
+```
+</Accordion>
+
+### Scenario 2: Email Agent Uses Shared Context
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 2: Email Agent Leverages Shared Context")
+print("=" * 70)
+print("\nUser → Email Agent: 'Draft an email to my colleague asking for a meeting to discuss the project'\n")
+
+response = client.agents.messages.create(
+    agent_id=email_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "Draft an email to my colleague Dr. Emily Chen asking for a 45-minute meeting to discuss the project. Suggest times that work with my schedule."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Email Agent: {msg.content}\n")
+
+print("Analysis:")
+print("- Email agent read user_preferences (knows to be direct and concise)")
+print("- Email agent read interaction_history (knows about ML project)")
+print("- Email agent read calendar_data (suggested morning times, avoided focus time)")
+print("- Email agent does NOT have access to financial_data")
+print("- Context seamlessly transferred from Coordinator to Email agent via shared blocks")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 2: Email Agent Leverages Shared Context
+======================================================================
+
+User → Email Agent: 'Draft an email to my colleague asking for a meeting to discuss the project'
+
+Email Agent: Here's a draft email for Dr. Emily Chen:
+
+---
+Subject: Meeting Request - Customer Segmentation ML Project
+
+Hi Emily,
+
+I'd like to schedule a 45-minute meeting to discuss the customer segmentation machine learning project I'm currently working on. Your insights would be valuable.
+
+Available times this week:
+- Tuesday, Oct 10: 9:00-11:00 AM PST
+- Thursday, Oct 12: 9:00-11:00 AM PST
+- Friday, Oct 13: 9:00-11:00 AM PST
+
+Let me know what works for you.
+
+Best,
+Sarah
+---
+
+Note: I've suggested morning times based on your calendar availability and preference for morning meetings. I've avoided your focus time (2-4 PM). The email is direct and concise per your communication style.
+
+Analysis:
+- Email agent read user_preferences (knows to be direct and concise)
+- Email agent read interaction_history (knows about ML project)
+- Email agent read calendar_data (suggested morning times, avoided focus time)
+- Email agent does NOT have access to financial_data
+- Context seamlessly transferred from Coordinator to Email agent via shared blocks
+```
+</Accordion>
+
+<Note>
+This demonstrates **seamless context handoff**. The Email agent automatically knew about the ML project (from `interaction_history`) and scheduling preferences (from `user_preferences` and `calendar_data`) without any explicit briefing.
+</Note>
+
+### Scenario 3: Research Agent Benefits from Email Context
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 3: Research Agent Sees Email Context")
+print("=" * 70)
+print("\nFirst, let's have Email agent update interaction_history...")
+
+# Simulate Email agent updating interaction_history
+response = client.agents.messages.create(
+    agent_id=email_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "Log that I've drafted a meeting request email to Dr. Emily Chen about the ML project in the interaction history."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Email Agent: {msg.content}\n")
+
+print("Now, User → Research Agent: 'Find recent papers on customer segmentation using ML'\n")
+
+response = client.agents.messages.create(
+    agent_id=research_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "I need recent research papers on customer segmentation using machine learning. Focus on practical applications."
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Research Agent: {msg.content}\n")
+
+print("Analysis:")
+print("- Email agent updated interaction_history (logged meeting request)")
+print("- Research agent read interaction_history (saw email context and ML project)")
+print("- Research agent understands broader context without explicit briefing")
+print("- Research agent tailored search to detailed explanations (user_preferences)")
+print("- Demonstrates cross-agent context sharing through shared blocks")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 3: Research Agent Sees Email Context
+======================================================================
+
+First, let's have Email agent update interaction_history...
+
+Email Agent: I've updated the interaction history to log the meeting request to Dr. Emily Chen. This will help other agents in your network understand the ongoing collaboration.
+
+Now, User → Research Agent: 'Find recent papers on customer segmentation using ML'
+
+Research Agent: I can see from your interaction history that you're working on a customer segmentation ML project and recently reached out to Dr. Emily Chen for collaboration. Let me find relevant recent research for you.
+
+I'll search for papers on ML-based customer segmentation with a focus on practical applications, and I'll provide detailed explanations as per your preferences.
+
+[After conducting web search...]
+
+Here are key recent papers on customer segmentation using machine learning:
+
+1. "Deep Learning for Customer Segmentation: A Comparative Study" (2024)
+   - Compares CNN, RNN, and transformer approaches
+   - Practical implementation with retail data
+   - Key finding: Hybrid models outperform traditional clustering by 23%
+
+2. "Real-Time Customer Segmentation Using Ensemble Methods" (2023)
+   - Focuses on scalability and production deployment
+   - Combines Random Forest with gradient boosting
+   - Includes case study: E-commerce company with 2M+ customers
+
+3. "Interpretable ML for Customer Segmentation" (2024)
+   - Addresses the black-box problem
+   - SHAP values for segment explanation
+   - Critical for business stakeholder buy-in
+
+Would you like detailed summaries of any specific paper? I've noted this research in my research notes for future reference.
+
+Analysis:
+- Email agent updated interaction_history (logged meeting request)
+- Research agent read interaction_history (saw email context and ML project)
+- Research agent understands broader context without explicit briefing
+- Research agent tailored search to detailed explanations (user_preferences)
+- Demonstrates cross-agent context sharing through shared blocks
+```
+</Accordion>
+
+### Scenario 4: Financial Privacy Boundary
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 4: Testing Financial Data Privacy Boundary")
+print("=" * 70)
+print("\nUser → Research Agent: 'What's my budget for attending the ML conference?'\n")
+
+response = client.agents.messages.create(
+    agent_id=research_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "I'm thinking of attending a machine learning conference. What's my current budget situation? Can I afford a $1,200 conference ticket?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type == "assistant_message":
+        print(f"Research Agent: {msg.content}\n")
+
+print("Analysis:")
+print("- Research agent does NOT have access to financial_data")
+print("- Research agent cannot answer budget questions")
+print("- Research agent should suggest consulting Finance agent or Coordinator")
+print("- Demonstrates privacy boundaries working correctly")
+```
+
+<Accordion title="Expected Output">
+```
+======================================================================
+SCENARIO 4: Testing Financial Data Privacy Boundary
+======================================================================
+
+User → Research Agent: 'What's my budget for attending the ML conference?'
+
+Research Agent: I don't have access to your financial data or budget information, so I can't advise on whether you can afford the $1,200 conference ticket.
+
+For budget questions, you should consult:
+- Finance Agent: Specializes in budget tracking and expense management
+- Coordinator Agent: Has visibility into all your information including finances
+
+I can help you research which ML conferences would be most valuable for your customer segmentation project, but financial decisions should go through the appropriate agents with financial access.
+
+Would you like me to research top ML conferences for customer segmentation instead?
+
+Analysis:
+- Research agent does NOT have access to financial_data
+- Research agent cannot answer budget questions
+- Research agent should suggest consulting Finance agent or Coordinator
+- Demonstrates privacy boundaries working correctly
+```
+</Accordion>
+
+<Warning>
+Financial data privacy is critical. Notice how the Research agent **gracefully handles** its lack of access by redirecting to appropriate agents, rather than hallucinating budget information.
+</Warning>
+
+### Scenario 5: Finance Agent Updates Budget
+
+```python
+print("\n" + "=" * 70)
+print("SCENARIO 5: Finance Agent with Financial Access")
+print("=" * 70)
+print("\nUser → Finance Agent: 'Can I afford a $1,200 ML conference ticket? Check my budget.'\n")
+
+response = client.agents.messages.create(
+    agent_id=finance_agent.id,
+    messages=[{
+        "role": "user",
+        "content": "I want to attend a machine learning conference that costs $1,200. Can I afford this given my current budget? What's my financial situation?"
+    }]
+)
+
+for msg in response.messages:
+    if msg.message_type

@@ -2,13 +2,11 @@
 
 **Extractors** select what content to evaluate from an agent's response. They navigate the conversation trajectory and extract the specific piece you want to grade.
 
-<Note>
 **Quick overview:**
 - **Purpose**: Agent responses are complex (messages, tool calls, memory) - extractors isolate what to grade
 - **Built-in options**: last_assistant, tool_arguments, memory_block, pattern, and more
 - **Flexible**: Different graders can use different extractors in the same suite
 - **Automatic**: No setup needed - just specify in your grader config
-</Note>
 
 **Common patterns:**
 - `last_assistant` - Most common, gets the agent's final message (90% of use cases)
@@ -205,9 +203,7 @@ graders:
       block_label: human  # Which memory block to extract
 ```
 
-<Warning>
 **Important**: This extractor requires the agent's final state, which adds overhead. The runner automatically fetches agent_state when this extractor is used.
-</Warning>
 
 Example use case: Verify the agent correctly updated its memory about the user.
 
@@ -249,7 +245,7 @@ If an extractor finds no matching content, it returns an empty string `""`. This
 
 ## Custom Extractors
 
-You can write custom extractors. See [Custom Extractors](/guides/evals/extractors/custom-extractors) for details.
+You can write custom extractors. See [Custom Extractors](../extractors/custom.md) for details.
 
 Example:
 
@@ -348,8 +344,7 @@ Extracted: "User's name is Alice"
 
 ## Troubleshooting
 
-<Warning>
-**Extractor returns empty string**
+### Extractor returns empty string
 
 **Problem**: Grader always gives score 0.0 because extractor finds nothing.
 
@@ -358,17 +353,42 @@ Extracted: "User's name is Alice"
 - **Wrong tool name**: `tool_arguments` with `tool_name: "search"` but agent calls `"web_search"` → check actual tool name
 - **Wrong memory block**: `memory_block` with `block_label: "user"` but block is actually labeled `"human"` → check block labels
 - **Pattern doesn't match**: `pattern: "Answer: (.*)"` but agent says "The answer is..." → adjust regex
-</Warning>
 
-<Tip>
 **Debug tips**:
 1. Check the trajectory in results JSON to see actual agent output
 2. Use `last_assistant` first to see what's there
 3. Verify tool names with `letta-evals list-extractors`
-</Tip>
+
+### Pattern extractor not working
+
+**Problem**: Pattern extractor returns empty or wrong content.
+
+**Solutions**:
+- Test your regex separately first
+- Remember to escape special characters: `\.`, `\(`, `\)`
+- Use `group: 0` to see the full match (default)
+- Use `group: 1` to extract first capture group
+- Set `search_all: true` if you need all matches
+
+### Memory block extractor fails
+
+**Problem**: `memory_block` extractor causes errors or returns nothing.
+
+**Solutions**:
+- Verify the block label exactly matches (case-sensitive)
+- Check that agent actually has this memory block
+- Remember: this adds overhead by fetching agent state
+
+### Tool extractor finds wrong tool
+
+**Problem**: Multiple tool calls, but extractor gets the wrong one.
+
+**Current behavior**: Extractors get the **first** matching tool call.
+
+**Workaround**: Use custom extractor to implement more specific logic.
 
 ## Next Steps
 
-- [Built-in Extractors Reference](/guides/evals/extractors/built-in-extractors) - Complete extractor documentation
-- [Custom Extractors Guide](/guides/evals/extractors/custom-extractors) - Write your own extractors
-- [Graders](/guides/evals/concepts/graders) - How to use extractors with graders
+- [Built-in Extractors Reference](../extractors/builtin.md) - Complete extractor documentation
+- [Custom Extractors Guide](../extractors/custom.md) - Write your own extractors
+- [Graders](./graders.md) - How to use extractors with graders

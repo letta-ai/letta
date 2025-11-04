@@ -1,21 +1,15 @@
-# Core Concepts
+# Core Concepts Overview
 
-Understanding how Letta Evals works and what makes it different.
+## What is Letta Evals?
 
-<Note>
-**Just want to run an eval?** Skip to [Getting Started](/guides/evals/getting-started) for a hands-on quickstart.
-</Note>
+Letta Evals is a framework for systematically testing and measuring the performance of Letta AI agents. It provides a structured way to:
 
-## Built for Stateful Agents
+- Define test cases and expected behaviors
+- Run agents against those tests automatically
+- Score agent responses using deterministic rules or LLM judges
+- Track performance over time and across different configurations
 
-Letta Evals is a testing framework specifically designed for agents that maintain state. Unlike traditional eval frameworks built for simple input-output models, Letta Evals understands that agents:
-
-- Maintain memory across conversations
-- Use tools and external functions
-- Evolve their behavior based on interactions
-- Have persistent context and state
-
-This means you can test aspects of your agent that other frameworks can't: memory updates, multi-turn conversations, tool usage patterns, and state evolution over time.
+Think of it as a testing framework specifically designed for stateful agents.
 
 ## The Evaluation Flow
 
@@ -30,18 +24,23 @@ Every evaluation follows this flow:
 5. **Gate**: Pass/fail criteria for the overall evaluation
 6. **Result**: Metrics, scores, and detailed results
 
-### What You Can Test
+### Built for Stateful Agents
 
-With Letta Evals, you can test aspects of agents that traditional frameworks can't:
+Unlike most evaluation frameworks designed for simple input-output models, Letta Evals is purpose-built for **stateful agents** - agents that:
+- Maintain memory across conversations
+- Use tools and external functions
+- Evolve their behavior based on interactions
+- Have persistent context and state
 
+This means you can test:
 - **Memory updates**: Did the agent correctly remember the user's name?
 - **Multi-turn conversations**: Can the agent maintain context across multiple exchanges?
 - **Tool usage**: Does the agent call the right tools with the right arguments?
 - **State evolution**: How does the agent's internal state change over time?
 
-<Note>
-**Example: Testing Memory Updates**
+Traditional eval frameworks treat each test as independent. Letta Evals understands that agent state matters.
 
+**Example: Testing Memory Updates**
 ```yaml
 graders:
   memory_check:
@@ -58,7 +57,6 @@ Dataset:
 ```
 
 This doesn't just check if the agent responded correctly - it verifies the agent actually stored "bananas" in its memory block. Traditional eval frameworks can't inspect agent state like this.
-</Note>
 
 ## Why Evals Matter
 
@@ -199,9 +197,9 @@ You can gate on either metric type.
 ## Next Steps
 
 Dive deeper into each concept:
-- [Suites](/guides/evals/concepts/suites) - Suite configuration in detail
-- [Datasets](/guides/evals/concepts/datasets) - Creating effective test datasets
-- [Targets](/guides/evals/concepts/targets) - Agent configuration options
-- [Graders](/guides/evals/concepts/graders) - Understanding grader types
-- [Extractors](/guides/evals/concepts/extractors) - Extraction strategies
-- [Gates](/guides/evals/concepts/gates) - Setting pass/fail criteria
+- [Suites](./suites.md) - Suite configuration in detail
+- [Datasets](./datasets.md) - Creating effective test datasets
+- [Targets](./targets.md) - Agent configuration options
+- [Graders](./graders.md) - Understanding grader types
+- [Extractors](./extractors.md) - Extraction strategies
+- [Gates](./gates.md) - Setting pass/fail criteria

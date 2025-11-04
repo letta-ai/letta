@@ -2,14 +2,12 @@
 
 A **suite** is a YAML configuration file that defines a complete evaluation specification. It's the central piece that ties together your dataset, target agent, grading criteria, and pass/fail thresholds.
 
-<Note>
 **Quick overview:**
 - **Single file defines everything**: Dataset, agent, graders, and success criteria all in one YAML
 - **Reusable and shareable**: Version control your evaluation specs alongside your code
 - **Multi-metric support**: Evaluate multiple aspects (accuracy, quality, tool usage) in one run
 - **Multi-model testing**: Run the same suite across different LLM models
 - **Flexible filtering**: Test subsets using tags or sample limits
-</Note>
 
 **Typical workflow:**
 1. Create a suite YAML defining what and how to test
@@ -29,7 +27,7 @@ dataset: path/to/dataset.jsonl  # Test cases
 target:  # What agent to evaluate
   kind: agent
   agent_file: agent.af  # Agent to test
-  base_url: https://api.letta.com  # Letta server
+  base_url: http://localhost:8283  # Letta server
 
 graders:  # How to evaluate responses
   my_metric:
@@ -60,13 +58,13 @@ dataset: ./datasets/qa.jsonl  # Relative to suite YAML location
 ```
 
 ### target
-Specifies what agent to evaluate. See [Targets](/guides/evals/concepts/targets) for details.
+Specifies what agent to evaluate. See [Targets](./targets.md) for details.
 
 ### graders
-One or more graders to evaluate agent performance. See [Graders](/guides/evals/concepts/graders) for details.
+One or more graders to evaluate agent performance. See [Graders](./graders.md) for details.
 
 ### gate
-Pass/fail criteria. See [Gates](/guides/evals/concepts/gates) for details.
+Pass/fail criteria. See [Gates](./gates.md) for details.
 
 ## Optional Fields
 
@@ -185,7 +183,7 @@ dataset: questions.jsonl  # Test questions
 target:
   kind: agent
   agent_file: qa_agent.af  # Pre-configured agent
-  base_url: https://api.letta.com  # Local server
+  base_url: http://localhost:8283  # Local server
 
 graders:
   accuracy:  # Single metric
@@ -236,7 +234,7 @@ dataset: test.jsonl  # Same test for all models
 target:
   kind: agent
   agent_file: agent.af  # Same agent configuration
-  base_url: https://api.letta.com  # Local server
+  base_url: http://localhost:8283  # Local server
   model_configs: [gpt-4o-mini, claude-3-5-sonnet]  # Test both models
 
 graders:
@@ -269,7 +267,7 @@ This checks:
 
 ## Next Steps
 
-- [Dataset Configuration](/guides/evals/concepts/datasets)
-- [Target Configuration](/guides/evals/concepts/targets)
-- [Grader Configuration](/guides/evals/concepts/graders)
-- [Gate Configuration](/guides/evals/concepts/gates)
+- [Dataset Configuration](./datasets.md)
+- [Target Configuration](./targets.md)
+- [Grader Configuration](./graders.md)
+- [Gate Configuration](./gates.md)
