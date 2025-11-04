@@ -1117,9 +1117,14 @@ class Message(BaseMessage):
             text_content = "[Image Here]"
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
-            text = [content for content in self.content if isinstance(content, TextContent)]
+            text_parts = [content for content in self.content if isinstance(content, TextContent)]
             # assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
-            text_content = "\n\n".join([t.text for t in text])
+            text_content = "\n\n".join([t.text for t in text_parts])
+            # Summarizer transcripts use this OpenAI-style dict; include a compact image placeholder
+            image_count = len([c for c in self.content if isinstance(c, ImageContent)])
+            if image_count > 0:
+                placeholder = "[Image omitted]" if image_count == 1 else f"[{image_count} images omitted]"
+                text_content = (text_content + (" " if text_content else "")) + placeholder
             parse_content_parts = True
         else:
             text_content = None
