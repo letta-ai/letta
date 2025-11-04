@@ -457,7 +457,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
                 messages,
                 tool_return_truncation_chars=TOOL_RETURN_TRUNCATION_CHARS,
             )
-            logger.debug(f"Full summarization payload: {request_data}")
+            logger.info(f"Full summarization payload: {request_data}")
 
             if include_ack:
                 input_messages = [
