@@ -27415,19 +27415,82 @@
       "LettaAsyncRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -27492,7 +27555,6 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaAsyncRequest"
       },
       "LettaBatchMessages": {
@@ -27512,19 +27574,82 @@
       "LettaBatchRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -27582,7 +27707,7 @@
           }
         },
         "type": "object",
-        "required": ["messages", "agent_id"],
+        "required": ["agent_id"],
         "title": "LettaBatchRequest"
       },
       "LettaImage": {
@@ -27658,19 +27783,82 @@
       "LettaRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -27723,7 +27911,6 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaRequest"
       },
       "LettaRequestConfig": {
@@ -27810,19 +27997,82 @@
       "LettaStreamingRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -27893,7 +28143,6 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaStreamingRequest"
       },
       "LettaStreamingResponse": {
