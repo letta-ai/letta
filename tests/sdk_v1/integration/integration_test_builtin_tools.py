@@ -72,9 +72,9 @@ def agent_state(client: Letta) -> AgentState:
     """
     client.tools.upsert_base_tools()
 
-    send_message_tool = client.tools.list(name="send_message")[0]
-    run_code_tool = client.tools.list(name="run_code")[0]
-    web_search_tool = client.tools.list(name="web_search")[0]
+    send_message_tool = list(client.tools.list(name="send_message"))[0]
+    run_code_tool = list(client.tools.list(name="run_code"))[0]
+    web_search_tool = list(client.tools.list(name="web_search"))[0]
     agent_state_instance = client.agents.create(
         name="test_builtin_tools_agent",
         include_base_tools=False,
