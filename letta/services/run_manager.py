@@ -341,6 +341,20 @@ class RunManager:
 
             await session.commit()
 
+        # Update agent's last_stop_reason when run completes
+        # Do this after run update is committed to database
+        if is_terminal_update and update.stop_reason:
+            try:
+                from letta.schemas.agent import UpdateAgent
+
+                await self.agent_manager.update_agent_async(
+                    agent_id=pydantic_run.agent_id,
+                    agent_update=UpdateAgent(last_stop_reason=update.stop_reason),
+                    actor=actor,
+                )
+            except Exception as e:
+                logger.error(f"Failed to update agent's last_stop_reason for run {run_id}: {e}")
+
         # update run metrics table
         num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
 

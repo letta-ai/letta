@@ -18981,6 +18981,17 @@
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
           },
+          "last_stop_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StopReasonType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stop reason from the agent's last run."
+          },
           "timezone": {
             "anyOf": [
               {
@@ -34652,6 +34663,17 @@
             ],
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
+          },
+          "last_stop_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StopReasonType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stop reason from the agent's last run."
           },
           "timezone": {
             "anyOf": [

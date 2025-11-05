@@ -14,6 +14,7 @@ from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
 from letta.schemas.identity import Identity
 from letta.schemas.letta_base import OrmMetadataBase
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
@@ -135,6 +136,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     # Run metrics
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    last_stop_reason: Optional[StopReasonType] = Field(None, description="The stop reason from the agent's last run.")
 
     # timezone
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
@@ -388,6 +390,7 @@ class UpdateAgent(BaseModel):
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    last_stop_reason: Optional[StopReasonType] = Field(None, description="The stop reason from the agent's last run.")
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
     max_files_open: Optional[int] = Field(
         None,
