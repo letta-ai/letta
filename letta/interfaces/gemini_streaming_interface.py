@@ -63,8 +63,9 @@ class SimpleGeminiStreamingInterface:
         # NOTE: signature only is included if tools are present
         self.thinking_signature: str | None = None
 
-        # Regular text content too
-        self.text_content: str | None = None
+        # Regular text content too (avoid O(n^2) by accumulating parts)
+        self._text_parts: list[str] = []
+        self.text_content: str | None = None  # legacy; not used elsewhere
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -221,7 +222,7 @@ class SimpleGeminiStreamingInterface:
             # Plain text content part
             elif part.text:
                 content = part.text
-                self.text_content = content if self.text_content is None else self.text_content + content
+                self._text_parts.append(content)
                 if prev_message_type and prev_message_type != "assistant_message":
                     message_index += 1
                 yield AssistantMessage(
