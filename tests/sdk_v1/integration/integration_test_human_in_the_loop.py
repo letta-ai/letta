@@ -1179,3 +1179,50 @@ def test_parallel_tool_calling(
     assert messages[1].message_type == "assistant_message"
     assert messages[2].message_type == "stop_reason"
     assert messages[3].message_type == "usage_statistics"
+
+
+def test_agent_records_last_stop_reason_after_approval_flow(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    """
+    Test that the agent's last_stop_reason is properly updated after a human-in-the-loop flow.
+    This verifies the integration between run completion and agent state updates.
+    """
+    # Get initial agent state
+    initial_agent = client.agents.retrieve(agent_id=agent.id)
+    initial_stop_reason = initial_agent.last_stop_reason
+
+    # Trigger approval request
+    response = client.agents.messages.send(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+
+    # Verify we got an approval request
+    messages = response.messages
+    assert messages is not None
+    assert len(messages) == 3
+    assert messages[2].message_type == "approval_request_message"
+
+    # Check agent after approval request (run should be paused with requires_approval)
+    agent_after_request = client.agents.retrieve(agent_id=agent.id)
+    assert agent_after_request.last_stop_reason == "requires_approval"
+
+    # Approve the tool call
+    approve_tool_call(client, agent.id, response.messages[2].tool_call.tool_call_id)
+
+    # Check agent after approval (run should complete with end_turn or similar)
+    agent_after_approval = client.agents.retrieve(agent_id=agent.id)
+    assert agent_after_approval.last_stop_reason is not None
+    assert agent_after_approval.last_stop_reason != initial_stop_reason
+
+    # Send follow-up message to complete the flow
+    response2 = client.agents.messages.send(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+    )
+
+    # Verify final agent state has the most recent stop reason
+    final_agent = client.agents.retrieve(agent_id=agent.id)
+    assert final_agent.last_stop_reason is not None

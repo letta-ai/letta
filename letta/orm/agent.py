@@ -16,6 +16,7 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.response_format import ResponseFormatUnion
@@ -92,6 +93,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     )
     last_run_duration_ms: Mapped[Optional[int]] = mapped_column(
         Integer, nullable=True, doc="The duration in milliseconds of the agent's last run."
+    )
+    last_stop_reason: Mapped[Optional[StopReasonType]] = mapped_column(
+        String, nullable=True, doc="The stop reason from the agent's last run."
     )
 
     # timezone
@@ -232,6 +236,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
+            "last_stop_reason": self.last_stop_reason,
             "timezone": self.timezone,
             "max_files_open": self.max_files_open,
             "per_file_view_window_char_limit": self.per_file_view_window_char_limit,
@@ -334,6 +339,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "response_format": self.response_format,
             "last_run_completion": self.last_run_completion,
             "last_run_duration_ms": self.last_run_duration_ms,
+            "last_stop_reason": self.last_stop_reason,
             "max_files_open": self.max_files_open,
             "per_file_view_window_char_limit": self.per_file_view_window_char_limit,
             "hidden": self.hidden,

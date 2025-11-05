@@ -712,6 +712,7 @@ class AgentManager:
                 "response_format": agent_update.response_format,
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
+                "last_stop_reason": agent_update.last_stop_reason,
                 "timezone": agent_update.timezone,
                 "max_files_open": agent_update.max_files_open,
                 "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,

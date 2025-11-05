@@ -233,6 +233,41 @@ async def test_update_run_metadata_persistence(server: SyncServer, sarah_agent, 
 
 
 @pytest.mark.asyncio
+async def test_update_run_updates_agent_last_stop_reason(server: SyncServer, sarah_agent, default_user):
+    """Test that completing a run updates the agent's last_stop_reason."""
+
+    # Verify agent starts with no last_stop_reason
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_stop_reason = agent.last_stop_reason
+
+    # Create a run
+    run_data = PydanticRun(agent_id=sarah_agent.id)
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Complete the run with end_turn stop reason
+    await server.run_manager.update_run_by_id_async(
+        created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Verify agent's last_stop_reason was updated to end_turn
+    updated_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert updated_agent.last_stop_reason == StopReasonType.end_turn
+
+    # Create another run and complete with different stop reason
+    run_data2 = PydanticRun(agent_id=sarah_agent.id)
+    created_run2 = await server.run_manager.create_run(pydantic_run=run_data2, actor=default_user)
+
+    # Complete with error stop reason
+    await server.run_manager.update_run_by_id_async(
+        created_run2.id, RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error), actor=default_user
+    )
+
+    # Verify agent's last_stop_reason was updated to error
+    final_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert final_agent.last_stop_reason == StopReasonType.error
+
+
+@pytest.mark.asyncio
 async def test_delete_run_by_id(server: SyncServer, sarah_agent, default_user):
     """Test deleting a run by its ID."""
     # Create a run

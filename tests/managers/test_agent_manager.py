@@ -625,6 +625,46 @@ async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_a
     assert updated_agent.per_file_view_window_char_limit == 150_000
 
 
+@pytest.mark.asyncio
+async def test_update_agent_last_stop_reason(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    """Test updating last_stop_reason field on an existing agent"""
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    assert agent.last_stop_reason is None
+
+    # Update with end_turn stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.end_turn,
+        last_run_completion=datetime.now(timezone.utc),
+        last_run_duration_ms=1500,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.end_turn
+    assert updated_agent.last_run_completion is not None
+    assert updated_agent.last_run_duration_ms == 1500
+
+    # Update with error stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.error,
+        last_run_completion=datetime.now(timezone.utc),
+        last_run_duration_ms=2500,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.error
+    assert updated_agent.last_run_duration_ms == 2500
+
+    # Update with requires_approval stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.requires_approval,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.requires_approval
+
+
 # ======================================================================================================================
 # AgentManager Tests - Listing
 # ======================================================================================================================
@@ -1086,6 +1126,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         # Run metrics
         "last_run_completion": (datetime, type(None)),
         "last_run_duration_ms": (int, type(None)),
+        "last_stop_reason": (StopReasonType, type(None)),
         # Timezone
         "timezone": (str, type(None)),
         # File controls
