@@ -80,18 +80,21 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             input_messages[i].group_id = self.group.id
 
         # Perform foreground agent step
-        async for chunk in super().stream(
-            input_messages=input_messages,
-            max_steps=max_steps,
-            stream_tokens=stream_tokens,
-            run_id=run_id,
-            use_assistant_message=use_assistant_message,
-            include_return_message_types=include_return_message_types,
-            request_start_timestamp_ns=request_start_timestamp_ns,
-        ):
-            yield chunk
-
-        await self.run_sleeptime_agents()
+        try:
+            async for chunk in super().stream(
+                input_messages=input_messages,
+                max_steps=max_steps,
+                stream_tokens=stream_tokens,
+                run_id=run_id,
+                use_assistant_message=use_assistant_message,
+                include_return_message_types=include_return_message_types,
+                request_start_timestamp_ns=request_start_timestamp_ns,
+            ):
+                yield chunk
+        finally:
+            # For some reason, stream is throwing a GeneratorExit even though it appears the that client
+            # is getting the whole stream. This pattern should work to ensure sleeptime agents run despite this.
+            await self.run_sleeptime_agents()
 
     @trace_method
     async def run_sleeptime_agents(self) -> list[str]:
