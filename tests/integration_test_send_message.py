@@ -6,6 +6,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import patch
 
@@ -156,7 +157,30 @@ USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+
+
+# Load test image from local file rather than fetching from external URL.
+# Using a local file avoids network dependencies and makes tests faster and more reliable.
+def _get_test_image_file_url() -> str:
+    """Returns a file:// URL pointing to the local test image."""
+    image_path = os.path.join(os.path.dirname(__file__), "./data/Camponotus_flavomarginatus_ant.jpg")
+    # Convert to absolute path and create file:// URL
+    absolute_path = os.path.abspath(image_path)
+    return Path(absolute_path).as_uri()  # Returns: file:///absolute/path/to/image.jpg
+
+
+def _load_test_image() -> str:
+    """Loads the test image from the data folder and returns it as base64."""
+    image_path = os.path.join(os.path.dirname(__file__), "./data/Camponotus_flavomarginatus_ant.jpg")
+    with open(image_path, "rb") as f:
+        return base64.standard_b64encode(f.read()).decode("utf-8")
+
+
+# Original external URL (kept for reference)
+# URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+
+# Use local file:// URL instead of external HTTP URL
+URL_IMAGE = _get_test_image_file_url()
 USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -167,7 +191,10 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
+
+
+BASE64_IMAGE = _load_test_image()
+
 USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
