@@ -440,6 +440,10 @@ class SyncServer(object):
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
                 )
 
+        # Copy parallel_tool_calls from request to llm_config if provided
+        if request.parallel_tool_calls is not None:
+            request.llm_config.parallel_tool_calls = request.parallel_tool_calls
+
         if request.reasoning is None:
             request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
 
@@ -507,6 +511,14 @@ class SyncServer(object):
             log_event(name="start get_cached_llm_config", attributes=config_params)
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
+
+        # Copy parallel_tool_calls from request to llm_config if provided
+        if request.parallel_tool_calls is not None:
+            if request.llm_config is None:
+                # Get the current agent's llm_config and update it
+                agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+                request.llm_config = agent.llm_config.model_copy()
+            request.llm_config.parallel_tool_calls = request.parallel_tool_calls
 
         if request.embedding is not None:
             request.embedding_config = await self.get_embedding_config_from_handle_async(handle=request.embedding, actor=actor)
