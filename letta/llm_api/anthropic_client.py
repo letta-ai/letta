@@ -445,10 +445,13 @@ class AnthropicClient(LLMClientBase):
                         msg["content"] = "."
                 elif isinstance(content, list):
                     if len(content) == 0:
+                        # Preserve truly empty list for final assistant message
                         if not is_final_assistant:
                             msg["content"] = [{"type": "text", "text": "."}]
-                    elif not is_final_assistant:
-                        # Replace empty text blocks with placeholder (only if not final assistant message)
+                    else:
+                        # Always fix empty text blocks within lists, even for final assistant message
+                        # The API exemption is for truly empty content (empty string or empty list),
+                        # not for lists with explicit empty text blocks
                         for block in content:
                             if isinstance(block, dict) and block.get("type") == "text":
                                 if not block.get("text", "").strip():
