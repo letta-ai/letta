@@ -240,6 +240,7 @@ def assert_greeting_with_assistant_message_response(
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
+    input: bool = False,
 ) -> None:
     """
     Asserts that the messages list follows the expected sequence:
@@ -258,7 +259,11 @@ def assert_greeting_with_assistant_message_response(
     index = 0
     if from_db:
         assert isinstance(messages[index], UserMessage)
-        assert messages[index].otid == USER_MESSAGE_OTID
+        # if messages are passed through the input parameter, the otid is generated on the server side
+        if not input:
+            assert messages[index].otid == USER_MESSAGE_OTID
+        else:
+            assert messages[index].otid is not None
         index += 1
 
     # Agent Step 1
@@ -2374,11 +2379,11 @@ def test_input_parameter_basic(
     )
 
     assert_contains_run_id(response.messages)
-    assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config, input=True)
     messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
     messages_from_db = messages_from_db_page.items
     assert_first_message_is_user_message(messages_from_db)
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config, input=True)
 
 
 @pytest.mark.parametrize(
@@ -2408,11 +2413,11 @@ def test_input_parameter_streaming(
     assert_contains_step_id(chunks)
     assert_contains_run_id(chunks)
     messages = accumulate_chunks(chunks)
-    assert_greeting_with_assistant_message_response(messages, streaming=True, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(messages, streaming=True, llm_config=llm_config, input=True)
     messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
     messages_from_db = messages_from_db_page.items
     assert_contains_run_id(messages_from_db)
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config, input=True)
 
 
 @pytest.mark.parametrize(
@@ -2441,10 +2446,10 @@ def test_input_parameter_async(
 
     messages_page = client.runs.messages.list(run_id=run.id)
     messages = messages_page.items
-    assert_greeting_with_assistant_message_response(messages, from_db=True, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(messages, from_db=True, llm_config=llm_config, input=True)
     messages_from_db_page = client.agents.messages.list(agent_id=agent_state.id, after=last_message.id if last_message else None)
     messages_from_db = messages_from_db_page.items
-    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config, input=True)
 
 
 def test_input_and_messages_both_provided_error(

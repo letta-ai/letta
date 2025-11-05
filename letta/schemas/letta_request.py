@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
@@ -73,7 +74,7 @@ class LettaRequest(BaseModel):
         # input can be either a string or List[LettaMessageContentUnion]
         if self.input is not None:
             # Both str and List[LettaMessageContentUnion] are valid content types for MessageCreate
-            self.messages = [MessageCreate(role=MessageRole.user, content=self.input)]
+            self.messages = [MessageCreate(role=MessageRole.user, content=self.input, otid=str(uuid.uuid4()))]
 
         return self
 
