@@ -1,5 +1,6 @@
 import base64
 import mimetypes
+from urllib.parse import unquote, urlparse
 
 import httpx
 
@@ -61,12 +62,33 @@ def _convert_message_create_to_message(
         elif isinstance(content, ImageContent):
             if content.source.type == ImageSourceType.url:
                 # Convert URL image to Base64Image if needed
-                image_response = httpx.get(content.source.url)
-                image_response.raise_for_status()
-                image_media_type = image_response.headers.get("content-type")
-                if not image_media_type:
-                    image_media_type, _ = mimetypes.guess_type(content.source.url)
-                image_data = base64.standard_b64encode(image_response.content).decode("utf-8")
+                url = content.source.url
+
+                # Handle file:// URLs for local filesystem access
+                if url.startswith("file://"):
+                    # Parse file path from file:// URL
+                    parsed = urlparse(url)
+                    file_path = unquote(parsed.path)
+
+                    # Read file directly from filesystem
+                    with open(file_path, "rb") as f:
+                        image_bytes = f.read()
+
+                    # Guess media type from file extension
+                    image_media_type, _ = mimetypes.guess_type(file_path)
+                    if not image_media_type:
+                        image_media_type = "image/jpeg"  # default fallback
+                else:
+                    # Handle http(s):// URLs using httpx
+                    image_response = httpx.get(url)
+                    image_response.raise_for_status()
+                    image_bytes = image_response.content
+                    image_media_type = image_response.headers.get("content-type")
+                    if not image_media_type:
+                        image_media_type, _ = mimetypes.guess_type(url)
+
+                # Convert to base64 (common path for both file:// and http(s)://)
+                image_data = base64.standard_b64encode(image_bytes).decode("utf-8")
                 content.source = Base64Image(media_type=image_media_type, data=image_data)
             if content.source.type == ImageSourceType.letta and not content.source.data:
                 # TODO: hydrate letta image with data from db
