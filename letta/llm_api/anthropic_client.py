@@ -430,6 +430,30 @@ class AnthropicClient(LLMClientBase):
                         # Handle XML-style thinking in string content
                         thinking_enabled = True
 
+        # Replace empty content with placeholder (Anthropic requires non-empty content except for final assistant message)
+        if messages_for_counting:
+            for i, msg in enumerate(messages_for_counting):
+                content = msg.get("content")
+                is_final_assistant = i == len(messages_for_counting) - 1 and msg.get("role") == "assistant"
+
+                # Check if content is empty and needs replacement
+                if content is None:
+                    if not is_final_assistant:
+                        msg["content"] = "."
+                elif isinstance(content, str) and not content.strip():
+                    if not is_final_assistant:
+                        msg["content"] = "."
+                elif isinstance(content, list):
+                    if len(content) == 0:
+                        if not is_final_assistant:
+                            msg["content"] = [{"type": "text", "text": "."}]
+                    elif not is_final_assistant:
+                        # Replace empty text blocks with placeholder (only if not final assistant message)
+                        for block in content:
+                            if isinstance(block, dict) and block.get("type") == "text":
+                                if not block.get("text", "").strip():
+                                    block["text"] = "."
+
         try:
             count_params = {
                 "model": model or "claude-3-7-sonnet-20250219",
@@ -458,8 +482,8 @@ class AnthropicClient(LLMClientBase):
                 result = await client.beta.messages.count_tokens(**count_params, betas=betas)
             else:
                 result = await client.beta.messages.count_tokens(**count_params)
-        except:
-            raise
+        except Exception as e:
+            raise self.handle_llm_error(e)
 
         token_count = result.input_tokens
         if messages is None:
