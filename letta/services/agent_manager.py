@@ -62,6 +62,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
@@ -873,6 +874,7 @@ class AgentManager:
         ascending: bool = True,
         sort_by: Optional[str] = "created_at",
         show_hidden_agents: Optional[bool] = None,
+        last_stop_reason: Optional[StopReasonType] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -895,6 +897,7 @@ class AgentManager:
             ascending (bool): Sort agents in ascending order.
             sort_by (Optional[str]): Sort agents by this field.
             show_hidden_agents (bool): If True, include agents marked as hidden in the results.
+            last_stop_reason (Optional[str]): Filter by the agent's last stop reason (e.g., 'requires_approval', 'error').
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -904,7 +907,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships, include)

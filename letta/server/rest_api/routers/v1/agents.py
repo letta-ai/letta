@@ -124,6 +124,7 @@ async def list_agents(
         include_in_schema=False,
         description="If set to True, include agents marked as hidden in the results.",
     ),
+    last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
 ):
     """
     Get a list of all agents.
@@ -158,6 +159,7 @@ async def list_agents(
         ascending=final_ascending,
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
+        last_stop_reason=last_stop_reason,
     )
 
 

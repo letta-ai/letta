@@ -836,6 +836,72 @@ async def test_list_agents_descending(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
+async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user):
+    # Create agent with requires_approval stop reason
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_requires_approval",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent1.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.requires_approval),
+        actor=default_user,
+    )
+
+    # Create agent with error stop reason
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_error",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent2.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.error),
+        actor=default_user,
+    )
+
+    # Create agent with no stop reason
+    agent3 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_no_stop_reason",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # Filter by requires_approval
+    approval_agents = await server.agent_manager.list_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value
+    )
+    approval_names = {agent.name for agent in approval_agents}
+    assert approval_names == {"agent_requires_approval"}
+
+    # Filter by error
+    error_agents = await server.agent_manager.list_agents_async(actor=default_user, last_stop_reason=StopReasonType.error.value)
+    error_names = {agent.name for agent in error_agents}
+    assert error_names == {"agent_error"}
+
+    # No filter - should return all agents
+    all_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    all_names = {agent.name for agent in all_agents}
+    assert {"agent_requires_approval", "agent_error", "agent_no_stop_reason"}.issubset(all_names)
+
+
+@pytest.mark.asyncio
 async def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
     names = ["alpha_agent", "beta_agent", "gamma_agent"]
     created_agents = []

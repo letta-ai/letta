@@ -4091,6 +4091,24 @@
             },
             "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
             "deprecated": true
+          },
+          {
+            "name": "last_stop_reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StopReasonType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by their last stop reason.",
+              "title": "Last Stop Reason"
+            },
+            "description": "Filter agents by their last stop reason."
           }
         ],
         "responses": {
