@@ -53,8 +53,9 @@ async def add_keepalive_to_stream(
     Yields:
         Original stream chunks interspersed with keepalive messages
     """
-    # Use a queue to decouple the stream reading from keepalive timing
-    queue = asyncio.Queue()
+    # Use a bounded queue to decouple reading from keepalive while preserving backpressure
+    # A small maxsize prevents unbounded memory growth if the client is slow
+    queue = asyncio.Queue(maxsize=1)
     stream_exhausted = False
 
     async def stream_reader():
