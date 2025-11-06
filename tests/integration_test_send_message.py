@@ -1190,8 +1190,8 @@ def test_step_stream_agent_loop_error(
     llm_config: LLMConfig,
 ) -> None:
     """
-    Tests sending a message with a synchronous client.
-    Verifies that no new messages are persisted on error.
+    Tests sending a message with a streaming client.
+    Verifies that errors are embedded in the stream response and no new messages are persisted on error.
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
@@ -1199,12 +1199,27 @@ def test_step_stream_agent_loop_error(
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
 
-        with pytest.raises(ApiError):
-            response = client.agents.messages.create_stream(
-                agent_id=agent_state.id,
-                messages=USER_MESSAGE_FORCE_REPLY,
-            )
-            list(response)  # This should trigger the error
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+        )
+        messages = list(response)
+
+        # Verify exactly one message with an error is returned
+        assert len(messages) == 1, f"Expected exactly 1 message, got {len(messages)}"
+
+        # Verify the message contains an error matching the streaming service error format
+        assert hasattr(messages[0], "error"), "Expected message to have an 'error' attribute"
+        assert messages[0].error is not None, "Expected error to be non-None"
+        assert messages[0].error.get("type") == "internal_error", (
+            f"Expected error type 'internal_error', got {messages[0].error.get('type')}"
+        )
+        assert messages[0].error.get("message") == "An unknown error occurred with the LLM streaming request.", (
+            f"Unexpected error message: {messages[0].error.get('message')}"
+        )
+        assert "No tool calls found in response, model must make a tool call" in messages[0].error.get("detail", ""), (
+            f"Expected error detail to contain exception message, got: {messages[0].error.get('detail')}"
+        )
 
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
@@ -1361,8 +1376,8 @@ def test_token_streaming_agent_loop_error(
     llm_config: LLMConfig,
 ) -> None:
     """
-    Tests sending a streaming message with a synchronous client.
-    Verifies that no new messages are persisted on error.
+    Tests sending a token streaming message with a synchronous client.
+    Verifies that errors are embedded in the stream response and no new messages are persisted on error.
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
@@ -1370,13 +1385,28 @@ def test_token_streaming_agent_loop_error(
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
 
-        with pytest.raises(ApiError):
-            response = client.agents.messages.create_stream(
-                agent_id=agent_state.id,
-                messages=USER_MESSAGE_FORCE_REPLY,
-                stream_tokens=True,
-            )
-            list(response)  # This should trigger the error
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+            stream_tokens=True,
+        )
+        messages = list(response)
+
+        # Verify exactly one message with an error is returned
+        assert len(messages) == 1, f"Expected exactly 1 message, got {len(messages)}"
+
+        # Verify the message contains an error matching the streaming service error format
+        assert hasattr(messages[0], "error"), "Expected message to have an 'error' attribute"
+        assert messages[0].error is not None, "Expected error to be non-None"
+        assert messages[0].error.get("type") == "internal_error", (
+            f"Expected error type 'internal_error', got {messages[0].error.get('type')}"
+        )
+        assert messages[0].error.get("message") == "An unknown error occurred with the LLM streaming request.", (
+            f"Unexpected error message: {messages[0].error.get('message')}"
+        )
+        assert "No tool calls found in response, model must make a tool call" in messages[0].error.get("detail", ""), (
+            f"Expected error detail to contain exception message, got: {messages[0].error.get('detail')}"
+        )
 
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
