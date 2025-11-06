@@ -902,6 +902,114 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
 
 
 @pytest.mark.asyncio
+async def test_count_agents_with_filters(server: SyncServer, default_user):
+    """Test count_agents_async with various filters"""
+    # Create agents with different attributes
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_requires_approval",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["inbox", "test"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent1.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.requires_approval),
+        actor=default_user,
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_error",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["error", "test"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent2.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.error),
+        actor=default_user,
+    )
+
+    agent3 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_completed",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["completed"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent3.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.end_turn),
+        actor=default_user,
+    )
+
+    agent4 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_no_stop_reason",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["test"],
+        ),
+        actor=default_user,
+    )
+
+    # Test count with no filters - should return total count
+    total_count = await server.agent_manager.count_agents_async(actor=default_user)
+    assert total_count >= 4
+
+    # Test count by last_stop_reason - requires_approval (inbox use case)
+    approval_count = await server.agent_manager.count_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value
+    )
+    assert approval_count == 1
+
+    # Test count by last_stop_reason - error
+    error_count = await server.agent_manager.count_agents_async(actor=default_user, last_stop_reason=StopReasonType.error.value)
+    assert error_count == 1
+
+    # Test count by last_stop_reason - end_turn
+    completed_count = await server.agent_manager.count_agents_async(actor=default_user, last_stop_reason=StopReasonType.end_turn.value)
+    assert completed_count == 1
+
+    # Test count by tags
+    test_tag_count = await server.agent_manager.count_agents_async(actor=default_user, tags=["test"])
+    assert test_tag_count == 3
+
+    # Test count by tags with match_all_tags
+    inbox_test_count = await server.agent_manager.count_agents_async(actor=default_user, tags=["inbox", "test"], match_all_tags=True)
+    assert inbox_test_count == 1
+
+    # Test count by name
+    name_count = await server.agent_manager.count_agents_async(actor=default_user, name="agent_requires_approval")
+    assert name_count == 1
+
+    # Test count by query_text
+    query_count = await server.agent_manager.count_agents_async(actor=default_user, query_text="error")
+    assert query_count >= 1
+
+    # Test combined filters: last_stop_reason + tags
+    combined_count = await server.agent_manager.count_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value, tags=["inbox"]
+    )
+    assert combined_count == 1
+
+
+@pytest.mark.asyncio
 async def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
     names = ["alpha_agent", "beta_agent", "gamma_agent"]
     created_agents = []
