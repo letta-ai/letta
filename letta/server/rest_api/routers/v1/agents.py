@@ -165,14 +165,57 @@ async def list_agents(
 
 @router.get("/count", response_model=int, operation_id="count_agents")
 async def count_agents(
+    name: str | None = Query(None, description="Name of the agent"),
+    tags: list[str] | None = Query(None, description="List of tags to filter agents by"),
+    match_all_tags: bool = Query(
+        False,
+        description="If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags.",
+    ),
+    query_text: str | None = Query(None, description="Search agents by name"),
+    project_id: str | None = Query(None, description="Search agents by project ID - this will default to your default project on cloud"),
+    template_id: str | None = Query(None, description="Search agents by template ID"),
+    base_template_id: str | None = Query(None, description="Search agents by base template ID"),
+    identity_id: str | None = Query(None, description="Search agents by identity ID"),
+    identifier_keys: list[str] | None = Query(None, description="Search agents by identifier keys"),
+    show_hidden_agents: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include agents marked as hidden in the results.",
+    ),
+    last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the total number of agents.
+    Get the total number of agents with optional filtering.
+    Supports the same filters as list_agents for consistent querying.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.size_async(actor=actor)
+
+    # If no filters are provided, use the simpler size_async method
+    if (
+        all(
+            param is None or param is False
+            for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
+        )
+        and not show_hidden_agents
+    ):
+        return await server.agent_manager.size_async(actor=actor)
+
+    return await server.agent_manager.count_agents_async(
+        actor=actor,
+        name=name,
+        tags=tags,
+        match_all_tags=match_all_tags,
+        query_text=query_text,
+        project_id=project_id,
+        template_id=template_id,
+        base_template_id=base_template_id,
+        identity_id=identity_id,
+        identifier_keys=identifier_keys,
+        show_hidden_agents=show_hidden_agents,
+        last_stop_reason=last_stop_reason,
+    )
 
 
 class IndentedORJSONResponse(Response):

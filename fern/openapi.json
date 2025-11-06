@@ -4201,9 +4201,190 @@
       "get": {
         "tags": ["agents"],
         "summary": "Count Agents",
-        "description": "Get the total number of agents.",
+        "description": "Get the total number of agents with optional filtering.\nSupports the same filters as list_agents for consistent querying.",
         "operationId": "count_agents",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name of the agent",
+              "title": "Name"
+            },
+            "description": "Name of the agent"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter agents by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter agents by"
+          },
+          {
+            "name": "match_all_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags.",
+              "default": false,
+              "title": "Match All Tags"
+            },
+            "description": "If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags."
+          },
+          {
+            "name": "query_text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by name",
+              "title": "Query Text"
+            },
+            "description": "Search agents by name"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by project ID - this will default to your default project on cloud",
+              "title": "Project Id"
+            },
+            "description": "Search agents by project ID - this will default to your default project on cloud"
+          },
+          {
+            "name": "template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by template ID",
+              "title": "Template Id"
+            },
+            "description": "Search agents by template ID"
+          },
+          {
+            "name": "base_template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by base template ID",
+              "title": "Base Template Id"
+            },
+            "description": "Search agents by base template ID"
+          },
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identity ID",
+              "title": "Identity Id"
+            },
+            "description": "Search agents by identity ID"
+          },
+          {
+            "name": "identifier_keys",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier keys",
+              "title": "Identifier Keys"
+            },
+            "description": "Search agents by identifier keys"
+          },
+          {
+            "name": "last_stop_reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StopReasonType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by their last stop reason.",
+              "title": "Last Stop Reason"
+            },
+            "description": "Filter agents by their last stop reason."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",

@@ -925,6 +925,58 @@ class AgentManager:
                 *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
             )
 
+    @trace_method
+    async def count_agents_async(
+        self,
+        actor: PydanticUser,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        query_text: Optional[str] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
+        identity_id: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        show_hidden_agents: Optional[bool] = None,
+        last_stop_reason: Optional[StopReasonType] = None,
+    ) -> int:
+        """
+        Count agents matching the specified filters using an efficient database-level COUNT query.
+
+        Args:
+            actor: The User requesting the count
+            name (Optional[str]): Filter by agent name.
+            tags (Optional[List[str]]): Filter agents by tags.
+            match_all_tags (bool): If True, only count agents that match ALL given tags.
+            query_text (Optional[str]): Search agents by name.
+            project_id (Optional[str]): Filter by project ID.
+            template_id (Optional[str]): Filter by template ID.
+            base_template_id (Optional[str]): Filter by base template ID.
+            identity_id (Optional[str]): Filter by identifier ID.
+            identifier_keys (Optional[List[str]]): Search agents by identifier keys.
+            show_hidden_agents (bool): If True, include agents marked as hidden in the results.
+            last_stop_reason (Optional[str]): Filter by the agent's last stop reason (e.g., 'requires_approval', 'error').
+
+        Returns:
+            int: The count of agents matching the filters.
+        """
+        async with db_registry.async_session() as session:
+            query = select(func.count()).select_from(AgentModel)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Apply filters
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_identity_filters(query, identity_id, identifier_keys)
+            query = _apply_tag_filter(query, tags, match_all_tags)
+
+            # Apply hidden filter
+            if not show_hidden_agents:
+                query = query.where((AgentModel.hidden.is_(None)) | (AgentModel.hidden == False))
+
+            result = await session.execute(query)
+            return result.scalar_one()
+
     @enforce_types
     @trace_method
     async def list_agents_matching_tags_async(
