@@ -288,6 +288,9 @@ class LettaAgentV3(LettaAgentV2):
 
                 input_messages_to_persist = []
 
+            if self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+
             if not self.agent_state.message_buffer_autoclear:
                 if self.last_step_usage:
                     await self.summarize_conversation_history(
