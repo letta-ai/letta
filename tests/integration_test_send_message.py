@@ -464,13 +464,6 @@ def assert_tool_call_response(
         ):
             return
 
-    try:
-        assert len(messages) == expected_message_count, messages
-    except:
-        if "claude-3-7-sonnet" not in llm_config.model:
-            raise
-        assert len(messages) == expected_message_count - 1, messages
-
     # OpenAI gpt-4o-mini can sometimes omit the final AssistantMessage in streaming,
     # yielding the shorter sequence:
     #   Reasoning -> ToolCall -> ToolReturn -> Reasoning -> StopReason -> Usage
@@ -488,6 +481,13 @@ def assert_tool_call_response(
         and getattr(messages[5], "message_type", None) == "usage_statistics"
     ):
         return
+
+    try:
+        assert len(messages) == expected_message_count, messages
+    except:
+        if "claude-3-7-sonnet" not in llm_config.model:
+            raise
+        assert len(messages) == expected_message_count - 1, messages
 
     index = 0
     if from_db:
