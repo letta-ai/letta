@@ -63,7 +63,7 @@ class Passage(PassageBase):
         # Only do this if using pgvector
         from letta.helpers.tpuf_client import should_use_tpuf
 
-        if should_use_tpuf() and settings.environment == "PRODUCTION":
+        if not should_use_tpuf() or settings.environment != "PRODUCTION":
             import numpy as np
 
             if embedding and len(embedding) != MAX_EMBEDDING_DIM:
