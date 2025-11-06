@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import Field, field_validator
 
+from letta import settings
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -59,12 +60,15 @@ class Passage(PassageBase):
     @classmethod
     def pad_embeddings(cls, embedding: List[float]) -> List[float]:
         """Pad embeddings to `MAX_EMBEDDING_SIZE`. This is necessary to ensure all stored embeddings are the same size."""
-        import numpy as np
+        # Only do this if using pgvector
+        if not settings.use_tpuf:
+            import numpy as np
 
-        if embedding and len(embedding) != MAX_EMBEDDING_DIM:
-            np_embedding = np.array(embedding)
-            padded_embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant")
-            return padded_embedding.tolist()
+            if embedding and len(embedding) != MAX_EMBEDDING_DIM:
+                np_embedding = np.array(embedding)
+                padded_embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant")
+                return padded_embedding.tolist()
+
         return embedding
 
 
