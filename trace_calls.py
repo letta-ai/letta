@@ -8,6 +8,13 @@ This will create /tmp/letta_trace.txt with all function calls
 import sys
 import os
 
+# Configure Letta to use proxy
+PROXY_PORT = os.environ.get('LETTA_PROXY_PORT', '5001')
+os.environ['LMSTUDIO_BASE_URL'] = f'http://127.0.0.1:{PROXY_PORT}'
+os.environ['OPENAI_API_KEY'] = 'dummy-key'
+
+print(f"Proxy URL: http://127.0.0.1:{PROXY_PORT}")
+
 # Track function calls
 call_counts = {}
 files_used = set()

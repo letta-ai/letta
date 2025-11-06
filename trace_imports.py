@@ -4,8 +4,14 @@ Track all imports when running Letta server.
 Usage: python trace_imports.py
 """
 import sys
+import os
 import importlib.abc
 import importlib.machinery
+
+# Configure Letta to use proxy
+PROXY_PORT = os.environ.get('LETTA_PROXY_PORT', '5001')
+os.environ['LMSTUDIO_BASE_URL'] = f'http://127.0.0.1:{PROXY_PORT}'
+os.environ['OPENAI_API_KEY'] = 'dummy-key'
 
 # Track all imported modules
 imported_modules = set()
@@ -28,6 +34,8 @@ sys.meta_path.insert(0, ImportTracker())
 
 # Now import and run letta
 if __name__ == "__main__":
+    print(f"Proxy URL: http://127.0.0.1:{PROXY_PORT}")
+    print("=" * 80)
     print("=" * 80)
     print("Starting Letta with import tracking...")
     print("=" * 80)
