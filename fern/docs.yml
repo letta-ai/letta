@@ -871,3 +871,7 @@ redirects:
     destination: "https://leaderboard.letta.com"
   - source: "/guides/agents/fetch-webpage"
     destination: "/guides/agents/web-search"
+  - source: "/evals"
+    destination: "/guides/development-tools/testing-evals/letta-evals-overview"
+  - source: "/guides/evals/overview"
+    destination: "/guides/development-tools/testing-evals/letta-evals-overview"
