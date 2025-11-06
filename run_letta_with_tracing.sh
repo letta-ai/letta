@@ -59,7 +59,8 @@ case $MODE in
         coverage json --omit="*/tests/*,*/test_*" -o /tmp/letta_coverage.json
 
         # Parse JSON to get used files
-        python3 -c "
+        # Run from /tmp to avoid circular import issues with letta/types/
+        (cd /tmp && python3 -c "
 import json
 with open('/tmp/letta_coverage.json') as f:
     data = json.load(f)
@@ -81,7 +82,7 @@ with open('/tmp/letta_files_used.txt', 'w') as out:
             out.write(f'{percent:5.1f}%  {filepath}\n')
 
 print(f'\n✅ Found {len([f for f in files_used if f[1] > 0])} files actually used')
-"
+")
 
         echo ""
         echo "✅ Coverage analysis complete!"
