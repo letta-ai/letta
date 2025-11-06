@@ -6,7 +6,6 @@ from pydantic import Field, field_validator
 from letta import settings
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.helpers.tpuf_client import should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
@@ -62,6 +61,8 @@ class Passage(PassageBase):
     def pad_embeddings(cls, embedding: List[float]) -> List[float]:
         """Pad embeddings to `MAX_EMBEDDING_SIZE`. This is necessary to ensure all stored embeddings are the same size."""
         # Only do this if using pgvector
+        from letta.helpers.tpuf_client import should_use_tpuf
+
         if should_use_tpuf() and settings.environment == "PRODUCTION":
             import numpy as np
 
