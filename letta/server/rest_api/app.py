@@ -62,7 +62,7 @@ from letta.server.db import db_registry
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, ProfilerContextMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LogContextMiddleware, ProfilerContextMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -518,6 +518,8 @@ def create_application() -> "FastAPI":
 
     if telemetry_settings.profiler:
         app.add_middleware(ProfilerContextMiddleware)
+
+    app.add_middleware(LogContextMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

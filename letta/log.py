@@ -7,6 +7,7 @@ from pathlib import Path
 from sys import stdout
 from typing import Any, Optional
 
+from letta.log_context import get_log_context
 from letta.settings import log_settings, settings, telemetry_settings
 
 selected_log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -131,6 +132,40 @@ class DatadogEnvFilter(logging.Filter):
         return True
 
 
+class LogContextFilter(logging.Filter):
+    """
+    Logging filter that enriches log records with request context.
+
+    Injects context-specific attributes like actor_id, agent_id, org_id, etc.
+    into log records. These attributes are stored in a context variable
+    and automatically included in all log messages within that context.
+
+    This enables correlation of logs with specific requests, agents, and users
+    in monitoring systems like Datadog.
+
+    Usage:
+        from letta.log_context import set_log_context, update_log_context
+
+        # Set a single context value
+        set_log_context("agent_id", "agent-123")
+
+        # Set multiple context values
+        update_log_context(agent_id="agent-123", actor_id="user-456")
+
+        # All subsequent logs will include these attributes
+        logger.info("Processing request")
+        # Output: {"message": "Processing request", "agent_id": "agent-123", "actor_id": "user-456", ...}
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Add request context attributes to log record."""
+        context = get_log_context()
+        for key, value in context.items():
+            if not hasattr(record, key):
+                setattr(record, key, value)
+        return True
+
+
 def _setup_logfile() -> "Path":
     """ensure the logger filepath is in place
 
@@ -184,6 +219,9 @@ DEVELOPMENT_LOGGING = {
         "datadog_env": {
             "()": DatadogEnvFilter,
         },
+        "log_context": {
+            "()": LogContextFilter,
+        },
     },
     "handlers": {
         "console": {
@@ -191,7 +229,7 @@ DEVELOPMENT_LOGGING = {
             "class": "logging.StreamHandler",
             "stream": stdout,
             "formatter": _get_console_formatter(),
-            "filters": ["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else [],
+            "filters": (["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else []) + ["log_context"],
         },
         "file": {
             "level": "DEBUG",
@@ -200,7 +238,7 @@ DEVELOPMENT_LOGGING = {
             "maxBytes": 1024**2 * 10,  # 10 MB per file
             "backupCount": 3,  # Keep 3 backup files
             "formatter": _get_file_formatter(),
-            "filters": ["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else [],
+            "filters": (["datadog_env"] if telemetry_settings.enable_datadog and not log_settings.json_logging else []) + ["log_context"],
         },
     },
     "root": {  # Root logger handles all logs
