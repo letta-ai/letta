@@ -134,6 +134,7 @@ class ApprovalCreate(MessageCreateBase):
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     @model_validator(mode="after")
     def migrate_deprecated_fields(self):
