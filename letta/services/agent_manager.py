@@ -383,10 +383,16 @@ class AgentManager:
         if agent_create.include_base_tools:
             if agent_create.agent_type == AgentType.voice_sleeptime_agent:
                 tool_names |= set(BASE_VOICE_SLEEPTIME_TOOLS)
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.agent_type == AgentType.voice_convo_agent:
                 tool_names |= set(BASE_VOICE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
