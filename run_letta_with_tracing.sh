@@ -59,30 +59,14 @@ case $MODE in
         coverage json --omit="*/tests/*,*/test_*" -o /tmp/letta_coverage.json
 
         # Parse JSON to get used files
-        # Run from /tmp to avoid circular import issues with letta/types/
-        (cd /tmp && python3 -c "
-import json
-with open('/tmp/letta_coverage.json') as f:
-    data = json.load(f)
-
-files_used = []
-for filepath, info in data['files'].items():
-    if 'letta/' in filepath:
-        rel_path = filepath.split('letta/')[-1]
-        percent = info['summary']['percent_covered']
-        files_used.append((rel_path, percent))
-
-files_used.sort(key=lambda x: x[1], reverse=True)
-
-with open('/tmp/letta_files_used.txt', 'w') as out:
-    out.write('FILES ACTUALLY USED (sorted by % coverage):\n')
-    out.write('=' * 80 + '\n')
-    for filepath, percent in files_used:
-        if percent > 0:
-            out.write(f'{percent:5.1f}%  {filepath}\n')
-
-print(f'\n✅ Found {len([f for f in files_used if f[1] > 0])} files actually used')
-")
+        # Use isolated environment to avoid circular import with letta/types/
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        if [ -f "$SCRIPT_DIR/parse_coverage_safe.sh" ]; then
+            bash "$SCRIPT_DIR/parse_coverage_safe.sh"
+        else
+            echo "⚠️  Warning: parse_coverage_safe.sh not found, using fallback..."
+            env -i PATH="$PATH" HOME="$HOME" python3 -c 'import json,sys;sys.path=[p for p in sys.path if "letta" not in p.lower()];d=json.load(open("/tmp/letta_coverage.json"));f=sorted([(p.split("letta/")[-1],i["summary"]["percent_covered"]) for p,i in d["files"].items() if "letta/" in p],key=lambda x:x[1],reverse=True);open("/tmp/letta_files_used.txt","w").write("FILES USED:\n"+"".join(f"{p:5.1f}%  {f}\n" for f,p in f if p>0));print(f"Found {len([x for x in f if x[1]>0])} files used")'
+        fi
 
         echo ""
         echo "✅ Coverage analysis complete!"
