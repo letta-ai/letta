@@ -19233,6 +19233,18 @@
             "title": "Reason",
             "description": "An optional explanation for the provided approval status",
             "deprecated": true
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",

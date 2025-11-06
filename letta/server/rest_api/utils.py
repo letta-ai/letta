@@ -196,6 +196,9 @@ def create_approval_response_message_from_input(
             denial_reason=input_message.reason,
             approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
             run_id=run_id,
+            group_id=input_message.group_id
+            if input_message.group_id
+            else (agent_state.multi_agent_group.id if agent_state.multi_agent_group else None),
         )
     ]
 
