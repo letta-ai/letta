@@ -339,6 +339,9 @@ class Settings(BaseSettings):
     # enabling letta_agent_v1 architecture
     use_letta_v1_agent: bool = False
 
+    # Archival memory token limit
+    archival_memory_token_limit: int = 8192
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:

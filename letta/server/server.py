@@ -634,6 +634,17 @@ class SyncServer(object):
     async def insert_archival_memory_async(
         self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]
     ) -> List[Passage]:
+        from letta.settings import settings
+        from letta.utils import count_tokens
+
+        # Check token count against limit
+        token_count = count_tokens(memory_contents)
+        if token_count > settings.archival_memory_token_limit:
+            raise LettaInvalidArgumentError(
+                message=f"Archival memory content exceeds token limit of {settings.archival_memory_token_limit} tokens (found {token_count} tokens)",
+                argument_name="memory_contents",
+            )
+
         # Get the agent object (loaded in memory)
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
