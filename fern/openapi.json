@@ -18739,11 +18739,35 @@
           },
           "llm_config": {
             "$ref": "#/components/schemas/LLMConfig",
-            "description": "The LLM configuration used by the agent."
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
           },
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "The embedding configuration used by the agent."
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model used by the agent."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding model used by the agent."
           },
           "response_format": {
             "anyOf": [
@@ -18773,7 +18797,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format used by the agent when returning from `send_message`."
+            "description": "The response format used by the agent"
           },
           "description": {
             "anyOf": [
@@ -18802,7 +18826,7 @@
           },
           "memory": {
             "$ref": "#/components/schemas/Memory",
-            "description": "The in-context memory of the agent.",
+            "description": "Deprecated: Use `blocks` field instead. The in-context memory of the agent.",
             "deprecated": true
           },
           "blocks": {
@@ -18920,7 +18944,7 @@
             },
             "type": "array",
             "title": "Identity Ids",
-            "description": "The ids of the identities associated with this agent.",
+            "description": "Deprecated: Use `identities` field instead. The ids of the identities associated with this agent.",
             "default": [],
             "deprecated": true
           },
@@ -18960,7 +18984,7 @@
                 "type": "null"
               }
             ],
-            "description": "The multi-agent group that this agent manages",
+            "description": "Deprecated: Use `managed_group` field instead. The multi-agent group that this agent manages.",
             "deprecated": true
           },
           "managed_group": {
@@ -22623,28 +22647,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -22688,7 +22690,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -22715,22 +22718,52 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
+                "$ref": "#/components/schemas/ModelSettings"
+              },
+              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -22761,8 +22794,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -22774,7 +22808,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -22786,7 +22821,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -22798,8 +22834,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -22811,7 +22848,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -22823,13 +22861,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -22841,7 +22881,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -22857,7 +22897,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -22887,7 +22928,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -22899,7 +22941,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "anyOf": [
@@ -22911,7 +22954,8 @@
               }
             ],
             "title": "Template Id",
-            "description": "The id of the template the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
+            "deprecated": true
           },
           "base_template_id": {
             "anyOf": [
@@ -22923,7 +22967,8 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "The base template id of the agent."
+            "description": "Deprecated: No longer used. The base template id of the agent.",
+            "deprecated": true
           },
           "identity_ids": {
             "anyOf": [
@@ -23034,7 +23079,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -23046,8 +23092,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           }
         },
         "type": "object",
@@ -23840,6 +23887,24 @@
         ],
         "title": "EmbeddingConfig",
         "description": "Configuration for embedding model connection and processing parameters."
+      },
+      "EmbeddingModelSettings": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["openai", "ollama"],
+            "title": "Provider",
+            "description": "The provider of the model."
+          }
+        },
+        "type": "object",
+        "required": ["model", "provider"],
+        "title": "EmbeddingModelSettings"
       },
       "EventMessage": {
         "properties": {
@@ -26269,28 +26334,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -26334,7 +26377,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -26361,22 +26405,52 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
+                "$ref": "#/components/schemas/ModelSettings"
+              },
+              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -26407,8 +26481,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -26420,7 +26495,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -26432,7 +26508,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -26444,8 +26521,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -26457,7 +26535,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -26469,13 +26548,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -26487,7 +26568,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -26503,7 +26584,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -26533,7 +26615,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -26545,7 +26628,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "type": "string",
@@ -26666,7 +26750,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -26678,8 +26763,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "deployment_id": {
             "type": "string",
@@ -29282,6 +29368,25 @@
         },
         "type": "object",
         "title": "ModalSandboxConfig"
+      },
+      "ModelSettings": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          }
+        },
+        "type": "object",
+        "required": ["model"],
+        "title": "ModelSettings",
+        "description": "Schema for defining settings for a model"
       },
       "ModifyApprovalRequest": {
         "properties": {
@@ -34400,28 +34505,6 @@
             "title": "Tool Rules",
             "description": "The tool rules governing the agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "message_ids": {
             "anyOf": [
               {
@@ -34561,16 +34644,22 @@
                 "type": "string"
               },
               {
+                "$ref": "#/components/schemas/ModelSettings"
+              },
+              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model used by the agent, specified either by a handle or an object. See the model schema for more information."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -34591,18 +34680,6 @@
             "title": "Context Window Limit",
             "description": "The context window limit used by the agent."
           },
-          "max_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
-          },
           "reasoning": {
             "anyOf": [
               {
@@ -34613,9 +34690,33 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
-          "enable_sleeptime": {
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
+          "parallel_tool_calls": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -34624,8 +34725,10 @@
                 "type": "null"
               }
             ],
-            "title": "Enable Sleeptime",
-            "description": "If set to True, memory management will move to a background agent thread."
+            "title": "Parallel Tool Calls",
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "response_format": {
             "anyOf": [
@@ -34655,7 +34758,33 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
+          },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread."
           },
           "last_run_completion": {
             "anyOf": [
@@ -34740,19 +34869,6 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
-          },
-          "parallel_tool_calls": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
           }
         },
         "type": "object",
@@ -35435,28 +35551,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -35500,7 +35594,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -35527,22 +35622,52 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
+                "$ref": "#/components/schemas/ModelSettings"
+              },
+              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
           },
           "embedding": {
             "anyOf": [
               {
                 "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
@@ -35573,8 +35698,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -35586,7 +35712,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -35598,7 +35725,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -35610,8 +35738,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -35623,7 +35752,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -35635,13 +35765,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -35653,7 +35785,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -35669,7 +35801,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -35699,7 +35832,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -35711,7 +35845,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "anyOf": [
@@ -35723,7 +35858,8 @@
               }
             ],
             "title": "Template Id",
-            "description": "The id of the template the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
+            "deprecated": true
           },
           "base_template_id": {
             "anyOf": [
@@ -35735,7 +35871,8 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "The base template id of the agent."
+            "description": "Deprecated: No longer used. The base template id of the agent.",
+            "deprecated": true
           },
           "identity_ids": {
             "anyOf": [
@@ -35846,7 +35983,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -35858,8 +35996,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "id": {
             "type": "string",
