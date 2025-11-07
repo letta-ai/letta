@@ -293,6 +293,8 @@ class Settings(BaseSettings):
     # experimental toggle
     use_vertex_structured_outputs_experimental: bool = False
     use_asyncio_shield: bool = True
+    # Gate using Temporal (Lettuce) for file uploads via folders endpoint
+    use_lettuce_for_file_uploads: bool = False
 
     # Database pool monitoring
     enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring

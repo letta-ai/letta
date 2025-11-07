@@ -1,5 +1,6 @@
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import DuplicateFileHandling
 from letta.schemas.letta_message import MessageType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
@@ -83,4 +84,18 @@ class LettuceClient:
         Returns:
             str | None: The ID of the run or None if client is not available.
         """
+        return None
+
+    async def upload_file_to_folder(
+        self,
+        *,
+        folder_id: str,
+        actor_id: str,
+        file_name: str,
+        content: bytes,
+        content_type: str | None = None,
+        duplicate_handling: DuplicateFileHandling | None = None,
+        override_name: str | None = None,
+    ):
+        """Kick off upload workflow. Base client does nothing and returns None."""
         return None
