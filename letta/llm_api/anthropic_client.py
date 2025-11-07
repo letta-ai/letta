@@ -1140,8 +1140,9 @@ def dedupe_tool_results_in_user_messages(messages: List[dict]) -> List[dict]:
                             sep = "\n" if first["content"] and extra else ""
                             first["content"] = f"{first['content']}{sep}{extra}"
                         else:
+                            sep = "\n" if first.get("content") else ""
                             # Fallback: coerce to strings and concat
-                            first["content"] = f"{first.get('content')}{'\n' if first.get('content') else ''}{extra}"
+                            first["content"] = f"{first.get('content')}{sep}{extra}"
                     any_deduped = True
                     dedup_counts[tid] = dedup_counts.get(tid, 0) + 1
                     # Skip appending duplicate
