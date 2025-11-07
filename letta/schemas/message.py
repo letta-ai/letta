@@ -1592,7 +1592,19 @@ class Message(BaseMessage):
             content = []
             for tool_return in self.tool_returns:
                 if not tool_return.tool_call_id:
-                    raise TypeError("Anthropic API requires tool_use_id to be set.")
+                    from letta.log import get_logger
+
+                    logger = get_logger(__name__)
+                    logger.error(
+                        f"Missing tool_call_id in tool return. "
+                        f"Message ID: {self.id}, "
+                        f"Tool name: {getattr(tool_return, 'name', 'unknown')}, "
+                        f"Tool return: {tool_return}"
+                    )
+                    raise TypeError(
+                        f"Anthropic API requires tool_use_id to be set. "
+                        f"Message ID: {self.id}, Tool: {getattr(tool_return, 'name', 'unknown')}"
+                    )
                 func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
                 content.append(
                     {
