@@ -1250,7 +1250,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.group import Group
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.memory import Memory
-    from letta.schemas.model import EmbeddingModelSettings, ModelSettings
+    from letta.schemas.model import ModelSettings
     from letta.schemas.response_format import ResponseFormatUnion
     from letta.schemas.source import Source
     from letta.schemas.tool import Tool
@@ -1271,9 +1271,10 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "agent_type": AgentType,
         # LLM information
         "llm_config": LLMConfig,
-        "model": ModelSettings,
-        "embedding": EmbeddingModelSettings,
+        "model": str,
+        "embedding": str,
         "embedding_config": EmbeddingConfig,
+        "model_settings": ModelSettings,
         "response_format": (ResponseFormatUnion, type(None)),
         # State fields
         "description": (str, type(None)),
