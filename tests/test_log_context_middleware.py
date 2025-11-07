@@ -3,13 +3,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from letta.log_context import get_log_context
-from letta.server.rest_api.middleware import LogContextMiddleware
+from letta.server.rest_api.middleware import LoggingMiddleware
 
 
 @pytest.fixture
 def app():
     app = FastAPI()
-    app.add_middleware(LogContextMiddleware)
+    app.add_middleware(LoggingMiddleware)
 
     @app.get("/v1/agents/{agent_id}")
     async def get_agent(agent_id: str):
