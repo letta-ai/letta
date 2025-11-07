@@ -18934,24 +18934,37 @@
           "model": {
             "anyOf": [
               {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model handle used by the agent (format: provider/model-name)."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
                 "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The model used by the agent."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding model used by the agent."
+            "description": "The model settings used by the agent."
           },
           "response_format": {
             "anyOf": [
@@ -22944,14 +22957,11 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/ModelSettings"
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -22959,14 +22969,22 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -24247,24 +24265,6 @@
           "embedding_dim"
         ],
         "title": "EmbeddingModel"
-      },
-      "EmbeddingModelSettings": {
-        "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["openai", "ollama"],
-            "title": "Provider",
-            "description": "The provider of the model."
-          }
-        },
-        "type": "object",
-        "required": ["model", "provider"],
-        "title": "EmbeddingModelSettings"
       },
       "EventMessage": {
         "properties": {
@@ -26795,14 +26795,11 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/ModelSettings"
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -26810,14 +26807,22 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -30017,11 +30022,6 @@
       },
       "ModelSettings": {
         "properties": {
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "description": "The name of the model."
-          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -30030,7 +30030,6 @@
           }
         },
         "type": "object",
-        "required": ["model"],
         "title": "ModelSettings",
         "description": "Schema for defining settings for a model"
       },
@@ -35290,14 +35289,11 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/ModelSettings"
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model used by the agent, specified either by a handle or an object. See the model schema for more information."
+            "description": "The model handle used by the agent (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -35305,14 +35301,22 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -36298,14 +36302,11 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/ModelSettings"
-              },
-              {
                 "type": "null"
               }
             ],
             "title": "Model",
-            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -36313,14 +36314,22 @@
                 "type": "string"
               },
               {
-                "$ref": "#/components/schemas/EmbeddingModelSettings"
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
