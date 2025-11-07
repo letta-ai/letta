@@ -58,11 +58,12 @@ from letta.schemas.letta_message_content import (
 )
 from letta.server.constants import REST_DEFAULT_PORT
 from letta.server.db import db_registry
+from letta.server.global_exception_handler import setup_global_exception_handlers
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LogContextMiddleware, ProfilerContextMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, ProfilerContextMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -260,12 +261,41 @@ def create_application() -> "FastAPI":
         lifespan=lifespan,
     )
 
+    # === Global Exception Handlers ===
+    # Set up handlers for exceptions outside of request context (background tasks, threads, etc.)
+    setup_global_exception_handlers()
+
     # === Exception Handlers ===
     # TODO (cliandy): move to separate file
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
-        logger.error(f"Unhandled error: {str(exc)}", exc_info=True)
+        # Log with structured context
+        request_context = {
+            "method": request.method,
+            "url": str(request.url),
+            "path": request.url.path,
+        }
+
+        # Extract user context if available
+        user_context = {}
+        if hasattr(request.state, "user_id"):
+            user_context["user_id"] = request.state.user_id
+        if hasattr(request.state, "org_id"):
+            user_context["org_id"] = request.state.org_id
+
+        logger.error(
+            f"Unhandled error: {exc.__class__.__name__}: {str(exc)}",
+            extra={
+                "exception_type": exc.__class__.__name__,
+                "exception_message": str(exc),
+                "exception_module": exc.__class__.__module__,
+                "request": request_context,
+                "user": user_context,
+            },
+            exc_info=True,
+        )
+
         if SENTRY_ENABLED:
             sentry_sdk.capture_exception(exc)
 
@@ -519,7 +549,8 @@ def create_application() -> "FastAPI":
     if telemetry_settings.profiler:
         app.add_middleware(ProfilerContextMiddleware)
 
-    app.add_middleware(LogContextMiddleware)
+    # Add unified logging middleware - enriches log context and logs exceptions
+    app.add_middleware(LoggingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
