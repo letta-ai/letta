@@ -1967,6 +1967,14 @@ class Message(BaseMessage):
         # Collapse adjacent tool call and approval messages
         messages = Message.collapse_tool_call_messages_for_llm_api(messages)
 
+        # Dedupe duplicate tool-return payloads across tool messages so downstream providers
+        # never see the same tool_call_id's result twice in a single request
+        messages = Message.dedupe_tool_messages_for_llm_api(messages)
+
+        # Dedupe duplicate tool calls within assistant messages so a single assistant message
+        # cannot emit multiple tool_use blocks with the same id (Anthropic requirement)
+        messages = Message.dedupe_tool_calls_for_llm_api(messages)
+
         return messages
 
     @staticmethod
@@ -1986,6 +1994,119 @@ class Message(BaseMessage):
             messages[i].content = messages[i].content + messages[i + 1].content
             messages[i].tool_calls = messages[i].tool_calls + messages[i + 1].tool_calls
             messages.remove(messages[i + 1])
+        return messages
+
+    @staticmethod
+    def dedupe_tool_messages_for_llm_api(messages: List[Message]) -> List[Message]:
+        """Dedupe duplicate tool returns across tool-role messages by tool_call_id.
+
+        - For explicit tool_returns arrays: keep the first occurrence of each tool_call_id,
+          drop subsequent duplicates within the request.
+        - For legacy single tool_call_id + content messages: keep the first, drop duplicates.
+        - If a tool message has neither unique tool_returns nor content, drop it.
+
+        This runs prior to provider-specific formatting to reduce duplicate tool_result blocks downstream.
+        """
+        if not messages:
+            return messages
+
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
+        seen_ids: set[str] = set()
+        removed_tool_msgs = 0
+        removed_tool_returns = 0
+        result: List[Message] = []
+
+        for m in messages:
+            if m.role != MessageRole.tool:
+                result.append(m)
+                continue
+
+            # Prefer explicit tool_returns when present
+            if m.tool_returns and len(m.tool_returns) > 0:
+                unique_returns = []
+                for tr in m.tool_returns:
+                    tcid = getattr(tr, "tool_call_id", None)
+                    if tcid and tcid in seen_ids:
+                        removed_tool_returns += 1
+                        continue
+                    if tcid:
+                        seen_ids.add(tcid)
+                    unique_returns.append(tr)
+
+                if unique_returns:
+                    # Replace with unique set; keep message
+                    m.tool_returns = unique_returns
+                    result.append(m)
+                else:
+                    # No unique returns left; if legacy content exists, fall back to legacy handling below
+                    if m.tool_call_id and m.content and len(m.content) > 0:
+                        tcid = m.tool_call_id
+                        if tcid in seen_ids:
+                            removed_tool_msgs += 1
+                            continue
+                        seen_ids.add(tcid)
+                        result.append(m)
+                    else:
+                        removed_tool_msgs += 1
+                        continue
+
+            else:
+                # Legacy single-response path
+                tcid = getattr(m, "tool_call_id", None)
+                if tcid:
+                    if tcid in seen_ids:
+                        removed_tool_msgs += 1
+                        continue
+                    seen_ids.add(tcid)
+                result.append(m)
+
+        if removed_tool_msgs or removed_tool_returns:
+            logger.error(
+                "[Message] Deduped duplicate tool messages for request: removed_messages=%d, removed_returns=%d",
+                removed_tool_msgs,
+                removed_tool_returns,
+            )
+
+        return result
+
+    @staticmethod
+    def dedupe_tool_calls_for_llm_api(messages: List[Message]) -> List[Message]:
+        """Ensure each assistant message contains unique tool_calls by id.
+
+        Anthropic requires tool_use ids to be unique within a single assistant message. When
+        collapsing adjacent assistant/approval messages, duplicates can sneak in. This pass keeps
+        the first occurrence per id and drops subsequent duplicates.
+        """
+        if not messages:
+            return messages
+
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
+        removed_counts_total = 0
+        for m in messages:
+            if m.role != MessageRole.assistant or not m.tool_calls:
+                continue
+            seen: set[str] = set()
+            unique_tool_calls = []
+            removed = 0
+            for tc in m.tool_calls:
+                tcid = getattr(tc, "id", None)
+                if tcid and tcid in seen:
+                    removed += 1
+                    continue
+                if tcid:
+                    seen.add(tcid)
+                unique_tool_calls.append(tc)
+            if removed:
+                m.tool_calls = unique_tool_calls
+                removed_counts_total += removed
+        if removed_counts_total:
+            logger.error("[Message] Deduped duplicate tool_calls in assistant messages: removed=%d", removed_counts_total)
         return messages
 
     @staticmethod
