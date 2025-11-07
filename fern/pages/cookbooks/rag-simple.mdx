@@ -148,7 +148,7 @@ The free tier includes 30,000 API requests per month, which is more than enough 
 Once you have these credentials, create a `.env` file in your project directory. Add the credentials for your chosen database:
 
 <Tabs>
-  <Tab title="ChromaDB">
+  <Tab title="ChromaDB" language="chromadb">
 ```bash
 LETTA_API_KEY="..."
 CHROMA_API_KEY="..."
@@ -239,7 +239,7 @@ You should see output indicating these are PDF documents, not HTML files.
 Install the necessary packages for your chosen database:
 
 <Tabs>
-  <Tab title="ChromaDB">
+  <Tab title="ChromaDB" language="chromadb">
 <CodeBlocks>
 ```txt title="Python"
 # requirements.txt
@@ -254,6 +254,16 @@ npm install @letta-ai/letta-client chromadb @chroma-core/default-embed dotenv pd
 npm install --save-dev typescript @types/node ts-node tsx
 ```
 </CodeBlocks>
+
+<Warning>
+**TypeScript installation issue:** If you encounter errors during installation (particularly with the `sharp` dependency), try installing with prebuilt binaries:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install @letta-ai/letta-client chromadb @chroma-core/default-embed dotenv pdf-ts sharp --ignore-scripts
+npm install --save-dev typescript @types/node ts-node tsx
+```
+</Warning>
 
 For Python, install with:
 ```bash
@@ -313,7 +323,7 @@ pip install -r requirements.txt
 Now create a `setup.py` or `setup.ts` file to load the PDFs, split them into chunks, and ingest them into your database:
 
 <Tabs>
-  <Tab title="ChromaDB">
+  <Tab title="ChromaDB" language="chromadb">
 <CodeBlocks>
 ```python title="Python"
 import os
@@ -947,7 +957,7 @@ Now we'll write the main script, `simple_rag.py` or `simple_rag.ts`, that ties e
 4. Send this combined prompt to our Simple Letta agent and print the response.
 
 <Tabs>
-  <Tab title="ChromaDB">
+  <Tab title="ChromaDB" language="chromadb">
 <CodeBlocks>
 ```python title="Python"
 import os

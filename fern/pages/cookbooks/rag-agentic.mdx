@@ -247,10 +247,20 @@ python-dotenv
 ```
 
 ```bash title="TypeScript"
-npm install @letta-ai/letta-client dotenv
+npm install @letta-ai/letta-client chromadb @chroma-core/default-embed dotenv pdf-ts
 npm install --save-dev typescript @types/node tsx
 ```
 </CodeBlocks>
+
+<Warning>
+**TypeScript installation issue:** If you encounter errors during installation (particularly with the `sharp` dependency), try installing with prebuilt binaries:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install @letta-ai/letta-client chromadb @chroma-core/default-embed dotenv pdf-ts sharp --ignore-scripts
+npm install --save-dev typescript @types/node ts-node tsx
+```
+</Warning>
 
 For Python, install with:
 ```bash
@@ -273,7 +283,7 @@ dnspython
 ```
 
 ```bash title="TypeScript"
-npm install @letta-ai/letta-client dotenv
+npm install @letta-ai/letta-client mongodb dotenv pdf-ts node-fetch
 npm install --save-dev typescript @types/node tsx
 ```
 </CodeBlocks>
@@ -297,7 +307,7 @@ requests
 ```
 
 ```bash title="TypeScript"
-npm install @letta-ai/letta-client dotenv
+npm install @letta-ai/letta-client @qdrant/js-client-rest dotenv node-fetch pdf-ts
 npm install --save-dev typescript @types/node tsx
 ```
 </CodeBlocks>
