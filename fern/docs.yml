@@ -455,6 +455,8 @@ navigation:
         contents:
           - page: API and SDK Overview
             path: pages/api/about.mdx
+          - page: SDK v1.0 Migration Guide
+            path: pages/api/sdk_migration_guide.mdx
           - changelog: ./changelog
             title: Changelog
             slug: changelog
