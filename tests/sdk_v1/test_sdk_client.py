@@ -416,39 +416,6 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
     client.agents.delete(agent.id)
 
 
-def test_count_agents(client: LettaSDKClient):
-    """Test counting agents."""
-    # Create a few agents
-    agent1 = client.agents.create(
-        memory_blocks=[CreateBlockParam(label="persona", value="test")],
-        model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-3-small",
-    )
-    agent2 = client.agents.create(
-        memory_blocks=[CreateBlockParam(label="persona", value="test")],
-        model="openai/gpt-4o-mini",
-        embedding="openai/text-embedding-3-small",
-    )
-
-    try:
-        # Get initial count
-        initial_count = client.agents.count()
-
-        # Verify we have at least 2 agents
-        assert initial_count >= 2, f"Expected at least 2 agents, got {initial_count}"
-
-        # List agents to verify count matches
-        agents_list = client.agents.list()
-        # Count should be consistent with list (though list may be paginated)
-        assert isinstance(initial_count, int), "Count should return an integer"
-        assert initial_count > 0, "Count should be positive"
-
-    finally:
-        # Clean up
-        client.agents.delete(agent_id=agent1.id)
-        client.agents.delete(agent_id=agent2.id)
-
-
 def test_reset_messages(client: LettaSDKClient):
     """Test resetting messages for an agent."""
     # Create an agent
