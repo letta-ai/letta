@@ -889,7 +889,7 @@ def agent_state(client: Letta) -> AgentState:
     client.tools.upsert_base_tools()
     dice_tool = client.tools.upsert_from_function(func=roll_dice)
 
-    send_message_tool = client.tools.list(name="send_message")[0]
+    send_message_tool = client.tools.list(name="send_message").items[0]
     agent_state_instance = client.agents.create(
         name="supervisor",
         include_base_tools=False,
@@ -1497,7 +1497,7 @@ def test_background_token_streaming_greeting_with_assistant_message(
     run_id = messages[0].run_id
     assert run_id is not None
 
-    runs = client.runs.list(agent_ids=[agent_state.id], background=True)
+    runs = client.runs.list(agent_ids=[agent_state.id], background=True).items
     assert len(runs) > 0
     assert runs[0].id == run_id
 

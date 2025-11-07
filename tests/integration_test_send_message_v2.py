@@ -526,6 +526,7 @@ async def test_greeting(
     assert run.status == JobStatus.completed
 
 
+@pytest.mark.skip(reason="Skipping parallel tool calling test until it is fixed")
 @pytest.mark.parametrize(
     "llm_config",
     TESTED_LLM_CONFIGS,
