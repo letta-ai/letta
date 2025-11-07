@@ -31,19 +31,7 @@ class PassageBase(OrmMetadataBase):
 
 
 class Passage(PassageBase):
-    """
-    Representation of a passage, which is stored in archival memory.
-
-    Parameters:
-        text (str): The text of the passage.
-        embedding (List[float]): The embedding of the passage.
-        embedding_config (EmbeddingConfig): The embedding configuration used by the passage.
-        created_at (datetime): The creation date of the passage.
-        organization_id (str): The unique identifier of the organization associated with the passage.
-        archive_id (str): The unique identifier of the archive containing this passage.
-        source_id (str): The data source of the passage.
-        file_id (str): The unique identifier of the file associated with the passage.
-    """
+    """Representation of a passage, which is stored in archival memory."""
 
     id: str = PassageBase.generate_id_field()
 

@@ -80,20 +80,7 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
 
 class Block(BaseBlock):
-    """
-    A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
-
-    Parameters:
-        label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
-        value (str): The value of the block. This is the string that is represented in the context window.
-        limit (int): The character limit of the block.
-        is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
-        label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
-        template_name (str): The name of the block template (if it is a template).
-        description (str): Description of the block.
-        metadata (Dict): Metadata of the block.
-        user_id (str): The unique identifier of the user associated with the block.
-    """
+    """A Block represents a reserved section of the LLM's context window."""
 
     id: str = BaseBlock.generate_id_field()
 

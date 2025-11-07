@@ -23,17 +23,7 @@ class BaseFolder(LettaBase):
 
 
 class Folder(BaseFolder):
-    """
-    Representation of a folder, which is a collection of files and passages.
-
-    Parameters:
-        id (str): The ID of the folder
-        name (str): The name of the folder.
-        embedding_config (EmbeddingConfig): The embedding configuration used by the folder.
-        user_id (str): The ID of the user that created the folder.
-        metadata (dict): Metadata associated with the folder.
-        description (str): The description of the folder.
-    """
+    """Representation of a folder, which is a collection of files and passages."""
 
     id: str = BaseFolder.generate_id_field()
     embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the folder.")

@@ -15,22 +15,7 @@ class RunBase(LettaBase):
 
 
 class Run(RunBase):
-    """
-    Representation of a run - a conversation or processing session for an agent.
-    Runs track when agents process messages and maintain the relationship between agents, steps, and messages.
-
-    Parameters:
-        id (str): The unique identifier of the run (prefixed with 'run-').
-        status (JobStatus): The current status of the run.
-        created_at (datetime): The timestamp when the run was created.
-        completed_at (datetime): The timestamp when the run was completed.
-        agent_id (str): The unique identifier of the agent associated with the run.
-        base_template_id (str): The base template ID that the run belongs to.
-        stop_reason (StopReasonType): The reason why the run was stopped.
-        background (bool): Whether the run was created in background mode.
-        metadata (dict): Additional metadata for the run.
-        request_config (LettaRequestConfig): The request configuration for the run.
-    """
+    """Representation of a run - a conversation or processing session for an agent. Runs track when agents process messages and maintain the relationship between agents, steps, and messages."""
 
     id: str = RunBase.generate_id_field()
 

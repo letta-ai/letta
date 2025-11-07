@@ -44,17 +44,7 @@ class JobBase(OrmMetadataBase):
 
 
 class Job(JobBase):
-    """
-    Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).
-
-    Parameters:
-        id (str): The unique identifier of the job.
-        status (JobStatus): The status of the job.
-        created_at (datetime): The unix timestamp of when the job was created.
-        completed_at (datetime): The unix timestamp of when the job was completed.
-        user_id (str): The unique identifier of the user associated with the.
-
-    """
+    """Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files)."""
 
     id: str = JobBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")

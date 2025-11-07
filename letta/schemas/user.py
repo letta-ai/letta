@@ -13,14 +13,7 @@ class UserBase(LettaBase):
 
 
 class User(UserBase):
-    """
-    Representation of a user.
-
-    Parameters:
-        id (str): The unique identifier of the user.
-        name (str): The name of the user.
-        created_at (datetime): The creation date of the user.
-    """
+    """Representation of a user."""
 
     id: str = UserBase.generate_id_field()
     organization_id: Optional[str] = Field(DEFAULT_ORG_ID, description="The organization id of the user")

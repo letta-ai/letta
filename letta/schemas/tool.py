@@ -33,17 +33,7 @@ class BaseTool(LettaBase):
 
 
 class Tool(BaseTool):
-    """
-    Representation of a tool, which is a function that can be called by the agent.
-
-    Parameters:
-        id (str): The unique identifier of the tool.
-        name (str): The name of the function.
-        tags (List[str]): Metadata tags.
-        source_code (str): The source code of the function.
-        json_schema (Dict): The JSON schema of the function.
-
-    """
+    """Representation of a tool, which is a function that can be called by the agent."""
 
     id: str = BaseTool.generate_id_field()
     tool_type: ToolType = Field(ToolType.CUSTOM, description="The type of the tool.")
