@@ -270,3 +270,21 @@ class SleeptimeMultiAgent(BaseAgent):
 
         usage_stats.run_ids = run_ids
         return LettaUsageStatistics(**usage_stats.model_dump())
+
+    async def step_stream(
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = 10,
+    ):
+        """
+        Streaming is not currently supported for SleeptimeMultiAgent.
+        This method is required by the BaseAgent abstract class but not yet implemented.
+        """
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+        logger.error(
+            f"step_stream called on SleeptimeMultiAgent (agent_id={self.agent_state.id}, "
+            f"group_id={self.group_id}). Streaming is not supported for multi-agent groups."
+        )
+        raise NotImplementedError("Streaming is not supported for SleeptimeMultiAgent. Use the non-streaming step() method instead.")
