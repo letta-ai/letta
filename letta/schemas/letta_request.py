@@ -80,17 +80,21 @@ class LettaRequest(BaseModel):
 
 
 class LettaStreamingRequest(LettaRequest):
+    streaming: bool = Field(
+        default=False,
+        description="If True, returns a streaming response (Server-Sent Events). If False (default), returns a complete response.",
+    )
     stream_tokens: bool = Field(
         default=False,
-        description="Flag to determine if individual tokens should be streamed, rather than streaming per step.",
+        description="Flag to determine if individual tokens should be streamed, rather than streaming per step (only used when streaming=true).",
     )
     include_pings: bool = Field(
         default=True,
-        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts (only used when streaming=true).",
     )
     background: bool = Field(
         default=False,
-        description="Whether to process the request in the background.",
+        description="Whether to process the request in the background (only used when streaming=true).",
     )
 
 

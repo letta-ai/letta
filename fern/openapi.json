@@ -7272,7 +7272,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Send Message",
-        "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.",
+        "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.\n\nThe response format is controlled by the `streaming` field in the request body:\n- If `streaming=false` (default): Returns a complete LettaResponse with all messages\n- If `streaming=true`: Returns a Server-Sent Events (SSE) stream\n\nAdditional streaming options (only used when streaming=true):\n- `stream_tokens`: Stream individual tokens instead of complete steps\n- `include_pings`: Include keepalive pings to prevent connection timeouts\n- `background`: Process the request in the background",
         "operationId": "send_message",
         "parameters": [
           {
@@ -7296,19 +7296,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LettaRequest"
+                "$ref": "#/components/schemas/LettaStreamingRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LettaResponse"
                 }
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream (when streaming=true in request body)"
               }
             }
           },
@@ -28595,22 +28598,28 @@
             "default": true,
             "deprecated": true
           },
+          "streaming": {
+            "type": "boolean",
+            "title": "Streaming",
+            "description": "If True, returns a streaming response (Server-Sent Events). If False (default), returns a complete response.",
+            "default": false
+          },
           "stream_tokens": {
             "type": "boolean",
             "title": "Stream Tokens",
-            "description": "Flag to determine if individual tokens should be streamed, rather than streaming per step.",
+            "description": "Flag to determine if individual tokens should be streamed, rather than streaming per step (only used when streaming=true).",
             "default": false
           },
           "include_pings": {
             "type": "boolean",
             "title": "Include Pings",
-            "description": "Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+            "description": "Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts (only used when streaming=true).",
             "default": true
           },
           "background": {
             "type": "boolean",
             "title": "Background",
-            "description": "Whether to process the request in the background.",
+            "description": "Whether to process the request in the background (only used when streaming=true).",
             "default": false
           }
         },
