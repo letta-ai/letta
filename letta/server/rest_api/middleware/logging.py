@@ -67,6 +67,17 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             if context:
                 update_log_context(**context)
 
+            logger.info(
+                f"Incoming request: {request.method} {request.url.path}",
+                extra={
+                    "method": request.method,
+                    "url": str(request.url),
+                    "path": request.url.path,
+                    "query_params": dict(request.query_params),
+                    "client_host": request.client.host if request.client else None,
+                },
+            )
+
             response = await call_next(request)
             return response
 
