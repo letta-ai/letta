@@ -3,7 +3,7 @@ from typing import Annotated, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.response_format import ResponseFormatUnion
 
@@ -17,33 +17,167 @@ class ModelBase(BaseModel):
     model_type: Literal["llm", "embedding"] = Field(..., description="Type of model (llm or embedding)")
 
 
-class Model(ModelBase):
+class Model(LLMConfig, ModelBase):
     model_type: Literal["llm"] = Field("llm", description="Type of model (llm or embedding)")
     max_context_window: int = Field(..., description="The maximum context window for the model")
     # supports_token_streaming: Optional[bool] = Field(None, description="Whether token streaming is supported")
     # supports_tool_calling: Optional[bool] = Field(None, description="Whether tool calling is supported")
 
-    def _from_llm_config(self, llm_config: LLMConfig) -> "Model":
-        return self(
-            handle=llm_config.handle,
+    # Deprecated fields from LLMConfig - use new field names instead
+    model: str = Field(..., description="Deprecated: Use 'name' field instead. LLM model name.", deprecated=True)
+    model_endpoint_type: Literal[
+        "openai",
+        "anthropic",
+        "google_ai",
+        "google_vertex",
+        "azure",
+        "groq",
+        "ollama",
+        "webui",
+        "webui-legacy",
+        "lmstudio",
+        "lmstudio-legacy",
+        "lmstudio-chatcompletions",
+        "llamacpp",
+        "koboldcpp",
+        "vllm",
+        "hugging-face",
+        "mistral",
+        "together",
+        "bedrock",
+        "deepseek",
+        "xai",
+    ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
+    context_window: int = Field(
+        ..., description="Deprecated: Use 'max_context_window' field instead. The context window size for the model.", deprecated=True
+    )
+
+    # Additional deprecated LLMConfig fields - kept for backward compatibility
+    model_endpoint: Optional[str] = Field(None, description="Deprecated: The endpoint for the model.", deprecated=True)
+    model_wrapper: Optional[str] = Field(None, description="Deprecated: The wrapper for the model.", deprecated=True)
+    put_inner_thoughts_in_kwargs: Optional[bool] = Field(
+        True, description="Deprecated: Puts 'inner_thoughts' as a kwarg in the function call.", deprecated=True
+    )
+    temperature: float = Field(0.7, description="Deprecated: The temperature to use when generating text with the model.", deprecated=True)
+    max_tokens: Optional[int] = Field(None, description="Deprecated: The maximum number of tokens to generate.", deprecated=True)
+    enable_reasoner: bool = Field(
+        True,
+        description="Deprecated: Whether or not the model should use extended thinking if it is a 'reasoning' style model.",
+        deprecated=True,
+    )
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
+        None, description="Deprecated: The reasoning effort to use when generating text reasoning models.", deprecated=True
+    )
+    max_reasoning_tokens: int = Field(0, description="Deprecated: Configurable thinking budget for extended thinking.", deprecated=True)
+    frequency_penalty: Optional[float] = Field(
+        None,
+        description="Deprecated: Positive values penalize new tokens based on their existing frequency in the text so far.",
+        deprecated=True,
+    )
+    compatibility_type: Optional[Literal["gguf", "mlx"]] = Field(
+        None, description="Deprecated: The framework compatibility type for the model.", deprecated=True
+    )
+    verbosity: Optional[Literal["low", "medium", "high"]] = Field(
+        None, description="Deprecated: Soft control for how verbose model output should be.", deprecated=True
+    )
+    tier: Optional[str] = Field(None, description="Deprecated: The cost tier for the model (cloud only).", deprecated=True)
+    parallel_tool_calls: Optional[bool] = Field(
+        False, description="Deprecated: If set to True, enables parallel tool calling.", deprecated=True
+    )
+    provider_category: Optional[ProviderCategory] = Field(
+        None, description="Deprecated: The provider category for the model.", deprecated=True
+    )
+
+    @classmethod
+    def from_llm_config(cls, llm_config: "LLMConfig") -> "Model":
+        """Create a Model instance from an LLMConfig"""
+        return cls(
+            # New fields
+            handle=llm_config.handle or f"{llm_config.provider_name}/{llm_config.model}",
             name=llm_config.model,
-            display_name=llm_config.display_name,
+            display_name=llm_config.display_name or llm_config.model,
             provider_type=llm_config.model_endpoint_type,
-            provider_name=llm_config.provider_name,
+            provider_name=llm_config.provider_name or llm_config.model_endpoint_type,
+            model_type="llm",
+            max_context_window=llm_config.context_window,
+            # Deprecated fields (copy from LLMConfig for backward compatibility)
+            model=llm_config.model,
+            model_endpoint_type=llm_config.model_endpoint_type,
+            model_endpoint=llm_config.model_endpoint,
+            model_wrapper=llm_config.model_wrapper,
+            context_window=llm_config.context_window,
+            put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+            temperature=llm_config.temperature,
+            max_tokens=llm_config.max_tokens,
+            enable_reasoner=llm_config.enable_reasoner,
+            reasoning_effort=llm_config.reasoning_effort,
+            max_reasoning_tokens=llm_config.max_reasoning_tokens,
+            frequency_penalty=llm_config.frequency_penalty,
+            compatibility_type=llm_config.compatibility_type,
+            verbosity=llm_config.verbosity,
+            tier=llm_config.tier,
+            parallel_tool_calls=llm_config.parallel_tool_calls,
+            provider_category=llm_config.provider_category,
         )
 
 
-class EmbeddingModel(ModelBase):
+class EmbeddingModel(EmbeddingConfig, ModelBase):
     model_type: Literal["embedding"] = Field("embedding", description="Type of model (llm or embedding)")
     embedding_dim: int = Field(..., description="The dimension of the embedding")
 
-    def _from_embedding_config(self, embedding_config: EmbeddingConfig) -> "Model":
-        return self(
-            handle=embedding_config.handle,
+    # Deprecated fields from EmbeddingConfig - use new field names instead
+    embedding_model: str = Field(..., description="Deprecated: Use 'name' field instead. Embedding model name.", deprecated=True)
+    embedding_endpoint_type: Literal[
+        "openai",
+        "anthropic",
+        "bedrock",
+        "google_ai",
+        "google_vertex",
+        "azure",
+        "groq",
+        "ollama",
+        "webui",
+        "webui-legacy",
+        "lmstudio",
+        "lmstudio-legacy",
+        "llamacpp",
+        "koboldcpp",
+        "vllm",
+        "hugging-face",
+        "mistral",
+        "together",
+        "pinecone",
+    ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the embedding model.", deprecated=True)
+
+    # Additional deprecated EmbeddingConfig fields - kept for backward compatibility
+    embedding_endpoint: Optional[str] = Field(None, description="Deprecated: The endpoint for the model.", deprecated=True)
+    embedding_chunk_size: Optional[int] = Field(300, description="Deprecated: The chunk size of the embedding.", deprecated=True)
+    batch_size: int = Field(32, description="Deprecated: The maximum batch size for processing embeddings.", deprecated=True)
+    azure_endpoint: Optional[str] = Field(None, description="Deprecated: The Azure endpoint for the model.", deprecated=True)
+    azure_version: Optional[str] = Field(None, description="Deprecated: The Azure version for the model.", deprecated=True)
+    azure_deployment: Optional[str] = Field(None, description="Deprecated: The Azure deployment for the model.", deprecated=True)
+
+    @classmethod
+    def from_embedding_config(cls, embedding_config: "EmbeddingConfig") -> "EmbeddingModel":
+        """Create an EmbeddingModel instance from an EmbeddingConfig"""
+        return cls(
+            # New fields
+            handle=embedding_config.handle or f"{embedding_config.embedding_endpoint_type}/{embedding_config.embedding_model}",
             name=embedding_config.embedding_model,
             display_name=embedding_config.embedding_model,
             provider_type=embedding_config.embedding_endpoint_type,
             provider_name=embedding_config.embedding_endpoint_type,
+            model_type="embedding",
+            embedding_dim=embedding_config.embedding_dim,
+            # Deprecated fields (copy from EmbeddingConfig for backward compatibility)
+            embedding_model=embedding_config.embedding_model,
+            embedding_endpoint_type=embedding_config.embedding_endpoint_type,
+            embedding_endpoint=embedding_config.embedding_endpoint,
+            embedding_chunk_size=embedding_config.embedding_chunk_size,
+            batch_size=embedding_config.batch_size,
+            azure_endpoint=embedding_config.azure_endpoint,
+            azure_version=embedding_config.azure_version,
+            azure_deployment=embedding_config.azure_deployment,
         )
 
 

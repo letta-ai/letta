@@ -11184,7 +11184,7 @@
       "get": {
         "tags": ["models", "llms"],
         "summary": "List Llm Models",
-        "description": "List available LLM models using the asynchronous implementation for improved performance",
+        "description": "List available LLM models using the asynchronous implementation for improved performance.\n\nReturns Model format which extends LLMConfig with additional metadata fields.\nLegacy LLMConfig fields are marked as deprecated but still available for backward compatibility.",
         "operationId": "list_models",
         "parameters": [
           {
@@ -11247,7 +11247,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/LLMConfig"
+                    "$ref": "#/components/schemas/Model"
                   },
                   "title": "Response List Models"
                 }
@@ -11271,7 +11271,7 @@
       "get": {
         "tags": ["models", "llms"],
         "summary": "List Embedding Models",
-        "description": "List available embedding models using the asynchronous implementation for improved performance",
+        "description": "List available embedding models using the asynchronous implementation for improved performance.\n\nReturns EmbeddingModel format which extends EmbeddingConfig with additional metadata fields.\nLegacy EmbeddingConfig fields are marked as deprecated but still available for backward compatibility.",
         "operationId": "list_embedding_models",
         "parameters": [],
         "responses": {
@@ -11282,7 +11282,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/EmbeddingConfig"
+                    "$ref": "#/components/schemas/EmbeddingModel"
                   },
                   "title": "Response List Embedding Models"
                 }
@@ -24081,6 +24081,170 @@
         "title": "EmbeddingConfig",
         "description": "Configuration for embedding model connection and processing parameters."
       },
+      "EmbeddingModel": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle",
+            "description": "The handle for this config, in the format provider/model-name."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The actual model name used by the provider"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Display name for the model shown in UI"
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider"
+          },
+          "provider_name": {
+            "type": "string",
+            "title": "Provider Name",
+            "description": "The name of the provider"
+          },
+          "model_type": {
+            "type": "string",
+            "const": "embedding",
+            "title": "Model Type",
+            "description": "Type of model (llm or embedding)",
+            "default": "embedding"
+          },
+          "embedding_endpoint_type": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "bedrock",
+              "google_ai",
+              "google_vertex",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face",
+              "mistral",
+              "together",
+              "pinecone"
+            ],
+            "title": "Embedding Endpoint Type",
+            "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the embedding model.",
+            "deprecated": true
+          },
+          "embedding_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Endpoint",
+            "description": "Deprecated: The endpoint for the model.",
+            "deprecated": true
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "description": "Deprecated: Use 'name' field instead. Embedding model name.",
+            "deprecated": true
+          },
+          "embedding_dim": {
+            "type": "integer",
+            "title": "Embedding Dim",
+            "description": "The dimension of the embedding"
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "Deprecated: The chunk size of the embedding.",
+            "default": 300,
+            "deprecated": true
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "description": "Deprecated: The maximum batch size for processing embeddings.",
+            "default": 32,
+            "deprecated": true
+          },
+          "azure_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Endpoint",
+            "description": "Deprecated: The Azure endpoint for the model.",
+            "deprecated": true
+          },
+          "azure_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Version",
+            "description": "Deprecated: The Azure version for the model.",
+            "deprecated": true
+          },
+          "azure_deployment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Deployment",
+            "description": "Deprecated: The Azure deployment for the model.",
+            "deprecated": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "display_name",
+          "provider_type",
+          "provider_name",
+          "embedding_endpoint_type",
+          "embedding_model",
+          "embedding_dim"
+        ],
+        "title": "EmbeddingModel"
+      },
       "EmbeddingModelSettings": {
         "properties": {
           "model": {
@@ -29561,6 +29725,286 @@
         },
         "type": "object",
         "title": "ModalSandboxConfig"
+      },
+      "Model": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle",
+            "description": "The handle for this config, in the format provider/model-name."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The actual model name used by the provider"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "A human-friendly display name for the model."
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider"
+          },
+          "provider_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Name",
+            "description": "The provider name for the model."
+          },
+          "model_type": {
+            "type": "string",
+            "const": "llm",
+            "title": "Model Type",
+            "description": "Type of model (llm or embedding)",
+            "default": "llm"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Deprecated: Use 'name' field instead. LLM model name.",
+            "deprecated": true
+          },
+          "model_endpoint_type": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "google_ai",
+              "google_vertex",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "lmstudio-chatcompletions",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face",
+              "mistral",
+              "together",
+              "bedrock",
+              "deepseek",
+              "xai"
+            ],
+            "title": "Model Endpoint Type",
+            "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the model.",
+            "deprecated": true
+          },
+          "model_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Endpoint",
+            "description": "Deprecated: The endpoint for the model.",
+            "deprecated": true
+          },
+          "provider_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: The provider category for the model.",
+            "deprecated": true
+          },
+          "model_wrapper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Wrapper",
+            "description": "Deprecated: The wrapper for the model.",
+            "deprecated": true
+          },
+          "context_window": {
+            "type": "integer",
+            "title": "Context Window",
+            "description": "Deprecated: Use 'max_context_window' field instead. The context window size for the model.",
+            "deprecated": true
+          },
+          "put_inner_thoughts_in_kwargs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Put Inner Thoughts In Kwargs",
+            "description": "Deprecated: Puts 'inner_thoughts' as a kwarg in the function call.",
+            "default": true,
+            "deprecated": true
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "Deprecated: The temperature to use when generating text with the model.",
+            "default": 0.7,
+            "deprecated": true
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Deprecated: The maximum number of tokens to generate.",
+            "deprecated": true
+          },
+          "enable_reasoner": {
+            "type": "boolean",
+            "title": "Enable Reasoner",
+            "description": "Deprecated: Whether or not the model should use extended thinking if it is a 'reasoning' style model.",
+            "default": true,
+            "deprecated": true
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["minimal", "low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Deprecated: The reasoning effort to use when generating text reasoning models.",
+            "deprecated": true
+          },
+          "max_reasoning_tokens": {
+            "type": "integer",
+            "title": "Max Reasoning Tokens",
+            "description": "Deprecated: Configurable thinking budget for extended thinking.",
+            "default": 0,
+            "deprecated": true
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Deprecated: Positive values penalize new tokens based on their existing frequency in the text so far.",
+            "deprecated": true
+          },
+          "compatibility_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["gguf", "mlx"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compatibility Type",
+            "description": "Deprecated: The framework compatibility type for the model.",
+            "deprecated": true
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity",
+            "description": "Deprecated: Soft control for how verbose model output should be.",
+            "deprecated": true
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier",
+            "description": "Deprecated: The cost tier for the model (cloud only).",
+            "deprecated": true
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Deprecated: If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
+          },
+          "max_context_window": {
+            "type": "integer",
+            "title": "Max Context Window",
+            "description": "The maximum context window for the model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "provider_type",
+          "model",
+          "model_endpoint_type",
+          "context_window",
+          "max_context_window"
+        ],
+        "title": "Model"
       },
       "ModelSettings": {
         "properties": {
