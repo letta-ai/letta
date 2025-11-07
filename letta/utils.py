@@ -1415,12 +1415,22 @@ def is_1_0_sdk_version(headers: HeaderParams):
         @letta-ai/letta-client/version (node) or
         letta-client/version (python)
     """
+    from letta.log import get_logger
+
+    logger = get_logger(__name__)
+
     sdk_version = headers.sdk_version
     if sdk_version:
         return True
 
     client = headers.user_agent
+    # None User-Agent might be like curl, which has no expectation of pinned behaviour etc.
+    if not client:
+        logger.debug("User-Agent header is None, assuming v1.0.0+")
+        return True
+
     if "/" not in client:
+        logger.debug(f"User-Agent '{client}' does not contain '/', assuming legacy SDK version")
         return False
 
     # Split into parts to validate format
