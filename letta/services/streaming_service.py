@@ -301,6 +301,8 @@ class StreamingService:
             run_update_metadata = None
             stop_reason = None
             error_data = None
+            saw_done = False
+            saw_error = False
 
             try:
                 stream = agent_loop.stream(
@@ -314,7 +316,23 @@ class StreamingService:
                 )
 
                 async for chunk in stream:
+                    # Track terminal events
+                    if isinstance(chunk, str):
+                        if "data: [DONE]" in chunk:
+                            saw_done = True
+                        if "event: error" in chunk:
+                            saw_error = True
                     yield chunk
+
+                # Stream completed - check if we got a terminal event
+                if not saw_done and not saw_error:
+                    # Stream ended without terminal - synthesize one
+                    logger.warning(
+                        f"Stream for run {run_id} ended without terminal event. "
+                        f"Agent stop_reason: {agent_loop.stop_reason}. Synthesizing [DONE]."
+                    )
+                    yield "data: [DONE]\n\n"
+                    saw_done = True
 
                 # set run status after successful completion
                 if agent_loop.stop_reason.stop_reason.value == "cancelled":
