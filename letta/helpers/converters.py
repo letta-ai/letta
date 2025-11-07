@@ -254,14 +254,33 @@ def deserialize_approvals(data: Optional[List[Dict]]) -> List[Union[ApprovalRetu
         return []
 
     approvals = []
-    for item in data:
-        if "type" in item and item.get("type") == MessageReturnType.approval:
-            approval_return = ApprovalReturn(**item)
-            approvals.append(approval_return)
-        elif "status" in item:
-            tool_return = ToolReturn(**item)
-            approvals.append(tool_return)
-        else:
+    for idx, item in enumerate(data):
+        try:
+            # Check for ApprovalReturn (has type="approval")
+            if "type" in item and item.get("type") == MessageReturnType.approval:
+                approval_return = ApprovalReturn(**item)
+                approvals.append(approval_return)
+            # Check for ToolReturn (has status field)
+            elif "status" in item:
+                # Handle field name variations (tool_return vs func_response)
+                if "tool_return" in item and "func_response" not in item:
+                    # Client SDK uses "tool_return", internal uses "func_response"
+                    item = {**item, "func_response": item["tool_return"]}
+                tool_return = ToolReturn(**item)
+                approvals.append(tool_return)
+            else:
+                # Unknown format - log warning with diagnostic info
+                # Truncate large fields for logging
+                item_preview = {k: (v[:100] + "..." if isinstance(v, str) and len(v) > 100 else v) for k, v in item.items()}
+                logger.warning(
+                    f"deserialize_approvals: Skipping unrecognized approval item at index {idx}. "
+                    f"Item preview: {item_preview}. Expected 'type=approval' or 'status' field."
+                )
+                continue
+        except Exception as e:
+            # Log validation errors but continue processing other items
+            item_preview = {k: (v[:100] + "..." if isinstance(v, str) and len(v) > 100 else v) for k, v in item.items()}
+            logger.warning(f"deserialize_approvals: Failed to deserialize approval item at index {idx}: {e}. Item preview: {item_preview}")
             continue
 
     return approvals

@@ -307,6 +307,15 @@ class LettaAgentV3(LettaAgentV2):
 
         except Exception as e:
             self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
+
+            # Set stop_reason if not already set
+            if self.stop_reason is None:
+                # Classify error type
+                if isinstance(e, LLMError):
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
+                else:
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+
             if first_chunk:
                 # Raise if no chunks sent yet (response not started, can return error status code)
                 raise
@@ -321,24 +330,48 @@ class LettaAgentV3(LettaAgentV2):
                 }
                 yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
 
-        if run_id:
-            letta_messages = Message.to_letta_messages_from_list(
-                self.response_messages_for_metadata,  # Use separate accumulator to preserve all messages
-                use_assistant_message=False,  # NOTE: set to false
-                reverse=False,
-                # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
-                text_is_assistant_message=True,
-            )
-            result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
-            if self.job_update_metadata is None:
-                self.job_update_metadata = {}
-            self.job_update_metadata["result"] = result.model_dump(mode="json")
+                # Return immediately - don't fall through to finish chunks
+                # This prevents sending end_turn finish chunks after an error
+                return
 
-        await self._request_checkpoint_finish(
-            request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
-        )
-        for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
-            yield f"data: {finish_chunk}\n\n"
+        # Cleanup and finalize (only runs if no exception occurred)
+        try:
+            if run_id:
+                letta_messages = Message.to_letta_messages_from_list(
+                    self.response_messages_for_metadata,  # Use separate accumulator to preserve all messages
+                    use_assistant_message=False,  # NOTE: set to false
+                    reverse=False,
+                    # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
+                    text_is_assistant_message=True,
+                )
+                result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+                if self.job_update_metadata is None:
+                    self.job_update_metadata = {}
+                self.job_update_metadata["result"] = result.model_dump(mode="json")
+
+            await self._request_checkpoint_finish(
+                request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
+            )
+            for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
+                yield f"data: {finish_chunk}\n\n"
+        except Exception as cleanup_error:
+            # Error during cleanup/finalization - ensure we still send a terminal event
+            self.logger.error(f"Error during stream cleanup: {cleanup_error}", exc_info=True)
+
+            # Set stop_reason if not already set
+            if self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+
+            # Send error event
+            error_chunk = {
+                "error": {
+                    "type": "cleanup_error",
+                    "message": "An error occurred during stream finalization.",
+                    "detail": str(cleanup_error),
+                }
+            }
+            yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+            # Note: we don't send finish chunks here since we already errored
 
     @trace_method
     async def _step(
@@ -433,6 +466,18 @@ class LettaAgentV3(LettaAgentV2):
                 # Get tool calls that were executed client side
                 if approval_response.approvals:
                     tool_returns = [r for r in approval_response.approvals if isinstance(r, ToolReturn)]
+
+                # Validate that the approval response contains meaningful data
+                # If all three lists are empty, this is a malformed approval response
+                if not tool_calls and not tool_call_denials and not tool_returns:
+                    self.logger.error(
+                        f"Invalid approval response: approval_response.approvals is {approval_response.approvals} "
+                        f"but no tool calls, denials, or returns were extracted. "
+                        f"This likely indicates a corrupted or malformed approval payload."
+                    )
+                    self.should_continue = False
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value)
+                    return
 
                 step_id = approval_request.step_id
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
