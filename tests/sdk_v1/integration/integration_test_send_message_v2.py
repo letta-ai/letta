@@ -579,7 +579,7 @@ async def test_greeting(
     # If run_id is not in messages (e.g., due to early cancellation), get the most recent run
     if run_id is None:
         runs = await client.runs.list(agent_ids=[agent_state.id])
-        run_id = runs[0].id if runs else None
+        run_id = runs.items[0].id if runs.items else None
 
     assert_greeting_response(
         messages, streaming=("stream" in send_type), token_streaming=(send_type == "stream_tokens"), llm_config=llm_config
@@ -850,7 +850,7 @@ async def test_tool_call(
     # If run_id is not in messages (e.g., due to early cancellation), get the most recent run
     if run_id is None:
         runs = await client.runs.list(agent_ids=[agent_state.id])
-        run_id = runs[0].id if runs else None
+        run_id = runs.items[0].id if runs.items else None
 
     assert_tool_call_response(
         messages, streaming=("stream" in send_type), llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
