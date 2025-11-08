@@ -301,11 +301,19 @@ async def create_background_stream_processor(
         if should_stop_writer:
             await writer.stop()
 
-        # Update run status if not already set (e.g., by exception handler)
-        if run_manager and actor and stop_reason:
+        # Derive a final stop_reason if one wasn't observed explicitly
+        final_stop_reason = stop_reason
+        if final_stop_reason is None:
+            if saw_error:
+                final_stop_reason = StopReasonType.error.value
+            elif saw_done:
+                # Treat DONE without an explicit stop_reason as an error to avoid masking failures
+                final_stop_reason = StopReasonType.error.value
+
+        # Update run status to reflect terminal outcome
+        if run_manager and actor and final_stop_reason:
             # Map stop_reason to run status
-            # Error states -> failed
-            if stop_reason in [
+            if final_stop_reason in [
                 StopReasonType.error.value,
                 StopReasonType.llm_api_error.value,
                 StopReasonType.invalid_tool_call.value,
@@ -313,11 +321,9 @@ async def create_background_stream_processor(
                 StopReasonType.no_tool_call.value,
             ]:
                 run_status = RunStatus.failed
-            # Cancelled state
-            elif stop_reason == StopReasonType.cancelled.value:
+            elif final_stop_reason == StopReasonType.cancelled.value:
                 run_status = RunStatus.cancelled
-            # Success states -> completed
-            elif stop_reason in [
+            elif final_stop_reason in [
                 StopReasonType.end_turn.value,
                 StopReasonType.max_steps.value,
                 StopReasonType.tool_rule.value,
@@ -325,17 +331,29 @@ async def create_background_stream_processor(
             ]:
                 run_status = RunStatus.completed
             else:
-                # Unknown stop_reason - default to completed but log warning
-                logger.warning(f"Unknown stop_reason '{stop_reason}' for run {run_id}, defaulting to completed")
+                logger.warning(f"Unknown stop_reason '{final_stop_reason}' for run {run_id}, defaulting to completed")
                 run_status = RunStatus.completed
 
-            # Only update if we saw a clean terminal (don't overwrite failed status set in except block)
-            if not saw_error or run_status != RunStatus.completed:
-                await run_manager.update_run_by_id_async(
-                    run_id=run_id,
-                    update=RunUpdate(status=run_status, stop_reason=stop_reason),
-                    actor=actor,
-                )
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(status=run_status, stop_reason=final_stop_reason),
+                actor=actor,
+            )
+
+        # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate
+        # Even if a previous chunk set `complete`, an extra [DONE] is harmless and ensures SDKs that
+        # rely on explicit [DONE] will exit.
+        logger.warning(
+            "[Stream Finalizer] Appending forced [DONE] for run=%s (saw_error=%s, saw_done=%s, final_stop_reason=%s)",
+            run_id,
+            saw_error,
+            saw_done,
+            final_stop_reason,
+        )
+        try:
+            await writer.mark_complete(run_id)
+        except Exception as e:
+            logger.warning(f"Failed to append terminal [DONE] for run {run_id}: {e}")
 
 
 async def redis_sse_stream_generator(
