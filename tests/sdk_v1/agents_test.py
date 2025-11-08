@@ -1,11 +1,28 @@
 from conftest import create_test_module
 
 AGENTS_CREATE_PARAMS = [
-    ("caren_agent", {"name": "caren", "model": "openai/gpt-4o-mini", "embedding": "openai/text-embedding-3-small"}, {}, None),
+    (
+        "caren_agent",
+        {"name": "caren", "model": "openai/gpt-4o-mini", "embedding": "openai/text-embedding-3-small"},
+        {
+            # Verify model_settings is populated with config values
+            # Note: The 'model' field itself is separate from model_settings
+            "model_settings": {"max_output_tokens": 4096, "parallel_tool_calls": False}
+        },
+        None,
+    ),
 ]
 
 AGENTS_MODIFY_PARAMS = [
-    ("caren_agent", {"name": "caren_updated"}, {}, None),
+    (
+        "caren_agent",
+        {"name": "caren_updated"},
+        {
+            # After modifying just the name, model_settings should still be present
+            "model_settings": {"max_output_tokens": 4096, "parallel_tool_calls": False}
+        },
+        None,
+    ),
 ]
 
 AGENTS_LIST_PARAMS = [
