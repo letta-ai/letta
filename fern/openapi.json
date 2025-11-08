@@ -19296,7 +19296,7 @@
           "tags"
         ],
         "title": "AgentState",
-        "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.\n\nParameters:\n    id (str): The unique identifier of the agent.\n    name (str): The name of the agent (must be unique to the user).\n    created_at (datetime): The datetime the agent was created.\n    message_ids (List[str]): The ids of the messages in the agent's in-context memory.\n    memory (Memory): The in-context memory of the agent.\n    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.\n    system (str): The system prompt used by the agent.\n    llm_config (LLMConfig): The LLM configuration used by the agent.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the agent."
+        "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent."
       },
       "AgentType": {
         "type": "string",
@@ -19931,7 +19931,7 @@
           "embedding_config"
         ],
         "title": "Archive",
-        "description": "Representation of an archive - a collection of archival passages that can be shared between agents.\n\nParameters:\n    id (str): The unique identifier of the archive.\n    name (str): The name of the archive.\n    description (str): A description of the archive.\n    organization_id (str): The organization this archive belongs to.\n    created_at (datetime): The creation date of the archive.\n    metadata (dict): Additional metadata for the archive."
+        "description": "Representation of an archive - a collection of archival passages that can be shared between agents."
       },
       "ArchiveCreateRequest": {
         "properties": {
@@ -20598,7 +20598,7 @@
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+        "description": "A Block represents a reserved section of the LLM's context window."
       },
       "BlockResponse": {
         "properties": {
@@ -25213,7 +25213,7 @@
         "type": "object",
         "required": ["name", "embedding_config"],
         "title": "Folder",
-        "description": "Representation of a folder, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the folder\n    name (str): The name of the folder.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the folder.\n    user_id (str): The ID of the user that created the folder.\n    metadata (dict): Metadata associated with the folder.\n    description (str): The description of the folder."
+        "description": "Representation of a folder, which is a collection of files and passages."
       },
       "Function-Output": {
         "properties": {
@@ -27600,7 +27600,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Job",
-        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
+        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files)."
       },
       "JobStatus": {
         "type": "string",
@@ -30027,6 +30027,12 @@
             "title": "Max Output Tokens",
             "description": "The maximum number of tokens the model can generate.",
             "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
           }
         },
         "type": "object",
@@ -30567,7 +30573,7 @@
         "type": "object",
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
-        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    organization_id (str): The unique identifier of the organization associated with the passage.\n    archive_id (str): The unique identifier of the archive containing this passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+        "description": "Representation of a passage, which is stored in archival memory."
       },
       "PipRequirement": {
         "properties": {
@@ -31595,7 +31601,7 @@
         "type": "object",
         "required": ["agent_id"],
         "title": "Run",
-        "description": "Representation of a run - a conversation or processing session for an agent.\nRuns track when agents process messages and maintain the relationship between agents, steps, and messages.\n\nParameters:\n    id (str): The unique identifier of the run (prefixed with 'run-').\n    status (JobStatus): The current status of the run.\n    created_at (datetime): The timestamp when the run was created.\n    completed_at (datetime): The timestamp when the run was completed.\n    agent_id (str): The unique identifier of the agent associated with the run.\n    base_template_id (str): The base template ID that the run belongs to.\n    stop_reason (StopReasonType): The reason why the run was stopped.\n    background (bool): Whether the run was created in background mode.\n    metadata (dict): Additional metadata for the run.\n    request_config (LettaRequestConfig): The request configuration for the run."
+        "description": "Representation of a run - a conversation or processing session for an agent. Runs track when agents process messages and maintain the relationship between agents, steps, and messages."
       },
       "RunMetrics": {
         "properties": {
@@ -32331,7 +32337,7 @@
         "type": "object",
         "required": ["name", "embedding_config"],
         "title": "Source",
-        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata (dict): Metadata associated with the source.\n    description (str): The description of the source."
+        "description": "(Deprecated: Use Folder) Representation of a source, which is a collection of files and passages."
       },
       "SourceCreate": {
         "properties": {
@@ -33889,7 +33895,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Tool",
-        "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
+        "description": "Representation of a tool, which is a function that can be called by the agent."
       },
       "ToolAnnotations": {
         "properties": {
@@ -35748,7 +35754,7 @@
         "type": "object",
         "required": ["name"],
         "title": "User",
-        "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
+        "description": "Representation of a user."
       },
       "UserCreate": {
         "properties": {
