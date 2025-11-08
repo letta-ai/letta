@@ -10706,7 +10706,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 1000
                 },
                 {
                   "type": "null"
@@ -13662,7 +13663,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 1000
                 },
                 {
                   "type": "null"
