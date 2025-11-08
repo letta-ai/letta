@@ -18958,12 +18958,59 @@
           "model_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelSettings"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
               },
               {
                 "type": "null"
               }
             ],
+            "title": "Model Settings",
             "description": "The model settings used by the agent."
           },
           "response_format": {
@@ -19353,6 +19400,79 @@
         "type": "object",
         "required": ["end_index", "start_index", "title", "url"],
         "title": "AnnotationURLCitation"
+      },
+      "AnthropicModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "anthropic",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "anthropic"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 1
+          },
+          "thinking": {
+            "$ref": "#/components/schemas/AnthropicThinking",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "type": "enabled",
+              "budget_tokens": 1024
+            }
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity",
+            "description": "Soft control for how verbose model output should be, used for GPT-5 models."
+          }
+        },
+        "type": "object",
+        "title": "AnthropicModelSettings"
+      },
+      "AnthropicThinking": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["enabled", "disabled"],
+            "title": "Type",
+            "description": "The type of thinking to use.",
+            "default": "enabled"
+          },
+          "budget_tokens": {
+            "type": "integer",
+            "maximum": 1024,
+            "minimum": 0,
+            "title": "Budget Tokens",
+            "description": "The maximum number of tokens the model can use for extended thinking.",
+            "default": 1024
+          }
+        },
+        "type": "object",
+        "title": "AnthropicThinking"
       },
       "ApprovalCreate": {
         "properties": {
@@ -20152,6 +20272,70 @@
         "required": ["uuid"],
         "title": "AuthResponse"
       },
+      "AzureModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "azure",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "azure"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "AzureModelSettings",
+        "description": "Azure OpenAI model configuration (OpenAI-compatible)."
+      },
       "Base64Image": {
         "properties": {
           "type": {
@@ -20402,6 +20586,70 @@
         "additionalProperties": false,
         "type": "object",
         "title": "BatchJob"
+      },
+      "BedrockModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "bedrock",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "bedrock"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "BedrockModelSettings",
+        "description": "AWS Bedrock model configuration."
       },
       "Block": {
         "properties": {
@@ -22978,12 +23226,59 @@
           "model_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelSettings"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
               },
               {
                 "type": "null"
               }
             ],
+            "title": "Model Settings",
             "description": "The model settings for the agent."
           },
           "context_window_limit": {
@@ -23740,6 +24035,70 @@
         "type": "object",
         "required": ["input", "name"],
         "title": "Custom"
+      },
+      "DeepseekModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "deepseek",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "deepseek"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "DeepseekModelSettings",
+        "description": "Deepseek model configuration (OpenAI-compatible)."
       },
       "DeleteDeploymentResponse": {
         "properties": {
@@ -25324,6 +25683,26 @@
         "required": ["function", "type"],
         "title": "FunctionTool"
       },
+      "GeminiThinkingConfig": {
+        "properties": {
+          "include_thoughts": {
+            "type": "boolean",
+            "title": "Include Thoughts",
+            "description": "Whether to include thoughts in the model's response.",
+            "default": true
+          },
+          "thinking_budget": {
+            "type": "integer",
+            "maximum": 1024,
+            "minimum": 0,
+            "title": "Thinking Budget",
+            "description": "The thinking budget for the model.",
+            "default": 1024
+          }
+        },
+        "type": "object",
+        "title": "GeminiThinkingConfig"
+      },
       "GenerateToolInput": {
         "properties": {
           "tool_name": {
@@ -25394,6 +25773,212 @@
         "type": "object",
         "required": ["tool", "sample_args", "response"],
         "title": "GenerateToolOutput"
+      },
+      "GoogleAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 65536
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "google_ai",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "google_ai"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "thinking_config": {
+            "$ref": "#/components/schemas/GeminiThinkingConfig",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "include_thoughts": true,
+              "thinking_budget": 1024
+            }
+          },
+          "response_schema": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Schema",
+            "description": "The response schema for the model."
+          }
+        },
+        "type": "object",
+        "title": "GoogleAIModelSettings"
+      },
+      "GoogleVertexModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 65536
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "google_vertex",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "google_vertex"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "thinking_config": {
+            "$ref": "#/components/schemas/GeminiThinkingConfig",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "include_thoughts": true,
+              "thinking_budget": 1024
+            }
+          },
+          "response_schema": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Schema",
+            "description": "The response schema for the model."
+          }
+        },
+        "type": "object",
+        "title": "GoogleVertexModelSettings"
+      },
+      "GroqModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "groq",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "groq"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "GroqModelSettings",
+        "description": "Groq model configuration (OpenAI-compatible)."
       },
       "Group": {
         "properties": {
@@ -26816,12 +27401,59 @@
           "model_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelSettings"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
               },
               {
                 "type": "null"
               }
             ],
+            "title": "Model Settings",
             "description": "The model settings for the agent."
           },
           "context_window_limit": {
@@ -30020,25 +30652,6 @@
         ],
         "title": "Model"
       },
-      "ModelSettings": {
-        "properties": {
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "parallel_tool_calls": {
-            "type": "boolean",
-            "title": "Parallel Tool Calls",
-            "description": "Whether to enable parallel tool calling.",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "ModelSettings",
-        "description": "Schema for defining settings for a model"
-      },
       "ModifyApprovalRequest": {
         "properties": {
           "requires_approval": {
@@ -30135,6 +30748,89 @@
         "type": "object",
         "title": "OmittedReasoningContent",
         "description": "A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)"
+      },
+      "OpenAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "openai",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "openai"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/OpenAIReasoning",
+            "description": "The reasoning configuration for the model.",
+            "default": {
+              "reasoning_effort": "high"
+            }
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "OpenAIModelSettings"
+      },
+      "OpenAIReasoning": {
+        "properties": {
+          "reasoning_effort": {
+            "type": "string",
+            "enum": ["minimal", "low", "medium", "high"],
+            "title": "Reasoning Effort",
+            "description": "The reasoning effort to use when generating text reasoning models",
+            "default": "minimal"
+          }
+        },
+        "type": "object",
+        "title": "OpenAIReasoning"
       },
       "Organization": {
         "properties": {
@@ -33694,6 +34390,70 @@
         "title": "TextResponseFormat",
         "description": "Response format for plain text responses."
       },
+      "TogetherModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "together",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "together"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "TogetherModelSettings",
+        "description": "Together AI model configuration (OpenAI-compatible)."
+      },
       "Tool": {
         "properties": {
           "id": {
@@ -35316,12 +36076,59 @@
           "model_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelSettings"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
               },
               {
                 "type": "null"
               }
             ],
+            "title": "Model Settings",
             "description": "The model settings for the agent."
           },
           "context_window_limit": {
@@ -36037,6 +36844,70 @@
         "type": "object",
         "title": "VoiceSleeptimeManagerUpdate"
       },
+      "XAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "const": "xai",
+            "title": "Provider",
+            "description": "The provider of the model.",
+            "default": "xai"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "XAIModelSettings",
+        "description": "xAI model configuration (OpenAI-compatible)."
+      },
       "letta__schemas__agent_file__AgentSchema": {
         "properties": {
           "name": {
@@ -36329,12 +37200,59 @@
           "model_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ModelSettings"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
               },
               {
                 "type": "null"
               }
             ],
+            "title": "Model Settings",
             "description": "The model settings for the agent."
           },
           "context_window_limit": {
