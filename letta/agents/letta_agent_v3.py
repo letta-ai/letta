@@ -434,6 +434,13 @@ class LettaAgentV3(LettaAgentV2):
                     self.logger.info("switching to unconstrained mode (allowing non-tool responses)")
             self._require_tool_call = require_tool_call
 
+            # Always refresh messages at the start of each step to pick up external inputs
+            # (e.g., approval responses submitted by the client while this stream is running)
+            try:
+                messages = await self._refresh_messages(messages)
+            except Exception as e:
+                self.logger.warning(f"Failed to refresh messages at step start: {e}")
+
             approval_request, approval_response = _maybe_get_approval_messages(messages)
             tool_call_denials, tool_returns = [], []
             if approval_request and approval_response:
@@ -494,7 +501,6 @@ class LettaAgentV3(LettaAgentV2):
                     step_id=step_id, run_id=run_id
                 )
 
-                messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 and self._require_tool_call else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:

@@ -326,20 +326,31 @@ class StreamingService:
 
                 # Stream completed - check if we got a terminal event
                 if not saw_done and not saw_error:
-                    # Stream ended without terminal - synthesize one
-                    logger.warning(
+                    # Stream ended without terminal - treat as error to avoid hanging clients
+                    logger.error(
                         f"Stream for run {run_id} ended without terminal event. "
-                        f"Agent stop_reason: {agent_loop.stop_reason}. Synthesizing [DONE]."
+                        f"Agent stop_reason: {agent_loop.stop_reason}. Emitting error + [DONE]."
                     )
+                    error_chunk = {
+                        "error": {
+                            "type": "stream_incomplete",
+                            "message": "Stream ended unexpectedly without a terminal event.",
+                            "detail": None,
+                        }
+                    }
+                    yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
                     yield "data: [DONE]\n\n"
+                    saw_error = True
                     saw_done = True
-
-                # set run status after successful completion
-                if agent_loop.stop_reason.stop_reason.value == "cancelled":
-                    run_status = RunStatus.cancelled
+                    run_status = RunStatus.failed
+                    stop_reason = StopReasonType.error
                 else:
-                    run_status = RunStatus.completed
-                stop_reason = agent_loop.stop_reason.stop_reason.value
+                    # set run status after successful completion
+                    if agent_loop.stop_reason and agent_loop.stop_reason.stop_reason.value == "cancelled":
+                        run_status = RunStatus.cancelled
+                    else:
+                        run_status = RunStatus.completed
+                    stop_reason = agent_loop.stop_reason.stop_reason.value if agent_loop.stop_reason else StopReasonType.end_turn.value
 
             except LLMTimeoutError as e:
                 run_status = RunStatus.failed
