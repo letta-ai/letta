@@ -18,7 +18,7 @@ from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.model import ModelSettings
+from letta.schemas.model import ModelSettingsUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
@@ -85,7 +85,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     )
     model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
-    model_settings: Optional[ModelSettings] = Field(None, description="The model settings used by the agent.")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings used by the agent.")
 
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
@@ -235,7 +235,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         description="The model handle for the agent to use (format: provider/model-name).",
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
-    model_settings: Optional[ModelSettings] = Field(None, description="The model settings for the agent.")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
 
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(
@@ -421,7 +421,7 @@ class UpdateAgent(BaseModel):
         description="The model handle used by the agent (format: provider/model-name).",
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
-    model_settings: Optional[ModelSettings] = Field(None, description="The model settings for the agent.")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     reasoning: Optional[bool] = Field(
         None,
