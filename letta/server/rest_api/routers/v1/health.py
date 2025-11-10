@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/health", tags=["health"])
 
 
-# Health check
 @router.get("/", response_model=Health, operation_id="check_health")
-def check_health():
+async def check_health():
+    """Async health check endpoint."""
     return Health(
         version=__version__,
         status="ok",
