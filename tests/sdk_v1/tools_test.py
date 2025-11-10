@@ -51,7 +51,7 @@ TOOLS_MODIFY_PARAMS = [
 
 TOOLS_LIST_PARAMS = [
     ({}, 2),
-    ({"name": ["friendly_func"]}, 1),
+    ({"name": "friendly_func"}, 1),
 ]
 
 # Create all test module components at once
