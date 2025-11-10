@@ -487,7 +487,7 @@ async def test_greeting(
             messages=USER_MESSAGE_FORCE_REPLY,
         )
         messages = response.messages
-        run_id = messages[0].run_id
+        run_id = next((m.run_id for m in messages if hasattr(m, "run_id") and m.run_id), None)
     elif send_type == "async":
         run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
@@ -505,7 +505,7 @@ async def test_greeting(
             background=(send_type == "stream_tokens_background"),
         )
         messages = await accumulate_chunks(response)
-        run_id = messages[0].run_id
+        run_id = next((m.run_id for m in messages if hasattr(m, "run_id") and m.run_id), None)
 
     assert_greeting_response(
         messages, streaming=("stream" in send_type), token_streaming=(send_type == "stream_tokens"), llm_config=llm_config
@@ -653,7 +653,7 @@ async def test_tool_call(
             messages=USER_MESSAGE_ROLL_DICE,
         )
         messages = response.messages
-        run_id = messages[0].run_id
+        run_id = next((m.run_id for m in messages if hasattr(m, "run_id") and m.run_id), None)
     elif send_type == "async":
         run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
@@ -671,7 +671,7 @@ async def test_tool_call(
             background=(send_type == "stream_tokens_background"),
         )
         messages = await accumulate_chunks(response)
-        run_id = messages[0].run_id
+        run_id = next((m.run_id for m in messages if hasattr(m, "run_id") and m.run_id), None)
 
     assert_tool_call_response(
         messages, streaming=("stream" in send_type), llm_config=llm_config, with_cancellation=(cancellation == "with_cancellation")
