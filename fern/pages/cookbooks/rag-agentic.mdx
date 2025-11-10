@@ -434,7 +434,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
 
     response = requests.post(API_URL, headers=headers, json={"inputs": [text], "options": {"wait_for_model": True}})
@@ -514,7 +514,7 @@ import fetch from 'node-fetch';
 dotenv.config();
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
     const headers = {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
@@ -634,7 +634,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
 
     response = requests.post(API_URL, headers=headers, json={"inputs": text, "options": {"wait_for_model": True}})
@@ -712,7 +712,7 @@ import * as fs from 'fs';
 dotenv.config();
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
 
     const response = await fetch(API_URL, {
         method: 'POST',
@@ -1010,7 +1010,7 @@ def search_research_papers(query_text: str, n_results: int = 1) -> str:
     # --- Hugging Face API Call ---
     try:
         response = requests.post(
-            "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5",
+            "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5",
             headers={"Authorization": f"Bearer {hf_api_key}"},
             json={"inputs": [query_text], "options": {"wait_for_model": True}},
             timeout=30
@@ -1090,7 +1090,7 @@ def search_research_papers(query_text: str, n_results: int = 1) -> str:
     # --- Hugging Face API Call ---
     try:
         response = requests.post(
-            "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5",
+            "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5",
             headers={"Authorization": f"Bearer {hf_api_key}"},
             json={"inputs": [query_text], "options": {"wait_for_model": True}},
             timeout=30
@@ -1166,7 +1166,7 @@ def search_research_papers(query_text: str, n_results: int = 1) -> str:
 
     try:
         # Generate embedding using Hugging Face
-        API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+        API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
         headers = {"Authorization": f"Bearer {hf_api_key}"}
         response = requests.post(API_URL, headers=headers, json={"inputs": query_text, "options": {"wait_for_model": True}})
 
@@ -1222,7 +1222,7 @@ export const searchResearchPapersToolCode = `def search_research_papers(query_te
 
     try:
         # Generate embedding using Hugging Face
-        API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+        API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
         headers = {"Authorization": f"Bearer {hf_api_key}"}
         response = requests.post(API_URL, headers=headers, json={"inputs": query_text, "options": {"wait_for_model": True}})
 

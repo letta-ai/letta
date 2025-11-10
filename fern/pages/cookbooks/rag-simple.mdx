@@ -436,7 +436,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
 
     response = requests.post(API_URL, headers=headers, json={"inputs": [text], "options": {"wait_for_model": True}})
@@ -515,7 +515,7 @@ import fetch from 'node-fetch';
 dotenv.config();
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
     const headers = {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
@@ -635,7 +635,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
 
     response = requests.post(API_URL, headers=headers, json={"inputs": text, "options": {"wait_for_model": True}})
@@ -713,7 +713,7 @@ import * as fs from 'fs';
 dotenv.config();
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
 
     const response = await fetch(API_URL, {
         method: 'POST',
@@ -1104,7 +1104,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
     response = requests.post(API_URL, headers=headers, json={"inputs": [text], "options": {"wait_for_model": True}})
 
@@ -1188,7 +1188,7 @@ dotenv.config();
 const AGENT_ID = 'your-agent-id';  // Replace with your agent ID
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
     const headers = {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
@@ -1324,7 +1324,7 @@ load_dotenv()
 
 def get_embedding(text, api_key):
     """Get embedding from Hugging Face Inference API"""
-    API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5"
+    API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
     headers = {"Authorization": f"Bearer {api_key}"}
     response = requests.post(API_URL, headers=headers, json={"inputs": text, "options": {"wait_for_model": True}})
 
@@ -1393,7 +1393,7 @@ import * as readline from 'readline';
 dotenv.config();
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-    const API_URL = "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5";
+    const API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
 
     const response = await fetch(API_URL, {
         method: 'POST',
