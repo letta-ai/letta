@@ -158,14 +158,30 @@ def conversation_search(
 
 async def archival_memory_insert(self: "Agent", content: str, tags: Optional[list[str]] = None) -> Optional[str]:
     """
-    Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
+    Add information to long-term archival memory for later retrieval.
+
+    Use this tool to store facts, knowledge, or context that you want to remember
+    across all future conversations. Archival memory is permanent and searchable by
+    semantic similarity.
+
+    Best practices:
+    - Store self-contained facts or summaries, not conversational fragments
+    - Add descriptive tags to make information easier to find later
+    - Use for: meeting notes, project updates, conversation summaries, events, reports
+    - Information stored here persists indefinitely and can be searched semantically
 
     Args:
-        content (str): Content to write to the memory. All unicode (including emojis) are supported.
-        tags (Optional[list[str]]): Optional list of tags to associate with this memory for better organization and filtering.
+        content: The information to store. Should be clear and self-contained.
+        tags: Optional list of category tags (e.g., ["meetings", "project-updates"])
 
     Returns:
-        Optional[str]: None is always returned as this function does not produce a response.
+        Confirmation message with the ID of the inserted memory.
+
+    Examples:
+        archival_memory_insert(
+            content="Meeting on 2024-03-15: Discussed Q2 roadmap priorities. Decided to focus on performance optimization and API v2 release. John will lead the optimization effort.",
+            tags=["meetings", "roadmap", "q2-2024"]
+        )
     """
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
@@ -180,37 +196,44 @@ async def archival_memory_search(
     end_datetime: Optional[str] = None,
 ) -> Optional[str]:
     """
-    Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+    Search archival memory using semantic similarity to find relevant information.
+
+    This tool searches your long-term memory storage by meaning, not exact keyword
+    matching. Use it when you need to recall information from past conversations or
+    knowledge you've stored.
+
+    Search strategy:
+    - Query by concept/meaning, not exact phrases
+    - Use tags to narrow results when you know the category
+    - Start broad, then narrow with tags if needed
+    - Results are ranked by semantic relevance
 
     Args:
-        query (str): String to search for using semantic similarity.
-        tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
-        tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
-        top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-        start_datetime (Optional[str]): Filter results to passages created on or after this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes passages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
-        end_datetime (Optional[str]): Filter results to passages created on or before this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-20"), includes all passages from that entire day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20" (includes all of Jan 20), "2024-01-20T17:00" (up to 5 PM on Jan 20).
-
-    Examples:
-        # Search all passages
-        archival_memory_search(query="project updates")
-
-        # Search with date range (inclusive of both dates)
-        archival_memory_search(query="meetings", start_datetime="2024-01-15", end_datetime="2024-01-20")
-        # This includes all passages from Jan 15 00:00:00 through Jan 20 23:59:59
-
-        # Search passages from a specific day (inclusive)
-        archival_memory_search(query="bug reports", start_datetime="2024-09-04", end_datetime="2024-09-04")
-        # This includes ALL passages from September 4, 2024
-
-        # Search with specific time range
-        archival_memory_search(query="error logs", start_datetime="2024-01-15T09:30", end_datetime="2024-01-15T17:30")
-        # This includes passages from 9:30 AM to 5:30 PM on Jan 15
-
-        # Search from a specific point in time onwards
-        archival_memory_search(query="customer feedback", start_datetime="2024-01-15T14:00")
+        query: What you're looking for, described naturally (e.g., "meetings about API redesign")
+        tags: Filter to memories with these tags. Use tag_match_mode to control matching.
+        tag_match_mode: "any" = match memories with ANY of the tags, "all" = match only memories with ALL tags
+        start_datetime: Only return memories created after this time (ISO 8601: "2024-01-15" or "2024-01-15T14:30")
+        end_datetime: Only return memories created before this time (ISO 8601 format)
+        top_k: Maximum number of results to return (default: 10)
 
     Returns:
-        str: Query result string containing matching passages with timestamps and content.
+        A list of relevant memories with timestamps and content, ranked by similarity.
+
+    Examples:
+        # Search for project discussions
+        archival_memory_search(
+            query="database migration decisions and timeline",
+            tags=["projects"]
+        )
+
+        # Search meeting notes from Q1
+        archival_memory_search(
+            query="roadmap planning discussions",
+            start_datetime="2024-01-01",
+            end_datetime="2024-03-31",
+            tags=["meetings", "roadmap"],
+            tag_match_mode="all"
+        )
     """
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
