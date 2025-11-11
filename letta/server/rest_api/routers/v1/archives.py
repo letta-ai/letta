@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel, Field
@@ -8,7 +8,7 @@ from letta import AgentState
 from letta.schemas.agent import AgentRelationships
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.passage import Passage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import AgentId, ArchiveId, PassageId
@@ -35,6 +35,14 @@ class ArchiveUpdateRequest(BaseModel):
 
     name: Optional[str] = None
     description: Optional[str] = None
+
+
+class PassageCreateRequest(BaseModel):
+    """Request model for creating a passage in an archive."""
+
+    text: str = Field(..., description="The text content of the passage")
+    metadata: Optional[Dict] = Field(default=None, description="Optional metadata for the passage")
+    tags: Optional[List[str]] = Field(default=None, description="Optional tags for categorizing the passage")
 
 
 @router.post("/", response_model=PydanticArchive, operation_id="create_archive")
@@ -176,6 +184,28 @@ async def list_agents_for_archive(
         limit=limit,
         include=include,
         ascending=(order == "asc"),
+    )
+
+
+@router.post("/{archive_id}/passages", response_model=Passage, operation_id="create_passage_in_archive")
+async def create_passage_in_archive(
+    archive_id: ArchiveId,
+    passage: PassageCreateRequest = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Create a new passage in an archive.
+
+    This adds a passage to the archive and creates embeddings for vector storage.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.create_passage_in_archive_async(
+        archive_id=archive_id,
+        text=passage.text,
+        metadata=passage.metadata,
+        tags=passage.tags,
+        actor=actor,
     )
 
 
