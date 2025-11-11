@@ -120,25 +120,6 @@ class Model(LLMConfig, ModelBase):
             provider_category=llm_config.provider_category,
         )
 
-    @property
-    def model_settings_schema(self) -> Optional[dict]:
-        """Returns the JSON schema for the ModelSettings class corresponding to this model's provider."""
-        PROVIDER_SETTINGS_MAP = {
-            ProviderType.openai: OpenAIModelSettings,
-            ProviderType.anthropic: AnthropicModelSettings,
-            ProviderType.google_ai: GoogleAIModelSettings,
-            ProviderType.google_vertex: GoogleVertexModelSettings,
-            ProviderType.azure: AzureModelSettings,
-            ProviderType.xai: XAIModelSettings,
-            ProviderType.groq: GroqModelSettings,
-            ProviderType.deepseek: DeepseekModelSettings,
-            ProviderType.together: TogetherModelSettings,
-            ProviderType.bedrock: BedrockModelSettings,
-        }
-
-        settings_class = PROVIDER_SETTINGS_MAP.get(self.provider_type)
-        return settings_class.model_json_schema() if settings_class else None
-
 
 class EmbeddingModel(EmbeddingConfig, ModelBase):
     model_type: Literal["embedding"] = Field("embedding", description="Type of model (llm or embedding)")
@@ -203,9 +184,16 @@ class EmbeddingModel(EmbeddingConfig, ModelBase):
 class ModelSettings(BaseModel):
     """Schema for defining settings for a model"""
 
-    # model: str = Field(..., description="The name of the model.")
+    model: str = Field(..., description="The name of the model.")
     max_output_tokens: int = Field(4096, description="The maximum number of tokens the model can generate.")
     parallel_tool_calls: bool = Field(False, description="Whether to enable parallel tool calling.")
+
+
+class EmbeddingModelSettings(BaseModel):
+    """Schema for defining settings for an embedding model"""
+
+    model: str = Field(..., description="The name of the model.")
+    provider: Literal["openai", "ollama"] = Field(..., description="The provider of the model.")
 
 
 class OpenAIReasoning(BaseModel):
@@ -221,7 +209,7 @@ class OpenAIReasoning(BaseModel):
 
 class OpenAIModelSettings(ModelSettings):
     provider: Literal["openai"] = Field("openai", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     reasoning: OpenAIReasoning = Field(OpenAIReasoning(reasoning_effort="high"), description="The reasoning configuration for the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
@@ -240,7 +228,6 @@ class OpenAIModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "reasoning_effort": self.reasoning.reasoning_effort,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -252,7 +239,7 @@ class OpenAIModelSettings(ModelSettings):
 
 class AnthropicThinking(BaseModel):
     type: Literal["enabled", "disabled"] = Field("enabled", description="The type of thinking to use.")
-    budget_tokens: int = Field(1024, ge=0, le=1024, description="The maximum number of tokens the model can use for extended thinking.")
+    budget_tokens: int = Field(1024, description="The maximum number of tokens the model can use for extended thinking.")
 
 
 class AnthropicModelSettings(ModelSettings):
@@ -279,18 +266,17 @@ class AnthropicModelSettings(ModelSettings):
             "extended_thinking": self.thinking.type == "enabled",
             "thinking_budget_tokens": self.thinking.budget_tokens,
             "verbosity": self.verbosity,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
 class GeminiThinkingConfig(BaseModel):
     include_thoughts: bool = Field(True, description="Whether to include thoughts in the model's response.")
-    thinking_budget: int = Field(1024, ge=0, le=1024, description="The thinking budget for the model.")
+    thinking_budget: int = Field(1024, description="The thinking budget for the model.")
 
 
 class GoogleAIModelSettings(ModelSettings):
     provider: Literal["google_ai"] = Field("google_ai", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     thinking_config: GeminiThinkingConfig = Field(
         GeminiThinkingConfig(include_thoughts=True, thinking_budget=1024), description="The thinking configuration for the model."
     )
@@ -302,7 +288,6 @@ class GoogleAIModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "max_reasoning_tokens": self.thinking_config.thinking_budget if self.thinking_config.include_thoughts else 0,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -314,7 +299,7 @@ class AzureModelSettings(ModelSettings):
     """Azure OpenAI model configuration (OpenAI-compatible)."""
 
     provider: Literal["azure"] = Field("azure", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -322,7 +307,6 @@ class AzureModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -330,7 +314,7 @@ class XAIModelSettings(ModelSettings):
     """xAI model configuration (OpenAI-compatible)."""
 
     provider: Literal["xai"] = Field("xai", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -338,7 +322,6 @@ class XAIModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -346,7 +329,7 @@ class GroqModelSettings(ModelSettings):
     """Groq model configuration (OpenAI-compatible)."""
 
     provider: Literal["groq"] = Field("groq", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -361,7 +344,7 @@ class DeepseekModelSettings(ModelSettings):
     """Deepseek model configuration (OpenAI-compatible)."""
 
     provider: Literal["deepseek"] = Field("deepseek", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -369,7 +352,6 @@ class DeepseekModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -377,7 +359,7 @@ class TogetherModelSettings(ModelSettings):
     """Together AI model configuration (OpenAI-compatible)."""
 
     provider: Literal["together"] = Field("together", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -385,7 +367,6 @@ class TogetherModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 
@@ -393,7 +374,7 @@ class BedrockModelSettings(ModelSettings):
     """AWS Bedrock model configuration."""
 
     provider: Literal["bedrock"] = Field("bedrock", description="The provider of the model.")
-    temperature: float = Field(0.7, ge=0.0, le=1.0, description="The temperature of the model.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     def _to_legacy_config_params(self) -> dict:
@@ -401,7 +382,6 @@ class BedrockModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
-            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 

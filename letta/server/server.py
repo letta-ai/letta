@@ -436,8 +436,6 @@ class SyncServer(object):
                     handle = f"{request.model.provider}/{request.model.model}"
                     # TODO: figure out how to override various params
                     additional_config_params = request.model._to_legacy_config_params()
-                    additional_config_params["model"] = request.model.model
-                    additional_config_params["provider_name"] = request.model.provider
 
             config_params = {
                 "handle": handle,
@@ -526,11 +524,6 @@ class SyncServer(object):
             log_event(name="start get_cached_llm_config", attributes=config_params)
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
-
-        # update with model_settings
-        if request.model_settings is not None:
-            update_llm_config_params = request.model_settings._to_legacy_config_params()
-            request.llm_config.update(update_llm_config_params)
 
         # Copy parallel_tool_calls from request to llm_config if provided
         if request.parallel_tool_calls is not None:

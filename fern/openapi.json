@@ -18937,84 +18937,24 @@
           "model": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/ModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Model",
-            "description": "The model handle used by the agent (format: provider/model-name)."
+            "description": "The model used by the agent."
           },
           "embedding": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Embedding",
-            "description": "The embedding model handle used by the agent (format: provider/model-name)."
-          },
-          "model_settings": {
-            "anyOf": [
-              {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/OpenAIModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AnthropicModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleAIModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/AzureModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/XAIModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/GroqModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DeepseekModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TogetherModelSettings"
-                  },
-                  {
-                    "$ref": "#/components/schemas/BedrockModelSettings"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "provider",
-                  "mapping": {
-                    "anthropic": "#/components/schemas/AnthropicModelSettings",
-                    "azure": "#/components/schemas/AzureModelSettings",
-                    "bedrock": "#/components/schemas/BedrockModelSettings",
-                    "deepseek": "#/components/schemas/DeepseekModelSettings",
-                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
-                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
-                    "groq": "#/components/schemas/GroqModelSettings",
-                    "openai": "#/components/schemas/OpenAIModelSettings",
-                    "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
-                  }
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Settings",
-            "description": "The model settings used by the agent."
+            "description": "The embedding model used by the agent."
           },
           "response_format": {
             "anyOf": [
@@ -19406,6 +19346,11 @@
       },
       "AnthropicModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -19454,6 +19399,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "AnthropicModelSettings"
       },
       "AnthropicThinking": {
@@ -19467,8 +19413,6 @@
           },
           "budget_tokens": {
             "type": "integer",
-            "maximum": 1024,
-            "minimum": 0,
             "title": "Budget Tokens",
             "description": "The maximum number of tokens the model can use for extended thinking.",
             "default": 1024
@@ -20277,6 +20221,11 @@
       },
       "AzureModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -20298,8 +20247,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -20336,6 +20283,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "AzureModelSettings",
         "description": "Azure OpenAI model configuration (OpenAI-compatible)."
       },
@@ -20592,6 +20540,11 @@
       },
       "BedrockModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -20613,8 +20566,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -20651,6 +20602,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "BedrockModelSettings",
         "description": "AWS Bedrock model configuration."
       },
@@ -23208,27 +23160,6 @@
                 "type": "string"
               },
               {
-                "type": "null"
-              }
-            ],
-            "title": "Model",
-            "description": "The model handle for the agent to use (format: provider/model-name)."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The embedding model handle used by the agent (format: provider/model-name)."
-          },
-          "model_settings": {
-            "anyOf": [
-              {
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/OpenAIModelSettings"
@@ -23281,8 +23212,23 @@
                 "type": "null"
               }
             ],
-            "title": "Model Settings",
-            "description": "The model settings for the agent."
+            "title": "Model",
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
           },
           "context_window_limit": {
             "anyOf": [
@@ -24041,6 +23987,11 @@
       },
       "DeepseekModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -24062,8 +24013,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -24100,6 +24049,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "DeepseekModelSettings",
         "description": "Deepseek model configuration (OpenAI-compatible)."
       },
@@ -24627,6 +24577,25 @@
           "embedding_dim"
         ],
         "title": "EmbeddingModel"
+      },
+      "EmbeddingModelSettings": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["openai", "ollama"],
+            "title": "Provider",
+            "description": "The provider of the model."
+          }
+        },
+        "type": "object",
+        "required": ["model", "provider"],
+        "title": "EmbeddingModelSettings",
+        "description": "Schema for defining settings for an embedding model"
       },
       "EventMessage": {
         "properties": {
@@ -25696,8 +25665,6 @@
           },
           "thinking_budget": {
             "type": "integer",
-            "maximum": 1024,
-            "minimum": 0,
             "title": "Thinking Budget",
             "description": "The thinking budget for the model.",
             "default": 1024
@@ -25779,6 +25746,11 @@
       },
       "GoogleAIModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -25800,8 +25772,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -25846,10 +25816,16 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "GoogleAIModelSettings"
       },
       "GoogleVertexModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -25871,8 +25847,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -25917,10 +25891,16 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "GoogleVertexModelSettings"
       },
       "GroqModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -25942,8 +25922,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -25980,6 +25958,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "GroqModelSettings",
         "description": "Groq model configuration (OpenAI-compatible)."
       },
@@ -27383,27 +27362,6 @@
                 "type": "string"
               },
               {
-                "type": "null"
-              }
-            ],
-            "title": "Model",
-            "description": "The model handle for the agent to use (format: provider/model-name)."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The embedding model handle used by the agent (format: provider/model-name)."
-          },
-          "model_settings": {
-            "anyOf": [
-              {
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/OpenAIModelSettings"
@@ -27456,8 +27414,23 @@
                 "type": "null"
               }
             ],
-            "title": "Model Settings",
-            "description": "The model settings for the agent."
+            "title": "Model",
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
           },
           "context_window_limit": {
             "anyOf": [
@@ -30655,6 +30628,31 @@
         ],
         "title": "Model"
       },
+      "ModelSettings": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["model"],
+        "title": "ModelSettings",
+        "description": "Schema for defining settings for a model"
+      },
       "ModifyApprovalRequest": {
         "properties": {
           "requires_approval": {
@@ -30754,6 +30752,11 @@
       },
       "OpenAIModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -30775,8 +30778,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -30820,6 +30821,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "OpenAIModelSettings"
       },
       "OpenAIReasoning": {
@@ -34395,6 +34397,11 @@
       },
       "TogetherModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -34416,8 +34423,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -34454,6 +34459,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "TogetherModelSettings",
         "description": "Together AI model configuration (OpenAI-compatible)."
       },
@@ -36058,27 +36064,6 @@
                 "type": "string"
               },
               {
-                "type": "null"
-              }
-            ],
-            "title": "Model",
-            "description": "The model handle used by the agent (format: provider/model-name)."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The embedding model handle used by the agent (format: provider/model-name)."
-          },
-          "model_settings": {
-            "anyOf": [
-              {
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/OpenAIModelSettings"
@@ -36131,8 +36116,23 @@
                 "type": "null"
               }
             ],
-            "title": "Model Settings",
-            "description": "The model settings for the agent."
+            "title": "Model",
+            "description": "The model used by the agent, specified either by a handle or an object. See the model schema for more information."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
           },
           "context_window_limit": {
             "anyOf": [
@@ -36849,6 +36849,11 @@
       },
       "XAIModelSettings": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The name of the model."
+          },
           "max_output_tokens": {
             "type": "integer",
             "title": "Max Output Tokens",
@@ -36870,8 +36875,6 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
             "title": "Temperature",
             "description": "The temperature of the model.",
             "default": 0.7
@@ -36908,6 +36911,7 @@
           }
         },
         "type": "object",
+        "required": ["model"],
         "title": "XAIModelSettings",
         "description": "xAI model configuration (OpenAI-compatible)."
       },
@@ -37182,27 +37186,6 @@
                 "type": "string"
               },
               {
-                "type": "null"
-              }
-            ],
-            "title": "Model",
-            "description": "The model handle for the agent to use (format: provider/model-name)."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The embedding model handle used by the agent (format: provider/model-name)."
-          },
-          "model_settings": {
-            "anyOf": [
-              {
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/OpenAIModelSettings"
@@ -37255,8 +37238,23 @@
                 "type": "null"
               }
             ],
-            "title": "Model Settings",
-            "description": "The model settings for the agent."
+            "title": "Model",
+            "description": "The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/EmbeddingModelSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
           },
           "context_window_limit": {
             "anyOf": [
