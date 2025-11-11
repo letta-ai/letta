@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import delete, or_, select
 
@@ -12,6 +12,7 @@ from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.archive import Archive as PydanticArchive
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
+from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
@@ -275,6 +276,67 @@ class ArchiveManager:
             )
             await archive_model.hard_delete_async(session, actor=actor)
             logger.info(f"Deleted archive {archive_id}")
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    async def create_passage_in_archive_async(
+        self,
+        archive_id: str,
+        text: str,
+        metadata: Dict = None,
+        tags: List[str] = None,
+        actor: PydanticUser = None,
+    ) -> PydanticPassage:
+        """Create a passage in an archive.
+
+        Args:
+            archive_id: ID of the archive to add the passage to
+            text: The text content of the passage
+            metadata: Optional metadata for the passage
+            tags: Optional tags for categorizing the passage
+            actor: User performing the operation
+
+        Returns:
+            The created passage
+
+        Raises:
+            NoResultFound: If archive not found
+        """
+        from letta.llm_api.llm_client import LLMClient
+        from letta.services.passage_manager import PassageManager
+
+        # Verify the archive exists and user has access
+        archive = await self.get_archive_by_id_async(archive_id=archive_id, actor=actor)
+
+        # Generate embeddings for the text
+        embedding_client = LLMClient.create(
+            provider_type=archive.embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([text], archive.embedding_config)
+        embedding = embeddings[0] if embeddings else None
+
+        # Create the passage object with embedding
+        passage = PydanticPassage(
+            text=text,
+            archive_id=archive_id,
+            organization_id=actor.organization_id,
+            metadata=metadata or {},
+            tags=tags,
+            embedding_config=archive.embedding_config,
+            embedding=embedding,
+        )
+
+        # Use PassageManager to create the passage
+        passage_manager = PassageManager()
+        created_passage = await passage_manager.create_agent_passage_async(
+            pydantic_passage=passage,
+            actor=actor,
+        )
+
+        logger.info(f"Created passage {created_passage.id} in archive {archive_id}")
+        return created_passage
 
     @enforce_types
     @trace_method

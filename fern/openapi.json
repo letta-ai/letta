@@ -502,6 +502,63 @@
         }
       }
     },
+    "/v1/archives/{archive_id}/passages": {
+      "post": {
+        "tags": ["archives"],
+        "summary": "Create Passage In Archive",
+        "description": "Create a new passage in an archive.\n\nThis adds a passage to the archive and creates embeddings for vector storage.",
+        "operationId": "create_passage_in_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Archive Id"
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Passage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/archives/{archive_id}/passages/{passage_id}": {
       "delete": {
         "tags": ["archives"],
@@ -31255,6 +31312,47 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory."
+      },
+      "PassageCreateRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content of the passage"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Optional metadata for the passage"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Optional tags for categorizing the passage"
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "PassageCreateRequest",
+        "description": "Request model for creating a passage in an archive."
       },
       "PipRequirement": {
         "properties": {
