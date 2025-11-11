@@ -255,7 +255,7 @@ class LLMConfig(BaseModel):
             + (f" [ip={self.model_endpoint}]" if self.model_endpoint else "")
         )
 
-    def _to_model(self) -> "ModelSettings":
+    def _to_model_settings(self) -> "ModelSettings":
         """
         Convert LLMConfig back into a Model schema (OpenAIModelSettings, AnthropicModelSettings, etc.).
         This is the inverse of the _to_legacy_config_params() methods in model.py.
@@ -279,7 +279,6 @@ class LLMConfig(BaseModel):
 
         if self.model_endpoint_type == "openai":
             return OpenAIModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
                 reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
@@ -287,7 +286,6 @@ class LLMConfig(BaseModel):
         elif self.model_endpoint_type == "anthropic":
             thinking_type = "enabled" if self.enable_reasoner else "disabled"
             return AnthropicModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
                 thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
@@ -295,7 +293,6 @@ class LLMConfig(BaseModel):
             )
         elif self.model_endpoint_type == "google_ai":
             return GoogleAIModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 65536,
                 temperature=self.temperature,
                 thinking_config=GeminiThinkingConfig(
@@ -304,7 +301,6 @@ class LLMConfig(BaseModel):
             )
         elif self.model_endpoint_type == "google_vertex":
             return GoogleVertexModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 65536,
                 temperature=self.temperature,
                 thinking_config=GeminiThinkingConfig(
@@ -313,39 +309,34 @@ class LLMConfig(BaseModel):
             )
         elif self.model_endpoint_type == "azure":
             return AzureModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "xai":
             return XAIModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "groq":
             return GroqModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "deepseek":
             return DeepseekModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "together":
             return TogetherModelSettings(
-                model=self.model,
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "bedrock":
-            return Model(model=self.model, max_output_tokens=self.max_tokens or 4096)
+            return Model(max_output_tokens=self.max_tokens or 4096)
         else:
             # If we don't know the model type, use the default Model schema
-            return Model(model=self.model, max_output_tokens=self.max_tokens or 4096)
+            return Model(max_output_tokens=self.max_tokens or 4096)
 
     @classmethod
     def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:

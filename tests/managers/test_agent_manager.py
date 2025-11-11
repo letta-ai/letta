@@ -1250,7 +1250,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.group import Group
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.memory import Memory
-    from letta.schemas.model import EmbeddingModelSettings, ModelSettings
+    from letta.schemas.model import ModelSettingsUnion
     from letta.schemas.response_format import ResponseFormatUnion
     from letta.schemas.source import Source
     from letta.schemas.tool import Tool
@@ -1271,9 +1271,10 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "agent_type": AgentType,
         # LLM information
         "llm_config": LLMConfig,
-        "model": ModelSettings,
-        "embedding": EmbeddingModelSettings,
+        "model": str,
+        "embedding": str,
         "embedding_config": EmbeddingConfig,
+        "model_settings": (ModelSettingsUnion, type(None)),
         "response_format": (ResponseFormatUnion, type(None)),
         # State fields
         "description": (str, type(None)),
@@ -1377,6 +1378,14 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
                 if expected is dict:
                     for arg in args:
                         if typing.get_origin(arg) is dict:
+                            return True
+                # Handle Annotated types within Union (e.g., Union[Annotated[...], None])
+                # This checks if any of the union args is an Annotated type that matches expected
+                for arg in args:
+                    if typing.get_origin(arg) is typing.Annotated:
+                        # For Annotated types, compare the first argument (the actual type)
+                        annotated_args = typing.get_args(arg)
+                        if annotated_args and annotated_args[0] == expected:
                             return True
 
             return False

@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
-from letta.errors import AgentExportProcessingError
+from letta.errors import AgentExportProcessingError, LettaInvalidArgumentError
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType
@@ -18,7 +18,7 @@ from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.model import EmbeddingModelSettings, ModelSettings, ModelSettingsUnion
+from letta.schemas.model import ModelSettingsUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
@@ -83,8 +83,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     embedding_config: EmbeddingConfig = Field(
         ..., description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
     )
-    model: Optional[ModelSettings] = Field(None, description="The model used by the agent.")
-    embedding: Optional[EmbeddingModelSettings] = Field(None, description="The embedding model used by the agent.")
+    model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings used by the agent.")
 
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
@@ -229,13 +230,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     embedding_config: Optional[EmbeddingConfig] = Field(
         None, description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
     )
-    model: Optional[str | ModelSettingsUnion] = Field(  # TODO: make this required  (breaking change)
+    model: Optional[str] = Field(  # TODO: make this required  (breaking change)
         None,
-        description="The model handle or model settings for the agent to use, specified either by a handle or an object. See the model schema for more information.",
+        description="The model handle for the agent to use (format: provider/model-name).",
     )
-    embedding: Optional[str | EmbeddingModelSettings] = Field(
-        None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
-    )
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
 
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(
@@ -348,9 +348,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not model:
             return model
 
+        if "/" not in model:
+            raise LettaInvalidArgumentError("The model handle should be in the format provider/model-name", argument_name="model")
+
         provider_name, model_name = model.split("/", 1)
         if not provider_name or not model_name:
-            raise ValueError("The llm config handle should be in the format provider/model-name")
+            raise LettaInvalidArgumentError("The model handle should be in the format provider/model-name", argument_name="model")
 
         return model
 
@@ -360,9 +363,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not embedding:
             return embedding
 
+        if "/" not in embedding:
+            raise ValueError("The embedding handle should be in the format provider/model-name")
+
         provider_name, embedding_name = embedding.split("/", 1)
         if not provider_name or not embedding_name:
-            raise ValueError("The embedding config handle should be in the format provider/model-name")
+            raise ValueError("The embedding handle should be in the format provider/model-name")
 
         return embedding
 
@@ -410,13 +416,12 @@ class UpdateAgent(BaseModel):
     )
 
     # model configuration
-    model: Optional[str | ModelSettingsUnion ] = Field(
+    model: Optional[str] = Field(
         None,
-        description="The model used by the agent, specified either by a handle or an object. See the model schema for more information.",
+        description="The model handle used by the agent (format: provider/model-name).",
     )
-    embedding: Optional[str | EmbeddingModelSettings] = Field(
-        None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
-    )
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     reasoning: Optional[bool] = Field(
         None,

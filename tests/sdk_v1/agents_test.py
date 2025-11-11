@@ -5,11 +5,16 @@ AGENTS_CREATE_PARAMS = [
         "caren_agent",
         {"name": "caren", "model": "openai/gpt-4o-mini", "embedding": "openai/text-embedding-3-small"},
         {
-            # Verify model field contains the model name and settings
-            # Note: we override 'model' here since the input is a string but the output is a ModelSettings object
-            "model": {"model": "gpt-4o-mini", "max_output_tokens": 4096, "parallel_tool_calls": False},
-            # Note: we override 'embedding' here since it's currently not populated in AgentState (remains None)
-            "embedding": None,
+            # Verify model_settings is populated with config values
+            # Note: The 'model' field itself is separate from model_settings
+            "model_settings": {
+                "max_output_tokens": 4096,
+                "parallel_tool_calls": False,
+                "provider_type": "openai",
+                "temperature": 0.7,
+                "reasoning": {"reasoning_effort": "minimal"},
+                "response_format": None,
+            }
         },
         None,
     ),
@@ -20,8 +25,15 @@ AGENTS_MODIFY_PARAMS = [
         "caren_agent",
         {"name": "caren_updated"},
         {
-            # After modifying just the name, model field should still be present and unchanged
-            "model": {"model": "gpt-4o-mini", "max_output_tokens": 4096, "parallel_tool_calls": False}
+            # After modifying just the name, model_settings should still be present
+            "model_settings": {
+                "max_output_tokens": 4096,
+                "parallel_tool_calls": False,
+                "provider_type": "openai",
+                "temperature": 0.7,
+                "reasoning": {"reasoning_effort": "minimal"},
+                "response_format": None,
+            }
         },
         None,
     ),
