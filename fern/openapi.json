@@ -13080,6 +13080,7 @@
       "get": {
         "tags": ["health"],
         "summary": "Check Health",
+        "description": "Async health check endpoint.",
         "operationId": "check_health",
         "responses": {
           "200": {
