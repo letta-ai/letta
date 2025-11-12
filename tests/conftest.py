@@ -170,6 +170,15 @@ def check_e2b_key_is_set():
 
 
 @pytest.fixture
+def check_modal_key_is_set():
+    from letta.settings import tool_settings
+
+    assert tool_settings.modal_token_id is not None, "Missing modal token id! Cannot execute these tests."
+    assert tool_settings.modal_token_secret is not None, "Missing modal token secret! Cannot execute these tests."
+    yield
+
+
+@pytest.fixture
 async def default_organization():
     """Fixture to create and return the default organization."""
     manager = OrganizationManager()

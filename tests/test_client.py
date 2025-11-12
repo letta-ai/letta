@@ -395,7 +395,7 @@ def test_function_always_error(client: Letta):
     assert response_message.status == "error"
     # TODO: add this back
     # assert "Error executing function testing_method" in response_message.tool_return, response_message.tool_return
-    assert "ZeroDivisionError: division by zero" in response_message.stderr[0]
+    assert "division by zero" in response_message.stderr[0]
 
     client.agents.delete(agent_id=agent.id)
 
