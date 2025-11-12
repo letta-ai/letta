@@ -54,7 +54,7 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import CreateAgent, InternalTemplateAgentCreate, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
@@ -1667,3 +1667,85 @@ async def test_agent_state_relationship_loads(server: SyncServer, default_user, 
     assert agent_state.sources
     assert not agent_state.tags
     assert not agent_state.tools
+
+
+async def test_create_template_agent_with_files_from_sources(server: SyncServer, default_user, print_tool, default_block):
+    """Test that agents created from templates properly attach files from their sources"""
+    from letta.schemas.file import FileMetadata as PydanticFileMetadata
+
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    # Create a source with files
+    source = await server.source_manager.create_source(
+        source=PydanticSource(
+            name="test_template_source",
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    # Create files in the source
+    file1_metadata = PydanticFileMetadata(
+        file_name="template_file_1.txt",
+        organization_id=default_user.organization_id,
+        source_id=source.id,
+    )
+    file1 = await server.file_manager.create_file(file_metadata=file1_metadata, actor=default_user, text="content for file 1")
+
+    file2_metadata = PydanticFileMetadata(
+        file_name="template_file_2.txt",
+        organization_id=default_user.organization_id,
+        source_id=source.id,
+    )
+    file2 = await server.file_manager.create_file(file_metadata=file2_metadata, actor=default_user, text="content for file 2")
+
+    # Create agent using InternalTemplateAgentCreate with the source
+    create_agent_request = InternalTemplateAgentCreate(
+        name="test_template_agent_with_files",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[print_tool.id],
+        source_ids=[source.id],  # Attach the source with files
+        include_base_tools=False,
+        base_template_id="base_template_123",
+        template_id="template_456",
+        deployment_id="deployment_789",
+        entity_id="entity_012",
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Verify agent was created
+    assert created_agent is not None
+    assert created_agent.name == "test_template_agent_with_files"
+
+    # Verify that the source is attached
+    attached_sources = await server.agent_manager.list_attached_sources_async(agent_id=created_agent.id, actor=default_user)
+    assert len(attached_sources) == 1
+    assert attached_sources[0].id == source.id
+
+    # Verify that files from the source are attached to the agent
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        created_agent.id, per_file_view_window_char_limit=created_agent.per_file_view_window_char_limit, actor=default_user
+    )
+
+    # Should have both files attached
+    assert len(attached_files) == 2
+    attached_file_names = {f.file_name for f in attached_files}
+    assert "template_file_1.txt" in attached_file_names
+    assert "template_file_2.txt" in attached_file_names
+
+    # Verify files are properly linked to the source
+    for attached_file in attached_files:
+        assert attached_file.source_id == source.id
+
+    # Clean up
+    await server.agent_manager.delete_agent_async(created_agent.id, default_user)
+    await server.source_manager.delete_source(source.id, default_user)

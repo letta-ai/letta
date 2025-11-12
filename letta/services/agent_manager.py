@@ -607,6 +607,45 @@ class AgentManager:
             await self.message_manager.create_many_messages_async(
                 pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
             )
+
+        # Attach files from sources if this is a template-based creation
+        # Use the new agent's sources (already copied from template via source_ids)
+        if isinstance(agent_create, InternalTemplateAgentCreate) and source_ids:
+            try:
+                from letta.services.file_manager import FileManager
+
+                file_manager = FileManager()
+
+                # Get all files from the new agent's sources
+                all_files_metadata = []
+                for source_id in source_ids:
+                    try:
+                        files_in_source = await file_manager.list_files(
+                            source_id=source_id,
+                            actor=actor,
+                            limit=1000,
+                        )
+                        all_files_metadata.extend(files_in_source)
+                    except Exception as e:
+                        logger.warning(f"Failed to get files from source {source_id}: {e}")
+
+                if all_files_metadata:
+                    try:
+                        await self.file_agent_manager.attach_files_bulk(
+                            agent_id=result.id,
+                            files_metadata=all_files_metadata,
+                            visible_content_map={},  # Empty map - content generated on-demand
+                            actor=actor,
+                            max_files_open=result.max_files_open or DEFAULT_MAX_FILES_OPEN,
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to attach files: {e}")
+            except Exception as e:
+                logger.error(f"====> Failed to attach files from sources: {e}")
+                import traceback
+
+                traceback.print_exc()
+
         return result
 
     @enforce_types
