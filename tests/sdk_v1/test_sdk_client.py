@@ -290,7 +290,7 @@ def test_shared_blocks(client: LettaSDKClient):
     )
 
     # update memory
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_state1.id,
         messages=[
             MessageCreateParam(
@@ -304,7 +304,7 @@ def test_shared_blocks(client: LettaSDKClient):
     block_value = client.blocks.retrieve(block_id=block.id).value
     assert "charles" in block_value.lower(), f"Shared block update failed {block_value}"
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_state2.id,
         messages=[
             MessageCreateParam(
@@ -336,7 +336,7 @@ def test_read_only_block(client: LettaSDKClient):
     )
 
     # make sure agent cannot update read-only block
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -352,7 +352,7 @@ def test_read_only_block(client: LettaSDKClient):
 
     # make sure can update from client
     new_value = "hello"
-    client.agents.blocks.modify(agent_id=agent.id, block_label="human", value=new_value)
+    client.agents.blocks.update(agent_id=agent.id, block_label="human", value=new_value)
     block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="human")
     assert block.value == new_value
 
@@ -380,7 +380,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
     assert len(agent.tags) == 0
 
     # Step 1: Add multiple tags to the agent
-    updated_agent = client.agents.modify(agent_id=agent.id, tags=tags_to_add)
+    updated_agent = client.agents.update(agent_id=agent.id, tags=tags_to_add)
 
     # Add small delay to ensure tags are persisted
     time.sleep(0.1)
@@ -398,7 +398,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
 
     # Step 4: Delete a specific tag from the agent and verify its removal
     tag_to_delete = tags_to_add.pop()
-    updated_agent = client.agents.modify(agent_id=agent.id, tags=tags_to_add)
+    updated_agent = client.agents.update(agent_id=agent.id, tags=tags_to_add)
 
     # Verify the tag is removed from the agent's tags - explicitly request tags
     remaining_tags = client.agents.retrieve(agent_id=agent.id, include=["agent.tags"]).tags
@@ -406,7 +406,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
     assert set(remaining_tags) == set(tags_to_add), f"Expected remaining tags to be {tags_to_add[1:]}, but got {remaining_tags}"
 
     # Step 5: Delete all remaining tags from the agent
-    client.agents.modify(agent_id=agent.id, tags=[])
+    client.agents.update(agent_id=agent.id, tags=[])
 
     # Verify all tags are removed - explicitly request tags
     final_tags = client.agents.retrieve(agent_id=agent.id, include=["agent.tags"]).tags
@@ -427,7 +427,7 @@ def test_reset_messages(client: LettaSDKClient):
 
     try:
         # Send a message
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[MessageCreateParam(role="user", content="Hello")],
         )
@@ -596,7 +596,7 @@ def test_modify_message(client: LettaSDKClient):
 
     try:
         # Send a message
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[MessageCreateParam(role="user", content="Original message")],
         )
@@ -624,7 +624,7 @@ def test_modify_message(client: LettaSDKClient):
         try:
             # Check if modify method exists
             if hasattr(client.agents.messages, "modify"):
-                updated_message = client.agents.messages.modify(
+                updated_message = client.agents.messages.update(
                     agent_id=agent.id,
                     message_id=message_id,
                     content="Modified message content",
@@ -751,7 +751,7 @@ def test_update_agent_memory_label(client: LettaSDKClient, agent: AgentState):
     example_new_label = "example_new_label"
     assert example_new_label not in current_labels
 
-    client.agents.blocks.modify(
+    client.agents.blocks.update(
         agent_id=agent.id,
         block_label=example_label,
         label=example_new_label,
@@ -809,7 +809,7 @@ def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
 
     # We expect this to throw a value error
     with pytest.raises(APIError):
-        client.agents.blocks.modify(
+        client.agents.blocks.update(
             agent_id=agent.id,
             block_label=example_label,
             limit=example_new_limit,
@@ -818,7 +818,7 @@ def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
     # Now try the same thing with a higher limit
     example_new_limit = current_block_length + 10000
     assert example_new_limit > current_block_length
-    client.agents.blocks.modify(
+    client.agents.blocks.update(
         agent_id=agent.id,
         block_label=example_label,
         limit=example_new_limit,
@@ -828,7 +828,7 @@ def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
 
 
 def test_messages(client: LettaSDKClient, agent: AgentState):
-    send_message_response = client.agents.messages.send(
+    send_message_response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -848,7 +848,7 @@ def test_messages(client: LettaSDKClient, agent: AgentState):
 
 def test_send_system_message(client: LettaSDKClient, agent: AgentState):
     """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.agents.messages.send(
+    send_system_message_response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -877,7 +877,7 @@ def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agen
     client.agents.tools.attach(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -914,7 +914,7 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     client.agents.tools.attach(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -1129,7 +1129,7 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
         verify_message_types(messages, message_types)
 
     elif message_create == "async":
-        response = client.agents.messages.send_async(
+        response = client.agents.messages.create_async(
             agent_id=agent.id,
             messages=[
                 MessageCreateParam(
@@ -1165,7 +1165,7 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
         verify_message_types(messages, message_types)
 
     elif message_create == "sync":
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 MessageCreateParam(
@@ -1287,7 +1287,7 @@ def test_pydantic_inventory_management_tool(e2b_sandbox_mode, client: LettaSDKCl
         include_base_tools=False,
     )
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=temp_agent.id,
         messages=[
             MessageCreateParam(
@@ -1377,7 +1377,7 @@ def test_pydantic_task_planning_tool(e2b_sandbox_mode, client: LettaSDKClient):
         ],
     )
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=temp_agent.id,
         messages=[
             MessageCreateParam(
@@ -1619,7 +1619,7 @@ def test_agent_tool_rules_deduplication(client: LettaSDKClient):
         MaxCountPerStepToolRule(tool_name="test_tool", max_count_limit=3, type="max_count_per_step"),  # different limit, not a duplicate
     ]
 
-    updated_agent = client.agents.modify(agent_id=agent_state.id, tool_rules=update_rules)
+    updated_agent = client.agents.update(agent_id=agent_state.id, tool_rules=update_rules)
 
     # Check that duplicates were removed
     assert len(updated_agent.tool_rules) == 3, f"Expected 3 unique tool rules after update, got {len(updated_agent.tool_rules)}"
@@ -1806,7 +1806,7 @@ def test_add_tool_with_multiple_functions_in_source_code(client: LettaSDKClient)
 #        ).strip()
 #
 #        # Modify the tool with new source code
-#        modified_tool = client.tools.modify(name="helper_utility", tool_id=tool.id, source_code=new_source_code)
+#        modified_tool = client.tools.update(name="helper_utility", tool_id=tool.id, source_code=new_source_code)
 #
 #        # Verify the name automatically updated to the last function
 #        assert modified_tool.name == "helper_utility"
@@ -1844,7 +1844,7 @@ def test_add_tool_with_multiple_functions_in_source_code(client: LettaSDKClient)
 #        ).strip()
 #
 #        # Modify again
-#        final_tool = client.tools.modify(tool_id=tool.id, source_code=single_function_code)
+#        final_tool = client.tools.update(tool_id=tool.id, source_code=single_function_code)
 #
 #        # Verify name updated again
 #        assert final_tool.name == "calculate_total"
@@ -1911,12 +1911,12 @@ def test_tool_rename_with_json_schema_and_source_code(client: LettaSDKClient):
 
         # verify there is a 400 error when both source code and json schema are provided
         with pytest.raises(Exception) as e:
-            client.tools.modify(tool_id=tool.id, source_code=new_source_code, json_schema=custom_json_schema)
+            client.tools.update(tool_id=tool.id, source_code=new_source_code, json_schema=custom_json_schema)
         assert e.value.status_code == 400
 
         # update with consistent name and schema
         custom_json_schema["name"] = "renamed_function"
-        tool = client.tools.modify(tool_id=tool.id, json_schema=custom_json_schema)
+        tool = client.tools.update(tool_id=tool.id, json_schema=custom_json_schema)
         assert tool.json_schema == custom_json_schema
         assert tool.name == "renamed_function"
 
@@ -2108,7 +2108,7 @@ def test_run_list(client: LettaSDKClient):
     )
 
     # message an agent
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(role="user", content="Hello, how are you?"),
@@ -2116,7 +2116,7 @@ def test_run_list(client: LettaSDKClient):
     )
 
     # message an agent async
-    async_run = client.agents.messages.send_async(
+    async_run = client.agents.messages.create_async(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(role="user", content="Hello, how are you?"),

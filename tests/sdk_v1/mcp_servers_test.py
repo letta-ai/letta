@@ -412,7 +412,7 @@ def test_update_stdio_mcp_server(client: Letta):
             "env": {"NEW_ENV": "new_value", "PORT": "3000"},
         }
 
-        updated_server = client.mcp_servers.modify(server_id, **update_request)
+        updated_server = client.mcp_servers.update(server_id, **update_request)
 
         assert get_attr(updated_server, "server_name") == "updated-stdio-server"
         assert get_attr(updated_server, "args") == ["new_server.js", "--port", "3000"]
@@ -445,7 +445,7 @@ def test_update_sse_mcp_server(client: Letta):
             "custom_headers": {"X-Updated": "true", "X-Version": "2.0"},
         }
 
-        updated_server = client.mcp_servers.modify(server_id, **update_request)
+        updated_server = client.mcp_servers.update(server_id, **update_request)
 
         assert get_attr(updated_server, "server_name") == "updated-sse-server"
         assert get_attr(updated_server, "server_url") == "https://new.example.com/sse/v2"
@@ -594,7 +594,7 @@ def test_partial_update_preserves_fields(client: Letta):
         # Update only the server name
         update_request = {"server_name": "renamed-server"}
 
-        updated_server = client.mcp_servers.modify(server_id, **update_request)
+        updated_server = client.mcp_servers.update(server_id, **update_request)
 
         assert get_attr(updated_server, "server_name") == "renamed-server"
         # Other fields should be preserved
@@ -622,7 +622,7 @@ def test_concurrent_server_operations(client: Letta):
         for i, server_id in enumerate(servers_created):
             update_request = {"server_name": f"updated-concurrent-{i}"}
 
-            updated_server = client.mcp_servers.modify(server_id, **update_request)
+            updated_server = client.mcp_servers.update(server_id, **update_request)
             assert get_attr(updated_server, "server_name") == f"updated-concurrent-{i}"
 
         # Get all servers
@@ -657,7 +657,7 @@ def test_full_server_lifecycle(client: Letta):
 
         # 4. Update server
         update_request = {"server_name": "lifecycle-updated", "env": {"TEST": "false", "NEW_VAR": "value"}}
-        updated_server = client.mcp_servers.modify(server_id, **update_request)
+        updated_server = client.mcp_servers.update(server_id, **update_request)
         assert get_attr(updated_server, "server_name") == "lifecycle-updated"
 
         # 5. List tools
@@ -734,7 +734,7 @@ def test_mcp_echo_tool_with_agent(client: Letta, agent_with_mcp_tools: AgentStat
     """
     test_message = "Hello from MCP integration test!"
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_with_mcp_tools.id,
         messages=[
             {
@@ -772,7 +772,7 @@ def test_mcp_add_tool_with_agent(client: Letta, agent_with_mcp_tools: AgentState
     a, b = 42, 58
     expected_sum = a + b
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_with_mcp_tools.id,
         messages=[
             {
@@ -860,7 +860,7 @@ def test_mcp_multiple_tools_in_sequence_with_agent(client: Letta):
         )
 
         # Send message requiring multiple tool calls
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 {
@@ -963,7 +963,7 @@ def test_mcp_complex_schema_tool_with_agent(client: Letta):
         )
 
         # Test 1: Simple call with just preset
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 {
@@ -988,7 +988,7 @@ def test_mcp_complex_schema_tool_with_agent(client: Letta):
         assert "Preset: a" in complex_return.tool_return, f"Expected 'Preset: a' in return, got: {complex_return.tool_return}"
 
         # Test 2: Complex call with nested data
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 {
@@ -1018,7 +1018,7 @@ def test_mcp_complex_schema_tool_with_agent(client: Letta):
 
         # Test 3: If create_person tool is available, test it
         if create_person_tool:
-            response = client.agents.messages.send(
+            response = client.agents.messages.create(
                 agent_id=agent.id,
                 messages=[
                     {

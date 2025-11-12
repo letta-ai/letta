@@ -931,8 +931,8 @@ def test_greeting_with_assistant_message(
         pytest.skip(f"Skipping deprecated model {llm_config.model}")
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-    response = client.agents.messages.send(
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
@@ -964,8 +964,8 @@ def test_greeting_without_assistant_message(
         pytest.skip(f"Skipping deprecated model {llm_config.model}")
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-    response = client.agents.messages.send(
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
         use_assistant_message=False,
@@ -1001,7 +1001,7 @@ def test_tool_call(
         pytest.skip(f"Skipping {llm_config.model} due to OTID chain issue and incomplete agent response")
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
     if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
         messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
@@ -1010,7 +1010,7 @@ def test_tool_call(
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
     try:
-        response = client.agents.messages.send(
+        response = client.agents.messages.create(
             agent_id=agent_state.id,
             messages=messages_to_send,
         )
@@ -1065,8 +1065,8 @@ def test_base64_image_input(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-    response = client.agents.messages.send(
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_BASE64_IMAGE,
     )
@@ -1093,13 +1093,13 @@ def test_agent_loop_error(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.step") as mock_step:
         mock_step.side_effect = LLMError("No tool calls found in response, model must make a tool call")
 
         with pytest.raises(APIError):
-            client.agents.messages.send(
+            client.agents.messages.create(
                 agent_id=agent_state.id,
                 messages=USER_MESSAGE_FORCE_REPLY,
             )
@@ -1127,7 +1127,7 @@ def test_step_streaming_greeting_with_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
@@ -1160,7 +1160,7 @@ def test_step_streaming_greeting_without_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
@@ -1204,7 +1204,7 @@ def test_step_streaming_tool_call(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
     if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
         messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
@@ -1256,7 +1256,7 @@ def test_step_stream_agent_loop_error(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
@@ -1290,7 +1290,7 @@ def test_token_streaming_greeting_with_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to test if they stream in chunks
     if llm_config.model_endpoint_type == "anthropic":
         messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
@@ -1328,7 +1328,7 @@ def test_token_streaming_greeting_without_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
         messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
@@ -1381,7 +1381,7 @@ def test_token_streaming_tool_call(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
         if llm_config.enable_reasoner:
@@ -1437,7 +1437,7 @@ def test_token_streaming_agent_loop_error(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
@@ -1472,7 +1472,7 @@ def test_background_token_streaming_greeting_with_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to test if they stream in chunks
     if llm_config.model_endpoint_type == "anthropic":
         messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
@@ -1531,7 +1531,7 @@ def test_background_token_streaming_greeting_without_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
         messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
@@ -1585,7 +1585,7 @@ def test_background_token_streaming_tool_call(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
         if llm_config.enable_reasoner:
@@ -1645,9 +1645,9 @@ def test_async_greeting_with_assistant_message(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
-    run = client.agents.messages.send_async(
+    run = client.agents.messages.create_async(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
@@ -1681,9 +1681,9 @@ def test_async_greeting_with_assistant_message(
     #    """
     #    last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    #    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    #    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
     #
-    #    run = client.agents.messages.send_async(
+    #    run = client.agents.messages.create_async(
     #        agent_id=agent_state.id,
     #        messages=USER_MESSAGE_FORCE_REPLY,
     #        use_assistant_message=False,
@@ -1732,7 +1732,7 @@ def test_async_tool_call(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
     if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
@@ -1741,7 +1741,7 @@ def test_async_tool_call(
         messages_to_send = USER_MESSAGE_ROLL_DICE_GEMINI_FLASH
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
-    run = client.agents.messages.send_async(
+    run = client.agents.messages.create_async(
         agent_id=agent_state.id,
         messages=messages_to_send,
     )
@@ -1865,11 +1865,11 @@ def test_async_greeting_with_callback_url(
     if not config_filename or config_filename in limited_configs:
         pytest.skip(f"Skipping test for limited model {llm_config.model}")
 
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     with callback_server() as server:
         # Create async job with callback URL
-        run = client.agents.messages.send_async(
+        run = client.agents.messages.create_async(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_FORCE_REPLY,
             callback_url=server.url,
@@ -1957,7 +1957,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
 
     for attempt in range(MAX_ATTEMPTS):
         try:
-            client.agents.messages.send(
+            client.agents.messages.create(
                 agent_id=temp_agent_state.id,
                 messages=[MessageCreateParam(role="user", content=philosophical_question)],
             )
@@ -2014,10 +2014,10 @@ def test_job_creation_for_send_message(
     Test that send_message endpoint creates a job and the job completes successfully.
     """
     previous_runs = client.runs.list(agent_ids=[agent_state.id])
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     # Send a simple message and verify a job was created
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
@@ -2050,11 +2050,11 @@ def test_job_creation_for_send_message(
 #     """
 #     Test that an async job can be cancelled and the cancellation is reflected in the job status.
 #     """
-#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#     client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 #
 #     # client.runs.cancel
 #     # Start an async job
-#     run = client.agents.messages.send_async(
+#     run = client.agents.messages.create_async(
 #         agent_id=agent_state.id,
 #         messages=USER_MESSAGE_FORCE_REPLY,
 #     )
@@ -2107,10 +2107,10 @@ def test_job_creation_for_send_message(
 #     """
 #     Test that completed jobs cannot be cancelled.
 #     """
-#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#     client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 #
 #     # Start an async job and wait for it to complete
-#     run = client.agents.messages.send_async(
+#     run = client.agents.messages.create_async(
 #         agent_id=agent_state.id,
 #         messages=USER_MESSAGE_FORCE_REPLY,
 #     )
@@ -2141,7 +2141,7 @@ def test_job_creation_for_send_message(
 #     Test that streaming jobs are independent of client connection state.
 #     This verifies that jobs continue even if the client "disconnects" (simulated by not consuming the stream).
 #     """
-#     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+#     client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 #
 #     # Create a streaming request
 #     import threading
@@ -2222,8 +2222,8 @@ def test_inner_thoughts_false_non_reasoner_models(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
-    response = client.agents.messages.send(
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
@@ -2269,7 +2269,7 @@ def test_inner_thoughts_false_non_reasoner_models_streaming(
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=adjusted_llm_config)
     response = client.agents.messages.stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
@@ -2309,10 +2309,10 @@ def test_inner_thoughts_toggle_interleaved(
         pytest.skip(f"Skipping `test_inner_thoughts_toggle_interleaved` for model endpoint type {llm_config.model_endpoint_type}")
 
     assert not is_reasoning_completely_disabled(llm_config), "Reasoning should be enabled"
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     # Send a message with inner thoughts
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_GREETING,
     )
@@ -2323,7 +2323,7 @@ def test_inner_thoughts_toggle_interleaved(
     new_llm_config["enable_reasoner"] = False
     new_llm_config["max_reasoning_tokens"] = 0
     adjusted_llm_config = LLMConfig(**new_llm_config)
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=adjusted_llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=adjusted_llm_config)
 
     # Preview the message payload of the next message
     # response = client.agents.messages.preview_raw_payload(
@@ -2370,10 +2370,10 @@ def test_input_parameter_basic(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     # Use input parameter instead of messages
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         input=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
     )
@@ -2402,7 +2402,7 @@ def test_input_parameter_streaming(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     response = client.agents.messages.stream(
         agent_id=agent_state.id,
@@ -2436,9 +2436,9 @@ def test_input_parameter_async(
     """
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
-    run = client.agents.messages.send_async(
+    run = client.agents.messages.create_async(
         agent_id=agent_state.id,
         input=f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'.",
     )
@@ -2461,7 +2461,7 @@ def test_input_and_messages_both_provided_error(
     Tests that providing both input and messages raises a validation error.
     """
     with pytest.raises(APIError) as exc_info:
-        client.agents.messages.send(
+        client.agents.messages.create(
             agent_id=agent_state.id,
             input="This is a test message",
             messages=USER_MESSAGE_FORCE_REPLY,
@@ -2479,7 +2479,7 @@ def test_input_and_messages_neither_provided_error(
     Tests that providing neither input nor messages raises a validation error.
     """
     with pytest.raises(APIError) as exc_info:
-        client.agents.messages.send(
+        client.agents.messages.create(
             agent_id=agent_state.id,
         )
     # Should get a 422 validation error

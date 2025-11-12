@@ -100,7 +100,7 @@ def accumulate_chunks(stream):
 
 
 def approve_tool_call(client: Letta, agent_id: str, tool_call_id: str):
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_id,
         messages=[
             ApprovalCreateParam(
@@ -168,7 +168,7 @@ def agent(client: Letta, approval_tool_fixture, dice_tool_fixture) -> AgentState
         tags=["approval_test"],
     )
     # Enable parallel tool calls for testing
-    agent_state = client.agents.modify(agent_id=agent_state.id, parallel_tool_calls=True)
+    agent_state = client.agents.update(agent_id=agent_state.id, parallel_tool_calls=True)
     yield agent_state
 
     client.agents.delete(agent_id=agent_state.id)
@@ -181,7 +181,7 @@ def agent(client: Letta, approval_tool_fixture, dice_tool_fixture) -> AgentState
 
 def test_send_approval_without_pending_request(client, agent):
     with pytest.raises(APIError, match="No tool call is currently awaiting approval"):
-        client.agents.messages.send(
+        client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 ApprovalCreateParam(
@@ -200,13 +200,13 @@ def test_send_approval_without_pending_request(client, agent):
 
 
 def test_send_user_message_with_pending_request(client, agent):
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
 
     with pytest.raises(APIError, match="Please approve or deny the pending request before continuing"):
-        client.agents.messages.send(
+        client.agents.messages.create(
             agent_id=agent.id,
             messages=[MessageCreateParam(role="user", content="hi")],
         )
@@ -215,13 +215,13 @@ def test_send_user_message_with_pending_request(client, agent):
 
 
 def test_send_approval_message_with_incorrect_request_id(client, agent):
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
 
     with pytest.raises(APIError, match="Invalid tool call IDs"):
-        client.agents.messages.send(
+        client.agents.messages.create(
             agent_id=agent.id,
             messages=[
                 ApprovalCreateParam(
@@ -250,7 +250,7 @@ def test_invoke_approval_request(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -311,7 +311,7 @@ def test_invoke_tool_after_turning_off_requires_approval(
     agent: AgentState,
     approval_tool_fixture,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -385,7 +385,7 @@ def test_approve_tool_call_request(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -437,7 +437,7 @@ def test_approve_cursor_fetch(
     agent: AgentState,
 ) -> None:
     last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -457,7 +457,7 @@ def test_approve_cursor_fetch(
     _args = _json.loads(messages[3].tool_call.arguments)
     assert "request_heartbeat" not in _args
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -493,7 +493,7 @@ def test_approve_with_context_check(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -531,13 +531,13 @@ def test_approve_and_follow_up(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
     tool_call_id = response.messages[2].tool_call.tool_call_id
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -586,7 +586,7 @@ def test_deny_tool_call_request(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -630,7 +630,7 @@ def test_deny_cursor_fetch(
     agent: AgentState,
 ) -> None:
     last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -651,7 +651,7 @@ def test_deny_cursor_fetch(
     # _args = _json.loads(messages[2].tool_call.arguments)
     # assert "request_heartbeat" not in _args
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -687,7 +687,7 @@ def test_deny_with_context_check(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -727,13 +727,13 @@ def test_deny_and_follow_up(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
     tool_call_id = response.messages[2].tool_call.tool_call_id
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -781,7 +781,7 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     initial_stop_reason = initial_agent.last_stop_reason
 
     # Trigger approval request
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -805,7 +805,7 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     assert agent_after_approval.last_stop_reason != initial_stop_reason
 
     # Send follow-up message to complete the flow
-    response2 = client.agents.messages.send(
+    response2 = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
     )
@@ -824,7 +824,7 @@ def test_client_side_tool_call_request(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -869,7 +869,7 @@ def test_client_side_tool_call_cursor_fetch(
     agent: AgentState,
 ) -> None:
     last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -890,7 +890,7 @@ def test_client_side_tool_call_cursor_fetch(
     # _args = _json.loads(messages[2].tool_call.arguments)
     # assert "request_heartbeat" not in _args
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -929,7 +929,7 @@ def test_client_side_tool_call_with_context_check(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -969,13 +969,13 @@ def test_client_side_tool_call_and_follow_up(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
     tool_call_id = response.messages[2].tool_call.tool_call_id
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -1026,7 +1026,7 @@ def test_parallel_tool_calling(
         pytest.skip("Parallel tool calling test only applies to Anthropic models.")
 
     last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
     )
@@ -1145,7 +1145,7 @@ def test_parallel_tool_calling(
     # ensure context is not bricked
     client.agents.retrieve(agent_id=agent.id)
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             ApprovalCreateParam(
@@ -1241,7 +1241,7 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     initial_stop_reason = initial_agent.last_stop_reason
 
     # Trigger approval request
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
@@ -1265,7 +1265,7 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     assert agent_after_approval.last_stop_reason != initial_stop_reason
 
     # Send follow-up message to complete the flow
-    response2 = client.agents.messages.send(
+    response2 = client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
     )

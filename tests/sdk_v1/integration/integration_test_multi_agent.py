@@ -121,7 +121,7 @@ def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent
     secret_word = "banana"
 
     # Encourage the agent to send a message to the other agent_obj with the secret string
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_obj.id,
         messages=[
             MessageCreateParam(
@@ -187,7 +187,7 @@ def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent
         raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
     # Test that the agent can still receive messages fine
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_obj.id,
         messages=[
             MessageCreateParam(
@@ -243,7 +243,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
         worker_agents_456.append(worker_agent_state)
 
     # Encourage the manager to send a message to the other agent_obj with the secret string
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=manager_agent_state.id,
         messages=[
             MessageCreateParam(
@@ -294,7 +294,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
                 assert secret_word not in m.content, f"Secret word should not be in agent {agent_state.id}"
 
     # Test that the agent can still receive messages fine
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=manager_agent_state.id,
         messages=[
             MessageCreateParam(
@@ -333,7 +333,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
 
     # Encourage the manager to send a message to the other agent_obj with the secret string
     broadcast_message = f"Send a message to all agents with tags {worker_tags} asking them to roll a dice for you!"
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=manager_agent_state.id,
         messages=[
             MessageCreateParam(
@@ -363,7 +363,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
             break
 
     # Test that the agent can still receive messages fine
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=manager_agent_state.id,
         messages=[
             MessageCreateParam(
