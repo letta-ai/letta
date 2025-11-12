@@ -90,7 +90,6 @@ class ArchivalPassage(BasePassage, ArchiveMixin):
     def __table_args__(cls):
         if settings.database_engine is DatabaseChoice.POSTGRES:
             return (
-                Index("archival_passages_org_idx", "organization_id"),
                 Index("ix_archival_passages_org_archive", "organization_id", "archive_id"),
                 Index("archival_passages_created_at_id_idx", "created_at", "id"),
                 Index("ix_archival_passages_archive_id", "archive_id"),

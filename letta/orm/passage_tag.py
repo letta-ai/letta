@@ -25,9 +25,7 @@ class PassageTag(SqlalchemyBase, OrganizationMixin):
         # ensure uniqueness of tag per passage
         UniqueConstraint("passage_id", "tag", name="uq_passage_tag"),
         # indexes for efficient queries
-        Index("ix_passage_tags_archive_id", "archive_id"),
         Index("ix_passage_tags_tag", "tag"),
-        Index("ix_passage_tags_archive_tag", "archive_id", "tag"),
         Index("ix_passage_tags_org_archive", "organization_id", "archive_id"),
     )
 
