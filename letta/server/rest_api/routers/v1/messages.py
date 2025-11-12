@@ -191,6 +191,8 @@ async def cancel_batch(
             # TODO: Extend to providers beyond anthropic
             # TODO: For now, we only support anthropic
             # Cancel the job
+            if server.anthropic_async_client is None:
+                raise HTTPException(status_code=501, detail="Batch job cancellation is not enabled")
             anthropic_batch_id = llm_batch_job.create_batch_response.id
             await server.anthropic_async_client.messages.batches.cancel(anthropic_batch_id)
 
