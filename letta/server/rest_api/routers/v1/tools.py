@@ -7,6 +7,7 @@ from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
+from letta.constants import MAX_TOOL_NAME_LENGTH
 from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE
 from letta.errors import (
     LettaInvalidArgumentError,

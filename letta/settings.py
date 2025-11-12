@@ -40,11 +40,19 @@ class ToolSettings(BaseSettings):
     mcp_disable_stdio: bool = False
 
     @property
+    def modal_sandbox_enabled(self) -> bool:
+        """Check if Modal credentials are configured."""
+        return bool(self.modal_token_id and self.modal_token_secret)
+
+    @property
     def sandbox_type(self) -> SandboxType:
+        """Default sandbox type based on available credentials.
+
+        Note: Modal is checked separately via modal_sandbox_enabled property.
+        This property determines the fallback behavior (E2B or LOCAL).
+        """
         if self.e2b_api_key:
             return SandboxType.E2B
-        # elif self.modal_token_id and self.modal_token_secret:
-        #    return SandboxType.MODAL
         else:
             return SandboxType.LOCAL
 

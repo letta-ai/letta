@@ -46,28 +46,41 @@ class SandboxToolExecutor(ToolExecutor):
 
             agent_state_copy = self._create_agent_state_copy(agent_state) if agent_state else None
 
-            # Execute in sandbox depending on API key
-            if tool_settings.sandbox_type == SandboxType.E2B:
-                from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+            # Execute in sandbox with Modal first (if configured and requested), then fallback to E2B/LOCAL
+            # Try Modal if: (1) Modal credentials configured AND (2) tool requests Modal via metadata
+            tool_requests_modal = tool.metadata_ and tool.metadata_.get("sandbox") == "modal"
+            modal_configured = tool_settings.modal_sandbox_enabled
 
-                sandbox = AsyncToolSandboxE2B(
-                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
-                )
-            # TODO (cliandy): this is just for testing right now, separate this out into it's own subclass and handling logic
-            elif tool_settings.sandbox_type == SandboxType.MODAL:
-                from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal, TypescriptToolSandboxModal
+            tool_execution_result = None
 
-                if tool.source_type == ToolSourceType.typescript:
-                    sandbox = TypescriptToolSandboxModal(
+            # Try Modal first if both conditions met
+            if tool_requests_modal and modal_configured:
+                try:
+                    from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal
+
+                    logger.info(f"Attempting Modal execution for tool {tool.name}")
+                    sandbox = AsyncToolSandboxModal(
                         function_name,
                         function_args,
                         actor,
                         tool_object=tool,
                         sandbox_config=sandbox_config,
                         sandbox_env_vars=sandbox_env_vars,
+                        organization_id=actor.organization_id,
                     )
-                elif tool.source_type == ToolSourceType.python:
-                    sandbox = AsyncToolSandboxModal(
+                    # TODO: pass through letta api key
+                    tool_execution_result = await sandbox.run(agent_state=agent_state_copy, additional_env_vars=sandbox_env_vars)
+                except Exception as e:
+                    # Modal execution failed, log and fall back to E2B/LOCAL
+                    logger.warning(f"Modal execution failed for tool {tool.name}: {e}. Falling back to {tool_settings.sandbox_type.value}")
+                    tool_execution_result = None
+
+            # Fallback to E2B or LOCAL if Modal wasn't tried or failed
+            if tool_execution_result is None:
+                if tool_settings.sandbox_type == SandboxType.E2B:
+                    from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+
+                    sandbox = AsyncToolSandboxE2B(
                         function_name,
                         function_args,
                         actor,
@@ -76,13 +89,16 @@ class SandboxToolExecutor(ToolExecutor):
                         sandbox_env_vars=sandbox_env_vars,
                     )
                 else:
-                    raise ValueError(f"Tool source type was {tool.source_type} but is required to be python or typescript to run in Modal.")
-            else:
-                sandbox = AsyncToolSandboxLocal(
-                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
-                )
+                    sandbox = AsyncToolSandboxLocal(
+                        function_name,
+                        function_args,
+                        actor,
+                        tool_object=tool,
+                        sandbox_config=sandbox_config,
+                        sandbox_env_vars=sandbox_env_vars,
+                    )
 
-            tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
+                tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
 
             log_lines = (tool_execution_result.stdout or []) + (tool_execution_result.stderr or [])
             logger.debug("Tool execution log: %s", "\n".join(log_lines))
