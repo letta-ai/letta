@@ -39,7 +39,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     __pydantic_model__ = PydanticAgentState
     __table_args__ = (
         Index("ix_agents_created_at", "created_at", "id"),
-        Index("ix_agents_organization_id", "organization_id"),
         Index("ix_agents_organization_id_deployment_id", "organization_id", "deployment_id"),
         Index("ix_agents_project_id", "project_id"),
     )
