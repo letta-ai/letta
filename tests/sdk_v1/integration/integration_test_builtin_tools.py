@@ -143,7 +143,7 @@ def test_run_code(
         otid=USER_MESSAGE_OTID,
     )
 
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[user_message],
     )

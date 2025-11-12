@@ -548,17 +548,17 @@ async def test_greeting(
 ) -> None:
     last_message_page = await client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = await client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     if send_type == "step":
-        response = await client.agents.messages.send(
+        response = await client.agents.messages.create(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_FORCE_REPLY,
         )
         messages = response.messages
         run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
     elif send_type == "async":
-        run = await client.agents.messages.send_async(
+        run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_FORCE_REPLY,
         )
@@ -630,19 +630,19 @@ async def test_parallel_tool_calls(
 
     # IMPORTANT: Set parallel_tool_calls at BOTH the agent level and llm_config level
     # There are two different parallel_tool_calls fields that need to be set
-    agent_state = await client.agents.modify(
+    agent_state = await client.agents.update(
         agent_id=agent_state.id,
         llm_config=modified_llm_config,
         parallel_tool_calls=True,  # Set at agent level as well!
     )
 
     if send_type == "step":
-        await client.agents.messages.send(
+        await client.agents.messages.create(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
         )
     elif send_type == "async":
-        run = await client.agents.messages.send_async(
+        run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_PARALLEL_TOOL_CALL,
         )
@@ -815,21 +815,21 @@ async def test_tool_call(
 
     last_message_page = await client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    agent_state = await client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    agent_state = await client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
     if cancellation == "with_cancellation":
         delay = 5 if llm_config.model == "gpt-5" else 0.5  # increase delay for responses api
         _cancellation_task = asyncio.create_task(cancel_run_after_delay(client, agent_state.id, delay=delay))
 
     if send_type == "step":
-        response = await client.agents.messages.send(
+        response = await client.agents.messages.create(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_ROLL_DICE,
         )
         messages = response.messages
         run_id = next((msg.run_id for msg in messages if hasattr(msg, "run_id")), None)
     elif send_type == "async":
-        run = await client.agents.messages.send_async(
+        run = await client.agents.messages.create_async(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_ROLL_DICE,
         )

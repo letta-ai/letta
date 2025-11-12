@@ -20,12 +20,12 @@ AGENTS_CREATE_PARAMS = [
     ),
 ]
 
-AGENTS_MODIFY_PARAMS = [
+AGENTS_UPDATE_PARAMS = [
     (
         "caren_agent",
         {"name": "caren_updated"},
         {
-            # After modifying just the name, model_settings should still be present
+            # After updating just the name, model_settings should still be present
             "model_settings": {
                 "max_output_tokens": 4096,
                 "parallel_tool_calls": False,
@@ -50,7 +50,7 @@ globals().update(
         resource_name="agents",
         id_param_name="agent_id",
         create_params=AGENTS_CREATE_PARAMS,
-        modify_params=AGENTS_MODIFY_PARAMS,
+        update_params=AGENTS_UPDATE_PARAMS,
         list_params=AGENTS_LIST_PARAMS,
     )
 )

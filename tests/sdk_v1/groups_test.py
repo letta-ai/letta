@@ -10,7 +10,7 @@ GROUPS_CREATE_PARAMS = [
     ),
 ]
 
-GROUPS_MODIFY_PARAMS = [
+GROUPS_UPDATE_PARAMS = [
     (
         "round_robin_group",
         {"manager_config": {"manager_type": "round_robin", "max_turns": 10}},
@@ -30,7 +30,7 @@ globals().update(
         resource_name="groups",
         id_param_name="group_id",
         create_params=GROUPS_CREATE_PARAMS,
-        modify_params=GROUPS_MODIFY_PARAMS,
+        update_params=GROUPS_UPDATE_PARAMS,
         list_params=GROUPS_LIST_PARAMS,
     )
 )
