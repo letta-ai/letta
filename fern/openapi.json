@@ -20118,8 +20118,28 @@
             "title": "Name"
           },
           "embedding_config": {
-            "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "Embedding configuration for the archive"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. Embedding configuration for the archive",
+            "deprecated": true
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "Embedding model handle for the archive"
           },
           "description": {
             "anyOf": [
@@ -20134,7 +20154,7 @@
           }
         },
         "type": "object",
-        "required": ["name", "embedding_config"],
+        "required": ["name"],
         "title": "ArchiveCreateRequest",
         "description": "Request model for creating an archive.\n\nIntentionally excludes vector_db_provider. These are derived internally (vector DB provider from env)."
       },
@@ -28566,7 +28586,7 @@
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for Language Model (LLM) connection and generation parameters."
+        "description": "Configuration for Language Model (LLM) connection and generation parameters.\n\n.. deprecated::\n    LLMConfig is deprecated and should not be used as an input or return type in API calls.\n    Use the schemas in letta.schemas.model (ModelSettings, OpenAIModelSettings, etc.) instead.\n    For conversion, use the _to_model() method or Model._from_llm_config() method."
       },
       "LettaAsyncRequest": {
         "properties": {

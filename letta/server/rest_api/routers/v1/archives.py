@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel, Field
 
 from letta import AgentState
+from letta.errors import LettaInvalidArgumentError
 from letta.schemas.agent import AgentRelationships
 from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -23,7 +24,10 @@ class ArchiveCreateRequest(BaseModel):
     """
 
     name: str
-    embedding_config: EmbeddingConfig = Field(..., description="Embedding configuration for the archive")
+    embedding_config: Optional[EmbeddingConfig] = Field(
+        None, description="Deprecated: Use `embedding` field instead. Embedding configuration for the archive", deprecated=True
+    )
+    embedding: Optional[str] = Field(None, description="Embedding model handle for the archive")
     description: Optional[str] = None
 
 
@@ -55,9 +59,21 @@ async def create_archive(
     Create a new archive.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    if archive.embedding_config is None and archive.embedding is None:
+        raise LettaInvalidArgumentError("Either embedding_config or embedding must be provided")
+
+    embedding_config = archive.embedding_config
+    if embedding_config is None and archive.embedding is not None:
+        handle = f"{archive.embedding.provider}/{archive.embedding.model}"
+        embedding_config = await server.get_embedding_config_from_handle_async(
+            handle=handle,
+            actor=actor,
+        )
+
     return await server.archive_manager.create_archive_async(
         name=archive.name,
-        embedding_config=archive.embedding_config,
+        embedding_config=embedding_config,
         description=archive.description,
         actor=actor,
     )
