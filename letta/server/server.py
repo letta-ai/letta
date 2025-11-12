@@ -184,10 +184,18 @@ class SyncServer(object):
             message_manager=self.message_manager,
         )
 
-        # A resusable httpx client
-        timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
-        limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
-        self.httpx_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True, limits=limits)
+        if settings.enable_batch_job_polling:
+            # A resusable httpx client
+            timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
+            limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
+            self.httpx_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True, limits=limits)
+
+            # TODO: Replace this with the Anthropic client we have in house
+            # Reuse the shared httpx client to prevent duplicate SSL contexts and connection pools
+            self.anthropic_async_client = AsyncAnthropic(http_client=self.httpx_client)
+        else:
+            self.httpx_client = None
+            self.anthropic_async_client = None
 
         # For MCP
         # TODO: remove this
@@ -197,9 +205,6 @@ class SyncServer(object):
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
         self._embedding_config_cache = {}
-
-        # TODO: Replace this with the Anthropic client we have in house
-        self.anthropic_async_client = AsyncAnthropic()
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider(name="letta")]
