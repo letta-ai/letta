@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Text, UniqueConstraint
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -9,6 +9,7 @@ from letta.schemas.providers import Provider as PydanticProvider
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization
+    from letta.orm.provider_model import ProviderModel
 
 
 class Provider(SqlalchemyBase, OrganizationMixin):
@@ -23,6 +24,9 @@ class Provider(SqlalchemyBase, OrganizationMixin):
             name="unique_name_organization_id",
         ),
     )
+
+    # Override organization_id to make it nullable for base providers
+    organization_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("organizations.id"), nullable=True)
 
     name: Mapped[str] = mapped_column(nullable=False, doc="The name of the provider")
     provider_type: Mapped[str] = mapped_column(nullable=True, doc="The type of the provider")
@@ -39,3 +43,4 @@ class Provider(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="providers")
+    models: Mapped[list["ProviderModel"]] = relationship("ProviderModel", back_populates="provider", cascade="all, delete-orphan")
