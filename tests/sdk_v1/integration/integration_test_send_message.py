@@ -18,7 +18,7 @@ from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
 from letta_client.types.agents import (
     AssistantMessage,
     HiddenReasoningMessage,
-    LettaMessageUnion,
+    Message,
     ReasoningMessage,
     Run,
     ToolCallMessage,
@@ -800,8 +800,8 @@ def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = False) -
     return [m for m in messages if m is not None]
 
 
-def cast_message_dict_to_messages(messages: List[Dict[str, Any]]) -> List[LettaMessageUnion]:
-    def cast_message(message: Dict[str, Any]) -> LettaMessageUnion:
+def cast_message_dict_to_messages(messages: List[Dict[str, Any]]) -> List[Message]:
+    def cast_message(message: Dict[str, Any]) -> Message:
         if message["message_type"] == "reasoning_message":
             return ReasoningMessage(**message)
         elif message["message_type"] == "assistant_message":
