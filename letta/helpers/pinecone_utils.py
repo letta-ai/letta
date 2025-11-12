@@ -151,8 +151,9 @@ async def upsert_pinecone_indices():
     indices = get_pinecone_indices()
     logger.info(f"[Pinecone] Upserting {len(indices)} indices: {indices}")
 
-    for index_name in indices:
-        async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
+    # Reuse single client for all indices to avoid creating multiple SSL contexts
+    async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
+        for index_name in indices:
             if not await pc.has_index(index_name):
                 logger.info(f"[Pinecone] Creating index {index_name} with model {PINECONE_EMBEDDING_MODEL}")
                 await pc.create_index_for_model(
