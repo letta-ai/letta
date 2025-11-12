@@ -1,7 +1,7 @@
 """drop unused and redundant indexes
 
 Revision ID: b1c2d3e4f5a6
-Revises: a1b2c3d4e5f6
+Revises: 2dbb2cf49e07
 Create Date: 2025-11-11 21:16:00.000000
 
 """
@@ -15,7 +15,7 @@ from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "b1c2d3e4f5a6"
-down_revision: Union[str, None] = "a1b2c3d4e5f6"
+down_revision: Union[str, None] = "2dbb2cf49e07"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
