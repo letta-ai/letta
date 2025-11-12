@@ -3239,8 +3239,18 @@ class AgentManager:
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
             token_counter = AnthropicTokenCounter(anthropic_client, model)  # noqa
+            logger.info(
+                f"Using AnthropicTokenCounter for agent_id={agent_id}, model={model}, "
+                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
+                f"environment={settings.environment}"
+            )
         else:
             token_counter = TiktokenCounter(agent_state.llm_config.model)
+            logger.info(
+                f"Using TiktokenCounter for agent_id={agent_id}, model={agent_state.llm_config.model}, "
+                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
+                f"environment={settings.environment}"
+            )
 
         return await calculator.calculate_context_window(
             agent_state=agent_state,
