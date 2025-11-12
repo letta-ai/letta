@@ -72,9 +72,9 @@ async def create_provider(
         if isinstance(value, str) and value == "":
             setattr(request, field_name, None)
 
-    request_data = request.model_dump(exclude_unset=True, exclude_none=True)
-    provider = ProviderCreate(**request_data)
-    provider = await server.provider_manager.create_provider_async(provider, actor=actor)
+    # ProviderCreate no longer has provider_category field
+    # API-created providers are always BYOK (bring your own key)
+    provider = await server.provider_manager.create_provider_async(request, actor=actor, is_byok=True)
     return provider
 
 

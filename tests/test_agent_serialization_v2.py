@@ -1147,7 +1147,7 @@ class TestAgentFileImport:
         """Test basic agent import functionality with embedding override."""
         agent_file = await agent_serialization_manager.export([test_agent.id], default_user)
 
-        embedding_config_override = await server.get_cached_embedding_config_async(actor=other_user, handle=embedding_handle_override)
+        embedding_config_override = await server.get_embedding_config_from_handle_async(actor=other_user, handle=embedding_handle_override)
         result = await agent_serialization_manager.import_file(agent_file, other_user, override_embedding_config=embedding_config_override)
 
         assert result.success

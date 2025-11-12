@@ -305,7 +305,7 @@ async def _import_agent(
     agent_schema = AgentFileSchema.model_validate(agent_file_json)
 
     if override_embedding_handle:
-        embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+        embedding_config_override = await server.get_embedding_config_from_handle_async(actor=actor, handle=override_embedding_handle)
     else:
         embedding_config_override = None
 
