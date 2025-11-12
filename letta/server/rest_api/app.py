@@ -1,3 +1,4 @@
+import faulthandler
 import importlib.util
 import json
 import logging
@@ -10,6 +11,9 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
+
+# Enable Python fault handler to get stack traces on segfaults
+faulthandler.enable()
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
