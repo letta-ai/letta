@@ -107,11 +107,38 @@ class OpenAIEmbedder(BaseEmbedder):
         if not chunks:
             return []
 
-        logger.info(f"Generating embeddings for {len(chunks)} chunks using {self.embedding_config.embedding_model}")
+        # Filter out empty or whitespace-only chunks that would fail embedding
+        valid_chunks = [(i, chunk) for i, chunk in enumerate(chunks) if chunk and chunk.strip()]
+
+        if not valid_chunks:
+            logger.warning(f"No valid text chunks found for file {file_id}. PDF may contain only images without text layer.")
+            log_event(
+                "embedder.no_valid_chunks",
+                {"file_id": file_id, "source_id": source_id, "total_chunks": len(chunks), "reason": "All chunks empty or whitespace-only"},
+            )
+            return []
+
+        if len(valid_chunks) < len(chunks):
+            logger.info(f"Filtered out {len(chunks) - len(valid_chunks)} empty chunks from {len(chunks)} total")
+            log_event(
+                "embedder.chunks_filtered",
+                {
+                    "file_id": file_id,
+                    "original_chunks": len(chunks),
+                    "valid_chunks": len(valid_chunks),
+                    "filtered_chunks": len(chunks) - len(valid_chunks),
+                },
+            )
+
+        # Extract just the chunk text and indices for processing
+        chunk_indices = [i for i, _ in valid_chunks]
+        chunks_to_embed = [chunk for _, chunk in valid_chunks]
+
+        logger.info(f"Generating embeddings for {len(chunks_to_embed)} chunks using {self.embedding_config.embedding_model}")
         log_event(
             "embedder.generation_started",
             {
-                "total_chunks": len(chunks),
+                "total_chunks": len(chunks_to_embed),
                 "model": self.embedding_config.embedding_model,
                 "embedding_endpoint_type": self.embedding_config.embedding_endpoint_type,
                 "batch_size": self.embedding_config.batch_size,
@@ -124,16 +151,16 @@ class OpenAIEmbedder(BaseEmbedder):
         batches = []
         batch_indices = []
 
-        for i in range(0, len(chunks), self.embedding_config.batch_size):
-            batch = chunks[i : i + self.embedding_config.batch_size]
-            indices = list(range(i, min(i + self.embedding_config.batch_size, len(chunks))))
+        for i in range(0, len(chunks_to_embed), self.embedding_config.batch_size):
+            batch = chunks_to_embed[i : i + self.embedding_config.batch_size]
+            indices = list(range(i, min(i + self.embedding_config.batch_size, len(chunks_to_embed))))
             batches.append(batch)
             batch_indices.append(indices)
 
         logger.info(f"Processing {len(batches)} batches")
         log_event(
             "embedder.batching_completed",
-            {"total_batches": len(batches), "batch_size": self.embedding_config.batch_size, "total_chunks": len(chunks)},
+            {"total_batches": len(batches), "batch_size": self.embedding_config.batch_size, "total_chunks": len(chunks_to_embed)},
         )
 
         async def process(batch: List[str], indices: List[int]):
@@ -164,7 +191,7 @@ class OpenAIEmbedder(BaseEmbedder):
 
         # Create Passage objects in original order
         passages = []
-        for (idx, embedding), text in zip(indexed_embeddings, chunks):
+        for (idx, embedding), text in zip(indexed_embeddings, chunks_to_embed):
             passage = Passage(
                 text=text,
                 file_id=file_id,
@@ -178,6 +205,6 @@ class OpenAIEmbedder(BaseEmbedder):
         logger.info(f"Successfully generated {len(passages)} embeddings")
         log_event(
             "embedder.generation_completed",
-            {"passages_created": len(passages), "total_chunks_processed": len(chunks), "file_id": file_id, "source_id": source_id},
+            {"passages_created": len(passages), "total_chunks_processed": len(chunks_to_embed), "file_id": file_id, "source_id": source_id},
         )
         return passages

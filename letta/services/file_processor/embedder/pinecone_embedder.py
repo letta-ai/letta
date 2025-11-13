@@ -40,11 +40,34 @@ class PineconeEmbedder(BaseEmbedder):
         if not chunks:
             return []
 
-        logger.info(f"Upserting {len(chunks)} chunks to Pinecone using namespace {source_id}")
+        # Filter out empty or whitespace-only chunks
+        valid_chunks = [chunk for chunk in chunks if chunk and chunk.strip()]
+
+        if not valid_chunks:
+            logger.warning(f"No valid text chunks found for file {file_id}. PDF may contain only images without text layer.")
+            log_event(
+                "pinecone_embedder.no_valid_chunks",
+                {"file_id": file_id, "source_id": source_id, "total_chunks": len(chunks), "reason": "All chunks empty or whitespace-only"},
+            )
+            return []
+
+        if len(valid_chunks) < len(chunks):
+            logger.info(f"Filtered out {len(chunks) - len(valid_chunks)} empty chunks from {len(chunks)} total")
+            log_event(
+                "pinecone_embedder.chunks_filtered",
+                {
+                    "file_id": file_id,
+                    "original_chunks": len(chunks),
+                    "valid_chunks": len(valid_chunks),
+                    "filtered_chunks": len(chunks) - len(valid_chunks),
+                },
+            )
+
+        logger.info(f"Upserting {len(valid_chunks)} chunks to Pinecone using namespace {source_id}")
         log_event(
             "embedder.generation_started",
             {
-                "total_chunks": len(chunks),
+                "total_chunks": len(valid_chunks),
                 "file_id": file_id,
                 "source_id": source_id,
             },
@@ -52,11 +75,11 @@ class PineconeEmbedder(BaseEmbedder):
 
         # Upsert records to Pinecone using source_id as namespace
         try:
-            await upsert_file_records_to_pinecone_index(file_id=file_id, source_id=source_id, chunks=chunks, actor=actor)
-            logger.info(f"Successfully kicked off upserting {len(chunks)} records to Pinecone")
+            await upsert_file_records_to_pinecone_index(file_id=file_id, source_id=source_id, chunks=valid_chunks, actor=actor)
+            logger.info(f"Successfully kicked off upserting {len(valid_chunks)} records to Pinecone")
             log_event(
                 "embedder.upsert_started",
-                {"records_upserted": len(chunks), "namespace": source_id, "file_id": file_id},
+                {"records_upserted": len(valid_chunks), "namespace": source_id, "file_id": file_id},
             )
         except Exception as e:
             logger.error(f"Failed to upsert records to Pinecone: {str(e)}")
@@ -65,7 +88,7 @@ class PineconeEmbedder(BaseEmbedder):
 
         # Create Passage objects (without embeddings since Pinecone handles them)
         passages = []
-        for i, text in enumerate(chunks):
+        for i, text in enumerate(valid_chunks):
             passage = Passage(
                 text=text,
                 file_id=file_id,
@@ -79,6 +102,6 @@ class PineconeEmbedder(BaseEmbedder):
         logger.info(f"Successfully created {len(passages)} passages")
         log_event(
             "embedder.generation_completed",
-            {"passages_created": len(passages), "total_chunks_processed": len(chunks), "file_id": file_id, "source_id": source_id},
+            {"passages_created": len(passages), "total_chunks_processed": len(valid_chunks), "file_id": file_id, "source_id": source_id},
         )
         return passages
