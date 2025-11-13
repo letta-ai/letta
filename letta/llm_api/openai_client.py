@@ -738,6 +738,33 @@ class OpenAIClient(LLMClientBase):
         if not inputs:
             return []
 
+        logger.info(f"request_embeddings called with {len(inputs)} inputs, model={embedding_config.embedding_model}")
+
+        # Validate inputs - OpenAI rejects empty strings or non-string values
+        # See: https://community.openai.com/t/embedding-api-change-input-is-invalid/707490/7
+        valid_inputs = []
+        input_index_map = []  # Map valid input index back to original index
+
+        for idx, inp in enumerate(inputs):
+            if not isinstance(inp, str):
+                logger.error(f"Invalid input at index {idx}: type={type(inp)}, value={inp}")
+                raise ValueError(f"Input at index {idx} is not a string: {type(inp)}")
+            if not inp or not inp.strip():
+                logger.warning(f"Empty or whitespace-only input at index {idx}, replacing with placeholder")
+                # Replace empty strings with placeholder to avoid API rejection
+                valid_inputs.append(" ")
+                input_index_map.append(idx)
+            else:
+                valid_inputs.append(inp)
+                input_index_map.append(idx)
+
+        if not valid_inputs:
+            logger.error("All inputs are empty after validation")
+            raise ValueError("Cannot request embeddings for empty inputs")
+
+        # Use valid_inputs instead of inputs for processing
+        inputs = valid_inputs
+
         kwargs = self._prepare_client_kwargs_embedding(embedding_config)
         client = AsyncOpenAI(**kwargs)
 
@@ -752,6 +779,11 @@ class OpenAIClient(LLMClientBase):
             task_metadata = []
 
             for start_idx, chunk_inputs, current_batch_size in chunks_to_process:
+                logger.info(
+                    f"Creating embedding task: start_idx={start_idx}, batch_size={len(chunk_inputs)}, "
+                    f"first_input_len={len(chunk_inputs[0]) if chunk_inputs else 0}, "
+                    f"model={embedding_config.embedding_model}"
+                )
                 task = client.embeddings.create(model=embedding_config.embedding_model, input=chunk_inputs)
                 tasks.append(task)
                 task_metadata.append((start_idx, chunk_inputs, current_batch_size))
