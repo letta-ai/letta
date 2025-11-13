@@ -2001,9 +2001,8 @@ class AgentManager:
                 agent_only=agent_only,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)
@@ -2077,9 +2076,8 @@ class AgentManager:
                 agent_only=agent_only,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)
@@ -2139,9 +2137,8 @@ class AgentManager:
                 embedding_config=embedding_config,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)

@@ -6783,6 +6783,7 @@
                 }
               ],
               "description": "How many results to include in the response.",
+              "default": 100,
               "title": "Limit"
             },
             "description": "How many results to include in the response."

@@ -1145,7 +1145,7 @@ async def list_passages(
     server: "SyncServer" = Depends(get_letta_server),
     after: str | None = Query(None, description="Unique ID of the memory to start the query range at."),
     before: str | None = Query(None, description="Unique ID of the memory to end the query range at."),
-    limit: int | None = Query(None, description="How many results to include in the response."),
+    limit: int | None = Query(100, description="How many results to include in the response."),
     search: str | None = Query(None, description="Search passages by text"),
     ascending: bool | None = Query(
         True, description="Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
