@@ -813,9 +813,11 @@ class OpenAIClient(LLMClientBase):
                         failed_chunks.append((start_idx, chunk_inputs[:mid], 1))
                         failed_chunks.append((start_idx + mid, chunk_inputs[mid:], 1))
                     else:
+                        chunk_preview = str(chunk_inputs)[:500] if chunk_inputs else "None"
                         logger.error(
                             f"Failed to get embeddings for chunk starting at {start_idx} even with batch_size=1 "
-                            f"and minimum chunk size {min_chunk_size}. Error: {result}"
+                            f"and minimum chunk size {min_chunk_size}. Error: {result}. "
+                            f"Chunk preview (first 500 chars): {chunk_preview}"
                         )
                         raise result
                 else:
