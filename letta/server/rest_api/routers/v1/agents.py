@@ -28,6 +28,7 @@ from letta.errors import (
 from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.log import get_logger
+from letta.monitoring import track_operation
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
@@ -329,6 +330,7 @@ async def _import_agent(
 
 
 @router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
+@track_operation("import_agent")
 async def import_agent(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -437,6 +439,7 @@ class CreateAgentRequest(CreateAgent):
 
 
 @router.post("/", response_model=AgentState, operation_id="create_agent")
+@track_operation("create_agent")
 async def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),

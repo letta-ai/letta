@@ -17,6 +17,7 @@ from letta.helpers.pinecone_utils import (
 )
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
+from letta.monitoring import track_operation
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -207,6 +208,7 @@ async def delete_source(
 
 
 @router.post("/{source_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_source", deprecated=True)
+@track_operation("file_upload_to_source")
 async def upload_file_to_source(
     file: UploadFile,
     source_id: SourceId,

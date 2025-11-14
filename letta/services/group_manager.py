@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from sqlalchemy import and_, asc, delete, desc, or_, select
 from sqlalchemy.orm import Session
 
+from letta.monitoring import track_operation
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block
 from letta.orm.errors import NoResultFound
@@ -73,6 +74,7 @@ class GroupManager:
             return group.to_pydantic()
 
     @enforce_types
+    @track_operation("create_multi_agent_group")
     async def create_group_async(self, group: Union[GroupCreate, InternalTemplateGroupCreate], actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             new_group = GroupModel()
@@ -197,6 +199,7 @@ class GroupManager:
     @enforce_types
     @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @track_operation("list_multi_agent_messages")
     async def list_group_messages_async(
         self,
         actor: PydanticUser,
@@ -320,6 +323,7 @@ class GroupManager:
         else:
             raise ValueError("Extend relationship is not supported for groups.")
 
+    @track_operation("process_multi_agent_relationships")
     async def _process_agent_relationship_async(self, session, group: GroupModel, agent_ids: List[str], allow_partial=False, replace=True):
         if not agent_ids:
             if replace:

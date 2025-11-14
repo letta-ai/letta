@@ -5,6 +5,7 @@ from sqlalchemy import and_, exists, select
 
 from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.helpers.tpuf_client import should_use_tpuf
+from letta.monitoring import track_operation
 from letta.orm import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.source import Source as SourceModel
@@ -272,6 +273,7 @@ class SourceManager:
     @enforce_types
     @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @track_operation("list_all_attached_agents")
     async def list_attached_agents(
         self, source_id: str, actor: PydanticUser, ids_only: bool = False
     ) -> Union[List[PydanticAgentState], List[str]]:
@@ -465,6 +467,7 @@ class SourceManager:
 
     @enforce_types
     @trace_method
+    @track_operation("batch_get_sources_by_ids")
     async def get_sources_by_ids_async(self, source_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
         """
         Get multiple sources by their IDs in a single query.
@@ -491,6 +494,7 @@ class SourceManager:
 
     @enforce_types
     @trace_method
+    @track_operation("batch_get_sources_for_agents")
     async def get_sources_for_agents_async(self, agent_ids: List[str], actor: PydanticUser) -> List[PydanticSource]:
         """
         Get all sources associated with the given agents via sources-agents relationships.

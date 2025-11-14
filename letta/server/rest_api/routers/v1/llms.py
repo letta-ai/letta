@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Depends, Query
 
+from letta.monitoring.memory_tracker import track_operation
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.model import EmbeddingModel, Model
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -13,6 +14,7 @@ router = APIRouter(prefix="/models", tags=["models", "llms"])
 
 
 @router.get("/", response_model=List[Model], operation_id="list_models")
+@track_operation("list_llm_models_endpoint")
 async def list_llm_models(
     provider_category: Optional[List[ProviderCategory]] = Query(None),
     provider_name: Optional[str] = Query(None),
@@ -40,6 +42,7 @@ async def list_llm_models(
 
 
 @router.get("/embedding", response_model=List[EmbeddingModel], operation_id="list_embedding_models")
+@track_operation("list_embedding_models_endpoint")
 async def list_embedding_models(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

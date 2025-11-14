@@ -14,6 +14,14 @@ import uvicorn
 
 # Enable Python fault handler to get stack traces on segfaults
 faulthandler.enable()
+
+# Import memory tracking (if available)
+try:
+    from letta.monitoring import RequestSizeMonitoringMiddleware, get_memory_tracker, identify_upload_endpoints
+
+    MEMORY_TRACKING_ENABLED = True
+except ImportError:
+    MEMORY_TRACKING_ENABLED = False
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -133,6 +141,13 @@ async def lifespan(app_: FastAPI):
     """
     worker_id = os.getpid()
 
+    # Initialize memory tracking
+    if MEMORY_TRACKING_ENABLED:
+        logger.info(f"[Worker {worker_id}] Initializing memory tracking")
+        # Get the global tracker instance (will start background monitor automatically)
+        tracker = get_memory_tracker(enable_background_monitor=True, monitor_interval=5)
+        logger.info(f"[Worker {worker_id}] Memory tracking enabled - monitoring every 5s with proactive alerts")
+
     if telemetry_settings.profiler:
         try:
             import googlecloudprofiler
@@ -174,6 +189,14 @@ async def lifespan(app_: FastAPI):
 
     # Cleanup on shutdown
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
+
+    # Report memory usage before shutdown
+    if MEMORY_TRACKING_ENABLED:
+        logger.info(f"[Worker {worker_id}] Generating final memory report")
+        tracker = get_memory_tracker()
+        report = tracker.get_report()
+        logger.info(f"[Worker {worker_id}] Memory report:\n{report}")
+
     try:
         from letta.jobs.scheduler import shutdown_scheduler_and_release_lock
 
@@ -555,6 +578,13 @@ def create_application() -> "FastAPI":
 
     # Add unified logging middleware - enriches log context and logs exceptions
     app.add_middleware(LoggingMiddleware)
+
+    # Add request size monitoring middleware to detect large uploads
+    if MEMORY_TRACKING_ENABLED:
+        app.add_middleware(RequestSizeMonitoringMiddleware)
+        logger.info("Request size monitoring middleware enabled")
+        # Identify potential upload endpoints
+        identify_upload_endpoints(app)
 
     app.add_middleware(
         CORSMiddleware,

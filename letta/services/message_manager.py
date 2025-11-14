@@ -7,6 +7,20 @@ from sqlalchemy import delete, exists, func, select, text
 
 from letta.constants import CONVERSATION_SEARCH_TOOL_NAME, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
+
+# Import memory tracking if available
+try:
+    from letta.monitoring import track_operation
+
+    MEMORY_TRACKING_ENABLED = True
+except ImportError:
+    MEMORY_TRACKING_ENABLED = False
+
+    # Define a no-op decorator if tracking is not available
+    def track_operation(name):
+        return lambda f: f
+
+
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
@@ -441,6 +455,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @track_operation("bulk_create_messages")
     async def create_many_messages_async(
         self,
         pydantic_msgs: List[PydanticMessage],
@@ -825,6 +840,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @track_operation("list_messages")
     async def list_messages(
         self,
         actor: PydanticUser,
@@ -949,6 +965,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @track_operation("bulk_delete_all_agent_messages")
     async def delete_all_messages_for_agent_async(
         self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None, strict_mode: bool = False
     ) -> int:
@@ -997,6 +1014,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @track_operation("bulk_delete_messages_by_ids")
     async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser, strict_mode: bool = False) -> int:
         """
         Efficiently deletes messages by their specific IDs,
@@ -1044,6 +1062,7 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    @track_operation("search_messages")
     async def search_messages_async(
         self,
         agent_id: str,
@@ -1164,6 +1183,7 @@ class MessageManager:
                 message_tuples.append((message, metadata))
             return message_tuples
 
+    @track_operation("search_messages_org")
     async def search_messages_org_async(
         self,
         actor: PydanticUser,
