@@ -18,6 +18,7 @@ from letta.constants import (
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MAX_TOOL_NAME_LENGTH,
     MCP_TOOL_TAG_NAME_PREFIX,
+    MODAL_DEFAULT_PYTHON_VERSION,
     MODAL_DEFAULT_TOOL_NAME,
 )
 from letta.errors import LettaInvalidArgumentError, LettaToolNameConflictError, LettaToolNameSchemaMismatchError
@@ -73,7 +74,7 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
         secrets_dict.update(sandbox_env_vars)
 
     @modal_app.function(
-        image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
+        image=modal.Image.debian_slim(python_version=MODAL_DEFAULT_PYTHON_VERSION).pip_install(packages),
         restrict_modal_access=True,
         timeout=10,
         secrets=[modal.Secret.from_dict(secrets_dict)],
