@@ -320,6 +320,8 @@ class LettaAgentV3(LettaAgentV2):
                 # Raise if no chunks sent yet (response not started, can return error status code)
                 raise
             else:
+                yield f"data: {self.stop_reason.model_dump_json()}\n\n"
+
                 # Mid-stream error: yield error event to client in SSE format
                 error_chunk = {
                     "error": {
