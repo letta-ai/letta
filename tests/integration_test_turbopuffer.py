@@ -801,7 +801,7 @@ def test_should_use_tpuf_for_messages_settings():
 
 
 def test_message_text_extraction(server, default_user):
-    """Test extraction of text from various message content structures"""
+    """Test extraction of text from various message content structures including ReasoningContent"""
     manager = server.message_manager
 
     # Test 1: List with single string-like TextContent
@@ -875,6 +875,76 @@ def test_message_text_extraction(server, default_user):
         text6
         == '{"content": "User said: Tool call: search({\\n  \\"query\\": \\"test\\"\\n}) Tool result: Found 5 results I should help the user"}'
     )
+
+    # Test 7: ReasoningContent only (edge case)
+    msg7 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[ReasoningContent(is_native=True, reasoning="This is my internal reasoning process", signature="reasoning-abc123")],
+        agent_id="test-agent",
+    )
+    text7 = manager._extract_message_text(msg7)
+    assert "This is my internal reasoning process" in text7
+
+    # Test 8: ReasoningContent with empty reasoning (should handle gracefully)
+    msg8 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[
+            ReasoningContent(
+                is_native=True,
+                reasoning="",  # Empty reasoning
+                signature="empty-reasoning",
+            ),
+            TextContent(text="But I have text content"),
+        ],
+        agent_id="test-agent",
+    )
+    text8 = manager._extract_message_text(msg8)
+    assert "But I have text content" in text8
+
+    # Test 9: Multiple ReasoningContent items
+    msg9 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[
+            ReasoningContent(is_native=True, reasoning="First thought", signature="step-1"),
+            ReasoningContent(is_native=True, reasoning="Second thought", signature="step-2"),
+            TextContent(text="Final answer"),
+        ],
+        agent_id="test-agent",
+    )
+    text9 = manager._extract_message_text(msg9)
+    assert "First thought" in text9
+    assert "Second thought" in text9
+    assert "Final answer" in text9
+
+    # Test 10: ReasoningContent in _combine_assistant_tool_messages
+    assistant_with_reasoning = PydanticMessage(
+        id="message-c19dbdc7-ba2f-4bf2-a469-64b5aed2c01d",
+        role=MessageRole.assistant,
+        content=[ReasoningContent(is_native=True, reasoning="I need to search for information", signature="reasoning-xyz")],
+        agent_id="test-agent",
+        tool_calls=[
+            {"id": "call-456", "type": "function", "function": {"name": "web_search", "arguments": '{"query": "Python tutorials"}'}}
+        ],
+    )
+
+    tool_response = PydanticMessage(
+        id="message-16134e76-40fa-48dd-92a8-3e0d9256d79a",
+        role=MessageRole.tool,
+        name="web_search",
+        tool_call_id="call-456",
+        content=[TextContent(text="Found 10 Python tutorials")],
+        agent_id="test-agent",
+    )
+
+    # Test that combination preserves reasoning content
+    combined_msgs = manager._combine_assistant_tool_messages([assistant_with_reasoning, tool_response])
+    assert len(combined_msgs) == 1
+    combined_text = combined_msgs[0].content[0].text
+
+    # Should contain the reasoning text
+    assert "search for information" in combined_text or "I need to" in combined_text
+    assert "web_search" in combined_text
+    assert "Found 10 Python tutorials" in combined_text
 
 
 @pytest.mark.asyncio

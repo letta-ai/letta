@@ -163,6 +163,8 @@ class MessageManager:
                     # Fall back to direct attribute access for types without .to_text() or that return None
                     if hasattr(content_item, "text") and content_item.text:
                         extracted_text = content_item.text
+                    elif hasattr(content_item, "reasoning") and content_item.reasoning:
+                        extracted_text = content_item.reasoning
                     elif hasattr(content_item, "content") and content_item.content:
                         extracted_text = content_item.content
 
@@ -256,11 +258,35 @@ class MessageManager:
                     and any(tc.id == next_msg.tool_call_id for tc in current_msg.tool_calls)
                 ):
                     # combine the messages - get raw content to avoid double-processing
-                    assistant_text = current_msg.content[0].text if current_msg.content else ""
+                    if current_msg.content and len(current_msg.content) > 0:
+                        # Use to_text() method or fall back to appropriate attribute
+                        content_item = current_msg.content[0]
+                        assistant_text = content_item.to_text() if hasattr(content_item, "to_text") and content_item.to_text() else ""
+                        if not assistant_text:
+                            if hasattr(content_item, "text"):
+                                assistant_text = content_item.text or ""
+                            elif hasattr(content_item, "reasoning"):
+                                assistant_text = content_item.reasoning or ""
+                            elif hasattr(content_item, "content"):
+                                assistant_text = content_item.content or ""
+                    else:
+                        assistant_text = ""
 
                     # for non-send_message tools, include tool result
                     if next_msg.name != DEFAULT_MESSAGE_TOOL:
-                        tool_result_text = next_msg.content[0].text if next_msg.content else ""
+                        if next_msg.content and len(next_msg.content) > 0:
+                            # Use to_text() method or fall back to appropriate attribute
+                            content_item = next_msg.content[0]
+                            tool_result_text = content_item.to_text() if hasattr(content_item, "to_text") and content_item.to_text() else ""
+                            if not tool_result_text:
+                                if hasattr(content_item, "text"):
+                                    tool_result_text = content_item.text or ""
+                                elif hasattr(content_item, "reasoning"):
+                                    tool_result_text = content_item.reasoning or ""
+                                elif hasattr(content_item, "content"):
+                                    tool_result_text = content_item.content or ""
+                        else:
+                            tool_result_text = ""
 
                         # get the tool call that matches this result (we know it exists from the condition above)
                         matching_tool_call = next((tc for tc in current_msg.tool_calls if tc.id == next_msg.tool_call_id), None)
