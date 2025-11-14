@@ -1,3 +1,4 @@
+import socket
 import sys
 import uuid
 
@@ -11,10 +12,11 @@ _resources = {}
 
 def get_resource(service_name: str) -> Resource:
     _env = settings.environment
-    if service_name not in _resources:
+    if (service_name, _env) not in _resources:
         resource_dict = {
             "service.name": service_name,
             "letta.version": letta_version,
+            "host.name": socket.gethostname(),
         }
         if _env != "PRODUCTION":
             resource_dict["device.id"] = uuid.getnode()  # MAC address as unique device identifier,
