@@ -423,6 +423,9 @@ async def initialize_message_sequence_async(
     )
     first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
+    if agent_state.agent_type == AgentType.letta_v1_agent:
+        return [{"role": "system", "content": full_system_message}]
+
     if include_initial_boot_message:
         llm_config = agent_state.llm_config
         uuid_str = str(uuid.uuid4())
