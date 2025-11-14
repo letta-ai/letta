@@ -487,6 +487,7 @@ class SyncServer(object):
         main_agent = await self.agent_manager.create_agent_async(
             agent_create=request,
             actor=actor,
+            _init_with_no_messages=(request.agent_type == AgentType.letta_v1_agent),
         )
         log_event(name="end create_agent db")
 
