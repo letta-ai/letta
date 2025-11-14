@@ -1298,6 +1298,7 @@ class SyncServer(object):
                 actor=actor,
                 sandbox_env_vars=tool_env_vars,
             )
+
             # TODO: Integrate sandbox result
             tool_execution_result = await tool_execution_manager.execute_tool_async(
                 function_name=tool_name,

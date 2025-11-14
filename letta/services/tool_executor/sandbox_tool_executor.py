@@ -11,6 +11,7 @@ from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
+from letta.services.sandbox_credentials_service import SandboxCredentialsService
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
 from letta.settings import tool_settings
@@ -39,6 +40,20 @@ class SandboxToolExecutor(ToolExecutor):
             orig_memory_str = agent_state.memory.compile(llm_config=agent_state.llm_config)
         else:
             orig_memory_str = None
+
+        # Fetch credentials from webhook
+        credentials_service = SandboxCredentialsService()
+
+        fetched_credentials = await credentials_service.fetch_credentials(
+            actor=actor,
+            tool_name=tool.name,
+            agent_id=agent_state.id if agent_state else None,
+        )
+
+        # Merge fetched credentials with provided sandbox_env_vars
+        if sandbox_env_vars is None:
+            sandbox_env_vars = {}
+        sandbox_env_vars = {**fetched_credentials, **sandbox_env_vars}
 
         try:
             # Prepare function arguments
