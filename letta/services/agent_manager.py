@@ -1495,8 +1495,8 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def reset_messages_async(
-        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
-    ) -> PydanticAgentState:
+        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False, needs_agent_state: bool = True
+    ) -> Optional[PydanticAgentState]:
         """
         Removes all in-context messages for the specified agent except the original system message by:
           1) Preserving the first message ID (original system message).
@@ -1510,9 +1510,10 @@ class AgentManager:
             add_default_initial_messages: If true, adds the default initial messages after resetting.
             agent_id (str): The ID of the agent whose messages will be reset.
             actor (PydanticUser): The user performing this action.
+            needs_agent_state: If True, returns the updated agent state. If False, returns None (for performance optimization)
 
         Returns:
-            PydanticAgentState: The updated agent state with only the original system message preserved.
+            Optional[PydanticAgentState]: The updated agent state with only the original system message preserved, or None if needs_agent_state=False.
         """
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1533,7 +1534,12 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
-            agent_state = await agent.to_pydantic_async(include_relationships=["sources"])
+
+            # Only convert to pydantic if we need to return it or add initial messages
+            if add_default_initial_messages or needs_agent_state:
+                agent_state = await agent.to_pydantic_async(include_relationships=["sources"] if add_default_initial_messages else None)
+            else:
+                agent_state = None
 
         # Optionally add default initial messages after the system message
         if add_default_initial_messages:
@@ -1703,6 +1709,8 @@ class AgentManager:
 
             # Commit the changes
             agent = await agent.update_async(session, actor=actor)
+            # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
+            # or even better, not refresh at all.
             return await agent.to_pydantic_async()
 
     @enforce_types
@@ -1863,6 +1871,8 @@ class AgentManager:
 
             # Get agent without loading relationships for return value
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
+            # or even better, not refresh at all.
             return await agent.to_pydantic_async()
 
     # ======================================================================================================================
@@ -1919,7 +1929,9 @@ class AgentManager:
     @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
-    async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
+    async def attach_block_async(
+        self, agent_id: str, block_id: str, actor: PydanticUser, needs_agent_state: bool = True
+    ) -> Optional[PydanticAgentState]:
         """Attaches a block to an agent. For sleeptime agents, also attaches to paired agents in the same group."""
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1951,7 +1963,7 @@ class AgentManager:
             # TODO: I have too many things rn so lets look at this later
             # await session.commit()
 
-            return await agent.to_pydantic_async()
+            return await agent.to_pydantic_async() if needs_agent_state else None
 
     @enforce_types
     @trace_method
@@ -1960,7 +1972,8 @@ class AgentManager:
         agent_id: str,
         block_id: str,
         actor: PydanticUser,
-    ) -> PydanticAgentState:
+        needs_agent_state: bool = True,
+    ) -> Optional[PydanticAgentState]:
         """Detaches a block from an agent."""
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1972,7 +1985,7 @@ class AgentManager:
                 raise NoResultFound(f"No block with id '{block_id}' found for agent '{agent_id}' with actor id: '{actor.id}'")
 
             await agent.update_async(session, actor=actor)
-            return await agent.to_pydantic_async()
+            return await agent.to_pydantic_async() if needs_agent_state else None
 
     # ======================================================================================================================
     # Passage Management
