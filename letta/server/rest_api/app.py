@@ -144,8 +144,10 @@ async def lifespan(app_: FastAPI):
     # Initialize memory tracking
     if MEMORY_TRACKING_ENABLED:
         logger.info(f"[Worker {worker_id}] Initializing memory tracking")
-        # Get the global tracker instance (will start background monitor automatically)
+        # Get the global tracker instance
         tracker = get_memory_tracker(enable_background_monitor=True, monitor_interval=5)
+        # Explicitly start the background monitor (won't wait for first tracked operation)
+        await tracker.start_background_monitor()
         logger.info(f"[Worker {worker_id}] Memory tracking enabled - monitoring every 5s with proactive alerts")
 
     if telemetry_settings.profiler:

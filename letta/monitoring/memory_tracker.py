@@ -87,11 +87,12 @@ class MemoryTracker:
                 # Check if there's a running event loop
                 loop = asyncio.get_running_loop()
                 # Create the monitor task
-                asyncio.create_task(self.start_background_monitor())
+                task = asyncio.create_task(self.start_background_monitor())
                 self._monitor_started = True
-            except RuntimeError:
+                logger.debug("Monitor start task created from _ensure_monitor_started")
+            except RuntimeError as e:
                 # No event loop running yet, will try again later
-                pass
+                logger.debug(f"No event loop available yet for monitor start: {e}")
 
     def get_memory_info(self) -> Dict[str, Any]:
         """Get current memory information."""
@@ -303,12 +304,20 @@ class MemoryTracker:
     async def start_background_monitor(self):
         """Start the background memory monitoring task."""
         if self._monitoring:
+            logger.info("Background monitor already running, skipping start")
             return
 
         self._monitoring = True
         self._monitor_started = True
-        self._monitor_task = asyncio.create_task(self._monitor_loop())
-        logger.info(f"Background memory monitor started (interval: {self.monitor_interval}s)")
+
+        try:
+            self._monitor_task = asyncio.create_task(self._monitor_loop())
+            logger.info(f"Background memory monitor task created successfully (interval: {self.monitor_interval}s)")
+        except Exception as e:
+            logger.error(f"Failed to create monitor task: {e}", exc_info=True)
+            self._monitoring = False
+            self._monitor_started = False
+            raise
 
     async def stop_background_monitor(self):
         """Stop the background memory monitoring task."""
@@ -326,9 +335,13 @@ class MemoryTracker:
         """Background monitoring loop that runs continuously using asyncio."""
         consecutive_high_memory = 0
         last_gc_time = time.time()
+        iteration_count = 0
+
+        logger.info(f"Memory monitor loop started (PID: {os.getpid()})")
 
         while self._monitoring:
             try:
+                iteration_count += 1
                 mem_info = self.get_memory_info()
                 current_mb = mem_info.get("rss_mb", 0)
                 system_percent = mem_info.get("system_percent", 0)
@@ -338,6 +351,14 @@ class MemoryTracker:
                     self.memory_history.append(mem_info)
                     if len(self.memory_history) > self.max_history_size:
                         self.memory_history.pop(0)
+
+                # Log periodic memory status
+                # Using INFO since production logging is at INFO level
+                percent = (current_mb / self.CRITICAL_THRESHOLD_MB) * 100
+                logger.info(
+                    f"Memory Status: RSS: {current_mb:.2f} MB ({percent:.1f}% of {self.CRITICAL_THRESHOLD_MB} MB limit), "
+                    f"System: {system_percent:.1f}%"
+                )
 
                 # Check memory levels
                 self._check_memory_thresholds(mem_info)
@@ -364,10 +385,13 @@ class MemoryTracker:
                 await asyncio.sleep(self.monitor_interval)
 
             except asyncio.CancelledError:
+                logger.info(f"Memory monitor loop cancelled after {iteration_count} iterations")
                 break
             except Exception as e:
-                logger.error(f"Error in memory monitor loop: {e}")
+                logger.error(f"Error in memory monitor loop (iteration {iteration_count}): {e}", exc_info=True)
                 await asyncio.sleep(self.monitor_interval)
+
+        logger.info(f"Memory monitor loop exited after {iteration_count} iterations")
 
     def _check_memory_thresholds(self, mem_info: Dict[str, Any]):
         """Check memory against thresholds and log appropriately."""
