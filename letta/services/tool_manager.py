@@ -20,6 +20,7 @@ from letta.constants import (
     MCP_TOOL_TAG_NAME_PREFIX,
     MODAL_DEFAULT_PYTHON_VERSION,
     MODAL_DEFAULT_TOOL_NAME,
+    MODAL_SAFE_IMPORT_MODULES,
 )
 from letta.errors import LettaInvalidArgumentError, LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
@@ -58,6 +59,8 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
     from letta_client import Letta
 
     packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
+    for package in MODAL_SAFE_IMPORT_MODULES:
+        packages.append(package)
     packages.append("letta_client")
     packages.append("letta")  # Base letta without extras
     packages.append("asyncpg>=0.30.0")  # Fixes asyncpg import error
@@ -1026,7 +1029,7 @@ class ToolManager:
         modal_app = modal_tool_wrapper(tool, actor, sandbox_env_vars)
 
         # Deploy the app first
-        with modal.enable_output():
+        with modal.enable_output(show_progress=False):
             try:
                 deploy = modal_app.deploy()
             except Exception as e:
