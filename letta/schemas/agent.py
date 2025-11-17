@@ -100,7 +100,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     memory: Memory = Field(..., description="Deprecated: Use `blocks` field instead. The in-context memory of the agent.", deprecated=True)
     blocks: List[Block] = Field(..., description="The memory blocks used by the agent.")
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
-    sources: List[Source] = Field(..., description="The sources used by the agent.")
+    sources: List[Source] = Field(
+        ..., description="Deprecated: Use `folders` field instead. The sources used by the agent.", deprecated=True
+    )
     tags: List[str] = Field(..., description="The tags associated with the agent.")
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
         default_factory=list,
@@ -199,7 +201,10 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     # TODO: This is a legacy field and should be removed ASAP to force `tool_ids` usage
     tools: Optional[List[str]] = Field(None, description="The tools used by the agent.")
     tool_ids: Optional[List[str]] = Field(None, description="The ids of the tools used by the agent.")
-    source_ids: Optional[List[str]] = Field(None, description="The ids of the sources used by the agent.")
+    source_ids: Optional[List[str]] = Field(
+        None, description="Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.", deprecated=True
+    )
+    folder_ids: Optional[List[str]] = Field(None, description="The ids of the folders used by the agent.")
     block_ids: Optional[List[str]] = Field(None, description="The ids of the blocks used by the agent.")
     tool_rules: Optional[List[ToolRule]] = Field(None, description="The tool rules governing the agent.")
     tags: Optional[List[str]] = Field(None, description="The tags associated with the agent.")
@@ -396,7 +401,10 @@ class InternalTemplateAgentCreate(CreateAgent):
 class UpdateAgent(BaseModel):
     name: Optional[str] = Field(None, description="The name of the agent.")
     tool_ids: Optional[List[str]] = Field(None, description="The ids of the tools used by the agent.")
-    source_ids: Optional[List[str]] = Field(None, description="The ids of the sources used by the agent.")
+    source_ids: Optional[List[str]] = Field(
+        None, description="Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.", deprecated=True
+    )
+    folder_ids: Optional[List[str]] = Field(None, description="The ids of the folders used by the agent.")
     block_ids: Optional[List[str]] = Field(None, description="The ids of the blocks used by the agent.")
     tags: Optional[List[str]] = Field(None, description="The tags associated with the agent.")
     system: Optional[str] = Field(None, description="The system prompt used by the agent.")

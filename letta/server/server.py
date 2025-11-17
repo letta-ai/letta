@@ -492,9 +492,11 @@ class SyncServer(object):
         log_event(name="end create_agent db")
 
         log_event(name="start insert_files_into_context_window db")
-        if request.source_ids:
-            for source_id in request.source_ids:
-                files = await self.file_manager.list_files(source_id, actor, include_content=True)
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        folder_ids_to_attach = request.folder_ids if request.folder_ids else request.source_ids
+        if folder_ids_to_attach:
+            for folder_id in folder_ids_to_attach:
+                files = await self.file_manager.list_files(folder_id, actor, include_content=True)
                 await self.agent_manager.insert_files_into_context_window(
                     agent_state=main_agent, file_metadata_with_content=files, actor=actor
                 )

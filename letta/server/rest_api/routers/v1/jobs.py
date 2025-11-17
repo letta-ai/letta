@@ -16,7 +16,9 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 @router.get("/", response_model=List[Job], operation_id="list_jobs")
 async def list_jobs(
     server: "SyncServer" = Depends(get_letta_server),
-    source_id: Optional[str] = Query(None, description="Only list jobs associated with the source."),
+    source_id: Optional[str] = Query(
+        None, description="Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.", deprecated=True
+    ),
     before: Optional[str] = Query(
         None, description="Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
     ),
@@ -66,7 +68,9 @@ async def list_jobs(
 async def list_active_jobs(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
-    source_id: Optional[str] = Query(None, description="Only list jobs associated with the source."),
+    source_id: Optional[str] = Query(
+        None, description="Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.", deprecated=True
+    ),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(50, description="Limit for pagination"),

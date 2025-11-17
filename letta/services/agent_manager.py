@@ -738,7 +738,9 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         new_tools = set(agent_update.tool_ids or [])
-        new_sources = set(agent_update.source_ids or [])
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        folder_ids_to_update = agent_update.folder_ids if agent_update.folder_ids is not None else agent_update.source_ids
+        new_sources = set(folder_ids_to_update or [])
         new_blocks = set(agent_update.block_ids or [])
         new_idents = set(agent_update.identity_ids or [])
         new_tags = set(agent_update.tags or [])
@@ -795,7 +797,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tools"])
 
-            if agent_update.source_ids is not None:
+            # Update sources if either folder_ids or source_ids (deprecated) is provided
+            if agent_update.folder_ids is not None or agent_update.source_ids is not None:
                 await self._replace_pivot_rows_async(
                     session,
                     SourcesAgents.__table__,

@@ -12732,10 +12732,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Only list jobs associated with the source.",
+              "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+              "deprecated": true,
               "title": "Source Id"
             },
-            "description": "Only list jobs associated with the source."
+            "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+            "deprecated": true
           },
           {
             "name": "before",
@@ -12894,10 +12896,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Only list jobs associated with the source.",
+              "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+              "deprecated": true,
               "title": "Source Id"
             },
-            "description": "Only list jobs associated with the source."
+            "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+            "deprecated": true
           },
           {
             "name": "before",
@@ -19156,7 +19160,8 @@
             },
             "type": "array",
             "title": "Sources",
-            "description": "The sources used by the agent."
+            "description": "Deprecated: Use `folders` field instead. The sources used by the agent.",
+            "deprecated": true
           },
           "tags": {
             "items": {
@@ -23074,7 +23079,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -24843,7 +24864,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source."
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source.",
+            "deprecated": true
           },
           "file_name": {
             "type": "string",
@@ -25116,7 +25138,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source."
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source.",
+            "deprecated": true
           },
           "is_open": {
             "type": "boolean",
@@ -25164,7 +25187,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "The unique identifier of the source associated with the document."
+            "description": "Deprecated: Use `folder_id` field instead. The unique identifier of the source associated with the document.",
+            "deprecated": true
           },
           "file_name": {
             "anyOf": [
@@ -25353,7 +25377,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "The unique identifier of the source associated with the document."
+            "description": "Deprecated: Use `folder_id` field instead. The unique identifier of the source associated with the document.",
+            "deprecated": true
           },
           "file_name": {
             "anyOf": [
@@ -27239,7 +27264,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -31234,7 +31275,8 @@
               }
             ],
             "title": "Source Id",
-            "description": "The data source of the passage."
+            "description": "Deprecated: Use `folder_id` field instead. The data source of the passage.",
+            "deprecated": true
           },
           "file_id": {
             "anyOf": [
@@ -33321,12 +33363,14 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source"
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source",
+            "deprecated": true
           },
           "source_name": {
             "type": "string",
             "title": "Source Name",
-            "description": "Name of the source"
+            "description": "Deprecated: Use `folder_name` field instead. Name of the source",
+            "deprecated": true
           },
           "file_count": {
             "type": "integer",
@@ -35917,7 +35961,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -37073,7 +37133,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
