@@ -12,6 +12,7 @@ from letta.orm.user import User as UserModel
 from letta.otel.tracing import trace_method
 from letta.schemas.user import User as PydanticUser, UserUpdate
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -110,7 +111,18 @@ class UserManager:
     @enforce_types
     @trace_method
     async def get_actor_or_default_async(self, actor_id: Optional[str] = None):
-        """Fetch the user or default user asynchronously."""
+        """Fetch the user or default user asynchronously.
+
+        Args:
+            actor_id: The actor ID to fetch. If None and no_default_actor is True, raises NoResultFound.
+
+        Raises:
+            NoResultFound: If actor_id is None and no_default_actor setting is True.
+        """
+        # Security check: if no_default_actor is enabled and actor_id is None, raise error
+        if settings.no_default_actor and actor_id is None:
+            raise NoResultFound("Actor ID is required when no_default_actor is enabled")
+
         target_id = actor_id or self.DEFAULT_USER_ID
 
         try:
