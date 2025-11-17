@@ -625,7 +625,7 @@ async def attach_source(
     return agent_state
 
 
-@router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=AgentState, operation_id="attach_folder_to_agent")
+@router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=Optional[AgentState], operation_id="attach_folder_to_agent")
 async def attach_folder_to_agent(
     folder_id: SourceId,
     agent_id: AgentId,
@@ -649,6 +649,8 @@ async def attach_folder_to_agent(
         source = await server.source_manager.get_source_by_id(source_id=folder_id)
         safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
+    if is_1_0_sdk_version(headers):
+        return None
     return agent_state
 
 
@@ -679,10 +681,11 @@ async def detach_source(
             await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
+
     return agent_state
 
 
-@router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=AgentState, operation_id="detach_folder_from_agent")
+@router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=Optional[AgentState], operation_id="detach_folder_from_agent")
 async def detach_folder_from_agent(
     folder_id: SourceId,
     agent_id: AgentId,
@@ -709,6 +712,9 @@ async def detach_folder_from_agent(
             await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
+
+    if is_1_0_sdk_version(headers):
+        return None
     return agent_state
 
 
@@ -1896,7 +1902,7 @@ class ResetMessagesRequest(BaseModel):
     )
 
 
-@router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
+@router.patch("/{agent_id}/reset-messages", response_model=Optional[AgentState], operation_id="reset_messages")
 async def reset_messages(
     agent_id: AgentId,
     request: ResetMessagesRequest = Body(...),
@@ -1906,7 +1912,10 @@ async def reset_messages(
     """Resets the messages for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.reset_messages_async(
-        agent_id=agent_id, actor=actor, add_default_initial_messages=request.add_default_initial_messages
+        agent_id=agent_id,
+        actor=actor,
+        add_default_initial_messages=request.add_default_initial_messages,
+        needs_agent_state=not is_1_0_sdk_version(headers),
     )
 
 

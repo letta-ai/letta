@@ -5319,7 +5319,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Attach Folder To Agent"
                 }
               }
             }
@@ -5444,7 +5452,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Detach Folder From Agent"
                 }
               }
             }
@@ -7782,7 +7798,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Reset Messages"
                 }
               }
             }
