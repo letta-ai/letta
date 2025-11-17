@@ -336,6 +336,25 @@ async def import_agent(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     x_override_embedding_model: str | None = Header(None, alias="x-override-embedding-model"),
+    # New fields (all optional)
+    override_existing_tools: bool = Form(
+        True,
+        description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+    ),
+    strip_messages: bool = Form(
+        False,
+        description="If set to True, strips all messages from the agent before importing.",
+    ),
+    secrets: Optional[str] = Form(None, description="Secrets as a JSON string to pass to the agent for tool execution."),
+    name: Optional[str] = Form(
+        None,
+        description="If provided, overrides the agent name with this value.",
+    ),
+    embedding: Optional[str] = Form(
+        None,
+        description="Embedding handle to override with.",
+    ),
+    # Deprecated fields (maintain backward compatibility)
     append_copy_suffix: bool = Form(
         True,
         description='If set to True, appends "_copy" to the end of the agent name.',
@@ -343,23 +362,21 @@ async def import_agent(
     ),
     override_name: Optional[str] = Form(
         None,
-        description="If provided, overrides the agent name with this value.",
-    ),
-    override_existing_tools: bool = Form(
-        True,
-        description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+        description="If provided, overrides the agent name with this value. Use 'name' instead.",
+        deprecated=True,
     ),
     override_embedding_handle: Optional[str] = Form(
         None,
-        description="Override import with specific embedding handle.",
+        description="Override import with specific embedding handle. Use 'embedding' instead.",
+        deprecated=True,
     ),
-    project_id: str | None = Form(None, description="The project ID to associate the uploaded agent with."),
-    strip_messages: bool = Form(
-        False,
-        description="If set to True, strips all messages from the agent before importing.",
+    project_id: str | None = Form(
+        None, description="The project ID to associate the uploaded agent with. This is now passed via headers.", deprecated=True
     ),
     env_vars_json: Optional[str] = Form(
-        None, description="Environment variables as a JSON string to pass to the agent for tool execution."
+        None,
+        description="Environment variables as a JSON string to pass to the agent for tool execution. Use 'secrets' instead.",
+        deprecated=True,
     ),
 ):
     """
@@ -376,19 +393,25 @@ async def import_agent(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
-    # Parse env_vars_json if provided
+    # Handle backward compatibility: prefer new field names over deprecated ones
+    final_name = name or override_name
+    final_embedding_handle = embedding or override_embedding_handle or x_override_embedding_model
+
+    # Parse secrets (new) or env_vars_json (deprecated)
     env_vars = None
-    if env_vars_json:
+    secrets_json = secrets or env_vars_json
+    if secrets_json:
         try:
-            env_vars = json.loads(env_vars_json)
+            env_vars = json.loads(secrets_json)
         except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
+            raise HTTPException(status_code=400, detail="secrets must be a valid JSON string")
 
         if not isinstance(env_vars, dict):
-            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
+            raise HTTPException(status_code=400, detail="secrets must be a valid JSON string")
 
-    # Prioritize header over form data for override_embedding_handle
-    final_override_embedding_handle = x_override_embedding_model or override_embedding_handle
+    # Get project_id from headers (preferred) or fall back to form data for backward compatibility
+    # In cloud environments, project_id should be passed via headers
+    final_project_id = headers.project_id or project_id
 
     # Check if the JSON is AgentFileSchema or AgentSchema
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
@@ -399,12 +422,12 @@ async def import_agent(
             server=server,
             actor=actor,
             append_copy_suffix=append_copy_suffix,
-            override_name=override_name,
+            override_name=final_name,
             override_existing_tools=override_existing_tools,
-            project_id=project_id,
+            project_id=final_project_id,
             strip_messages=strip_messages,
             env_vars=env_vars,
-            override_embedding_handle=final_override_embedding_handle,
+            override_embedding_handle=final_embedding_handle,
         )
     else:
         # This is a legacy AgentSchema

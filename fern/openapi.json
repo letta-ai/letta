@@ -21534,6 +21534,54 @@
             "format": "binary",
             "title": "File"
           },
+          "override_existing_tools": {
+            "type": "boolean",
+            "title": "Override Existing Tools",
+            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+            "default": true
+          },
+          "strip_messages": {
+            "type": "boolean",
+            "title": "Strip Messages",
+            "description": "If set to True, strips all messages from the agent before importing.",
+            "default": false
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
+            "description": "Secrets as a JSON string to pass to the agent for tool execution."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "If provided, overrides the agent name with this value."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "Embedding handle to override with."
+          },
           "append_copy_suffix": {
             "type": "boolean",
             "title": "Append Copy Suffix",
@@ -21551,13 +21599,8 @@
               }
             ],
             "title": "Override Name",
-            "description": "If provided, overrides the agent name with this value."
-          },
-          "override_existing_tools": {
-            "type": "boolean",
-            "title": "Override Existing Tools",
-            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
-            "default": true
+            "description": "If provided, overrides the agent name with this value. Use 'name' instead.",
+            "deprecated": true
           },
           "override_embedding_handle": {
             "anyOf": [
@@ -21569,7 +21612,8 @@
               }
             ],
             "title": "Override Embedding Handle",
-            "description": "Override import with specific embedding handle."
+            "description": "Override import with specific embedding handle. Use 'embedding' instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -21581,13 +21625,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The project ID to associate the uploaded agent with."
-          },
-          "strip_messages": {
-            "type": "boolean",
-            "title": "Strip Messages",
-            "description": "If set to True, strips all messages from the agent before importing.",
-            "default": false
+            "description": "The project ID to associate the uploaded agent with. This is now passed via headers.",
+            "deprecated": true
           },
           "env_vars_json": {
             "anyOf": [
@@ -21599,7 +21638,8 @@
               }
             ],
             "title": "Env Vars Json",
-            "description": "Environment variables as a JSON string to pass to the agent for tool execution."
+            "description": "Environment variables as a JSON string to pass to the agent for tool execution. Use 'secrets' instead.",
+            "deprecated": true
           }
         },
         "type": "object",
