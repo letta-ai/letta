@@ -5,6 +5,7 @@ import logging
 import os
 import platform
 import sys
+import threading
 from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
@@ -149,6 +150,18 @@ async def lifespan(app_: FastAPI):
         # Explicitly start the background monitor (won't wait for first tracked operation)
         await tracker.start_background_monitor()
         logger.info(f"[Worker {worker_id}] Memory tracking enabled - monitoring every 5s with proactive alerts")
+
+    # Initialize event loop watchdog
+    try:
+        import asyncio
+
+        from letta.monitoring.event_loop_watchdog import start_watchdog
+
+        loop = asyncio.get_running_loop()
+        start_watchdog(loop, check_interval=5.0, timeout_threshold=15.0)
+        logger.info(f"[Worker {worker_id}] Event loop watchdog started")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to start watchdog: {e}")
 
     if telemetry_settings.profiler:
         try:
