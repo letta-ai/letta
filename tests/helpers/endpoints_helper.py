@@ -64,6 +64,7 @@ async def setup_agent(
 
     request = CreateAgent(
         name=agent_uuid,
+        agent_type="memgpt_v2_agent",
         llm_config=llm_config,
         embedding_config=embedding_config,
         memory_blocks=[

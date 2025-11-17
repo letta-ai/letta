@@ -363,6 +363,7 @@ async def comprehensive_test_agent_fixture(server: SyncServer, default_user, pri
     """Create a comprehensive test agent with all features."""
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),

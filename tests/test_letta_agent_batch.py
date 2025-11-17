@@ -123,6 +123,7 @@ async def agents(server, weather_tool):
                 tags=["test_agents"],
                 embedding="letta/letta-free",
                 tool_ids=[weather_tool.id],
+                agent_type="memgpt_v2_agent",
             ),
             actor=actor,
         )

@@ -91,6 +91,7 @@ def agent(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
     yield agent_state
 
@@ -285,6 +286,7 @@ def test_shared_blocks(client: LettaSDKClient):
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
     agent_state2 = client.agents.create(
         name="agent2",
@@ -297,6 +299,7 @@ def test_shared_blocks(client: LettaSDKClient):
         block_ids=[block.id],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     # update memory
@@ -343,6 +346,7 @@ def test_read_only_block(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     # make sure agent cannot update read-only block
@@ -386,6 +390,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
     assert len(agent.tags) == 0
 
@@ -439,6 +444,7 @@ def test_agent_tags(client: LettaSDKClient):
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
         tags=["test", "agent1", "production"],
+        agent_type="memgpt_v2_agent",
     )
 
     agent2 = client.agents.create(
@@ -451,6 +457,7 @@ def test_agent_tags(client: LettaSDKClient):
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
         tags=["test", "agent2", "development"],
+        agent_type="memgpt_v2_agent",
     )
 
     agent3 = client.agents.create(
@@ -463,6 +470,7 @@ def test_agent_tags(client: LettaSDKClient):
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
         tags=["test", "agent3", "production"],
+        agent_type="memgpt_v2_agent",
     )
 
     # Test getting all tags
@@ -856,6 +864,7 @@ def test_agent_creation(client: LettaSDKClient):
         include_base_tools=False,
         tags=["test"],
         block_ids=[user_preferences_block.id],
+        agent_type="memgpt_v2_agent",
     )
 
     # Verify the agent was created successfully
@@ -893,6 +902,7 @@ def test_many_blocks(client: LettaSDKClient):
         embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
+        agent_type="memgpt_v2_agent",
     )
     agent2 = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
@@ -910,6 +920,7 @@ def test_many_blocks(client: LettaSDKClient):
         embedding="openai/text-embedding-3-small",
         include_base_tools=False,
         tags=["test"],
+        agent_type="memgpt_v2_agent",
     )
 
     # Verify the agent was created successfully
@@ -948,6 +959,7 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
         ],
         model="letta/letta-free",
         embedding="letta/letta-free",
+        agent_type="memgpt_v2_agent",
     )
 
     if message_create == "stream_step":
@@ -1121,6 +1133,7 @@ def test_pydantic_inventory_management_tool(e2b_sandbox_mode, client: LettaSDKCl
         embedding="openai/text-embedding-3-small",
         tool_ids=[tool.id],
         include_base_tools=False,
+        agent_type="memgpt_v2_agent",
     )
 
     response = client.agents.messages.create(
@@ -1211,6 +1224,7 @@ def test_pydantic_task_planning_tool(e2b_sandbox_mode, client: LettaSDKClient):
         tool_rules=[
             TerminalToolRule(tool_name=tool.name),
         ],
+        agent_type="memgpt_v2_agent",
     )
 
     response = client.agents.messages.create(
@@ -1299,6 +1313,7 @@ def test_preview_payload(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     try:
@@ -1389,6 +1404,7 @@ def test_archive_tags_in_system_prompt(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     try:
@@ -1467,6 +1483,7 @@ def test_agent_tools_list(client: LettaSDKClient):
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
         include_base_tools=True,
+        agent_type="memgpt_v2_agent",
     )
 
     try:
@@ -1507,6 +1524,7 @@ def test_agent_tool_rules_deduplication(client: LettaSDKClient):
         embedding="openai/text-embedding-3-small",
         tool_rules=duplicate_rules,
         include_base_tools=False,
+        agent_type="memgpt_v2_agent",
     )
 
     # Get the agent and check tool rules
@@ -1845,6 +1863,7 @@ def test_import_agent_file_from_disk(
         include_base_tools=True,
         tags=["test", "export", "import"],
         system="You are a helpful assistant specializing in data analysis and mathematical computations.",
+        agent_type="memgpt_v2_agent",
     )
 
     # Add archival memory
@@ -1912,6 +1931,7 @@ def test_agent_serialization_v2(
         include_base_tools=True,
         tags=["test", "comprehensive", "serialization"],
         system="You are a helpful assistant specializing in data analysis and mathematical computations.",
+        agent_type="memgpt_v2_agent",
     )
 
     # Add archival memory
@@ -2075,6 +2095,7 @@ def test_export_import_agent_with_files(client: LettaSDKClient):
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
         source_ids=[source.id],  # Attach the source with files
+        agent_type="memgpt_v2_agent",
     )
 
     # Verify the agent has the source and file blocks
@@ -2243,6 +2264,7 @@ def test_run_list(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     # message an agent
@@ -2279,12 +2301,14 @@ async def test_create_batch(client: LettaSDKClient, server: SyncServer):
         memory_blocks=[{"label": "persona", "value": "you are agent 1"}],
         model="anthropic/claude-3-7-sonnet-20250219",
         embedding="letta/letta-free",
+        agent_type="memgpt_v2_agent",
     )
     agent2 = client.agents.create(
         name="agent2_batch",
         memory_blocks=[{"label": "persona", "value": "you are agent 2"}],
         model="anthropic/claude-3-7-sonnet-20250219",
         embedding="letta/letta-free",
+        agent_type="memgpt_v2_agent",
     )
 
     # create a run
@@ -2353,6 +2377,7 @@ def test_create_agent(client: LettaSDKClient) -> None:
         ],
         model="anthropic/claude-sonnet-4-20250514",
         embedding="openai/text-embedding-ada-002",
+        agent_type="memgpt_v2_agent",
     )
     assert agent is not None
     agents = client.agents.list()

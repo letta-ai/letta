@@ -892,6 +892,7 @@ def agent_state(client: Letta) -> AgentState:
     send_message_tool = client.tools.list(name="send_message").items[0]
     agent_state_instance = client.agents.create(
         name="supervisor",
+        agent_type="memgpt_v2_agent",
         include_base_tools=False,
         tool_ids=[send_message_tool.id, dice_tool.id],
         model="openai/gpt-4o",
@@ -1942,6 +1943,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
     send_message_tool = client.tools.list(name="send_message").items[0]
     temp_agent_state = client.agents.create(
         include_base_tools=False,
+        agent_type="memgpt_v2_agent",
         tool_ids=[send_message_tool.id],
         llm_config=pinned_context_window_llm_config,
         embedding="letta/letta-free",

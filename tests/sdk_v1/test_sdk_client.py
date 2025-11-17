@@ -1463,6 +1463,7 @@ def test_preview_payload(client: LettaSDKClient):
         ],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-3-small",
+        agent_type="memgpt_v2_agent",
     )
 
     try:
