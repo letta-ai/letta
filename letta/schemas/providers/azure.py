@@ -106,8 +106,10 @@ class AzureProvider(Provider):
         return list(latest_models.values())
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
-        # TODO (cliandy): asyncify
-        model_list = self.azure_openai_get_deployed_model_list()
+        # Run blocking model list fetch in thread pool to avoid blocking event loop
+        import asyncio
+
+        model_list = await asyncio.to_thread(self.azure_openai_get_deployed_model_list)
         # Extract models that support text generation
         model_options = [m for m in model_list if m.get("capabilities").get("chat_completion") == True]
 

@@ -163,6 +163,18 @@ async def lifespan(app_: FastAPI):
     except Exception as e:
         logger.warning(f"[Worker {worker_id}] Failed to start watchdog: {e}")
 
+    # Pre-download NLTK data to avoid blocking during requests (fallback if Docker build failed)
+    try:
+        import asyncio
+
+        import nltk
+
+        logger.info(f"[Worker {worker_id}] Checking NLTK data availability...")
+        await asyncio.to_thread(nltk.download, "punkt_tab", quiet=True)
+        logger.info(f"[Worker {worker_id}] NLTK data ready")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to download NLTK data: {e}")
+
     if telemetry_settings.profiler:
         try:
             import googlecloudprofiler
