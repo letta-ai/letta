@@ -261,6 +261,7 @@ class AnthropicModelSettings(ModelSettings):
     thinking: AnthropicThinking = Field(
         AnthropicThinking(type="enabled", budget_tokens=1024), description="The thinking configuration for the model."
     )
+    output_format: Optional[ResponseFormatUnion] = Field(None, description="The structured output format for the model.")
 
     # gpt-5 models only
     verbosity: Optional[Literal["low", "medium", "high"]] = Field(
@@ -280,6 +281,7 @@ class AnthropicModelSettings(ModelSettings):
             "thinking_budget_tokens": self.thinking.budget_tokens,
             "verbosity": self.verbosity,
             "parallel_tool_calls": self.parallel_tool_calls,
+            "output_format": self.output_format,
         }
 
 
