@@ -105,12 +105,33 @@ class EventLoopWatchdog:
                 logger.error(f"Watchdog error: {e}")
 
     def _dump_state(self):
-        """Dump minimal state when hang detected."""
+        """Dump state with stack traces when hang detected."""
         try:
+            import sys
+
             # Get all threads
             logger.error(f"Active threads: {threading.active_count()}")
             for thread in threading.enumerate():
                 logger.error(f"  {thread.name} (daemon={thread.daemon})")
+
+            # Get stack traces from all threads
+            logger.error("\nStack traces of all threads:")
+            for thread_id, frame in sys._current_frames().items():
+                # Find thread name
+                thread_name = "unknown"
+                for thread in threading.enumerate():
+                    if thread.ident == thread_id:
+                        thread_name = thread.name
+                        break
+
+                logger.error(f"\nThread {thread_name} (ID: {thread_id}):")
+
+                # Format stack trace
+                for filename, lineno, name, line in traceback.extract_stack(frame):
+                    logger.error(f"  File: {filename}:{lineno}")
+                    logger.error(f"    in {name}")
+                    if line:
+                        logger.error(f"    > {line.strip()}")
 
         except Exception as e:
             logger.error(f"Failed to dump state: {e}")
