@@ -575,9 +575,7 @@ async def modify_approval_for_tool(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
-@router.patch(
-    "/{agent_id}/sources/attach/{source_id}", response_model=Optional[AgentState], operation_id="attach_source_to_agent", deprecated=True
-)
+@router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent", deprecated=True)
 async def attach_source(
     source_id: SourceId,
     agent_id: AgentId,
@@ -601,12 +599,10 @@ async def attach_source(
         source = await server.source_manager.get_source_by_id(source_id=source_id)
         safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
-    if is_1_0_sdk_version(headers):
-        return None
     return agent_state
 
 
-@router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=Optional[AgentState], operation_id="attach_folder_to_agent")
+@router.patch("/{agent_id}/folders/attach/{folder_id}", response_model=AgentState, operation_id="attach_folder_to_agent")
 async def attach_folder_to_agent(
     folder_id: SourceId,
     agent_id: AgentId,
@@ -630,14 +626,10 @@ async def attach_folder_to_agent(
         source = await server.source_manager.get_source_by_id(source_id=folder_id)
         safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
-    if is_1_0_sdk_version(headers):
-        return None
     return agent_state
 
 
-@router.patch(
-    "/{agent_id}/sources/detach/{source_id}", response_model=Optional[AgentState], operation_id="detach_source_from_agent", deprecated=True
-)
+@router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent", deprecated=True)
 async def detach_source(
     source_id: SourceId,
     agent_id: AgentId,
@@ -664,13 +656,10 @@ async def detach_source(
             await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
-
-    if is_1_0_sdk_version(headers):
-        return None
     return agent_state
 
 
-@router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=Optional[AgentState], operation_id="detach_folder_from_agent")
+@router.patch("/{agent_id}/folders/detach/{folder_id}", response_model=AgentState, operation_id="detach_folder_from_agent")
 async def detach_folder_from_agent(
     folder_id: SourceId,
     agent_id: AgentId,
@@ -697,9 +686,6 @@ async def detach_folder_from_agent(
             await server.block_manager.delete_block_async(block.id, actor)
         except:
             pass
-
-    if is_1_0_sdk_version(headers):
-        return None
     return agent_state
 
 
@@ -1052,9 +1038,7 @@ async def modify_block_for_agent(
     return block
 
 
-@router.patch(
-    "/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=Optional[AgentState], operation_id="attach_core_memory_block"
-)
+@router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
 async def attach_block_to_agent(
     block_id: BlockId,
     agent_id: AgentId,
@@ -1065,14 +1049,10 @@ async def attach_block_to_agent(
     Attach a core memory block to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.attach_block_async(
-        agent_id=agent_id, block_id=block_id, actor=actor, needs_agent_state=not is_1_0_sdk_version(headers)
-    )
+    return await server.agent_manager.attach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.patch(
-    "/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=Optional[AgentState], operation_id="detach_core_memory_block"
-)
+@router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
 async def detach_block_from_agent(
     block_id: BlockId,
     agent_id: AgentId,
@@ -1083,9 +1063,7 @@ async def detach_block_from_agent(
     Detach a core memory block from an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.detach_block_async(
-        agent_id=agent_id, block_id=block_id, actor=actor, needs_agent_state=not is_1_0_sdk_version(headers)
-    )
+    return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.patch("/{agent_id}/archives/attach/{archive_id}", response_model=None, operation_id="attach_archive_to_agent")
@@ -1895,7 +1873,7 @@ class ResetMessagesRequest(BaseModel):
     )
 
 
-@router.patch("/{agent_id}/reset-messages", response_model=Optional[AgentState], operation_id="reset_messages")
+@router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
 async def reset_messages(
     agent_id: AgentId,
     request: ResetMessagesRequest = Body(...),
@@ -1905,10 +1883,7 @@ async def reset_messages(
     """Resets the messages for an agent"""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.reset_messages_async(
-        agent_id=agent_id,
-        actor=actor,
-        add_default_initial_messages=request.add_default_initial_messages,
-        needs_agent_state=not is_1_0_sdk_version(headers),
+        agent_id=agent_id, actor=actor, add_default_initial_messages=request.add_default_initial_messages
     )
 
 

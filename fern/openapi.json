@@ -5257,15 +5257,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Attach Source To Agent"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -5327,15 +5319,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Attach Folder To Agent"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -5398,15 +5382,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Detach Source From Agent"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -5468,15 +5444,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Detach Folder From Agent"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -6446,15 +6414,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Attach Core Memory Block"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -6516,15 +6476,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Detach Core Memory Block"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -7830,15 +7782,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AgentState"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Reset Messages"
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }

@@ -460,17 +460,8 @@ def test_reset_messages(client: LettaSDKClient):
         # After reset, messages should be empty or only have default initial messages
         # Messages returns SyncArrayPage, check items
         assert isinstance(messages_after.items, list), "Should return list of messages"
-
-        # In SDK v1.0, reset-messages returns None, so we need to retrieve the agent to verify
-        if reset_agent is None:
-            # Retrieve the agent state after reset
-            agent_after_reset = client.agents.retrieve(agent_id=agent.id)
-            assert isinstance(agent_after_reset, AgentState), "Should be able to retrieve agent after reset"
-            assert agent_after_reset.id == agent.id, "Should be the same agent"
-        else:
-            # For older SDK versions that still return AgentState
-            assert isinstance(reset_agent, AgentState), "Should return updated agent state"
-            assert reset_agent.id == agent.id, "Should return the same agent"
+        assert isinstance(reset_agent, AgentState), "Should return updated agent state"
+        assert reset_agent.id == agent.id, "Should return the same agent"
 
     finally:
         # Clean up
