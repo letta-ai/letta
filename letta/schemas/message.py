@@ -1749,6 +1749,15 @@ class Message(BaseMessage):
                 parts.append({"text": text_content})
 
             if self.tool_calls is not None:
+                # Check if there's a signature in the content that should be included with function calls
+                # Google Vertex requires thought_signature to be echoed back in function calls
+                thought_signature = None
+                if self.content and current_model == self.model:
+                    for content in self.content:
+                        # Check for signature in ReasoningContent, TextContent, or ToolCallContent
+                        if isinstance(content, (ReasoningContent, TextContent, ToolCallContent)):
+                            thought_signature = getattr(content, "signature", None)
+
                 # NOTE: implied support for multiple calls
                 for tool_call in self.tool_calls:
                     function_name = tool_call.function.name
@@ -1768,14 +1777,19 @@ class Message(BaseMessage):
                     if strip_request_heartbeat:
                         function_args.pop(REQUEST_HEARTBEAT_PARAM, None)
 
-                    parts.append(
-                        {
-                            "functionCall": {
-                                "name": function_name,
-                                "args": function_args,
-                            }
+                    # Build the function call part
+                    function_call_part = {
+                        "functionCall": {
+                            "name": function_name,
+                            "args": function_args,
                         }
-                    )
+                    }
+
+                    # Include thought_signature if we found one
+                    if thought_signature is not None:
+                        function_call_part["thought_signature"] = thought_signature
+
+                    parts.append(function_call_part)
             else:
                 if not native_content:
                     assert text_content is not None
