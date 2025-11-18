@@ -33,7 +33,7 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, ToolCallDenial, UsageStatistics
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -47,10 +47,6 @@ from letta.services.helpers.tool_parser_helper import runtime_override_tool_json
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.utils import log_telemetry, validate_function_response
-
-
-class ToolCallDenial(ToolCall):
-    reason: Optional[str] = None
 
 
 class LettaAgentV3(LettaAgentV2):
