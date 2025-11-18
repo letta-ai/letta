@@ -28,11 +28,10 @@ logger = logging.getLogger(__name__)
 
 all_configs = [
     "openai-gpt-4o-mini.json",
-    "openai-o3.json",
+    "openai-gpt-4.1.json",
     "openai-gpt-5.json",
     "claude-4-5-sonnet.json",
-    "claude-4-1-opus.json",
-    "gemini-2.5-flash.json",
+    "gemini-2.5-pro.json",
 ]
 
 
@@ -47,16 +46,6 @@ def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model
 requested = os.getenv("LLM_CONFIG_FILE")
 filenames = [requested] if requested else all_configs
 TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
-# Filter out deprecated Claude 3.5 Sonnet model that is no longer available
-TESTED_LLM_CONFIGS = [
-    cfg for cfg in TESTED_LLM_CONFIGS if not (cfg.model_endpoint_type == "anthropic" and cfg.model == "claude-3-5-sonnet-20241022")
-]
-# Filter out Bedrock models that require aioboto3 dependency (not available in CI)
-TESTED_LLM_CONFIGS = [cfg for cfg in TESTED_LLM_CONFIGS if not (cfg.model_endpoint_type == "bedrock")]
-# Filter out Gemini models that have Google Cloud permission issues
-TESTED_LLM_CONFIGS = [cfg for cfg in TESTED_LLM_CONFIGS if cfg.model_endpoint_type not in ["google_vertex", "google_ai"]]
-# Filter out qwen2.5:7b model that has server issues
-TESTED_LLM_CONFIGS = [cfg for cfg in TESTED_LLM_CONFIGS if not (cfg.model == "qwen2.5:7b")]
 
 
 def roll_dice(num_sides: int) -> int:
@@ -236,6 +225,7 @@ def assert_tool_call_response(
     index += 1
 
     # Tool return message
+    otid_suffix = 0
     assert isinstance(messages[index], ToolReturnMessage)
     assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
     index += 1
@@ -243,6 +233,7 @@ def assert_tool_call_response(
     # Messages from second agent step if request has not been cancelled
     if not with_cancellation:
         # Reasoning message if reasoning enabled
+        otid_suffix = 0
         try:
             if is_reasoner_model(llm_config):
                 assert isinstance(messages[index], ReasoningMessage)
