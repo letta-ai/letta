@@ -62,6 +62,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
@@ -382,10 +383,16 @@ class AgentManager:
         if agent_create.include_base_tools:
             if agent_create.agent_type == AgentType.voice_sleeptime_agent:
                 tool_names |= set(BASE_VOICE_SLEEPTIME_TOOLS)
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.agent_type == AgentType.voice_convo_agent:
                 tool_names |= set(BASE_VOICE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
@@ -410,9 +417,6 @@ class AgentManager:
                 tool_names |= calculate_base_tools(is_v2=False)
         if agent_create.include_multi_agent_tools:
             tool_names |= calculate_multi_agent_tools()
-
-        # take out the deprecated tool names
-        tool_names.difference_update(set(DEPRECATED_LETTA_TOOLS))
 
         supplied_ids = set(agent_create.tool_ids or [])
 
@@ -603,6 +607,45 @@ class AgentManager:
             await self.message_manager.create_many_messages_async(
                 pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
             )
+
+        # Attach files from sources if this is a template-based creation
+        # Use the new agent's sources (already copied from template via source_ids)
+        if isinstance(agent_create, InternalTemplateAgentCreate) and source_ids:
+            try:
+                from letta.services.file_manager import FileManager
+
+                file_manager = FileManager()
+
+                # Get all files from the new agent's sources
+                all_files_metadata = []
+                for source_id in source_ids:
+                    try:
+                        files_in_source = await file_manager.list_files(
+                            source_id=source_id,
+                            actor=actor,
+                            limit=1000,
+                        )
+                        all_files_metadata.extend(files_in_source)
+                    except Exception as e:
+                        logger.warning(f"Failed to get files from source {source_id}: {e}")
+
+                if all_files_metadata:
+                    try:
+                        await self.file_agent_manager.attach_files_bulk(
+                            agent_id=result.id,
+                            files_metadata=all_files_metadata,
+                            visible_content_map={},  # Empty map - content generated on-demand
+                            actor=actor,
+                            max_files_open=result.max_files_open or DEFAULT_MAX_FILES_OPEN,
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to attach files: {e}")
+            except Exception as e:
+                logger.error(f"====> Failed to attach files from sources: {e}")
+                import traceback
+
+                traceback.print_exc()
+
         return result
 
     @enforce_types
@@ -715,6 +758,7 @@ class AgentManager:
                 "response_format": agent_update.response_format,
                 "last_run_completion": agent_update.last_run_completion,
                 "last_run_duration_ms": agent_update.last_run_duration_ms,
+                "last_stop_reason": agent_update.last_stop_reason,
                 "timezone": agent_update.timezone,
                 "max_files_open": agent_update.max_files_open,
                 "per_file_view_window_char_limit": agent_update.per_file_view_window_char_limit,
@@ -875,6 +919,7 @@ class AgentManager:
         ascending: bool = True,
         sort_by: Optional[str] = "created_at",
         show_hidden_agents: Optional[bool] = None,
+        last_stop_reason: Optional[StopReasonType] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -897,6 +942,7 @@ class AgentManager:
             ascending (bool): Sort agents in ascending order.
             sort_by (Optional[str]): Sort agents by this field.
             show_hidden_agents (bool): If True, include agents marked as hidden in the results.
+            last_stop_reason (Optional[str]): Filter by the agent's last stop reason (e.g., 'requires_approval', 'error').
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -906,7 +952,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships, include)
@@ -923,6 +969,58 @@ class AgentManager:
             return await asyncio.gather(
                 *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
             )
+
+    @trace_method
+    async def count_agents_async(
+        self,
+        actor: PydanticUser,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        query_text: Optional[str] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
+        identity_id: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        show_hidden_agents: Optional[bool] = None,
+        last_stop_reason: Optional[StopReasonType] = None,
+    ) -> int:
+        """
+        Count agents matching the specified filters using an efficient database-level COUNT query.
+
+        Args:
+            actor: The User requesting the count
+            name (Optional[str]): Filter by agent name.
+            tags (Optional[List[str]]): Filter agents by tags.
+            match_all_tags (bool): If True, only count agents that match ALL given tags.
+            query_text (Optional[str]): Search agents by name.
+            project_id (Optional[str]): Filter by project ID.
+            template_id (Optional[str]): Filter by template ID.
+            base_template_id (Optional[str]): Filter by base template ID.
+            identity_id (Optional[str]): Filter by identifier ID.
+            identifier_keys (Optional[List[str]]): Search agents by identifier keys.
+            show_hidden_agents (bool): If True, include agents marked as hidden in the results.
+            last_stop_reason (Optional[str]): Filter by the agent's last stop reason (e.g., 'requires_approval', 'error').
+
+        Returns:
+            int: The count of agents matching the filters.
+        """
+        async with db_registry.async_session() as session:
+            query = select(func.count()).select_from(AgentModel)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Apply filters
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_identity_filters(query, identity_id, identifier_keys)
+            query = _apply_tag_filter(query, tags, match_all_tags)
+
+            # Apply hidden filter
+            if not show_hidden_agents:
+                query = query.where((AgentModel.hidden.is_(None)) | (AgentModel.hidden == False))
+
+            result = await session.execute(query)
+            return result.scalar_one()
 
     @enforce_types
     @trace_method
@@ -1568,13 +1666,16 @@ class AgentManager:
             actor: User performing the action
 
         Raises:
-            ValueError: If either agent or source doesn't exist
+            NoResultFound: If either agent or source doesn't exist or actor lacks permission to access them
             IntegrityError: If the source is already attached to the agent
         """
 
         async with db_registry.async_session() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+            # Verify the actor has permission to access the source
+            await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)
 
             # The _process_relationship helper already handles duplicate checking via unique constraint
             await _process_relationship_async(
@@ -1900,9 +2001,8 @@ class AgentManager:
                 agent_only=agent_only,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)
@@ -1976,9 +2076,8 @@ class AgentManager:
                 agent_only=agent_only,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)
@@ -2038,9 +2137,8 @@ class AgentManager:
                 embedding_config=embedding_config,
             )
 
-            # Add limit
-            if limit:
-                main_query = main_query.limit(limit)
+            # Add limit (enforce default if not provided)
+            main_query = main_query.limit(limit)
 
             # Execute query
             result = await session.execute(main_query)
@@ -3177,8 +3275,18 @@ class AgentManager:
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
             token_counter = AnthropicTokenCounter(anthropic_client, model)  # noqa
+            logger.info(
+                f"Using AnthropicTokenCounter for agent_id={agent_id}, model={model}, "
+                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
+                f"environment={settings.environment}"
+            )
         else:
             token_counter = TiktokenCounter(agent_state.llm_config.model)
+            logger.info(
+                f"Using TiktokenCounter for agent_id={agent_id}, model={agent_state.llm_config.model}, "
+                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
+                f"environment={settings.environment}"
+            )
 
         return await calculator.calculate_context_window(
             agent_state=agent_state,

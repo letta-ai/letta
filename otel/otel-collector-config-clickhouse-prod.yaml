@@ -8,17 +8,27 @@ receivers:
   filelog:
     include:
       - /root/.letta/logs/Letta.log
+    multiline:
+      line_start_pattern: '^[\{\[]|^[0-9]{4}-[0-9]{2}-[0-9]{2}'
     operators:
-      # Parse JSON logs
+      # Parse JSON logs (skip non-JSON lines)
       - type: json_parser
         parse_from: body
         parse_to: attributes
+        on_error: send
       - type: time_parser
         parse_from: attributes.timestamp
         layout_type: gotime
         layout: '2006-01-02T15:04:05.999999Z07:00'
+        on_error: send
+        if: 'attributes.timestamp != nil'
 
 processors:
+  resource:
+    attributes:
+      - key: environment
+        value: ${env:LETTA_ENVIRONMENT}
+        action: upsert
   memory_limiter:
     check_interval: 1s
     limit_mib: 1024
@@ -62,7 +72,7 @@ service:
       exporters: [clickhouse]
     logs:
       receivers: [filelog]
-      processors: [memory_limiter, batch]
+      processors: [resource, memory_limiter, batch]
       exporters: [clickhouse]
     metrics:
       receivers: [otlp]

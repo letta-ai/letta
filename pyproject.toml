@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.13.0"
+version = "0.14.0"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -70,6 +70,7 @@ dependencies = [
     "trafilatura",
     "readability-lxml",
     "google-genai>=1.15.0",
+    "datadog>=0.49.1",
 ]
 
 [project.scripts]

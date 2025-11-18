@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
-from letta.errors import AgentExportProcessingError
+from letta.errors import AgentExportProcessingError, LettaInvalidArgumentError
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType
@@ -14,9 +14,11 @@ from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
 from letta.schemas.identity import Identity
 from letta.schemas.letta_base import OrmMetadataBase
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.model import ModelSettingsUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
@@ -56,20 +58,7 @@ AgentRelationships = Literal[
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
-    """
-    Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
-
-    Parameters:
-        id (str): The unique identifier of the agent.
-        name (str): The name of the agent (must be unique to the user).
-        created_at (datetime): The datetime the agent was created.
-        message_ids (List[str]): The ids of the messages in the agent's in-context memory.
-        memory (Memory): The in-context memory of the agent.
-        tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.
-        system (str): The system prompt used by the agent.
-        llm_config (LLMConfig): The LLM configuration used by the agent.
-        embedding_config (EmbeddingConfig): The embedding configuration used by the agent.
-    """
+    """Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent."""
 
     __id_prefix__ = PrimitiveType.AGENT.value
 
@@ -87,11 +76,20 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     # agent configuration
     agent_type: AgentType = Field(..., description="The type of agent.")
 
-    # llm information
-    llm_config: LLMConfig = Field(..., description="The LLM configuration used by the agent.")
-    embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the agent.")
+    # model information
+    llm_config: LLMConfig = Field(
+        ..., description="Deprecated: Use `model` field instead. The LLM configuration used by the agent.", deprecated=True
+    )
+    embedding_config: EmbeddingConfig = Field(
+        ..., description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
+    )
+    model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings used by the agent.")
+
     response_format: Optional[ResponseFormatUnion] = Field(
-        None, description="The response format used by the agent when returning from `send_message`."
+        None,
+        description="The response format used by the agent",
     )
 
     # This is an object representing the in-process state of a running `Agent`
@@ -99,7 +97,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 
-    memory: Memory = Field(..., description="The in-context memory of the agent.", deprecated=True)
+    memory: Memory = Field(..., description="Deprecated: Use `blocks` field instead. The in-context memory of the agent.", deprecated=True)
     blocks: List[Block] = Field(..., description="The memory blocks used by the agent.")
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
     sources: List[Source] = Field(..., description="The sources used by the agent.")
@@ -117,7 +115,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
     deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
     entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
-    identity_ids: List[str] = Field([], description="The ids of the identities associated with this agent.", deprecated=True)
+    identity_ids: List[str] = Field(
+        [], description="Deprecated: Use `identities` field instead. The ids of the identities associated with this agent.", deprecated=True
+    )
     identities: List[Identity] = Field([], description="The identities associated with this agent.")
 
     # An advanced configuration that makes it so this agent does not remember any previous messages
@@ -130,11 +130,14 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         description="If set to True, memory management will move to a background agent thread.",
     )
 
-    multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages", deprecated=True)
+    multi_agent_group: Optional[Group] = Field(
+        None, description="Deprecated: Use `managed_group` field instead. The multi-agent group that this agent manages.", deprecated=True
+    )
     managed_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
     # Run metrics
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    last_stop_reason: Optional[StopReasonType] = Field(None, description="The stop reason from the agent's last run.")
 
     # timezone
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
@@ -202,8 +205,6 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     tags: Optional[List[str]] = Field(None, description="The tags associated with the agent.")
     system: Optional[str] = Field(None, description="The system prompt used by the agent.")
     agent_type: AgentType = Field(default_factory=lambda: AgentType.memgpt_v2_agent, description="The type of agent.")
-    llm_config: Optional[LLMConfig] = Field(None, description="The LLM configuration used by the agent.")
-    embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     # Note: if this is None, then we'll populate with the standard "more human than human" initial message sequence
     # If the client wants to make this empty, then the client can set the arg to an empty list
     initial_message_sequence: Optional[List[MessageCreate]] = Field(
@@ -216,43 +217,77 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_base_tool_rules: Optional[bool] = Field(
         None, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
     )
-    include_default_source: bool = Field(
-        False, description="If true, automatically creates and attaches a default data source for this agent."
+    include_default_source: bool = Field(  # TODO: get rid of this
+        False, description="If true, automatically creates and attaches a default data source for this agent.", deprecated=True
     )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
-    model: Optional[str] = Field(
+
+    # model configuration
+    llm_config: Optional[LLMConfig] = Field(
+        None, description="Deprecated: Use `model` field instead. The LLM configuration used by the agent.", deprecated=True
+    )
+    embedding_config: Optional[EmbeddingConfig] = Field(
+        None, description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
+    )
+    model: Optional[str] = Field(  # TODO: make this required  (breaking change)
         None,
-        description="The LLM configuration handle used by the agent, specified in the format "
-        "provider/model-name, as an alternative to specifying llm_config.",
+        description="The model handle for the agent to use (format: provider/model-name).",
     )
-    embedding: Optional[str] = Field(
-        None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
-    )
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
+
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
-    embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
+    embedding_chunk_size: Optional[int] = Field(
+        DEFAULT_EMBEDDING_CHUNK_SIZE, description="Deprecated: No longer used. The embedding chunk size used by the agent.", deprecated=True
+    )
     max_tokens: Optional[int] = Field(
         None,
-        description="The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.",
+        description="Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+        deprecated=True,
     )
     max_reasoning_tokens: Optional[int] = Field(
-        None, description="The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+        None,
+        description="Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+        deprecated=True,
     )
-    enable_reasoner: Optional[bool] = Field(True, description="Whether to enable internal extended thinking step for a reasoner model.")
-    reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
-    from_template: Optional[str] = Field(None, description="Deprecated: please use the 'create agents from a template' endpoint instead.")
-    template: bool = Field(False, description="Deprecated: No longer used")
+    enable_reasoner: Optional[bool] = Field(
+        True,
+        description="Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+        deprecated=True,
+    )
+    reasoning: Optional[bool] = Field(
+        None,
+        description="Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+        deprecated=True,
+    )
+    from_template: Optional[str] = Field(
+        None, description="Deprecated: please use the 'create agents from a template' endpoint instead.", deprecated=True
+    )
+    template: bool = Field(False, description="Deprecated: No longer used.", deprecated=True)
     project: Optional[str] = Field(
         None,
         deprecated=True,
-        description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+        description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
     )
-    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(None, description="Deprecated: use `secrets` field instead.")
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
+        None, description="Deprecated: Use `secrets` field instead. Environment variables for tool execution.", deprecated=True
+    )
     secrets: Optional[Dict[str, str]] = Field(None, description="The environment variables for tool execution specific to this agent.")
-    memory_variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
-    project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
-    template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
-    base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    memory_variables: Optional[Dict[str, str]] = Field(
+        None,
+        description="Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+        deprecated=True,
+    )
+    project_id: Optional[str] = Field(
+        None, description="Deprecated: No longer used. The id of the project the agent belongs to.", deprecated=True
+    )
+    template_id: Optional[str] = Field(
+        None, description="Deprecated: No longer used. The id of the template the agent belongs to.", deprecated=True
+    )
+    base_template_id: Optional[str] = Field(
+        None, description="Deprecated: No longer used. The base template id of the agent.", deprecated=True
+    )
     identity_ids: Optional[List[str]] = Field(None, description="The ids of the identities associated with this agent.")
     message_buffer_autoclear: bool = Field(
         False,
@@ -271,9 +306,14 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     hidden: Optional[bool] = Field(
         None,
-        description="If set to True, the agent will be hidden.",
+        description="Deprecated: No longer used. If set to True, the agent will be hidden.",
+        deprecated=True,
     )
-    parallel_tool_calls: Optional[bool] = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
+    parallel_tool_calls: Optional[bool] = Field(
+        False,
+        description="Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+        deprecated=True,
+    )
 
     @field_validator("name")
     @classmethod
@@ -308,9 +348,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not model:
             return model
 
+        if "/" not in model:
+            raise LettaInvalidArgumentError("The model handle should be in the format provider/model-name", argument_name="model")
+
         provider_name, model_name = model.split("/", 1)
         if not provider_name or not model_name:
-            raise ValueError("The llm config handle should be in the format provider/model-name")
+            raise LettaInvalidArgumentError("The model handle should be in the format provider/model-name", argument_name="model")
 
         return model
 
@@ -320,9 +363,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not embedding:
             return embedding
 
+        if "/" not in embedding:
+            raise ValueError("The embedding handle should be in the format provider/model-name")
+
         provider_name, embedding_name = embedding.split("/", 1)
         if not provider_name or not embedding_name:
-            raise ValueError("The embedding config handle should be in the format provider/model-name")
+            raise ValueError("The embedding handle should be in the format provider/model-name")
 
         return embedding
 
@@ -355,8 +401,6 @@ class UpdateAgent(BaseModel):
     tags: Optional[List[str]] = Field(None, description="The tags associated with the agent.")
     system: Optional[str] = Field(None, description="The system prompt used by the agent.")
     tool_rules: Optional[List[ToolRule]] = Field(None, description="The tool rules governing the agent.")
-    llm_config: Optional[LLMConfig] = Field(None, description="The LLM configuration used by the agent.")
-    embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
@@ -370,24 +414,44 @@ class UpdateAgent(BaseModel):
         None,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
+
+    # model configuration
     model: Optional[str] = Field(
         None,
-        description="The LLM configuration handle used by the agent, specified in the format "
-        "provider/model-name, as an alternative to specifying llm_config.",
+        description="The model handle used by the agent (format: provider/model-name).",
     )
-    embedding: Optional[str] = Field(
-        None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
-    )
+    embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
+    model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
+    reasoning: Optional[bool] = Field(
+        None,
+        description="Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+        deprecated=True,
+    )
+    llm_config: Optional[LLMConfig] = Field(
+        None, description="Deprecated: Use `model` field instead. The LLM configuration used by the agent.", deprecated=True
+    )
+    embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
+    parallel_tool_calls: Optional[bool] = Field(
+        False,
+        description="Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+        deprecated=True,
+    )
+    response_format: Optional[ResponseFormatUnion] = Field(
+        None,
+        description="Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+        deprecated=True,
+    )
     max_tokens: Optional[int] = Field(
         None,
-        description="The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.",
+        description="Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+        deprecated=True,
     )
-    reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
+
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
-    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")
     last_run_duration_ms: Optional[int] = Field(None, description="The duration in milliseconds of the agent's last run.")
+    last_stop_reason: Optional[StopReasonType] = Field(None, description="The stop reason from the agent's last run.")
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
     max_files_open: Optional[int] = Field(
         None,
@@ -401,7 +465,6 @@ class UpdateAgent(BaseModel):
         None,
         description="If set to True, the agent will be hidden.",
     )
-    parallel_tool_calls: Optional[bool] = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 

@@ -78,6 +78,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             use_responses = "input" in request_data and "messages" not in request_data
             # No support for Responses API proxy
             is_proxy = self.llm_config.provider_name == "lmstudio_openai"
+
             if use_responses and not is_proxy:
                 self.interface = SimpleOpenAIResponsesStreamingInterface(
                     is_openai_proxy=False,
@@ -109,8 +110,11 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
         # Extract optional parameters
         # ttft_span = kwargs.get('ttft_span', None)
 
-        # Start the streaming request
-        stream = await self.llm_client.stream_async(request_data, self.llm_config)
+        # Start the streaming request (map provider errors to common LLMError types)
+        try:
+            stream = await self.llm_client.stream_async(request_data, self.llm_config)
+        except Exception as e:
+            raise self.llm_client.handle_llm_error(e)
 
         # Process the stream and yield chunks immediately for TTFT
         async for chunk in self.interface.process(stream):  # TODO: add ttft span

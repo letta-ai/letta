@@ -308,6 +308,10 @@ class LettaAgentV2(BaseAgentV2):
 
                 input_messages_to_persist = []
 
+            if self.stop_reason is None:
+                # terminated due to hitting max_steps
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+
             if not self.agent_state.message_buffer_autoclear:
                 await self.summarize_conversation_history(
                     in_context_messages=in_context_messages,
@@ -327,6 +331,8 @@ class LettaAgentV2(BaseAgentV2):
                 use_assistant_message=use_assistant_message,
                 reverse=False,
             )
+            if not self.stop_reason:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
             result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
             if self.job_update_metadata is None:
                 self.job_update_metadata = {}
@@ -911,6 +917,10 @@ class LettaAgentV2(BaseAgentV2):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
+            for message in messages_to_persist:
+                message.step_id = step_id
+                message.run_id = run_id
+
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist,
                 actor=self.actor,
@@ -1027,6 +1037,10 @@ class LettaAgentV2(BaseAgentV2):
                 is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
+
+        for message in messages_to_persist:
+            message.step_id = step_id
+            message.run_id = run_id
 
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id

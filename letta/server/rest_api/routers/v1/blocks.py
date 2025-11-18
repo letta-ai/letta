@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentRelationships, AgentState
-from letta.schemas.block import BaseBlock, Block, BlockUpdate, CreateBlock
+from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.utils import is_1_0_sdk_version
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/blocks", tags=["blocks"])
 
 
-@router.get("/", response_model=List[Block], operation_id="list_blocks")
+@router.get("/", response_model=List[BlockResponse], operation_id="list_blocks")
 async def list_blocks(
     # query parameters
     label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
@@ -117,7 +117,7 @@ async def count_blocks(
     return await server.block_manager.size_async(actor=actor)
 
 
-@router.post("/", response_model=Block, operation_id="create_block")
+@router.post("/", response_model=BlockResponse, operation_id="create_block")
 async def create_block(
     create_block: CreateBlock = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -128,7 +128,7 @@ async def create_block(
     return await server.block_manager.create_or_update_block_async(actor=actor, block=block)
 
 
-@router.patch("/{block_id}", response_model=Block, operation_id="modify_block")
+@router.patch("/{block_id}", response_model=BlockResponse, operation_id="modify_block")
 async def modify_block(
     block_id: BlockId,
     block_update: BlockUpdate = Body(...),
@@ -149,7 +149,7 @@ async def delete_block(
     await server.block_manager.delete_block_async(block_id=block_id, actor=actor)
 
 
-@router.get("/{block_id}", response_model=Block, operation_id="retrieve_block")
+@router.get("/{block_id}", response_model=BlockResponse, operation_id="retrieve_block")
 async def retrieve_block(
     block_id: BlockId,
     server: SyncServer = Depends(get_letta_server),
@@ -214,7 +214,7 @@ async def list_agents_for_block(
     return agents
 
 
-@router.patch("/{block_id}/identities/attach/{identity_id}", response_model=Block, operation_id="attach_identity_to_block")
+@router.patch("/{block_id}/identities/attach/{identity_id}", response_model=BlockResponse, operation_id="attach_identity_to_block")
 async def attach_identity_to_block(
     identity_id: str,
     block_id: BlockId,
@@ -233,7 +233,7 @@ async def attach_identity_to_block(
     return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
 
 
-@router.patch("/{block_id}/identities/detach/{identity_id}", response_model=Block, operation_id="detach_identity_from_block")
+@router.patch("/{block_id}/identities/detach/{identity_id}", response_model=BlockResponse, operation_id="detach_identity_from_block")
 async def detach_identity_from_block(
     identity_id: str,
     block_id: BlockId,

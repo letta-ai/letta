@@ -21,6 +21,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.webhook_service import WebhookService
 from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
 
@@ -278,15 +279,14 @@ class StepManager:
         ascending: bool = False,
     ) -> List[PydanticMessage]:
         async with db_registry.async_session() as session:
-            messages = MessageModel.list(
+            messages = await MessageModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
                 ascending=ascending,
                 limit=limit,
                 actor=actor,
-                join_model=StepModel,
-                join_conditions=[MessageModel.step.id == step_id],
+                step_id=step_id,
             )
             return [message.to_pydantic() for message in messages]
 
@@ -362,7 +362,13 @@ class StepManager:
                 step.stop_reason = stop_reason.stop_reason
 
             await session.commit()
-            return step.to_pydantic()
+            pydantic_step = step.to_pydantic()
+
+            # Send webhook notification for step completion
+            webhook_service = WebhookService()
+            await webhook_service.notify_step_complete(step_id)
+
+            return pydantic_step
 
     @enforce_types
     @trace_method
@@ -403,7 +409,13 @@ class StepManager:
                 step.stop_reason = stop_reason.stop_reason
 
             await session.commit()
-            return step.to_pydantic()
+            pydantic_step = step.to_pydantic()
+
+            # Send webhook notification for step completion
+            webhook_service = WebhookService()
+            await webhook_service.notify_step_complete(step_id)
+
+            return pydantic_step
 
     @enforce_types
     @trace_method
@@ -439,7 +451,13 @@ class StepManager:
                 step.stop_reason = stop_reason.stop_reason
 
             await session.commit()
-            return step.to_pydantic()
+            pydantic_step = step.to_pydantic()
+
+            # Send webhook notification for step completion
+            webhook_service = WebhookService()
+            await webhook_service.notify_step_complete(step_id)
+
+            return pydantic_step
 
     @enforce_types
     @trace_method

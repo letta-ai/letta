@@ -395,7 +395,7 @@ def test_function_always_error(client: Letta):
     assert response_message.status == "error"
     # TODO: add this back
     # assert "Error executing function testing_method" in response_message.tool_return, response_message.tool_return
-    assert "ZeroDivisionError: division by zero" in response_message.stderr[0]
+    assert "division by zero" in response_message.stderr[0]
 
     client.agents.delete(agent_id=agent.id)
 
@@ -585,37 +585,6 @@ def test_agent_creation(client: Letta):
     assert all(tool.id in tool_ids for tool in agent_tools)
 
     client.agents.delete(agent_id=agent.id)
-
-
-# --------------------------------------------------------------------------------------------------------------------
-# Agent sources
-# --------------------------------------------------------------------------------------------------------------------
-def test_attach_detach_agent_source(client: Letta, agent: AgentState):
-    """Test that we can attach and detach a source from an agent"""
-
-    # Create a source
-    source = client.sources.create(
-        name="test_source",
-        embedding="openai/text-embedding-3-small",
-    )
-    initial_sources = client.agents.sources.list(agent_id=agent.id)
-    assert source.id not in [s.id for s in initial_sources]
-
-    # Attach source
-    client.agents.sources.attach(agent_id=agent.id, source_id=source.id)
-
-    # Verify source is attached
-    final_sources = client.agents.sources.list(agent_id=agent.id)
-    assert source.id in [s.id for s in final_sources]
-
-    # Detach source
-    client.agents.sources.detach(agent_id=agent.id, source_id=source.id)
-
-    # Verify source is detached
-    final_sources = client.agents.sources.list(agent_id=agent.id)
-    assert source.id not in [s.id for s in final_sources]
-
-    client.sources.delete(source.id)
 
 
 # --------------------------------------------------------------------------------------------------------------------

@@ -21,9 +21,9 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     project_id: Optional[str] = Field(None, description="The associated project id.")
     # template data (optional)
-    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
+    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
-    template_id: Optional[str] = Field(None, description="The id of the template.", alias="name")
+    template_id: Optional[str] = Field(None, description="The id of the template.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the block.")
     deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
     entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
@@ -80,26 +80,32 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
 
 class Block(BaseBlock):
-    """
-    A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
-
-    Parameters:
-        label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
-        value (str): The value of the block. This is the string that is represented in the context window.
-        limit (int): The character limit of the block.
-        is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
-        label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
-        template_name (str): The name of the block template (if it is a template).
-        description (str): Description of the block.
-        metadata (Dict): Metadata of the block.
-        user_id (str): The unique identifier of the user associated with the block.
-    """
+    """A Block represents a reserved section of the LLM's context window."""
 
     id: str = BaseBlock.generate_id_field()
 
     # default orm fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Block.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")
+
+
+class BlockResponse(Block):
+    id: str = Field(
+        ...,
+        description="The id of the block.",
+    )
+    template_name: Optional[str] = Field(
+        None, description="(Deprecated) The name of the block template (if it is a template).", deprecated=True
+    )
+    template_id: Optional[str] = Field(None, description="(Deprecated) The id of the template.", deprecated=True)
+    base_template_id: Optional[str] = Field(None, description="(Deprecated) The base template id of the block.", deprecated=True)
+    deployment_id: Optional[str] = Field(None, description="(Deprecated) The id of the deployment.", deprecated=True)
+    entity_id: Optional[str] = Field(None, description="(Deprecated) The id of the entity within the template.", deprecated=True)
+    preserve_on_migration: Optional[bool] = Field(
+        False, description="(Deprecated) Preserve the block on template migration.", deprecated=True
+    )
+    read_only: bool = Field(False, description="(Deprecated) Whether the agent has read-only access to the block.", deprecated=True)
+    hidden: Optional[bool] = Field(None, description="(Deprecated) If set to True, the block will be hidden.", deprecated=True)
 
 
 class FileBlock(Block):
@@ -149,7 +155,7 @@ class CreateBlock(BaseBlock):
     project_id: Optional[str] = Field(None, description="The associated project id.")
     # block templates
     is_template: bool = False
-    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
+    template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
 
     @model_validator(mode="before")
     @classmethod

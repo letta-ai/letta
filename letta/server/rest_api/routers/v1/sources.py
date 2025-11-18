@@ -251,9 +251,33 @@ async def upload_file_to_source(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    # Read file bytes once
+    file_bytes = await file.read()
 
-    content = await file.read()
+    # If enabled, delegate to Temporal workflow (Lettuce) and return its result
+    if settings.use_lettuce_for_file_uploads:
+        from letta.services.lettuce import LettuceClient
+
+        lettuce_client = await LettuceClient.create()
+        result = await lettuce_client.upload_file_to_folder(
+            folder_id=source_id,  # same underlying entity
+            actor_id=actor.id,
+            file_name=file.filename,
+            content=file_bytes,
+            content_type=raw_ct or None,
+            duplicate_handling=duplicate_handling,
+            override_name=name,
+        )
+        if result is not None:
+            return result.file_metadata
+
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
+    content = file_bytes
+    file_size_mb = len(content) / (1024 * 1024)
+    from letta.log import get_logger
+
+    logger = get_logger(__name__)
+    logger.info(f"File upload to source: loaded {file_size_mb:.2f} MB into memory, filename: {file.filename}")
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name

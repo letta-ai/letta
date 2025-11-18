@@ -688,115 +688,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         except Exception as e:
             raise Exception(f"Error performing rename: {str(e)}")
 
-    async def memory_view(self, agent_state: AgentState, actor: User, path: str, view_range: Optional[int] = None) -> str:
-        """View the content of a memory block with optional line range."""
-        try:
-            # Special case: if path is "/memories", list all blocks
-            if path == "/memories":
-                blocks = agent_state.memory.get_blocks()
-
-                if not blocks:
-                    raise ValueError("No memory blocks found.")
-
-                result_lines = [f"Found {len(blocks)} memory block(s):\n"]
-
-                for i, block in enumerate(blocks, 1):
-                    content = str(block.value)
-                    content_length = len(content)
-                    line_count = len(content.split("\n")) if content else 0
-
-                    # Basic info
-                    block_info = [f"{i}. {block.label}"]
-
-                    # Add description if available
-                    if block.description:
-                        block_info.append(f"   Description: {block.description}")
-
-                    # Add read-only status
-                    if block.read_only:
-                        block_info.append("   Read-only: true")
-
-                    # Add content stats
-                    block_info.append(f"   Character limit: {block.limit}")
-                    block_info.append(f"   Current length: {content_length} characters")
-                    block_info.append(f"   Lines: {line_count}")
-
-                    # Add content preview (first 100 characters)
-                    if content:
-                        preview = content[:100].replace("\n", "\\n")
-                        if len(content) > 100:
-                            preview += "..."
-                        block_info.append(f"   Preview: {preview}")
-                    else:
-                        block_info.append("   Preview: (empty)")
-
-                    result_lines.append("\n".join(block_info))
-                    if i < len(blocks):  # Add separator between blocks
-                        result_lines.append("")
-
-                return "\n".join(result_lines)
-
-            # Extract memory block label from path (e.g., "/memories/preferences.txt" -> "preferences.txt")
-            if path.startswith("/memories/"):
-                label = path[10:]  # Remove "/memories/" prefix
-            else:
-                label = path
-
-            # Get the memory block
-            memory_block = agent_state.memory.get_block(label)
-            if memory_block is None:
-                raise ValueError(f"Error: Memory block '{label}' does not exist")
-
-            # Get the content
-            content = str(memory_block.value)
-            if not content:
-                raise ValueError(f"Memory block '{label}' is empty")
-
-            # Split content into lines
-            lines = content.split("\n")
-            total_lines = len(lines)
-
-            # Handle view_range parameter
-            if view_range is not None:
-                if view_range <= 0:
-                    raise ValueError(f"Error: view_range must be positive, got {view_range}")
-
-                # Show only the first view_range lines
-                lines_to_show = lines[:view_range]
-                range_info = f" (showing first {view_range} of {total_lines} lines)"
-            else:
-                lines_to_show = lines
-                range_info = f" ({total_lines} lines total)"
-
-            # Format output with line numbers
-            numbered_lines = []
-            for i, line in enumerate(lines_to_show, start=1):
-                numbered_lines.append(f"Line {i}: {line}")
-
-            numbered_content = "\n".join(numbered_lines)
-
-            # Add metadata information
-            metadata_info = []
-            if memory_block.description:
-                metadata_info.append(f"Description: {memory_block.description}")
-            if memory_block.read_only:
-                metadata_info.append("Read-only: true")
-            metadata_info.append(f"Character limit: {memory_block.limit}")
-            metadata_info.append(f"Current length: {len(content)} characters")
-
-            metadata_str = "\n".join(metadata_info)
-
-            result = f"Memory block: {label}{range_info}\n"
-            result += f"Metadata:\n{metadata_str}\n\n"
-            result += f"Content:\n{numbered_content}"
-
-            return result
-
-        except KeyError:
-            raise ValueError(f"Error: Memory block '{label}' does not exist")
-        except Exception as e:
-            raise Exception(f"Error viewing memory block: {str(e)}")
-
     async def memory_create(
         self, agent_state: AgentState, actor: User, path: str, description: str, file_text: Optional[str] = None
     ) -> str:
@@ -961,14 +852,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         insert_text: Optional[str] = None,
         old_path: Optional[str] = None,
         new_path: Optional[str] = None,
-        view_range: Optional[int] = None,
     ) -> Optional[str]:
-        if command == "view":
-            if path is None:
-                raise ValueError("Error: path is required for view command")
-            return await self.memory_view(agent_state, actor, path, view_range)
-
-        elif command == "create":
+        if command == "create":
             if path is None:
                 raise ValueError("Error: path is required for create command")
             if description is None:
@@ -1007,4 +892,4 @@ class LettaCoreToolExecutor(ToolExecutor):
                 )
 
         else:
-            raise ValueError(f"Error: Unknown command '{command}'. Supported commands: str_replace, str_insert, insert, delete, rename")
+            raise ValueError(f"Error: Unknown command '{command}'. Supported commands: create, str_replace, insert, delete, rename")

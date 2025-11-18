@@ -31,12 +31,18 @@ from letta.schemas.letta_message import AssistantMessage, MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
-from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
+from letta.server.rest_api.streaming_response import (
+    StreamingResponseWithStatusCode,
+    add_keepalive_to_stream,
+    cancellation_aware_stream_wrapper,
+)
+from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -129,9 +135,19 @@ class StreamingService:
                             service_name="redis",
                         )
 
+                    # Wrap the agent loop stream with cancellation awareness for background task
+                    background_stream = raw_stream
+                    if settings.enable_cancellation_aware_streaming and run:
+                        background_stream = cancellation_aware_stream_wrapper(
+                            stream_generator=raw_stream,
+                            run_manager=self.runs_manager,
+                            run_id=run.id,
+                            actor=actor,
+                        )
+
                     safe_create_task(
                         create_background_stream_processor(
-                            stream_generator=raw_stream,
+                            stream_generator=background_stream,
                             redis_client=redis_client,
                             run_id=run.id,
                             run_manager=self.server.run_manager,
@@ -145,11 +161,19 @@ class StreamingService:
                         run_id=run.id,
                     )
 
+                # wrap client stream with cancellation awareness if enabled and tracking runs
+                stream = raw_stream
+                if settings.enable_cancellation_aware_streaming and settings.track_agent_run and run and not request.background:
+                    stream = cancellation_aware_stream_wrapper(
+                        stream_generator=raw_stream,
+                        run_manager=self.runs_manager,
+                        run_id=run.id,
+                        actor=actor,
+                    )
+
                 # conditionally wrap with keepalive based on request parameter
                 if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
-                else:
-                    stream = raw_stream
+                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
 
                 result = StreamingResponseWithStatusCode(
                     stream,
@@ -273,6 +297,13 @@ class StreamingService:
 
         async def error_aware_stream():
             """Stream that handles early LLM errors gracefully in streaming format."""
+            run_status = None
+            run_update_metadata = None
+            stop_reason = None
+            error_data = None
+            saw_done = False
+            saw_error = False
+
             try:
                 stream = agent_loop.stream(
                     input_messages=messages,
@@ -285,25 +316,52 @@ class StreamingService:
                 )
 
                 async for chunk in stream:
+                    # Track terminal events
+                    if isinstance(chunk, str):
+                        if "data: [DONE]" in chunk:
+                            saw_done = True
+                        if "event: error" in chunk:
+                            saw_error = True
                     yield chunk
 
-                # update run status after completion
-                if run_id and self.runs_manager:
-                    if agent_loop.stop_reason.stop_reason.value == "cancelled":
+                # Stream completed - check if we got a terminal event
+                if not saw_done and not saw_error:
+                    # Stream ended without terminal - treat as error to avoid hanging clients
+                    logger.error(
+                        f"Stream for run {run_id} ended without terminal event. "
+                        f"Agent stop_reason: {agent_loop.stop_reason}. Emitting error + [DONE]."
+                    )
+                    error_chunk = {
+                        "error": {
+                            "type": "stream_incomplete",
+                            "message": "Stream ended unexpectedly without a terminal event.",
+                            "detail": None,
+                        }
+                    }
+                    yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+                    yield "data: [DONE]\n\n"
+                    saw_error = True
+                    saw_done = True
+                    run_status = RunStatus.failed
+                    stop_reason = StopReasonType.error
+                else:
+                    # set run status after successful completion
+                    if agent_loop.stop_reason and agent_loop.stop_reason.stop_reason.value == "cancelled":
                         run_status = RunStatus.cancelled
                     else:
                         run_status = RunStatus.completed
-
-                    await self.runs_manager.update_run_by_id_async(
-                        run_id=run_id,
-                        update=RunUpdate(status=run_status, stop_reason=agent_loop.stop_reason.stop_reason.value),
-                        actor=actor,
-                    )
+                    stop_reason = agent_loop.stop_reason.stop_reason.value if agent_loop.stop_reason else StopReasonType.end_turn.value
 
             except LLMTimeoutError as e:
+                run_status = RunStatus.failed
                 error_data = {"error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": str(e)}}
-                yield (f"data: {json.dumps(error_data)}\n\n", 504)
+                stop_reason = StopReasonType.llm_api_error
+                logger.error(f"Run {run_id} stopped with LLM timeout error: {e}, error_data: {error_data}")
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except LLMRateLimitError as e:
+                run_status = RunStatus.failed
                 error_data = {
                     "error": {
                         "type": "llm_rate_limit",
@@ -311,8 +369,13 @@ class StreamingService:
                         "detail": str(e),
                     }
                 }
-                yield (f"data: {json.dumps(error_data)}\n\n", 429)
+                stop_reason = StopReasonType.llm_api_error
+                logger.warning(f"Run {run_id} stopped with LLM rate limit error: {e}, error_data: {error_data}")
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except LLMAuthenticationError as e:
+                run_status = RunStatus.failed
                 error_data = {
                     "error": {
                         "type": "llm_authentication",
@@ -320,13 +383,43 @@ class StreamingService:
                         "detail": str(e),
                     }
                 }
-                yield (f"data: {json.dumps(error_data)}\n\n", 401)
+                logger.warning(f"Run {run_id} stopped with LLM authentication error: {e}, error_data: {error_data}")
+                stop_reason = StopReasonType.llm_api_error
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except LLMError as e:
+                run_status = RunStatus.failed
                 error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
-                yield (f"data: {json.dumps(error_data)}\n\n", 502)
+                logger.error(f"Run {run_id} stopped with LLM error: {e}, error_data: {error_data}")
+                stop_reason = StopReasonType.llm_api_error
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except Exception as e:
-                error_data = {"error": {"type": "internal_error", "message": "An internal server error occurred.", "detail": str(e)}}
-                yield (f"data: {json.dumps(error_data)}\n\n", 500)
+                run_status = RunStatus.failed
+                error_data = {
+                    "error": {
+                        "type": "internal_error",
+                        "message": "An unknown error occurred with the LLM streaming request.",
+                        "detail": str(e),
+                    }
+                }
+                logger.error(f"Run {run_id} stopped with unknown error: {e}, error_data: {error_data}")
+                stop_reason = StopReasonType.error
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
+                # Capture for Sentry but don't re-raise to allow stream to complete gracefully
+                capture_sentry_exception(e)
+            finally:
+                # always update run status, whether success or failure
+                if run_id and self.runs_manager and run_status:
+                    await self.runs_manager.update_run_by_id_async(
+                        run_id=run_id,
+                        update=RunUpdate(status=run_status, stop_reason=stop_reason, metadata=error_data),
+                        actor=actor,
+                    )
 
         return error_aware_stream()
 

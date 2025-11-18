@@ -54,7 +54,7 @@ from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import CreateAgent, InternalTemplateAgentCreate, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
@@ -625,6 +625,46 @@ async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_a
     assert updated_agent.per_file_view_window_char_limit == 150_000
 
 
+@pytest.mark.asyncio
+async def test_update_agent_last_stop_reason(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    """Test updating last_stop_reason field on an existing agent"""
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    assert agent.last_stop_reason is None
+
+    # Update with end_turn stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.end_turn,
+        last_run_completion=datetime.now(timezone.utc),
+        last_run_duration_ms=1500,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.end_turn
+    assert updated_agent.last_run_completion is not None
+    assert updated_agent.last_run_duration_ms == 1500
+
+    # Update with error stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.error,
+        last_run_completion=datetime.now(timezone.utc),
+        last_run_duration_ms=2500,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.error
+    assert updated_agent.last_run_duration_ms == 2500
+
+    # Update with requires_approval stop reason
+    update_request = UpdateAgent(
+        last_stop_reason=StopReasonType.requires_approval,
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_request, actor=default_user)
+
+    assert updated_agent.last_stop_reason == StopReasonType.requires_approval
+
+
 # ======================================================================================================================
 # AgentManager Tests - Listing
 # ======================================================================================================================
@@ -793,6 +833,180 @@ async def test_list_agents_descending(server: SyncServer, default_user):
     agents = await server.agent_manager.list_agents_async(actor=default_user, ascending=False)
     names = [agent.name for agent in agents]
     assert names.index("agent_newest") < names.index("agent_oldest")
+
+
+@pytest.mark.asyncio
+async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user):
+    # Create agent with requires_approval stop reason
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_requires_approval",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent1.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.requires_approval),
+        actor=default_user,
+    )
+
+    # Create agent with error stop reason
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_error",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent2.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.error),
+        actor=default_user,
+    )
+
+    # Create agent with no stop reason
+    agent3 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_no_stop_reason",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # Filter by requires_approval
+    approval_agents = await server.agent_manager.list_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value
+    )
+    approval_names = {agent.name for agent in approval_agents}
+    assert approval_names == {"agent_requires_approval"}
+
+    # Filter by error
+    error_agents = await server.agent_manager.list_agents_async(actor=default_user, last_stop_reason=StopReasonType.error.value)
+    error_names = {agent.name for agent in error_agents}
+    assert error_names == {"agent_error"}
+
+    # No filter - should return all agents
+    all_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    all_names = {agent.name for agent in all_agents}
+    assert {"agent_requires_approval", "agent_error", "agent_no_stop_reason"}.issubset(all_names)
+
+
+@pytest.mark.asyncio
+async def test_count_agents_with_filters(server: SyncServer, default_user):
+    """Test count_agents_async with various filters"""
+    # Create agents with different attributes
+    agent1 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_requires_approval",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["inbox", "test"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent1.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.requires_approval),
+        actor=default_user,
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_error",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["error", "test"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent2.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.error),
+        actor=default_user,
+    )
+
+    agent3 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_completed",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["completed"],
+        ),
+        actor=default_user,
+    )
+    await server.agent_manager.update_agent_async(
+        agent_id=agent3.id,
+        agent_update=UpdateAgent(last_stop_reason=StopReasonType.end_turn),
+        actor=default_user,
+    )
+
+    agent4 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_no_stop_reason",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+            tags=["test"],
+        ),
+        actor=default_user,
+    )
+
+    # Test count with no filters - should return total count
+    total_count = await server.agent_manager.count_agents_async(actor=default_user)
+    assert total_count >= 4
+
+    # Test count by last_stop_reason - requires_approval (inbox use case)
+    approval_count = await server.agent_manager.count_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value
+    )
+    assert approval_count == 1
+
+    # Test count by last_stop_reason - error
+    error_count = await server.agent_manager.count_agents_async(actor=default_user, last_stop_reason=StopReasonType.error.value)
+    assert error_count == 1
+
+    # Test count by last_stop_reason - end_turn
+    completed_count = await server.agent_manager.count_agents_async(actor=default_user, last_stop_reason=StopReasonType.end_turn.value)
+    assert completed_count == 1
+
+    # Test count by tags
+    test_tag_count = await server.agent_manager.count_agents_async(actor=default_user, tags=["test"])
+    assert test_tag_count == 3
+
+    # Test count by tags with match_all_tags
+    inbox_test_count = await server.agent_manager.count_agents_async(actor=default_user, tags=["inbox", "test"], match_all_tags=True)
+    assert inbox_test_count == 1
+
+    # Test count by name
+    name_count = await server.agent_manager.count_agents_async(actor=default_user, name="agent_requires_approval")
+    assert name_count == 1
+
+    # Test count by query_text
+    query_count = await server.agent_manager.count_agents_async(actor=default_user, query_text="error")
+    assert query_count >= 1
+
+    # Test combined filters: last_stop_reason + tags
+    combined_count = await server.agent_manager.count_agents_async(
+        actor=default_user, last_stop_reason=StopReasonType.requires_approval.value, tags=["inbox"]
+    )
+    assert combined_count == 1
 
 
 @pytest.mark.asyncio
@@ -1036,6 +1250,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.group import Group
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.memory import Memory
+    from letta.schemas.model import ModelSettingsUnion
     from letta.schemas.response_format import ResponseFormatUnion
     from letta.schemas.source import Source
     from letta.schemas.tool import Tool
@@ -1056,7 +1271,10 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "agent_type": AgentType,
         # LLM information
         "llm_config": LLMConfig,
+        "model": str,
+        "embedding": str,
         "embedding_config": EmbeddingConfig,
+        "model_settings": (ModelSettingsUnion, type(None)),
         "response_format": (ResponseFormatUnion, type(None)),
         # State fields
         "description": (str, type(None)),
@@ -1086,6 +1304,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         # Run metrics
         "last_run_completion": (datetime, type(None)),
         "last_run_duration_ms": (int, type(None)),
+        "last_stop_reason": (StopReasonType, type(None)),
         # Timezone
         "timezone": (str, type(None)),
         # File controls
@@ -1159,6 +1378,14 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
                 if expected is dict:
                     for arg in args:
                         if typing.get_origin(arg) is dict:
+                            return True
+                # Handle Annotated types within Union (e.g., Union[Annotated[...], None])
+                # This checks if any of the union args is an Annotated type that matches expected
+                for arg in args:
+                    if typing.get_origin(arg) is typing.Annotated:
+                        # For Annotated types, compare the first argument (the actual type)
+                        annotated_args = typing.get_args(arg)
+                        if annotated_args and annotated_args[0] == expected:
                             return True
 
             return False
@@ -1440,3 +1667,85 @@ async def test_agent_state_relationship_loads(server: SyncServer, default_user, 
     assert agent_state.sources
     assert not agent_state.tags
     assert not agent_state.tools
+
+
+async def test_create_template_agent_with_files_from_sources(server: SyncServer, default_user, print_tool, default_block):
+    """Test that agents created from templates properly attach files from their sources"""
+    from letta.schemas.file import FileMetadata as PydanticFileMetadata
+
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    # Create a source with files
+    source = await server.source_manager.create_source(
+        source=PydanticSource(
+            name="test_template_source",
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    # Create files in the source
+    file1_metadata = PydanticFileMetadata(
+        file_name="template_file_1.txt",
+        organization_id=default_user.organization_id,
+        source_id=source.id,
+    )
+    file1 = await server.file_manager.create_file(file_metadata=file1_metadata, actor=default_user, text="content for file 1")
+
+    file2_metadata = PydanticFileMetadata(
+        file_name="template_file_2.txt",
+        organization_id=default_user.organization_id,
+        source_id=source.id,
+    )
+    file2 = await server.file_manager.create_file(file_metadata=file2_metadata, actor=default_user, text="content for file 2")
+
+    # Create agent using InternalTemplateAgentCreate with the source
+    create_agent_request = InternalTemplateAgentCreate(
+        name="test_template_agent_with_files",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[print_tool.id],
+        source_ids=[source.id],  # Attach the source with files
+        include_base_tools=False,
+        base_template_id="base_template_123",
+        template_id="template_456",
+        deployment_id="deployment_789",
+        entity_id="entity_012",
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Verify agent was created
+    assert created_agent is not None
+    assert created_agent.name == "test_template_agent_with_files"
+
+    # Verify that the source is attached
+    attached_sources = await server.agent_manager.list_attached_sources_async(agent_id=created_agent.id, actor=default_user)
+    assert len(attached_sources) == 1
+    assert attached_sources[0].id == source.id
+
+    # Verify that files from the source are attached to the agent
+    attached_files = await server.file_agent_manager.list_files_for_agent(
+        created_agent.id, per_file_view_window_char_limit=created_agent.per_file_view_window_char_limit, actor=default_user
+    )
+
+    # Should have both files attached
+    assert len(attached_files) == 2
+    attached_file_names = {f.file_name for f in attached_files}
+    assert "template_file_1.txt" in attached_file_names
+    assert "template_file_2.txt" in attached_file_names
+
+    # Verify files are properly linked to the source
+    for attached_file in attached_files:
+        assert attached_file.source_id == source.id
+
+    # Clean up
+    await server.agent_manager.delete_agent_async(created_agent.id, default_user)
+    await server.source_manager.delete_source(source.id, default_user)

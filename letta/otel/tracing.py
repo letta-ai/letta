@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import itertools
 import re
 import time
 import traceback
@@ -227,11 +228,137 @@ def trace_method(func):
             if args and hasattr(args[0], "__class__"):
                 param_items = param_items[1:]
 
+            # Parameters to skip entirely (known to be large)
+            SKIP_PARAMS = {
+                "agent_state",
+                "messages",
+                "in_context_messages",
+                "message_sequence",
+                "content",
+                "tool_returns",
+                "memory",
+                "sources",
+                "context",
+                "resource_id",
+                "source_code",
+                "request_data",
+                "system",
+            }
+
+            # Max size for parameter value strings (1KB)
+            MAX_PARAM_SIZE = 1024
+            # Max total size for all parameters (100KB)
+            MAX_TOTAL_SIZE = 1024 * 100
+            total_size = 0
+
             for name, value in param_items:
-                # Convert value to string to avoid serialization issues
-                span.set_attribute(f"parameter.{name}", str(value))
-        except:
-            pass
+                try:
+                    # Check if we've exceeded total size limit
+                    if total_size > MAX_TOTAL_SIZE:
+                        span.set_attribute("parameters.truncated", True)
+                        span.set_attribute("parameters.truncated_reason", f"Total size exceeded {MAX_TOTAL_SIZE} bytes")
+                        break
+
+                    # Skip parameters known to be large
+                    if name in SKIP_PARAMS:
+                        # Try to extract ID for observability
+                        type_name = type(value).__name__
+                        id_info = ""
+
+                        try:
+                            # Handle lists/iterables (e.g., messages)
+                            if hasattr(value, "__iter__") and not isinstance(value, (str, bytes, dict)):
+                                ids = []
+                                count = 0
+                                # Use itertools.islice to avoid converting entire iterable
+                                for item in itertools.islice(value, 5):
+                                    count += 1
+                                    if hasattr(item, "id"):
+                                        ids.append(str(item.id))
+
+                                # Try to get total count if it's a sized iterable
+                                total_count = None
+                                if hasattr(value, "__len__"):
+                                    try:
+                                        total_count = len(value)
+                                    except (TypeError, AttributeError):
+                                        pass
+
+                                if ids:
+                                    suffix = ""
+                                    if total_count is not None and total_count > 5:
+                                        suffix = f"... ({total_count} total)"
+                                    elif count == 5:
+                                        suffix = "..."
+                                    id_info = f", ids=[{','.join(ids)}{suffix}]"
+                            # Handle single objects with id attribute
+                            elif hasattr(value, "id"):
+                                id_info = f", id={value.id}"
+                        except (TypeError, AttributeError, ValueError):
+                            pass
+
+                        param_value = f"<{type_name} (excluded{id_info})>"
+                        span.set_attribute(f"parameter.{name}", param_value)
+                        total_size += len(param_value)
+                        continue
+
+                    # Try repr first with length limit, fallback to str if needed
+                    str_value = None
+
+                    # For simple types, use str directly
+                    if isinstance(value, (str, int, float, bool, type(None))):
+                        str_value = str(value)
+                    else:
+                        # For complex objects, try to get a truncated representation
+                        try:
+                            # Test if str() works (some objects have broken __str__)
+                            try:
+                                test_str = str(value)
+                                # If str() works and is reasonable, use repr
+                                str_value = repr(value)
+                            except Exception:
+                                # If str() fails, mark as serialization failed
+                                raise ValueError("str() failed")
+
+                            # If repr is already too long, try to be smarter
+                            if len(str_value) > MAX_PARAM_SIZE * 2:
+                                # For collections, show just the type and size
+                                if hasattr(value, "__len__"):
+                                    try:
+                                        str_value = f"<{type(value).__name__} with {len(value)} items>"
+                                    except (TypeError, AttributeError):
+                                        str_value = f"<{type(value).__name__}>"
+                                else:
+                                    str_value = f"<{type(value).__name__}>"
+                        except (RecursionError, MemoryError, ValueError):
+                            # Handle cases where repr or str causes issues
+                            str_value = f"<serialization failed: {type(value).__name__}>"
+                        except Exception as e:
+                            # Fallback for any other issues
+                            str_value = f"<serialization failed: {type(e).__name__}>"
+
+                    # Apply size limit
+                    original_size = len(str_value)
+                    if original_size > MAX_PARAM_SIZE:
+                        str_value = str_value[:MAX_PARAM_SIZE] + f"... (truncated, original size: {original_size} chars)"
+
+                    span.set_attribute(f"parameter.{name}", str_value)
+                    total_size += len(str_value)
+
+                except (TypeError, ValueError, AttributeError, RecursionError, MemoryError) as e:
+                    try:
+                        error_msg = f"<serialization failed: {type(e).__name__}>"
+                        span.set_attribute(f"parameter.{name}", error_msg)
+                        total_size += len(error_msg)
+                    except Exception:
+                        # If even the fallback fails, skip this parameter
+                        pass
+
+        except (TypeError, ValueError, AttributeError) as e:
+            logger.debug(f"Failed to add parameters to span: {type(e).__name__}: {e}")
+        except Exception as e:
+            # Catch-all for any other unexpected exceptions
+            logger.debug(f"Unexpected error adding parameters to span: {type(e).__name__}: {e}")
 
     @wraps(func)
     async def async_wrapper(*args, **kwargs):

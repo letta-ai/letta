@@ -90,9 +90,24 @@ class TiktokenCounter(TokenCounter):
         ttl_s=3600,  # cache for 1 hour
     )
     async def count_text_tokens(self, text: str) -> int:
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
         if not text:
             return 0
-        return count_tokens(text)
+
+        text_length = len(text)
+        text_preview = text[:100] + "..." if len(text) > 100 else text
+        logger.debug(f"TiktokenCounter.count_text_tokens: model={self.model}, text_length={text_length}, preview={repr(text_preview)}")
+
+        try:
+            result = count_tokens(text)
+            logger.debug(f"TiktokenCounter.count_text_tokens: completed successfully, tokens={result}")
+            return result
+        except Exception as e:
+            logger.error(f"TiktokenCounter.count_text_tokens: FAILED with {type(e).__name__}: {e}, text_length={text_length}")
+            raise
 
     @trace_method
     @async_redis_cache(
@@ -102,11 +117,28 @@ class TiktokenCounter(TokenCounter):
         ttl_s=3600,  # cache for 1 hour
     )
     async def count_message_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
         if not messages:
             return 0
-        from letta.local_llm.utils import num_tokens_from_messages
 
-        return num_tokens_from_messages(messages=messages, model=self.model)
+        num_messages = len(messages)
+        total_content_length = sum(len(str(m.get("content", ""))) for m in messages)
+        logger.debug(
+            f"TiktokenCounter.count_message_tokens: model={self.model}, num_messages={num_messages}, total_content_length={total_content_length}"
+        )
+
+        try:
+            from letta.local_llm.utils import num_tokens_from_messages
+
+            result = num_tokens_from_messages(messages=messages, model=self.model)
+            logger.debug(f"TiktokenCounter.count_message_tokens: completed successfully, tokens={result}")
+            return result
+        except Exception as e:
+            logger.error(f"TiktokenCounter.count_message_tokens: FAILED with {type(e).__name__}: {e}, num_messages={num_messages}")
+            raise
 
     @trace_method
     @async_redis_cache(

@@ -8,7 +8,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from letta.constants import MAX_EMBEDDING_DIM
-from letta.embeddings import parse_and_chunk_text
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -24,6 +23,7 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -153,13 +153,26 @@ class PassageManager:
         if tags:
             tags = list(set(tags))
 
+        # Pad embeddings to MAX_EMBEDDING_DIM for pgvector (only when using Postgres as vector DB)
+        embedding = data["embedding"]
+        if embedding:
+            import numpy as np
+
+            from letta.helpers.tpuf_client import should_use_tpuf
+
+            # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+            if not should_use_tpuf():
+                np_embedding = np.array(embedding)
+                if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                    embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
-            "embedding": data["embedding"],
+            "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
-            "metadata_": data.get("metadata", {}),
+            "metadata_": data.get("metadata_", {}),
             "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
@@ -201,13 +214,26 @@ class PassageManager:
         if tags:
             tags = list(set(tags))
 
+        # Pad embeddings to MAX_EMBEDDING_DIM for pgvector (only when using Postgres as vector DB)
+        embedding = data["embedding"]
+        if embedding:
+            import numpy as np
+
+            from letta.helpers.tpuf_client import should_use_tpuf
+
+            # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+            if not should_use_tpuf():
+                np_embedding = np.array(embedding)
+                if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                    embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
-            "embedding": data["embedding"],
+            "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
-            "metadata_": data.get("metadata", {}),
+            "metadata_": data.get("metadata_", {}),
             "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
@@ -244,7 +270,7 @@ class PassageManager:
             "embedding": data["embedding"],
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
-            "metadata_": data.get("metadata", {}),
+            "metadata_": data.get("metadata_", {}),
             "tags": data.get("tags"),
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
@@ -286,13 +312,27 @@ class PassageManager:
                 raise ValueError("Archival passage cannot have source_id")
 
             data = p.model_dump(to_orm=True)
+
+            # Pad embeddings to MAX_EMBEDDING_DIM for pgvector (only when using Postgres as vector DB)
+            embedding = data["embedding"]
+            if embedding:
+                import numpy as np
+
+                from letta.helpers.tpuf_client import should_use_tpuf
+
+                # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+                if not should_use_tpuf():
+                    np_embedding = np.array(embedding)
+                    if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                        embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
+
             common_fields = {
                 "id": data.get("id"),
                 "text": data["text"],
-                "embedding": data["embedding"],
+                "embedding": embedding,
                 "embedding_config": data["embedding_config"],
                 "organization_id": data["organization_id"],
-                "metadata_": data.get("metadata", {}),
+                "metadata_": data.get("metadata_", {}),
                 "tags": data.get("tags"),
                 "is_deleted": data.get("is_deleted", False),
                 "created_at": data.get("created_at", datetime.now(timezone.utc)),
@@ -326,13 +366,27 @@ class PassageManager:
                 raise ValueError("Source passage cannot have archive_id")
 
             data = p.model_dump(to_orm=True)
+
+            # Pad embeddings to MAX_EMBEDDING_DIM for pgvector (always pad when writing to Postgres)
+            embedding = data["embedding"]
+            if embedding:
+                import numpy as np
+
+                from letta.helpers.tpuf_client import should_use_tpuf
+
+                # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+                if not should_use_tpuf():
+                    np_embedding = np.array(embedding)
+                    if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                        embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
+
             common_fields = {
                 "id": data.get("id"),
                 "text": data["text"],
-                "embedding": data["embedding"],
+                "embedding": embedding,
                 "embedding_config": data["embedding_config"],
                 "organization_id": data["organization_id"],
-                "metadata_": data.get("metadata", {}),
+                "metadata_": data.get("metadata_", {}),
                 "tags": data.get("tags"),
                 "is_deleted": data.get("is_deleted", False),
                 "created_at": data.get("created_at", datetime.now(timezone.utc)),
@@ -427,7 +481,8 @@ class PassageManager:
         # Get or create the default archive for the agent
         archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=agent_state, actor=actor)
 
-        text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
+        # TODO: check to make sure token count is okay for embedding model
+        text_chunks = [text]
 
         if not text_chunks:
             return []
@@ -549,6 +604,21 @@ class PassageManager:
                 # Update the tags on the passage object
                 setattr(curr_passage, "tags", new_tags)
 
+            # Pad embeddings if needed (only when using Postgres as vector DB)
+            if "embedding" in update_data and update_data["embedding"]:
+                import numpy as np
+
+                from letta.helpers.tpuf_client import should_use_tpuf
+
+                # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+                if not should_use_tpuf():
+                    embedding = update_data["embedding"]
+                    np_embedding = np.array(embedding)
+                    if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                        update_data["embedding"] = np.pad(
+                            np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant"
+                        ).tolist()
+
             # Update other fields
             for key, value in update_data.items():
                 setattr(curr_passage, key, value)
@@ -578,6 +648,22 @@ class PassageManager:
 
             # Update the database record with values from the provided record
             update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Pad embeddings if needed (only when using Postgres as vector DB)
+            if "embedding" in update_data and update_data["embedding"]:
+                import numpy as np
+
+                from letta.helpers.tpuf_client import should_use_tpuf
+
+                # Always pad when writing to Postgres vector DB (don't pad for Turbopuffer/Pinecone)
+                if not should_use_tpuf():
+                    embedding = update_data["embedding"]
+                    np_embedding = np.array(embedding)
+                    if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                        update_data["embedding"] = np.pad(
+                            np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant"
+                        ).tolist()
+
             for key, value in update_data.items():
                 setattr(curr_passage, key, value)
 

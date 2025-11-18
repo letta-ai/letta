@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from letta_client import LettaMessageUnion
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.responses import ResponseReasoningItem
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -55,6 +54,14 @@ from letta.schemas.letta_message_content import (
 )
 from letta.system import unpack_message
 from letta.utils import parse_json, validate_function_response
+
+
+def truncate_tool_return(content: Optional[str], limit: Optional[int]) -> Optional[str]:
+    if limit is None or content is None:
+        return content
+    if len(content) <= limit:
+        return content
+    return content[:limit] + f"... [truncated {len(content) - limit} chars]"
 
 
 def add_inner_thoughts_to_tool_call(
@@ -127,6 +134,7 @@ class ApprovalCreate(MessageCreateBase):
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     @model_validator(mode="after")
     def migrate_deprecated_fields(self):
@@ -1091,6 +1099,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
         assert not (native_content and put_inner_thoughts_in_kwargs), "native_content and put_inner_thoughts_in_kwargs cannot both be true"
@@ -1109,9 +1118,14 @@ class Message(BaseMessage):
             text_content = "[Image Here]"
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
-            text = [content for content in self.content if isinstance(content, TextContent)]
+            text_parts = [content for content in self.content if isinstance(content, TextContent)]
             # assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
-            text_content = "\n\n".join([t.text for t in text])
+            text_content = "\n\n".join([t.text for t in text_parts])
+            # Summarizer transcripts use this OpenAI-style dict; include a compact image placeholder
+            image_count = len([c for c in self.content if isinstance(c, ImageContent)])
+            if image_count > 0:
+                placeholder = "[Image omitted]" if image_count == 1 else f"[{image_count} images omitted]"
+                text_content = (text_content + (" " if text_content else "")) + placeholder
             parse_content_parts = True
         else:
             text_content = None
@@ -1139,8 +1153,14 @@ class Message(BaseMessage):
                 assert self.tool_calls is not None or text_content is not None, vars(self)
             except AssertionError as e:
                 # relax check if this message only contains reasoning content
-                if self.content is not None and len(self.content) > 0 and isinstance(self.content[0], ReasoningContent):
-                    return None
+                if self.content is not None and len(self.content) > 0:
+                    # Check if all non-empty content is reasoning-related
+                    all_reasoning = all(
+                        isinstance(c, (ReasoningContent, SummarizedReasoningContent, OmittedReasoningContent, RedactedReasoningContent))
+                        for c in self.content
+                    )
+                    if all_reasoning:
+                        return None
                 raise e
 
             # if native content, then put it directly inside the content
@@ -1181,12 +1201,26 @@ class Message(BaseMessage):
                         tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
-            openai_message = {
-                "content": text_content,
-                "role": self.role,
-                "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-            }
+            # Handle tool returns - if tool_returns exists, use the first one
+            if self.tool_returns and len(self.tool_returns) > 0:
+                tool_return = self.tool_returns[0]
+                if not tool_return.tool_call_id:
+                    raise TypeError("OpenAI API requires tool_call_id to be set.")
+                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                openai_message = {
+                    "content": func_response,
+                    "role": self.role,
+                    "tool_call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
+                }
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
+                openai_message = {
+                    "content": legacy_content,
+                    "role": self.role,
+                    "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                }
 
         else:
             raise ValueError(self.role)
@@ -1215,22 +1249,44 @@ class Message(BaseMessage):
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
-        result = [
-            m.to_openai_dict(
+        result: List[dict] = []
+
+        for m in messages:
+            # Special case: OpenAI Chat Completions requires a separate tool message per tool_call_id
+            # If we have multiple explicit tool_returns on a single Message, expand into one dict per return
+            if m.role == MessageRole.tool and m.tool_returns and len(m.tool_returns) > 0:
+                for tr in m.tool_returns:
+                    if not tr.tool_call_id:
+                        raise TypeError("ToolReturn came back without a tool_call_id.")
+                    # Ensure explicit tool_returns are truncated for Chat Completions
+                    func_response = truncate_tool_return(tr.func_response, tool_return_truncation_chars)
+                    result.append(
+                        {
+                            "content": func_response,
+                            "role": "tool",
+                            "tool_call_id": tr.tool_call_id[:max_tool_id_length] if max_tool_id_length else tr.tool_call_id,
+                        }
+                    )
+                continue
+
+            d = m.to_openai_dict(
                 max_tool_id_length=max_tool_id_length,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
-            for m in messages
-        ]
-        result = [m for m in result if m is not None]
+            if d is not None:
+                result.append(d)
+
         return result
 
     def to_openai_responses_dicts(
         self,
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         """Go from Message class to ChatCompletion message object"""
 
@@ -1306,15 +1362,31 @@ class Message(BaseMessage):
                     )
 
         elif self.role == "tool":
-            assert self.tool_call_id is not None, vars(self)
-            assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
-            message_dicts.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
-                    "output": self.content[0].text,
-                }
-            )
+            # Handle tool returns - similar pattern to Anthropic
+            if self.tool_returns:
+                for tool_return in self.tool_returns:
+                    if not tool_return.tool_call_id:
+                        raise TypeError("OpenAI Responses API requires tool_call_id to be set.")
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    message_dicts.append(
+                        {
+                            "type": "function_call_output",
+                            "call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
+                            "output": func_response,
+                        }
+                    )
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+                assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+                legacy_output = truncate_tool_return(self.content[0].text, tool_return_truncation_chars)
+                message_dicts.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                        "output": legacy_output,
+                    }
+                )
 
         else:
             raise ValueError(self.role)
@@ -1325,11 +1397,16 @@ class Message(BaseMessage):
     def to_openai_responses_dicts_from_list(
         messages: List[Message],
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
         result = []
         for message in messages:
-            result.extend(message.to_openai_responses_dicts(max_tool_id_length=max_tool_id_length))
+            result.extend(
+                message.to_openai_responses_dicts(
+                    max_tool_id_length=max_tool_id_length, tool_return_truncation_chars=tool_return_truncation_chars
+                )
+            )
         return result
 
     def to_anthropic_dict(
@@ -1340,6 +1417,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """
         Convert to an Anthropic message dictionary
@@ -1514,12 +1592,25 @@ class Message(BaseMessage):
             content = []
             for tool_return in self.tool_returns:
                 if not tool_return.tool_call_id:
-                    raise TypeError("Anthropic API requires tool_use_id to be set.")
+                    from letta.log import get_logger
+
+                    logger = get_logger(__name__)
+                    logger.error(
+                        f"Missing tool_call_id in tool return. "
+                        f"Message ID: {self.id}, "
+                        f"Tool name: {getattr(tool_return, 'name', 'unknown')}, "
+                        f"Tool return: {tool_return}"
+                    )
+                    raise TypeError(
+                        f"Anthropic API requires tool_use_id to be set. "
+                        f"Message ID: {self.id}, Tool: {getattr(tool_return, 'name', 'unknown')}"
+                    )
+                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
                 content.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": tool_return.tool_call_id,
-                        "content": tool_return.func_response,
+                        "content": func_response,
                     }
                 )
             if content:
@@ -1532,6 +1623,7 @@ class Message(BaseMessage):
                     raise TypeError("Anthropic API requires tool_use_id to be set.")
 
                 # This is for legacy reasons
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
                 anthropic_message = {
                     "role": "user",  # NOTE: diff
                     "content": [
@@ -1539,7 +1631,7 @@ class Message(BaseMessage):
                         {
                             "type": "tool_result",
                             "tool_use_id": self.tool_call_id,
-                            "content": text_content,
+                            "content": legacy_content,
                         }
                     ],
                 }
@@ -1558,6 +1650,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> List[dict]:
         messages = Message.filter_messages_for_llm_api(messages)
         result = [
@@ -1567,6 +1660,7 @@ class Message(BaseMessage):
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
                 strip_request_heartbeat=strip_request_heartbeat,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
             for m in messages
         ]
@@ -1580,6 +1674,7 @@ class Message(BaseMessage):
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict | None:
         """
         Go from Message class to Google AI REST message object
@@ -1717,34 +1812,75 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             # NOTE: Significantly different tool calling format, more similar to function calling format
-            assert self.tool_call_id is not None, vars(self)
 
-            if self.name is None:
-                logger.warning("Couldn't find function name on tool call, defaulting to tool ID instead.")
-                function_name = self.tool_call_id
-            else:
-                function_name = self.name
+            # Handle tool returns - similar pattern to Anthropic
+            if self.tool_returns:
+                parts = []
+                for tool_return in self.tool_returns:
+                    if not tool_return.tool_call_id:
+                        raise TypeError("Google AI API requires tool_call_id to be set.")
 
-            # NOTE: Google AI API wants the function response as JSON only, no string
-            try:
-                function_response = parse_json(text_content)
-            except:
-                function_response = {"function_response": text_content}
+                    # Use the function name if available, otherwise use tool_call_id
+                    function_name = self.name if self.name else tool_return.tool_call_id
 
-            google_ai_message = {
-                "role": "function",
-                "parts": [
-                    {
-                        "functionResponse": {
-                            "name": function_name,
-                            "response": {
-                                "name": function_name,  # NOTE: name twice... why?
-                                "content": function_response,
-                            },
+                    # Truncate the tool return if needed
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+
+                    # NOTE: Google AI API wants the function response as JSON only, no string
+                    try:
+                        function_response = parse_json(func_response)
+                    except:
+                        function_response = {"function_response": func_response}
+
+                    parts.append(
+                        {
+                            "functionResponse": {
+                                "name": function_name,
+                                "response": {
+                                    "name": function_name,  # NOTE: name twice... why?
+                                    "content": function_response,
+                                },
+                            }
                         }
-                    }
-                ],
-            }
+                    )
+
+                google_ai_message = {
+                    "role": "function",
+                    "parts": parts,
+                }
+            else:
+                # Legacy fallback for old message format
+                assert self.tool_call_id is not None, vars(self)
+
+                if self.name is None:
+                    logger.warning("Couldn't find function name on tool call, defaulting to tool ID instead.")
+                    function_name = self.tool_call_id
+                else:
+                    function_name = self.name
+
+                # Truncate the legacy content if needed
+                legacy_content = truncate_tool_return(text_content, tool_return_truncation_chars)
+
+                # NOTE: Google AI API wants the function response as JSON only, no string
+                try:
+                    function_response = parse_json(legacy_content)
+                except:
+                    function_response = {"function_response": legacy_content}
+
+                google_ai_message = {
+                    "role": "function",
+                    "parts": [
+                        {
+                            "functionResponse": {
+                                "name": function_name,
+                                "response": {
+                                    "name": function_name,  # NOTE: name twice... why?
+                                    "content": function_response,
+                                },
+                            }
+                        }
+                    ],
+                }
 
         else:
             raise ValueError(self.role)
@@ -1765,6 +1901,7 @@ class Message(BaseMessage):
         current_model: str,
         put_inner_thoughts_in_kwargs: bool = True,
         native_content: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ):
         messages = Message.filter_messages_for_llm_api(messages)
         result = [
@@ -1772,6 +1909,7 @@ class Message(BaseMessage):
                 current_model=current_model,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 native_content=native_content,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
             for m in messages
         ]
@@ -1829,6 +1967,14 @@ class Message(BaseMessage):
         # Collapse adjacent tool call and approval messages
         messages = Message.collapse_tool_call_messages_for_llm_api(messages)
 
+        # Dedupe duplicate tool-return payloads across tool messages so downstream providers
+        # never see the same tool_call_id's result twice in a single request
+        messages = Message.dedupe_tool_messages_for_llm_api(messages)
+
+        # Dedupe duplicate tool calls within assistant messages so a single assistant message
+        # cannot emit multiple tool_use blocks with the same id (Anthropic requirement)
+        messages = Message.dedupe_tool_calls_for_llm_api(messages)
+
         return messages
 
     @staticmethod
@@ -1848,6 +1994,119 @@ class Message(BaseMessage):
             messages[i].content = messages[i].content + messages[i + 1].content
             messages[i].tool_calls = messages[i].tool_calls + messages[i + 1].tool_calls
             messages.remove(messages[i + 1])
+        return messages
+
+    @staticmethod
+    def dedupe_tool_messages_for_llm_api(messages: List[Message]) -> List[Message]:
+        """Dedupe duplicate tool returns across tool-role messages by tool_call_id.
+
+        - For explicit tool_returns arrays: keep the first occurrence of each tool_call_id,
+          drop subsequent duplicates within the request.
+        - For legacy single tool_call_id + content messages: keep the first, drop duplicates.
+        - If a tool message has neither unique tool_returns nor content, drop it.
+
+        This runs prior to provider-specific formatting to reduce duplicate tool_result blocks downstream.
+        """
+        if not messages:
+            return messages
+
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
+        seen_ids: set[str] = set()
+        removed_tool_msgs = 0
+        removed_tool_returns = 0
+        result: List[Message] = []
+
+        for m in messages:
+            if m.role != MessageRole.tool:
+                result.append(m)
+                continue
+
+            # Prefer explicit tool_returns when present
+            if m.tool_returns and len(m.tool_returns) > 0:
+                unique_returns = []
+                for tr in m.tool_returns:
+                    tcid = getattr(tr, "tool_call_id", None)
+                    if tcid and tcid in seen_ids:
+                        removed_tool_returns += 1
+                        continue
+                    if tcid:
+                        seen_ids.add(tcid)
+                    unique_returns.append(tr)
+
+                if unique_returns:
+                    # Replace with unique set; keep message
+                    m.tool_returns = unique_returns
+                    result.append(m)
+                else:
+                    # No unique returns left; if legacy content exists, fall back to legacy handling below
+                    if m.tool_call_id and m.content and len(m.content) > 0:
+                        tcid = m.tool_call_id
+                        if tcid in seen_ids:
+                            removed_tool_msgs += 1
+                            continue
+                        seen_ids.add(tcid)
+                        result.append(m)
+                    else:
+                        removed_tool_msgs += 1
+                        continue
+
+            else:
+                # Legacy single-response path
+                tcid = getattr(m, "tool_call_id", None)
+                if tcid:
+                    if tcid in seen_ids:
+                        removed_tool_msgs += 1
+                        continue
+                    seen_ids.add(tcid)
+                result.append(m)
+
+        if removed_tool_msgs or removed_tool_returns:
+            logger.error(
+                "[Message] Deduped duplicate tool messages for request: removed_messages=%d, removed_returns=%d",
+                removed_tool_msgs,
+                removed_tool_returns,
+            )
+
+        return result
+
+    @staticmethod
+    def dedupe_tool_calls_for_llm_api(messages: List[Message]) -> List[Message]:
+        """Ensure each assistant message contains unique tool_calls by id.
+
+        Anthropic requires tool_use ids to be unique within a single assistant message. When
+        collapsing adjacent assistant/approval messages, duplicates can sneak in. This pass keeps
+        the first occurrence per id and drops subsequent duplicates.
+        """
+        if not messages:
+            return messages
+
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
+        removed_counts_total = 0
+        for m in messages:
+            if m.role != MessageRole.assistant or not m.tool_calls:
+                continue
+            seen: set[str] = set()
+            unique_tool_calls = []
+            removed = 0
+            for tc in m.tool_calls:
+                tcid = getattr(tc, "id", None)
+                if tcid and tcid in seen:
+                    removed += 1
+                    continue
+                if tcid:
+                    seen.add(tcid)
+                unique_tool_calls.append(tc)
+            if removed:
+                m.tool_calls = unique_tool_calls
+                removed_counts_total += removed
+        if removed_counts_total:
+            logger.error("[Message] Deduped duplicate tool_calls in assistant messages: removed=%d", removed_counts_total)
         return messages
 
     @staticmethod

@@ -196,6 +196,78 @@ async def test_update_run_by_id(server: SyncServer, sarah_agent, default_user):
 
 
 @pytest.mark.asyncio
+async def test_update_run_metadata_persistence(server: SyncServer, sarah_agent, default_user):
+    """Test that metadata is properly persisted when updating a run."""
+    # Create a run with initial metadata
+    run_data = PydanticRun(
+        metadata={"type": "test", "initial": "value"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Verify initial metadata
+    assert created_run.metadata == {"type": "test", "initial": "value"}
+
+    # Update the run with error metadata (simulating what happens in streaming service)
+    error_data = {
+        "error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": "Timeout after 30s"}
+    }
+    updated_run = await server.run_manager.update_run_by_id_async(
+        created_run.id,
+        RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.llm_api_error, metadata=error_data),
+        actor=default_user,
+    )
+
+    # Verify metadata was properly updated
+    assert updated_run.status == RunStatus.failed
+    assert updated_run.stop_reason == StopReasonType.llm_api_error
+    assert updated_run.metadata == error_data
+    assert "error" in updated_run.metadata
+    assert updated_run.metadata["error"]["type"] == "llm_timeout"
+
+    # Fetch the run again to ensure it's persisted in DB
+    fetched_run = await server.run_manager.get_run_by_id(created_run.id, actor=default_user)
+    assert fetched_run.metadata == error_data
+    assert "error" in fetched_run.metadata
+    assert fetched_run.metadata["error"]["type"] == "llm_timeout"
+
+
+@pytest.mark.asyncio
+async def test_update_run_updates_agent_last_stop_reason(server: SyncServer, sarah_agent, default_user):
+    """Test that completing a run updates the agent's last_stop_reason."""
+
+    # Verify agent starts with no last_stop_reason
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    initial_stop_reason = agent.last_stop_reason
+
+    # Create a run
+    run_data = PydanticRun(agent_id=sarah_agent.id)
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Complete the run with end_turn stop reason
+    await server.run_manager.update_run_by_id_async(
+        created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Verify agent's last_stop_reason was updated to end_turn
+    updated_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert updated_agent.last_stop_reason == StopReasonType.end_turn
+
+    # Create another run and complete with different stop reason
+    run_data2 = PydanticRun(agent_id=sarah_agent.id)
+    created_run2 = await server.run_manager.create_run(pydantic_run=run_data2, actor=default_user)
+
+    # Complete with error stop reason
+    await server.run_manager.update_run_by_id_async(
+        created_run2.id, RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error), actor=default_user
+    )
+
+    # Verify agent's last_stop_reason was updated to error
+    final_agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert final_agent.last_stop_reason == StopReasonType.error
+
+
+@pytest.mark.asyncio
 async def test_delete_run_by_id(server: SyncServer, sarah_agent, default_user):
     """Test deleting a run by its ID."""
     # Create a run
@@ -267,49 +339,33 @@ async def test_list_runs_pagination(server: SyncServer, sarah_agent, default_use
     assert all(run.agent_id == sarah_agent.id for run in runs)
 
     # Test cursor-based pagination
-    first_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=True)  # [J0, J1, J2]
+    first_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=True)
     assert len(first_page) == 3
     assert first_page[0].created_at <= first_page[1].created_at <= first_page[2].created_at
 
-    last_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=False)  # [J9, J8, J7]
+    last_page = await server.run_manager.list_runs(actor=default_user, limit=3, ascending=False)
     assert len(last_page) == 3
     assert last_page[0].created_at >= last_page[1].created_at >= last_page[2].created_at
     first_page_ids = set(run.id for run in first_page)
     last_page_ids = set(run.id for run in last_page)
     assert first_page_ids.isdisjoint(last_page_ids)
 
-    # Test middle page using both before and after
-    middle_page = await server.run_manager.list_runs(
-        actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=True
-    )  # [J3, J4, J5, J6]
-    assert len(middle_page) == 4  # Should include jobs between first and second page
-    head_tail_jobs = first_page_ids.union(last_page_ids)
-    assert all(job.id not in head_tail_jobs for job in middle_page)
-
-    # NOTE: made some changes about assumptions ofr ascending
-
-    # Test descending order
-    middle_page_desc = await server.run_manager.list_runs(
-        # actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=False
+    # Test pagination with "before" cursor in descending order (UI's default behavior)
+    # This is the critical scenario that was broken - clicking "Next" in the UI
+    second_page_desc = await server.run_manager.list_runs(
         actor=default_user,
-        before=first_page[-1].id,
-        after=last_page[-1].id,
+        before=last_page[-1].id,  # Use last (oldest) item from first page as cursor
+        limit=3,
         ascending=False,
-    )  # [J6, J5, J4, J3]
-    assert len(middle_page_desc) == 4
-    assert middle_page_desc[0].id == middle_page[-1].id
-    assert middle_page_desc[1].id == middle_page[-2].id
-    assert middle_page_desc[2].id == middle_page[-3].id
-    assert middle_page_desc[3].id == middle_page[-4].id
-
-    # BONUS
-    run_7 = last_page[-1].id
-    # earliest_runs = await server.run_manager.list_runs(actor=default_user, ascending=False, before=run_7)
-    earliest_runs = await server.run_manager.list_runs(actor=default_user, ascending=True, before=run_7)
-    assert len(earliest_runs) == 7
-    assert all(j.id not in last_page_ids for j in earliest_runs)
-    # assert all(earliest_runs[i].created_at >= earliest_runs[i + 1].created_at for i in range(len(earliest_runs) - 1))
-    assert all(earliest_runs[i].created_at <= earliest_runs[i + 1].created_at for i in range(len(earliest_runs) - 1))
+    )
+    assert len(second_page_desc) == 3
+    # CRITICAL: Verify no overlap with first page (this was the bug - there was overlap before)
+    second_page_desc_ids = set(run.id for run in second_page_desc)
+    assert second_page_desc_ids.isdisjoint(last_page_ids), "Second page should not overlap with first page"
+    # Verify descending order is maintained
+    assert second_page_desc[0].created_at >= second_page_desc[1].created_at >= second_page_desc[2].created_at
+    # Verify second page contains older items than first page
+    assert second_page_desc[0].created_at < last_page[-1].created_at
 
 
 @pytest.mark.asyncio
@@ -1754,3 +1810,353 @@ async def test_list_runs_with_no_status_filter_returns_all(server: SyncServer, s
     assert RunStatus.completed in statuses_found
     assert RunStatus.failed in statuses_found
     assert RunStatus.cancelled in statuses_found
+
+
+# ======================================================================================================================
+# RunManager Tests - Duration Filtering
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_gt(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration greater than a threshold."""
+    import asyncio
+
+    # Create runs with different durations
+    runs_data = []
+
+    # Fast run (< 100ms)
+    run_fast = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "fast"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.05)  # 50ms
+    await server.run_manager.update_run_by_id_async(
+        run_fast.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_fast)
+
+    # Medium run (~150ms)
+    run_medium = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "medium"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.15)  # 150ms
+    await server.run_manager.update_run_by_id_async(
+        run_medium.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_medium)
+
+    # Slow run (~250ms)
+    run_slow = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "slow"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.25)  # 250ms
+    await server.run_manager.update_run_by_id_async(
+        run_slow.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+    runs_data.append(run_slow)
+
+    # Filter runs with duration > 100ms (100,000,000 ns)
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_filter={"value": 100_000_000, "operator": "gt"},
+    )
+
+    # Should return medium and slow runs
+    assert len(filtered_runs) >= 2
+    run_ids = {run.id for run in filtered_runs}
+    assert run_medium.id in run_ids
+    assert run_slow.id in run_ids
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_lt(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration less than a threshold."""
+    import asyncio
+
+    # Create runs with different durations
+    # Fast run
+    run_fast = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "fast"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.05)  # 50ms
+    await server.run_manager.update_run_by_id_async(
+        run_fast.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Slow run
+    run_slow = await server.run_manager.create_run(
+        pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"speed": "slow"}),
+        actor=default_user,
+    )
+    await asyncio.sleep(0.30)  # 300ms
+    await server.run_manager.update_run_by_id_async(
+        run_slow.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+    )
+
+    # Get actual durations to set a threshold between them
+    fast_metrics = await server.run_manager.get_run_metrics_async(run_id=run_fast.id, actor=default_user)
+    slow_metrics = await server.run_manager.get_run_metrics_async(run_id=run_slow.id, actor=default_user)
+
+    # Set threshold between the two durations
+    threshold = (fast_metrics.run_ns + slow_metrics.run_ns) // 2
+
+    # Filter runs with duration < threshold
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_filter={"value": threshold, "operator": "lt"},
+    )
+
+    # Should return only the fast run
+    assert len(filtered_runs) >= 1
+    assert run_fast.id in [run.id for run in filtered_runs]
+    # Verify slow run is not included
+    assert run_slow.id not in [run.id for run in filtered_runs]
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_percentile(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration percentile."""
+    import asyncio
+
+    # Create runs with varied durations
+    run_ids = []
+    durations_ms = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+
+    for i, duration_ms in enumerate(durations_ms):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)  # Convert to seconds
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        run_ids.append(run.id)
+
+    # Filter runs in top 20% (80th percentile)
+    # This should return approximately the slowest 20% of runs
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_percentile=80,
+    )
+
+    # Should return at least 2 runs (approximately 20% of 10)
+    assert len(filtered_runs) >= 2
+    # Verify the slowest run is definitely included
+    filtered_ids = {run.id for run in filtered_runs}
+    assert run_ids[-1] in filtered_ids  # Slowest run (500ms)
+
+    # Verify that filtered runs are among the slower runs
+    # At least one should be from the slowest 3
+    slowest_3_ids = set(run_ids[-3:])
+    assert len(filtered_ids & slowest_3_ids) >= 2, "Expected at least 2 of the slowest 3 runs"
+
+
+@pytest.mark.asyncio
+async def test_list_runs_by_duration_with_order_by(server: SyncServer, sarah_agent, default_user):
+    """Test listing runs filtered by duration with different order_by options."""
+    import asyncio
+
+    # Create runs with different durations
+    runs = []
+    for i, duration_ms in enumerate([100, 200, 300]):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        runs.append(run)
+
+    # Test order_by="duration" with ascending order
+    filtered_runs_asc = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        order_by="duration",
+        ascending=True,
+    )
+
+    # Should be ordered from fastest to slowest
+    assert len(filtered_runs_asc) >= 3
+    # Get metrics to verify ordering
+    metrics_asc = []
+    for run in filtered_runs_asc[:3]:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        metrics_asc.append(metrics.run_ns)
+    # Verify ascending order
+    assert metrics_asc[0] <= metrics_asc[1] <= metrics_asc[2]
+
+    # Test order_by="duration" with descending order (default)
+    filtered_runs_desc = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        order_by="duration",
+        ascending=False,
+    )
+
+    # Should be ordered from slowest to fastest
+    assert len(filtered_runs_desc) >= 3
+    # Get metrics to verify ordering
+    metrics_desc = []
+    for run in filtered_runs_desc[:3]:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        metrics_desc.append(metrics.run_ns)
+    # Verify descending order
+    assert metrics_desc[0] >= metrics_desc[1] >= metrics_desc[2]
+
+
+@pytest.mark.asyncio
+async def test_list_runs_combined_duration_filter_and_percentile(server: SyncServer, sarah_agent, default_user):
+    """Test combining duration filter with percentile filter."""
+    import asyncio
+
+    # Create runs with varied durations
+    runs = []
+    for i, duration_ms in enumerate([50, 100, 150, 200, 250, 300, 350, 400]):
+        run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(agent_id=sarah_agent.id, metadata={"index": i}),
+            actor=default_user,
+        )
+        await asyncio.sleep(duration_ms / 1000.0)
+        await server.run_manager.update_run_by_id_async(
+            run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
+        )
+        runs.append(run)
+
+    # Filter runs that are:
+    # 1. In top 50% slowest (duration_percentile=50)
+    # 2. AND greater than 200ms (duration_filter > 200_000_000 ns)
+    filtered_runs = await server.run_manager.list_runs(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        duration_percentile=50,
+        duration_filter={"value": 200_000_000, "operator": "gt"},
+    )
+
+    # Should return runs that satisfy both conditions
+    assert len(filtered_runs) >= 2
+    # Verify all returned runs meet both criteria
+    for run in filtered_runs:
+        metrics = await server.run_manager.get_run_metrics_async(run_id=run.id, actor=default_user)
+        # Should be greater than 200ms
+        assert metrics.run_ns > 200_000_000
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_no_lettuce(server: SyncServer, sarah_agent, default_user):
+    """Test getting a run without Lettuce metadata."""
+    # Create a run without Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"type": "test"},
+        agent_id=sarah_agent.id,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Get run with status
+    fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify run is returned correctly without Lettuce status check
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.created
+    assert fetched_run.metadata == {"type": "test"}
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_success(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test getting a run with Lettuce metadata and successful status fetch."""
+    # Create a run with Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.running,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient
+    mock_client = AsyncMock()
+    mock_client.get_status = AsyncMock(return_value="COMPLETED")
+
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(return_value=mock_client)
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify status was updated from Lettuce
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.completed
+    mock_client.get_status.assert_called_once_with(run_id=created_run.id)
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_failure(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test getting a run when Lettuce status fetch fails."""
+    # Create a run with Lettuce metadata
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.running,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient to raise an exception
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(side_effect=Exception("Lettuce connection failed"))
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status - should gracefully handle error
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify run is returned with DB status (error was logged but not raised)
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.running  # Original status from DB
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_lettuce_terminal_status(server: SyncServer, sarah_agent, default_user, monkeypatch):
+    """Test that Lettuce status is not fetched for runs with terminal status."""
+    # Create a run with Lettuce metadata but terminal status
+    run_data = PydanticRun(
+        metadata={"lettuce": True},
+        agent_id=sarah_agent.id,
+        status=RunStatus.completed,
+    )
+    created_run = await server.run_manager.create_run(pydantic_run=run_data, actor=default_user)
+
+    # Mock LettuceClient - should not be called
+    mock_client = AsyncMock()
+    mock_client.get_status = AsyncMock()
+
+    mock_lettuce_class = AsyncMock()
+    mock_lettuce_class.create = AsyncMock(return_value=mock_client)
+
+    # Patch LettuceClient where it's imported from
+    with patch("letta.services.lettuce.LettuceClient", mock_lettuce_class):
+        # Get run with status
+        fetched_run = await server.run_manager.get_run_with_status(run_id=created_run.id, actor=default_user)
+
+    # Verify status remains unchanged and Lettuce was not called
+    assert fetched_run.id == created_run.id
+    assert fetched_run.status == RunStatus.completed
+    mock_client.get_status.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_run_with_status_not_found(server: SyncServer, default_user):
+    """Test getting a non-existent run with get_run_with_status."""
+    # Use properly formatted run ID that doesn't exist
+    non_existent_run_id = f"run-{uuid.uuid4()}"
+    with pytest.raises(NoResultFound):
+        await server.run_manager.get_run_with_status(run_id=non_existent_run_id, actor=default_user)

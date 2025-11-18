@@ -23,7 +23,6 @@ from anthropic.types.beta import (
     BetaThinkingDelta,
     BetaToolUseBlock,
 )
-from letta_client.types import assistant_message
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
@@ -82,7 +81,8 @@ class AnthropicStreamingInterface:
         self.accumulated_inner_thoughts = []
         self.tool_call_id = None
         self.tool_call_name = None
-        self.accumulated_tool_call_args = ""
+        # Accumulate tool-call args as parts to avoid O(n^2)
+        self._accumulated_tool_call_args_parts: list[str] = []
         self.previous_parse = {}
 
         # usage trackers
@@ -109,15 +109,16 @@ class AnthropicStreamingInterface:
             raise ValueError("No tool call returned")
         # hack for tool rules
         try:
-            tool_input = json.loads(self.accumulated_tool_call_args)
+            args_str = "".join(self._accumulated_tool_call_args_parts)
+            tool_input = json.loads(args_str)
         except json.JSONDecodeError as e:
             # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
             try:
-                tool_input = self.json_parser.parse(self.accumulated_tool_call_args)
+                tool_input = self.json_parser.parse(args_str)
             except:
                 logger.warning(
                     f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
-                    f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
+                    f"name={self.tool_call_name}. Raw input: {args_str!r}. Error: {e}"
                 )
                 raise e
         if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
@@ -362,8 +363,9 @@ class AnthropicStreamingInterface:
                         f"Streaming integrity failed - received BetaInputJSONDelta object while not in TOOL_USE EventMode: {delta}"
                     )
 
-                self.accumulated_tool_call_args += delta.partial_json
-                current_parsed = self.json_parser.parse(self.accumulated_tool_call_args)
+                if delta.partial_json:
+                    self._accumulated_tool_call_args_parts.append(delta.partial_json)
+                current_parsed = self.json_parser.parse("".join(self._accumulated_tool_call_args_parts))
 
                 # Start detecting a difference in inner thoughts
                 previous_inner_thoughts = self.previous_parse.get(INNER_THOUGHTS_KWARG, "")
@@ -386,7 +388,9 @@ class AnthropicStreamingInterface:
                     yield reasoning_message
 
                 # Check if inner thoughts are complete - if so, flush the buffer or create approval message
-                if not self.inner_thoughts_complete and self._check_inner_thoughts_complete(self.accumulated_tool_call_args):
+                if not self.inner_thoughts_complete and self._check_inner_thoughts_complete(
+                    "".join(self._accumulated_tool_call_args_parts)
+                ):
                     self.inner_thoughts_complete = True
 
                     # Check if this tool requires approval
@@ -396,7 +400,7 @@ class AnthropicStreamingInterface:
                             message_index += 1
 
                         # Strip out inner thoughts from arguments
-                        tool_call_args = self.accumulated_tool_call_args
+                        tool_call_args = "".join(self._accumulated_tool_call_args_parts)
                         if current_inner_thoughts:
                             tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
 
@@ -420,9 +424,10 @@ class AnthropicStreamingInterface:
                             message_index += 1
 
                         # Strip out the inner thoughts from the buffered tool call arguments before streaming
-                        tool_call_args = ""
-                        for buffered_msg in self.tool_call_buffer:
-                            tool_call_args += buffered_msg.tool_call.arguments if buffered_msg.tool_call.arguments else ""
+                        parts = [
+                            buffered_msg.tool_call.arguments for buffered_msg in self.tool_call_buffer if buffered_msg.tool_call.arguments
+                        ]
+                        tool_call_args = "".join(parts)
                         tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
 
                         tool_call_delta = ToolCallDelta(
@@ -579,7 +584,7 @@ class SimpleAnthropicStreamingInterface:
         self.accumulated_inner_thoughts = []
         self.tool_call_id = None
         self.tool_call_name = None
-        self.accumulated_tool_call_args = ""
+        self._accumulated_tool_call_args_parts: list[str] = []
         self.previous_parse = {}
 
         # usage trackers
@@ -609,15 +614,16 @@ class SimpleAnthropicStreamingInterface:
 
         # hack for tool rules
         try:
-            tool_input = json.loads(self.accumulated_tool_call_args)
+            args_str = "".join(self._accumulated_tool_call_args_parts)
+            tool_input = json.loads(args_str)
         except json.JSONDecodeError as e:
             # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
             try:
-                tool_input = self.json_parser.parse(self.accumulated_tool_call_args)
+                tool_input = self.json_parser.parse(args_str)
             except:
                 logger.warning(
                     f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
-                    f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
+                    f"name={self.tool_call_name}. Raw input: {args_str!r}. Error: {e}"
                 )
                 raise e
         if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
@@ -643,13 +649,13 @@ class SimpleAnthropicStreamingInterface:
                 redacted_text = "".join(chunk.hidden_reasoning for chunk in group if chunk.hidden_reasoning is not None)
                 return RedactedReasoningContent(data=redacted_text)
             elif group_type == "text":
-                concat = ""
+                parts: list[str] = []
                 for chunk in group:
                     if isinstance(chunk.content, list):
-                        concat += "".join([c.text for c in chunk.content])
+                        parts.append("".join([c.text for c in chunk.content]))
                     else:
-                        concat += chunk.content
-                return TextContent(text=concat)
+                        parts.append(chunk.content)
+                return TextContent(text="".join(parts))
             else:
                 raise ValueError("Unexpected group type")
 
@@ -853,7 +859,8 @@ class SimpleAnthropicStreamingInterface:
                         f"Streaming integrity failed - received BetaInputJSONDelta object while not in TOOL_USE EventMode: {delta}"
                     )
 
-                self.accumulated_tool_call_args += delta.partial_json
+                if delta.partial_json:
+                    self._accumulated_tool_call_args_parts.append(delta.partial_json)
 
                 if self.tool_call_name in self.requires_approval_tools:
                     if prev_message_type and prev_message_type != "approval_request_message":

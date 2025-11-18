@@ -6,6 +6,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import patch
 
@@ -156,7 +157,30 @@ USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+
+
+# Load test image from local file rather than fetching from external URL.
+# Using a local file avoids network dependencies and makes tests faster and more reliable.
+def _get_test_image_file_url() -> str:
+    """Returns a file:// URL pointing to the local test image."""
+    image_path = os.path.join(os.path.dirname(__file__), "./data/Camponotus_flavomarginatus_ant.jpg")
+    # Convert to absolute path and create file:// URL
+    absolute_path = os.path.abspath(image_path)
+    return Path(absolute_path).as_uri()  # Returns: file:///absolute/path/to/image.jpg
+
+
+def _load_test_image() -> str:
+    """Loads the test image from the data folder and returns it as base64."""
+    image_path = os.path.join(os.path.dirname(__file__), "./data/Camponotus_flavomarginatus_ant.jpg")
+    with open(image_path, "rb") as f:
+        return base64.standard_b64encode(f.read()).decode("utf-8")
+
+
+# Original external URL (kept for reference)
+# URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+
+# Use local file:// URL instead of external HTTP URL
+URL_IMAGE = _get_test_image_file_url()
 USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -167,7 +191,10 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
+
+
+BASE64_IMAGE = _load_test_image()
+
 USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -437,13 +464,6 @@ def assert_tool_call_response(
         ):
             return
 
-    try:
-        assert len(messages) == expected_message_count, messages
-    except:
-        if "claude-3-7-sonnet" not in llm_config.model:
-            raise
-        assert len(messages) == expected_message_count - 1, messages
-
     # OpenAI gpt-4o-mini can sometimes omit the final AssistantMessage in streaming,
     # yielding the shorter sequence:
     #   Reasoning -> ToolCall -> ToolReturn -> Reasoning -> StopReason -> Usage
@@ -461,6 +481,13 @@ def assert_tool_call_response(
         and getattr(messages[5], "message_type", None) == "usage_statistics"
     ):
         return
+
+    try:
+        assert len(messages) == expected_message_count, messages
+    except:
+        if "claude-3-7-sonnet" not in llm_config.model:
+            raise
+        assert len(messages) == expected_message_count - 1, messages
 
     index = 0
     if from_db:
@@ -1163,8 +1190,8 @@ def test_step_stream_agent_loop_error(
     llm_config: LLMConfig,
 ) -> None:
     """
-    Tests sending a message with a synchronous client.
-    Verifies that no new messages are persisted on error.
+    Tests sending a message with a streaming client.
+    Verifies that errors are embedded in the stream response and no new messages are persisted on error.
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
@@ -1172,12 +1199,27 @@ def test_step_stream_agent_loop_error(
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
 
-        with pytest.raises(ApiError):
-            response = client.agents.messages.create_stream(
-                agent_id=agent_state.id,
-                messages=USER_MESSAGE_FORCE_REPLY,
-            )
-            list(response)  # This should trigger the error
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+        )
+        messages = list(response)
+
+        # Verify exactly one message with an error is returned
+        assert len(messages) == 1, f"Expected exactly 1 message, got {len(messages)}"
+
+        # Verify the message contains an error matching the streaming service error format
+        assert hasattr(messages[0], "error"), "Expected message to have an 'error' attribute"
+        assert messages[0].error is not None, "Expected error to be non-None"
+        assert messages[0].error.get("type") == "internal_error", (
+            f"Expected error type 'internal_error', got {messages[0].error.get('type')}"
+        )
+        assert messages[0].error.get("message") == "An unknown error occurred with the LLM streaming request.", (
+            f"Unexpected error message: {messages[0].error.get('message')}"
+        )
+        assert "No tool calls found in response, model must make a tool call" in messages[0].error.get("detail", ""), (
+            f"Expected error detail to contain exception message, got: {messages[0].error.get('detail')}"
+        )
 
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
@@ -1334,8 +1376,8 @@ def test_token_streaming_agent_loop_error(
     llm_config: LLMConfig,
 ) -> None:
     """
-    Tests sending a streaming message with a synchronous client.
-    Verifies that no new messages are persisted on error.
+    Tests sending a token streaming message with a synchronous client.
+    Verifies that errors are embedded in the stream response and no new messages are persisted on error.
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
@@ -1343,13 +1385,28 @@ def test_token_streaming_agent_loop_error(
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
         mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
 
-        with pytest.raises(ApiError):
-            response = client.agents.messages.create_stream(
-                agent_id=agent_state.id,
-                messages=USER_MESSAGE_FORCE_REPLY,
-                stream_tokens=True,
-            )
-            list(response)  # This should trigger the error
+        response = client.agents.messages.create_stream(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_FORCE_REPLY,
+            stream_tokens=True,
+        )
+        messages = list(response)
+
+        # Verify exactly one message with an error is returned
+        assert len(messages) == 1, f"Expected exactly 1 message, got {len(messages)}"
+
+        # Verify the message contains an error matching the streaming service error format
+        assert hasattr(messages[0], "error"), "Expected message to have an 'error' attribute"
+        assert messages[0].error is not None, "Expected error to be non-None"
+        assert messages[0].error.get("type") == "internal_error", (
+            f"Expected error type 'internal_error', got {messages[0].error.get('type')}"
+        )
+        assert messages[0].error.get("message") == "An unknown error occurred with the LLM streaming request.", (
+            f"Unexpected error message: {messages[0].error.get('message')}"
+        )
+        assert "No tool calls found in response, model must make a tool call" in messages[0].error.get("detail", ""), (
+            f"Expected error detail to contain exception message, got: {messages[0].error.get('detail')}"
+        )
 
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0

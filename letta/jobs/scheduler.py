@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.log import get_logger
-from letta.server.db import db_registry
+from letta.server.db import async_session_factory, db_registry
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -42,7 +42,7 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
             logger.warning(f"Advisory locks not supported for {engine_name} database. Starting scheduler without leader election.")
             acquired_lock = True
         else:
-            lock_session = db_registry.get_async_session_factory()()
+            lock_session = async_session_factory()
             result = await lock_session.execute(
                 text("SELECT pg_try_advisory_lock(CAST(:lock_key AS bigint))"), {"lock_key": ADVISORY_LOCK_KEY}
             )

@@ -29,11 +29,34 @@ class TurbopufferEmbedder(BaseEmbedder):
         if not chunks:
             return []
 
-        logger.info(f"Generating embeddings for {len(chunks)} chunks using Turbopuffer")
+        # Filter out empty or whitespace-only chunks
+        valid_chunks = [chunk for chunk in chunks if chunk and chunk.strip()]
+
+        if not valid_chunks:
+            logger.warning(f"No valid text chunks found for file {file_id}. PDF may contain only images without text layer.")
+            log_event(
+                "turbopuffer_embedder.no_valid_chunks",
+                {"file_id": file_id, "source_id": source_id, "total_chunks": len(chunks), "reason": "All chunks empty or whitespace-only"},
+            )
+            return []
+
+        if len(valid_chunks) < len(chunks):
+            logger.info(f"Filtered out {len(chunks) - len(valid_chunks)} empty chunks from {len(chunks)} total")
+            log_event(
+                "turbopuffer_embedder.chunks_filtered",
+                {
+                    "file_id": file_id,
+                    "original_chunks": len(chunks),
+                    "valid_chunks": len(valid_chunks),
+                    "filtered_chunks": len(chunks) - len(valid_chunks),
+                },
+            )
+
+        logger.info(f"Generating embeddings for {len(valid_chunks)} chunks using Turbopuffer")
         log_event(
             "turbopuffer_embedder.generation_started",
             {
-                "total_chunks": len(chunks),
+                "total_chunks": len(valid_chunks),
                 "file_id": file_id,
                 "source_id": source_id,
                 "embedding_model": self.embedding_config.embedding_model,
@@ -45,7 +68,7 @@ class TurbopufferEmbedder(BaseEmbedder):
             passages = await self.tpuf_client.insert_file_passages(
                 source_id=source_id,
                 file_id=file_id,
-                text_chunks=chunks,
+                text_chunks=valid_chunks,
                 organization_id=actor.organization_id,
                 actor=actor,
             )
@@ -55,7 +78,7 @@ class TurbopufferEmbedder(BaseEmbedder):
                 "turbopuffer_embedder.generation_completed",
                 {
                     "passages_created": len(passages),
-                    "total_chunks_processed": len(chunks),
+                    "total_chunks_processed": len(valid_chunks),
                     "file_id": file_id,
                     "source_id": source_id,
                 },

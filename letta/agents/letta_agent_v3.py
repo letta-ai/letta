@@ -19,7 +19,7 @@ from letta.agents.helpers import (
     merge_and_validate_prefilled_args,
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM, SUMMARIZATION_TRIGGER_MULTIPLIER
 from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -37,6 +37,7 @@ from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
+from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.utils import (
     create_approval_request_message_from_llm_response,
     create_letta_messages_from_llm_response,
@@ -67,6 +68,25 @@ class LettaAgentV3(LettaAgentV2):
     def _initialize_state(self):
         super()._initialize_state()
         self._require_tool_call = False
+        self.last_step_usage = None
+        self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
+
+    def _compute_tool_return_truncation_chars(self) -> int:
+        """Compute a dynamic cap for tool returns in requests.
+
+        Heuristic: ~20% of context window × 4 chars/token, minimum 5k chars.
+        This prevents any single tool return from consuming too much context.
+        """
+        try:
+            cap = int(self.agent_state.llm_config.context_window * 0.2 * 4)  # 20% of tokens → chars
+        except Exception:
+            cap = 5000
+        return max(5000, cap)
+
+    def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
+        """Override to track per-step usage for context limit checks"""
+        self.last_step_usage = step_usage_stats
+        super()._update_global_usage_stats(step_usage_stats)
 
     @trace_method
     async def step(
@@ -115,19 +135,46 @@ class LettaAgentV3(LettaAgentV2):
             async for chunk in response:
                 response_letta_messages.append(chunk)
 
+            # Proactive summarization if approaching context limit
+            if (
+                self.last_step_usage
+                and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                and not self.agent_state.message_buffer_autoclear
+            ):
+                self.logger.warning(
+                    f"Step usage ({self.last_step_usage.total_tokens} tokens) approaching "
+                    f"context limit ({self.agent_state.llm_config.context_window}), triggering summarization."
+                )
+
+                in_context_messages = await self.summarize_conversation_history(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=self.response_messages,
+                    total_tokens=self.last_step_usage.total_tokens,
+                    force=True,
+                )
+
+                # Clear to avoid duplication in next iteration
+                self.response_messages = []
+
             if not self.should_continue:
                 break
 
             input_messages_to_persist = []
 
-        # Rebuild context window after stepping
+        # Rebuild context window after stepping (safety net)
         if not self.agent_state.message_buffer_autoclear:
-            await self.summarize_conversation_history(
-                in_context_messages=in_context_messages,
-                new_letta_messages=self.response_messages,
-                total_tokens=self.usage.total_tokens,
-                force=False,
-            )
+            if self.last_step_usage:
+                await self.summarize_conversation_history(
+                    in_context_messages=in_context_messages,
+                    new_letta_messages=self.response_messages,
+                    total_tokens=self.last_step_usage.total_tokens,
+                    force=False,
+                )
+            else:
+                self.logger.warning(
+                    "Post-loop summarization skipped: last_step_usage is None. "
+                    "No step completed successfully or usage stats were not updated."
+                )
 
         if self.stop_reason is None:
             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
@@ -211,42 +258,120 @@ class LettaAgentV3(LettaAgentV2):
                     yield f"data: {chunk.model_dump_json()}\n\n"
                     first_chunk = False
 
+                # Check if step was cancelled - break out of the step loop
+                if not self.should_continue:
+                    break
+
+                # Proactive summarization if approaching context limit
+                if (
+                    self.last_step_usage
+                    and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                    and not self.agent_state.message_buffer_autoclear
+                ):
+                    self.logger.warning(
+                        f"Step usage ({self.last_step_usage.total_tokens} tokens) approaching "
+                        f"context limit ({self.agent_state.llm_config.context_window}), triggering summarization."
+                    )
+
+                    in_context_messages = await self.summarize_conversation_history(
+                        in_context_messages=in_context_messages,
+                        new_letta_messages=self.response_messages,
+                        total_tokens=self.last_step_usage.total_tokens,
+                        force=True,
+                    )
+
+                    # Clear to avoid duplication in next iteration
+                    self.response_messages = []
+
                 if not self.should_continue:
                     break
 
                 input_messages_to_persist = []
 
+            if self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+
             if not self.agent_state.message_buffer_autoclear:
-                await self.summarize_conversation_history(
-                    in_context_messages=in_context_messages,
-                    new_letta_messages=self.response_messages,
-                    total_tokens=self.usage.total_tokens,
-                    force=False,
-                )
+                if self.last_step_usage:
+                    await self.summarize_conversation_history(
+                        in_context_messages=in_context_messages,
+                        new_letta_messages=self.response_messages,
+                        total_tokens=self.last_step_usage.total_tokens,
+                        force=False,
+                    )
+                else:
+                    self.logger.warning(
+                        "Post-loop summarization skipped: last_step_usage is None. "
+                        "No step completed successfully or usage stats were not updated."
+                    )
 
         except Exception as e:
             self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
+
+            # Set stop_reason if not already set
+            if self.stop_reason is None:
+                # Classify error type
+                if isinstance(e, LLMError):
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
+                else:
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+
             if first_chunk:
-                raise  # only raise if first chunk has not been streamed yet
+                # Raise if no chunks sent yet (response not started, can return error status code)
+                raise
+            else:
+                # Mid-stream error: yield error event to client in SSE format
+                error_chunk = {
+                    "error": {
+                        "type": "internal_error",
+                        "message": "An error occurred during agent execution.",
+                        "detail": str(e),
+                    }
+                }
+                yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
 
-        if run_id:
-            letta_messages = Message.to_letta_messages_from_list(
-                self.response_messages,
-                use_assistant_message=False,  # NOTE: set to false
-                reverse=False,
-                # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
-                text_is_assistant_message=True,
+                # Return immediately - don't fall through to finish chunks
+                # This prevents sending end_turn finish chunks after an error
+                return
+
+        # Cleanup and finalize (only runs if no exception occurred)
+        try:
+            if run_id:
+                letta_messages = Message.to_letta_messages_from_list(
+                    self.response_messages_for_metadata,  # Use separate accumulator to preserve all messages
+                    use_assistant_message=False,  # NOTE: set to false
+                    reverse=False,
+                    # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
+                    text_is_assistant_message=True,
+                )
+                result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+                if self.job_update_metadata is None:
+                    self.job_update_metadata = {}
+                self.job_update_metadata["result"] = result.model_dump(mode="json")
+
+            await self._request_checkpoint_finish(
+                request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
             )
-            result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
-            if self.job_update_metadata is None:
-                self.job_update_metadata = {}
-            self.job_update_metadata["result"] = result.model_dump(mode="json")
+            for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
+                yield f"data: {finish_chunk}\n\n"
+        except Exception as cleanup_error:
+            # Error during cleanup/finalization - ensure we still send a terminal event
+            self.logger.error(f"Error during stream cleanup: {cleanup_error}", exc_info=True)
 
-        await self._request_checkpoint_finish(
-            request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
-        )
-        for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
-            yield f"data: {finish_chunk}\n\n"
+            # Set stop_reason if not already set
+            if self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+
+            # Send error event
+            error_chunk = {
+                "error": {
+                    "type": "cleanup_error",
+                    "message": "An error occurred during stream finalization.",
+                    "detail": str(cleanup_error),
+                }
+            }
+            yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+            # Note: we don't send finish chunks here since we already errored
 
     @trace_method
     async def _step(
@@ -309,6 +434,13 @@ class LettaAgentV3(LettaAgentV2):
                     self.logger.info("switching to unconstrained mode (allowing non-tool responses)")
             self._require_tool_call = require_tool_call
 
+            # Always refresh messages at the start of each step to pick up external inputs
+            # (e.g., approval responses submitted by the client while this stream is running)
+            try:
+                messages = await self._refresh_messages(messages)
+            except Exception as e:
+                self.logger.warning(f"Failed to refresh messages at step start: {e}")
+
             approval_request, approval_response = _maybe_get_approval_messages(messages)
             tool_call_denials, tool_returns = [], []
             if approval_request and approval_response:
@@ -316,18 +448,24 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Get tool calls that are pending
                 backfill_tool_call_id = approval_request.tool_calls[0].id  # legacy case
-                approved_tool_call_ids = {
-                    backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
-                    for a in approval_response.approvals
-                    if isinstance(a, ApprovalReturn) and a.approve
-                }
+                if approval_response.approvals:
+                    approved_tool_call_ids = {
+                        backfill_tool_call_id if a.tool_call_id.startswith("message-") else a.tool_call_id
+                        for a in approval_response.approvals
+                        if isinstance(a, ApprovalReturn) and a.approve
+                    }
+                else:
+                    approved_tool_call_ids = {}
                 tool_calls = [tool_call for tool_call in approval_request.tool_calls if tool_call.id in approved_tool_call_ids]
                 pending_tool_call_message = _maybe_get_pending_tool_call_message(messages)
                 if pending_tool_call_message:
                     tool_calls.extend(pending_tool_call_message.tool_calls)
 
                 # Get tool calls that were denied
-                denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
+                if approval_response.approvals:
+                    denies = {d.tool_call_id: d for d in approval_response.approvals if isinstance(d, ApprovalReturn) and not d.approve}
+                else:
+                    denies = {}
                 tool_call_denials = [
                     ToolCallDenial(**t.model_dump(), reason=denies.get(t.id).reason) for t in approval_request.tool_calls if t.id in denies
                 ]
@@ -335,6 +473,18 @@ class LettaAgentV3(LettaAgentV2):
                 # Get tool calls that were executed client side
                 if approval_response.approvals:
                     tool_returns = [r for r in approval_response.approvals if isinstance(r, ToolReturn)]
+
+                # Validate that the approval response contains meaningful data
+                # If all three lists are empty, this is a malformed approval response
+                if not tool_calls and not tool_call_denials and not tool_returns:
+                    self.logger.error(
+                        f"Invalid approval response: approval_response.approvals is {approval_response.approvals} "
+                        f"but no tool calls, denials, or returns were extracted. "
+                        f"This likely indicates a corrupted or malformed approval payload."
+                    )
+                    self.should_continue = False
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value)
+                    return
 
                 step_id = approval_request.step_id
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
@@ -351,7 +501,6 @@ class LettaAgentV3(LettaAgentV2):
                     step_id=step_id, run_id=run_id
                 )
 
-                messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 and self._require_tool_call else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
@@ -362,15 +511,18 @@ class LettaAgentV3(LettaAgentV2):
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
                             requires_subsequent_tool_call=self._require_tool_call,
+                            tool_return_truncation_chars=self._compute_tool_return_truncation_chars(),
                         )
                         # TODO: Extend to more providers, and also approval tool rules
-                        # Enable Anthropic parallel tool use when no tool rules are attached
+                        # Enable parallel tool use when no tool rules are attached
                         try:
+                            no_tool_rules = (
+                                not self.agent_state.tool_rules
+                                or len([t for t in self.agent_state.tool_rules if t.type != "requires_approval"]) == 0
+                            )
+
+                            # Anthropic/Bedrock parallel tool use
                             if self.agent_state.llm_config.model_endpoint_type in ["anthropic", "bedrock"]:
-                                no_tool_rules = (
-                                    not self.agent_state.tool_rules
-                                    or len([t for t in self.agent_state.tool_rules if t.type != "requires_approval"]) == 0
-                                )
                                 if (
                                     isinstance(request_data.get("tool_choice"), dict)
                                     and "disable_parallel_tool_use" in request_data["tool_choice"]
@@ -381,6 +533,23 @@ class LettaAgentV3(LettaAgentV2):
                                     else:
                                         # Explicitly disable when tool rules present or llm_config toggled off
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = True
+
+                            # OpenAI parallel tool use
+                            elif self.agent_state.llm_config.model_endpoint_type == "openai":
+                                # For OpenAI, we control parallel tool calling via parallel_tool_calls field
+                                # Only allow parallel tool calls when no tool rules and enabled in config
+                                if "parallel_tool_calls" in request_data:
+                                    if no_tool_rules and self.agent_state.llm_config.parallel_tool_calls:
+                                        request_data["parallel_tool_calls"] = True
+                                    else:
+                                        request_data["parallel_tool_calls"] = False
+
+                            # Gemini (Google AI/Vertex) parallel tool use
+                            elif self.agent_state.llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+                                # Gemini supports parallel tool calling natively through multiple parts in the response
+                                # We just need to ensure the config flag is set for tracking purposes
+                                # The actual handling happens in GoogleVertexClient.convert_response_to_chat_completion
+                                pass  # No specific request_data field needed for Gemini
                         except Exception:
                             # if this fails, we simply don't enable parallel tool use
                             pass
@@ -420,11 +589,11 @@ class LettaAgentV3(LettaAgentV2):
                             messages = await self.summarize_conversation_history(
                                 in_context_messages=messages,
                                 new_letta_messages=self.response_messages,
-                                llm_config=self.agent_state.llm_config,
                                 force=True,
                             )
                         else:
-                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
+                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+                            self.logger.error(f"Unknown error occured for run {run_id}: {e}")
                             raise e
 
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(
@@ -434,11 +603,13 @@ class LettaAgentV3(LettaAgentV2):
                 self._update_global_usage_stats(llm_adapter.usage)
 
                 # Handle the AI response with the extracted data (supports multiple tool calls)
-                # Gather tool calls. Approval paths specify a single tool call.
+                # Gather tool calls - check for multi-call API first, then fall back to single
                 if hasattr(llm_adapter, "tool_calls") and llm_adapter.tool_calls:
                     tool_calls = llm_adapter.tool_calls
                 elif llm_adapter.tool_call is not None:
                     tool_calls = [llm_adapter.tool_call]
+                else:
+                    tool_calls = []
 
             aggregated_persisted: list[Message] = []
             persisted_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
@@ -468,6 +639,7 @@ class LettaAgentV3(LettaAgentV2):
 
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(aggregated_persisted[new_message_idx:])
+            self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
             if llm_adapter.supports_token_streaming():
                 # Stream each tool return if tools were executed
@@ -492,18 +664,9 @@ class LettaAgentV3(LettaAgentV2):
                     if include_return_message_types is None or message.message_type in include_return_message_types:
                         yield message
 
-            # Persist approval responses immediately to prevent agent from getting into a bad state
-            if (
-                len(input_messages_to_persist) == 1
-                and input_messages_to_persist[0].role == "approval"
-                and persisted_messages[0].role == "approval"
-                and persisted_messages[1].role == "tool"
-            ):
-                self.agent_state.message_ids = self.agent_state.message_ids + [m.id for m in persisted_messages[:2]]
-                await self.agent_manager.update_message_ids_async(
-                    agent_id=self.agent_state.id, message_ids=self.agent_state.message_ids, actor=self.actor
-                )
-            # TODO should we be logging this even if persisted_messages is empty? Technically, there still was an LLM call
+            # Note: message_ids update for approval responses now happens immediately after
+            # persistence in _handle_ai_response (line ~1093-1107) to prevent desync when
+            # the stream is interrupted and this generator is abandoned before being fully consumed
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             self.logger.warning(f"Error during step processing: {e}")
@@ -673,6 +836,8 @@ class LettaAgentV3(LettaAgentV2):
             for message in messages_to_persist:
                 if message.run_id is None:
                     message.run_id = run_id
+                if message.step_id is None:
+                    message.step_id = step_id
 
             persisted_messages = await self.message_manager.create_many_messages_async(
                 messages_to_persist, actor=self.actor, run_id=run_id, project_id=agent_state.project_id, template_id=agent_state.template_id
@@ -699,6 +864,8 @@ class LettaAgentV3(LettaAgentV2):
                 for message in messages_to_persist:
                     if message.run_id is None:
                         message.run_id = run_id
+                    if message.step_id is None:
+                        message.step_id = step_id
 
                 persisted_messages = await self.message_manager.create_many_messages_async(
                     messages_to_persist,
@@ -713,6 +880,39 @@ class LettaAgentV3(LettaAgentV2):
 
         # 3. Handle client side tool execution
         if tool_returns:
+            # Clamp client-side tool returns before persisting (JSON-aware: truncate only the 'message' field)
+            try:
+                cap = self._compute_tool_return_truncation_chars()
+            except Exception:
+                cap = 5000
+
+            for tr in tool_returns:
+                try:
+                    if tr.func_response and isinstance(tr.func_response, str):
+                        parsed = json.loads(tr.func_response)
+                        if isinstance(parsed, dict) and "message" in parsed and isinstance(parsed["message"], str):
+                            msg = parsed["message"]
+                            if len(msg) > cap:
+                                original_len = len(msg)
+                                parsed["message"] = msg[:cap] + f"... [truncated {original_len - cap} chars]"
+                                tr.func_response = json.dumps(parsed)
+                                self.logger.warning(f"Truncated client-side tool return message from {original_len} to {cap} chars")
+                        else:
+                            # Fallback to raw string truncation if not a dict with 'message'
+                            if len(tr.func_response) > cap:
+                                original_len = len(tr.func_response)
+                                tr.func_response = tr.func_response[:cap] + f"... [truncated {original_len - cap} chars]"
+                                self.logger.warning(f"Truncated client-side tool return (raw) from {original_len} to {cap} chars")
+                except json.JSONDecodeError:
+                    # Non-JSON or unexpected shape; truncate as raw string
+                    if tr.func_response and len(tr.func_response) > cap:
+                        original_len = len(tr.func_response)
+                        tr.func_response = tr.func_response[:cap] + f"... [truncated {original_len - cap} chars]"
+                        self.logger.warning(f"Truncated client-side tool return (non-JSON) from {original_len} to {cap} chars")
+                except Exception as e:
+                    # Unexpected error; log and skip truncation for this return
+                    self.logger.warning(f"Failed to truncate client-side tool return: {e}")
+
             continue_stepping = True
             stop_reason = None
             result_tool_returns = tool_returns
@@ -909,10 +1109,12 @@ class LettaAgentV3(LettaAgentV2):
 
         messages_to_persist: list[Message] = (initial_messages or []) + parallel_messages
 
-        # Set run_id on all messages before persisting
+        # Set run_id and step_id on all messages before persisting
         for message in messages_to_persist:
             if message.run_id is None:
                 message.run_id = run_id
+            if message.step_id is None:
+                message.step_id = step_id
 
         # Persist all messages
         persisted_messages = await self.message_manager.create_many_messages_async(
@@ -923,16 +1125,42 @@ class LettaAgentV3(LettaAgentV2):
             template_id=agent_state.template_id,
         )
 
+        # Update message_ids immediately after persistence to prevent desync
+        # This handles approval responses where we need to keep message_ids in sync
+        if (
+            is_approval_response
+            and initial_messages
+            and len(initial_messages) == 1
+            and initial_messages[0].role == "approval"
+            and len(persisted_messages) >= 2
+            and persisted_messages[0].role == "approval"
+            and persisted_messages[1].role == "tool"
+        ):
+            agent_state.message_ids = agent_state.message_ids + [m.id for m in persisted_messages[:2]]
+            await self.agent_manager.update_message_ids_async(
+                agent_id=agent_state.id, message_ids=agent_state.message_ids, actor=self.actor
+            )
+
         # 5g. Aggregate continuation decisions
-        # For multiple tools: continue if ANY says continue, use last non-None stop_reason
-        # For single tool: use its decision directly
         aggregate_continue = any(persisted_continue_flags) if persisted_continue_flags else False
-        aggregate_continue = aggregate_continue or tool_call_denials or tool_returns  # continue if any tool call was denied or returned
+        aggregate_continue = aggregate_continue or tool_call_denials or tool_returns
+
+        # Determine aggregate stop reason
         aggregate_stop_reason = None
         for sr in persisted_stop_reasons:
             if sr is not None:
                 aggregate_stop_reason = sr
 
+        # For parallel tool calls, always continue to allow the agent to process/summarize results
+        # unless a terminal tool was called or we hit max steps
+        if len(exec_specs) > 1:
+            has_terminal = any(sr and sr.stop_reason == StopReasonType.tool_rule.value for sr in persisted_stop_reasons)
+            is_max_steps = any(sr and sr.stop_reason == StopReasonType.max_steps.value for sr in persisted_stop_reasons)
+
+            if not has_terminal and not is_max_steps:
+                # Force continuation for parallel tool execution
+                aggregate_continue = True
+                aggregate_stop_reason = None
         return persisted_messages, aggregate_continue, aggregate_stop_reason
 
     @trace_method

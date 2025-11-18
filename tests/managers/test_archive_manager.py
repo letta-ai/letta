@@ -711,8 +711,10 @@ async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_
     agents = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
     assert len(agents) == 0
 
-    # attempting to detach the deleted agent should be idempotent (no error)
-    await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
+    # attempting to detach the deleted agent
+    # 2025-10-27: used to be idempotent (no error) but now we raise an error
+    with pytest.raises(LettaAgentNotFoundError):
+        await server.archive_manager.detach_agent_from_archive_async(agent_id=agent_id, archive_id=archive.id, actor=default_user)
 
     # cleanup
     await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
@@ -1137,4 +1139,154 @@ async def test_archive_manager_delete_passage_from_nonexistent_archive(server: S
 
     # cleanup
     await server.passage_manager.delete_agent_passage_by_id_async(passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_passage_in_archive_async(server: SyncServer, default_user):
+    """Test creating a passage in an archive."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_passage_creation_archive",
+        description="Archive for testing passage creation",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
+    )
+
+    # create a passage in the archive
+    created_passage = await server.archive_manager.create_passage_in_archive_async(
+        archive_id=archive.id,
+        text="This is a test passage for creation",
+        actor=default_user,
+    )
+
+    # verify the passage was created
+    assert created_passage.id is not None
+    assert created_passage.text == "This is a test passage for creation"
+    assert created_passage.archive_id == archive.id
+    assert created_passage.organization_id == default_user.organization_id
+
+    # verify we can retrieve it
+    retrieved_passage = await server.passage_manager.get_agent_passage_by_id_async(passage_id=created_passage.id, actor=default_user)
+    assert retrieved_passage.id == created_passage.id
+    assert retrieved_passage.text == created_passage.text
+    assert retrieved_passage.archive_id == archive.id
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(created_passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_passage_with_metadata_and_tags(server: SyncServer, default_user):
+    """Test creating a passage with metadata and tags."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_passage_metadata_archive",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
+    )
+
+    # create passage with metadata and tags
+    test_metadata = {"source": "unit_test", "version": 1}
+    test_tags = ["test", "archive", "passage"]
+
+    created_passage = await server.archive_manager.create_passage_in_archive_async(
+        archive_id=archive.id,
+        text="Passage with metadata and tags",
+        metadata=test_metadata,
+        tags=test_tags,
+        actor=default_user,
+    )
+
+    # verify metadata and tags were stored
+    assert created_passage.metadata == test_metadata
+    assert set(created_passage.tags) == set(test_tags)  # Use set comparison to ignore order
+
+    # retrieve and verify persistence
+    retrieved_passage = await server.passage_manager.get_agent_passage_by_id_async(passage_id=created_passage.id, actor=default_user)
+    assert retrieved_passage.metadata == test_metadata
+    assert set(retrieved_passage.tags) == set(test_tags)
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(created_passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_passage_in_nonexistent_archive(server: SyncServer, default_user):
+    """Test that creating a passage in a non-existent archive raises an error."""
+    # attempt to create passage in non-existent archive
+    fake_archive_id = f"archive-{uuid.uuid4()}"
+
+    with pytest.raises(NoResultFound):
+        await server.archive_manager.create_passage_in_archive_async(
+            archive_id=fake_archive_id,
+            text="This should fail",
+            actor=default_user,
+        )
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_passage_inherits_embedding_config(server: SyncServer, default_user):
+    """Test that created passages inherit the archive's embedding configuration."""
+    # create archive with specific embedding config
+    specific_embedding_config = EmbeddingConfig.default_config(provider="openai")
+
+    archive = await server.archive_manager.create_archive_async(
+        name="test_embedding_inheritance_archive",
+        embedding_config=specific_embedding_config,
+        actor=default_user,
+    )
+
+    # create passage
+    created_passage = await server.archive_manager.create_passage_in_archive_async(
+        archive_id=archive.id,
+        text="Test passage for embedding config inheritance",
+        actor=default_user,
+    )
+
+    # verify the passage inherited the archive's embedding config
+    assert created_passage.embedding_config is not None
+    assert created_passage.embedding_config.embedding_endpoint_type == specific_embedding_config.embedding_endpoint_type
+    assert created_passage.embedding_config.embedding_model == specific_embedding_config.embedding_model
+    assert created_passage.embedding_config.embedding_dim == specific_embedding_config.embedding_dim
+
+    # cleanup
+    await server.passage_manager.delete_agent_passage_by_id_async(created_passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_create_multiple_passages_in_archive(server: SyncServer, default_user):
+    """Test creating multiple passages in the same archive."""
+    # create archive
+    archive = await server.archive_manager.create_archive_async(
+        name="test_multiple_passages_archive",
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        actor=default_user,
+    )
+
+    # create multiple passages
+    passages = []
+    for i in range(3):
+        passage = await server.archive_manager.create_passage_in_archive_async(
+            archive_id=archive.id,
+            text=f"Test passage number {i}",
+            metadata={"index": i},
+            tags=[f"passage_{i}"],
+            actor=default_user,
+        )
+        passages.append(passage)
+
+    # verify all passages were created with correct data
+    for i, passage in enumerate(passages):
+        assert passage.text == f"Test passage number {i}"
+        assert passage.metadata["index"] == i
+        assert f"passage_{i}" in passage.tags
+        assert passage.archive_id == archive.id
+
+    # cleanup
+    for passage in passages:
+        await server.passage_manager.delete_agent_passage_by_id_async(passage.id, actor=default_user)
     await server.archive_manager.delete_archive_async(archive.id, actor=default_user)

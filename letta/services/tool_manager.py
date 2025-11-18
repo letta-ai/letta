@@ -16,28 +16,174 @@ from letta.constants import (
     LETTA_TOOL_MODULE_NAMES,
     LETTA_TOOL_SET,
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
+    MAX_TOOL_NAME_LENGTH,
     MCP_TOOL_TAG_NAME_PREFIX,
+    MODAL_DEFAULT_TOOL_NAME,
 )
-from letta.errors import LettaToolNameConflictError, LettaToolNameSchemaMismatchError
+from letta.errors import LettaInvalidArgumentError, LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
+from letta.helpers.tool_helpers import compute_tool_hash, generate_modal_function_name
 from letta.log import get_logger
 
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import PrimitiveType, ToolType
+from letta.schemas.agent import AgentState
+from letta.schemas.enums import PrimitiveType, SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.services.tool_schema_generator import generate_schema_for_tool_creation, generate_schema_for_tool_update
-from letta.settings import settings
+from letta.settings import settings, tool_settings
 from letta.utils import enforce_types, printd
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
+
+
+# NOTE: function name and nested modal function decorator name must stay in sync with MODAL_DEFAULT_TOOL_NAME
+def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars: dict = None, project_id: str = "default"):
+    """Create a Modal function wrapper for a tool"""
+    import contextlib
+    import io
+    import os
+    import sys
+    from typing import Optional
+
+    import modal
+    from letta_client import Letta
+
+    packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
+    packages.append("letta_client")
+    packages.append("letta")  # Base letta without extras
+    packages.append("asyncpg>=0.30.0")  # Fixes asyncpg import error
+    packages.append("psycopg2-binary>=2.9.10")  # PostgreSQL adapter (pre-compiled, no build required)
+    # packages.append("pgvector>=0.3.6")  # Vector operations support
+
+    function_name = generate_modal_function_name(tool.name, actor.organization_id, project_id)
+    modal_app = modal.App(function_name)
+    logger.info(f"Creating Modal app {tool.id} with name {function_name}")
+
+    # Create secrets dict with sandbox env vars
+    secrets_dict = {"LETTA_API_KEY": None}
+    if sandbox_env_vars:
+        secrets_dict.update(sandbox_env_vars)
+
+    @modal_app.function(
+        image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
+        restrict_modal_access=True,
+        timeout=10,
+        secrets=[modal.Secret.from_dict(secrets_dict)],
+        serialized=True,
+    )
+    def modal_function(
+        tool_name: str, agent_state: Optional[dict], agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs
+    ):
+        """Wrapper function for running untrusted code in a Modal function"""
+        # Reconstruct AgentState from dict if passed (to avoid cloudpickle serialization issues)
+        # This is done with extra safety to handle schema mismatches between environments
+        reconstructed_agent_state = None
+        if agent_state:
+            try:
+                from letta.schemas.agent import AgentState as AgentStateModel
+
+                # Filter dict to only include fields that exist in Modal's version of AgentState
+                # This prevents ValidationError from extra fields in newer schemas
+                modal_agent_fields = set(AgentStateModel.model_fields.keys())
+                filtered_agent_state = {key: value for key, value in agent_state.items() if key in modal_agent_fields}
+
+                # Try to reconstruct with filtered data
+                reconstructed_agent_state = AgentStateModel.model_validate(filtered_agent_state)
+
+                # Log if we filtered out any fields
+                filtered_out = set(agent_state.keys()) - modal_agent_fields
+                if filtered_out:
+                    print(f"Fields not in available in AgentState: {filtered_out}", file=sys.stderr)
+
+            except ImportError as e:
+                print(f"Cannot import AgentState: {e}", file=sys.stderr)
+                print("Passing agent_state as dict to tool", file=sys.stderr)
+                reconstructed_agent_state = agent_state
+            except Exception as e:
+                print(f"Warning: Could not reconstruct AgentState (schema mismatch?): {e}", file=sys.stderr)
+                print("Passing agent_state as dict to tool", file=sys.stderr)
+                reconstructed_agent_state = agent_state
+
+        # Set environment variables
+        if env_vars:
+            for key, value in env_vars.items():
+                os.environ[key] = str(value)
+
+        # Initialize the Letta client
+        if letta_api_key:
+            letta_client = Letta(token=letta_api_key, base_url=os.environ.get("LETTA_API_URL", "https://api.letta.com"))
+        else:
+            letta_client = None
+
+        tool_namespace = {
+            "__builtins__": __builtins__,  # Include built-in functions
+            "_letta_client": letta_client,  # Make letta_client available
+            "os": os,  # Include os module for env vars access
+            "agent_id": agent_id,
+            # Add any other modules/variables the tool might need
+        }
+
+        # Initialize the tool code
+        # Create a namespace for the tool
+        # tool_namespace = {}
+        exec(tool.source_code, tool_namespace)
+
+        # Get the tool function
+        if tool_name not in tool_namespace:
+            raise Exception(f"Tool function {tool_name} not found in {tool.source_code}, globals: {tool_namespace}")
+        tool_func = tool_namespace[tool_name]
+
+        # Detect if the tool function is async
+        import asyncio
+        import inspect
+        import traceback
+
+        is_async = inspect.iscoroutinefunction(tool_func)
+
+        # Capture stdout and stderr during tool execution
+        stdout_capture = io.StringIO()
+        stderr_capture = io.StringIO()
+        result = None
+        error_occurred = False
+
+        with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
+            try:
+                # if `agent_state` is in the tool function arguments, inject it
+                # Pass reconstructed AgentState (or dict if reconstruction failed)
+                if "agent_state" in tool_func.__code__.co_varnames:
+                    kwargs["agent_state"] = reconstructed_agent_state
+
+                # Execute the tool function (async or sync)
+                if is_async:
+                    result = asyncio.run(tool_func(**kwargs))
+                else:
+                    result = tool_func(**kwargs)
+            except Exception as e:
+                # Capture the exception and write to stderr
+                error_occurred = True
+                traceback.print_exc(file=stderr_capture)
+
+        # Get captured output
+        stdout = stdout_capture.getvalue()
+        stderr = stderr_capture.getvalue()
+
+        return {
+            "result": result,
+            "stdout": stdout,
+            "stderr": stderr,
+            "agent_state": agent_state,  # TODO: deprecate (use letta_client instead)
+            "error": error_occurred or bool(stderr),
+        }
+
+    return modal_app
 
 
 class ToolManager:
@@ -56,12 +202,16 @@ class ToolManager:
             else:
                 raise ValueError("Failed to generate schema for tool", pydantic_tool.source_code)
 
-        print("SCHEMA", pydantic_tool.json_schema)
-
         # make sure the name matches the json_schema
         if not pydantic_tool.name:
             pydantic_tool.name = pydantic_tool.json_schema.get("name")
         else:
+            # if name is provided, make sure its less tahn the MAX_TOOL_NAME_LENGTH
+            if len(pydantic_tool.name) > MAX_TOOL_NAME_LENGTH:
+                raise LettaInvalidArgumentError(
+                    f"Tool name {pydantic_tool.name} is too long. It must be less than {MAX_TOOL_NAME_LENGTH} characters."
+                )
+
             if pydantic_tool.name != pydantic_tool.json_schema.get("name"):
                 raise LettaToolNameSchemaMismatchError(
                     tool_name=pydantic_tool.name,
@@ -136,13 +286,41 @@ class ToolManager:
             # Auto-generate description if not provided
             if pydantic_tool.description is None and pydantic_tool.json_schema:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
+
+            # Add tool hash to metadata for Modal deployment tracking
+            tool_hash = compute_tool_hash(pydantic_tool)
+            if pydantic_tool.metadata_ is None:
+                pydantic_tool.metadata_ = {}
+            pydantic_tool.metadata_["tool_hash"] = tool_hash
+
             tool_data = pydantic_tool.model_dump(to_orm=True)
             # Set the organization id at the ORM layer
             tool_data["organization_id"] = actor.organization_id
 
             tool = ToolModel(**tool_data)
+
+            # Log tool creation with memory footprint
+            import sys
+
+            tool_size_kb = sys.getsizeof(tool_data) / 1024
+            source_code_size_kb = len(pydantic_tool.source_code or "") / 1024
+            schema_size_kb = len(str(pydantic_tool.json_schema or "")) / 1024
+            logger.info(
+                f"Creating tool '{pydantic_tool.name}': total {tool_size_kb:.2f} KB (source: {source_code_size_kb:.2f} KB, schema: {schema_size_kb:.2f} KB)"
+            )
+
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
-            return tool.to_pydantic()
+            created_tool = tool.to_pydantic()
+
+            # Deploy Modal app for the new tool
+            # Both Modal credentials configured AND tool metadata must indicate Modal
+            tool_requests_modal = created_tool.metadata_ and created_tool.metadata_.get("sandbox") == "modal"
+            modal_configured = tool_settings.modal_sandbox_enabled
+
+            if created_tool.tool_type == ToolType.CUSTOM and tool_requests_modal and modal_configured:
+                await self.create_or_update_modal_app(created_tool, actor)
+
+            return created_tool
 
     @enforce_types
     @trace_method
@@ -192,6 +370,10 @@ class ToolManager:
         for tool in pydantic_tools:
             if tool.description is None:
                 tool.description = tool.json_schema.get("description", None)
+
+        # Log bulk tool operation
+        total_source_code_kb = sum(len(t.source_code or "") for t in pydantic_tools) / 1024
+        logger.info(f"Bulk upserting {len(pydantic_tools)} tools: total source code {total_source_code_kb:.2f} KB")
 
         if settings.letta_pg_uri_no_default:
             # use optimized postgresql bulk upsert
@@ -584,6 +766,33 @@ class ToolManager:
                 source_code=update_data.get("source_code"),
             )
 
+        # Create a preview of the updated tool by merging current tool with updates
+        # This allows us to compute the hash before the database session
+        updated_tool_pydantic = current_tool.model_copy(deep=True)
+        for key, value in update_data.items():
+            setattr(updated_tool_pydantic, key, value)
+        if new_schema is not None:
+            updated_tool_pydantic.json_schema = new_schema
+            updated_tool_pydantic.name = new_name
+        if updated_tool_type:
+            updated_tool_pydantic.tool_type = updated_tool_type
+
+        # Check if we need to redeploy the Modal app due to changes
+        # Compute this before the session to avoid issues
+        tool_requests_modal = updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal"
+        modal_configured = tool_settings.modal_sandbox_enabled
+        should_check_modal = tool_requests_modal and modal_configured and updated_tool_pydantic.tool_type == ToolType.CUSTOM
+
+        # Compute hash before session if needed
+        new_hash = None
+        old_hash = None
+        needs_modal_deployment = False
+
+        if should_check_modal:
+            new_hash = compute_tool_hash(updated_tool_pydantic)
+            old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
+            needs_modal_deployment = new_hash != old_hash
+
         # Now perform the update within the session
         async with db_registry.async_session() as session:
             # Fetch the tool by ID
@@ -603,7 +812,25 @@ class ToolManager:
 
             # Save the updated tool to the database
             tool = await tool.update_async(db_session=session, actor=actor)
-            return tool.to_pydantic()
+            updated_tool = tool.to_pydantic()
+
+            # Update Modal hash in metadata if needed (inside session context)
+            if needs_modal_deployment:
+                if updated_tool.metadata_ is None:
+                    updated_tool.metadata_ = {}
+                updated_tool.metadata_["tool_hash"] = new_hash
+
+                # Update the metadata in the database (still inside session)
+                tool.metadata_ = updated_tool.metadata_
+                tool = await tool.update_async(db_session=session, actor=actor)
+                updated_tool = tool.to_pydantic()
+
+        # Deploy Modal app outside of session (it creates its own sessions)
+        if needs_modal_deployment:
+            logger.info(f"Deploying Modal app for tool {updated_tool.id} with new hash: {new_hash}")
+            await self.create_or_update_modal_app(updated_tool, actor)
+
+        return updated_tool
 
     @enforce_types
     @trace_method
@@ -768,3 +995,49 @@ class ToolManager:
                     created_tool = await self.create_tool_async(tool, actor=actor)
                     tools.append(created_tool)
         return tools
+
+    # MODAL RELATED METHODS
+    @trace_method
+    async def create_or_update_modal_app(self, tool: PydanticTool, actor: PydanticUser):
+        """Create a Modal app with the tool function registered"""
+        import time
+
+        import modal
+
+        from letta.services.sandbox_config_manager import SandboxConfigManager
+
+        # Load sandbox env vars to bake them into the Modal secrets
+        sandbox_env_vars = {}
+        try:
+            sandbox_config_manager = SandboxConfigManager()
+            sandbox_config = await sandbox_config_manager.get_or_create_default_sandbox_config_async(
+                sandbox_type=SandboxType.MODAL, actor=actor
+            )
+            if sandbox_config:
+                sandbox_env_vars = await sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
+                    sandbox_config_id=sandbox_config.id, actor=actor, limit=None
+                )
+                logger.info(f"Loaded {len(sandbox_env_vars)} sandbox env vars for Modal app {tool.id}")
+        except Exception as e:
+            logger.warning(f"Could not load sandbox env vars for Modal app {tool.id}: {e}")
+
+        # Create the Modal app using the global function with sandbox env vars
+        modal_app = modal_tool_wrapper(tool, actor, sandbox_env_vars)
+
+        # Deploy the app first
+        with modal.enable_output():
+            try:
+                deploy = modal_app.deploy()
+            except Exception as e:
+                raise LettaInvalidArgumentError(f"Failed to deploy tool {tool.id} with name {tool.name} to Modal: {e}")
+
+        # After deployment, look up the function to configure autoscaler
+        try:
+            func = modal.Function.from_name(modal_app.name, MODAL_DEFAULT_TOOL_NAME)
+            func.update_autoscaler(scaledown_window=2)  # drain inactive old containers
+            time.sleep(5)
+            func.update_autoscaler(scaledown_window=60)
+        except Exception as e:
+            logger.warning(f"Failed to configure autoscaler for Modal function {modal_app.name}: {e}")
+
+        return deploy

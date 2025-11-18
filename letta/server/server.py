@@ -184,10 +184,18 @@ class SyncServer(object):
             message_manager=self.message_manager,
         )
 
-        # A resusable httpx client
-        timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
-        limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
-        self.httpx_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True, limits=limits)
+        if settings.enable_batch_job_polling:
+            # A resusable httpx client
+            timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
+            limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
+            self.httpx_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True, limits=limits)
+
+            # TODO: Replace this with the Anthropic client we have in house
+            # Reuse the shared httpx client to prevent duplicate SSL contexts and connection pools
+            self.anthropic_async_client = AsyncAnthropic(http_client=self.httpx_client)
+        else:
+            self.httpx_client = None
+            self.anthropic_async_client = None
 
         # For MCP
         # TODO: remove this
@@ -197,9 +205,6 @@ class SyncServer(object):
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
         self._embedding_config_cache = {}
-
-        # TODO: Replace this with the Anthropic client we have in house
-        self.anthropic_async_client = AsyncAnthropic()
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider(name="letta")]
@@ -304,9 +309,8 @@ class SyncServer(object):
         if model_settings.openrouter_api_key:
             self._enabled_providers.append(
                 OpenRouterProvider(
-                    name="openrouter",
+                    name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
                     api_key=model_settings.openrouter_api_key,
-                    handle_base=model_settings.openrouter_handle_base,
                 )
             )
 
@@ -372,6 +376,8 @@ class SyncServer(object):
                 logger.error(e)
                 self.mcp_clients.pop(server_name)
 
+        logger.info(f"MCP clients initialized: {len(self.mcp_clients)} active connections")
+
         # Print out the tools that are connected
         for server_name, client in self.mcp_clients.items():
             logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
@@ -384,6 +390,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(actor=actor, **kwargs)
+            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
         return self._llm_config_cache[key]
 
     @trace_method
@@ -391,6 +398,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = await self.get_llm_config_from_handle_async(actor=actor, **kwargs)
+            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
         return self._llm_config_cache[key]
 
     @trace_method
@@ -398,6 +406,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._embedding_config_cache:
             self._embedding_config_cache[key] = self.get_embedding_config_from_handle(actor=actor, **kwargs)
+            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
         return self._embedding_config_cache[key]
 
     # @async_redis_cache(key_func=lambda (actor, **kwargs): actor.id + hash(kwargs))
@@ -406,6 +415,7 @@ class SyncServer(object):
         key = make_key(**kwargs)
         if key not in self._embedding_config_cache:
             self._embedding_config_cache[key] = await self.get_embedding_config_from_handle_async(actor=actor, **kwargs)
+            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
         return self._embedding_config_cache[key]
 
     @trace_method
@@ -415,21 +425,44 @@ class SyncServer(object):
         actor: User,
     ) -> AgentState:
         if request.llm_config is None:
+            additional_config_params = {}
             if request.model is None:
                 if settings.default_llm_handle is None:
                     raise LettaInvalidArgumentError("Must specify either model or llm_config in request", argument_name="model")
                 else:
-                    request.model = settings.default_llm_handle
+                    handle = settings.default_llm_handle
+            else:
+                if isinstance(request.model, str):
+                    handle = request.model
+                elif isinstance(request.model, list):
+                    raise LettaInvalidArgumentError("Multiple models are not supported yet")
+                else:
+                    # EXTREMELEY HACKY, TEMPORARY WORKAROUND
+                    handle = f"{request.model.provider}/{request.model.model}"
+                    # TODO: figure out how to override various params
+                    additional_config_params = request.model._to_legacy_config_params()
+                    additional_config_params["model"] = request.model.model
+                    additional_config_params["provider_name"] = request.model.provider
+
             config_params = {
-                "handle": request.model,
+                "handle": handle,
                 "context_window_limit": request.context_window_limit,
                 "max_tokens": request.max_tokens,
                 "max_reasoning_tokens": request.max_reasoning_tokens,
                 "enable_reasoner": request.enable_reasoner,
             }
+            config_params.update(additional_config_params)
             log_event(name="start get_cached_llm_config", attributes=config_params)
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
+            if request.model and isinstance(request.model, str):
+                assert request.llm_config.handle == request.model, (
+                    f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
+                )
+
+        # Copy parallel_tool_calls from request to llm_config if provided
+        if request.parallel_tool_calls is not None:
+            request.llm_config.parallel_tool_calls = request.parallel_tool_calls
 
         if request.reasoning is None:
             request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
@@ -498,6 +531,19 @@ class SyncServer(object):
             log_event(name="start get_cached_llm_config", attributes=config_params)
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
+
+        # update with model_settings
+        if request.model_settings is not None:
+            update_llm_config_params = request.model_settings._to_legacy_config_params()
+            request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
+
+        # Copy parallel_tool_calls from request to llm_config if provided
+        if request.parallel_tool_calls is not None:
+            if request.llm_config is None:
+                # Get the current agent's llm_config and update it
+                agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+                request.llm_config = agent.llm_config.model_copy()
+            request.llm_config.parallel_tool_calls = request.parallel_tool_calls
 
         if request.embedding is not None:
             request.embedding_config = await self.get_embedding_config_from_handle_async(handle=request.embedding, actor=actor)
@@ -613,6 +659,17 @@ class SyncServer(object):
     async def insert_archival_memory_async(
         self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]
     ) -> List[Passage]:
+        from letta.settings import settings
+        from letta.utils import count_tokens
+
+        # Check token count against limit
+        token_count = count_tokens(memory_contents)
+        if token_count > settings.archival_memory_token_limit:
+            raise LettaInvalidArgumentError(
+                message=f"Archival memory content exceeds token limit of {settings.archival_memory_token_limit} tokens (found {token_count} tokens)",
+                argument_name="memory_contents",
+            )
+
         # Get the agent object (loaded in memory)
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 

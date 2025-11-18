@@ -2,11 +2,12 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
 class StepMetricsBase(LettaBase):
-    __id_prefix__ = "step"
+    __id_prefix__ = PrimitiveType.STEP.value
 
 
 class StepMetrics(StepMetricsBase):

@@ -12,6 +12,7 @@ from letta.schemas.enums import RunStatus
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.run import RunUpdate
 from letta.schemas.user import User
+from letta.server.rest_api.streaming_response import RunCancelledException
 from letta.services.run_manager import RunManager
 from letta.utils import safe_create_task
 
@@ -214,6 +215,9 @@ async def create_background_stream_processor(
         actor: Optional actor for run status updates
     """
     stop_reason = None
+    saw_done = False
+    saw_error = False
+
     if writer is None:
         writer = RedisSSEStreamWriter(redis_client)
         await writer.start()
@@ -226,7 +230,14 @@ async def create_background_stream_processor(
             if isinstance(chunk, tuple):
                 chunk = chunk[0]
 
-            is_done = isinstance(chunk, str) and ("data: [DONE]" in chunk or "event: error" in chunk)
+            # Track terminal events
+            if isinstance(chunk, str):
+                if "data: [DONE]" in chunk:
+                    saw_done = True
+                if "event: error" in chunk:
+                    saw_error = True
+
+            is_done = saw_done or saw_error
 
             await writer.write_chunk(run_id=run_id, data=chunk, is_complete=is_done)
 
@@ -234,7 +245,7 @@ async def create_background_stream_processor(
                 break
 
             try:
-                # sorry for this
+                # Extract stop_reason from stop_reason chunks
                 maybe_json_chunk = chunk.split("data: ")[1]
                 maybe_stop_reason = json.loads(maybe_json_chunk) if maybe_json_chunk and maybe_json_chunk[0] == "{" else None
                 if maybe_stop_reason and maybe_stop_reason.get("message_type") == "stop_reason":
@@ -242,35 +253,107 @@ async def create_background_stream_processor(
             except:
                 pass
 
+        # Stream ended naturally - check if we got a proper terminal
+        if not saw_done and not saw_error:
+            # Stream ended without terminal event - synthesize one
+            logger.warning(
+                f"Stream for run {run_id} ended without terminal event (no [DONE] or event:error). "
+                f"Last stop_reason seen: {stop_reason}. Synthesizing terminal."
+            )
+            if stop_reason:
+                # We have a stop_reason, send [DONE]
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+                saw_done = True
+            else:
+                # No stop_reason and no terminal - this is an error condition
+                error_chunk = {"error": "Stream ended unexpectedly without stop_reason", "code": "STREAM_INCOMPLETE"}
+                await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=False)
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+                saw_error = True
+                saw_done = True
+                # Set a default stop_reason so run status can be mapped in finally
+                stop_reason = StopReasonType.error.value
+
+    except RunCancelledException as e:
+        # Handle cancellation gracefully - don't write error chunk, cancellation event was already sent
+        logger.info(f"Stream processing stopped due to cancellation for run {run_id}")
+        # The cancellation event was already yielded by cancellation_aware_stream_wrapper
+        # Write [DONE] marker to properly close the stream for clients reading from Redis
+        await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+        saw_done = True
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
-        # error_chunk = {"error": {"message": str(e)}}
-        # Mark run_id terminal state
+        error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
+        await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=False)
+        await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+        saw_error = True
+        saw_done = True
+
+        # Mark run as failed immediately
         if run_manager and actor:
             await run_manager.update_run_by_id_async(
                 run_id=run_id,
-                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value),
+                update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
-                metadata={"error": str(e)},
             )
-
-        error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
-        await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=True)
     finally:
         if should_stop_writer:
             await writer.stop()
-        if run_manager and actor:
-            if stop_reason == "cancelled":
+
+        # Derive a final stop_reason if one wasn't observed explicitly
+        final_stop_reason = stop_reason
+        if final_stop_reason is None:
+            if saw_error:
+                final_stop_reason = StopReasonType.error.value
+            elif saw_done:
+                # Treat DONE without an explicit stop_reason as an error to avoid masking failures
+                final_stop_reason = StopReasonType.error.value
+
+        # Update run status to reflect terminal outcome
+        if run_manager and actor and final_stop_reason:
+            # Map stop_reason to run status
+            if final_stop_reason in [
+                StopReasonType.error.value,
+                StopReasonType.llm_api_error.value,
+                StopReasonType.invalid_tool_call.value,
+                StopReasonType.invalid_llm_response.value,
+                StopReasonType.no_tool_call.value,
+            ]:
+                run_status = RunStatus.failed
+            elif final_stop_reason == StopReasonType.cancelled.value:
                 run_status = RunStatus.cancelled
+            elif final_stop_reason in [
+                StopReasonType.end_turn.value,
+                StopReasonType.max_steps.value,
+                StopReasonType.tool_rule.value,
+                StopReasonType.requires_approval.value,
+            ]:
+                run_status = RunStatus.completed
             else:
+                logger.warning(f"Unknown stop_reason '{final_stop_reason}' for run {run_id}, defaulting to completed")
                 run_status = RunStatus.completed
 
             await run_manager.update_run_by_id_async(
                 run_id=run_id,
-                update=RunUpdate(status=run_status, stop_reason=stop_reason or StopReasonType.end_turn.value),
+                update=RunUpdate(status=run_status, stop_reason=final_stop_reason),
                 actor=actor,
             )
+
+        # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate
+        # Even if a previous chunk set `complete`, an extra [DONE] is harmless and ensures SDKs that
+        # rely on explicit [DONE] will exit.
+        logger.warning(
+            "[Stream Finalizer] Appending forced [DONE] for run=%s (saw_error=%s, saw_done=%s, final_stop_reason=%s)",
+            run_id,
+            saw_error,
+            saw_done,
+            final_stop_reason,
+        )
+        try:
+            await writer.mark_complete(run_id)
+        except Exception as e:
+            logger.warning(f"Failed to append terminal [DONE] for run {run_id}: {e}")
 
 
 async def redis_sse_stream_generator(

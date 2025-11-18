@@ -25,21 +25,23 @@ from letta.errors import (
     AgentNotFoundForExportError,
     PendingApprovalError,
 )
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
-from letta.schemas.block import BaseBlock, Block, BlockUpdate
-from letta.schemas.enums import AgentType, RunStatus
+from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate
+from letta.schemas.enums import AgentType, MessageRole, RunStatus
 from letta.schemas.file import AgentFileAttachment, FileMetadataBase, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
@@ -48,7 +50,7 @@ from letta.schemas.memory import (
     CreateArchivalMemory,
     Memory,
 )
-from letta.schemas.message import BaseMessage, MessageCreate, MessageCreateType, MessageSearchRequest, MessageSearchResult
+from letta.schemas.message import Message, MessageCreate, MessageCreateType, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.source import BaseSource, Source
@@ -59,6 +61,7 @@ from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_le
 from letta.server.server import SyncServer
 from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
+from letta.services.streaming_service import StreamingService
 from letta.settings import settings
 from letta.utils import is_1_0_sdk_version, safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, ToolId
@@ -122,6 +125,7 @@ async def list_agents(
         include_in_schema=False,
         description="If set to True, include agents marked as hidden in the results.",
     ),
+    last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
 ):
     """
     Get a list of all agents.
@@ -156,19 +160,63 @@ async def list_agents(
         ascending=final_ascending,
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
+        last_stop_reason=last_stop_reason,
     )
 
 
 @router.get("/count", response_model=int, operation_id="count_agents")
 async def count_agents(
+    name: str | None = Query(None, description="Name of the agent"),
+    tags: list[str] | None = Query(None, description="List of tags to filter agents by"),
+    match_all_tags: bool = Query(
+        False,
+        description="If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags.",
+    ),
+    query_text: str | None = Query(None, description="Search agents by name"),
+    project_id: str | None = Query(None, description="Search agents by project ID - this will default to your default project on cloud"),
+    template_id: str | None = Query(None, description="Search agents by template ID"),
+    base_template_id: str | None = Query(None, description="Search agents by base template ID"),
+    identity_id: str | None = Query(None, description="Search agents by identity ID"),
+    identifier_keys: list[str] | None = Query(None, description="Search agents by identifier keys"),
+    show_hidden_agents: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include agents marked as hidden in the results.",
+    ),
+    last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the total number of agents.
+    Get the total number of agents with optional filtering.
+    Supports the same filters as list_agents for consistent querying.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.size_async(actor=actor)
+
+    # If no filters are provided, use the simpler size_async method
+    if (
+        all(
+            param is None or param is False
+            for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
+        )
+        and not show_hidden_agents
+    ):
+        return await server.agent_manager.size_async(actor=actor)
+
+    return await server.agent_manager.count_agents_async(
+        actor=actor,
+        name=name,
+        tags=tags,
+        match_all_tags=match_all_tags,
+        query_text=query_text,
+        project_id=project_id,
+        template_id=template_id,
+        base_template_id=base_template_id,
+        identity_id=identity_id,
+        identifier_keys=identifier_keys,
+        show_hidden_agents=show_hidden_agents,
+        last_stop_reason=last_stop_reason,
+    )
 
 
 class IndentedORJSONResponse(Response):
@@ -257,7 +305,7 @@ async def _import_agent(
     agent_schema = AgentFileSchema.model_validate(agent_file_json)
 
     if override_embedding_handle:
-        embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+        embedding_config_override = await server.get_embedding_config_from_handle_async(actor=actor, handle=override_embedding_handle)
     else:
         embedding_config_override = None
 
@@ -320,6 +368,8 @@ async def import_agent(
 
     try:
         serialized_data = file.file.read()
+        file_size_mb = len(serialized_data) / (1024 * 1024)
+        logger.info(f"Agent import: loaded {file_size_mb:.2f} MB into memory")
         agent_json = json.loads(serialized_data)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
@@ -915,7 +965,7 @@ async def retrieve_agent_memory(
     return await server.get_agent_memory_async(agent_id=agent_id, actor=actor)
 
 
-@router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
+@router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=BlockResponse, operation_id="retrieve_core_memory_block")
 async def retrieve_block_for_agent(
     block_label: str,
     agent_id: AgentId,
@@ -930,7 +980,7 @@ async def retrieve_block_for_agent(
     return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
 
 
-@router.get("/{agent_id}/core-memory/blocks", response_model=list[Block], operation_id="list_core_memory_blocks")
+@router.get("/{agent_id}/core-memory/blocks", response_model=list[BlockResponse], operation_id="list_core_memory_blocks")
 async def list_blocks_for_agent(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -962,7 +1012,7 @@ async def list_blocks_for_agent(
     )
 
 
-@router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
+@router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=BlockResponse, operation_id="modify_core_memory_block")
 async def modify_block_for_agent(
     block_label: str,
     agent_id: AgentId,
@@ -1095,7 +1145,7 @@ async def list_passages(
     server: "SyncServer" = Depends(get_letta_server),
     after: str | None = Query(None, description="Unique ID of the memory to start the query range at."),
     before: str | None = Query(None, description="Unique ID of the memory to end the query range at."),
-    limit: int | None = Query(None, description="How many results to include in the response."),
+    limit: int | None = Query(100, description="How many results to include in the response."),
     search: str | None = Query(None, description="Search passages by text"),
     ascending: bool | None = Query(
         True, description="Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
@@ -1277,24 +1327,78 @@ async def modify_message(
     "/{agent_id}/messages",
     response_model=LettaResponse,
     operation_id="send_message",
+    responses={
+        200: {
+            "description": "Successful response",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/LettaResponse"}},
+                "text/event-stream": {"description": "Server-Sent Events stream (when streaming=true in request body)"},
+            },
+        }
+    },
 )
 async def send_message(
     request_obj: Request,  # FastAPI Request
     agent_id: AgentId,
     server: SyncServer = Depends(get_letta_server),
-    request: LettaRequest = Body(...),
+    request: LettaStreamingRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
-):
+) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
+
+    The response format is controlled by the `streaming` field in the request body:
+    - If `streaming=false` (default): Returns a complete LettaResponse with all messages
+    - If `streaming=true`: Returns a Server-Sent Events (SSE) stream
+
+    Additional streaming options (only used when streaming=true):
+    - `stream_tokens`: Stream individual tokens instead of complete steps
+    - `include_pings`: Include keepalive pings to prevent connection timeouts
+    - `background`: Process the request in the background
     """
-    if len(request.messages) == 0:
-        raise ValueError("Messages must not be empty")
-    request_start_timestamp_ns = get_utc_timestamp_ns()
-    MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
+    # After validation, messages should always be set (converted from input if needed)
+    if not request.messages or len(request.messages) == 0:
+        raise HTTPException(status_code=422, detail="Messages must not be empty")
+
+    # Validate streaming-specific options are only set when streaming=true
+    if not request.streaming:
+        errors = []
+
+        if request.stream_tokens is True:
+            errors.append("stream_tokens can only be true when streaming=true")
+
+        if request.include_pings is False:
+            errors.append("include_pings can only be set to false when streaming=true")
+
+        if request.background is True:
+            errors.append("background can only be true when streaming=true")
+
+        if errors:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Streaming options set without streaming enabled. {'; '.join(errors)}. "
+                "Either set streaming=true or use default values for streaming options.",
+            )
+
+    is_1_0_sdk = is_1_0_sdk_version(headers)
+    if request.streaming and not is_1_0_sdk:
+        raise HTTPException(status_code=422, detail="streaming=true is only supported for SDK v1.0+ clients.")
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    if request.streaming and is_1_0_sdk:
+        streaming_service = StreamingService(server)
+        run, result = await streaming_service.create_agent_stream(
+            agent_id=agent_id,
+            actor=actor,
+            request=request,
+            run_type="send_message",
+        )
+        return result
+
+    request_start_timestamp_ns = get_utc_timestamp_ns()
+    MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(
         agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
@@ -1394,7 +1498,7 @@ async def send_message(
 # noinspection PyInconsistentReturns
 @router.post(
     "/{agent_id}/messages/stream",
-    response_model=None,
+    response_model=LettaStreamingResponse,
     operation_id="create_agent_message_stream",
     responses={
         200: {
@@ -1417,9 +1521,10 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-    from letta.services.streaming_service import StreamingService
-
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Since this is the dedicated streaming endpoint, ensure streaming is enabled
+    request.streaming = True
 
     # use the streaming service for unified stream handling
     streaming_service = StreamingService(server)
@@ -1902,3 +2007,63 @@ async def summarize_messages(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
         )
+
+
+class CaptureMessagesRequest(BaseModel):
+    provider: str
+    model: str
+    request_messages: list[dict[str, Any]]
+    response_dict: dict[str, Any]
+
+
+@router.post("/{agent_id}/messages/capture", response_model=str, operation_id="capture_messages", include_in_schema=False)
+async def capture_messages(
+    agent_id: AgentId,
+    request: CaptureMessagesRequest = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Capture a list of messages for an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+
+    messages_to_persist = []
+
+    # Input user messages
+    for message in request.request_messages:
+        if message["role"] == "user":
+            messages_to_persist.append(
+                Message(
+                    role=MessageRole.user,
+                    content=[(TextContent(text=message["content"]))],
+                    agent_id=agent_id,
+                    tool_calls=None,
+                    tool_call_id=None,
+                    created_at=get_utc_time(),
+                )
+            )
+
+    # Assistant response
+    messages_to_persist.append(
+        Message(
+            role=MessageRole.assistant,
+            content=[(TextContent(text=request.response_dict["content"]))],
+            agent_id=agent_id,
+            model=request.model,
+            tool_calls=None,
+            tool_call_id=None,
+            created_at=get_utc_time(),
+        )
+    )
+
+    response_messages = await server.message_manager.create_many_messages_async(messages_to_persist, actor=actor)
+
+    sleeptime_group = agent.multi_agent_group if agent.multi_agent_group and agent.multi_agent_group.manager_type == "sleeptime" else None
+    if sleeptime_group:
+        sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
+        sleeptime_agent_loop.response_messages = response_messages
+        run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+
+    return JSONResponse({"success": True, "messages_created": len(response_messages), "run_ids": run_ids})

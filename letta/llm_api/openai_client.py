@@ -64,6 +64,14 @@ def is_openai_reasoning_model(model: str) -> bool:
     return is_reasoning
 
 
+def does_not_support_minimal_reasoning(model: str) -> bool:
+    """Check if the model does not support minimal reasoning effort.
+
+    Currently, models that contain codex don't support minimal reasoning.
+    """
+    return "codex" in model.lower()
+
+
 def is_openai_5_model(model: str) -> bool:
     """Utility function to check if the model is a '5' model"""
     return model.startswith("gpt-5")
@@ -221,6 +229,7 @@ class OpenAIClient(LLMClientBase):
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI Responses API.
@@ -228,7 +237,9 @@ class OpenAIClient(LLMClientBase):
         if llm_config.put_inner_thoughts_in_kwargs:
             raise ValueError("Inner thoughts in kwargs are not supported for the OpenAI Responses API")
 
-        openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(messages)
+        openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(
+            messages, tool_return_truncation_chars=tool_return_truncation_chars
+        )
         # Add multi-modal support for Responses API by rewriting user messages
         # into input_text/input_image parts.
         openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, messages)
@@ -316,7 +327,7 @@ class OpenAIClient(LLMClientBase):
             tool_choice=tool_choice,
             max_output_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
-            parallel_tool_calls=False,
+            parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
         # Add verbosity control for GPT-5 models
@@ -341,7 +352,7 @@ class OpenAIClient(LLMClientBase):
 
         # Add parallel tool calling
         if tools and supports_parallel_tool_calling(model):
-            data.parallel_tool_calls = False
+            data.parallel_tool_calls = llm_config.parallel_tool_calls
 
         # always set user id for openai requests
         if self.actor:
@@ -369,6 +380,7 @@ class OpenAIClient(LLMClientBase):
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
@@ -382,6 +394,7 @@ class OpenAIClient(LLMClientBase):
                 tools=tools,
                 force_tool_call=force_tool_call,
                 requires_subsequent_tool_call=requires_subsequent_tool_call,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
 
         if agent_type == AgentType.letta_v1_agent:
@@ -411,6 +424,7 @@ class OpenAIClient(LLMClientBase):
                 messages,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
+                tool_return_truncation_chars=tool_return_truncation_chars,
             )
         ]
 
@@ -724,6 +738,33 @@ class OpenAIClient(LLMClientBase):
         if not inputs:
             return []
 
+        logger.info(f"request_embeddings called with {len(inputs)} inputs, model={embedding_config.embedding_model}")
+
+        # Validate inputs - OpenAI rejects empty strings or non-string values
+        # See: https://community.openai.com/t/embedding-api-change-input-is-invalid/707490/7
+        valid_inputs = []
+        input_index_map = []  # Map valid input index back to original index
+
+        for idx, inp in enumerate(inputs):
+            if not isinstance(inp, str):
+                logger.error(f"Invalid input at index {idx}: type={type(inp)}, value={inp}")
+                raise ValueError(f"Input at index {idx} is not a string: {type(inp)}")
+            if not inp or not inp.strip():
+                logger.warning(f"Empty or whitespace-only input at index {idx}, replacing with placeholder")
+                # Replace empty strings with placeholder to avoid API rejection
+                valid_inputs.append(" ")
+                input_index_map.append(idx)
+            else:
+                valid_inputs.append(inp)
+                input_index_map.append(idx)
+
+        if not valid_inputs:
+            logger.error("All inputs are empty after validation")
+            raise ValueError("Cannot request embeddings for empty inputs")
+
+        # Use valid_inputs instead of inputs for processing
+        inputs = valid_inputs
+
         kwargs = self._prepare_client_kwargs_embedding(embedding_config)
         client = AsyncOpenAI(**kwargs)
 
@@ -738,6 +779,11 @@ class OpenAIClient(LLMClientBase):
             task_metadata = []
 
             for start_idx, chunk_inputs, current_batch_size in chunks_to_process:
+                logger.info(
+                    f"Creating embedding task: start_idx={start_idx}, batch_size={len(chunk_inputs)}, "
+                    f"first_input_len={len(chunk_inputs[0]) if chunk_inputs else 0}, "
+                    f"model={embedding_config.embedding_model}"
+                )
                 task = client.embeddings.create(model=embedding_config.embedding_model, input=chunk_inputs)
                 tasks.append(task)
                 task_metadata.append((start_idx, chunk_inputs, current_batch_size))

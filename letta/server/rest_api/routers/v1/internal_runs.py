@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -51,17 +52,29 @@ async def list_runs(
     after: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
     ),
-    limit: Optional[int] = Query(100, description="Maximum number of runs to return"),
+    limit: Optional[int] = Query(100, description="Maximum number of runs to return", le=1000),
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
-    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    order_by: Literal["created_at", "duration"] = Query("created_at", description="Field to sort by"),
     active: bool = Query(False, description="Filter for active runs."),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
         deprecated=True,
     ),
+    project_id: Optional[str] = Query(None, description="Filter runs by project ID."),
+    duration_percentile: Optional[int] = Query(
+        None, description="Filter runs by duration percentile (1-100). Returns runs slower than this percentile."
+    ),
+    duration_value: Optional[int] = Query(
+        None, description="Duration value in nanoseconds for filtering. Must be used with duration_operator."
+    ),
+    duration_operator: Optional[Literal["gt", "lt", "eq"]] = Query(
+        None, description="Comparison operator for duration filter: 'gt' (greater than), 'lt' (less than), 'eq' (equals)."
+    ),
+    start_date: Optional[datetime] = Query(None, description="Filter runs created on or after this date (ISO 8601 format)."),
+    end_date: Optional[datetime] = Query(None, description="Filter runs created on or before this date (ISO 8601 format)."),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -89,6 +102,11 @@ async def list_runs(
     # Convert string statuses to RunStatus enum
     parsed_statuses = convert_statuses_to_enum(statuses)
 
+    # Create duration filter dict if both parameters provided
+    duration_filter = None
+    if duration_value is not None and duration_operator is not None:
+        duration_filter = {"value": duration_value, "operator": duration_operator}
+
     runs = await runs_manager.list_runs(
         actor=actor,
         agent_ids=agent_ids,
@@ -103,5 +121,11 @@ async def list_runs(
         step_count=step_count,
         step_count_operator=step_count_operator,
         tools_used=tools_used,
+        project_id=project_id,
+        order_by=order_by,
+        duration_percentile=duration_percentile,
+        duration_filter=duration_filter,
+        start_date=start_date,
+        end_date=end_date,
     )
     return runs

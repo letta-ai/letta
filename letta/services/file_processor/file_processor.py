@@ -229,6 +229,14 @@ class FileProcessor:
                     {"filename": filename, "total_passages": len(all_passages)},
                 )
 
+            # Handle case where no passages were created (e.g., image-only PDF)
+            if len(all_passages) == 0:
+                logger.warning(f"No passages created for {filename}. File may contain only images without extractable text.")
+                log_event(
+                    "file_processor.no_passages_created",
+                    {"filename": filename, "file_id": str(file_metadata.id), "reason": "No extractable text content"},
+                )
+
             logger.info(f"Successfully processed {filename}: {len(all_passages)} passages")
             log_event(
                 "file_processor.processing_completed",

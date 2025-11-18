@@ -570,6 +570,8 @@ paths:
                   - $ref: '#/components/schemas/AssistantMessage'
                   - $ref: '#/components/schemas/ApprovalRequestMessage'
                   - $ref: '#/components/schemas/ApprovalResponseMessage'
+                  - $ref: '#/components/schemas/SummaryMessage'
+                  - $ref: '#/components/schemas/EventMessage'
                   - $ref: '#/components/schemas/LettaPing'
                   - $ref: '#/components/schemas/LettaStopReason'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
@@ -940,20 +942,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                x-fern-type-name: LettaStreamingResponse
-                oneOf:
-                  - $ref: '#/components/schemas/SystemMessage'
-                  - $ref: '#/components/schemas/UserMessage'
-                  - $ref: '#/components/schemas/ReasoningMessage'
-                  - $ref: '#/components/schemas/HiddenReasoningMessage'
-                  - $ref: '#/components/schemas/ToolCallMessage'
-                  - $ref: '#/components/schemas/ToolReturnMessage'
-                  - $ref: '#/components/schemas/AssistantMessage'
-                  - $ref: '#/components/schemas/ApprovalRequestMessage'
-                  - $ref: '#/components/schemas/ApprovalResponseMessage'
-                  - $ref: '#/components/schemas/LettaPing'
-                  - $ref: '#/components/schemas/LettaStopReason'
-                  - $ref: '#/components/schemas/LettaUsageStatistics'
+                $ref: '#/components/schemas/LettaStreamingResponse'
   /v1/health/:
     get:
       x-fern-sdk-group-name:
@@ -1200,6 +1189,8 @@ paths:
                   - $ref: '#/components/schemas/ToolCallMessage'
                   - $ref: '#/components/schemas/ToolReturnMessage'
                   - $ref: '#/components/schemas/AssistantMessage'
+                  - $ref: '#/components/schemas/SummaryMessage'
+                  - $ref: '#/components/schemas/EventMessage'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
   /v1/messages/batches:
     post:
@@ -1257,6 +1248,20 @@ paths:
       x-fern-ignore: true
   /v1/_internal_runs/:
     get:
+      x-fern-ignore: true
+  /v1/_internal_blocks/:
+    get:
+      x-fern-ignore: true
+    post:
+      x-fern-ignore: true
+  /v1/_internal_blocks/{block_id}:
+    delete:
+      x-fern-ignore: true
+  /v1/_internal_blocks/{block_id}/agents:
+    get:
+      x-fern-ignore: true
+  /v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}:
+    patch:
       x-fern-ignore: true
   /v1/projects:
     get:

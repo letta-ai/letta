@@ -1,14 +1,19 @@
-from typing import List, Optional
+import uuid
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
-from letta.schemas.message import MessageCreateUnion
+from letta.schemas.letta_message_content import LettaMessageContentUnion
+from letta.schemas.message import MessageCreate, MessageCreateUnion, MessageRole
 
 
 class LettaRequest(BaseModel):
-    messages: List[MessageCreateUnion] = Field(..., description="The messages to be sent to the agent.")
+    messages: Optional[List[MessageCreateUnion]] = Field(None, description="The messages to be sent to the agent.")
+    input: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(
+        None, description="Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
+    )
     max_steps: int = Field(
         default=DEFAULT_MAX_STEPS,
         description="Maximum number of steps the agent should take to process the request.",
@@ -57,19 +62,39 @@ class LettaRequest(BaseModel):
                             item["type"] = "message"
         return v
 
+    @model_validator(mode="after")
+    def validate_input_or_messages(self):
+        """Ensure exactly one of input or messages is set, and convert input to messages if needed"""
+        if self.input is not None and self.messages is not None:
+            raise ValueError("Cannot specify both 'input' and 'messages'. Use one or the other.")
+        if self.input is None and self.messages is None:
+            raise ValueError("Must specify either 'input' or 'messages'.")
+
+        # Convert input to messages format
+        # input can be either a string or List[LettaMessageContentUnion]
+        if self.input is not None:
+            # Both str and List[LettaMessageContentUnion] are valid content types for MessageCreate
+            self.messages = [MessageCreate(role=MessageRole.user, content=self.input, otid=str(uuid.uuid4()))]
+
+        return self
+
 
 class LettaStreamingRequest(LettaRequest):
+    streaming: bool = Field(
+        default=False,
+        description="If True, returns a streaming response (Server-Sent Events). If False (default), returns a complete response.",
+    )
     stream_tokens: bool = Field(
         default=False,
-        description="Flag to determine if individual tokens should be streamed, rather than streaming per step.",
+        description="Flag to determine if individual tokens should be streamed, rather than streaming per step (only used when streaming=true).",
     )
     include_pings: bool = Field(
         default=True,
-        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts (only used when streaming=true).",
     )
     background: bool = Field(
         default=False,
-        description="Whether to process the request in the background.",
+        description="Whether to process the request in the background (only used when streaming=true).",
     )
 
 

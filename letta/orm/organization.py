@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from letta.orm.passage import ArchivalPassage, SourcePassage
     from letta.orm.passage_tag import PassageTag
     from letta.orm.provider import Provider
+    from letta.orm.provider_model import ProviderModel
+    from letta.orm.provider_trace import ProviderTrace
     from letta.orm.run import Run
     from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, SandboxEnvironmentVariable
     from letta.orm.tool import Tool
@@ -62,6 +64,9 @@ class Organization(SqlalchemyBase):
     passage_tags: Mapped[List["PassageTag"]] = relationship("PassageTag", back_populates="organization", cascade="all, delete-orphan")
     archives: Mapped[List["Archive"]] = relationship("Archive", back_populates="organization", cascade="all, delete-orphan")
     providers: Mapped[List["Provider"]] = relationship("Provider", back_populates="organization", cascade="all, delete-orphan")
+    provider_models: Mapped[List["ProviderModel"]] = relationship(
+        "ProviderModel", back_populates="organization", cascade="all, delete-orphan"
+    )
     identities: Mapped[List["Identity"]] = relationship("Identity", back_populates="organization", cascade="all, delete-orphan")
     groups: Mapped[List["Group"]] = relationship("Group", back_populates="organization", cascade="all, delete-orphan")
     llm_batch_jobs: Mapped[List["LLMBatchJob"]] = relationship("LLMBatchJob", back_populates="organization", cascade="all, delete-orphan")
@@ -70,3 +75,6 @@ class Organization(SqlalchemyBase):
     )
     jobs: Mapped[List["Job"]] = relationship("Job", back_populates="organization", cascade="all, delete-orphan")
     runs: Mapped[List["Run"]] = relationship("Run", back_populates="organization", cascade="all, delete-orphan")
+    provider_traces: Mapped[List["ProviderTrace"]] = relationship(
+        "ProviderTrace", back_populates="organization", cascade="all, delete-orphan"
+    )

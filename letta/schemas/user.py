@@ -4,22 +4,16 @@ from typing import Optional
 from pydantic import Field
 
 from letta.constants import DEFAULT_ORG_ID
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 
 
 class UserBase(LettaBase):
-    __id_prefix__ = "user"
+    __id_prefix__ = PrimitiveType.USER.value
 
 
 class User(UserBase):
-    """
-    Representation of a user.
-
-    Parameters:
-        id (str): The unique identifier of the user.
-        name (str): The name of the user.
-        created_at (datetime): The creation date of the user.
-    """
+    """Representation of a user."""
 
     id: str = UserBase.generate_id_field()
     organization_id: Optional[str] = Field(DEFAULT_ORG_ID, description="The organization id of the user")

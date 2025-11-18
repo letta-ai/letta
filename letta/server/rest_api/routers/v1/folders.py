@@ -238,6 +238,7 @@ async def upload_file_to_folder(
     """
     Upload a file to a data folder.
     """
+
     # NEW: Cloud based file processing
     # Determine file's MIME type
     mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
@@ -271,9 +272,33 @@ async def upload_file_to_folder(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
+    # Read file bytes once
+    file_bytes = await file.read()
 
-    content = await file.read()
+    # If enabled, delegate to Temporal workflow (Lettuce) and return its result
+    if settings.use_lettuce_for_file_uploads:
+        from letta.services.lettuce import LettuceClient
+
+        lettuce_client = await LettuceClient.create()
+        result = await lettuce_client.upload_file_to_folder(
+            folder_id=folder_id,
+            actor_id=actor.id,
+            file_name=file.filename,
+            content=file_bytes,
+            content_type=raw_ct or None,
+            duplicate_handling=duplicate_handling,
+            override_name=name,
+        )
+        if result is not None:
+            return result.file_metadata
+
+    folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
+    content = file_bytes
+    file_size_mb = len(content) / (1024 * 1024)
+    from letta.log import get_logger
+
+    logger = get_logger(__name__)
+    logger.info(f"File upload to folder: loaded {file_size_mb:.2f} MB into memory, filename: {file.filename}")
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name

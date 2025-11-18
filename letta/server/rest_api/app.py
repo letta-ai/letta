@@ -1,3 +1,4 @@
+import faulthandler
 import importlib.util
 import json
 import logging
@@ -10,6 +11,9 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
+
+# Enable Python fault handler to get stack traces on segfaults
+faulthandler.enable()
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -26,6 +30,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     BedrockPermissionError,
+    HandleNotFoundError,
     LettaAgentNotFoundError,
     LettaExpiredError,
     LettaInvalidArgumentError,
@@ -39,6 +44,7 @@ from letta.errors import (
     LettaUserNotFoundError,
     LLMAuthenticationError,
     LLMError,
+    LLMProviderOverloaded,
     LLMRateLimitError,
     LLMTimeoutError,
     PendingApprovalError,
@@ -56,11 +62,12 @@ from letta.schemas.letta_message_content import (
 )
 from letta.server.constants import REST_DEFAULT_PORT
 from letta.server.db import db_registry
+from letta.server.global_exception_handler import setup_global_exception_handlers
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, ProfilerContextMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, ProfilerContextMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -258,19 +265,48 @@ def create_application() -> "FastAPI":
         lifespan=lifespan,
     )
 
+    # === Global Exception Handlers ===
+    # Set up handlers for exceptions outside of request context (background tasks, threads, etc.)
+    setup_global_exception_handlers()
+
     # === Exception Handlers ===
     # TODO (cliandy): move to separate file
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
-        logger.error(f"Unhandled error: {str(exc)}", exc_info=True)
+        # Log with structured context
+        request_context = {
+            "method": request.method,
+            "url": str(request.url),
+            "path": request.url.path,
+        }
+
+        # Extract user context if available
+        user_context = {}
+        if hasattr(request.state, "user_id"):
+            user_context["user_id"] = request.state.user_id
+        if hasattr(request.state, "org_id"):
+            user_context["org_id"] = request.state.org_id
+
+        logger.error(
+            f"Unhandled error: {exc.__class__.__name__}: {str(exc)}",
+            extra={
+                "exception_type": exc.__class__.__name__,
+                "exception_message": str(exc),
+                "exception_module": exc.__class__.__module__,
+                "request": request_context,
+                "user": user_context,
+            },
+            exc_info=True,
+        )
+
         if SENTRY_ENABLED:
             sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=500,
             content={
-                "detail": "An internal server error occurred",
+                "detail": "An unknown error occurred",
                 # Only include error details in debug/development mode
                 # "debug_info": str(exc) if settings.debug else None
             },
@@ -369,6 +405,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaAgentNotFoundError, _error_handler_404_agent)
     app.add_exception_handler(LettaUserNotFoundError, _error_handler_404_user)
     app.add_exception_handler(AgentNotFoundForExportError, _error_handler_404)
+    app.add_exception_handler(HandleNotFoundError, _error_handler_404)
 
     # 410 Expired errors
     app.add_exception_handler(LettaExpiredError, _error_handler_410)
@@ -396,6 +433,7 @@ def create_application() -> "FastAPI":
     # 503 Service Unavailable errors
     app.add_exception_handler(OperationalError, _error_handler_503)
     app.add_exception_handler(LettaServiceUnavailableError, _error_handler_503)
+    app.add_exception_handler(LLMProviderOverloaded, _error_handler_503)
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -514,6 +552,9 @@ def create_application() -> "FastAPI":
 
     if telemetry_settings.profiler:
         app.add_middleware(ProfilerContextMiddleware)
+
+    # Add unified logging middleware - enriches log context and logs exceptions
+    app.add_middleware(LoggingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

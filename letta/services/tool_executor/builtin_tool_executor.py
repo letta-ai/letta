@@ -189,7 +189,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             return json.dumps(response, indent=2, ensure_ascii=False)
 
         except Exception as e:
-            logger.error(f"Exa search failed for query '{query}': {str(e)}")
+            logger.info(f"Exa search failed for query '{query}': {str(e)}")
             return json.dumps({"query": query, "error": f"Search failed: {str(e)}"})
 
     async def fetch_webpage(self, agent_state: "AgentState", url: str) -> str:

@@ -404,6 +404,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         )
 
         self._chunks.append(item)
+        if len(self._chunks) > 100:
+            logger.warning(f"StreamingServerInterface buffer growing large: {len(self._chunks)} chunks")
         self._event.set()  # Signal that new data is available
 
     def stream_start(self):
@@ -416,12 +418,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             self._active = True
             self._chunks.clear()
             self._event.clear()
+            logger.debug("StreamingServerInterface stream_start: chunks buffer cleared")
 
     def stream_end(self):
         """Clean up the stream by deactivating and clearing chunks."""
+        chunk_count = len(self._chunks)
         self.streaming_chat_completion_mode_function_name = None
         self.current_function_arguments = ""
         self.current_json_parse_result = {}
+        logger.debug(f"StreamingServerInterface stream_end: {chunk_count} chunks in buffer")
 
         # if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
         #     self._push_to_buffer(self.multi_step_gen_indicator)

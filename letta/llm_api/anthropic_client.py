@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import re
@@ -19,6 +20,7 @@ from letta.errors import (
     LLMConnectionError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
+    LLMProviderOverloaded,
     LLMRateLimitError,
     LLMServerError,
     LLMTimeoutError,
@@ -229,6 +231,7 @@ class AnthropicClient(LLMClientBase):
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
@@ -334,6 +337,7 @@ class AnthropicClient(LLMClientBase):
             # if react, use native content + strip heartbeats
             native_content=is_v1,
             strip_request_heartbeat=is_v1,
+            tool_return_truncation_chars=tool_return_truncation_chars,
         )
 
         # Ensure first message is user
@@ -359,6 +363,11 @@ class AnthropicClient(LLMClientBase):
             if llm_config.enable_reasoner:
                 data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
 
+        # Deduplicate tool_result blocks that reference the same tool_use_id within a single user message
+        # Anthropic requires a single result per tool_use. Merging consecutive user messages can accidentally
+        # produce multiple tool_result blocks with the same id; consolidate them here.
+        data["messages"] = dedupe_tool_results_in_user_messages(data["messages"])
+
         # Prefix fill
         # https://docs.anthropic.com/en/api/messages#body-messages
         # NOTE: cannot prefill with tools for opus:
@@ -368,6 +377,61 @@ class AnthropicClient(LLMClientBase):
                 # Start the thinking process for the assistant
                 {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
             )
+
+        # As a final safeguard for request payloads: drop empty messages (instead of inserting placeholders)
+        # to avoid changing conversational meaning. Preserve an optional final assistant prefill if present.
+        if data.get("messages"):
+            sanitized_messages = []
+            dropped_messages = []
+            empty_blocks_removed = 0
+            total = len(data["messages"])
+            for i, msg in enumerate(data["messages"]):
+                role = msg.get("role")
+                content = msg.get("content")
+                is_final_assistant = i == total - 1 and role == "assistant"
+
+                # If content is a list, drop empty text blocks but keep non-text blocks
+                if isinstance(content, list) and len(content) > 0:
+                    new_blocks = []
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            if block.get("text", "").strip():
+                                new_blocks.append(block)
+                            else:
+                                empty_blocks_removed += 1
+                        else:
+                            new_blocks.append(block)
+                    msg["content"] = new_blocks
+                    content = new_blocks
+
+                # Determine emptiness after trimming blocks
+                is_empty = (
+                    content is None
+                    or (isinstance(content, str) and not content.strip())
+                    or (isinstance(content, list) and len(content) == 0)
+                )
+
+                # Drop empty messages except an allowed final assistant prefill
+                if is_empty and not is_final_assistant:
+                    dropped_messages.append({"index": i, "role": role})
+                    continue
+                sanitized_messages.append(msg)
+
+            data["messages"] = sanitized_messages
+
+            # Log unexpected sanitation events for visibility
+            if dropped_messages or empty_blocks_removed > 0:
+                logger.error(
+                    "[Anthropic] Sanitized request messages: dropped=%s, empty_text_blocks_removed=%s, model=%s",
+                    dropped_messages,
+                    empty_blocks_removed,
+                    data.get("model"),
+                )
+
+            # Ensure first message is user after sanitation
+            if not data["messages"] or data["messages"][0].get("role") != "user":
+                logger.error("[Anthropic] Inserting dummy first user message after sanitation to satisfy API constraints")
+                data["messages"] = [{"role": "user", "content": DUMMY_FIRST_USER_MESSAGE}] + data["messages"]
 
         return data
 
@@ -383,25 +447,80 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
-        # Detect presence of reasoning blocks anywhere in the final assistant message.
-        # Interleaved thinking is not guaranteed to be the first content part.
+        # Convert final thinking blocks to text to work around token counting endpoint limitation.
+        # The token counting endpoint rejects messages where the final content block is thinking,
+        # even though the main API supports this with the interleaved-thinking beta.
+        # We convert (not strip) to preserve accurate token counts.
+        # TODO: Remove this workaround if Anthropic fixes the token counting endpoint.
         thinking_enabled = False
+        messages_for_counting = messages
+
         if messages and len(messages) > 0:
-            last_assistant_message = next((m for m in reversed(messages) if m.get("role") == "assistant"), None)
-            if last_assistant_message:
-                content = last_assistant_message.get("content")
-                if isinstance(content, list):
-                    for part in content:
-                        if isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"}:
+            messages_for_counting = copy.deepcopy(messages)
+
+            # Scan all assistant messages and convert any final thinking blocks to text
+            for message in messages_for_counting:
+                if message.get("role") == "assistant":
+                    content = message.get("content")
+
+                    # Check for thinking in any format
+                    if isinstance(content, list) and len(content) > 0:
+                        # Check if message has any thinking blocks (to enable thinking mode)
+                        has_thinking = any(
+                            isinstance(part, dict) and part.get("type") in {"thinking", "redacted_thinking"} for part in content
+                        )
+                        if has_thinking:
                             thinking_enabled = True
-                            break
-                elif isinstance(content, str) and "<thinking>" in content:
-                    thinking_enabled = True
+
+                        # If final block is thinking, handle it
+                        last_block = content[-1]
+                        if isinstance(last_block, dict) and last_block.get("type") in {"thinking", "redacted_thinking"}:
+                            if len(content) == 1:
+                                # Thinking-only message: add text at end (don't convert the thinking)
+                                # API requires first block to be thinking when thinking is enabled
+                                content.append({"type": "text", "text": "."})
+                            else:
+                                # Multiple blocks: convert final thinking to text
+                                if last_block["type"] == "thinking":
+                                    content[-1] = {"type": "text", "text": last_block.get("thinking", "")}
+                                elif last_block["type"] == "redacted_thinking":
+                                    content[-1] = {"type": "text", "text": last_block.get("data", "[redacted]")}
+
+                    elif isinstance(content, str) and "<thinking>" in content:
+                        # Handle XML-style thinking in string content
+                        thinking_enabled = True
+
+        # Replace empty content with placeholder (Anthropic requires non-empty content except for final assistant message)
+        if messages_for_counting:
+            for i, msg in enumerate(messages_for_counting):
+                content = msg.get("content")
+                is_final_assistant = i == len(messages_for_counting) - 1 and msg.get("role") == "assistant"
+
+                # Check if content is empty and needs replacement
+                if content is None:
+                    if not is_final_assistant:
+                        msg["content"] = "."
+                elif isinstance(content, str) and not content.strip():
+                    if not is_final_assistant:
+                        msg["content"] = "."
+                elif isinstance(content, list):
+                    if len(content) == 0:
+                        # Preserve truly empty list for final assistant message
+                        if not is_final_assistant:
+                            msg["content"] = [{"type": "text", "text": "."}]
+                    else:
+                        # Always fix empty text blocks within lists, even for final assistant message
+                        # The API exemption is for truly empty content (empty string or empty list),
+                        # not for lists with explicit empty text blocks
+                        for block in content:
+                            if isinstance(block, dict) and block.get("type") == "text":
+                                if not block.get("text", "").strip():
+                                    block["text"] = "."
 
         try:
             count_params = {
                 "model": model or "claude-3-7-sonnet-20250219",
-                "messages": messages or [{"role": "user", "content": "hi"}],
+                "messages": messages_for_counting or [{"role": "user", "content": "hi"}],
                 "tools": anthropic_tools or [],
             }
 
@@ -426,8 +545,8 @@ class AnthropicClient(LLMClientBase):
                 result = await client.beta.messages.count_tokens(**count_params, betas=betas)
             else:
                 result = await client.beta.messages.count_tokens(**count_params)
-        except:
-            raise
+        except Exception as e:
+            raise self.handle_llm_error(e)
 
         token_count = result.input_tokens
         if messages is None:
@@ -444,6 +563,20 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
+        # make sure to check for overflow errors, regardless of error type
+        error_str = str(e).lower()
+        if (
+            "prompt is too long" in error_str
+            or "exceed context limit" in error_str
+            or "exceeds context" in error_str
+            or "too many total text bytes" in error_str
+            or "total text bytes" in error_str
+        ):
+            logger.warning(f"[Anthropic] Context window exceeded: {str(e)}")
+            return ContextWindowExceededError(
+                message=f"Context window exceeded for Anthropic: {str(e)}",
+            )
+
         if isinstance(e, anthropic.APITimeoutError):
             logger.warning(f"[Anthropic] Request timeout: {e}")
             return LLMTimeoutError(
@@ -470,7 +603,13 @@ class AnthropicClient(LLMClientBase):
         if isinstance(e, anthropic.BadRequestError):
             logger.warning(f"[Anthropic] Bad request: {str(e)}")
             error_str = str(e).lower()
-            if "prompt is too long" in error_str or "exceed context limit" in error_str:
+            if (
+                "prompt is too long" in error_str
+                or "exceed context limit" in error_str
+                or "exceeds context" in error_str
+                or "too many total text bytes" in error_str
+                or "total text bytes" in error_str
+            ):
                 # If the context window is too large, we expect to receive either:
                 # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 200758 tokens > 200000 maximum'}}
                 # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'input length and `max_tokens` exceed context limit: 173298 + 32000 > 200000, decrease input length or `max_tokens` and try again'}}
@@ -513,6 +652,11 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.APIStatusError):
             logger.warning(f"[Anthropic] API status error: {str(e)}")
+            if "overloaded" in str(e).lower():
+                return LLMProviderOverloaded(
+                    message=f"Anthropic API is overloaded: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
             return LLMServerError(
                 message=f"Anthropic API error: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
@@ -962,6 +1106,61 @@ def merge_tool_results_into_user_messages(messages: List[dict]):
     merged_messages.append(current_message)
 
     return merged_messages
+
+
+def dedupe_tool_results_in_user_messages(messages: List[dict]) -> List[dict]:
+    """Ensure each tool_use has a single tool_result within a user message.
+
+    If multiple tool_result blocks with the same tool_use_id appear in the same user message
+    (e.g., after merging consecutive user messages), merge their content and keep only one block.
+    """
+    any_deduped = False
+    dedup_counts: dict[str, int] = {}
+
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") != "user":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list) or len(content) == 0:
+            continue
+
+        seen: dict[str, dict] = {}
+        new_content: list = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_result" and "tool_use_id" in block:
+                tid = block.get("tool_use_id")
+                if tid in seen:
+                    # Merge duplicate tool_result into the first occurrence
+                    first = seen[tid]
+                    extra = block.get("content")
+                    if extra:
+                        if isinstance(first.get("content"), str) and isinstance(extra, str):
+                            sep = "\n" if first["content"] and extra else ""
+                            first["content"] = f"{first['content']}{sep}{extra}"
+                        else:
+                            sep = "\n" if first.get("content") else ""
+                            # Fallback: coerce to strings and concat
+                            first["content"] = f"{first.get('content')}{sep}{extra}"
+                    any_deduped = True
+                    dedup_counts[tid] = dedup_counts.get(tid, 0) + 1
+                    # Skip appending duplicate
+                    continue
+                else:
+                    new_content.append(block)
+                    seen[tid] = block
+            else:
+                new_content.append(block)
+
+        # Replace content if we pruned/merged duplicates
+        if len(new_content) != len(content):
+            msg["content"] = new_content
+
+    if any_deduped:
+        logger.error("[Anthropic] Deduped tool_result blocks in user messages: %s", dedup_counts)
+
+    return messages
 
 
 def remap_finish_reason(stop_reason: str) -> str:

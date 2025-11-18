@@ -1,16 +1,26 @@
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from letta.constants import LETTA_MODEL_ENDPOINT
+from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import AgentType, ProviderCategory
+
+if TYPE_CHECKING:
+    from letta.schemas.model import ModelSettings
 
 logger = get_logger(__name__)
 
 
 class LLMConfig(BaseModel):
-    """Configuration for Language Model (LLM) connection and generation parameters."""
+    """Configuration for Language Model (LLM) connection and generation parameters.
+
+    .. deprecated::
+        LLMConfig is deprecated and should not be used as an input or return type in API calls.
+        Use the schemas in letta.schemas.model (ModelSettings, OpenAIModelSettings, etc.) instead.
+        For conversion, use the _to_model() method or Model._from_llm_config() method.
+    """
 
     model: str = Field(..., description="LLM model name. ")
     display_name: Optional[str] = Field(None, description="A human-friendly display name for the model.")
@@ -163,6 +173,24 @@ class LLMConfig(BaseModel):
 
         return values
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_codex_reasoning_effort(cls, values):
+        """
+        Validate that gpt-5-codex models do not use 'minimal' reasoning effort.
+        Codex models require at least 'low' reasoning effort.
+        """
+        from letta.llm_api.openai_client import does_not_support_minimal_reasoning
+
+        model = values.get("model")
+        reasoning_effort = values.get("reasoning_effort")
+
+        if model and does_not_support_minimal_reasoning(model) and reasoning_effort == "minimal":
+            raise LettaInvalidArgumentError(
+                f"Model '{model}' does not support 'minimal' reasoning effort. Please use 'low', 'medium', or 'high' instead."
+            )
+        return values
+
     @classmethod
     def default_config(cls, model_name: str):
         """
@@ -233,6 +261,89 @@ class LLMConfig(BaseModel):
             + (f" [ip={self.model_endpoint}]" if self.model_endpoint else "")
         )
 
+    def _to_model_settings(self) -> "ModelSettings":
+        """
+        Convert LLMConfig back into a Model schema (OpenAIModelSettings, AnthropicModelSettings, etc.).
+        This is the inverse of the _to_legacy_config_params() methods in model.py.
+        """
+        from letta.schemas.model import (
+            AnthropicModelSettings,
+            AnthropicThinking,
+            AzureModelSettings,
+            BedrockModelSettings,
+            DeepseekModelSettings,
+            GeminiThinkingConfig,
+            GoogleAIModelSettings,
+            GoogleVertexModelSettings,
+            GroqModelSettings,
+            Model,
+            OpenAIModelSettings,
+            OpenAIReasoning,
+            TogetherModelSettings,
+            XAIModelSettings,
+        )
+
+        if self.model_endpoint_type == "openai":
+            return OpenAIModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+                reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
+            )
+        elif self.model_endpoint_type == "anthropic":
+            thinking_type = "enabled" if self.enable_reasoner else "disabled"
+            return AnthropicModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+                thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
+                verbosity=self.verbosity,
+            )
+        elif self.model_endpoint_type == "google_ai":
+            return GoogleAIModelSettings(
+                max_output_tokens=self.max_tokens or 65536,
+                temperature=self.temperature,
+                thinking_config=GeminiThinkingConfig(
+                    include_thoughts=self.max_reasoning_tokens > 0, thinking_budget=self.max_reasoning_tokens or 1024
+                ),
+            )
+        elif self.model_endpoint_type == "google_vertex":
+            return GoogleVertexModelSettings(
+                max_output_tokens=self.max_tokens or 65536,
+                temperature=self.temperature,
+                thinking_config=GeminiThinkingConfig(
+                    include_thoughts=self.max_reasoning_tokens > 0, thinking_budget=self.max_reasoning_tokens or 1024
+                ),
+            )
+        elif self.model_endpoint_type == "azure":
+            return AzureModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "xai":
+            return XAIModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "groq":
+            return GroqModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "deepseek":
+            return DeepseekModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "together":
+            return TogetherModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "bedrock":
+            return Model(max_output_tokens=self.max_tokens or 4096)
+        else:
+            # If we don't know the model type, use the default Model schema
+            return Model(max_output_tokens=self.max_tokens or 4096)
+
     @classmethod
     def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:
         from letta.llm_api.openai_client import is_openai_reasoning_model
@@ -277,6 +388,8 @@ class LLMConfig(BaseModel):
         - Google Gemini (2.5 family): force disabled until native reasoning supported
         - All others: disabled (no simulated reasoning via kwargs)
         """
+        from letta.llm_api.openai_client import does_not_support_minimal_reasoning
+
         # V1 agent policy: do not allow simulated reasoning for non-native models
         if agent_type is not None and agent_type == AgentType.letta_v1_agent:
             # OpenAI native reasoning models: always on
@@ -284,7 +397,8 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"
@@ -324,7 +438,8 @@ class LLMConfig(BaseModel):
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
                     # GPT-5 models default to minimal, others to medium
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"
@@ -357,7 +472,8 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
                     # GPT-5 models default to minimal, others to medium
-                    if config.model.startswith("gpt-5"):
+                    # Codex models cannot use "minimal" reasoning effort
+                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"

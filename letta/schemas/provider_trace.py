@@ -6,11 +6,12 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
 from letta.helpers.datetime_helpers import get_utc_time
+from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
 
 
 class BaseProviderTrace(OrmMetadataBase):
-    __id_prefix__ = "provider_trace"
+    __id_prefix__ = PrimitiveType.PROVIDER_TRACE.value
 
 
 class ProviderTraceCreate(BaseModel):

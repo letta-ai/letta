@@ -186,6 +186,14 @@ def create_approval_response_message_from_input(
             )
         return maybe_tool_return
 
+    # Guard against None approvals - treat as empty list to avoid TypeError
+    approvals_list = input_message.approvals or []
+    if input_message.approvals is None:
+        logger.warning(
+            "ApprovalCreate.approvals is None; treating as empty list (approval_request_id=%s)",
+            getattr(input_message, "approval_request_id", None),
+        )
+
     return [
         Message(
             role=MessageRole.approval,
@@ -194,8 +202,11 @@ def create_approval_response_message_from_input(
             approval_request_id=input_message.approval_request_id,
             approve=input_message.approve,
             denial_reason=input_message.reason,
-            approvals=[maybe_convert_tool_return_message(approval) for approval in input_message.approvals],
+            approvals=[maybe_convert_tool_return_message(approval) for approval in approvals_list],
             run_id=run_id,
+            group_id=input_message.group_id
+            if input_message.group_id
+            else (agent_state.multi_agent_group.id if agent_state.multi_agent_group else None),
         )
     ]
 

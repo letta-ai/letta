@@ -40,11 +40,19 @@ class ToolSettings(BaseSettings):
     mcp_disable_stdio: bool = False
 
     @property
+    def modal_sandbox_enabled(self) -> bool:
+        """Check if Modal credentials are configured."""
+        return bool(self.modal_token_id and self.modal_token_secret)
+
+    @property
     def sandbox_type(self) -> SandboxType:
+        """Default sandbox type based on available credentials.
+
+        Note: Modal is checked separately via modal_sandbox_enabled property.
+        This property determines the fallback behavior (E2B or LOCAL).
+        """
         if self.e2b_api_key:
             return SandboxType.E2B
-        # elif self.modal_token_id and self.modal_token_secret:
-        #    return SandboxType.MODAL
         else:
             return SandboxType.LOCAL
 
@@ -293,6 +301,8 @@ class Settings(BaseSettings):
     # experimental toggle
     use_vertex_structured_outputs_experimental: bool = False
     use_asyncio_shield: bool = True
+    # Gate using Temporal (Lettuce) for file uploads via folders endpoint
+    use_lettuce_for_file_uploads: bool = False
 
     # Database pool monitoring
     enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring
@@ -338,6 +348,9 @@ class Settings(BaseSettings):
 
     # enabling letta_agent_v1 architecture
     use_letta_v1_agent: bool = False
+
+    # Archival memory token limit
+    archival_memory_token_limit: int = 8192
 
     @property
     def letta_pg_uri(self) -> str:

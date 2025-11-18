@@ -7,6 +7,8 @@ from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
+from letta.constants import MAX_TOOL_NAME_LENGTH
+from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE
 from letta.errors import (
     LettaInvalidArgumentError,
     LettaInvalidMCPSchemaError,
@@ -817,7 +819,7 @@ async def generate_tool_from_prompt(
     Generate a tool from the given user prompt.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or "anthropic/claude-3-5-sonnet-20240620")
+    llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.handle or DEFAULT_GENERATE_TOOL_MODEL_HANDLE)
     formatted_prompt = (
         f"Generate a python function named {request.tool_name} using the instructions below "
         + (f"based on this starter code: \n\n```\n{request.starter_code}\n```\n\n" if request.starter_code else "\n")
@@ -867,12 +869,22 @@ async def generate_tool_from_prompt(
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
     output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
     pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
+
+    # Derive JSON schema from the generated source code
+    try:
+        json_schema = derive_openai_json_schema(source_code=output["raw_source_code"])
+    except Exception as e:
+        raise LettaInvalidArgumentError(
+            message=f"Failed to generate JSON schema for tool '{request.tool_name}': {e}", argument_name="tool_name"
+        )
+
     return GenerateToolOutput(
         tool=Tool(
             name=request.tool_name,
             source_type="python",
             source_code=output["raw_source_code"],
             pip_requirements=pip_requirements,
+            json_schema=json_schema,
         ),
         sample_args=json.loads(output["sample_args_json"]),
         response=response.choices[0].message.content,

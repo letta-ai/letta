@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Literal, Optional, Set
 
 from letta.log import get_logger
+from letta.schemas.letta_stop_reason import StopReasonType
 
 logger = get_logger(__name__)
 
@@ -738,12 +739,14 @@ def _apply_filters(
     project_id: Optional[str],
     template_id: Optional[str],
     base_template_id: Optional[str],
+    last_stop_reason: Optional[StopReasonType] = None,
 ):
     """
     Apply basic filtering criteria to the agent query.
 
     This helper function adds WHERE clauses based on provided parameters such as
-    exact name, partial name match (using ILIKE), project ID, template ID, and base template ID.
+    exact name, partial name match (using ILIKE), project ID, template ID, base template ID,
+    and last stop reason.
 
     Args:
         query: The SQLAlchemy query object to be modified.
@@ -752,6 +755,7 @@ def _apply_filters(
         project_id (Optional[str]): Filter for agents belonging to a specific project.
         template_id (Optional[str]): Filter for agents using a specific template.
         base_template_id (Optional[str]): Filter for agents using a specific base template.
+        last_stop_reason (Optional[StopReasonType]): Filter for agents by their last stop reason (e.g., 'requires_approval', 'error').
 
     Returns:
         The modified query with the applied filters.
@@ -776,6 +780,9 @@ def _apply_filters(
     # Filter agents by base template ID.
     if base_template_id:
         query = query.where(AgentModel.base_template_id == base_template_id)
+    # Filter agents by last stop reason.
+    if last_stop_reason:
+        query = query.where(AgentModel.last_stop_reason == last_stop_reason)
     return query
 
 

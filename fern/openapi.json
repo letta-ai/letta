@@ -502,6 +502,63 @@
         }
       }
     },
+    "/v1/archives/{archive_id}/passages": {
+      "post": {
+        "tags": ["archives"],
+        "summary": "Create Passage In Archive",
+        "description": "Create a new passage in an archive.\n\nThis adds a passage to the archive and creates embeddings for vector storage.",
+        "operationId": "create_passage_in_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 44,
+              "maxLength": 44,
+              "pattern": "^archive-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the archive in the format 'archive-<uuid4>'",
+              "examples": ["archive-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Archive Id"
+            },
+            "description": "The ID of the archive in the format 'archive-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Passage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/archives/{archive_id}/passages/{passage_id}": {
       "delete": {
         "tags": ["archives"],
@@ -4091,6 +4148,24 @@
             },
             "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
             "deprecated": true
+          },
+          {
+            "name": "last_stop_reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StopReasonType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by their last stop reason.",
+              "title": "Last Stop Reason"
+            },
+            "description": "Filter agents by their last stop reason."
           }
         ],
         "responses": {
@@ -4183,9 +4258,190 @@
       "get": {
         "tags": ["agents"],
         "summary": "Count Agents",
-        "description": "Get the total number of agents.",
+        "description": "Get the total number of agents with optional filtering.\nSupports the same filters as list_agents for consistent querying.",
         "operationId": "count_agents",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name of the agent",
+              "title": "Name"
+            },
+            "description": "Name of the agent"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter agents by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter agents by"
+          },
+          {
+            "name": "match_all_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags.",
+              "default": false,
+              "title": "Match All Tags"
+            },
+            "description": "If True, only counts agents that match ALL given tags. Otherwise, counts agents that have ANY of the passed-in tags."
+          },
+          {
+            "name": "query_text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by name",
+              "title": "Query Text"
+            },
+            "description": "Search agents by name"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by project ID - this will default to your default project on cloud",
+              "title": "Project Id"
+            },
+            "description": "Search agents by project ID - this will default to your default project on cloud"
+          },
+          {
+            "name": "template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by template ID",
+              "title": "Template Id"
+            },
+            "description": "Search agents by template ID"
+          },
+          {
+            "name": "base_template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by base template ID",
+              "title": "Base Template Id"
+            },
+            "description": "Search agents by base template ID"
+          },
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identity ID",
+              "title": "Identity Id"
+            },
+            "description": "Search agents by identity ID"
+          },
+          {
+            "name": "identifier_keys",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier keys",
+              "title": "Identifier Keys"
+            },
+            "description": "Search agents by identifier keys"
+          },
+          {
+            "name": "last_stop_reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StopReasonType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by their last stop reason.",
+              "title": "Last Stop Reason"
+            },
+            "description": "Filter agents by their last stop reason."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5900,7 +6156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -5964,7 +6220,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -6094,7 +6350,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Block"
+                    "$ref": "#/components/schemas/BlockResponse"
                   },
                   "title": "Response List Core Memory Blocks"
                 }
@@ -6527,6 +6783,7 @@
                 }
               ],
               "description": "How many results to include in the response.",
+              "default": 100,
               "title": "Limit"
             },
             "description": "How many results to include in the response."
@@ -7073,7 +7330,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Send Message",
-        "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.",
+        "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.\n\nThe response format is controlled by the `streaming` field in the request body:\n- If `streaming=false` (default): Returns a complete LettaResponse with all messages\n- If `streaming=true`: Returns a Server-Sent Events (SSE) stream\n\nAdditional streaming options (only used when streaming=true):\n- `stream_tokens`: Stream individual tokens instead of complete steps\n- `include_pings`: Include keepalive pings to prevent connection timeouts\n- `background`: Process the request in the background",
         "operationId": "send_message",
         "parameters": [
           {
@@ -7097,19 +7354,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LettaRequest"
+                "$ref": "#/components/schemas/LettaStreamingRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LettaResponse"
                 }
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream (when streaming=true in request body)"
               }
             }
           },
@@ -7221,6 +7481,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApprovalResponseMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummaryMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventMessage"
                     }
                   ],
                   "discriminator": {
@@ -7234,7 +7500,9 @@
                       "tool_return_message": "#/components/schemas/ToolReturnMessage",
                       "assistant_message": "#/components/schemas/AssistantMessage",
                       "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                      "summary": "#/components/schemas/SummaryMessage",
+                      "event": "#/components/schemas/EventMessage"
                     }
                   },
                   "title": "Response Modify Message"
@@ -7293,7 +7561,9 @@
             "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LettaStreamingResponse"
+                }
               },
               "text/event-stream": {
                 "description": "Server-Sent Events stream"
@@ -8619,6 +8889,12 @@
                     },
                     {
                       "$ref": "#/components/schemas/ApprovalResponseMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummaryMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventMessage"
                     }
                   ],
                   "discriminator": {
@@ -8632,7 +8908,9 @@
                       "tool_return_message": "#/components/schemas/ToolReturnMessage",
                       "assistant_message": "#/components/schemas/AssistantMessage",
                       "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                      "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                      "summary": "#/components/schemas/SummaryMessage",
+                      "event": "#/components/schemas/EventMessage"
                     }
                   },
                   "title": "Response Modify Group Message"
@@ -8660,6 +8938,114 @@
         "description": "Delete the group messages for all agents that are part of the multi-agent group.",
         "operationId": "reset_group_messages",
         "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Group Id"
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/blocks/attach/{block_id}": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Attach Block To Group",
+        "description": "Attach a block to a group.\nThis will add the block to the group and all agents within the group.",
+        "operationId": "attach_block_to_group",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^group-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the group in the format 'group-<uuid4>'",
+              "examples": ["group-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Group Id"
+            },
+            "description": "The ID of the group in the format 'group-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/blocks/detach/{block_id}": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Detach Block From Group",
+        "description": "Detach a block from a group.\nThis will remove the block from the group and all agents within the group.",
+        "operationId": "detach_block_from_group",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
           {
             "name": "group_id",
             "in": "path",
@@ -9494,9 +9880,657 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Block"
+                    "$ref": "#/components/schemas/BlockResponse"
                   },
                   "title": "Response List Blocks For Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}": {
+      "patch": {
+        "tags": ["_internal_agents"],
+        "summary": "Modify Block For Agent",
+        "description": "Updates a core memory block of an agent.",
+        "operationId": "modify_internal_core_memory_block",
+        "parameters": [
+          {
+            "name": "block_label",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Label"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/_internal_blocks/": {
+      "get": {
+        "tags": ["_internal_blocks"],
+        "summary": "List Blocks",
+        "operationId": "list_internal_blocks",
+        "parameters": [
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Labels to include (e.g. human, persona)",
+              "title": "Label"
+            },
+            "description": "Labels to include (e.g. human, persona)"
+          },
+          {
+            "name": "templates_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include only templates",
+              "default": false,
+              "title": "Templates Only"
+            },
+            "description": "Whether to include only templates"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name of the block",
+              "title": "Name"
+            },
+            "description": "Name of the block"
+          },
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier id",
+              "title": "Identity Id"
+            },
+            "description": "Search agents by identifier id"
+          },
+          {
+            "name": "identifier_keys",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier keys",
+              "title": "Identifier Keys"
+            },
+            "description": "Search agents by identifier keys"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by project id",
+              "title": "Project Id"
+            },
+            "description": "Search blocks by project id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of blocks to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Number of blocks to return"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "label_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "title": "Label Search"
+            },
+            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+          },
+          {
+            "name": "description_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "title": "Description Search"
+            },
+            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+          },
+          {
+            "name": "value_search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "title": "Value Search"
+            },
+            "description": "Search blocks by value. If provided, returns blocks that match this value."
+          },
+          {
+            "name": "connected_to_agents_count_gt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents.",
+              "title": "Connected To Agents Count Gt"
+            },
+            "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have more than this number of connected agents."
+          },
+          {
+            "name": "connected_to_agents_count_lt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.",
+              "title": "Connected To Agents Count Lt"
+            },
+            "description": "Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents."
+          },
+          {
+            "name": "connected_to_agents_count_eq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.",
+              "title": "Connected To Agents Count Eq"
+            },
+            "description": "Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "title": "Response List Internal Blocks"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["_internal_blocks"],
+        "summary": "Create Block",
+        "operationId": "create_internal_block",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBlock"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/_internal_blocks/{block_id}": {
+      "delete": {
+        "tags": ["_internal_blocks"],
+        "summary": "Delete Block",
+        "operationId": "delete_internal_block",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Block Id"
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/_internal_blocks/{block_id}/agents": {
+      "get": {
+        "tags": ["_internal_blocks"],
+        "summary": "List Agents For Block",
+        "description": "Retrieves all agents associated with the specified block.\nRaises a 404 if the block does not exist.",
+        "operationId": "list_agents_for_internal_block",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^block-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the block in the format 'block-<uuid4>'",
+              "examples": ["block-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Block Id"
+            },
+            "description": "The ID of the block in the format 'block-<uuid4>'"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "include_relationships",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+              "title": "Include Relationships"
+            },
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Specify which relational fields to include in the response. No relationships are included by default.",
+              "default": [],
+              "title": "Include"
+            },
+            "description": "Specify which relational fields to include in the response. No relationships are included by default."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "title": "Response List Agents For Internal Block"
                 }
               }
             }
@@ -9730,7 +10764,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 1000
                 },
                 {
                   "type": "null"
@@ -9760,7 +10795,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "const": "created_at",
+              "enum": ["created_at", "duration"],
               "type": "string",
               "description": "Field to sort by",
               "default": "created_at",
@@ -9793,6 +10828,117 @@
             },
             "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default). Deprecated in favor of order field.",
             "deprecated": true
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by project ID.",
+              "title": "Project Id"
+            },
+            "description": "Filter runs by project ID."
+          },
+          {
+            "name": "duration_percentile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by duration percentile (1-100). Returns runs slower than this percentile.",
+              "title": "Duration Percentile"
+            },
+            "description": "Filter runs by duration percentile (1-100). Returns runs slower than this percentile."
+          },
+          {
+            "name": "duration_value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Duration value in nanoseconds for filtering. Must be used with duration_operator.",
+              "title": "Duration Value"
+            },
+            "description": "Duration value in nanoseconds for filtering. Must be used with duration_operator."
+          },
+          {
+            "name": "duration_operator",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["gt", "lt", "eq"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comparison operator for duration filter: 'gt' (greater than), 'lt' (less than), 'eq' (equals).",
+              "title": "Duration Operator"
+            },
+            "description": "Comparison operator for duration filter: 'gt' (greater than), 'lt' (less than), 'eq' (equals)."
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs created on or after this date (ISO 8601 format).",
+              "title": "Start Date"
+            },
+            "description": "Filter runs created on or after this date (ISO 8601 format)."
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs created on or before this date (ISO 8601 format).",
+              "title": "End Date"
+            },
+            "description": "Filter runs created on or before this date (ISO 8601 format)."
           }
         ],
         "responses": {
@@ -10100,7 +11246,7 @@
       "get": {
         "tags": ["models", "llms"],
         "summary": "List Llm Models",
-        "description": "List available LLM models using the asynchronous implementation for improved performance",
+        "description": "List available LLM models using the asynchronous implementation for improved performance.\n\nReturns Model format which extends LLMConfig with additional metadata fields.\nLegacy LLMConfig fields are marked as deprecated but still available for backward compatibility.",
         "operationId": "list_models",
         "parameters": [
           {
@@ -10163,7 +11309,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/LLMConfig"
+                    "$ref": "#/components/schemas/Model"
                   },
                   "title": "Response List Models"
                 }
@@ -10187,7 +11333,7 @@
       "get": {
         "tags": ["models", "llms"],
         "summary": "List Embedding Models",
-        "description": "List available embedding models using the asynchronous implementation for improved performance",
+        "description": "List available embedding models using the asynchronous implementation for improved performance.\n\nReturns EmbeddingModel format which extends EmbeddingConfig with additional metadata fields.\nLegacy EmbeddingConfig fields are marked as deprecated but still available for backward compatibility.",
         "operationId": "list_embedding_models",
         "parameters": [],
         "responses": {
@@ -10198,7 +11344,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/EmbeddingConfig"
+                    "$ref": "#/components/schemas/EmbeddingModel"
                   },
                   "title": "Response List Embedding Models"
                 }
@@ -11045,7 +12191,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Block"
+                    "$ref": "#/components/schemas/BlockResponse"
                   },
                   "title": "Response List Blocks"
                 }
@@ -11085,7 +12231,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -11173,7 +12319,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -11259,7 +12405,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -11492,7 +12638,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -11548,7 +12694,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Block"
+                  "$ref": "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -11992,6 +13138,7 @@
       "get": {
         "tags": ["health"],
         "summary": "Check Health",
+        "description": "Async health check endpoint.",
         "operationId": "check_health",
         "responses": {
           "200": {
@@ -12575,7 +13722,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 1000
                 },
                 {
                   "type": "null"
@@ -13891,6 +15039,12 @@
                       },
                       {
                         "$ref": "#/components/schemas/ApprovalResponseMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SummaryMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/EventMessage"
                       }
                     ],
                     "discriminator": {
@@ -13904,7 +15058,9 @@
                         "tool_return_message": "#/components/schemas/ToolReturnMessage",
                         "assistant_message": "#/components/schemas/AssistantMessage",
                         "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                        "summary": "#/components/schemas/SummaryMessage",
+                        "event": "#/components/schemas/EventMessage"
                       }
                     }
                   },
@@ -14982,6 +16138,132 @@
         }
       }
     },
+    "/v1/templates/{template_version}/agents": {
+      "post": {
+        "description": "Creates an Agent or multiple Agents from a template",
+        "summary": "Create agents from a template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+          }
+        ],
+        "operationId": "templates.createAgentsFromTemplateWithHeader",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9-_ ]*$"
+                    },
+                    "description": "The tags to assign to the agent"
+                  },
+                  "agent_name": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9-_ ]*$",
+                    "description": "The name of the agent, optional otherwise a random one will be assigned"
+                  },
+                  "initial_message_sequence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "system", "assistant"]
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "otid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sender_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "batch_item_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "group_id": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": ["role", "content"]
+                    },
+                    "description": "Set an initial sequence of messages, if not provided, the agent will start with the default message sequence, if an empty array is provided, the agent will start with no messages"
+                  },
+                  "memory_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The memory variables to assign to the agent"
+                  },
+                  "tool_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The tool variables to assign to the agent"
+                  },
+                  "identity_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The identity ids to assign to the agent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201"
+          },
+          "402": {
+            "description": "402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["message", "limit"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/templates": {
       "get": {
         "description": "List all templates",
@@ -15175,6 +16457,11 @@
                   "preserve_core_memories_on_migration": {
                     "type": "boolean",
                     "description": "If true, the core memories will be preserved in the template version when migrating agents"
+                  },
+                  "block_reconciliation_strategy": {
+                    "type": "string",
+                    "enum": ["reconcile-all", "preserve-deleted"],
+                    "description": "Strategy for reconciling memory blocks during migration: \"reconcile-all\" deletes blocks not in the template, \"preserve-deleted\" keeps them. Defaults to \"preserve-deleted\"."
                   },
                   "migrate_agents": {
                     "type": "boolean",
@@ -17697,11 +18984,95 @@
           },
           "llm_config": {
             "$ref": "#/components/schemas/LLMConfig",
-            "description": "The LLM configuration used by the agent."
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
           },
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "The embedding configuration used by the agent."
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model handle used by the agent (format: provider/model-name)."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "The model settings used by the agent."
           },
           "response_format": {
             "anyOf": [
@@ -17731,7 +19102,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format used by the agent when returning from `send_message`."
+            "description": "The response format used by the agent"
           },
           "description": {
             "anyOf": [
@@ -17760,7 +19131,7 @@
           },
           "memory": {
             "$ref": "#/components/schemas/Memory",
-            "description": "The in-context memory of the agent.",
+            "description": "Deprecated: Use `blocks` field instead. The in-context memory of the agent.",
             "deprecated": true
           },
           "blocks": {
@@ -17878,7 +19249,7 @@
             },
             "type": "array",
             "title": "Identity Ids",
-            "description": "The ids of the identities associated with this agent.",
+            "description": "Deprecated: Use `identities` field instead. The ids of the identities associated with this agent.",
             "default": [],
             "deprecated": true
           },
@@ -17918,7 +19289,7 @@
                 "type": "null"
               }
             ],
-            "description": "The multi-agent group that this agent manages",
+            "description": "Deprecated: Use `managed_group` field instead. The multi-agent group that this agent manages.",
             "deprecated": true
           },
           "managed_group": {
@@ -17956,6 +19327,17 @@
             ],
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
+          },
+          "last_stop_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StopReasonType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stop reason from the agent's last run."
           },
           "timezone": {
             "anyOf": [
@@ -18022,7 +19404,7 @@
           "tags"
         ],
         "title": "AgentState",
-        "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.\n\nParameters:\n    id (str): The unique identifier of the agent.\n    name (str): The name of the agent (must be unique to the user).\n    created_at (datetime): The datetime the agent was created.\n    message_ids (List[str]): The ids of the messages in the agent's in-context memory.\n    memory (Memory): The in-context memory of the agent.\n    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.\n    system (str): The system prompt used by the agent.\n    llm_config (LLMConfig): The LLM configuration used by the agent.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the agent."
+        "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent."
       },
       "AgentType": {
         "type": "string",
@@ -18079,6 +19461,77 @@
         "type": "object",
         "required": ["end_index", "start_index", "title", "url"],
         "title": "AnnotationURLCitation"
+      },
+      "AnthropicModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "anthropic",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "anthropic"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 1
+          },
+          "thinking": {
+            "$ref": "#/components/schemas/AnthropicThinking",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "type": "enabled",
+              "budget_tokens": 1024
+            }
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity",
+            "description": "Soft control for how verbose model output should be, used for GPT-5 models."
+          }
+        },
+        "type": "object",
+        "title": "AnthropicModelSettings"
+      },
+      "AnthropicThinking": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["enabled", "disabled"],
+            "title": "Type",
+            "description": "The type of thinking to use.",
+            "default": "enabled"
+          },
+          "budget_tokens": {
+            "type": "integer",
+            "title": "Budget Tokens",
+            "description": "The maximum number of tokens the model can use for extended thinking.",
+            "default": 1024
+          }
+        },
+        "type": "object",
+        "title": "AnthropicThinking"
       },
       "ApprovalCreate": {
         "properties": {
@@ -18156,6 +19609,18 @@
             "title": "Reason",
             "description": "An optional explanation for the provided approval status",
             "deprecated": true
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -18645,7 +20110,7 @@
           "embedding_config"
         ],
         "title": "Archive",
-        "description": "Representation of an archive - a collection of archival passages that can be shared between agents.\n\nParameters:\n    id (str): The unique identifier of the archive.\n    name (str): The name of the archive.\n    description (str): A description of the archive.\n    organization_id (str): The organization this archive belongs to.\n    created_at (datetime): The creation date of the archive.\n    metadata (dict): Additional metadata for the archive."
+        "description": "Representation of an archive - a collection of archival passages that can be shared between agents."
       },
       "ArchiveCreateRequest": {
         "properties": {
@@ -18654,8 +20119,28 @@
             "title": "Name"
           },
           "embedding_config": {
-            "$ref": "#/components/schemas/EmbeddingConfig",
-            "description": "Embedding configuration for the archive"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. Embedding configuration for the archive",
+            "deprecated": true
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "Embedding model handle for the archive"
           },
           "description": {
             "anyOf": [
@@ -18670,7 +20155,7 @@
           }
         },
         "type": "object",
-        "required": ["name", "embedding_config"],
+        "required": ["name"],
         "title": "ArchiveCreateRequest",
         "description": "Request model for creating an archive.\n\nIntentionally excludes vector_db_provider. These are derived internally (vector DB provider from env)."
       },
@@ -18865,6 +20350,68 @@
         "type": "object",
         "required": ["uuid"],
         "title": "AuthResponse"
+      },
+      "AzureModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "azure",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "azure"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "AzureModelSettings",
+        "description": "Azure OpenAI model configuration (OpenAI-compatible)."
       },
       "Base64Image": {
         "properties": {
@@ -19117,6 +20664,68 @@
         "type": "object",
         "title": "BatchJob"
       },
+      "BedrockModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "bedrock",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "bedrock"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "BedrockModelSettings",
+        "description": "AWS Bedrock model configuration."
+      },
       "Block": {
         "properties": {
           "value": {
@@ -19142,7 +20751,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -19151,14 +20760,26 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The id of the template."
+            "title": "Template Name",
+            "description": "Name of the block if it is a template."
           },
           "is_template": {
             "type": "boolean",
             "title": "Is Template",
             "description": "Whether the block is a template (e.g. saved human/persona options).",
             "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template."
           },
           "base_template_id": {
             "anyOf": [
@@ -19300,7 +20921,209 @@
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+        "description": "A Block represents a reserved section of the LLM's context window."
+      },
+      "BlockResponse": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 20000
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
+          "template_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Name",
+            "description": "(Deprecated) The name of the block template (if it is a template).",
+            "deprecated": true
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "(Deprecated) The id of the template.",
+            "deprecated": true
+          },
+          "base_template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Template Id",
+            "description": "(Deprecated) The base template id of the block.",
+            "deprecated": true
+          },
+          "deployment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployment Id",
+            "description": "(Deprecated) The id of the deployment.",
+            "deprecated": true
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id",
+            "description": "(Deprecated) The id of the entity within the template.",
+            "deprecated": true
+          },
+          "preserve_on_migration": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preserve On Migration",
+            "description": "(Deprecated) Preserve the block on template migration.",
+            "default": false,
+            "deprecated": true
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona') in the context window."
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "(Deprecated) Whether the agent has read-only access to the block.",
+            "default": false,
+            "deprecated": true
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "(Deprecated) If set to True, the block will be hidden.",
+            "deprecated": true
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the block."
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Block."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that last updated this Block."
+          }
+        },
+        "type": "object",
+        "required": ["value", "id"],
+        "title": "BlockResponse"
       },
       "BlockSchema": {
         "properties": {
@@ -19327,7 +21150,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -19336,13 +21159,25 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The id of the template."
+            "title": "Template Name",
+            "description": "Name of the block if it is a template."
           },
           "is_template": {
             "type": "boolean",
             "title": "Is Template",
             "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template."
           },
           "base_template_id": {
             "anyOf": [
@@ -19491,7 +21326,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -19500,14 +21335,26 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The id of the template."
+            "title": "Template Name",
+            "description": "Name of the block if it is a template."
           },
           "is_template": {
             "type": "boolean",
             "title": "Is Template",
             "description": "Whether the block is a template (e.g. saved human/persona options).",
             "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template."
           },
           "base_template_id": {
             "anyOf": [
@@ -21332,28 +23179,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -21397,7 +23222,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -21424,6 +23250,30 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
@@ -21434,7 +23284,7 @@
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -21446,7 +23296,65 @@
               }
             ],
             "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -21470,8 +23378,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -21483,7 +23392,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -21495,7 +23405,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -21507,8 +23418,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -21520,7 +23432,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -21532,13 +23445,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -21550,7 +23465,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -21566,7 +23481,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -21596,7 +23512,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -21608,7 +23525,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "anyOf": [
@@ -21620,7 +23538,8 @@
               }
             ],
             "title": "Template Id",
-            "description": "The id of the template the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
+            "deprecated": true
           },
           "base_template_id": {
             "anyOf": [
@@ -21632,7 +23551,8 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "The base template id of the agent."
+            "description": "Deprecated: No longer used. The base template id of the agent.",
+            "deprecated": true
           },
           "identity_ids": {
             "anyOf": [
@@ -21743,7 +23663,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -21755,8 +23676,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           }
         },
         "type": "object",
@@ -21858,7 +23780,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -21867,13 +23789,25 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The id of the template."
+            "title": "Template Name",
+            "description": "Name of the block if it is a template."
           },
           "is_template": {
             "type": "boolean",
             "title": "Is Template",
             "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template."
           },
           "base_template_id": {
             "anyOf": [
@@ -22176,6 +24110,68 @@
         "type": "object",
         "required": ["input", "name"],
         "title": "Custom"
+      },
+      "DeepseekModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "deepseek",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "deepseek"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "DeepseekModelSettings",
+        "description": "Deepseek model configuration (OpenAI-compatible)."
       },
       "DeleteDeploymentResponse": {
         "properties": {
@@ -22538,6 +24534,280 @@
         "title": "EmbeddingConfig",
         "description": "Configuration for embedding model connection and processing parameters."
       },
+      "EmbeddingModel": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle",
+            "description": "The handle for this config, in the format provider/model-name."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The actual model name used by the provider"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Display name for the model shown in UI"
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider"
+          },
+          "provider_name": {
+            "type": "string",
+            "title": "Provider Name",
+            "description": "The name of the provider"
+          },
+          "model_type": {
+            "type": "string",
+            "const": "embedding",
+            "title": "Model Type",
+            "description": "Type of model (llm or embedding)",
+            "default": "embedding"
+          },
+          "embedding_endpoint_type": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "bedrock",
+              "google_ai",
+              "google_vertex",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face",
+              "mistral",
+              "together",
+              "pinecone"
+            ],
+            "title": "Embedding Endpoint Type",
+            "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the embedding model.",
+            "deprecated": true
+          },
+          "embedding_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Endpoint",
+            "description": "Deprecated: The endpoint for the model.",
+            "deprecated": true
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "description": "Deprecated: Use 'name' field instead. Embedding model name.",
+            "deprecated": true
+          },
+          "embedding_dim": {
+            "type": "integer",
+            "title": "Embedding Dim",
+            "description": "The dimension of the embedding"
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "Deprecated: The chunk size of the embedding.",
+            "default": 300,
+            "deprecated": true
+          },
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "description": "Deprecated: The maximum batch size for processing embeddings.",
+            "default": 32,
+            "deprecated": true
+          },
+          "azure_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Endpoint",
+            "description": "Deprecated: The Azure endpoint for the model.",
+            "deprecated": true
+          },
+          "azure_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Version",
+            "description": "Deprecated: The Azure version for the model.",
+            "deprecated": true
+          },
+          "azure_deployment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Deployment",
+            "description": "Deprecated: The Azure deployment for the model.",
+            "deprecated": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "display_name",
+          "provider_type",
+          "provider_name",
+          "embedding_endpoint_type",
+          "embedding_model",
+          "embedding_dim"
+        ],
+        "title": "EmbeddingModel"
+      },
+      "EventMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message_type": {
+            "type": "string",
+            "const": "event",
+            "title": "Message Type",
+            "default": "event_message"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "event_type": {
+            "type": "string",
+            "const": "compaction",
+            "title": "Event Type"
+          },
+          "event_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Event Data"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "event_type", "event_data"],
+        "title": "EventMessage",
+        "description": "A message for notifying the developer that an event that has occured (e.g. a compaction). Events are NOT part of the context window."
+      },
       "FeedbackType": {
         "type": "string",
         "enum": ["positive", "negative"],
@@ -22672,7 +24942,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -22681,14 +24951,26 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The id of the template."
+            "title": "Template Name",
+            "description": "Name of the block if it is a template."
           },
           "is_template": {
             "type": "boolean",
             "title": "Is Template",
             "description": "Whether the block is a template (e.g. saved human/persona options).",
             "default": false
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template."
           },
           "base_template_id": {
             "anyOf": [
@@ -23363,7 +25645,7 @@
         "type": "object",
         "required": ["name", "embedding_config"],
         "title": "Folder",
-        "description": "Representation of a folder, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the folder\n    name (str): The name of the folder.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the folder.\n    user_id (str): The ID of the user that created the folder.\n    metadata (dict): Metadata associated with the folder.\n    description (str): The description of the folder."
+        "description": "Representation of a folder, which is a collection of files and passages."
       },
       "Function-Output": {
         "properties": {
@@ -23474,6 +25756,24 @@
         "required": ["function", "type"],
         "title": "FunctionTool"
       },
+      "GeminiThinkingConfig": {
+        "properties": {
+          "include_thoughts": {
+            "type": "boolean",
+            "title": "Include Thoughts",
+            "description": "Whether to include thoughts in the model's response.",
+            "default": true
+          },
+          "thinking_budget": {
+            "type": "integer",
+            "title": "Thinking Budget",
+            "description": "The thinking budget for the model.",
+            "default": 1024
+          }
+        },
+        "type": "object",
+        "title": "GeminiThinkingConfig"
+      },
       "GenerateToolInput": {
         "properties": {
           "tool_name": {
@@ -23544,6 +25844,206 @@
         "type": "object",
         "required": ["tool", "sample_args", "response"],
         "title": "GenerateToolOutput"
+      },
+      "GoogleAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 65536
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "google_ai",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "google_ai"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "thinking_config": {
+            "$ref": "#/components/schemas/GeminiThinkingConfig",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "include_thoughts": true,
+              "thinking_budget": 1024
+            }
+          },
+          "response_schema": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Schema",
+            "description": "The response schema for the model."
+          }
+        },
+        "type": "object",
+        "title": "GoogleAIModelSettings"
+      },
+      "GoogleVertexModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 65536
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "google_vertex",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "google_vertex"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "thinking_config": {
+            "$ref": "#/components/schemas/GeminiThinkingConfig",
+            "description": "The thinking configuration for the model.",
+            "default": {
+              "include_thoughts": true,
+              "thinking_budget": 1024
+            }
+          },
+          "response_schema": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Schema",
+            "description": "The response schema for the model."
+          }
+        },
+        "type": "object",
+        "title": "GoogleVertexModelSettings"
+      },
+      "GroqModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "groq",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "groq"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "GroqModelSettings",
+        "description": "Groq model configuration (OpenAI-compatible)."
       },
       "Group": {
         "properties": {
@@ -23624,7 +26124,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "manager_agent_id": {
             "anyOf": [
@@ -23808,7 +26309,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [
@@ -23895,7 +26397,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [
@@ -24012,7 +26515,8 @@
               }
             ],
             "title": "Shared Block Ids",
-            "description": ""
+            "description": "",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -24840,28 +27344,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -24905,7 +27387,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -24932,6 +27415,30 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
@@ -24942,7 +27449,7 @@
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -24954,7 +27461,65 @@
               }
             ],
             "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -24978,8 +27543,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -24991,7 +27557,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -25003,7 +27570,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -25015,8 +27583,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -25028,7 +27597,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -25040,13 +27610,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -25058,7 +27630,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -25074,7 +27646,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -25104,7 +27677,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -25116,7 +27690,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "type": "string",
@@ -25237,7 +27812,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -25249,8 +27825,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "deployment_id": {
             "type": "string",
@@ -25298,7 +27875,7 @@
             "title": "Project Id",
             "description": "The associated project id."
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -25307,7 +27884,7 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
+            "title": "Template Name",
             "description": "Name of the block if it is a template."
           },
           "is_template": {
@@ -25478,7 +28055,8 @@
             "type": "array",
             "title": "Shared Block Ids",
             "description": "",
-            "default": []
+            "default": [],
+            "deprecated": true
           },
           "hidden": {
             "anyOf": [
@@ -25719,7 +28297,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Job",
-        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
+        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files)."
       },
       "JobStatus": {
         "type": "string",
@@ -26009,24 +28587,87 @@
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for Language Model (LLM) connection and generation parameters."
+        "description": "Configuration for Language Model (LLM) connection and generation parameters.\n\n.. deprecated::\n    LLMConfig is deprecated and should not be used as an input or return type in API calls.\n    Use the schemas in letta.schemas.model (ModelSettings, OpenAIModelSettings, etc.) instead.\n    For conversion, use the _to_model() method or Model._from_llm_config() method."
       },
       "LettaAsyncRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -26091,7 +28732,6 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaAsyncRequest"
       },
       "LettaBatchMessages": {
@@ -26111,19 +28751,82 @@
       "LettaBatchRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -26181,7 +28884,7 @@
           }
         },
         "type": "object",
-        "required": ["messages", "agent_id"],
+        "required": ["agent_id"],
         "title": "LettaBatchRequest"
       },
       "LettaImage": {
@@ -26239,22 +28942,100 @@
         "required": ["file_id"],
         "title": "LettaImage"
       },
+      "LettaPing": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "ping",
+            "title": "Message Type",
+            "description": "The type of the message.",
+            "default": "ping"
+          }
+        },
+        "type": "object",
+        "required": ["message_type"],
+        "title": "LettaPing",
+        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests."
+      },
       "LettaRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -26307,7 +29088,6 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaRequest"
       },
       "LettaRequestConfig": {
@@ -26394,19 +29174,82 @@
       "LettaStreamingRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageCreate"
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalCreate"
+                    }
+                  ]
                 },
-                {
-                  "$ref": "#/components/schemas/ApprovalCreate"
-                }
-              ]
-            },
-            "type": "array",
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SummarizedReasoningContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image": "#/components/schemas/ImageContent",
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "summarized_reasoning": "#/components/schemas/SummarizedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input",
+            "description": "Syntactic sugar for a single user message. Equivalent to messages=[{'role': 'user', 'content': input}]."
           },
           "max_steps": {
             "type": "integer",
@@ -26457,28 +29300,92 @@
             "default": true,
             "deprecated": true
           },
+          "streaming": {
+            "type": "boolean",
+            "title": "Streaming",
+            "description": "If True, returns a streaming response (Server-Sent Events). If False (default), returns a complete response.",
+            "default": false
+          },
           "stream_tokens": {
             "type": "boolean",
             "title": "Stream Tokens",
-            "description": "Flag to determine if individual tokens should be streamed, rather than streaming per step.",
+            "description": "Flag to determine if individual tokens should be streamed, rather than streaming per step (only used when streaming=true).",
             "default": false
           },
           "include_pings": {
             "type": "boolean",
             "title": "Include Pings",
-            "description": "Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+            "description": "Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts (only used when streaming=true).",
             "default": true
           },
           "background": {
             "type": "boolean",
             "title": "Background",
-            "description": "Whether to process the request in the background.",
+            "description": "Whether to process the request in the background (only used when streaming=true).",
             "default": false
           }
         },
         "type": "object",
-        "required": ["messages"],
         "title": "LettaStreamingRequest"
+      },
+      "LettaStreamingResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SystemMessage"
+          },
+          {
+            "$ref": "#/components/schemas/UserMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ReasoningMessage"
+          },
+          {
+            "$ref": "#/components/schemas/HiddenReasoningMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ToolCallMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ToolReturnMessage"
+          },
+          {
+            "$ref": "#/components/schemas/AssistantMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ApprovalRequestMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ApprovalResponseMessage"
+          },
+          {
+            "$ref": "#/components/schemas/LettaPing"
+          },
+          {
+            "$ref": "#/components/schemas/LettaStopReason"
+          },
+          {
+            "$ref": "#/components/schemas/LettaUsageStatistics"
+          }
+        ],
+        "title": "LettaStreamingResponse",
+        "description": "Streaming response type for Server-Sent Events (SSE) endpoints.\nEach event in the stream will be one of these types.",
+        "discriminator": {
+          "propertyName": "message_type",
+          "mapping": {
+            "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+            "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+            "assistant_message": "#/components/schemas/AssistantMessage",
+            "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+            "ping": "#/components/schemas/LettaPing",
+            "reasoning_message": "#/components/schemas/ReasoningMessage",
+            "stop_reason": "#/components/schemas/LettaStopReason",
+            "system_message": "#/components/schemas/SystemMessage",
+            "tool_call_message": "#/components/schemas/ToolCallMessage",
+            "tool_return_message": "#/components/schemas/ToolReturnMessage",
+            "usage_statistics": "#/components/schemas/LettaUsageStatistics",
+            "user_message": "#/components/schemas/UserMessage"
+          }
+        }
       },
       "LettaUsageStatistics": {
         "properties": {
@@ -27530,6 +30437,286 @@
         "type": "object",
         "title": "ModalSandboxConfig"
       },
+      "Model": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle",
+            "description": "The handle for this config, in the format provider/model-name."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The actual model name used by the provider"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "A human-friendly display name for the model."
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider"
+          },
+          "provider_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Name",
+            "description": "The provider name for the model."
+          },
+          "model_type": {
+            "type": "string",
+            "const": "llm",
+            "title": "Model Type",
+            "description": "Type of model (llm or embedding)",
+            "default": "llm"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Deprecated: Use 'name' field instead. LLM model name.",
+            "deprecated": true
+          },
+          "model_endpoint_type": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "google_ai",
+              "google_vertex",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "lmstudio-chatcompletions",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face",
+              "mistral",
+              "together",
+              "bedrock",
+              "deepseek",
+              "xai"
+            ],
+            "title": "Model Endpoint Type",
+            "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the model.",
+            "deprecated": true
+          },
+          "model_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Endpoint",
+            "description": "Deprecated: The endpoint for the model.",
+            "deprecated": true
+          },
+          "provider_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: The provider category for the model.",
+            "deprecated": true
+          },
+          "model_wrapper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Wrapper",
+            "description": "Deprecated: The wrapper for the model.",
+            "deprecated": true
+          },
+          "context_window": {
+            "type": "integer",
+            "title": "Context Window",
+            "description": "Deprecated: Use 'max_context_window' field instead. The context window size for the model.",
+            "deprecated": true
+          },
+          "put_inner_thoughts_in_kwargs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Put Inner Thoughts In Kwargs",
+            "description": "Deprecated: Puts 'inner_thoughts' as a kwarg in the function call.",
+            "default": true,
+            "deprecated": true
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "Deprecated: The temperature to use when generating text with the model.",
+            "default": 0.7,
+            "deprecated": true
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Deprecated: The maximum number of tokens to generate.",
+            "deprecated": true
+          },
+          "enable_reasoner": {
+            "type": "boolean",
+            "title": "Enable Reasoner",
+            "description": "Deprecated: Whether or not the model should use extended thinking if it is a 'reasoning' style model.",
+            "default": true,
+            "deprecated": true
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["minimal", "low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Deprecated: The reasoning effort to use when generating text reasoning models.",
+            "deprecated": true
+          },
+          "max_reasoning_tokens": {
+            "type": "integer",
+            "title": "Max Reasoning Tokens",
+            "description": "Deprecated: Configurable thinking budget for extended thinking.",
+            "default": 0,
+            "deprecated": true
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Deprecated: Positive values penalize new tokens based on their existing frequency in the text so far.",
+            "deprecated": true
+          },
+          "compatibility_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["gguf", "mlx"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compatibility Type",
+            "description": "Deprecated: The framework compatibility type for the model.",
+            "deprecated": true
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity",
+            "description": "Deprecated: Soft control for how verbose model output should be.",
+            "deprecated": true
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier",
+            "description": "Deprecated: The cost tier for the model (cloud only).",
+            "deprecated": true
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Deprecated: If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
+          },
+          "max_context_window": {
+            "type": "integer",
+            "title": "Max Context Window",
+            "description": "The maximum context window for the model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "provider_type",
+          "model",
+          "model_endpoint_type",
+          "context_window",
+          "max_context_window"
+        ],
+        "title": "Model"
+      },
       "ModifyApprovalRequest": {
         "properties": {
           "requires_approval": {
@@ -27626,6 +30813,87 @@
         "type": "object",
         "title": "OmittedReasoningContent",
         "description": "A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)"
+      },
+      "OpenAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "openai",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "openai"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/OpenAIReasoning",
+            "description": "The reasoning configuration for the model.",
+            "default": {
+              "reasoning_effort": "high"
+            }
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "OpenAIModelSettings"
+      },
+      "OpenAIReasoning": {
+        "properties": {
+          "reasoning_effort": {
+            "type": "string",
+            "enum": ["minimal", "low", "medium", "high"],
+            "title": "Reasoning Effort",
+            "description": "The reasoning effort to use when generating text reasoning models",
+            "default": "minimal"
+          }
+        },
+        "type": "object",
+        "title": "OpenAIReasoning"
       },
       "Organization": {
         "properties": {
@@ -28064,7 +31332,48 @@
         "type": "object",
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
-        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    organization_id (str): The unique identifier of the organization associated with the passage.\n    archive_id (str): The unique identifier of the archive containing this passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+        "description": "Representation of a passage, which is stored in archival memory."
+      },
+      "PassageCreateRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content of the passage"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Optional metadata for the passage"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Optional tags for categorizing the passage"
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "PassageCreateRequest",
+        "description": "Request model for creating a passage in an archive."
       },
       "PipRequirement": {
         "properties": {
@@ -29092,7 +32401,7 @@
         "type": "object",
         "required": ["agent_id"],
         "title": "Run",
-        "description": "Representation of a run - a conversation or processing session for an agent.\nRuns track when agents process messages and maintain the relationship between agents, steps, and messages.\n\nParameters:\n    id (str): The unique identifier of the run (prefixed with 'run-').\n    status (JobStatus): The current status of the run.\n    created_at (datetime): The timestamp when the run was created.\n    completed_at (datetime): The timestamp when the run was completed.\n    agent_id (str): The unique identifier of the agent associated with the run.\n    base_template_id (str): The base template ID that the run belongs to.\n    stop_reason (StopReasonType): The reason why the run was stopped.\n    background (bool): Whether the run was created in background mode.\n    metadata (dict): Additional metadata for the run.\n    request_config (LettaRequestConfig): The request configuration for the run."
+        "description": "Representation of a run - a conversation or processing session for an agent. Runs track when agents process messages and maintain the relationship between agents, steps, and messages."
       },
       "RunMetrics": {
         "properties": {
@@ -29828,7 +33137,7 @@
         "type": "object",
         "required": ["name", "embedding_config"],
         "title": "Source",
-        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata (dict): Metadata associated with the source.\n    description (str): The description of the source."
+        "description": "(Deprecated: Use Folder) Representation of a source, which is a collection of files and passages."
       },
       "SourceCreate": {
         "properties": {
@@ -30842,6 +34151,110 @@
         "required": ["index", "text"],
         "title": "SummarizedReasoningContentPart"
       },
+      "SummaryMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message_type": {
+            "type": "string",
+            "const": "summary",
+            "title": "Message Type",
+            "default": "summary_message"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "summary"],
+        "title": "SummaryMessage",
+        "description": "A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider."
+      },
       "SupervisorManager": {
         "properties": {
           "manager_type": {
@@ -31081,6 +34494,68 @@
         "title": "TextResponseFormat",
         "description": "Response format for plain text responses."
       },
+      "TogetherModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "together",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "together"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "TogetherModelSettings",
+        "description": "Together AI model configuration (OpenAI-compatible)."
+      },
       "Tool": {
         "properties": {
           "id": {
@@ -31180,6 +34655,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
@@ -31280,7 +34757,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Tool",
-        "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
+        "description": "Representation of a tool, which is a function that can be called by the agent."
       },
       "ToolAnnotations": {
         "properties": {
@@ -31669,6 +35146,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
@@ -32283,7 +35762,9 @@
           "return_char_limit": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 1000000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -32537,28 +36018,6 @@
             "title": "Tool Rules",
             "description": "The tool rules governing the agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "message_ids": {
             "anyOf": [
               {
@@ -32702,7 +36161,7 @@
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle used by the agent (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -32714,7 +36173,65 @@
               }
             ],
             "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -32728,18 +36245,6 @@
             "title": "Context Window Limit",
             "description": "The context window limit used by the agent."
           },
-          "max_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
-          },
           "reasoning": {
             "anyOf": [
               {
@@ -32750,9 +36255,33 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
-          "enable_sleeptime": {
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
+          "parallel_tool_calls": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -32761,8 +36290,10 @@
                 "type": "null"
               }
             ],
-            "title": "Enable Sleeptime",
-            "description": "If set to True, memory management will move to a background agent thread."
+            "title": "Parallel Tool Calls",
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "response_format": {
             "anyOf": [
@@ -32792,7 +36323,33 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
+          },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread."
           },
           "last_run_completion": {
             "anyOf": [
@@ -32818,6 +36375,17 @@
             ],
             "title": "Last Run Duration Ms",
             "description": "The duration in milliseconds of the agent's last run."
+          },
+          "last_stop_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StopReasonType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stop reason from the agent's last run."
           },
           "timezone": {
             "anyOf": [
@@ -32866,19 +36434,6 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the agent will be hidden."
-          },
-          "parallel_tool_calls": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
           }
         },
         "type": "object",
@@ -33108,7 +36663,7 @@
         "type": "object",
         "required": ["name"],
         "title": "User",
-        "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
+        "description": "Representation of a user."
       },
       "UserCreate": {
         "properties": {
@@ -33391,6 +36946,68 @@
         "type": "object",
         "title": "VoiceSleeptimeManagerUpdate"
       },
+      "XAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "xai",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "xai"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "XAIModelSettings",
+        "description": "xAI model configuration (OpenAI-compatible)."
+      },
       "letta__schemas__agent_file__AgentSchema": {
         "properties": {
           "name": {
@@ -33561,28 +37178,6 @@
             "$ref": "#/components/schemas/AgentType",
             "description": "The type of agent."
           },
-          "llm_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The LLM configuration used by the agent."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the agent."
-          },
           "initial_message_sequence": {
             "anyOf": [
               {
@@ -33626,7 +37221,8 @@
             "type": "boolean",
             "title": "Include Default Source",
             "description": "If true, automatically creates and attaches a default data source for this agent.",
-            "default": false
+            "default": false,
+            "deprecated": true
           },
           "description": {
             "anyOf": [
@@ -33653,6 +37249,30 @@
             "title": "Metadata",
             "description": "The metadata of the agent."
           },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `model` field instead. The LLM configuration used by the agent.",
+            "deprecated": true
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
+            "deprecated": true
+          },
           "model": {
             "anyOf": [
               {
@@ -33663,7 +37283,7 @@
               }
             ],
             "title": "Model",
-            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+            "description": "The model handle for the agent to use (format: provider/model-name)."
           },
           "embedding": {
             "anyOf": [
@@ -33675,7 +37295,65 @@
               }
             ],
             "title": "Embedding",
-            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+            "description": "The embedding model handle used by the agent (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "The model settings for the agent."
           },
           "context_window_limit": {
             "anyOf": [
@@ -33699,8 +37377,9 @@
               }
             ],
             "title": "Embedding Chunk Size",
-            "description": "The embedding chunk size used by the agent.",
-            "default": 300
+            "description": "Deprecated: No longer used. The embedding chunk size used by the agent.",
+            "default": 300,
+            "deprecated": true
           },
           "max_tokens": {
             "anyOf": [
@@ -33712,7 +37391,8 @@
               }
             ],
             "title": "Max Tokens",
-            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure max output tokens instead. The maximum number of tokens to generate, including reasoning step.",
+            "deprecated": true
           },
           "max_reasoning_tokens": {
             "anyOf": [
@@ -33724,7 +37404,8 @@
               }
             ],
             "title": "Max Reasoning Tokens",
-            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+            "description": "Deprecated: Use `model` field to configure reasoning tokens instead. The maximum number of tokens to generate for reasoning step.",
+            "deprecated": true
           },
           "enable_reasoner": {
             "anyOf": [
@@ -33736,8 +37417,9 @@
               }
             ],
             "title": "Enable Reasoner",
-            "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": true
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable internal extended thinking step for a reasoner model.",
+            "default": true,
+            "deprecated": true
           },
           "reasoning": {
             "anyOf": [
@@ -33749,7 +37431,8 @@
               }
             ],
             "title": "Reasoning",
-            "description": "Whether to enable reasoning for this agent."
+            "description": "Deprecated: Use `model` field to configure reasoning instead. Whether to enable reasoning for this agent.",
+            "deprecated": true
           },
           "from_template": {
             "anyOf": [
@@ -33761,13 +37444,15 @@
               }
             ],
             "title": "From Template",
-            "description": "Deprecated: please use the 'create agents from a template' endpoint instead."
+            "description": "Deprecated: please use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "template": {
             "type": "boolean",
             "title": "Template",
-            "description": "Deprecated: No longer used",
-            "default": false
+            "description": "Deprecated: No longer used.",
+            "default": false,
+            "deprecated": true
           },
           "project": {
             "anyOf": [
@@ -33779,7 +37464,7 @@
               }
             ],
             "title": "Project",
-            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the SDK, this can be done via the x_project parameter.",
             "deprecated": true
           },
           "tool_exec_environment_variables": {
@@ -33795,7 +37480,8 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
-            "description": "Deprecated: use `secrets` field instead."
+            "description": "Deprecated: Use `secrets` field instead. Environment variables for tool execution.",
+            "deprecated": true
           },
           "secrets": {
             "anyOf": [
@@ -33825,7 +37511,8 @@
               }
             ],
             "title": "Memory Variables",
-            "description": "The variables that should be set for the agent."
+            "description": "Deprecated: Only relevant for creating agents from a template. Use the 'create agents from a template' endpoint instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -33837,7 +37524,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The id of the project the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the project the agent belongs to.",
+            "deprecated": true
           },
           "template_id": {
             "anyOf": [
@@ -33849,7 +37537,8 @@
               }
             ],
             "title": "Template Id",
-            "description": "The id of the template the agent belongs to."
+            "description": "Deprecated: No longer used. The id of the template the agent belongs to.",
+            "deprecated": true
           },
           "base_template_id": {
             "anyOf": [
@@ -33861,7 +37550,8 @@
               }
             ],
             "title": "Base Template Id",
-            "description": "The base template id of the agent."
+            "description": "Deprecated: No longer used. The base template id of the agent.",
+            "deprecated": true
           },
           "identity_ids": {
             "anyOf": [
@@ -33972,7 +37662,8 @@
               }
             ],
             "title": "Hidden",
-            "description": "If set to True, the agent will be hidden."
+            "description": "Deprecated: No longer used. If set to True, the agent will be hidden.",
+            "deprecated": true
           },
           "parallel_tool_calls": {
             "anyOf": [
@@ -33984,8 +37675,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+            "default": false,
+            "deprecated": true
           },
           "id": {
             "type": "string",
@@ -34363,6 +38055,8 @@
           },
           "return_char_limit": {
             "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
             "title": "Return Char Limit",
             "description": "The maximum number of characters in the response.",
             "default": 50000
@@ -35394,6 +39088,12 @@
           },
           {
             "$ref": "#/components/schemas/ApprovalResponseMessage"
+          },
+          {
+            "$ref": "#/components/schemas/SummaryMessage"
+          },
+          {
+            "$ref": "#/components/schemas/EventMessage"
           }
         ],
         "discriminator": {
@@ -35407,7 +39107,9 @@
             "tool_return_message": "#/components/schemas/ToolReturnMessage",
             "assistant_message": "#/components/schemas/AssistantMessage",
             "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-            "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+            "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+            "summary": "#/components/schemas/SummaryMessage",
+            "event": "#/components/schemas/EventMessage"
           }
         }
       },
@@ -35477,21 +39179,6 @@
             "image": "#/components/schemas/ImageContent"
           }
         }
-      },
-      "LettaPing": {
-        "properties": {
-          "message_type": {
-            "type": "string",
-            "const": "ping",
-            "title": "Message Type",
-            "description": "The type of the message.",
-            "default": "ping"
-          }
-        },
-        "type": "object",
-        "required": ["message_type"],
-        "title": "LettaPing",
-        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests."
       }
     },
     "securitySchemes": {

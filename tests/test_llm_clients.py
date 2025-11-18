@@ -17,7 +17,7 @@ def llm_config():
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=32000,
-        handle="anthropic/claude-3-5-sonnet-20241022",
+        handle="anthropic/claude-sonnet-4-20250514",
         put_inner_thoughts_in_kwargs=False,
         max_tokens=4096,
         enable_reasoner=True,
@@ -105,3 +105,96 @@ async def test_send_llm_batch_request_async_mismatched_keys(anthropic_client, mo
         await anthropic_client.send_llm_batch_request_async(
             AgentType.memgpt_agent, mock_agent_messages, mismatched_tools, mock_agent_llm_config
         )
+
+
+@pytest.mark.asyncio
+async def test_count_tokens_with_empty_messages(anthropic_client, llm_config):
+    """
+    Test that count_tokens properly handles empty messages by replacing them with placeholders,
+    while preserving the exemption for the final assistant message.
+    """
+    import anthropic
+
+    with patch("anthropic.AsyncAnthropic") as mock_anthropic_class:
+        mock_client = AsyncMock()
+        mock_count_tokens = AsyncMock()
+
+        # Create a mock return value with input_tokens attribute
+        mock_response = AsyncMock()
+        mock_response.input_tokens = 100
+        mock_count_tokens.return_value = mock_response
+
+        mock_client.beta.messages.count_tokens = mock_count_tokens
+        mock_anthropic_class.return_value = mock_client
+
+        # Test case 1: Empty string content (non-final message) - should be replaced with "."
+        messages_with_empty_string = [
+            {"role": "user", "content": ""},
+            {"role": "assistant", "content": "response"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_empty_string, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"] == "."
+        assert call_args["messages"][1]["content"] == "response"
+
+        # Test case 2: Empty list content (non-final message) - should be replaced with [{"type": "text", "text": "."}]
+        mock_count_tokens.reset_mock()
+        messages_with_empty_list = [
+            {"role": "user", "content": []},
+            {"role": "assistant", "content": "response"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_empty_list, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"] == [{"type": "text", "text": "."}]
+        assert call_args["messages"][1]["content"] == "response"
+
+        # Test case 3: Empty text block within content list (non-final message) - should be replaced with "."
+        mock_count_tokens.reset_mock()
+        messages_with_empty_block = [
+            {"role": "user", "content": [{"type": "text", "text": ""}]},
+            {"role": "assistant", "content": "response"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_empty_block, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"][0]["text"] == "."
+        assert call_args["messages"][1]["content"] == "response"
+
+        # Test case 4: Empty final assistant message - should be preserved (allowed by Anthropic)
+        mock_count_tokens.reset_mock()
+        messages_with_empty_final_assistant = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": ""},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_empty_final_assistant, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"] == "hello"
+        assert call_args["messages"][1]["content"] == ""
+
+        # Test case 5: Empty text block in final assistant message - should be replaced with "."
+        # Note: The API exemption is for truly empty content ("" or []), not for lists with empty text blocks
+        mock_count_tokens.reset_mock()
+        messages_with_empty_final_assistant_block = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_empty_final_assistant_block, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"] == "hello"
+        assert call_args["messages"][1]["content"][0]["text"] == "."  # Empty text blocks are always fixed
+
+        # Test case 6: None content (non-final message) - should be replaced with "."
+        mock_count_tokens.reset_mock()
+        messages_with_none = [
+            {"role": "user", "content": None},
+            {"role": "assistant", "content": "response"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_none, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][0]["content"] == "."
+        assert call_args["messages"][1]["content"] == "response"

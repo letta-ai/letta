@@ -35,9 +35,9 @@ from tests.utils import create_tool_from_func
 
 # Model identifiers used in tests
 MODELS = {
-    "sonnet": "anthropic/claude-3-5-sonnet-20241022",
-    "haiku": "anthropic/claude-3-5-haiku-20241022",
-    "opus": "anthropic/claude-3-opus-20240229",
+    "sonnet": "anthropic/claude-sonnet-4-20250514",
+    "haiku": "anthropic/claude-haiku-4-5-20251001",
+    "opus": "anthropic/claude-opus-4-1-20250805",
 }
 
 # Expected message roles in batch requests
@@ -933,9 +933,9 @@ async def test_step_until_request_prepares_and_submits_batch_correctly(
 
     # Map of agent IDs to their expected models
     expected_models = {
-        agent_sonnet.id: "claude-3-5-sonnet-20241022",
-        agent_haiku.id: "claude-3-5-haiku-20241022",
-        agent_opus.id: "claude-3-opus-20240229",
+        agent_sonnet.id: "claude-sonnet-4-20250514",
+        agent_haiku.id: "claude-haiku-4-5-20251001",
+        agent_opus.id: "claude-opus-4-1-20250805",
     }
 
     # Set up spy function for the Anthropic client

@@ -58,11 +58,14 @@ class SimpleGeminiStreamingInterface:
         self.tool_call_name: str | None = None
         self.tool_call_args: dict | None = None  # NOTE: Not a str!
 
+        self.collected_tool_calls: list[ToolCall] = []
+
         # NOTE: signature only is included if tools are present
         self.thinking_signature: str | None = None
 
-        # Regular text content too
-        self.text_content: str | None = None
+        # Regular text content too (avoid O(n^2) by accumulating parts)
+        self._text_parts: list[str] = []
+        self.text_content: str | None = None  # legacy; not used elsewhere
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -81,6 +84,9 @@ class SimpleGeminiStreamingInterface:
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
+        if self.collected_tool_calls:
+            return self.collected_tool_calls[-1]
+
         if self.tool_call_id is None:
             raise ValueError("No tool call ID available")
         if self.tool_call_name is None:
@@ -88,17 +94,12 @@ class SimpleGeminiStreamingInterface:
         if self.tool_call_args is None:
             raise ValueError("No tool call arguments available")
 
-        # TODO use json_dumps?
         tool_call_args_str = json.dumps(self.tool_call_args)
+        return ToolCall(id=self.tool_call_id, function=FunctionCall(name=self.tool_call_name, arguments=tool_call_args_str))
 
-        return ToolCall(
-            id=self.tool_call_id,
-            type="function",
-            function=FunctionCall(
-                name=self.tool_call_name,
-                arguments=tool_call_args_str,
-            ),
-        )
+    def get_tool_call_objects(self) -> list[ToolCall]:
+        """Return all finalized tool calls collected during this message (parallel supported)."""
+        return list(self.collected_tool_calls)
 
     async def process(
         self,
@@ -221,7 +222,7 @@ class SimpleGeminiStreamingInterface:
             # Plain text content part
             elif part.text:
                 content = part.text
-                self.text_content = content if self.text_content is None else self.text_content + content
+                self._text_parts.append(content)
                 if prev_message_type and prev_message_type != "assistant_message":
                     message_index += 1
                 yield AssistantMessage(
@@ -254,6 +255,8 @@ class SimpleGeminiStreamingInterface:
                 self.tool_call_id = call_id
                 self.tool_call_name = name
                 self.tool_call_args = arguments
+
+                self.collected_tool_calls.append(ToolCall(id=call_id, function=FunctionCall(name=name, arguments=arguments_str)))
 
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
                     yield ApprovalRequestMessage(

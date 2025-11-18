@@ -23,7 +23,6 @@ from letta.server.rest_api.streaming_response import (
     cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
-from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 
@@ -62,7 +61,7 @@ async def list_runs(
     after: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
     ),
-    limit: Optional[int] = Query(100, description="Maximum number of runs to return"),
+    limit: Optional[int] = Query(100, description="Maximum number of runs to return", le=1000),
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
@@ -150,26 +149,7 @@ async def retrieve_run(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
-
-    run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
-
-    use_lettuce = run.metadata and run.metadata.get("lettuce")
-    if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
-        lettuce_client = await LettuceClient.create()
-        status = await lettuce_client.get_status(run_id=run_id)
-
-        # Map the status to our enum
-        run_status = run.status
-        if status == "RUNNING":
-            run_status = RunStatus.running
-        elif status == "COMPLETED":
-            run_status = RunStatus.completed
-        elif status == "FAILED":
-            run_status = RunStatus.failed
-        elif status == "CANCELLED":
-            run_status = RunStatus.cancelled
-        run.status = run_status
-    return run
+    return await runs_manager.get_run_with_status(run_id=run_id, actor=actor)
 
 
 RunMessagesResponse = Annotated[

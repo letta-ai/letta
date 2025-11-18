@@ -636,6 +636,26 @@ def test_insert_archival_memory(client: LettaSDKClient, agent: AgentState):
     assert "This is a test passage" not in passage_texts, f"Memory was not deleted: {passage_texts}"
 
 
+def test_insert_archival_memory_exceeds_token_limit(client: LettaSDKClient, agent: AgentState):
+    """Test that inserting archival memory exceeding token limit raises an error."""
+    from letta.settings import settings
+
+    # Create a text that exceeds the token limit (default 8192)
+    # Each word is roughly 1-2 tokens, so we'll create a large enough text
+    long_text = " ".join(["word"] * (settings.archival_memory_token_limit + 1000))
+
+    # Attempt to insert and expect an error
+    with pytest.raises(ApiError) as exc_info:
+        client.agents.passages.create(
+            agent_id=agent.id,
+            text=long_text,
+        )
+
+    # Verify the error is an INVALID_ARGUMENT error
+    assert exc_info.value.status_code == 400, f"Expected 400 status code, got {exc_info.value.status_code}"
+    assert "token limit" in str(exc_info.value).lower(), f"Error message should mention token limit: {exc_info.value}"
+
+
 def test_search_archival_memory(client: LettaSDKClient, agent: AgentState):
     from datetime import datetime, timezone
 
@@ -2331,7 +2351,7 @@ def test_create_agent(client: LettaSDKClient) -> None:
                 label="human",
             )
         ],
-        model="anthropic/claude-3-5-sonnet-20241022",
+        model="anthropic/claude-sonnet-4-20250514",
         embedding="openai/text-embedding-ada-002",
     )
     assert agent is not None

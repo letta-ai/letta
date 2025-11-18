@@ -154,9 +154,20 @@ class MessageManager:
         else:
             text_parts = []
             for content_item in message.content:
-                text = content_item.to_text()
-                if text:
-                    text_parts.append(text)
+                # Try to extract text - prefer .to_text() method, then fall back to attributes
+                # .to_text() is the canonical method for getting text representation
+                # Falls back to .text or .content attributes if .to_text() returns None
+                extracted_text = content_item.to_text()
+
+                if not extracted_text:
+                    # Fall back to direct attribute access for types without .to_text() or that return None
+                    if hasattr(content_item, "text") and content_item.text:
+                        extracted_text = content_item.text
+                    elif hasattr(content_item, "content") and content_item.content:
+                        extracted_text = content_item.content
+
+                if extracted_text:
+                    text_parts.append(extracted_text)
             content_str = " ".join(text_parts)
 
         # skip heartbeat messages entirely

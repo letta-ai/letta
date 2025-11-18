@@ -14,7 +14,7 @@ from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, RunStatus, PrimitiveType
+from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, PrimitiveType, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_response import LettaResponse
@@ -63,14 +63,16 @@ class RunManager:
 
             run = RunModel(**run_data)
             run.organization_id = organization_id
-            run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
-
-            # Create run metrics with start timestamp
-            import time
 
             # Get the project_id from the agent
             agent = await session.get(AgentModel, agent_id)
             project_id = agent.project_id if agent else None
+            run.project_id = project_id
+
+            run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+
+            # Create run metrics with start timestamp
+            import time
 
             metrics = RunMetricsModel(
                 id=run.id,
@@ -96,6 +98,34 @@ class RunManager:
             return run.to_pydantic()
 
     @enforce_types
+    async def get_run_with_status(self, run_id: str, actor: PydanticUser) -> PydanticRun:
+        """Get a run by its ID and update status from Lettuce if applicable."""
+        run = await self.get_run_by_id(run_id=run_id, actor=actor)
+
+        use_lettuce = run.metadata and run.metadata.get("lettuce")
+        if use_lettuce and run.status not in [RunStatus.completed, RunStatus.failed, RunStatus.cancelled]:
+            try:
+                from letta.services.lettuce import LettuceClient
+
+                lettuce_client = await LettuceClient.create()
+                status = await lettuce_client.get_status(run_id=run_id)
+
+                # Map the status to our enum
+                if status == "RUNNING":
+                    run.status = RunStatus.running
+                elif status == "COMPLETED":
+                    run.status = RunStatus.completed
+                elif status == "FAILED":
+                    run.status = RunStatus.failed
+                elif status == "CANCELLED":
+                    run.status = RunStatus.cancelled
+            except Exception as e:
+                logger.error(f"Failed to get status from Lettuce for run {run_id}: {str(e)}")
+                # Return run with current status from DB if Lettuce fails
+
+        return run
+
+    @enforce_types
     async def list_runs(
         self,
         actor: PydanticUser,
@@ -112,12 +142,27 @@ class RunManager:
         step_count: Optional[int] = None,
         step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
         tools_used: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
+        order_by: Literal["created_at", "duration"] = "created_at",
+        duration_percentile: Optional[int] = None,
+        duration_filter: Optional[dict] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
-            from sqlalchemy import or_, select
+            from sqlalchemy import func, or_, select
 
-            query = select(RunModel).filter(RunModel.organization_id == actor.organization_id)
+            # Always join with run_metrics to get duration data
+            query = (
+                select(RunModel, RunMetricsModel.run_ns)
+                .outerjoin(RunMetricsModel, RunModel.id == RunMetricsModel.id)
+                .filter(RunModel.organization_id == actor.organization_id)
+            )
+
+            # Filter by project_id if provided
+            if project_id:
+                query = query.filter(RunModel.project_id == project_id)
 
             # Handle agent filtering
             if agent_id:
@@ -141,41 +186,107 @@ class RunManager:
             if template_family:
                 query = query.filter(RunModel.base_template_id == template_family)
 
-            # Filter by step_count and/or tools_used - join with run_metrics
-            if step_count is not None or tools_used:
-                query = query.join(RunMetricsModel, RunModel.id == RunMetricsModel.id)
+            # Filter by date range
+            if start_date:
+                query = query.filter(RunModel.created_at >= start_date)
+            if end_date:
+                query = query.filter(RunModel.created_at <= end_date)
 
-                # Filter by step_count with the specified operator
-                if step_count is not None:
-                    if step_count_operator == ComparisonOperator.EQ:
-                        query = query.filter(RunMetricsModel.num_steps == step_count)
-                    elif step_count_operator == ComparisonOperator.GTE:
-                        query = query.filter(RunMetricsModel.num_steps >= step_count)
-                    elif step_count_operator == ComparisonOperator.LTE:
-                        query = query.filter(RunMetricsModel.num_steps <= step_count)
+            # Filter by step_count with the specified operator
+            if step_count is not None:
+                if step_count_operator == ComparisonOperator.EQ:
+                    query = query.filter(RunMetricsModel.num_steps == step_count)
+                elif step_count_operator == ComparisonOperator.GTE:
+                    query = query.filter(RunMetricsModel.num_steps >= step_count)
+                elif step_count_operator == ComparisonOperator.LTE:
+                    query = query.filter(RunMetricsModel.num_steps <= step_count)
 
-                # Filter by tools used ids
-                if tools_used:
-                    from sqlalchemy import String, cast as sa_cast, type_coerce
-                    from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+            # Filter by tools used ids
+            if tools_used:
+                from sqlalchemy import String, cast as sa_cast, type_coerce
+                from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-                    # Use ?| operator to check if any tool_id exists in the array (OR logic)
-                    jsonb_tools = sa_cast(RunMetricsModel.tools_used, JSONB)
-                    tools_array = type_coerce(tools_used, ARRAY(String))
-                    query = query.filter(jsonb_tools.op("?|")(tools_array))
+                # Use ?| operator to check if any tool_id exists in the array (OR logic)
+                jsonb_tools = sa_cast(RunMetricsModel.tools_used, JSONB)
+                tools_array = type_coerce(tools_used, ARRAY(String))
+                query = query.filter(jsonb_tools.op("?|")(tools_array))
 
-            # Apply pagination
-            from letta.services.helpers.run_manager_helper import _apply_pagination_async
+            # Ensure run_ns is not null when working with duration
+            if order_by == "duration" or duration_percentile is not None or duration_filter is not None:
+                query = query.filter(RunMetricsModel.run_ns.isnot(None))
 
-            query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
+            # Apply duration filter if requested
+            if duration_filter is not None:
+                duration_value = duration_filter.get("value") if isinstance(duration_filter, dict) else duration_filter.value
+                duration_operator = duration_filter.get("operator") if isinstance(duration_filter, dict) else duration_filter.operator
+
+                if duration_operator == "gt":
+                    query = query.filter(RunMetricsModel.run_ns > duration_value)
+                elif duration_operator == "lt":
+                    query = query.filter(RunMetricsModel.run_ns < duration_value)
+                elif duration_operator == "eq":
+                    query = query.filter(RunMetricsModel.run_ns == duration_value)
+
+            # Apply duration percentile filter if requested
+            if duration_percentile is not None:
+                # Calculate the percentile threshold
+                percentile_query = (
+                    select(func.percentile_cont(duration_percentile / 100.0).within_group(RunMetricsModel.run_ns))
+                    .select_from(RunMetricsModel)
+                    .join(RunModel, RunModel.id == RunMetricsModel.id)
+                    .filter(RunModel.organization_id == actor.organization_id)
+                    .filter(RunMetricsModel.run_ns.isnot(None))
+                )
+
+                # Apply same filters to percentile calculation
+                if project_id:
+                    percentile_query = percentile_query.filter(RunModel.project_id == project_id)
+                if agent_ids:
+                    percentile_query = percentile_query.filter(RunModel.agent_id.in_(agent_ids))
+                if statuses:
+                    percentile_query = percentile_query.filter(RunModel.status.in_(statuses))
+
+                # Execute percentile query
+                percentile_result = await session.execute(percentile_query)
+                percentile_threshold = percentile_result.scalar()
+
+                # Filter by percentile threshold (runs slower than the percentile)
+                if percentile_threshold is not None:
+                    query = query.filter(RunMetricsModel.run_ns >= percentile_threshold)
+
+            # Apply sorting based on order_by
+            if order_by == "duration":
+                # Sort by duration
+                if ascending:
+                    query = query.order_by(RunMetricsModel.run_ns.asc())
+                else:
+                    query = query.order_by(RunMetricsModel.run_ns.desc())
+            else:
+                # Apply pagination for created_at ordering
+                from letta.services.helpers.run_manager_helper import _apply_pagination_async
+
+                query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
 
             # Apply limit
             if limit:
                 query = query.limit(limit)
 
             result = await session.execute(query)
-            runs = result.scalars().all()
-            return [run.to_pydantic() for run in runs]
+            rows = result.all()
+
+            # Populate total_duration_ns from run_metrics.run_ns
+            pydantic_runs = []
+            for row in rows:
+                run_model = row[0]
+                run_ns = row[1]
+
+                pydantic_run = run_model.to_pydantic()
+                if run_ns is not None:
+                    pydantic_run.total_duration_ns = run_ns
+
+                pydantic_runs.append(pydantic_run)
+
+            return pydantic_runs
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
@@ -229,6 +340,20 @@ class RunManager:
             pydantic_run = run.to_pydantic()
 
             await session.commit()
+
+        # Update agent's last_stop_reason when run completes
+        # Do this after run update is committed to database
+        if is_terminal_update and update.stop_reason:
+            try:
+                from letta.schemas.agent import UpdateAgent
+
+                await self.agent_manager.update_agent_async(
+                    agent_id=pydantic_run.agent_id,
+                    agent_update=UpdateAgent(last_stop_reason=update.stop_reason),
+                    actor=actor,
+                )
+            except Exception as e:
+                logger.error(f"Failed to update agent's last_stop_reason for run {run_id}: {e}")
 
         # update run metrics table
         num_steps = len(await self.step_manager.list_steps_async(run_id=run_id, actor=actor))
@@ -323,8 +448,8 @@ class RunManager:
             logger.error(error_message)
             result["callback_error"] = error_message
             # Continue silently - callback failures should not affect run completion
-        finally:
-            return result
+
+        return result
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)

@@ -59,7 +59,7 @@ def handle_assistant_message(assistant_message: AssistantMessage) -> AssistantMe
     return assistant_message
 
 
-def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Message]:
+def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List["_Message"]:
     """
     Deepeek API has the following constraints: messages must be interleaved between user and assistant messages, ending on a user message.
     Tools are currently unstable for V3 and not supported for R1 in the API: https://api-docs.deepseek.com/guides/function_calling.
@@ -103,7 +103,7 @@ def map_messages_to_deepseek_format(messages: List[ChatMessage]) -> List[_Messag
 
 def build_deepseek_chat_completions_request(
     llm_config: LLMConfig,
-    messages: List[_Message],
+    messages: List["_Message"],
     user_id: Optional[str],
     functions: Optional[list],
     function_call: Optional[str],
@@ -340,6 +340,7 @@ class DeepseekClient(OpenAIClient):
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
+        tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         # Override put_inner_thoughts_in_kwargs to False for DeepSeek
         llm_config.put_inner_thoughts_in_kwargs = False

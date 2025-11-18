@@ -134,7 +134,7 @@ def create_failed_response(custom_id: str) -> BetaMessageBatchIndividualResponse
 # --- Test Setup Helpers --- #
 
 
-async def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthropic/claude-3-5-sonnet-20241022"):
+async def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthropic/claude-sonnet-4-20250514"):
     """Create a test agent with standardized configuration."""
     dummy_llm_config = LLMConfig(
         model="claude-3-7-sonnet-latest",

@@ -44,12 +44,22 @@ IN_CONTEXT_MEMORY_KEYWORD = "CORE_MEMORY"
 # OpenAI error message: Invalid 'messages[1].tool_calls[0].id': string too long. Expected a string with maximum length 29, but got a string with length 36 instead.
 TOOL_CALL_ID_MAX_LEN = 29
 
+# Maximum length for tool names to support Modal deployment
+# Modal function names are limited to 64 characters: tool_name + "_" + project_id
+# Reserving 16 characters for project_id suffix (e.g., "_project-12345678")
+MAX_TOOL_NAME_LENGTH = 48
+
 # Max steps for agent loop
 DEFAULT_MAX_STEPS = 50
 
 # context window size
 MIN_CONTEXT_WINDOW = 4096
 DEFAULT_CONTEXT_WINDOW = 32000
+
+# Summarization trigger threshold (multiplier of context_window limit)
+# Summarization triggers when step usage > context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+# Set to 0.9 (90%) to provide buffer before hitting hard limit
+SUMMARIZATION_TRIGGER_MULTIPLIER = 0.9
 
 # number of concurrent embedding requests to sent
 EMBEDDING_BATCH_SIZE = 200
@@ -373,6 +383,9 @@ FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 50000  # same as regular function limit
 FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
+# Tool return truncation limit for LLM context window management
+TOOL_RETURN_TRUNCATION_CHARS = 5000
+
 MAX_PAUSE_HEARTBEATS = 360  # in min
 
 MESSAGE_CHATGPT_FUNCTION_MODEL = "gpt-3.5-turbo"
@@ -431,3 +444,19 @@ WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE = "gpt-4.1-mini-2025-04-14"
 EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES = ["claude-4-sonnet", "claude-3-5-sonnet", "gpt-5", "gemini-2.5-pro"]
 # But include models with these keywords in base tool rules (overrides exclusion)
 INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES = ["mini"]
+
+# Deployment and versioning
+MODAL_DEFAULT_TOOL_NAME = "modal_tool_wrapper.<locals>.modal_function"  # NOTE: must stay in sync with modal_tool_wrapper
+MODAL_DEFAULT_CONFIG_KEY = "default"
+MODAL_MODAL_DEPLOYMENTS_KEY = "modal_deployments"
+MODAL_VERSION_HASH_LENGTH = 12
+
+# Modal execution settings
+MODAL_DEFAULT_TIMEOUT = 60
+MODAL_DEFAULT_MAX_CONCURRENT_INPUTS = 1
+MODAL_DEFAULT_PYTHON_VERSION = "3.12"
+
+# Security settings
+MODAL_SAFE_IMPORT_MODULES = {"typing", "pydantic", "datetime", "enum", "uuid", "decimal"}
+# Default handle for model used to generate tools
+DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"

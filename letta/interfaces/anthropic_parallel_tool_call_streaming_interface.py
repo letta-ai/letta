@@ -111,8 +111,8 @@ class SimpleAnthropicStreamingInterface:
         # Collected finalized tool calls (supports parallel tool use)
         self.collected_tool_calls: list[ToolCall] = []
         # Track active tool_use blocks by stream index for parallel tool calling
-        # { index: {"id": str, "name": str, "args": str} }
-        self.active_tool_uses: dict[int, dict[str, str]] = {}
+        # { index: {"id": str, "name": str, "args_parts": list[str]} }
+        self.active_tool_uses: dict[int, dict[str, object]] = {}
         # Maintain start order and indexed collection for stable ordering
         self._tool_use_start_order: list[int] = []
         self._collected_indexed: list[tuple[int, ToolCall]] = []
@@ -154,13 +154,13 @@ class SimpleAnthropicStreamingInterface:
                 redacted_text = "".join(chunk.hidden_reasoning for chunk in group if chunk.hidden_reasoning is not None)
                 return RedactedReasoningContent(data=redacted_text)
             elif group_type == "text":
-                concat = ""
+                parts: list[str] = []
                 for chunk in group:
                     if isinstance(chunk.content, list):
-                        concat += "".join([c.text for c in chunk.content])
+                        parts.append("".join([c.text for c in chunk.content]))
                     else:
-                        concat += chunk.content
-                return TextContent(text=concat)
+                        parts.append(chunk.content)
+                return TextContent(text="".join(parts))
             else:
                 raise ValueError("Unexpected group type")
 
@@ -274,7 +274,7 @@ class SimpleAnthropicStreamingInterface:
             elif isinstance(content, BetaToolUseBlock):
                 # New tool_use block started at this index
                 self.anthropic_mode = EventMode.TOOL_USE
-                self.active_tool_uses[event.index] = {"id": content.id, "name": content.name, "args": ""}
+                self.active_tool_uses[event.index] = {"id": content.id, "name": content.name, "args_parts": []}
                 if event.index not in self._tool_use_start_order:
                     self._tool_use_start_order.append(event.index)
 
@@ -366,12 +366,21 @@ class SimpleAnthropicStreamingInterface:
                 ctx = self.active_tool_uses.get(event.index)
                 if ctx is None:
                     # Defensive: initialize if missing
-                    self.active_tool_uses[event.index] = {"id": self.tool_call_id or "", "name": self.tool_call_name or "", "args": ""}
+                    self.active_tool_uses[event.index] = {
+                        "id": self.tool_call_id or "",
+                        "name": self.tool_call_name or "",
+                        "args_parts": [],
+                    }
                     ctx = self.active_tool_uses[event.index]
 
                 # Append only non-empty partials
                 if delta.partial_json:
-                    ctx["args"] += delta.partial_json
+                    # Append fragment to args_parts to avoid O(n^2) string growth
+                    args_parts = ctx.get("args_parts") if isinstance(ctx.get("args_parts"), list) else None
+                    if args_parts is None:
+                        args_parts = []
+                        ctx["args_parts"] = args_parts
+                    args_parts.append(delta.partial_json)
                 else:
                     # Skip streaming a no-op delta to prevent duplicate placeholders in UI
                     return
@@ -465,7 +474,8 @@ class SimpleAnthropicStreamingInterface:
             # Finalize the tool_use block at this index using accumulated deltas
             ctx = self.active_tool_uses.pop(event.index, None)
             if ctx is not None and ctx.get("id") and ctx.get("name") is not None:
-                raw_args = ctx.get("args", "")
+                parts = ctx.get("args_parts") if isinstance(ctx.get("args_parts"), list) else None
+                raw_args = "".join(parts) if parts else ""
                 try:
                     # Prefer strict JSON load, fallback to permissive parser
                     tool_input = json.loads(raw_args) if raw_args else {}

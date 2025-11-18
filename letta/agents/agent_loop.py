@@ -17,7 +17,7 @@ class AgentLoop:
 
     @staticmethod
     def load(agent_state: AgentState, actor: "User") -> BaseAgentV2:
-        if agent_state.agent_type == AgentType.letta_v1_agent:
+        if agent_state.agent_type in [AgentType.letta_v1_agent, AgentType.sleeptime_agent]:
             if agent_state.enable_sleeptime:
                 return SleeptimeMultiAgentV4(
                     agent_state=agent_state,

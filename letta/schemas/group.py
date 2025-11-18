@@ -34,7 +34,7 @@ class Group(GroupBase):
     template_id: Optional[str] = Field(None, description="The id of the template.")
     base_template_id: Optional[str] = Field(None, description="The base template id.")
     deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
-    shared_block_ids: List[str] = Field([], description="")
+    shared_block_ids: List[str] = Field([], description="", deprecated=True)
     # Pattern fields
     manager_agent_id: Optional[str] = Field(None, description="")
     termination_token: Optional[str] = Field(None, description="")
@@ -174,7 +174,7 @@ class GroupCreate(BaseModel):
     description: str = Field(..., description="")
     manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
-    shared_block_ids: List[str] = Field([], description="")
+    shared_block_ids: List[str] = Field([], description="", deprecated=True)
     hidden: Optional[bool] = Field(
         None,
         description="If set to True, the group will be hidden.",
@@ -194,4 +194,4 @@ class GroupUpdate(BaseModel):
     description: Optional[str] = Field(None, description="")
     manager_config: Optional[ManagerConfigUpdateUnion] = Field(None, description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
-    shared_block_ids: Optional[List[str]] = Field(None, description="")
+    shared_block_ids: Optional[List[str]] = Field(None, description="", deprecated=True)

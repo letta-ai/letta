@@ -225,7 +225,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio(loop_scope="module")
-@pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet-20241022"])
+@pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-sonnet-4-20250514"])
 @pytest.mark.parametrize(
     "message", ["How are you?", "Use the roll_dice tool to roll a die for me", "Use the run_code tool to calculate 2+2"]
 )
