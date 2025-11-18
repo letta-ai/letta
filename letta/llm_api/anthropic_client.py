@@ -71,9 +71,6 @@ class AnthropicClient(LLMClientBase):
                 betas.append("context-1m-2025-08-07")
         except Exception:
             pass
-        # Structured outputs beta (always enabled for output_format and strict tool support)
-        if self.supports_structured_output(llm_config):
-            betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = client.beta.messages.create(**request_data, betas=betas)
@@ -100,9 +97,6 @@ class AnthropicClient(LLMClientBase):
                 betas.append("context-1m-2025-08-07")
         except Exception:
             pass
-
-        # Structured outputs beta (always enabled for output_format and strict tool support)
-        betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = await client.beta.messages.create(**request_data, betas=betas)
@@ -136,9 +130,6 @@ class AnthropicClient(LLMClientBase):
                 betas.append("context-1m-2025-08-07")
         except Exception:
             pass
-
-        # Structured outputs beta (always enabled for output_format and strict tool support)
-        betas.append("structured-outputs-2025-11-13")
 
         return await client.beta.messages.create(**request_data, betas=betas)
 
@@ -262,6 +253,7 @@ class AnthropicClient(LLMClientBase):
             "max_tokens": max_output_tokens,
             "temperature": llm_config.temperature,
         }
+
         # Extended Thinking
         if self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
             thinking_budget = max(llm_config.max_reasoning_tokens, 1024)
@@ -327,7 +319,7 @@ class AnthropicClient(LLMClientBase):
 
         if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
-            data["tools"] = convert_tools_to_anthropic_format(tools_for_request, strict=self.supports_structured_output(llm_config))
+            data["tools"] = convert_tools_to_anthropic_format(tools_for_request)
 
         # Messages
         inner_thoughts_xml_tag = "thinking"
@@ -451,7 +443,7 @@ class AnthropicClient(LLMClientBase):
         if messages and len(messages) == 0:
             messages = None
         if tools and len(tools) > 0:
-            anthropic_tools = convert_tools_to_anthropic_format(tools, strict=False)
+            anthropic_tools = convert_tools_to_anthropic_format(tools)
         else:
             anthropic_tools = None
 
@@ -527,7 +519,7 @@ class AnthropicClient(LLMClientBase):
 
         try:
             count_params = {
-                "model": model or "claude-haiku-4-5",
+                "model": model or "claude-3-7-sonnet-20250219",
                 "messages": messages_for_counting or [{"role": "user", "content": "hi"}],
                 "tools": anthropic_tools or [],
             }
@@ -569,9 +561,7 @@ class AnthropicClient(LLMClientBase):
             or llm_config.model.startswith("claude-haiku-4-5")
         )
 
-    def supports_structured_output(self, llm_config: LLMConfig) -> bool:
-        return llm_config.model.startswith("claude-opus-4-1") or llm_config.model.startswith("claude-sonnet-4-5")
-
+    @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
         # make sure to check for overflow errors, regardless of error type
         error_str = str(e).lower()
@@ -819,7 +809,7 @@ class AnthropicClient(LLMClientBase):
         return system_content
 
 
-def convert_tools_to_anthropic_format(tools: List[OpenAITool], strict: bool = False) -> List[dict]:
+def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
     """See: https://docs.anthropic.com/claude/docs/tool-use
 
     OpenAI style:
@@ -876,7 +866,7 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], strict: bool = Fa
             cleaned_properties = {}
             for prop_name, prop_schema in input_schema.get("properties", {}).items():
                 if isinstance(prop_schema, dict):
-                    cleaned_properties[prop_name] = _clean_property_schema(prop_schema, strict=strict)
+                    cleaned_properties[prop_name] = _clean_property_schema(prop_schema)
                 else:
                     cleaned_properties[prop_name] = prop_schema
 
@@ -889,41 +879,21 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], strict: bool = Fa
             # Only add required field if it exists and is non-empty
             if "required" in input_schema and input_schema["required"]:
                 cleaned_input_schema["required"] = input_schema["required"]
-
-            # Add additionalProperties from input_schema if present, or set to false for strict mode
-            if "additionalProperties" in input_schema:
-                cleaned_input_schema["additionalProperties"] = input_schema["additionalProperties"]
-            elif strict:
-                # Strict mode requires additionalProperties: false
-                cleaned_input_schema["additionalProperties"] = False
         else:
             cleaned_input_schema = input_schema
-            # Ensure additionalProperties is set for strict mode even when schema is not cleaned
-            if strict and isinstance(cleaned_input_schema, dict) and cleaned_input_schema.get("type") == "object":
-                if "additionalProperties" not in cleaned_input_schema:
-                    cleaned_input_schema = cleaned_input_schema.copy()
-                    cleaned_input_schema["additionalProperties"] = False
 
         formatted_tool = {
             "name": tool.function.name,
             "description": tool.function.description if tool.function.description else "",
             "input_schema": cleaned_input_schema,
         }
-        if strict:
-            formatted_tool["strict"] = True
-
         formatted_tools.append(formatted_tool)
 
     return formatted_tools
 
 
-def _clean_property_schema(prop_schema: dict, strict: bool = False) -> dict:
-    """Clean up a property schema by removing defaults and simplifying union types.
-
-    Args:
-        prop_schema: The property schema to clean
-        strict: If True, adds additionalProperties: false to object types for strict mode compliance
-    """
+def _clean_property_schema(prop_schema: dict) -> dict:
+    """Clean up a property schema by removing defaults and simplifying union types."""
     cleaned = {}
 
     # Handle type field - simplify union types like ["null", "string"] to just "string"
@@ -949,16 +919,9 @@ def _clean_property_schema(prop_schema: dict, strict: bool = False) -> dict:
         if key not in ["type", "default"]:  # Skip 'default' field
             if key == "properties" and isinstance(value, dict):
                 # Recursively clean nested properties
-                cleaned["properties"] = {
-                    k: _clean_property_schema(v, strict=strict) if isinstance(v, dict) else v for k, v in value.items()
-                }
+                cleaned["properties"] = {k: _clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
             else:
                 cleaned[key] = value
-
-    # For strict mode, ensure object types have additionalProperties: false
-    if strict and cleaned.get("type") == "object":
-        if "additionalProperties" not in cleaned:
-            cleaned["additionalProperties"] = False
 
     return cleaned
 
