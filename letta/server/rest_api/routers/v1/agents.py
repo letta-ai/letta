@@ -1643,6 +1643,7 @@ async def search_messages(
         query_text=request.query,
         search_mode=request.search_mode,
         roles=request.roles,
+        agent_id=request.agent_id,
         project_id=request.project_id,
         template_id=request.template_id,
         limit=request.limit,

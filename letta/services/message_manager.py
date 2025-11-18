@@ -1190,6 +1190,7 @@ class MessageManager:
         query_text: Optional[str] = None,
         search_mode: str = "hybrid",
         roles: Optional[List[MessageRole]] = None,
+        agent_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         limit: int = 50,
@@ -1204,6 +1205,7 @@ class MessageManager:
             query_text: Text query for full-text search
             search_mode: "vector", "fts", or "hybrid" (default: "hybrid")
             roles: Optional list of message roles to filter by
+            agent_id: Optional agent ID to filter messages by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
             limit: Maximum number of results to return
@@ -1232,6 +1234,7 @@ class MessageManager:
             search_mode=search_mode,
             top_k=limit,
             roles=roles,
+            agent_id=agent_id,
             project_id=project_id,
             template_id=template_id,
             start_date=start_date,

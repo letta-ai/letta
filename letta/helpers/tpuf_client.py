@@ -758,6 +758,7 @@ class TurbopufferClient:
         search_mode: str = "hybrid",  # "vector", "fts", "hybrid"
         top_k: int = 10,
         roles: Optional[List[MessageRole]] = None,
+        agent_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         vector_weight: float = 0.5,
@@ -774,6 +775,7 @@ class TurbopufferClient:
             search_mode: Search mode - "vector", "fts", or "hybrid" (default: "hybrid")
             top_k: Number of results to return
             roles: Optional list of message roles to filter by
+            agent_id: Optional agent ID to filter messages by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
@@ -805,6 +807,10 @@ class TurbopufferClient:
                 all_filters.append(("role", "Eq", role_values[0]))
             else:
                 all_filters.append(("role", "In", role_values))
+
+        # agent filter
+        if agent_id:
+            all_filters.append(("agent_id", "Eq", agent_id))
 
         # project filter
         if project_id:

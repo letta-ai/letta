@@ -30385,6 +30385,18 @@
             "title": "Roles",
             "description": "Filter messages by role"
           },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Filter messages by agent ID"
+          },
           "project_id": {
             "anyOf": [
               {
