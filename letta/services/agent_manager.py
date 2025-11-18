@@ -434,7 +434,8 @@ class AgentManager:
 
         supplied_ids = set(agent_create.tool_ids or [])
 
-        source_ids = agent_create.source_ids or []
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        source_ids = agent_create.folder_ids if agent_create.folder_ids else (agent_create.source_ids or [])
 
         # Create default source if requested
         if agent_create.include_default_source:
