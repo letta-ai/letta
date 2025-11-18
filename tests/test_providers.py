@@ -367,7 +367,7 @@ def test_reasoning_toggle_by_provider(
     expected_enable_reasoner: bool,
     expected_put_inner_thoughts_in_kwargs: bool,
     expected_max_reasoning_tokens: int,
-    expected_reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]],
+    expected_reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]],
 ):
     model_endpoint_type, model = handle.split("/")
     config = LLMConfig(

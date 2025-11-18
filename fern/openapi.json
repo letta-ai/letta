@@ -17020,7 +17020,13 @@
                               },
                               "reasoning_effort": {
                                 "type": "string",
-                                "enum": ["minimal", "low", "medium", "high"],
+                                "enum": [
+                                  "none",
+                                  "minimal",
+                                  "low",
+                                  "medium",
+                                  "high"
+                                ],
                                 "nullable": true
                               },
                               "per_file_view_window_char_limit": {
@@ -28619,7 +28625,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["minimal", "low", "medium", "high"]
+                "enum": ["none", "minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -30729,7 +30735,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["minimal", "low", "medium", "high"]
+                "enum": ["none", "minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -31000,7 +31006,7 @@
         "properties": {
           "reasoning_effort": {
             "type": "string",
-            "enum": ["minimal", "low", "medium", "high"],
+            "enum": ["none", "minimal", "low", "medium", "high"],
             "title": "Reasoning Effort",
             "description": "The reasoning effort to use when generating text reasoning models",
             "default": "minimal"

@@ -72,6 +72,14 @@ def does_not_support_minimal_reasoning(model: str) -> bool:
     return "codex" in model.lower()
 
 
+def supports_none_reasoning_effort(model: str) -> bool:
+    """Check if the model supports 'none' reasoning effort.
+
+    Currently, only GPT-5.1 models support the 'none' reasoning effort level.
+    """
+    return model.startswith("gpt-5.1")
+
+
 def is_openai_5_model(model: str) -> bool:
     """Utility function to check if the model is a '5' model"""
     return model.startswith("gpt-5")
@@ -337,7 +345,8 @@ class OpenAIClient(LLMClientBase):
             data.text = ResponseTextConfigParam(verbosity=llm_config.verbosity)
 
         # Add reasoning effort control for reasoning models
-        if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
+        # Only set reasoning if effort is not "none" (GPT-5.1 uses "none" to disable reasoning)
+        if is_openai_reasoning_model(model) and llm_config.reasoning_effort and llm_config.reasoning_effort != "none":
             # data.reasoning_effort = llm_config.reasoning_effort
             data.reasoning = Reasoning(
                 effort=llm_config.reasoning_effort,
@@ -481,7 +490,8 @@ class OpenAIClient(LLMClientBase):
             data.verbosity = llm_config.verbosity
 
         # Add reasoning effort control for reasoning models
-        if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
+        # Only set reasoning_effort if it's not "none" (GPT-5.1 uses "none" to disable reasoning)
+        if is_openai_reasoning_model(model) and llm_config.reasoning_effort and llm_config.reasoning_effort != "none":
             data.reasoning_effort = llm_config.reasoning_effort
 
         if llm_config.frequency_penalty is not None:

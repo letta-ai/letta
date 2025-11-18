@@ -65,7 +65,7 @@ class Model(LLMConfig, ModelBase):
         description="Deprecated: Whether or not the model should use extended thinking if it is a 'reasoning' style model.",
         deprecated=True,
     )
-    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]] = Field(
         None, description="Deprecated: The reasoning effort to use when generating text reasoning models.", deprecated=True
     )
     max_reasoning_tokens: int = Field(0, description="Deprecated: Configurable thinking budget for extended thinking.", deprecated=True)
@@ -209,7 +209,7 @@ class ModelSettings(BaseModel):
 
 
 class OpenAIReasoning(BaseModel):
-    reasoning_effort: Literal["minimal", "low", "medium", "high"] = Field(
+    reasoning_effort: Literal["none", "minimal", "low", "medium", "high"] = Field(
         "minimal", description="The reasoning effort to use when generating text reasoning models"
     )
 
