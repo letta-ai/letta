@@ -1825,7 +1825,6 @@ async def send_message_async(
         pydantic_run=run,
         actor=actor,
     )
-
     if use_lettuce:
         agent_state = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]

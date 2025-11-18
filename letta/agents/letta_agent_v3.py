@@ -556,7 +556,6 @@ class LettaAgentV3(LettaAgentV2):
                             return
 
                         step_progression, step_metrics = self._step_checkpoint_llm_request_start(step_metrics, agent_step_span)
-
                         invocation = llm_adapter.invoke_llm(
                             request_data=request_data,
                             messages=messages,
