@@ -109,9 +109,11 @@ def mock_mcp_server_config_for_agent() -> Dict[str, Any]:
 
     return {
         "server_name": server_name,
-        "type": "stdio",
-        "command": sys.executable,  # Use the current Python interpreter
-        "args": [str(mcp_server_path)],
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": sys.executable,  # Use the current Python interpreter
+            "args": [str(mcp_server_path)],
+        },
     }
 
 
@@ -188,44 +190,50 @@ def get_attr(obj, attr):
 def create_stdio_server_request(server_name: str, command: str = "npx", args: List[str] = None) -> Dict[str, Any]:
     """Create a stdio MCP server configuration object.
 
-    Note: The SDK infers type="stdio" from the presence of args/command parameters.
+    Returns a dict with server_name and config following CreateMCPServerRequest schema.
     """
     return {
         "server_name": server_name,
-        "command": command,
-        "args": args or ["-y", "@modelcontextprotocol/server-everything"],
-        "env": {"NODE_ENV": "test", "DEBUG": "true"},
-        "type": "stdio",  # Optional but explicit
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": command,
+            "args": args or ["-y", "@modelcontextprotocol/server-everything"],
+            "env": {"NODE_ENV": "test", "DEBUG": "true"},
+        },
     }
 
 
 def create_sse_server_request(server_name: str, server_url: str = None) -> Dict[str, Any]:
     """Create an SSE MCP server configuration object.
 
-    Note: The SDK infers type="sse" from the presence of server_url parameter.
+    Returns a dict with server_name and config following CreateMCPServerRequest schema.
     """
     return {
         "server_name": server_name,
-        "server_url": server_url or "https://api.example.com/sse",
-        "auth_header": "Authorization",
-        "auth_token": "Bearer test_token_123",
-        "custom_headers": {"X-Custom-Header": "custom_value", "X-API-Version": "1.0"},
-        "type": "sse",  # Optional but explicit
+        "config": {
+            "mcp_server_type": "sse",
+            "server_url": server_url or "https://api.example.com/sse",
+            "auth_header": "Authorization",
+            "auth_token": "Bearer test_token_123",
+            "custom_headers": {"X-Custom-Header": "custom_value", "X-API-Version": "1.0"},
+        },
     }
 
 
 def create_streamable_http_server_request(server_name: str, server_url: str = None) -> Dict[str, Any]:
     """Create a streamable HTTP MCP server configuration object.
 
-    Note: The SDK infers type="streamable_http" from the presence of server_url parameter.
+    Returns a dict with server_name and config following CreateMCPServerRequest schema.
     """
     return {
         "server_name": server_name,
-        "server_url": server_url or "https://api.example.com/streamable",
-        "auth_header": "X-API-Key",
-        "auth_token": "api_key_456",
-        "custom_headers": {"Accept": "application/json", "X-Version": "2.0"},
-        "type": "streamable_http",  # Optional but explicit
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": server_url or "https://api.example.com/streamable",
+            "auth_header": "X-API-Key",
+            "auth_token": "api_key_456",
+            "custom_headers": {"Accept": "application/json", "X-Version": "2.0"},
+        },
     }
 
 
@@ -233,13 +241,15 @@ def create_exa_streamable_http_server_request(server_name: str) -> Dict[str, Any
     """Create a Streamable HTTP config for Exa MCP with no auth.
 
     Reference: https://mcp.exa.ai/mcp
-    Note: The SDK infers type="streamable_http" from the presence of server_url parameter.
+    Returns a dict with server_name and config following CreateMCPServerRequest schema.
     """
     return {
         "server_name": server_name,
-        "server_url": "https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key",
-        "type": "streamable_http",  # Optional but explicit
-        # no auth header/token, no custom headers
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": "https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key",
+            # no auth header/token, no custom headers
+        },
     }
 
 
@@ -257,16 +267,17 @@ def test_create_stdio_mcp_server(client: Letta):
     server_data = client.mcp_servers.create(**server_config)
 
     # Handle both dict and object attribute access
+    # Response should have server_name at top level and config fields flattened
     if isinstance(server_data, dict):
         assert server_data["server_name"] == server_name
-        assert server_data["command"] == server_config["command"]
-        assert server_data["args"] == server_config["args"]
+        assert server_data["command"] == server_config["config"]["command"]
+        assert server_data["args"] == server_config["config"]["args"]
         assert server_data["id"] is not None  # Should have an ID assigned
         server_id = server_data["id"]
     else:
         assert server_data.server_name == server_name
-        assert server_data.command == server_config["command"]  # server_config is always a dict
-        assert server_data.args == server_config["args"]  # server_config is always a dict
+        assert server_data.command == server_config["config"]["command"]
+        assert server_data.args == server_config["config"]["args"]
         assert server_data.id is not None  # Should have an ID assigned
         server_id = server_data.id
 
@@ -285,14 +296,14 @@ def test_create_sse_mcp_server(client: Letta):
     # Handle both dict and object attribute access
     if isinstance(server_data, dict):
         assert server_data["server_name"] == server_name
-        assert server_data["server_url"] == server_config["server_url"]
-        assert server_data["auth_header"] == server_config["auth_header"]
+        assert server_data["server_url"] == server_config["config"]["server_url"]
+        assert server_data["auth_header"] == server_config["config"]["auth_header"]
         assert server_data["id"] is not None
         server_id = server_data["id"]
     else:
         assert server_data.server_name == server_name
-        assert server_data.server_url == server_config["server_url"]  # server_config is always a dict
-        assert server_data.auth_header == server_config["auth_header"]  # server_config is always a dict
+        assert server_data.server_url == server_config["config"]["server_url"]
+        assert server_data.auth_header == server_config["config"]["auth_header"]
         assert server_data.id is not None
         server_id = server_data.id
 
@@ -311,12 +322,12 @@ def test_create_streamable_http_mcp_server(client: Letta):
     # Handle both dict and object attribute access
     if isinstance(server_data, dict):
         assert server_data["server_name"] == server_name
-        assert server_data["server_url"] == server_config["server_url"]
+        assert server_data["server_url"] == server_config["config"]["server_url"]
         assert server_data["id"] is not None
         server_id = server_data["id"]
     else:
         assert server_data.server_name == server_name
-        assert server_data.server_url == server_config["server_url"]  # server_config is always a dict
+        assert server_data.server_url == server_config["config"]["server_url"]
         assert server_data.id is not None
         server_id = server_data.id
 
@@ -370,7 +381,7 @@ def test_get_specific_mcp_server(client: Letta):
     # Create a server
     server_name = f"get-test-{uuid.uuid4().hex[:8]}"
     server_config = create_stdio_server_request(server_name, command="python", args=["-m", "mcp_server"])
-    server_config["env"]["PYTHONPATH"] = "/usr/local/lib"
+    server_config["config"]["env"]["PYTHONPATH"] = "/usr/local/lib"
 
     created_server = client.mcp_servers.create(**server_config)
     server_id = get_attr(created_server, "id")
@@ -407,9 +418,12 @@ def test_update_stdio_mcp_server(client: Letta):
         # Update the server
         update_request = {
             "server_name": "updated-stdio-server",
-            "command": "node",
-            "args": ["new_server.js", "--port", "3000"],
-            "env": {"NEW_ENV": "new_value", "PORT": "3000"},
+            "config": {
+                "mcp_server_type": "stdio",
+                "command": "node",
+                "args": ["new_server.js", "--port", "3000"],
+                "env": {"NEW_ENV": "new_value", "PORT": "3000"},
+            },
         }
 
         updated_server = client.mcp_servers.update(server_id, **update_request)
@@ -440,9 +454,12 @@ def test_update_sse_mcp_server(client: Letta):
         # Update the server
         update_request = {
             "server_name": "updated-sse-server",
-            "server_url": "https://new.example.com/sse/v2",
-            "auth_token": "new_token_789",
-            "custom_headers": {"X-Updated": "true", "X-Version": "2.0"},
+            "config": {
+                "mcp_server_type": "sse",
+                "server_url": "https://new.example.com/sse/v2",
+                "auth_token": "new_token_789",
+                "custom_headers": {"X-Updated": "true", "X-Version": "2.0"},
+            },
         }
 
         updated_server = client.mcp_servers.update(server_id, **update_request)
@@ -561,13 +578,13 @@ def test_multiple_server_types_coexist(client: Letta):
 
         # Get each server and verify type-specific fields
         stdio_retrieved = client.mcp_servers.retrieve(stdio_id)
-        assert get_attr(stdio_retrieved, "command") == stdio_config["command"]
+        assert get_attr(stdio_retrieved, "command") == stdio_config["config"]["command"]
 
         sse_retrieved = client.mcp_servers.retrieve(sse_id)
-        assert get_attr(sse_retrieved, "server_url") == sse_config["server_url"]
+        assert get_attr(sse_retrieved, "server_url") == sse_config["config"]["server_url"]
 
         http_retrieved = client.mcp_servers.retrieve(http_id)
-        assert get_attr(http_retrieved, "server_url") == http_config["server_url"]
+        assert get_attr(http_retrieved, "server_url") == http_config["config"]["server_url"]
 
     finally:
         # Cleanup all servers
@@ -581,18 +598,28 @@ def test_partial_update_preserves_fields(client: Letta):
     server_name = f"partial-update-{uuid.uuid4().hex[:8]}"
     server_config = {
         "server_name": server_name,
-        "type": "stdio",
-        "command": "node",
-        "args": ["server.js", "--port", "3000"],
-        "env": {"NODE_ENV": "production", "PORT": "3000", "DEBUG": "false"},
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": "node",
+            "args": ["server.js", "--port", "3000"],
+            "env": {"NODE_ENV": "production", "PORT": "3000", "DEBUG": "false"},
+        },
     }
 
     created_server = client.mcp_servers.create(**server_config)
     server_id = get_attr(created_server, "id")
 
     try:
-        # Update only the server name
-        update_request = {"server_name": "renamed-server"}
+        # Update only the server name - note that we still need to provide config with mcp_server_type
+        # but we can leave other fields as None/unset
+        update_request = {
+            "server_name": "renamed-server",
+            "config": {
+                "mcp_server_type": "stdio",
+                "command": "node",  # Keep same command
+                "args": ["server.js", "--port", "3000"],  # Keep same args
+            },
+        }
 
         updated_server = client.mcp_servers.update(server_id, **update_request)
 
@@ -620,7 +647,14 @@ def test_concurrent_server_operations(client: Letta):
 
         # Update all servers
         for i, server_id in enumerate(servers_created):
-            update_request = {"server_name": f"updated-concurrent-{i}"}
+            update_request = {
+                "server_name": f"updated-concurrent-{i}",
+                "config": {
+                    "mcp_server_type": "stdio",
+                    "command": "python",
+                    "args": [f"server_{i}.py"],
+                },
+            }
 
             updated_server = client.mcp_servers.update(server_id, **update_request)
             assert get_attr(updated_server, "server_name") == f"updated-concurrent-{i}"
@@ -641,7 +675,7 @@ def test_full_server_lifecycle(client: Letta):
     # 1. Create server
     server_name = f"lifecycle-test-{uuid.uuid4().hex[:8]}"
     server_config = create_stdio_server_request(server_name, command="npx", args=["-y", "@modelcontextprotocol/server-everything"])
-    server_config["env"]["TEST"] = "true"
+    server_config["config"]["env"]["TEST"] = "true"
 
     created_server = client.mcp_servers.create(**server_config)
     server_id = get_attr(created_server, "id")
@@ -656,7 +690,15 @@ def test_full_server_lifecycle(client: Letta):
         assert get_attr(retrieved_server, "server_name") == server_name
 
         # 4. Update server
-        update_request = {"server_name": "lifecycle-updated", "env": {"TEST": "false", "NEW_VAR": "value"}}
+        update_request = {
+            "server_name": "lifecycle-updated",
+            "config": {
+                "mcp_server_type": "stdio",
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-everything"],
+                "env": {"TEST": "false", "NEW_VAR": "value"},
+            },
+        }
         updated_server = client.mcp_servers.update(server_id, **update_request)
         assert get_attr(updated_server, "server_name") == "lifecycle-updated"
 
@@ -817,9 +859,11 @@ def test_mcp_multiple_tools_in_sequence_with_agent(client: Letta):
     server_name = f"test-multi-tools-{uuid.uuid4().hex[:8]}"
     server_config = {
         "server_name": server_name,
-        "type": "stdio",
-        "command": sys.executable,
-        "args": [str(mcp_server_path)],
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": sys.executable,
+            "args": [str(mcp_server_path)],
+        },
     }
 
     # Register the MCP server
@@ -915,9 +959,11 @@ def test_mcp_complex_schema_tool_with_agent(client: Letta):
     server_name = f"test-complex-schema-{uuid.uuid4().hex[:8]}"
     server_config = {
         "server_name": server_name,
-        "type": "stdio",
-        "command": sys.executable,
-        "args": [str(mcp_server_path)],
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": sys.executable,
+            "args": [str(mcp_server_path)],
+        },
     }
 
     # Register the MCP server
@@ -1064,9 +1110,11 @@ def test_comprehensive_mcp_server_tool_listing(client: Letta):
     server_name = f"test-comprehensive-{uuid.uuid4().hex[:8]}"
     server_config = {
         "server_name": server_name,
-        "type": "stdio",
-        "command": sys.executable,
-        "args": [str(mcp_server_path)],
+        "config": {
+            "mcp_server_type": "stdio",
+            "command": sys.executable,
+            "args": [str(mcp_server_path)],
+        },
     }
 
     # Register the MCP server

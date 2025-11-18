@@ -8,10 +8,10 @@ from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig,
 from letta.log import get_logger
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.mcp_server import (
-    CreateMCPServerUnion,
+    CreateMCPServerRequest,
     MCPServerUnion,
     MCPToolExecuteRequest,
-    UpdateMCPServerUnion,
+    UpdateMCPServerRequest,
     convert_generic_to_union,
     convert_update_to_internal,
 )
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
     operation_id="mcp_create_mcp_server",
 )
 async def create_mcp_server(
-    request: CreateMCPServerUnion = Body(...),
+    request: CreateMCPServerRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -49,7 +49,7 @@ async def create_mcp_server(
     """
     # TODO: add the tools to the MCP server table we made.
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    new_server = await server.mcp_server_manager.create_mcp_server_from_config_with_tools(request, actor=actor)
+    new_server = await server.mcp_server_manager.create_mcp_server_from_request(request, actor=actor)
     return convert_generic_to_union(new_server)
 
 
@@ -112,7 +112,7 @@ async def delete_mcp_server(
 )
 async def update_mcp_server(
     mcp_server_id: str,
-    request: UpdateMCPServerUnion = Body(...),
+    request: UpdateMCPServerRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

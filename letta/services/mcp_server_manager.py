@@ -36,6 +36,7 @@ from letta.schemas.mcp import (
     UpdateStdioMCPServer,
     UpdateStreamableHTTPMCPServer,
 )
+from letta.schemas.mcp_server import CreateMCPServerRequest, CreateSSEMCPServer, CreateStdioMCPServer, CreateStreamableHTTPMCPServer
 from letta.schemas.secret import Secret
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
@@ -544,6 +545,29 @@ class MCPServerManager:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 
         return mcp_server
+
+    @enforce_types
+    async def create_mcp_server_from_request(self, request: CreateMCPServerRequest, actor: PydanticUser) -> MCPServer:
+        """
+        Create an MCP server from a request object.
+        """
+        # Convert CreateMCPServerUnion to ServerConfig union by adding server_name
+        config_type_map = {
+            CreateStdioMCPServer: StdioServerConfig,
+            CreateSSEMCPServer: SSEServerConfig,
+            CreateStreamableHTTPMCPServer: StreamableHTTPServerConfig,
+        }
+
+        config_dict = request.config.model_dump(exclude={"mcp_server_type"})
+        config_dict["server_name"] = request.server_name
+        config_dict["type"] = request.config.mcp_server_type
+        server_config = config_type_map[type(request.config)](**config_dict)
+
+        # Create the MCP server object (with encryption of sensitive fields)
+        mcp_server = await self.create_mcp_server_from_config(server_config, actor)
+
+        # Persist to database and sync tools
+        return await self.create_mcp_server_with_tools(mcp_server, actor)
 
     @enforce_types
     async def create_mcp_server_from_config_with_tools(

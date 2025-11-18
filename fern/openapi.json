@@ -11400,18 +11400,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/CreateStdioMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CreateSSEMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CreateStreamableHTTPMCPServer"
-                  }
-                ],
-                "title": "Request"
+                "$ref": "#/components/schemas/CreateMCPServerRequest"
               }
             }
           }
@@ -11598,18 +11587,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
-                  }
-                ],
-                "title": "Request"
+                "$ref": "#/components/schemas/UpdateMCPServerRequest"
               }
             }
           }
@@ -24028,15 +24006,49 @@
         "title": "CreateBlock",
         "description": "Create a block"
       },
-      "CreateSSEMCPServer": {
+      "CreateMCPServerRequest": {
         "properties": {
           "server_name": {
             "type": "string",
             "title": "Server Name",
-            "description": "The name of the server"
+            "description": "The name of the MCP server"
           },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+          "config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateStdioMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/CreateSSEMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/CreateStreamableHTTPMCPServer"
+              }
+            ],
+            "title": "Config",
+            "description": "The MCP server configuration (Stdio, SSE, or Streamable HTTP)",
+            "discriminator": {
+              "propertyName": "mcp_server_type",
+              "mapping": {
+                "sse": "#/components/schemas/CreateSSEMCPServer",
+                "stdio": "#/components/schemas/CreateStdioMCPServer",
+                "streamable_http": "#/components/schemas/CreateStreamableHTTPMCPServer"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["server_name", "config"],
+        "title": "CreateMCPServerRequest",
+        "description": "Request to create a new MCP server with configuration."
+      },
+      "CreateSSEMCPServer": {
+        "properties": {
+          "mcp_server_type": {
+            "type": "string",
+            "const": "sse",
+            "title": "Mcp Server Type",
             "default": "sse"
           },
           "server_url": {
@@ -24084,20 +24096,18 @@
             "description": "Custom HTTP headers to include with requests"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url"],
         "title": "CreateSSEMCPServer",
         "description": "Create a new SSE MCP server"
       },
       "CreateStdioMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "stdio",
+            "title": "Mcp Server Type",
             "default": "stdio"
           },
           "command": {
@@ -24129,20 +24139,18 @@
             "description": "Environment variables to set"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "command", "args"],
+        "required": ["command", "args"],
         "title": "CreateStdioMCPServer",
         "description": "Create a new Stdio MCP server"
       },
       "CreateStreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
             "default": "streamable_http"
           },
           "server_url": {
@@ -24190,8 +24198,9 @@
             "description": "Custom HTTP headers to include with requests"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url"],
         "title": "CreateStreamableHTTPMCPServer",
         "description": "Create a new Streamable HTTP MCP server"
       },
@@ -32659,13 +32668,10 @@
       },
       "SSEMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "sse",
+            "title": "Mcp Server Type",
             "default": "sse"
           },
           "server_url": {
@@ -32718,10 +32724,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url", "server_name"],
         "title": "SSEMCPServer",
         "description": "An SSE MCP server"
       },
@@ -33563,13 +33575,10 @@
       },
       "StdioMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "stdio",
+            "title": "Mcp Server Type",
             "default": "stdio"
           },
           "command": {
@@ -33606,10 +33615,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "command", "args"],
+        "required": ["command", "args", "server_name"],
         "title": "StdioMCPServer",
         "description": "A Stdio MCP server"
       },
@@ -34112,13 +34127,10 @@
       },
       "StreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
             "default": "streamable_http"
           },
           "server_url": {
@@ -34171,10 +34183,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url", "server_name"],
         "title": "StreamableHTTPMCPServer",
         "description": "A Streamable HTTP MCP server"
       },
@@ -36621,6 +36639,50 @@
         "required": ["content"],
         "title": "UpdateAssistantMessage"
       },
+      "UpdateMCPServerRequest": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the MCP server"
+          },
+          "config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
+              }
+            ],
+            "title": "Config",
+            "description": "The MCP server configuration updates (Stdio, SSE, or Streamable HTTP)",
+            "discriminator": {
+              "propertyName": "mcp_server_type",
+              "mapping": {
+                "sse": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer",
+                "stdio": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer",
+                "streamable_http": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["config"],
+        "title": "UpdateMCPServerRequest",
+        "description": "Request to update an existing MCP server configuration."
+      },
       "UpdateReasoningMessage": {
         "properties": {
           "reasoning": {
@@ -38562,17 +38624,11 @@
       },
       "letta__schemas__mcp_server__UpdateSSEMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "sse",
+            "title": "Mcp Server Type",
+            "default": "sse"
           },
           "server_url": {
             "anyOf": [
@@ -38584,31 +38640,7 @@
               }
             ],
             "title": "Server Url",
-            "description": "The URL of the SSE MCP server"
-          },
-          "auth_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Token",
-            "description": "The authentication token or API key value"
-          },
-          "token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Token",
-            "description": "The authentication token (internal)"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -38621,6 +38653,18 @@
             ],
             "title": "Auth Header",
             "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
           },
           "custom_headers": {
             "anyOf": [
@@ -38635,27 +38679,22 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom headers to send with requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["server_url"],
         "title": "UpdateSSEMCPServer",
         "description": "Update schema for SSE MCP server - all fields optional"
       },
       "letta__schemas__mcp_server__UpdateStdioMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "stdio",
+            "title": "Mcp Server Type",
+            "default": "stdio"
           },
           "command": {
             "anyOf": [
@@ -38667,7 +38706,7 @@
               }
             ],
             "title": "Command",
-            "description": "The command to run the MCP server"
+            "description": "The command to run (MCP 'local' client will run this command)"
           },
           "args": {
             "anyOf": [
@@ -38702,22 +38741,17 @@
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["command", "args"],
         "title": "UpdateStdioMCPServer",
         "description": "Update schema for Stdio MCP server - all fields optional"
       },
       "letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
+            "default": "streamable_http"
           },
           "server_url": {
             "anyOf": [
@@ -38729,31 +38763,7 @@
               }
             ],
             "title": "Server Url",
-            "description": "The URL of the Streamable HTTP MCP server"
-          },
-          "auth_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Token",
-            "description": "The authentication token or API key value"
-          },
-          "token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Token",
-            "description": "The authentication token (internal)"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -38766,6 +38776,18 @@
             ],
             "title": "Auth Header",
             "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
           },
           "custom_headers": {
             "anyOf": [
@@ -38780,11 +38802,12 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom headers to send with requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["server_url"],
         "title": "UpdateStreamableHTTPMCPServer",
         "description": "Update schema for Streamable HTTP MCP server - all fields optional"
       },
