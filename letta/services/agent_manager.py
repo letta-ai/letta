@@ -655,7 +655,7 @@ class AgentManager:
                     except Exception as e:
                         logger.error(f"Failed to attach files: {e}")
             except Exception as e:
-                logger.error(f"====> Failed to attach files from sources: {e}")
+                logger.error(f"Failed to attach files from sources: {e}")
                 import traceback
 
                 traceback.print_exc()
