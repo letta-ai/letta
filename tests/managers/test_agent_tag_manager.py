@@ -231,6 +231,7 @@ async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, 
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent1",
+            agent_type="memgpt_v2_agent",
             tags=["pagination_test", "tag1"],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -247,6 +248,7 @@ async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, 
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent2",
+            agent_type="memgpt_v2_agent",
             tags=["pagination_test", "tag2"],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -289,6 +291,7 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="Search Agent One",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             description="This is a search agent for testing",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -304,6 +307,7 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="Search Agent Two",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             description="Another search agent for testing",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -319,6 +323,7 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="Different Agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             description="This is a different agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -379,6 +384,7 @@ async def test_list_tags(server: SyncServer, default_user, default_organization)
             actor=default_user,
             agent_create=CreateAgent(
                 name="tag_agent_" + str(i),
+                agent_type="memgpt_v2_agent",
                 memory_blocks=[],
                 llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),

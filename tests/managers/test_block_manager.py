@@ -232,6 +232,7 @@ async def test_refresh_memory_async(server: SyncServer, default_user):
     agent = await server.agent_manager.create_agent_async(
         CreateAgent(
             name="test",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,

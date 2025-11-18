@@ -332,6 +332,7 @@ async def sarah_agent(server: SyncServer, default_user, default_organization):
     agent_state = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="sarah_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -348,6 +349,7 @@ async def charles_agent(server: SyncServer, default_user, default_organization):
     agent_state = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="charles_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[CreateBlock(label="human", value="Charles"), CreateBlock(label="persona", value="I am a helpful assistant")],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -684,6 +686,7 @@ async def agent_with_tags(server: SyncServer, default_user):
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent1",
+            agent_type="memgpt_v2_agent",
             tags=["primary_agent", "benefit_1"],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -696,6 +699,7 @@ async def agent_with_tags(server: SyncServer, default_user):
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent2",
+            agent_type="memgpt_v2_agent",
             tags=["primary_agent", "benefit_2"],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -708,6 +712,7 @@ async def agent_with_tags(server: SyncServer, default_user):
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent3",
+            agent_type="memgpt_v2_agent",
             tags=["primary_agent", "benefit_1", "benefit_2"],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),

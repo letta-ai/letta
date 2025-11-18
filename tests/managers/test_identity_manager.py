@@ -235,6 +235,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
 
     agent_with_identity = await server.create_agent_async(
         CreateAgent(
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -245,6 +246,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
     )
     agent_without_identity = await server.create_agent_async(
         CreateAgent(
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),

@@ -247,6 +247,7 @@ async def test_get_agents_for_source_id_pagination(server: SyncServer, default_s
         agent = await server.agent_manager.create_agent_async(
             agent_create=CreateAgent(
                 name=f"Test Agent {i}",
+                agent_type="memgpt_v2_agent",
                 memory_blocks=[],
                 llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
