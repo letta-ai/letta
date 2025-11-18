@@ -90,6 +90,7 @@ async def _update_trace_attributes(request: Request):
         "user-agent": "client",
         "x-stainless-package-version": "sdk.version",
         "x-stainless-lang": "sdk.language",
+        "x-letta-source": "source",
     }
     for header_key, span_key in header_attributes.items():
         header_value = request.headers.get(header_key)
