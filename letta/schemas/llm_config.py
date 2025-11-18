@@ -422,8 +422,10 @@ class LLMConfig(BaseModel):
 
             # Anthropic 3.7/4 and Gemini: toggle honored
             is_google_reasoner_with_configurable_thinking = (
-                cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config)
-            ) and not config.model.startswith("gemini-2.5-pro")
+                (cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config))
+                and not config.model.startswith("gemini-2.5-pro")
+                and not config.model.startswith("gemini-3")
+            )
             if cls.is_anthropic_reasoning_model(config) or is_google_reasoner_with_configurable_thinking:
                 config.enable_reasoner = bool(reasoning)
                 config.put_inner_thoughts_in_kwargs = False
@@ -431,8 +433,8 @@ class LLMConfig(BaseModel):
                     config.max_reasoning_tokens = 1024
                 return config
 
-            # Google Gemini 2.5 Pro: not possible to disable
-            if config.model.startswith("gemini-2.5-pro"):
+            # Google Gemini 2.5 Pro and Gemini 3: not possible to disable
+            if config.model.startswith("gemini-2.5-pro") or config.model.startswith("gemini-3"):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.max_reasoning_tokens == 0:
@@ -466,8 +468,8 @@ class LLMConfig(BaseModel):
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
-            elif config.model.startswith("gemini-2.5-pro"):
-                logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
+            elif config.model.startswith("gemini-2.5-pro") or config.model.startswith("gemini-3"):
+                logger.warning(f"Reasoning cannot be disabled for {config.model} model")
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 config.enable_reasoner = True
