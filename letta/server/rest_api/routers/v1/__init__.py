@@ -1,4 +1,5 @@
 from letta.server.rest_api.routers.v1.agents import router as agents_router
+from letta.server.rest_api.routers.v1.anthropic import router as anthropic_router
 from letta.server.rest_api.routers.v1.archives import router as archives_router
 from letta.server.rest_api.routers.v1.blocks import router as blocks_router
 from letta.server.rest_api.routers.v1.chat_completions import router as chat_completions_router, router as openai_chat_completions_router
@@ -26,6 +27,7 @@ from letta.server.rest_api.routers.v1.tools import router as tools_router
 from letta.server.rest_api.routers.v1.voice import router as voice_router
 
 ROUTERS = [
+    anthropic_router,
     archives_router,
     tools_router,
     sources_router,
