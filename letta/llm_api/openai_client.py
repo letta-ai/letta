@@ -687,7 +687,7 @@ class OpenAIClient(LLMClientBase):
                 response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
             )
 
-        # If we used a reasoning model, create a content part for the ommitted reasoning
+        # If we used a reasoning model, create a content part for the omitted reasoning
         if self.is_reasoning_model(llm_config):
             chat_completion_response.choices[0].message.omitted_reasoning_content = True
 
