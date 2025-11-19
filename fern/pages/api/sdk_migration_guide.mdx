@@ -201,7 +201,7 @@ Many methods were reorganized for better SDK structure:
 
 // Message operations
 - await client.agents.summarize_agent_conversation(agentId)
-+ await client.agents.messages.summarize(agentId)
++ await client.agents.messages.compact(agentId)
 
 - await client.agents.cancel_agent_run(agentId)
 + await client.agents.messages.cancel(agentId)
@@ -215,10 +215,10 @@ Many methods were reorganized for better SDK structure:
 
 // Export/Import
 - await client.agents.export_agent_serialized(agentId)
-+ await client.agents.export(agentId)
++ await client.agents.exportFile(agentId)
 
 - await client.agents.import_agent_serialized(file)
-+ await client.agents.import(file)
++ await client.agents.importFile(file)
 
 // Folder operations
 - await client.folders.get_agents_for_folder(folderId)
@@ -254,17 +254,17 @@ Many methods were reorganized for better SDK structure:
 
 // Message operations
 - client.agents.summarize_agent_conversation(agent_id)
-+ client.agents.messages.summarize(agent_id)
++ client.agents.messages.compact(agent_id)
 
 - client.agents.cancel_agent_run(agent_id)
 + client.agents.messages.cancel(agent_id)
 
 // Export/Import
 - client.agents.export_agent_serialized(agent_id)
-+ client.agents.export(agent_id)
++ client.agents.export_file(agent_id)
 
 - client.agents.import_agent_serialized(file)
-+ client.agents.import(file)
++ client.agents.import_file(file)
 
 // Folder operations
 - client.folders.get_agents_for_folder(folder_id)
@@ -728,7 +728,7 @@ const agent = await client.agents.import(file, {
 });
 
 // New - override_name parameter
-const agent = await client.agents.import(file, {
+const agent = await client.agents.importFile(file, {
   override_name: "my-imported-agent"  // Optional, exact name to use
 });
 ```
@@ -740,7 +740,7 @@ agent = client.agents.import_agent(
 )
 
 # New
-agent = client.agents.import_agent(
+agent = client.agents.import_file(
     file,
     override_name="my-imported-agent"
 )
@@ -1208,12 +1208,12 @@ Use this checklist to ensure a complete migration:
 **Method Renames:**
 - [ ] Update `modify()` calls to `update()`
 - [ ] Update `createStream()` calls to `stream()`
-- [ ] Rename `summarize_agent_conversation()` → `messages.summarize()`
+- [ ] Rename `summarize_agent_conversation()` → `messages.compact()`
 - [ ] Rename `cancel_agent_run()` → `messages.cancel()`
 - [ ] Rename `preview_raw_payload()` → `messages.preview()`
 - [ ] Rename `list_agent_files()` → `files.list()`
-- [ ] Rename `export_agent_serialized()` → `export()`
-- [ ] Rename `import_agent_serialized()` → `import()`
+- [ ] Rename `export_agent_serialized()` → `export_file()`
+- [ ] Rename `import_agent_serialized()` → `import_file()`
 - [ ] Rename folder/provider method names (see section 2)
 - [ ] Update telemetry routes to use `steps.trace()`
 
@@ -1435,7 +1435,7 @@ const agent = await client.agents.retrieve(agentId);  // Get updated state
 
 ```typescript
 - await client.agents.summarize_agent_conversation(agentId)
-+ await client.agents.messages.summarize(agentId)
++ await client.agents.messages.compact(agentId)
 ```
 
 ### "Query parameter 'add_default_initial_messages' not working"
