@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 from typing import List, Optional
 
 import openai
@@ -748,7 +749,8 @@ class OpenAIClient(LLMClientBase):
         if not inputs:
             return []
 
-        logger.info(f"request_embeddings called with {len(inputs)} inputs, model={embedding_config.embedding_model}")
+        request_start = time.time()
+        logger.info(f"DIAGNOSTIC: request_embeddings called with {len(inputs)} inputs, model={embedding_config.embedding_model}")
 
         # Validate inputs - OpenAI rejects empty strings or non-string values
         # See: https://community.openai.com/t/embedding-api-change-input-is-invalid/707490/7
@@ -794,7 +796,7 @@ class OpenAIClient(LLMClientBase):
                     continue
 
                 logger.info(
-                    f"Creating embedding task: start_idx={start_idx}, batch_size={len(chunk_inputs)}, "
+                    f"DIAGNOSTIC: Creating embedding task: start_idx={start_idx}, batch_size={len(chunk_inputs)}, "
                     f"first_input_len={len(chunk_inputs[0]) if chunk_inputs else 0}, "
                     f"model={embedding_config.embedding_model}"
                 )
@@ -806,7 +808,15 @@ class OpenAIClient(LLMClientBase):
                 logger.warning("All chunks were empty, skipping embedding request")
                 break
 
+            gather_start = time.time()
+            logger.info(f"DIAGNOSTIC: Awaiting {len(tasks)} embedding API calls...")
             task_results = await asyncio.gather(*tasks, return_exceptions=True)
+            gather_duration = time.time() - gather_start
+
+            if gather_duration > 1.0:
+                logger.warning(f"DIAGNOSTIC: SLOW embedding API gather took {gather_duration:.2f}s for {len(tasks)} tasks")
+            else:
+                logger.info(f"DIAGNOSTIC: Embedding API gather completed in {gather_duration:.2f}s")
 
             failed_chunks = []
             for (start_idx, chunk_inputs, current_batch_size), result in zip(task_metadata, task_results):
@@ -848,6 +858,14 @@ class OpenAIClient(LLMClientBase):
                         results[start_idx + i] = embedding
 
             chunks_to_process = failed_chunks
+
+        total_duration = time.time() - request_start
+        if total_duration > 2.0:
+            logger.error(f"DIAGNOSTIC: BLOCKING DETECTED - request_embeddings took {total_duration:.2f}s for {len(inputs)} inputs")
+        elif total_duration > 1.0:
+            logger.warning(f"DIAGNOSTIC: Slow request_embeddings took {total_duration:.2f}s for {len(inputs)} inputs")
+        else:
+            logger.info(f"DIAGNOSTIC: request_embeddings completed in {total_duration:.2f}s")
 
         return results
 

@@ -1,3 +1,4 @@
+import time
 from typing import List, Optional
 
 from letta.helpers.tpuf_client import TurbopufferClient
@@ -65,6 +66,7 @@ class TurbopufferEmbedder(BaseEmbedder):
 
         try:
             # insert passages to Turbopuffer - it will handle embedding generation internally
+            embedding_start = time.time()
             passages = await self.tpuf_client.insert_file_passages(
                 source_id=source_id,
                 file_id=file_id,
@@ -72,8 +74,9 @@ class TurbopufferEmbedder(BaseEmbedder):
                 organization_id=actor.organization_id,
                 actor=actor,
             )
+            embedding_duration = time.time() - embedding_start
 
-            logger.info(f"Successfully generated and stored {len(passages)} passages in Turbopuffer")
+            logger.info(f"Successfully generated and stored {len(passages)} passages in Turbopuffer (took {embedding_duration:.2f}s)")
             log_event(
                 "turbopuffer_embedder.generation_completed",
                 {
@@ -81,6 +84,7 @@ class TurbopufferEmbedder(BaseEmbedder):
                     "total_chunks_processed": len(valid_chunks),
                     "file_id": file_id,
                     "source_id": source_id,
+                    "duration_seconds": embedding_duration,
                 },
             )
             return passages
