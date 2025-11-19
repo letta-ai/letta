@@ -36,7 +36,9 @@ COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-dev --all-extras --python 3.11
+RUN uv sync --frozen --no-dev --all-extras --python 3.11 && \
+    # Install py-spy for Python stack trace diagnostics
+    uv pip install py-spy
 
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime
@@ -47,6 +49,8 @@ ARG NODE_VERSION=22
 RUN apt-get update && \
     # Install curl, Python, and PostgreSQL client libraries
     apt-get install -y curl python3 python3-venv libpq-dev && \
+    # Install diagnostic tools (gdb for stack traces, procps for ps/top, net-tools for netstat)
+    apt-get install -y gdb procps net-tools && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
@@ -81,6 +85,10 @@ COPY --from=builder /app .
 
 # Copy initialization SQL if it exists
 COPY init.sql /docker-entrypoint-initdb.d/
+
+# Copy diagnostic monitor script
+COPY diagnostic_monitor.sh /app/diagnostic_monitor.sh
+RUN chmod +x /app/diagnostic_monitor.sh
 
 EXPOSE 8283 5432 4317 4318
 
