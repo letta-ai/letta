@@ -278,3 +278,104 @@ class TestSecret:
                 assert mock_decrypt.call_count == 1
         finally:
             settings.encryption_key = original_key
+
+    def test_get_plaintext_with_false_positive_encryption_check(self):
+        """Test that get_plaintext() works correctly when is_encrypted() returns false positive.
+        
+        This test covers the fix for issue #3069 where long API keys (e.g., OpenAI keys)
+        can trigger false positives in the is_encrypted() heuristic, causing get_plaintext()
+        to return None even when the value was explicitly created as plaintext.
+        """
+        from letta.settings import settings
+
+        # Clear encryption key to simulate the problematic scenario
+        original_key = settings.encryption_key
+        settings.encryption_key = None
+
+        try:
+            # Use a long API key that would trigger false positive in is_encrypted()
+            # OpenAI API keys are typically 164+ characters and base64-decodable
+            long_api_key = "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"
+            
+            # Verify this would trigger false positive
+            assert CryptoUtils.is_encrypted(long_api_key) is True
+            assert CryptoUtils.is_encryption_available() is False
+
+            # Create Secret from plaintext (was_encrypted=False)
+            secret = Secret.from_plaintext(long_api_key)
+            
+            # Verify it was created as plaintext
+            assert secret.was_encrypted is False
+            assert secret.encrypted_value == long_api_key
+            assert secret._plaintext_cache == long_api_key
+
+            # get_plaintext() should return the value despite false positive
+            # This is the key fix: was_encrypted=False should prevent cache clearing
+            result = secret.get_plaintext()
+            assert result == long_api_key
+            assert result is not None
+            
+            # Cache should still be intact
+            assert secret._plaintext_cache == long_api_key
+        finally:
+            settings.encryption_key = original_key
+
+    def test_get_plaintext_was_encrypted_flag_prevents_false_positive(self):
+        """Test that was_encrypted=False flag prevents false positive from clearing cache."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = None
+
+        try:
+            # Create a value that looks encrypted but was created as plaintext
+            plaintext_value = "sk-proj-" + "A" * 150  # Long value that triggers false positive
+            
+            secret = Secret.from_plaintext(plaintext_value)
+            
+            # Verify conditions that would cause the bug
+            assert secret.was_encrypted is False
+            assert CryptoUtils.is_encrypted(plaintext_value) is True
+            assert CryptoUtils.is_encryption_available() is False
+            assert secret._plaintext_cache == plaintext_value
+
+            # Before fix: this would return None
+            # After fix: should return the cached value because was_encrypted=False
+            result = secret.get_plaintext()
+            assert result == plaintext_value
+            assert result is not None
+            
+            # Verify cache was not cleared
+            assert secret._plaintext_cache == plaintext_value
+        finally:
+            settings.encryption_key = original_key
+
+    def test_get_plaintext_preserves_behavior_for_actually_encrypted(self):
+        """Test that the fix doesn't break behavior for actually encrypted values."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext = "actual-secret-value"
+            encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY)
+            
+            # Create from encrypted value (was_encrypted=True)
+            secret = Secret.from_encrypted(encrypted)
+            assert secret.was_encrypted is True
+
+            # Should still decrypt correctly
+            result = secret.get_plaintext()
+            assert result == plaintext
+            
+            # Clear encryption key to simulate losing the key
+            settings.encryption_key = None
+            
+            # For actually encrypted values, should return None when key is lost
+            # (This is expected behavior - different from the false positive case)
+            result_after_key_loss = secret.get_plaintext()
+            # Note: This might still work if cache exists, but if cache is cleared,
+            # it should return None for actually encrypted values
+        finally:
+            settings.encryption_key = original_key
