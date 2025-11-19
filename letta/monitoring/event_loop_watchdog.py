@@ -85,20 +85,37 @@ class EventLoopWatchdog:
 
                 time_since_heartbeat = time.time() - last_beat
 
+                # Try to estimate event loop load (safe from separate thread)
+                task_count = -1
+                try:
+                    if self._loop and not self._loop.is_closed():
+                        # all_tasks returns only unfinished tasks
+                        all_tasks = asyncio.all_tasks(self._loop)
+                        task_count = len(all_tasks)
+                except Exception:
+                    # Accessing loop from thread can be fragile, don't fail
+                    pass
+
+                # ALWAYS log every check to prove watchdog is alive
+                logger.info(
+                    f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
+                )
+
                 if time_since_heartbeat > self.timeout_threshold:
                     consecutive_hangs += 1
                     logger.error(
-                        f"EVENT LOOP HANG DETECTED! No heartbeat for {time_since_heartbeat:.1f}s (threshold: {self.timeout_threshold}s)"
+                        f"EVENT LOOP HANG DETECTED! No heartbeat for {time_since_heartbeat:.1f}s (threshold: {self.timeout_threshold}s), "
+                        f"tasks={task_count}"
                     )
 
                     # Dump basic state
                     self._dump_state()
 
                     if consecutive_hangs >= 2:
-                        logger.critical(f"Event loop appears frozen ({consecutive_hangs} consecutive hangs)")
+                        logger.critical(f"Event loop appears frozen ({consecutive_hangs} consecutive hangs), tasks={task_count}")
                 else:
                     if consecutive_hangs > 0:
-                        logger.info("Event loop recovered")
+                        logger.info(f"Event loop recovered (was {consecutive_hangs} hangs, tasks now: {task_count})")
                     consecutive_hangs = 0
 
             except Exception as e:
