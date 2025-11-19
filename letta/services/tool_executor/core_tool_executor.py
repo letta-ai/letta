@@ -155,7 +155,6 @@ class LettaCoreToolExecutor(ToolExecutor):
             else:
                 # Filter out tool messages to prevent recursive results and exponential escaping
                 from letta.constants import CONVERSATION_SEARCH_TOOL_NAME
-                from letta.schemas.enums import MessageRole
 
                 filtered_results = []
                 for message, metadata in message_results:
