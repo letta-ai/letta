@@ -1825,11 +1825,16 @@ async def send_message_async(
         pydantic_run=run,
         actor=actor,
     )
+
     if use_lettuce:
         agent_state = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
-        if agent_state.multi_agent_group is None and agent_state.agent_type != AgentType.letta_v1_agent:
+        # Allow V1 agents only if the message async flag is enabled
+        is_v1_message_async_enabled = (
+            agent_state.agent_type == AgentType.letta_v1_agent and headers.experimental_params.letta_v1_agent_message_async
+        )
+        if agent_state.multi_agent_group is None and (agent_state.agent_type != AgentType.letta_v1_agent or is_v1_message_async_enabled):
             lettuce_client = await LettuceClient.create()
             run_id_from_lettuce = await lettuce_client.step(
                 agent_state=agent_state,
