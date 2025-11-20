@@ -937,10 +937,14 @@ def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
     except:
         return False
 
+    # Check if message_json is a dict (not int, str, list, etc.)
+    if not isinstance(message_json, dict):
+        return False
+
     if "reason" not in message_json:
         return False
 
-    if message_json["type"] != "heartbeat":
+    if message_json.get("type") != "heartbeat":
         return False
 
     if not is_ping:
