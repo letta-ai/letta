@@ -21,10 +21,10 @@ class GoogleAIProvider(Provider):
     base_url: str = "https://generativelanguage.googleapis.com"
 
     async def check_api_key(self):
-        from letta.llm_api.google_ai_client import google_ai_check_valid_api_key
+        from letta.llm_api.google_ai_client import google_ai_check_valid_api_key_async
 
         api_key = self.get_api_key_secret().get_plaintext()
-        google_ai_check_valid_api_key(api_key)
+        await google_ai_check_valid_api_key_async(api_key)
 
     async def list_llm_models_async(self):
         from letta.llm_api.google_ai_client import google_ai_get_model_list_async

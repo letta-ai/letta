@@ -49,11 +49,14 @@ def get_gemini_endpoint_and_headers(
     return url, headers
 
 
-def google_ai_check_valid_api_key(api_key: str):
+async def google_ai_check_valid_api_key_async(api_key: str):
+    """
+    Async version to check if Google AI API key is valid without blocking the event loop.
+    """
     client = genai.Client(api_key=api_key)
     # use the count token endpoint for a cheap model - as of 5/7/2025 this is slightly faster than fetching the list of models
     try:
-        client.models.count_tokens(
+        await client.aio.models.count_tokens(
             model=GOOGLE_MODEL_FOR_API_KEY_CHECK,
             contents="",
         )
