@@ -435,8 +435,8 @@ async def list_folder_passages(
     )
 
 
-@router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_folder_files")
-async def list_folder_files(
+@router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_files_for_folder")
+async def list_files_for_folder(
     folder_id: FolderId,
     before: Optional[str] = Query(
         None,

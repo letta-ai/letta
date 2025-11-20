@@ -128,8 +128,8 @@ async def update_mcp_server(
     return convert_generic_to_union(updated_server)
 
 
-@router.get("/{mcp_server_id}/tools", response_model=List[Tool], operation_id="mcp_list_mcp_tools_by_server")
-async def list_mcp_tools_by_server(
+@router.get("/{mcp_server_id}/tools", response_model=List[Tool], operation_id="mcp_list_tools_for_mcp_server")
+async def list_tools_for_mcp_server(
     mcp_server_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

@@ -3623,9 +3623,9 @@
     "/v1/folders/{folder_id}/files": {
       "get": {
         "tags": ["folders"],
-        "summary": "List Folder Files",
+        "summary": "List Files For Folder",
         "description": "List paginated files associated with a data folder.",
-        "operationId": "list_folder_files",
+        "operationId": "list_files_for_folder",
         "parameters": [
           {
             "name": "folder_id",
@@ -3746,7 +3746,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FileMetadata"
                   },
-                  "title": "Response List Folder Files"
+                  "title": "Response List Files For Folder"
                 }
               }
             }
@@ -11630,9 +11630,9 @@
     "/v1/mcp-servers/{mcp_server_id}/tools": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "List Mcp Tools By Server",
+        "summary": "List Tools For Mcp Server",
         "description": "Get a list of all tools for a specific MCP server",
-        "operationId": "mcp_list_mcp_tools_by_server",
+        "operationId": "mcp_list_tools_for_mcp_server",
         "parameters": [
           {
             "name": "mcp_server_id",
@@ -11654,7 +11654,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Tool"
                   },
-                  "title": "Response Mcp List Mcp Tools By Server"
+                  "title": "Response Mcp List Tools For Mcp Server"
                 }
               }
             }
