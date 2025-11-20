@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from letta.orm.job import Job
     from letta.orm.llm_batch_items import LLMBatchItem
     from letta.orm.llm_batch_job import LLMBatchJob
+    from letta.orm.mcp_server import MCPServer
     from letta.orm.message import Message
     from letta.orm.passage import ArchivalPassage, SourcePassage
     from letta.orm.passage_tag import PassageTag
@@ -39,7 +40,7 @@ class Organization(SqlalchemyBase):
     # relationships
     users: Mapped[List["User"]] = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     tools: Mapped[List["Tool"]] = relationship("Tool", back_populates="organization", cascade="all, delete-orphan")
-    # mcp_servers: Mapped[List["MCPServer"]] = relationship("MCPServer", back_populates="organization", cascade="all, delete-orphan")
+    mcp_servers: Mapped[List["MCPServer"]] = relationship("MCPServer", back_populates="organization", cascade="all, delete-orphan")
     blocks: Mapped[List["Block"]] = relationship("Block", back_populates="organization", cascade="all, delete-orphan")
     sandbox_configs: Mapped[List["SandboxConfig"]] = relationship(
         "SandboxConfig", back_populates="organization", cascade="all, delete-orphan"
