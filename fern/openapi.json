@@ -9581,8 +9581,8 @@
     "/v1/identities/{identity_id}/properties": {
       "put": {
         "tags": ["identities", "identities"],
-        "summary": "Upsert Identity Properties",
-        "operationId": "upsert_identity_properties",
+        "summary": "Upsert Properties For Identity",
+        "operationId": "upsert_properties_for_identity",
         "parameters": [
           {
             "name": "identity_id",
