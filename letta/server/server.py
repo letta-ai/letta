@@ -1357,7 +1357,7 @@ class SyncServer(object):
 
     # MCP wrappers
     # TODO support both command + SSE servers (via config)
-    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    async def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """List the MCP servers in the config (doesn't test that they are actually working)"""
 
         # TODO implement non-flatfile mechanism
@@ -1370,12 +1370,16 @@ class SyncServer(object):
         # Attempt to read from ~/.letta/mcp_config.json
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
-            with open(mcp_config_path, "r") as f:
-                try:
-                    mcp_config = json.load(f)
-                except Exception as e:
-                    logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
-                    return mcp_server_list
+
+            def _read_config():
+                with open(mcp_config_path, "r") as f:
+                    return json.load(f)
+
+            try:
+                mcp_config = await asyncio.to_thread(_read_config)
+            except Exception as e:
+                logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                return mcp_server_list
 
                 # Proper formatting is "mcpServers" key at the top level,
                 # then a dict with the MCP server name as the key,
@@ -1482,18 +1486,22 @@ class SyncServer(object):
         # Add to the server file
         current_mcp_servers[server_config.server_name] = server_config
 
-        # Write out the file, and make sure to in include the top-level mcpConfig
+        # Write out the file, and make sure to in include the top-level mcpConfig (wrapped to avoid blocking event loop)
         try:
             new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
-            with open(mcp_config_path, "w") as f:
-                json.dump(new_mcp_file, f, indent=4)
+
+            def _write_config():
+                with open(mcp_config_path, "w") as f:
+                    json.dump(new_mcp_file, f, indent=4)
+
+            await asyncio.to_thread(_write_config)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
             raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")
 
         return list(current_mcp_servers.values())
 
-    def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    async def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """Delete a server config from the MCP config file"""
 
         # TODO implement non-flatfile mechanism
@@ -1508,7 +1516,7 @@ class SyncServer(object):
 
         # If the file does exist, attempt to parse it get calling get_mcp_servers
         try:
-            current_mcp_servers = self.get_mcp_servers()
+            current_mcp_servers = await self.get_mcp_servers()
         except Exception as e:
             # Raise an error telling the user to fix the config file
             logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
@@ -1522,11 +1530,15 @@ class SyncServer(object):
         # Remove from the server file
         del current_mcp_servers[server_name]
 
-        # Write out the file, and make sure to in include the top-level mcpConfig
+        # Write out the file, and make sure to in include the top-level mcpConfig (wrapped to avoid blocking event loop)
         try:
             new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
-            with open(mcp_config_path, "w") as f:
-                json.dump(new_mcp_file, f, indent=4)
+
+            def _write_config():
+                with open(mcp_config_path, "w") as f:
+                    json.dump(new_mcp_file, f, indent=4)
+
+            await asyncio.to_thread(_write_config)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
             raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")

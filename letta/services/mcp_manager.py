@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import secrets
@@ -118,7 +119,7 @@ class MCPManager:
                 server_config = mcp_config.to_config(environment_variables)
             else:
                 # read from config file
-                mcp_config = self.read_mcp_config()
+                mcp_config = await self.read_mcp_config()
                 if mcp_server_name not in mcp_config:
                     raise ValueError(f"MCP server {mcp_server_name} not found in config.")
                 server_config = mcp_config[mcp_server_name]
@@ -719,19 +720,23 @@ class MCPManager:
                 logger.error(f"Failed to delete MCP server {mcp_server_id}: {e}")
                 raise
 
-    def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
+    async def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
         mcp_server_list = {}
 
         # Attempt to read from ~/.letta/mcp_config.json
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
-            with open(mcp_config_path, "r") as f:
-                try:
-                    mcp_config = json.load(f)
-                except Exception as e:
-                    # Config parsing errors are user configuration issues, not system errors
-                    logger.warning(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
-                    return mcp_server_list
+            # Read file without blocking event loop
+            def _read_config():
+                with open(mcp_config_path, "r") as f:
+                    return json.load(f)
+
+            try:
+                mcp_config = await asyncio.to_thread(_read_config)
+            except Exception as e:
+                # Config parsing errors are user configuration issues, not system errors
+                logger.warning(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                return mcp_server_list
 
                 # Proper formatting is "mcpServers" key at the top level,
                 # then a dict with the MCP server name as the key,

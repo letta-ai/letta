@@ -98,9 +98,12 @@ async def _convert_message_create_to_message(
                     parsed = urlparse(url)
                     file_path = unquote(parsed.path)
 
-                    # Read file directly from filesystem
-                    with open(file_path, "rb") as f:
-                        image_bytes = f.read()
+                    # Read file directly from filesystem (wrapped to avoid blocking event loop)
+                    def _read_file():
+                        with open(file_path, "rb") as f:
+                            return f.read()
+
+                    image_bytes = await asyncio.to_thread(_read_file)
 
                     # Guess media type from file extension
                     image_media_type, _ = mimetypes.guess_type(file_path)

@@ -5,6 +5,7 @@ This runs tool calls within an isolated modal sandbox. This does this by doing t
 3. tracking deployment versions to know when a deployment update is needed
 """
 
+import asyncio
 from typing import Any, Dict
 
 import modal
@@ -106,8 +107,12 @@ class AsyncToolSandboxModalV2(AsyncToolSandboxBase):
         if not executor_path.exists():
             raise ValueError(f"modal_executor.py not found at {executor_path}")
 
-        with open(executor_path, "r") as f:
-            f.read()
+        # Validate file is readable (wrapped to avoid blocking event loop)
+        def _validate_file():
+            with open(executor_path, "r") as f:
+                f.read()
+
+        await asyncio.to_thread(_validate_file)
 
         # Create a single file mount instead of directory mount
         # This avoids sys.path manipulation
