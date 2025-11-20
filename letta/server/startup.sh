@@ -68,16 +68,11 @@ fi
 /usr/local/bin/otelcol-contrib --config "$CONFIG_FILE" &
 OTEL_PID=$!
 
-# Start diagnostic monitor in background
-echo "Starting diagnostic monitor..."
-/app/diagnostic_monitor.sh 2>&1 | while IFS= read -r line; do echo "[DIAG] $line"; done &
-DIAG_PID=$!
-
 # Function to cleanup processes on exit
 cleanup() {
     echo "Shutting down..."
-    kill $OTEL_PID $DIAG_PID 2>/dev/null
-    wait $OTEL_PID $DIAG_PID 2>/dev/null
+    kill $OTEL_PID
+    wait $OTEL_PID
 }
 trap cleanup EXIT
 
