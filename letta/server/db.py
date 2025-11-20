@@ -72,6 +72,7 @@ class DatabaseRegistry:
                 await session.rollback()
                 raise
             finally:
+                session.expunge_all()
                 await session.close()
 
 
