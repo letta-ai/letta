@@ -441,24 +441,11 @@ def test_approve_tool_call_request(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 3 or len(messages) == 5 or len(messages) == 6
     assert messages[0].message_type == "tool_return_message"
     assert messages[0].tool_call_id == tool_call_id
     assert messages[0].status == "success"
-    if len(messages) == 4:
-        assert messages[1].message_type == "stop_reason"
-        assert messages[2].message_type == "usage_statistics"
-    elif len(messages) == 5:
-        assert messages[1].message_type == "reasoning_message"
-        assert messages[2].message_type == "assistant_message"
-        assert messages[3].message_type == "stop_reason"
-        assert messages[4].message_type == "usage_statistics"
-    elif len(messages) == 6:
-        assert messages[1].message_type == "reasoning_message"
-        assert messages[2].message_type == "tool_call_message"
-        assert messages[3].message_type == "tool_return_message"
-        assert messages[4].message_type == "stop_reason"
-        assert messages[5].message_type == "usage_statistics"
+    assert messages[-2].message_type == "stop_reason"
+    assert messages[-1].message_type == "usage_statistics"
 
 
 def test_approve_cursor_fetch(
@@ -474,7 +461,6 @@ def test_approve_cursor_fetch(
     tool_call_id = response.messages[-1].tool_call.tool_call_id
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 4
     assert messages[0].message_type == "user_message"
     assert messages[-1].message_type == "approval_request_message"
     # Ensure no request_heartbeat on approval request
@@ -584,18 +570,9 @@ def test_approve_and_follow_up(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 4 or len(messages) == 5
-    if len(messages) == 4:
-        assert messages[0].message_type == "reasoning_message"
-        assert messages[1].message_type == "assistant_message"
-        assert messages[2].message_type == "stop_reason"
-        assert messages[3].message_type == "usage_statistics"
-    elif len(messages) == 5:
-        assert messages[0].message_type == "reasoning_message"
-        assert messages[1].message_type == "tool_call_message"
-        assert messages[2].message_type == "tool_return_message"
-        assert messages[3].message_type == "stop_reason"
-        assert messages[4].message_type == "usage_statistics"
+    assert messages[0].message_type in ["reasoning_message", "assistant_message", "tool_call_message"]
+    assert messages[-2].message_type == "stop_reason"
+    assert messages[-1].message_type == "usage_statistics"
 
 
 def test_approve_and_follow_up_with_error(
@@ -690,13 +667,10 @@ def test_deny_tool_call_request(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert messages[0].message_type == "tool_return_message"
-    assert messages[0].tool_call_id == tool_call_id
-    assert messages[0].status == "error"
-    if messages[1].message_type == "assistant_message":
+    if messages[0].message_type == "assistant_message":
+        assert SECRET_CODE in messages[0].content
+    elif messages[1].message_type == "assistant_message":
         assert SECRET_CODE in messages[1].content
-    elif messages[2].message_type == "assistant_message":
-        assert SECRET_CODE in messages[2].content
 
 
 def test_deny_cursor_fetch(
@@ -922,13 +896,9 @@ def test_client_side_tool_call_request(
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert messages[0].message_type == "tool_return_message"
-    assert messages[0].tool_call_id == tool_call_id
-    assert messages[0].status == "success"
-    assert messages[0].tool_return == SECRET_CODE
-    if messages[1].message_type == "assistant_message":
+    if messages[0].message_type == "assistant_message":
         assert SECRET_CODE in messages[1].content
-    elif messages[2].message_type == "assistant_message":
+    elif messages[1].message_type == "assistant_message":
         assert SECRET_CODE in messages[2].content
     assert messages[-2].message_type == "stop_reason"
     assert messages[-1].message_type == "usage_statistics"

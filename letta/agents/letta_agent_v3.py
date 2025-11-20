@@ -638,7 +638,7 @@ class LettaAgentV3(LettaAgentV2):
             self.response_messages.extend(aggregated_persisted[new_message_idx:])
             self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
-            if llm_adapter.supports_token_streaming():
+            if llm_adapter.supports_token_streaming() and tool_calls:
                 # Stream each tool return if tools were executed
                 response_tool_returns = [msg for msg in aggregated_persisted if msg.role == "tool"]
                 for tr in response_tool_returns:
