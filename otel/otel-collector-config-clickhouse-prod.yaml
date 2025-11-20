@@ -53,6 +53,16 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
 
+  datadog:
+    api:
+      site: ${env:DD_SITE}
+      key: ${env:DD_API_KEY}
+    traces:
+      span_name_as_resource_name: true
+      span_name_remappings:
+        http.method: http.request.method
+        http.status_code: http.response.status_code
+
 extensions:
   health_check:
   pprof:
@@ -69,11 +79,11 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse]
+      exporters: [clickhouse, datadog]
     logs:
       receivers: [filelog]
       processors: [resource, memory_limiter, batch]
-      exporters: [clickhouse]
+      exporters: [clickhouse, datadog]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]

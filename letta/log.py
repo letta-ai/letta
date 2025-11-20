@@ -71,6 +71,20 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "dd.version"):
             log_data["dd.version"] = getattr(record, "dd.version")
 
+        # Add OpenTelemetry trace correlation (for OTEL → Datadog integration)
+        try:
+            from opentelemetry import trace
+
+            span = trace.get_current_span()
+            if span and span.get_span_context().is_valid:
+                ctx = span.get_span_context()
+                # Format trace_id and span_id as Datadog expects (decimal strings)
+                log_data["dd.trace_id"] = str(ctx.trace_id)
+                log_data["dd.span_id"] = str(ctx.span_id)
+        except Exception:
+            # Fail silently if OTEL is not available
+            pass
+
         # Add exception info if present
         if record.exc_info:
             log_data["exception"] = {
