@@ -78,9 +78,13 @@ class AzureProvider(Provider):
         # 2. Get all the deployed models
         url = self.get_azure_deployment_list_endpoint()
         try:
-            async with httpx.AsyncClient() as http_client:
+            # Azure API can be slow (8+ seconds), use a generous timeout
+            timeout = httpx.Timeout(15.0, connect=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as http_client:
                 response = await http_client.get(url, headers=headers)
                 response.raise_for_status()
+        except httpx.TimeoutException as e:
+            raise RuntimeError(f"Azure API timeout after 15s: {e}")
         except httpx.HTTPStatusError as e:
             raise RuntimeError(f"Failed to retrieve model list: {e}")
 
