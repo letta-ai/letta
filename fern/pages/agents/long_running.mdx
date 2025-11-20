@@ -493,7 +493,7 @@ while (run.status !== "completed") {
 }
 
 // Get the messages once complete
-const messages = await client.runs.listRunMessages({ runId: run.id });
+const messages = await client.runs.messages.list({ runId: run.id });
 ```
 </CodeGroup>
 

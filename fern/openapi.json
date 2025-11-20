@@ -13976,9 +13976,9 @@
     "/v1/runs/{run_id}/messages": {
       "get": {
         "tags": ["runs"],
-        "summary": "List Run Messages",
+        "summary": "List Messages For Run",
         "description": "Get response messages associated with a run.",
-        "operationId": "list_run_messages",
+        "operationId": "list_messages_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14081,7 +14081,7 @@
                   "items": {
                     "$ref": "#/components/schemas/LettaMessageUnion"
                   },
-                  "title": "Response List Run Messages"
+                  "title": "Response List Messages For Run"
                 }
               }
             }
@@ -14102,9 +14102,9 @@
     "/v1/runs/{run_id}/usage": {
       "get": {
         "tags": ["runs"],
-        "summary": "Retrieve Run Usage",
+        "summary": "Retrieve Usage For Run",
         "description": "Get usage statistics for a run.",
-        "operationId": "retrieve_run_usage",
+        "operationId": "retrieve_usage_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14184,9 +14184,9 @@
     "/v1/runs/{run_id}/steps": {
       "get": {
         "tags": ["runs"],
-        "summary": "List Run Steps",
+        "summary": "List Steps For Run",
         "description": "Get steps associated with a run with filtering options.",
-        "operationId": "list_run_steps",
+        "operationId": "list_steps_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14289,7 +14289,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Step"
                   },
-                  "title": "Response List Run Steps"
+                  "title": "Response List Steps For Run"
                 }
               }
             }
@@ -14310,8 +14310,8 @@
     "/v1/runs/{run_id}/stream": {
       "post": {
         "tags": ["runs"],
-        "summary": "Retrieve Stream",
-        "operationId": "retrieve_stream",
+        "summary": "Retrieve Stream For Run",
+        "operationId": "retrieve_stream_for_run",
         "parameters": [
           {
             "name": "run_id",

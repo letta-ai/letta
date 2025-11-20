@@ -19,7 +19,7 @@ import { LettaClient } from '@letta-ai/letta-client';
 const client = new LettaClient({
   token: "YOUR_API_KEY",
 });
-const steps = await client.runs.listRunSteps({
+const steps = await client.runs.steps.list({
   run_id: "RUN_ID",
 });
 steps.forEach(step => {
