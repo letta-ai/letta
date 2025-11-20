@@ -19,6 +19,19 @@ class AgentLoop:
     def load(agent_state: AgentState, actor: "User") -> BaseAgentV2:
         if agent_state.agent_type in [AgentType.letta_v1_agent, AgentType.sleeptime_agent]:
             if agent_state.enable_sleeptime:
+                if agent_state.multi_agent_group is None:
+                    # Agent has sleeptime enabled but no group - fall back to non-sleeptime agent
+                    from letta.log import get_logger
+
+                    logger = get_logger(__name__)
+                    logger.warning(
+                        f"Agent {agent_state.id} has enable_sleeptime=True but multi_agent_group is None. "
+                        f"Falling back to standard LettaAgentV3."
+                    )
+                    return LettaAgentV3(
+                        agent_state=agent_state,
+                        actor=actor,
+                    )
                 return SleeptimeMultiAgentV4(
                     agent_state=agent_state,
                     actor=actor,
@@ -29,6 +42,19 @@ class AgentLoop:
                 actor=actor,
             )
         elif agent_state.enable_sleeptime and agent_state.agent_type != AgentType.voice_convo_agent:
+            if agent_state.multi_agent_group is None:
+                # Agent has sleeptime enabled but no group - fall back to non-sleeptime agent
+                from letta.log import get_logger
+
+                logger = get_logger(__name__)
+                logger.warning(
+                    f"Agent {agent_state.id} has enable_sleeptime=True but multi_agent_group is None. "
+                    f"Falling back to standard LettaAgentV2."
+                )
+                return LettaAgentV2(
+                    agent_state=agent_state,
+                    actor=actor,
+                )
             return SleeptimeMultiAgentV3(agent_state=agent_state, actor=actor, group=agent_state.multi_agent_group)
         else:
             return LettaAgentV2(
