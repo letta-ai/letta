@@ -273,8 +273,15 @@ async def create_background_stream_processor(
                     message="Stream ended unexpectedly without stop_reason.",
                     detail=None,
                 )
-                yield f"data: {LettaStopReason(stop_reason=StopReasonType.error).model_dump_json()}\n\n"
-                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
+                # Write error chunks to Redis instead of yielding (this is a background task, not a generator)
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.error).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(
+                    run_id=run_id, data=f"event: error\ndata: {error_message.model_dump_json()}\n\n", is_complete=False
+                )
                 await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
                 saw_error = True
                 saw_done = True

@@ -1121,6 +1121,19 @@ def get_background_task_count() -> int:
 
 @trace_method
 def safe_create_task(coro, label: str = "background task"):
+    # Check if coro is an async generator instead of a coroutine
+    if inspect.isasyncgen(coro):
+        raise TypeError(
+            f"{label}: Cannot create task from async generator. "
+            "Async generators must be consumed with 'async for', not 'await'. "
+            "If you need to run an async generator as a task, wrap it in an async function."
+        )
+
+    if not inspect.iscoroutine(coro):
+        raise TypeError(
+            f"{label}: Expected a coroutine, got {type(coro).__name__}. Make sure you're calling the async function with () parentheses."
+        )
+
     async def wrapper():
         try:
             await coro
