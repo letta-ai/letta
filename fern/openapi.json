@@ -11675,9 +11675,9 @@
     "/v1/mcp-servers/{mcp_server_id}/tools/{tool_id}": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "Get Mcp Tool",
+        "summary": "Retrieve Mcp Tool",
         "description": "Get a specific MCP tool by its ID",
-        "operationId": "mcp_get_mcp_tool",
+        "operationId": "mcp_retrieve_mcp_tool",
         "parameters": [
           {
             "name": "mcp_server_id",

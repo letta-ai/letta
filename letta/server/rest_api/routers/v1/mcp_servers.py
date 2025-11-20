@@ -143,8 +143,8 @@ async def list_tools_for_mcp_server(
     return tools
 
 
-@router.get("/{mcp_server_id}/tools/{tool_id}", response_model=Tool, operation_id="mcp_get_mcp_tool")
-async def get_mcp_tool(
+@router.get("/{mcp_server_id}/tools/{tool_id}", response_model=Tool, operation_id="mcp_retrieve_mcp_tool")
+async def retrieve_mcp_tool(
     mcp_server_id: str,
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
