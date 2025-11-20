@@ -537,13 +537,17 @@ class MessageManager:
         if should_use_tpuf_for_messages() and result:
             agent_id = result[0].agent_id
             if agent_id:
-                if strict_mode:
-                    await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
-                else:
-                    fire_and_forget(
-                        self._embed_messages_background(result, actor, agent_id, project_id, template_id),
-                        task_name=f"embed_messages_for_agent_{agent_id}",
-                    )
+                # Filter out system messages before embedding to avoid unnecessary processing
+                # System messages (especially initial agent system messages) can be very large
+                messages_to_embed = [msg for msg in result if msg.role != MessageRole.system]
+                if messages_to_embed:
+                    if strict_mode:
+                        await self._embed_messages_background(messages_to_embed, actor, agent_id, project_id, template_id)
+                    else:
+                        fire_and_forget(
+                            self._embed_messages_background(messages_to_embed, actor, agent_id, project_id, template_id),
+                            task_name=f"embed_messages_for_agent_{agent_id}",
+                        )
 
         if allow_partial and existing_messages:
             async with db_registry.async_session() as session:

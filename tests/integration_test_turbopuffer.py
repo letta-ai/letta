@@ -2165,3 +2165,59 @@ async def test_message_template_id_filtering(server, sarah_agent, default_user, 
     await tpuf_client.delete_messages(
         agent_id=sarah_agent.id, organization_id=default_user.organization_id, message_ids=[message_a.id, message_b.id]
     )
+
+
+@pytest.mark.asyncio
+async def test_system_messages_not_embedded_during_agent_creation(server, default_user, enable_message_embedding):
+    """Test that system messages are filtered out before being passed to the embedding pipeline during agent creation"""
+    from unittest.mock import AsyncMock, patch
+
+    from letta.schemas.agent import CreateAgent
+    from letta.schemas.llm_config import LLMConfig
+
+    # Mock the _embed_messages_background method to track what messages are passed to it
+    messages_passed_to_embed = []
+
+    original_embed = server.message_manager._embed_messages_background
+
+    async def mock_embed(messages, actor, agent_id, project_id=None, template_id=None):
+        # Capture what messages are being passed to embedding
+        messages_passed_to_embed.extend(messages)
+        # Call the original method
+        return await original_embed(messages, actor, agent_id, project_id, template_id)
+
+    with patch.object(server.message_manager, "_embed_messages_background", mock_embed):
+        # Create agent with initial messages (which includes a system message)
+        agent = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name="TestSystemMessageAgent",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+        # Get all messages created for the agent
+        all_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=default_user)
+
+        # Verify that at least one system message was created
+        system_messages = [msg for msg in all_messages if msg.role == MessageRole.system]
+        assert len(system_messages) > 0, "No system messages were created during agent creation"
+
+        print(messages_passed_to_embed)
+        print(system_messages)
+        print(all_messages)
+
+        # Verify that NO system messages were passed to the embedding pipeline
+        system_messages_in_embed = [msg for msg in messages_passed_to_embed if msg.role == MessageRole.system]
+        assert len(system_messages_in_embed) == 0, (
+            f"System messages should not be embedded, but {len(system_messages_in_embed)} were passed to embedding pipeline"
+        )
+
+        # Clean up
+        try:
+            await server.agent_manager.delete_agent_async(agent.id, default_user)
+        except:
+            pass
