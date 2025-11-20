@@ -11486,9 +11486,9 @@
     "/v1/mcp-servers/{mcp_server_id}": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "Get Mcp Server",
+        "summary": "Retrieve Mcp Server",
         "description": "Get a specific MCP server",
-        "operationId": "mcp_get_mcp_server",
+        "operationId": "mcp_retrieve_mcp_server",
         "parameters": [
           {
             "name": "mcp_server_id",
@@ -11517,7 +11517,7 @@
                       "$ref": "#/components/schemas/StreamableHTTPMCPServer"
                     }
                   ],
-                  "title": "Response Mcp Get Mcp Server"
+                  "title": "Response Mcp Retrieve Mcp Server"
                 }
               }
             }

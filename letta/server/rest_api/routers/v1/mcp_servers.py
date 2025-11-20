@@ -73,9 +73,9 @@ async def list_mcp_servers(
 @router.get(
     "/{mcp_server_id}",
     response_model=MCPServerUnion,
-    operation_id="mcp_get_mcp_server",
+    operation_id="mcp_retrieve_mcp_server",
 )
-async def get_mcp_server(
+async def retrieve_mcp_server(
     mcp_server_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
