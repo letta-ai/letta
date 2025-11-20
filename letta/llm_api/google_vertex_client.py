@@ -520,6 +520,8 @@ class GoogleVertexClient(LLMClientBase):
                         try:
                             # Structured output tool call
                             function_call = json_loads(response_message.text)
+
+                            # Access dict keys - will raise TypeError/KeyError if not a dict or missing keys
                             function_name = function_call["name"]
                             function_args = function_call["args"]
                             assert isinstance(function_args, dict), function_args
@@ -557,9 +559,13 @@ class GoogleVertexClient(LLMClientBase):
                                     openai_response_message.tool_calls = []
                                 openai_response_message.tool_calls.append(tool_call)
 
-                        except json.decoder.JSONDecodeError:
+                        except (json.decoder.JSONDecodeError, ValueError, TypeError, KeyError, AssertionError) as e:
                             if candidate.finish_reason == "MAX_TOKENS":
                                 raise LLMServerError("Could not parse response data from LLM: exceeded max token limit")
+                            # Log the parsing error for debugging
+                            logger.warning(
+                                f"Failed to parse structured output from LLM response: {e}. Response text: {response_message.text[:500]}"
+                            )
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
