@@ -215,9 +215,9 @@
     "/v1/archives/{archive_id}": {
       "get": {
         "tags": ["archives"],
-        "summary": "Get Archive By Id",
+        "summary": "Retrieve Archive",
         "description": "Get a single archive by its ID.",
-        "operationId": "get_archive_by_id",
+        "operationId": "retrieve_archive",
         "parameters": [
           {
             "name": "archive_id",

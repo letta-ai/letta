@@ -115,8 +115,8 @@ async def list_archives(
     return archives
 
 
-@router.get("/{archive_id}", response_model=PydanticArchive, operation_id="get_archive_by_id")
-async def get_archive_by_id(
+@router.get("/{archive_id}", response_model=PydanticArchive, operation_id="retrieve_archive")
+async def retrieve_archive(
     archive_id: ArchiveId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
