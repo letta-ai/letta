@@ -16015,7 +16015,7 @@
     "/v1/templates/{project_id}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
-        "summary": "Create agents from a template (Cloud-only)",
+        "summary": "Create Agents From Template",
         "tags": ["templates"],
         "parameters": [
           {
@@ -16034,7 +16034,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest. This endpoint is not available for self-hosted Letta."
           }
         ],
         "operationId": "templates.createAgentsFromTemplate",
@@ -16150,7 +16150,7 @@
     "/v1/templates/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
-        "summary": "Create agents from a template (Cloud-only)",
+        "summary": "Create Agents From Template",
         "tags": ["templates"],
         "parameters": [
           {
@@ -16160,7 +16160,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest. This endpoint is not available for self-hosted Letta."
           }
         ],
         "operationId": "templates.createAgentsFromTemplateWithHeader",
