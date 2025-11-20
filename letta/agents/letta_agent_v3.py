@@ -638,16 +638,17 @@ class LettaAgentV3(LettaAgentV2):
             self.response_messages.extend(aggregated_persisted[new_message_idx:])
             self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
-            if llm_adapter.supports_token_streaming() and tool_calls:
-                # Stream each tool return if tools were executed
-                response_tool_returns = [msg for msg in aggregated_persisted if msg.role == "tool"]
-                for tr in response_tool_returns:
-                    # Skip streaming for aggregated parallel tool returns (no per-call tool_call_id)
-                    if tr.tool_call_id is None and tr.tool_returns:
-                        continue
-                    tool_return_letta = tr.to_letta_messages()[0]
-                    if include_return_message_types is None or tool_return_letta.message_type in include_return_message_types:
-                        yield tool_return_letta
+            if llm_adapter.supports_token_streaming():
+                if tool_calls:
+                    # Stream each tool return if tools were executed
+                    response_tool_returns = [msg for msg in aggregated_persisted if msg.role == "tool"]
+                    for tr in response_tool_returns:
+                        # Skip streaming for aggregated parallel tool returns (no per-call tool_call_id)
+                        if tr.tool_call_id is None and tr.tool_returns:
+                            continue
+                        tool_return_letta = tr.to_letta_messages()[0]
+                        if include_return_message_types is None or tool_return_letta.message_type in include_return_message_types:
+                            yield tool_return_letta
             else:
                 filter_user_messages = [m for m in aggregated_persisted[new_message_idx:] if m.role != "user"]
                 letta_messages = Message.to_letta_messages_from_list(
