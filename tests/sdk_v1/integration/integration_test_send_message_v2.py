@@ -644,17 +644,14 @@ async def test_parallel_tool_calls(
     if provider_type in ["google_ai", "google_vertex"]:
         pytest.skip("Gemini models are flaky for this test so we disable them for now")
 
-    # # Update model_settings to enable parallel tool calling
-    # modified_model_settings = model_settings.copy()
-    # modified_model_settings["parallel_tool_calls"] = True
+    # Update model_settings to enable parallel tool calling
+    modified_model_settings = model_settings.copy()
+    modified_model_settings["parallel_tool_calls"] = True
 
-    # IMPORTANT: Set parallel_tool_calls at BOTH the agent level and in model_settings
-    # Even though the agent-level parameter is deprecated, it may still be needed
     agent_state = await client.agents.update(
         agent_id=agent_state.id,
         model=model_handle,
-        model_settings=model_settings,
-        parallel_tool_calls=True,  # Set at agent level as well
+        model_settings=modified_model_settings,
     )
 
     if send_type == "step":

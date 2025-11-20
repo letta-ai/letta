@@ -315,8 +315,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         deprecated=True,
     )
     parallel_tool_calls: Optional[bool] = Field(
-        False,
-        description="Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+        None,
+        description="Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
         deprecated=True,
     )
 
@@ -441,8 +441,8 @@ class UpdateAgent(BaseModel):
     )
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     parallel_tool_calls: Optional[bool] = Field(
-        False,
-        description="Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
+        None,
+        description="Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
         deprecated=True,
     )
     response_format: Optional[ResponseFormatUnion] = Field(

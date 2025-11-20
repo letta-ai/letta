@@ -354,6 +354,7 @@ class GroqModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
+            "parallel_tool_calls": self.parallel_tool_calls,
         }
 
 

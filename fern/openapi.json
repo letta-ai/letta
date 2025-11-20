@@ -23748,8 +23748,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           }
         },
@@ -27948,8 +27947,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "deployment_id": {
@@ -28703,8 +28701,9 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use model_settings to configure parallel tool calls instead. If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false,
+            "deprecated": true
           }
         },
         "type": "object",
@@ -36493,8 +36492,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "response_format": {
@@ -37937,8 +37935,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "id": {

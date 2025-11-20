@@ -461,6 +461,11 @@ class SyncServer(object):
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
                 )
 
+        # update with model_settings
+        if request.model_settings is not None:
+            update_llm_config_params = request.model_settings._to_legacy_config_params()
+            request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
+
         # Copy parallel_tool_calls from request to llm_config if provided
         if request.parallel_tool_calls is not None:
             request.llm_config.parallel_tool_calls = request.parallel_tool_calls
