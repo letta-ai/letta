@@ -615,6 +615,7 @@ paths:
                   - $ref: '#/components/schemas/SummaryMessage'
                   - $ref: '#/components/schemas/EventMessage'
                   - $ref: '#/components/schemas/LettaPing'
+                  - $ref: '#/components/schemas/LettaErrorMessage'
                   - $ref: '#/components/schemas/LettaStopReason'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
   /v1/agents/{agent_id}/messages/cancel:

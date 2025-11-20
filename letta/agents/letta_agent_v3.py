@@ -28,7 +28,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import ApprovalReturn, LettaMessage, MessageType
+from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
@@ -319,14 +319,13 @@ class LettaAgentV3(LettaAgentV2):
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
 
                 # Mid-stream error: yield error event to client in SSE format
-                error_chunk = {
-                    "error": {
-                        "type": "internal_error",
-                        "message": "An error occurred during agent execution.",
-                        "detail": str(e),
-                    }
-                }
-                yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type="internal_error",
+                    message="An error occurred during agent execution.",
+                    detail=str(e),
+                )
+                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
 
                 # Return immediately - don't fall through to finish chunks
                 # This prevents sending end_turn finish chunks after an error
@@ -360,15 +359,16 @@ class LettaAgentV3(LettaAgentV2):
             if self.stop_reason is None:
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
 
+            yield f"data: {self.stop_reason.model_dump_json()}\n\n"
+
             # Send error event
-            error_chunk = {
-                "error": {
-                    "type": "cleanup_error",
-                    "message": "An error occurred during stream finalization.",
-                    "detail": str(cleanup_error),
-                }
-            }
-            yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+            error_message = LettaErrorMessage(
+                run_id=run_id,
+                error_type="cleanup_error",
+                message="An error occurred during stream finalization.",
+                detail=str(cleanup_error),
+            )
+            yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
             # Note: we don't send finish chunks here since we already errored
 
     @trace_method

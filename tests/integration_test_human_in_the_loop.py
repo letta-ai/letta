@@ -608,6 +608,9 @@ def test_approve_and_follow_up_with_error(
         messages = accumulate_chunks(response)
 
     assert messages is not None
+    print("\n\nmessages:\n\n")
+    for m in messages:
+        print(m)
     stop_reason_message = [m for m in messages if m.message_type == "stop_reason"][0]
     assert stop_reason_message
     assert stop_reason_message.stop_reason == "invalid_llm_response"

@@ -13,6 +13,7 @@ from letta.schemas.letta_message import (
     ApprovalResponseMessage,
     AssistantMessage,
     HiddenReasoningMessage,
+    LettaErrorMessage,
     LettaMessage,
     LettaMessageUnion,
     LettaPing,
@@ -201,6 +202,7 @@ class LettaStreamingResponse(RootModel):
         ApprovalRequestMessage,
         ApprovalResponseMessage,
         LettaPing,
+        LettaErrorMessage,
         LettaStopReason,
         LettaUsageStatistics,
     ] = Field(..., discriminator="message_type")

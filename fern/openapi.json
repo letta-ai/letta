@@ -14374,6 +14374,9 @@
                       "$ref": "#/components/schemas/LettaPing"
                     },
                     {
+                      "$ref": "#/components/schemas/LettaErrorMessage"
+                    },
+                    {
                       "$ref": "#/components/schemas/LettaStopReason"
                     },
                     {
@@ -29007,6 +29010,41 @@
         "required": ["agent_id"],
         "title": "LettaBatchRequest"
       },
+      "LettaErrorMessage": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "error_message",
+            "title": "Message Type",
+            "description": "The type of the message.",
+            "default": "error_message"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run ID",
+            "description": "The ID of the run."
+          },
+          "error_type": {
+            "type": "string",
+            "title": "Error Type",
+            "description": "The type of error."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "The error message."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "An optional error detail."
+          }
+        },
+        "type": "object",
+        "required": ["message_type", "run_id", "error_type", "message"],
+        "title": "LettaErrorMessage",
+        "description": "Error messages are used to notify the client of an error that occurred during the agent's execution."
+      },
       "LettaImage": {
         "properties": {
           "type": {
@@ -29481,6 +29519,9 @@
             "$ref": "#/components/schemas/LettaPing"
           },
           {
+            "$ref": "#/components/schemas/LettaErrorMessage"
+          },
+          {
             "$ref": "#/components/schemas/LettaStopReason"
           },
           {
@@ -29495,6 +29536,7 @@
             "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
             "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
             "assistant_message": "#/components/schemas/AssistantMessage",
+            "error_message": "#/components/schemas/LettaErrorMessage",
             "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
             "ping": "#/components/schemas/LettaPing",
             "reasoning_message": "#/components/schemas/ReasoningMessage",

@@ -282,6 +282,7 @@ async def delete_run(
                             {"$ref": "#/components/schemas/ApprovalRequestMessage"},
                             {"$ref": "#/components/schemas/ApprovalResponseMessage"},
                             {"$ref": "#/components/schemas/LettaPing"},
+                            {"$ref": "#/components/schemas/LettaErrorMessage"},
                             {"$ref": "#/components/schemas/LettaStopReason"},
                             {"$ref": "#/components/schemas/LettaUsageStatistics"},
                         ]

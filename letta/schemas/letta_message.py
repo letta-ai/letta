@@ -368,6 +368,24 @@ class LettaPing(LettaMessage):
     )
 
 
+class LettaErrorMessage(BaseModel):
+    """
+    Message returning any error that occurred during the agent's execution, mid SSE stream.
+
+    Args:
+        run_id (str): The ID of the run
+        error_type (str): The type of error
+        message (str): The error message
+        detail (Optional[str]): An optional error detail
+    """
+
+    message_type: Literal["error_message"] = "error_message"
+    run_id: str
+    error_type: str
+    message: str
+    detail: Optional[str] = None
+
+
 class SummaryMessage(LettaMessage):
     """
     A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider.
@@ -455,6 +473,44 @@ def create_letta_ping_schema():
         "required": ["message_type"],
         "title": "LettaPing",
         "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
+    }
+
+
+def create_letta_error_message_schema():
+    return {
+        "properties": {
+            "message_type": {
+                "type": "string",
+                "const": "error_message",
+                "title": "Message Type",
+                "description": "The type of the message.",
+                "default": "error_message",
+            },
+            "run_id": {
+                "type": "string",
+                "title": "Run ID",
+                "description": "The ID of the run.",
+            },
+            "error_type": {
+                "type": "string",
+                "title": "Error Type",
+                "description": "The type of error.",
+            },
+            "message": {
+                "type": "string",
+                "title": "Message",
+                "description": "The error message.",
+            },
+            "detail": {
+                "type": "string",
+                "title": "Detail",
+                "description": "An optional error detail.",
+            },
+        },
+        "type": "object",
+        "required": ["message_type", "run_id", "error_type", "message"],
+        "title": "LettaErrorMessage",
+        "description": "Error messages are used to notify the client of an error that occurred during the agent's execution.",
     }
 
 
