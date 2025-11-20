@@ -51,10 +51,16 @@ def _convert_message_create_to_message(
     else:
         raise ValueError("Message content is empty or invalid")
 
-    assert message_create.role in {MessageRole.user, MessageRole.system}, f"Invalid message role: {message_create.role}"
+    # Validate message role (assistant messages are allowed but won't be wrapped)
+    assert message_create.role in {
+        MessageRole.user,
+        MessageRole.system,
+        MessageRole.assistant,
+    }, f"Invalid message role: {message_create.role}"
+
     for content in message_content:
         if isinstance(content, TextContent):
-            # Apply wrapping if needed
+            # Apply wrapping only to user and system messages
             if message_create.role == MessageRole.user and wrap_user_message:
                 content.text = system.package_user_message(user_message=content.text, timezone=timezone)
             elif message_create.role == MessageRole.system and wrap_system_message:
