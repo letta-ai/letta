@@ -78,7 +78,7 @@ class EphemeralSummaryAgent(BaseAgent):
             role=MessageRole.system,
             content=[TextContent(text=get_system_text("summary_system_prompt"))],
         )
-        messages = convert_message_creates_to_messages(
+        messages = await convert_message_creates_to_messages(
             message_creates=[system_message_create] + input_messages,
             agent_id=self.agent_id,
             timezone=agent_state.timezone,

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import mimetypes
 from urllib.parse import unquote, urlparse
@@ -5,12 +6,31 @@ from urllib.parse import unquote, urlparse
 import httpx
 
 from letta import system
+from letta.errors import LettaImageFetchError
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import Base64Image, ImageContent, ImageSourceType, TextContent
 from letta.schemas.message import Message, MessageCreate
 
 
-def convert_message_creates_to_messages(
+async def _fetch_image_from_url(url: str) -> tuple[bytes, str | None]:
+    """
+    Async helper to fetch image from URL without blocking the event loop.
+    """
+    timeout = httpx.Timeout(15.0, connect=5.0)
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            image_response = await client.get(url, follow_redirects=True)
+            image_response.raise_for_status()
+            image_bytes = image_response.content
+            image_media_type = image_response.headers.get("content-type")
+            return image_bytes, image_media_type
+    except (httpx.RemoteProtocolError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        raise LettaImageFetchError(url=url, reason=str(e))
+    except Exception as e:
+        raise LettaImageFetchError(url=url, reason=f"Unexpected error: {e}")
+
+
+async def convert_message_creates_to_messages(
     message_creates: list[MessageCreate],
     agent_id: str,
     timezone: str,
@@ -18,7 +38,8 @@ def convert_message_creates_to_messages(
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
 ) -> list[Message]:
-    return [
+    # Process all messages concurrently
+    tasks = [
         _convert_message_create_to_message(
             message_create=create,
             agent_id=agent_id,
@@ -29,9 +50,10 @@ def convert_message_creates_to_messages(
         )
         for create in message_creates
     ]
+    return await asyncio.gather(*tasks)
 
 
-def _convert_message_create_to_message(
+async def _convert_message_create_to_message(
     message_create: MessageCreate,
     agent_id: str,
     timezone: str,
@@ -85,11 +107,8 @@ def _convert_message_create_to_message(
                     if not image_media_type:
                         image_media_type = "image/jpeg"  # default fallback
                 else:
-                    # Handle http(s):// URLs using httpx
-                    image_response = httpx.get(url)
-                    image_response.raise_for_status()
-                    image_bytes = image_response.content
-                    image_media_type = image_response.headers.get("content-type")
+                    # Handle http(s):// URLs using async httpx
+                    image_bytes, image_media_type = await _fetch_image_from_url(url)
                     if not image_media_type:
                         image_media_type, _ = mimetypes.guess_type(url)
 

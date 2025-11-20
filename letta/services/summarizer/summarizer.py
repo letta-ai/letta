@@ -183,19 +183,21 @@ class Summarizer:
             summary=summary_message_str,
             timezone=agent_state.timezone,
         )
-        summary_message_obj = convert_message_creates_to_messages(
-            message_creates=[
-                MessageCreate(
-                    role=MessageRole.user,
-                    content=[TextContent(text=summary_message_str_packed)],
-                )
-            ],
-            agent_id=agent_state.id,
-            timezone=agent_state.timezone,
-            # We already packed, don't pack again
-            wrap_user_message=False,
-            wrap_system_message=False,
-            run_id=None,  # TODO: add this
+        summary_message_obj = (
+            await convert_message_creates_to_messages(
+                message_creates=[
+                    MessageCreate(
+                        role=MessageRole.user,
+                        content=[TextContent(text=summary_message_str_packed)],
+                    )
+                ],
+                agent_id=agent_state.id,
+                timezone=agent_state.timezone,
+                # We already packed, don't pack again
+                wrap_user_message=False,
+                wrap_system_message=False,
+                run_id=None,  # TODO: add this
+            )
         )[0]
 
         # Create the message in the DB

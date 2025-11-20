@@ -110,6 +110,18 @@ class LettaInvalidArgumentError(LettaError):
         super().__init__(message=message, code=ErrorCode.INVALID_ARGUMENT, details=details)
 
 
+class LettaImageFetchError(LettaError):
+    """Error raised when fetching an image from a URL fails."""
+
+    def __init__(self, url: str, reason: str):
+        details = {"url": url, "reason": reason}
+        super().__init__(
+            message=f"Failed to fetch image from {url}: {reason}",
+            code=ErrorCode.INVALID_ARGUMENT,
+            details=details,
+        )
+
+
 class LettaMCPError(LettaError):
     """Base error for MCP-related issues."""
 
