@@ -426,6 +426,9 @@ class TelemetrySettings(BaseSettings):
     )
     datadog_agent_port: int = Field(default=8126, ge=1, le=65535, description="Datadog trace agent port (typically 8126 for traces).")
     datadog_service_name: str = Field(default="letta-server", description="Service name for Datadog profiling.")
+
+    datadog_profiling_enabled: bool = Field(default=False, description="Enable Datadog profiling.")
+
     datadog_profiling_memory_enabled: bool = Field(default=False, description="Enable memory profiling in Datadog.")
     datadog_profiling_heap_enabled: bool = Field(default=False, description="Enable heap profiling in Datadog.")
 

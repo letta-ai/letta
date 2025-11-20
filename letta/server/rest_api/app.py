@@ -265,7 +265,7 @@ def create_application() -> "FastAPI":
     if telemetry_settings.enable_datadog:
         try:
             dd_env = settings.environment or "development"
-            print(f"▶ Initializing Datadog profiling (env={dd_env})")
+            print(f"▶ Initializing Datadog tracing (env={dd_env})")
 
             # Configure environment variables before importing ddtrace (must be set in environment before importing ddtrace)
             os.environ.setdefault("DD_ENV", dd_env)
@@ -273,32 +273,33 @@ def create_application() -> "FastAPI":
             os.environ.setdefault("DD_VERSION", letta_version)
             os.environ.setdefault("DD_AGENT_HOST", telemetry_settings.datadog_agent_host)
             os.environ.setdefault("DD_TRACE_AGENT_PORT", str(telemetry_settings.datadog_agent_port))
-            os.environ.setdefault("DD_PROFILING_ENABLED", "true")
+            os.environ.setdefault("DD_PROFILING_ENABLED", str(telemetry_settings.datadog_profiling_enabled).lower())
             os.environ.setdefault("DD_PROFILING_MEMORY_ENABLED", str(telemetry_settings.datadog_profiling_memory_enabled).lower())
             os.environ.setdefault("DD_PROFILING_HEAP_ENABLED", str(telemetry_settings.datadog_profiling_heap_enabled).lower())
 
-            from ddtrace.profiling import Profiler
+            if telemetry_settings.datadog_profiling_enabled:
+                from ddtrace.profiling import Profiler
 
-            # Initialize and start profiler
-            profiler = Profiler(
-                env=dd_env,
-                service=telemetry_settings.datadog_service_name,
-                version=letta_version,
-            )
-            profiler.start()
+                # Initialize and start profiler
+                profiler = Profiler(
+                    env=dd_env,
+                    service=telemetry_settings.datadog_service_name,
+                    version=letta_version,
+                )
+                profiler.start()
 
-            # Log Git metadata for source code integration
-            git_info = ""
-            if telemetry_settings.datadog_git_commit_sha:
-                git_info = f", commit={telemetry_settings.datadog_git_commit_sha[:8]}"
-            if telemetry_settings.datadog_git_repository_url:
-                git_info += f", repo={telemetry_settings.datadog_git_repository_url}"
+                # Log Git metadata for source code integration
+                git_info = ""
+                if telemetry_settings.datadog_git_commit_sha:
+                    git_info = f", commit={telemetry_settings.datadog_git_commit_sha[:8]}"
+                if telemetry_settings.datadog_git_repository_url:
+                    git_info += f", repo={telemetry_settings.datadog_git_repository_url}"
 
-            logger.info(
-                f"Datadog profiling enabled: env={dd_env}, "
-                f"service={telemetry_settings.datadog_service_name}, "
-                f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
-            )
+                logger.info(
+                    f"Datadog profiling enabled: env={dd_env}, "
+                    f"service={telemetry_settings.datadog_service_name}, "
+                    f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
+                )
         except Exception as e:
             logger.error(f"Failed to initialize Datadog profiling: {e}", exc_info=True)
             if SENTRY_ENABLED:

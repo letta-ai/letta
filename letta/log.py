@@ -123,8 +123,8 @@ class DatadogEnvFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         """Add Datadog attributes to log record if Datadog is enabled."""
         if telemetry_settings.enable_datadog:
-            record.dd_env = telemetry_settings.datadog_env
-            record.dd_service = "letta-server"
+            record.dd_env = settings.environment or "development"
+            record.dd_service = telemetry_settings.datadog_service_name
         else:
             # Provide defaults to prevent attribute errors if filter is applied incorrectly
             record.dd_env = ""
