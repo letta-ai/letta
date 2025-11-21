@@ -36,13 +36,27 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # Extract and set log context
             context = {}
 
+            # Headers
             actor_id = request.headers.get("user_id")
             if actor_id:
                 context["actor_id"] = actor_id
 
+            project_id = request.headers.get("x-project-id")
+            if project_id:
+                context["project_id"] = project_id
+
+            org_id = request.headers.get("x-organization-id")
+            if org_id:
+                context["org_id"] = org_id
+
+            user_agent = request.headers.get("x-agent-id")
+            if user_agent:
+                context["agent_id"] = user_agent
+
             path = request.url.path
             path_parts = [p for p in path.split("/") if p]
 
+            # Path
             matched_parts = set()
             for part in path_parts:
                 if part in matched_parts:
@@ -62,6 +76,30 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
                         context[context_key] = part
                         matched_parts.add(part)
+                        break
+
+            # Query Parameters
+            for param_value in request.query_params.values():
+                if param_value in matched_parts:
+                    continue
+
+                for primitive_type in PrimitiveType:
+                    prefix = primitive_type.value
+                    pattern = PRIMITIVE_ID_PATTERNS.get(prefix)
+
+                    if pattern and pattern.match(param_value):
+                        context_key = f"{primitive_type.name.lower()}_id"
+
+                        if primitive_type == PrimitiveType.ORGANIZATION:
+                            context_key = "org_id"
+                        elif primitive_type == PrimitiveType.USER:
+                            context_key = "user_id"
+
+                        # Only set if not already set from path (path takes precedence over query params)
+                        # Query params can overwrite headers, but path values take precedence
+                        if context_key not in context:
+                            context[context_key] = param_value
+                            matched_parts.add(param_value)
                         break
 
             if context:
