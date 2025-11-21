@@ -21,6 +21,7 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, RE
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
@@ -273,6 +274,7 @@ class Message(BaseMessage):
         return str(uuid.uuid4())
 
     @staticmethod
+    @trace_method
     def to_letta_messages_from_list(
         messages: List[Message],
         use_assistant_message: bool = True,
