@@ -149,27 +149,23 @@ class LettaCoreToolExecutor(ToolExecutor):
                 end_date=end_datetime,
             )
 
-            # Filtering of tool messages is only necessary if we aren't using turbopuffer.
-            if should_use_tpuf_for_messages():
-                filtered_results = message_results
-            else:
-                # Filter out tool messages to prevent recursive results and exponential escaping
-                from letta.constants import CONVERSATION_SEARCH_TOOL_NAME
+            # Filter out tool messages to prevent recursive results and exponential escaping
+            from letta.constants import CONVERSATION_SEARCH_TOOL_NAME
 
-                filtered_results = []
-                for message, metadata in message_results:
-                    # Skip ALL tool messages - they contain tool execution results
-                    # which can cause recursive nesting and exponential escaping
-                    if message.role == MessageRole.tool:
+            filtered_results = []
+            for message, metadata in message_results:
+                # Skip ALL tool messages - they contain tool execution results
+                # which can cause recursive nesting and exponential escaping
+                if message.role == MessageRole.tool:
+                    continue
+
+                # Also skip assistant messages that call conversation_search
+                # These can contain the search query which may lead to confusing results
+                if message.role == MessageRole.assistant and message.tool_calls:
+                    if CONVERSATION_SEARCH_TOOL_NAME in [tool_call.function.name for tool_call in message.tool_calls]:
                         continue
 
-                    # Also skip assistant messages that call conversation_search
-                    # These can contain the search query which may lead to confusing results
-                    if message.role == MessageRole.assistant and message.tool_calls:
-                        if CONVERSATION_SEARCH_TOOL_NAME in [tool_call.function.name for tool_call in message.tool_calls]:
-                            continue
-
-                    filtered_results.append((message, metadata))
+                filtered_results.append((message, metadata))
 
             if len(filtered_results) == 0:
                 return {"message": "No results found.", "results": []}
