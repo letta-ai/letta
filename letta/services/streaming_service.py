@@ -351,7 +351,7 @@ class StreamingService:
                         run_status = RunStatus.cancelled
                     else:
                         run_status = RunStatus.completed
-                    stop_reason = agent_loop.stop_reason.stop_reason.value if agent_loop.stop_reason else StopReasonType.end_turn.value
+                    stop_reason = agent_loop.stop_reason if agent_loop.stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn)
 
             except LLMTimeoutError as e:
                 run_status = RunStatus.failed
@@ -428,9 +428,11 @@ class StreamingService:
             finally:
                 # always update run status, whether success or failure
                 if run_id and self.runs_manager and run_status:
+                    # Extract stop_reason enum value from LettaStopReason object
+                    stop_reason_value = stop_reason.stop_reason if stop_reason else StopReasonType.error.value
                     await self.runs_manager.update_run_by_id_async(
                         run_id=run_id,
-                        update=RunUpdate(status=run_status, stop_reason=stop_reason, metadata=error_data),
+                        update=RunUpdate(status=run_status, stop_reason=stop_reason_value, metadata=error_data),
                         actor=actor,
                     )
 
