@@ -16249,7 +16249,34 @@
         },
         "responses": {
           "201": {
-            "description": "201"
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of created agent IDs"
+                    },
+                    "group_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Optional group ID if agents were created in a group"
+                    },
+                    "deployment_id": {
+                      "type": "string",
+                      "description": "The deployment ID for the created agents"
+                    }
+                  },
+                  "required": ["agent_ids", "group_id", "deployment_id"],
+                  "description": "Response containing created agent IDs and associated metadata"
+                }
+              }
+            }
           },
           "402": {
             "description": "402",
