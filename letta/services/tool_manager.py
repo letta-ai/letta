@@ -61,7 +61,7 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
     packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
     for package in MODAL_SAFE_IMPORT_MODULES:
         packages.append(package)
-    packages.append("letta_client")
+    packages.append("letta_client>=1.1.1")
     packages.append("letta")  # Base letta without extras
     packages.append("asyncpg>=0.30.0")  # Fixes asyncpg import error
     packages.append("psycopg2-binary>=2.9.10")  # PostgreSQL adapter (pre-compiled, no build required)
@@ -116,22 +116,23 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
                 print("Passing agent_state as dict to tool", file=sys.stderr)
                 reconstructed_agent_state = agent_state
 
-        # Set environment variables
         if env_vars:
             for key, value in env_vars.items():
                 os.environ[key] = str(value)
 
+        # TODO: directly instantiate the letta client once we upgrade to 1.0.0+ in core
         # Initialize the Letta client
-        if letta_api_key:
-            letta_client = Letta(token=letta_api_key, base_url=os.environ.get("LETTA_API_URL", "https://api.letta.com"))
-        else:
-            letta_client = None
+        # if letta_api_key:
+        #     letta_client = Letta(token=letta_api_key, base_url=os.environ.get("LETTA_API_URL", "https://api.letta.com"))
+        # else:
+        #     letta_client = None
 
         tool_namespace = {
             "__builtins__": __builtins__,  # Include built-in functions
-            "_letta_client": letta_client,  # Make letta_client available
+            # "_letta_client": letta_client,  # Make letta_client available
             "os": os,  # Include os module for env vars access
             "agent_id": agent_id,
+            "_LETTA_API_KEY": letta_api_key,
             # Add any other modules/variables the tool might need
         }
 

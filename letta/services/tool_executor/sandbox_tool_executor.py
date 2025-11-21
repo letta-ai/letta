@@ -84,7 +84,9 @@ class SandboxToolExecutor(ToolExecutor):
                         organization_id=actor.organization_id,
                     )
                     # TODO: pass through letta api key
-                    tool_execution_result = await sandbox.run(agent_state=agent_state_copy, additional_env_vars=sandbox_env_vars)
+                    tool_execution_result = await sandbox.run(
+                        agent_id=agent_state.id, agent_state=agent_state_copy, additional_env_vars=sandbox_env_vars
+                    )
                 except Exception as e:
                     # Modal execution failed, log and fall back to E2B/LOCAL
                     logger.warning(f"Modal execution failed for tool {tool.name}: {e}. Falling back to {tool_settings.sandbox_type.value}")
