@@ -3,20 +3,6 @@ from typing import List, Optional, Tuple, Union
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
-
-# Import memory tracking if available
-try:
-    from letta.monitoring import track_operation
-
-    MEMORY_TRACKING_ENABLED = True
-except ImportError:
-    MEMORY_TRACKING_ENABLED = False
-
-    # Define a no-op decorator if tracking is not available
-    def track_operation(name):
-        return lambda f: f
-
-
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -760,7 +746,6 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
-    @track_operation("list_models")
     async def list_models_async(
         self,
         actor: PydanticUser,

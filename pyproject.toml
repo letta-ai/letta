@@ -151,7 +151,6 @@ desktop = [
 ]
 profiling = [
     "ddtrace>=2.18.2",
-    "google-cloud-profiler>=4.1.0",
 ]
 
 [build-system]

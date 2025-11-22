@@ -415,9 +415,6 @@ class TelemetrySettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="letta_telemetry_", extra="ignore")
 
-    # Google Cloud Profiler
-    profiler: bool = Field(default=False, description="Enable Google Cloud Profiler.")
-
     # Datadog APM and Profiling
     enable_datadog: bool = Field(default=False, description="Enable Datadog profiling. Environment is pulled from settings.environment.")
     datadog_agent_host: str = Field(

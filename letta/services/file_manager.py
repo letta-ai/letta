@@ -11,7 +11,6 @@ from sqlalchemy.orm import selectinload
 from letta.constants import MAX_FILENAME_LENGTH
 from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
 from letta.log import get_logger
-from letta.monitoring import track_operation
 from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
 from letta.orm.sqlalchemy_base import AccessType
@@ -54,7 +53,6 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    @track_operation("create_file_with_content")
     async def create_file(
         self,
         file_metadata: PydanticFileMetadata,
@@ -358,7 +356,6 @@ class FileManager:
     @enforce_types
     @trace_method
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
-    @track_operation("upsert_file_content")
     async def upsert_file_content(
         self,
         *,
@@ -405,7 +402,6 @@ class FileManager:
     @enforce_types
     @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
-    @track_operation("list_files_with_content")
     async def list_files(
         self,
         source_id: str,
@@ -633,7 +629,6 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    @track_operation("batch_get_files_by_ids")
     async def get_files_by_ids_async(
         self, file_ids: List[str], actor: PydanticUser, *, include_content: bool = False
     ) -> List[PydanticFileMetadata]:
@@ -669,7 +664,6 @@ class FileManager:
 
     @enforce_types
     @trace_method
-    @track_operation("batch_get_files_for_agents")
     async def get_files_for_agents_async(
         self, agent_ids: List[str], actor: PydanticUser, *, include_content: bool = False
     ) -> List[PydanticFileMetadata]:

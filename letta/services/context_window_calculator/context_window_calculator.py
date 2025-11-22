@@ -4,20 +4,6 @@ from typing import Any, List, Optional, Tuple
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.log import get_logger
-
-# Import memory tracking if available
-try:
-    from letta.monitoring import track_operation
-
-    MEMORY_TRACKING_ENABLED = True
-except ImportError:
-    MEMORY_TRACKING_ENABLED = False
-
-    # Define a no-op decorator if tracking is not available
-    def track_operation(name):
-        return lambda f: f
-
-
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
@@ -110,7 +96,6 @@ class ContextWindowCalculator:
 
         return None, 1
 
-    @track_operation("calculate_context_window")
     async def calculate_context_window(
         self,
         agent_state: AgentState,

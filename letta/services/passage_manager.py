@@ -11,7 +11,6 @@ from letta.constants import MAX_EMBEDDING_DIM
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
-from letta.monitoring import track_operation
 from letta.orm import ArchivesAgents
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import ArchivalPassage, SourcePassage
@@ -303,7 +302,6 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    @track_operation("batch_create_archival_passages")
     async def create_many_archival_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """Create multiple archival passages."""
         archival_passages = []
@@ -356,7 +354,6 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    @track_operation("batch_create_source_passages")
     async def create_many_source_passages_async(
         self, passages: List[PydanticPassage], file_metadata: PydanticFileMetadata, actor: PydanticUser
     ) -> List[PydanticPassage]:
@@ -454,7 +451,6 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    @track_operation("insert_passages_with_embeddings")
     async def insert_passage(
         self,
         agent_state: AgentState,
@@ -549,7 +545,6 @@ class PassageManager:
         except Exception as e:
             raise e
 
-    @track_operation("generate_embeddings_batch")
     async def _generate_embeddings_concurrent(self, text_chunks: List[str], embedding_config, actor: PydanticUser) -> List[List[float]]:
         """Generate embeddings for all text chunks concurrently using LLMClient"""
 
@@ -769,7 +764,6 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    @track_operation("bulk_delete_agent_passages")
     async def delete_agent_passages_async(
         self,
         passages: List[PydanticPassage],
@@ -824,7 +818,6 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    @track_operation("bulk_delete_source_passages")
     async def delete_source_passages_async(
         self,
         actor: PydanticUser,

@@ -7,19 +7,6 @@ import sqlalchemy as sa
 from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-# Import memory tracking if available
-try:
-    from letta.monitoring import track_operation
-
-    MEMORY_TRACKING_ENABLED = True
-except ImportError:
-    MEMORY_TRACKING_ENABLED = False
-
-    # Define a no-op decorator if tracking is not available
-    def track_operation(name):
-        return lambda f: f
-
-
 from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_MEMORY_TOOLS_V2,
@@ -340,7 +327,6 @@ class AgentManager:
     # ======================================================================================================================
 
     @trace_method
-    @track_operation("agent_creation")
     async def create_agent_async(
         self,
         agent_create: CreateAgent,

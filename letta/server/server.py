@@ -31,7 +31,6 @@ from letta.interface import (
     CLIInterface,  # for printing to terminal
 )
 from letta.log import get_logger
-from letta.monitoring.memory_tracker import track_operation
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import log_event, trace_method
 from letta.prompts.gpt_system import get_system_text
@@ -1025,7 +1024,6 @@ class SyncServer(object):
         return passage_count, document_count
 
     @trace_method
-    @track_operation("list_llm_models_server")
     async def list_llm_models_async(
         self,
         actor: User,
@@ -1077,7 +1075,6 @@ class SyncServer(object):
 
         return unique_models
 
-    @track_operation("list_embedding_models_server")
     async def list_embedding_models_async(self, actor: User) -> List[EmbeddingConfig]:
         """Asynchronously list available embedding models with maximum concurrency"""
         import asyncio
@@ -1104,7 +1101,6 @@ class SyncServer(object):
 
         return embedding_models
 
-    @track_operation("get_enabled_providers")
     async def get_enabled_providers_async(
         self,
         actor: User,

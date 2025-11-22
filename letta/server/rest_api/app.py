@@ -16,13 +16,6 @@ import uvicorn
 # Enable Python fault handler to get stack traces on segfaults
 faulthandler.enable()
 
-# Import memory tracking (if available)
-try:
-    from letta.monitoring import RequestSizeMonitoringMiddleware, get_memory_tracker, identify_upload_endpoints
-
-    MEMORY_TRACKING_ENABLED = True
-except ImportError:
-    MEMORY_TRACKING_ENABLED = False
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -76,7 +69,7 @@ from letta.server.global_exception_handler import setup_global_exception_handler
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, ProfilerContextMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -143,15 +136,6 @@ async def lifespan(app_: FastAPI):
     """
     worker_id = os.getpid()
 
-    # Initialize memory tracking
-    if MEMORY_TRACKING_ENABLED:
-        logger.info(f"[Worker {worker_id}] Initializing memory tracking")
-        # Get the global tracker instance
-        tracker = get_memory_tracker(enable_background_monitor=True, monitor_interval=5)
-        # Explicitly start the background monitor (won't wait for first tracked operation)
-        await tracker.start_background_monitor()
-        logger.info(f"[Worker {worker_id}] Memory tracking enabled - monitoring every 5s with proactive alerts")
-
     # Initialize event loop watchdog
     try:
         import asyncio
@@ -175,19 +159,6 @@ async def lifespan(app_: FastAPI):
         logger.info(f"[Worker {worker_id}] NLTK data ready")
     except Exception as e:
         logger.warning(f"[Worker {worker_id}] Failed to download NLTK data: {e}")
-
-    if telemetry_settings.profiler:
-        try:
-            import googlecloudprofiler
-
-            googlecloudprofiler.start(
-                service="memgpt-server",
-                service_version=str(letta_version),
-                verbose=3,
-            )
-            logger.info("Profiler started.")
-        except Exception as exc:
-            logger.info("Profiler not enabled: %", exc)
 
     # logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
     # logger.info(f"[Worker {worker_id}] Initializing database connections")
@@ -217,13 +188,6 @@ async def lifespan(app_: FastAPI):
 
     # Cleanup on shutdown
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
-
-    # Report memory usage before shutdown
-    if MEMORY_TRACKING_ENABLED:
-        logger.info(f"[Worker {worker_id}] Generating final memory report")
-        tracker = get_memory_tracker()
-        report = tracker.get_report()
-        logger.info(f"[Worker {worker_id}] Memory report:\n{report}")
 
     try:
         from letta.jobs.scheduler import shutdown_scheduler_and_release_lock
@@ -602,18 +566,8 @@ def create_application() -> "FastAPI":
     # Add reverse proxy middleware to handle X-Forwarded-* headers
     # app.add_middleware(ReverseProxyMiddleware, base_path=settings.server_base_path)
 
-    if telemetry_settings.profiler:
-        app.add_middleware(ProfilerContextMiddleware)
-
     # Add unified logging middleware - enriches log context and logs exceptions
     app.add_middleware(LoggingMiddleware)
-
-    # Add request size monitoring middleware to detect large uploads
-    if MEMORY_TRACKING_ENABLED:
-        app.add_middleware(RequestSizeMonitoringMiddleware)
-        logger.info("Request size monitoring middleware enabled")
-        # Identify potential upload endpoints
-        identify_upload_endpoints(app)
 
     app.add_middleware(
         CORSMiddleware,
