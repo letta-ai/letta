@@ -284,8 +284,8 @@ class ArchiveManager:
         self,
         archive_id: str,
         text: str,
-        metadata: Dict = None,
-        tags: List[str] = None,
+        metadata: Optional[Dict] = None,
+        tags: Optional[List[str]] = None,
         actor: PydanticUser = None,
     ) -> PydanticPassage:
         """Create a passage in an archive.
@@ -334,6 +334,27 @@ class ArchiveManager:
             pydantic_passage=passage,
             actor=actor,
         )
+
+        # If archive uses Turbopuffer, also write to Turbopuffer (dual-write)
+        if archive.vector_db_provider == VectorDBProvider.TPUF:
+            try:
+                from letta.helpers.tpuf_client import TurbopufferClient
+
+                tpuf_client = TurbopufferClient()
+
+                # Insert to Turbopuffer with the same ID as SQL
+                await tpuf_client.insert_archival_memories(
+                    archive_id=archive.id,
+                    text_chunks=[created_passage.text],
+                    passage_ids=[created_passage.id],
+                    organization_id=actor.organization_id,
+                    actor=actor,
+                )
+                logger.info(f"Uploaded passage {created_passage.id} to Turbopuffer for archive {archive_id}")
+            except Exception as e:
+                logger.error(f"Failed to upload passage to Turbopuffer: {e}")
+                # Don't fail the entire operation if Turbopuffer upload fails
+                # The passage is already saved to SQL
 
         logger.info(f"Created passage {created_passage.id} in archive {archive_id}")
         return created_passage

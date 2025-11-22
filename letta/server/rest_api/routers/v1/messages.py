@@ -1,14 +1,17 @@
-from typing import List, Literal, Optional
+from typing import Annotated, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from pydantic import Field
 from starlette.requests import Request
 
 from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
+from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import CreateBatch
 from letta.schemas.letta_response import LettaBatchMessages
+from letta.schemas.message import Message, MessageSearchRequest, MessageSearchResult, SearchAllMessagesRequest
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
@@ -16,6 +19,65 @@ from letta.settings import settings
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 logger = get_logger(__name__)
+
+
+MessagesResponse = Annotated[
+    list[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
+]
+
+
+@router.get("/", response_model=MessagesResponse, operation_id="list_all_messages")
+async def list_all_messages(
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+):
+    """
+    List messages across all agents for the current user.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.get_all_messages_recall_async(
+        after=after,
+        before=before,
+        limit=limit,
+        reverse=(order == "desc"),
+        return_message_object=False,
+        actor=actor,
+    )
+
+
+@router.post("/search", response_model=List[LettaMessageUnion], operation_id="search_all_messages")
+async def search_all_messages(
+    request: SearchAllMessagesRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Search messages across the organization with optional agent filtering.
+    Returns messages with FTS/vector ranks and total RRF score.
+
+    This is a cloud-only feature.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    results = await server.message_manager.search_messages_org_async(
+        actor=actor,
+        query_text=request.query,
+        search_mode=request.search_mode,
+        limit=request.limit,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
+    return Message.to_letta_messages_from_list(messages=[result.message for result in results], text_is_assistant_message=True)
 
 
 @router.post(

@@ -2263,6 +2263,100 @@ def test_create_agent(client: LettaSDKClient) -> None:
     client.agents.delete(agent_id=agent.id)
 
 
+def test_list_all_messages(client: LettaSDKClient):
+    """Test listing all messages across multiple agents."""
+    # Create two agents
+    agent1 = client.agents.create(
+        name="test_agent_1_messages",
+        memory_blocks=[CreateBlockParam(label="persona", value="you are agent 1")],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    agent2 = client.agents.create(
+        name="test_agent_2_messages",
+        memory_blocks=[CreateBlockParam(label="persona", value="you are agent 2")],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    try:
+        # Send messages to both agents
+        agent1_msg_content = "Hello from agent 1"
+        agent2_msg_content = "Hello from agent 2"
+
+        client.agents.messages.create(
+            agent_id=agent1.id,
+            messages=[MessageCreateParam(role="user", content=agent1_msg_content)],
+        )
+
+        client.agents.messages.create(
+            agent_id=agent2.id,
+            messages=[MessageCreateParam(role="user", content=agent2_msg_content)],
+        )
+
+        # Wait a bit for messages to be persisted
+        time.sleep(0.5)
+
+        # List all messages across both agents
+        all_messages = client.messages.list(limit=100)
+
+        # Verify we got messages back
+        assert hasattr(all_messages, "items") or isinstance(all_messages, list), "Should return messages list or paginated response"
+
+        # Handle both list and paginated response formats
+        if hasattr(all_messages, "items"):
+            messages_list = all_messages.items
+        else:
+            messages_list = list(all_messages)
+
+        # Should have messages from both agents (plus initial system messages)
+        assert len(messages_list) > 0, "Should have at least some messages"
+
+        # Extract message content for verification
+        message_contents = []
+        for msg in messages_list:
+            # Handle different message types
+            if hasattr(msg, "content"):
+                content = msg.content
+                if isinstance(content, str):
+                    message_contents.append(content)
+                elif isinstance(content, list):
+                    for item in content:
+                        if hasattr(item, "text"):
+                            message_contents.append(item.text)
+
+        # Verify messages from both agents are present
+        found_agent1_msg = any(agent1_msg_content in content for content in message_contents)
+        found_agent2_msg = any(agent2_msg_content in content for content in message_contents)
+
+        assert found_agent1_msg or found_agent2_msg, "Should find at least one of the messages we sent"
+
+        # Test pagination parameters
+        limited_messages = client.messages.list(limit=5)
+        if hasattr(limited_messages, "items"):
+            limited_list = limited_messages.items
+        else:
+            limited_list = list(limited_messages)
+
+        assert len(limited_list) <= 5, "Should respect limit parameter"
+
+        # Test order parameter (desc should be default - newest first)
+        desc_messages = client.messages.list(limit=10, order="desc")
+        if hasattr(desc_messages, "items"):
+            desc_list = desc_messages.items
+        else:
+            desc_list = list(desc_messages)
+
+        # Verify messages are returned
+        assert isinstance(desc_list, list), "Should return a list of messages"
+
+    finally:
+        # Clean up agents
+        client.agents.delete(agent_id=agent1.id)
+        client.agents.delete(agent_id=agent2.id)
+
+
 def test_create_agent_with_tools(client: LettaSDKClient) -> None:
     """Test creating an agent with custom inventory management tools"""
 

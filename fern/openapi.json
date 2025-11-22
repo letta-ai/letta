@@ -336,15 +336,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Archive"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -15296,6 +15289,205 @@
         }
       }
     },
+    "/v1/messages/": {
+      "get": {
+        "tags": ["messages"],
+        "summary": "List All Messages",
+        "description": "List messages across all agents for the current user.",
+        "operationId": "list_all_messages",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LettaMessageUnion"
+                  },
+                  "title": "Response List All Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/search": {
+      "post": {
+        "tags": ["messages"],
+        "summary": "Search All Messages",
+        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
+        "operationId": "search_all_messages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchAllMessagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/SystemMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/UserMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/HiddenReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolCallMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolReturnMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/AssistantMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalRequestMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalResponseMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SummaryMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/EventMessage"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "message_type",
+                      "mapping": {
+                        "system_message": "#/components/schemas/SystemMessage",
+                        "user_message": "#/components/schemas/UserMessage",
+                        "reasoning_message": "#/components/schemas/ReasoningMessage",
+                        "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+                        "tool_call_message": "#/components/schemas/ToolCallMessage",
+                        "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                        "assistant_message": "#/components/schemas/AssistantMessage",
+                        "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                        "summary": "#/components/schemas/SummaryMessage",
+                        "event": "#/components/schemas/EventMessage"
+                      }
+                    }
+                  },
+                  "title": "Response Search All Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
@@ -15657,6 +15849,51 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/passages/search": {
+      "post": {
+        "tags": ["passages"],
+        "summary": "Search Passages",
+        "description": "Search passages across the organization with optional agent and archive filtering.\nReturns passages with relevance scores.\n\nThis endpoint supports semantic search through passages:\n- If neither agent_id nor archive_id is provided, searches ALL passages in the organization\n- If agent_id is provided, searches passages across all archives attached to that agent\n- If archive_id is provided, searches passages within that specific archive\n- If both are provided, agent_id takes precedence",
+        "operationId": "search_passages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PassageSearchResult"
+                  },
+                  "title": "Response Search Passages"
+                }
               }
             }
           },
@@ -31576,6 +31813,122 @@
         "title": "PassageCreateRequest",
         "description": "Request model for creating a passage in an archive."
       },
+      "PassageSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Text query for semantic search"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Filter passages by agent ID"
+          },
+          "archive_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Id",
+            "description": "Filter passages by archive ID"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Optional list of tags to filter search results"
+          },
+          "tag_match_mode": {
+            "type": "string",
+            "enum": ["any", "all"],
+            "title": "Tag Match Mode",
+            "description": "How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags",
+            "default": "any"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return",
+            "default": 50
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Filter results to passages created after this datetime"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Filter results to passages created before this datetime"
+          }
+        },
+        "type": "object",
+        "required": ["query"],
+        "title": "PassageSearchRequest",
+        "description": "Request model for searching passages across archives."
+      },
+      "PassageSearchResult": {
+        "properties": {
+          "passage": {
+            "$ref": "#/components/schemas/Passage",
+            "description": "The passage object"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Relevance score"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Additional metadata about the search result"
+          }
+        },
+        "type": "object",
+        "required": ["passage", "score"],
+        "title": "PassageSearchResult",
+        "description": "Result from a passage search operation with scoring details."
+      },
       "PipRequirement": {
         "properties": {
           "name": {
@@ -33157,6 +33510,59 @@
         "type": "string",
         "enum": ["e2b", "modal", "local"],
         "title": "SandboxType"
+      },
+      "SearchAllMessagesRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Text query for full-text search"
+          },
+          "search_mode": {
+            "type": "string",
+            "enum": ["vector", "fts", "hybrid"],
+            "title": "Search Mode",
+            "description": "Search mode to use",
+            "default": "hybrid"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return",
+            "default": 50
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Filter messages created after this date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Filter messages created on or before this date"
+          }
+        },
+        "type": "object",
+        "required": ["query"],
+        "title": "SearchAllMessagesRequest"
       },
       "SleeptimeManager": {
         "properties": {

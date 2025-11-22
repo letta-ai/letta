@@ -2183,6 +2183,7 @@ class AgentManager:
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
+        archive_id: Optional[str] = None,
         limit: Optional[int] = 50,
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
@@ -2197,17 +2198,26 @@ class AgentManager:
     ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Lists all passages attached to an agent."""
         # Check if we should use Turbopuffer for vector search
-        if embed_query and agent_id and query_text and embedding_config:
-            # Get archive IDs for the agent
-            archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
+        # Support searching by either agent_id or archive_id directly
+        if embed_query and query_text and embedding_config:
+            target_archive_id = None
 
-            if archive_ids:
-                # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
-                if len(archive_ids) > 1:
-                    raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+            if agent_id:
+                # Get archive IDs for the agent
+                archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
 
+                if archive_ids:
+                    # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
+                    if len(archive_ids) > 1:
+                        raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+                    target_archive_id = archive_ids[0]
+            elif archive_id:
+                # Use the provided archive_id directly
+                target_archive_id = archive_id
+
+            if target_archive_id:
                 # Get archive to check vector_db_provider
-                archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_ids[0], actor=actor)
+                archive = await self.archive_manager.get_archive_by_id_async(archive_id=target_archive_id, actor=actor)
 
                 # Use Turbopuffer for vector search if archive is configured for TPUF
                 if archive.vector_db_provider == VectorDBProvider.TPUF:
@@ -2226,7 +2236,7 @@ class AgentManager:
                     tpuf_client = TurbopufferClient()
                     # use hybrid search to combine vector and full-text search
                     passages_with_scores = await tpuf_client.query_passages(
-                        archive_id=archive_ids[0],
+                        archive_id=target_archive_id,
                         query_text=query_text,  # pass text for potential hybrid search
                         search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
@@ -2239,14 +2249,13 @@ class AgentManager:
 
                     # Return full tuples with metadata
                     return passages_with_scores
-            else:
-                return []
 
         # Fall back to SQL-based search for non-vector queries or NATIVE archives
         async with db_registry.async_session() as session:
             main_query = await build_agent_passage_query(
                 actor=actor,
                 agent_id=agent_id,
+                archive_id=archive_id,
                 query_text=query_text,
                 start_date=start_date,
                 end_date=end_date,

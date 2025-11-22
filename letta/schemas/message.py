@@ -2168,6 +2168,14 @@ class MessageSearchRequest(BaseModel):
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
 
 
+class SearchAllMessagesRequest(BaseModel):
+    query: str = Field(..., description="Text query for full-text search")
+    search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
+    limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
+    start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
+    end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
+
+
 class MessageSearchResult(BaseModel):
     """Result from a message search operation with scoring details."""
 

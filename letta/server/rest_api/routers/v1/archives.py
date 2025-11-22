@@ -65,7 +65,7 @@ async def create_archive(
 
     embedding_config = archive.embedding_config
     if embedding_config is None and archive.embedding is not None:
-        handle = f"{archive.embedding.provider}/{archive.embedding.model}"
+        handle = archive.embedding
         embedding_config = await server.get_embedding_config_from_handle_async(
             handle=handle,
             actor=actor,
@@ -150,7 +150,7 @@ async def modify_archive(
     )
 
 
-@router.delete("/{archive_id}", response_model=PydanticArchive, operation_id="delete_archive")
+@router.delete("/{archive_id}", status_code=204, operation_id="delete_archive")
 async def delete_archive(
     archive_id: ArchiveId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -160,10 +160,11 @@ async def delete_archive(
     Delete an archive by its ID.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.archive_manager.delete_archive_async(
+    await server.archive_manager.delete_archive_async(
         archive_id=archive_id,
         actor=actor,
     )
+    return None
 
 
 @router.get("/{archive_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_archive")

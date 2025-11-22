@@ -16,6 +16,7 @@ from letta.server.rest_api.routers.v1.jobs import router as jobs_router
 from letta.server.rest_api.routers.v1.llms import router as llm_router
 from letta.server.rest_api.routers.v1.mcp_servers import router as mcp_servers_router
 from letta.server.rest_api.routers.v1.messages import router as messages_router
+from letta.server.rest_api.routers.v1.passages import router as passages_router
 from letta.server.rest_api.routers.v1.providers import router as providers_router
 from letta.server.rest_api.routers.v1.runs import router as runs_router
 from letta.server.rest_api.routers.v1.sandbox_configs import router as sandbox_configs_router
@@ -52,6 +53,7 @@ ROUTERS = [
     tags_router,
     telemetry_router,
     messages_router,
+    passages_router,
     voice_router,
     embeddings_router,
     openai_chat_completions_router,

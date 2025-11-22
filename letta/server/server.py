@@ -784,6 +784,51 @@ class SyncServer(object):
 
         return records
 
+    async def get_all_messages_recall_async(
+        self,
+        actor: User,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        limit: Optional[int] = 100,
+        group_id: Optional[str] = None,
+        reverse: Optional[bool] = False,
+        return_message_object: bool = True,
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        include_err: Optional[bool] = None,
+    ) -> Union[List[Message], List[LettaMessage]]:
+        records = await self.message_manager.list_messages(
+            agent_id=None,
+            actor=actor,
+            after=after,
+            before=before,
+            limit=limit,
+            ascending=not reverse,
+            group_id=group_id,
+            include_err=include_err,
+        )
+
+        if not return_message_object:
+            # NOTE: We are assuming all messages are coming from letta_v1_agent. This may lead to slightly incorrect assistant message handling.
+            # text_is_assistant_message = agent_state.agent_type == AgentType.letta_v1_agent
+            text_is_assistant_message = True
+
+            records = Message.to_letta_messages_from_list(
+                messages=records,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+                include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
+            )
+
+        if reverse:
+            records = records[::-1]
+
+        return records
+
     def get_server_config(self, include_defaults: bool = False) -> dict:
         """Return the base config"""
 
