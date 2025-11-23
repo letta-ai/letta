@@ -472,6 +472,8 @@ for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
     print(chunk)
 ```
 
+
+
 ### TypeScript / Node.js
 ```typescript
 const stream = await client.agents.messages.createStream({
