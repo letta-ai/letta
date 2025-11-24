@@ -268,6 +268,12 @@ class AnthropicModelSettings(ModelSettings):
         description="Soft control for how verbose model output should be, used for GPT-5 models.",
     )
 
+    # Opus 4.5 effort parameter
+    effort: Optional[Literal["low", "medium", "high"]] = Field(
+        None,
+        description="Effort level for Opus 4.5 model (controls token conservation). Not setting this gives similar performance to 'high'.",
+    )
+
     # TODO: implement support for these
     # top_k: Optional[int] = Field(None, description="The number of top tokens to return.")
     # top_p: Optional[float] = Field(None, description="The top-p value to use when generating text.")
@@ -280,6 +286,7 @@ class AnthropicModelSettings(ModelSettings):
             "thinking_budget_tokens": self.thinking.budget_tokens,
             "verbosity": self.verbosity,
             "parallel_tool_calls": self.parallel_tool_calls,
+            "effort": self.effort,
         }
 
 

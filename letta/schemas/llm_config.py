@@ -77,6 +77,10 @@ class LLMConfig(BaseModel):
         0,
         description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
     )
+    effort: Optional[Literal["low", "medium", "high"]] = Field(
+        None,
+        description="The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'.",
+    )
     frequency_penalty: Optional[float] = Field(
         None,  # Can also deafult to 0.0?
         description="Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
@@ -172,6 +176,7 @@ class LLMConfig(BaseModel):
             or model.startswith("claude-sonnet-4")
             or model.startswith("claude-opus-4")
             or model.startswith("claude-haiku-4-5")
+            or model.startswith("claude-opus-4-5")
         ):
             values["put_inner_thoughts_in_kwargs"] = False
 
@@ -372,6 +377,7 @@ class LLMConfig(BaseModel):
             or config.model.startswith("claude-sonnet-4")
             or config.model.startswith("claude-3-7-sonnet")
             or config.model.startswith("claude-haiku-4-5")
+            or config.model.startswith("claude-opus-4-5")
         )
 
     @classmethod

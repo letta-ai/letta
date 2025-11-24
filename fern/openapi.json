@@ -19789,6 +19789,19 @@
             ],
             "title": "Verbosity",
             "description": "Soft control for how verbose model output should be, used for GPT-5 models."
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "Effort level for Opus 4.5 model (controls token conservation). Not setting this gives similar performance to 'high'."
           }
         },
         "type": "object",
@@ -28905,6 +28918,19 @@
             "description": "Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
             "default": 0
           },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'."
+          },
           "frequency_penalty": {
             "anyOf": [
               {
@@ -31068,6 +31094,19 @@
             "description": "Deprecated: Configurable thinking budget for extended thinking.",
             "default": 0,
             "deprecated": true
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'."
           },
           "frequency_penalty": {
             "anyOf": [
