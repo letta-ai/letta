@@ -117,9 +117,13 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             raise self.llm_client.handle_llm_error(e)
 
         # Process the stream and yield chunks immediately for TTFT
-        async for chunk in self.interface.process(stream):  # TODO: add ttft span
-            # Yield each chunk immediately as it arrives
-            yield chunk
+        try:
+            async for chunk in self.interface.process(stream):  # TODO: add ttft span
+                # Yield each chunk immediately as it arrives
+                yield chunk
+        except Exception as e:
+            # Map provider-specific errors during streaming to common LLMError types
+            raise self.llm_client.handle_llm_error(e)
 
         # After streaming completes, extract the accumulated data
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
