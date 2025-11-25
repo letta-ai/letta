@@ -808,9 +808,7 @@ def test_duplicate_file_handling_replace(disable_pinecone, disable_turbopuffer, 
             f.write(replacement_content)
 
         # Upload replacement file with REPLACE duplicate handling
-        from letta.schemas.enums import DuplicateFileHandling  # TODO: Temporary pre-client compliation, good to remove
-
-        replacement_file = upload_file_and_wait(client, source.id, temp_file_path, duplicate_handling=DuplicateFileHandling.REPLACE)
+        replacement_file = upload_file_and_wait(client, source.id, temp_file_path, duplicate_handling="replace")
 
         # Verify we still have only 1 file (replacement, not addition)
         files_after_replace = list(client.folders.files.list(folder_id=source.id, limit=10))
@@ -902,10 +900,8 @@ def test_upload_file_with_custom_name(disable_pinecone, disable_turbopuffer, cli
         assert custom_name.replace(".txt", "") in file_blocks[0].label
 
         # Test duplicate handling with custom name - upload same file with same custom name
-        from letta.schemas.enums import DuplicateFileHandling
-
         with pytest.raises(Exception) as exc_info:
-            upload_file_and_wait(client, source.id, temp_file_path, name=custom_name, duplicate_handling=DuplicateFileHandling.ERROR)
+            upload_file_and_wait(client, source.id, temp_file_path, name=custom_name, duplicate_handling="error")
         assert "already exists" in str(exc_info.value).lower()
 
         # Upload same file with different custom name should succeed
