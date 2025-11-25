@@ -1965,7 +1965,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, model_config: T
         tags=["supervisor"],
     )
 
-    philosophical_question_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "philosophical_question.txt")
+    philosophical_question_path = os.path.join(os.path.dirname(__file__), "data", "philosophical_question.txt")
     with open(philosophical_question_path, "r", encoding="utf-8") as f:
         philosophical_question = f.read().strip()
 
