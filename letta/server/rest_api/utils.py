@@ -523,9 +523,10 @@ def create_parallel_tool_messages_from_llm_response(
         agent_id=agent_id,
         model=model,
         tool_calls=[],
-        tool_call_id=tool_returns[0].tool_call_id,  # For legacy reasons, set to first one
+        tool_call_id=tool_returns[0].tool_call_id if tool_returns else None,  # For legacy reasons, set to first one
         created_at=get_utc_time(),
         batch_item_id=llm_batch_item_id,
+        name=tool_call_specs[0].get("name") if tool_call_specs else None,  # For legacy reasons, set to first one
         tool_returns=tool_returns,
         run_id=run_id,
     )
