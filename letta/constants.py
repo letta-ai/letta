@@ -143,7 +143,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 )
 
 # Built in tools
-BUILTIN_TOOLS = ["run_code", "web_search", "fetch_webpage"]
+BUILTIN_TOOLS = ["run_code", "web_search", "fetch_webpage", "get_sandbox_id", "run_bash"]
 
 # Built in tools
 FILES_TOOLS = ["open_files", "grep_files", "semantic_search_files"]

@@ -29,7 +29,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage, "get_sandbox_id": self.get_sandbox_id, "run_bash": self.run_bash}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -271,3 +271,50 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             raise Exception(f"Error fetching webpage: {str(e)}")
         except Exception as e:
             raise Exception(f"Unexpected error: {str(e)}")
+
+
+    async def get_sandbox_id(self, agent_state: "AgentState") -> str:
+        """
+        Get the sandbox ID attached to the agent. This is the sandbox that agent actions should be conducted in.
+
+        Args:
+            agent_state: The agent state
+
+        Returns:
+            The sandbox ID as a string
+        """
+        sandbox_id = agent_state.metadata.get("sandbox_id")
+        if not sandbox_id:
+            raise ValueError("Sandbox ID is not set in agent state metadata")
+        
+        return sandbox_id
+        
+
+    async def run_bash(self, agent_state: "AgentState", command: str) -> str:
+        """
+        Run a bash command in the agent's sandbox.
+
+        Args:
+            agent_state: The agent state
+            command: The command to run
+
+        Returns:
+            JSON-encoded string containing bash command results
+        """
+        from e2b_code_interpreter import AsyncSandbox
+
+        if tool_settings.e2b_api_key is None:
+            raise ValueError("E2B_API_KEY is not set")
+
+        sandbox_id = agent_state.metadata.get("sandbox_id")
+        if not sandbox_id:
+            raise ValueError("Sandbox ID is not set in agent state metadata")
+
+        try:
+            sbx = await AsyncSandbox.connect(api_key=tool_settings.e2b_api_key, sandbox_id=sandbox_id)
+
+            res = self._llm_friendly_result(await sbx.run_code(command, language="bash"))
+
+            return json.dumps(res, ensure_ascii=False)
+        except Exception as e:
+            raise Exception(f"Error running bash command: {str(e)}")

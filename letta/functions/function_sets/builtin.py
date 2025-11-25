@@ -64,3 +64,25 @@ async def fetch_webpage(url: str) -> str:
         String containing the webpage content in markdown/text format
     """
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
+async def get_sandbox_id() -> str:
+    """
+    Get the sandbox ID attached to the agent. This is the sandbox that agent actions should be conducted in.
+
+    Returns:
+        The sandbox ID as a string
+    """
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
+async def run_bash(command: str) -> str:
+    """
+    Run a bash command in the agent's sandbox.
+
+    Args:
+        command: The command to run
+
+    Returns:
+        JSON-encoded string containing bash command results
+    """
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
