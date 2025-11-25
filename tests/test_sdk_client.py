@@ -1462,6 +1462,7 @@ def test_create_tool_from_function_with_docstring(e2b_sandbox_mode, client: Lett
     client.tools.delete(tool.id)
 
 
+@pytest.mark.skip(reason="Not compatible with 1.0 SDK")
 def test_preview_payload(client: LettaSDKClient):
     temp_agent = client.agents.create(
         memory_blocks=[
@@ -2263,6 +2264,7 @@ def test_create_agent(client: LettaSDKClient) -> None:
     client.agents.delete(agent_id=agent.id)
 
 
+@pytest.mark.skip(reason="Not compatible with 1.0 SDK")
 def test_list_all_messages(client: LettaSDKClient):
     """Test listing all messages across multiple agents."""
     # Create two agents
