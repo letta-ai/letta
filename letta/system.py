@@ -273,6 +273,5 @@ def unpack_message(packed_message: str) -> str:
             return packed_message
 
         if message_type != "user_message":
-            logger.warning(f"Expected type to be 'user_message', but was '{message_type}', so not unpacking: '{packed_message}'")
             return packed_message
         return message_json.get("message")
