@@ -16,6 +16,7 @@ from .ollama import OllamaProvider
 from .openai import OpenAIProvider
 from .openrouter import OpenRouterProvider
 from .together import TogetherProvider
+from .venice import VeniceProvider
 from .vllm import VLLMProvider
 from .xai import XAIProvider
 
@@ -41,6 +42,7 @@ __all__ = [
     "OllamaProvider",
     "OpenAIProvider",
     "TogetherProvider",
+    "VeniceProvider",
     "VLLMProvider",  # Replaces ChatCompletions and Completions
     "XAIProvider",
     "OpenRouterProvider",
