@@ -16388,7 +16388,7 @@
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
         "summary": "Create Agents From Template",
-        "tags": ["templates"],
+        "tags": ["newTemplates"],
         "parameters": [
           {
             "name": "template_version",
@@ -16400,7 +16400,7 @@
             "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest. This endpoint is not available for self-hosted Letta."
           }
         ],
-        "operationId": "templates.createAgentsFromTemplateWithHeader",
+        "operationId": "newTemplates.createAgentsFromTemplate",
         "requestBody": {
           "description": "Body",
           "content": {
