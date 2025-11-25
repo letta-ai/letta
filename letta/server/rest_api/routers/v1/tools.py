@@ -282,7 +282,10 @@ async def create_tool(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     tool = Tool(**request.model_dump(exclude_unset=True))
-    return await server.tool_manager.create_or_update_tool_async(pydantic_tool=tool, actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    return await server.tool_manager.create_or_update_tool_async(
+        pydantic_tool=tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
 
 
 @router.put("/", response_model=Tool, operation_id="upsert_tool")
@@ -295,7 +298,10 @@ async def upsert_tool(
     Create or update a tool
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    tool = await server.tool_manager.create_or_update_tool_async(
+        pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
     return tool
 
 
@@ -310,7 +316,10 @@ async def modify_tool(
     Update an existing tool
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    tool = await server.tool_manager.update_tool_by_id_async(
+        tool_id=tool_id, tool_update=request, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
     return tool
 
 
