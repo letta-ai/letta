@@ -28873,7 +28873,7 @@
             ],
             "title": "Put Inner Thoughts In Kwargs",
             "description": "Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
-            "default": true
+            "default": false
           },
           "handle": {
             "anyOf": [

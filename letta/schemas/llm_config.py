@@ -55,7 +55,7 @@ class LLMConfig(BaseModel):
     model_wrapper: Optional[str] = Field(None, description="The wrapper for the model.")
     context_window: int = Field(..., description="The context window size for the model.")
     put_inner_thoughts_in_kwargs: Optional[bool] = Field(
-        True,
+        False,
         description="Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
     )
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
@@ -163,11 +163,11 @@ class LLMConfig(BaseModel):
         if model is None:
             return values
 
-        # Define models where we want put_inner_thoughts_in_kwargs to be False
-        avoid_put_inner_thoughts_in_kwargs = ["gpt-4"]
-
+        # Default put_inner_thoughts_in_kwargs to False for all models
+        # Reasoning models (o1, o3, o4, claude-sonnet-4, etc.) will have this set to False below
+        # Non-reasoner models should also default to False to avoid unwanted reasoning token generation
         if values.get("put_inner_thoughts_in_kwargs") is None:
-            values["put_inner_thoughts_in_kwargs"] = False if model in avoid_put_inner_thoughts_in_kwargs else True
+            values["put_inner_thoughts_in_kwargs"] = False
 
         # For the o1/o3 series from OpenAI, set to False by default
         # We can set this flag to `true` if desired, which will enable "double-think"

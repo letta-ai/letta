@@ -2391,11 +2391,9 @@ def test_inner_thoughts_false_non_reasoner_models(
         pytest.skip(f"Skipping test for reasoning model {model_handle}")
 
     # Note: This test is for models without reasoning, so model_settings should already have reasoning disabled
-    # We don't need to modify anything
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
-    model_settings["put_inner_thoughts_in_kwargs"] = False
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
