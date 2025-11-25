@@ -3,19 +3,15 @@ import os
 import threading
 import time
 import uuid
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta, MessageCreate
-from letta_client.types import ToolReturnMessage
+from letta_client import Letta
+from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
 
-from letta.schemas.agent import AgentState
-from letta.schemas.llm_config import LLMConfig
 from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
-from letta.settings import tool_settings
 
 # ------------------------------
 # Fixtures
@@ -76,9 +72,9 @@ def agent_state(client: Letta) -> AgentState:
     """
     client.tools.upsert_base_tools()
 
-    send_message_tool = client.tools.list(name="send_message")[0]
-    run_code_tool = client.tools.list(name="run_code")[0]
-    web_search_tool = client.tools.list(name="web_search")[0]
+    send_message_tool = list(client.tools.list(name="send_message"))[0]
+    run_code_tool = list(client.tools.list(name="run_code"))[0]
+    web_search_tool = list(client.tools.list(name="web_search"))[0]
     agent_state_instance = client.agents.create(
         name="test_builtin_tools_agent",
         include_base_tools=False,
@@ -94,23 +90,7 @@ def agent_state(client: Letta) -> AgentState:
 # Helper Functions and Constants
 # ------------------------------
 
-
-def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
-    filename = os.path.join(llm_config_dir, filename)
-    with open(filename, "r") as f:
-        config_data = json.load(f)
-    llm_config = LLMConfig(**config_data)
-    return llm_config
-
-
 USER_MESSAGE_OTID = str(uuid.uuid4())
-all_configs = [
-    "openai-gpt-4o-mini.json",
-]
-requested = os.getenv("LLM_CONFIG_FILE")
-filenames = [requested] if requested else all_configs
-TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
-
 TEST_LANGUAGES = ["Python", "Javascript", "Typescript"]
 EXPECTED_INTEGER_PARTITION_OUTPUT = "190569292"
 
@@ -152,7 +132,7 @@ def test_run_code(
     """
     expected = str(reference_partition(100))
 
-    user_message = MessageCreate(
+    user_message = MessageCreateParam(
         role="user",
         content=(
             "Here is a Python reference implementation:\n\n"

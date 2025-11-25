@@ -44,14 +44,14 @@ TOOLS_UPSERT_PARAMS = [
     ("unfriendly_func", {"source_code": UNFRIENDLY_FUNC_SOURCE_CODE_V2}, {}, None),
 ]
 
-TOOLS_MODIFY_PARAMS = [
+TOOLS_UPDATE_PARAMS = [
     ("friendly_func", {"tags": ["sdk_test"]}, {}, None),
     ("unfriendly_func", {"return_char_limit": 300}, {}, None),
 ]
 
 TOOLS_LIST_PARAMS = [
     ({}, 2),
-    ({"name": ["friendly_func"]}, 1),
+    ({"name": "friendly_func"}, 1),
 ]
 
 # Create all test module components at once
@@ -61,7 +61,7 @@ globals().update(
         id_param_name="tool_id",
         create_params=TOOLS_CREATE_PARAMS,
         upsert_params=TOOLS_UPSERT_PARAMS,
-        modify_params=TOOLS_MODIFY_PARAMS,
+        update_params=TOOLS_UPDATE_PARAMS,
         list_params=TOOLS_LIST_PARAMS,
     )
 )

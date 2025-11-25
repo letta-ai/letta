@@ -5,7 +5,8 @@ import time
 from datetime import datetime, timezone
 from typing import Dict, Iterator, List, Optional, Tuple
 
-from letta_client import Letta, SystemMessage
+from letta_client import Letta
+from letta_client.types.agents.system_message import SystemMessage
 
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector

@@ -1,5 +1,5 @@
 from conftest import create_test_module
-from letta_client.errors import UnprocessableEntityError
+from letta_client import UnprocessableEntityError
 
 from letta.constants import CORE_MEMORY_HUMAN_CHAR_LIMIT, CORE_MEMORY_PERSONA_CHAR_LIMIT
 
@@ -8,7 +8,7 @@ BLOCKS_CREATE_PARAMS = [
     ("persona_block", {"label": "persona", "value": "test1"}, {"limit": CORE_MEMORY_PERSONA_CHAR_LIMIT}, None),
 ]
 
-BLOCKS_MODIFY_PARAMS = [
+BLOCKS_UPDATE_PARAMS = [
     ("human_block", {"value": "test2"}, {}, None),
     ("persona_block", {"value": "testing testing testing", "limit": 10}, {}, UnprocessableEntityError),
 ]
@@ -25,7 +25,7 @@ globals().update(
         resource_name="blocks",
         id_param_name="block_id",
         create_params=BLOCKS_CREATE_PARAMS,
-        modify_params=BLOCKS_MODIFY_PARAMS,
+        update_params=BLOCKS_UPDATE_PARAMS,
         list_params=BLOCKS_LIST_PARAMS,
     )
 )

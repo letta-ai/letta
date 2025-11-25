@@ -8,7 +8,10 @@ from pathlib import Path
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta, MessageCreate, ToolCallMessage, ToolReturnMessage
+from letta_client import Letta
+from letta_client.types import MessageCreateParam
+from letta_client.types.agents.tool_call_message import ToolCallMessage
+from letta_client.types.agents.tool_return import ToolReturn
 
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.agent import AgentState
@@ -166,7 +169,7 @@ def test_mcp_echo_tool(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content=f"Use the echo tool to echo back this exact message: '{test_message}'",
             )
@@ -182,7 +185,7 @@ def test_mcp_echo_tool(client: Letta, agent_state: AgentState):
     assert echo_call is not None, f"No echo tool call found. Tool calls: {[m.tool_call.name for m in tool_calls]}"
 
     # Check for tool return message
-    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturn)]
     assert len(tool_returns) > 0, "Expected at least one ToolReturnMessage"
 
     # Find the return for the echo call
@@ -204,7 +207,7 @@ def test_mcp_add_tool(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content=f"Use the add tool to add {a} and {b}.",
             )
@@ -220,7 +223,7 @@ def test_mcp_add_tool(client: Letta, agent_state: AgentState):
     assert add_call is not None, f"No add tool call found. Tool calls: {[m.tool_call.name for m in tool_calls]}"
 
     # Check for tool return message
-    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturn)]
     assert len(tool_returns) > 0, "Expected at least one ToolReturnMessage"
 
     # Find the return for the add call
@@ -239,7 +242,7 @@ def test_mcp_multiple_tools_in_sequence(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content="First use the add tool to add 10 and 20. Then use the echo tool to echo back the result you got from the add tool.",
             )
@@ -256,7 +259,7 @@ def test_mcp_multiple_tools_in_sequence(client: Letta, agent_state: AgentState):
     assert "echo" in tool_names, f"echo tool not called. Tools called: {tool_names}"
 
     # Check for tool return messages
-    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+    tool_returns = [m for m in response.messages if isinstance(m, ToolReturn)]
     assert len(tool_returns) >= 2, f"Expected at least 2 tool returns, got {len(tool_returns)}"
 
     # Verify all tools succeeded
@@ -339,7 +342,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user", content='Use the get_parameter_type_description tool with preset "a" to get parameter information.'
                 )
             ],
@@ -351,7 +354,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         complex_call = next((m for m in tool_calls if m.tool_call.name == "get_parameter_type_description"), None)
         assert complex_call is not None, f"No get_parameter_type_description call found. Calls: {[m.tool_call.name for m in tool_calls]}"
 
-        tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+        tool_returns = [m for m in response.messages if isinstance(m, ToolReturn)]
         assert len(tool_returns) > 0, "Expected at least one ToolReturnMessage"
 
         complex_return = next((m for m in tool_returns if m.tool_call_id == complex_call.tool_call.tool_call_id), None)
@@ -363,7 +366,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user",
                     content="Use the get_parameter_type_description tool with these arguments: "
                     'preset="b", connected_service_descriptor="test-service", '
@@ -379,7 +382,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         complex_call = next((m for m in tool_calls if m.tool_call.name == "get_parameter_type_description"), None)
         assert complex_call is not None, "No get_parameter_type_description call found for nested test"
 
-        tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
+        tool_returns = [m for m in response.messages if isinstance(m, ToolReturn)]
         complex_return = next((m for m in tool_returns if m.tool_call_id == complex_call.tool_call.tool_call_id), None)
         assert complex_return is not None, "No tool return found for complex nested call"
         assert complex_return.status == "success", f"Complex nested call failed with status: {complex_return.status}"

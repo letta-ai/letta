@@ -8,12 +8,14 @@ with Turbopuffer integration, including vector search, FTS, hybrid search, filte
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import pytest
 from letta_client import Letta
 from letta_client.types import CreateBlockParam, MessageCreateParam
 
 from letta.config import LettaConfig
+from letta.server.rest_api.routers.v1.passages import PassageSearchResult
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -147,7 +149,15 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
             time.sleep(2)
 
             # Test search by agent_id
-            results = client.passages.search(query="python programming", agent_id=agent.id, limit=10)
+            results = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "python programming",
+                    "agent_id": agent.id,
+                    "limit": 10,
+                },
+            )
 
             assert len(results) > 0, "Should find at least one passage"
             assert any("Python" in result.passage.text for result in results), "Should find Python-related passage"
@@ -160,7 +170,15 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
                 assert isinstance(result.score, float), "Score should be a float"
 
             # Test search by archive_id
-            archive_results = client.passages.search(query="vector database", archive_id=archive.id, limit=10)
+            archive_results = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "vector database",
+                    "archive_id": archive.id,
+                    "limit": 10,
+                },
+            )
 
             assert len(archive_results) > 0, "Should find passages in archive"
             assert any("Turbopuffer" in result.passage.text or "vector" in result.passage.text for result in archive_results), (
@@ -213,7 +231,15 @@ def test_passage_search_with_tags(client: Letta, enable_turbopuffer):
             time.sleep(2)
 
             # Test basic search without tags first
-            results = client.passages.search(query="programming tutorial", agent_id=agent.id, limit=10)
+            results = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "programming tutorial",
+                    "agent_id": agent.id,
+                    "limit": 10,
+                },
+            )
 
             assert len(results) > 0, "Should find passages"
 
@@ -267,7 +293,16 @@ def test_passage_search_with_date_filters(client: Letta, enable_turbopuffer):
             now = datetime.now(timezone.utc)
             start_date = now - timedelta(hours=1)
 
-            results = client.passages.search(query="AI machine learning", agent_id=agent.id, limit=10, start_date=start_date)
+            results = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "AI machine learning",
+                    "agent_id": agent.id,
+                    "limit": 10,
+                    "start_date": start_date.isoformat(),
+                },
+            )
 
             assert len(results) > 0, "Should find recent passages"
 
@@ -353,15 +388,39 @@ def test_passage_search_pagination(client: Letta, enable_turbopuffer):
             time.sleep(2)
 
             # Test with different limit values
-            results_limit_3 = client.passages.search(query="programming", agent_id=agent.id, limit=3)
+            results_limit_3 = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "programming",
+                    "agent_id": agent.id,
+                    "limit": 3,
+                },
+            )
 
             assert len(results_limit_3) == 3, "Should respect limit parameter"
 
-            results_limit_5 = client.passages.search(query="programming", agent_id=agent.id, limit=5)
+            results_limit_5 = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "programming",
+                    "agent_id": agent.id,
+                    "limit": 5,
+                },
+            )
 
             assert len(results_limit_5) == 5, "Should return 5 results"
 
-            results_all = client.passages.search(query="programming", agent_id=agent.id, limit=20)
+            results_all = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "programming",
+                    "agent_id": agent.id,
+                    "limit": 20,
+                },
+            )
 
             assert len(results_all) >= 10, "Should return all matching passages"
 
@@ -414,7 +473,14 @@ def test_passage_search_org_wide(client: Letta, enable_turbopuffer):
             time.sleep(2)
 
             # Test org-wide search (no agent_id or archive_id)
-            results = client.passages.search(query="unique passage", limit=20)
+            results = client.post(
+                "/v1/passages/search",
+                cast_to=list[PassageSearchResult],
+                body={
+                    "query": "unique passage",
+                    "limit": 20,
+                },
+            )
 
             # Should find passages from both agents
             assert len(results) >= 2, "Should find passages from multiple agents"
