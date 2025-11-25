@@ -169,7 +169,7 @@ async def test_sleeptime_group_chat(client):
     # Verify final status
     for run_id in run_ids:
         job = client.runs.retrieve(run_id=run_id)
-        assert job.status in ["running", "completed", "failed"], f"Unexpected status: {job.status}"
+        assert job.status == "running" or job.status == "completed"
 
     # 7. Delete agent (now safe because all runs are complete)
     client.agents.delete(agent_id=main_agent.id)

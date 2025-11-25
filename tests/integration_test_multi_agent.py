@@ -217,12 +217,8 @@ def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent
 
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_simple(client: Letta):
-    import uuid
-
-    # Add unique identifier to tags to prevent interference from retry attempts
-    test_id = str(uuid.uuid4())[:8]
-    worker_tags_123 = ["worker", f"user-123-{test_id}"]
-    worker_tags_456 = ["worker", f"user-456-{test_id}"]
+    worker_tags_123 = ["worker", "user-123"]
+    worker_tags_456 = ["worker", "user-456"]
 
     secret_word = "banana"
 
@@ -282,14 +278,10 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
             # Verify responses from all expected worker agents
             worker_agent_ids = {agent.id for agent in worker_agents_456}
             returned_agent_ids = set()
-            for item in tool_response:
-                # Handle both dict and JSON string formats
-                if isinstance(item, str):
-                    response_obj = json.loads(item)
-                else:
-                    response_obj = item
+            for json_str in tool_response:
+                response_obj = json.loads(json_str)
                 assert response_obj["agent_id"] in worker_agent_ids
-                assert response_obj.get("response", response_obj.get("response_messages")) != ["<no response>"]
+                assert response_obj["response_messages"] != ["<no response>"]
                 returned_agent_ids.add(response_obj["agent_id"])
             break
 
@@ -332,11 +324,6 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
 
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_dice_tool):
-    import uuid
-
-    # Add unique identifier to tags to prevent interference from retry attempts
-    test_id = str(uuid.uuid4())[:8]
-
     # Create "manager" agent
     send_message_to_agents_matching_tags_tool_id = list(client.tools.list(name="send_message_to_agents_matching_tags"))[0].id
     manager_agent_state = client.agents.create(
@@ -383,16 +370,12 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
             worker_agent_ids = {agent.id for agent in worker_agents}
             returned_agent_ids = set()
             all_responses = []
-            for item in tool_response:
-                # Handle both dict and JSON string formats
-                if isinstance(item, str):
-                    response_obj = json.loads(item)
-                else:
-                    response_obj = item
+            for json_str in tool_response:
+                response_obj = json.loads(json_str)
                 assert response_obj["agent_id"] in worker_agent_ids
-                assert response_obj.get("response", response_obj.get("response_messages")) != ["<no response>"]
+                assert response_obj["response_messages"] != ["<no response>"]
                 returned_agent_ids.add(response_obj["agent_id"])
-                all_responses.extend(response_obj.get("response", response_obj.get("response_messages", [])))
+                all_responses.extend(response_obj["response_messages"])
             break
 
     # Test that the agent can still receive messages fine

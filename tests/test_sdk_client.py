@@ -2264,7 +2264,6 @@ def test_create_agent(client: LettaSDKClient) -> None:
     client.agents.delete(agent_id=agent.id)
 
 
-@pytest.mark.skip(reason="Not compatible with 1.0 SDK")
 def test_list_all_messages(client: LettaSDKClient):
     """Test listing all messages across multiple agents."""
     # Create two agents

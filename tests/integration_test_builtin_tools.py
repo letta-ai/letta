@@ -10,10 +10,8 @@ import requests
 from dotenv import load_dotenv
 from letta_client import Letta
 from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
-from letta_client.types.agents import ToolCallMessage
 
 from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
-from letta.settings import tool_settings
 
 # ------------------------------
 # Fixtures
@@ -74,9 +72,9 @@ def agent_state(client: Letta) -> AgentState:
     """
     client.tools.upsert_base_tools()
 
-    send_message_tool = client.tools.list(name="send_message").items[0]
-    run_code_tool = client.tools.list(name="run_code").items[0]
-    web_search_tool = client.tools.list(name="web_search").items[0]
+    send_message_tool = list(client.tools.list(name="send_message"))[0]
+    run_code_tool = list(client.tools.list(name="run_code"))[0]
+    web_search_tool = list(client.tools.list(name="web_search"))[0]
     agent_state_instance = client.agents.create(
         name="test_builtin_tools_agent",
         include_base_tools=False,

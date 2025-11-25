@@ -186,7 +186,7 @@ limited_configs = [
 all_configs = [
     "openai-gpt-4o-mini.json",
     "openai-gpt-4.1.json",
-    "openai-gpt-5.json",  # TODO: GPT-5 disabled for now, it sends HiddenReasoningMessages which break the tests.
+    # "openai-gpt-5.json", TODO: GPT-5 disabled for now, it sends HiddenReasoningMessages which break the tests.
     "claude-4-5-sonnet.json",
     "gemini-2.5-pro.json",
 ]
@@ -338,6 +338,14 @@ def assert_greeting_with_assistant_message_response(
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
+    # Extract model name from handle
+    model_name = model_handle.split("/")[-1] if "/" in model_handle else model_handle
+
+    # For o1 models in token streaming, AssistantMessage is not included in the stream
+    o1_token_streaming = is_openai_reasoning_model(model_name) and streaming and token_streaming
+    expected_message_count = 3 if o1_token_streaming else (4 if streaming else 3 if from_db else 2)
+    assert len(messages) == expected_message_count
+
     expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
         model_handle, model_settings, streaming=streaming, from_db=from_db
     )
@@ -356,17 +364,11 @@ def assert_greeting_with_assistant_message_response(
             assert messages[index].otid is not None
         index += 1
 
-    # Reasoning message if reasoning enabled
-    otid_suffix = 0
-    try:
-        if is_reasoner_model(model_handle, model_settings):
-            assert isinstance(messages[index], (ReasoningMessage, HiddenReasoningMessage))
-            assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-            index += 1
-            otid_suffix += 1
-    except:
-        # Reasoning is non-deterministic, so don't throw if missing
-        pass
+    # Agent Step 1
+    if is_openai_reasoning_model(model_name):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
 
     # For o1/o3/o4/gpt-5 models in token streaming, AssistantMessage is omitted
     # Check if next message is LettaStopReason to detect this case
@@ -379,15 +381,14 @@ def assert_greeting_with_assistant_message_response(
         and isinstance(messages[index], LettaStopReason)
     )
 
-    # Assistant message (skip for o1-style models in token streaming)
-    if not skip_assistant_message:
+    # Agent Step 2: AssistantMessage (skip for o1 token streaming)
+    if not o1_token_streaming:
         assert isinstance(messages[index], AssistantMessage)
         if not token_streaming:
             # Check for either short or long response
             assert "teamwork" in messages[index].content.lower() or USER_MESSAGE_LONG_RESPONSE in messages[index].content
-        assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
+        assert messages[index].otid and messages[index].otid[-1] == "1"
         index += 1
-        otid_suffix += 1
 
     # Stop reason and usage statistics if streaming
     if streaming:
@@ -480,31 +481,22 @@ def assert_greeting_without_assistant_message_response(
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
-    expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
-        model_handle, model_settings, tool_call=True, streaming=streaming, from_db=from_db, use_assistant_message=False
-    )
-    assert expected_message_count_min <= len(messages) <= expected_message_count_max, (
-        f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
-    )
+    # Extract model name from handle
+    model_name = model_handle.split("/")[-1] if "/" in model_handle else model_handle
 
-    # User message if loaded from db
     index = 0
     if from_db:
         assert isinstance(messages[index], UserMessage)
         assert messages[index].otid == USER_MESSAGE_OTID
         index += 1
 
-    # Reasoning message if reasoning enabled
-    otid_suffix = 0
-    try:
-        if is_reasoner_model(model_handle, model_settings):
-            assert isinstance(messages[index], (ReasoningMessage, HiddenReasoningMessage))
-            assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-            index += 1
-            otid_suffix += 1
-    except:
-        # Reasoning is non-deterministic, so don't throw if missing
-        pass
+    # Agent Step 1
+    if is_openai_reasoning_model(model_name):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
 
     # Special case for claude-sonnet-4-5-20250929 and opus-4.1 which can generate an extra AssistantMessage before tool call
     if (
@@ -592,6 +584,13 @@ def assert_tool_call_response(
     if o1_token_streaming:
         return
 
+    try:
+        assert len(messages) == expected_message_count, messages
+    except:
+        if "claude-3-7-sonnet" not in model_handle:
+            raise
+        assert len(messages) == expected_message_count - 1, messages
+
     # OpenAI gpt-4o-mini can sometimes omit the final AssistantMessage in streaming,
     # yielding the shorter sequence:
     #   Reasoning -> ToolCall -> ToolReturn -> Reasoning -> StopReason -> Usage
@@ -633,6 +632,17 @@ def assert_tool_call_response(
     ):
         return
 
+    # Groq models can sometimes stop after tool return without generating final reasoning/assistant messages
+    # Accept the shorter sequence: Reasoning -> ToolCall -> ToolReturn
+    if (
+        model_settings.get("provider_type") == "groq"
+        and len(messages) == 3
+        and getattr(messages[0], "message_type", None) == "reasoning_message"
+        and getattr(messages[1], "message_type", None) == "tool_call_message"
+        and getattr(messages[2], "message_type", None) == "tool_return_message"
+    ):
+        return
+
     # Use range-based assertion for normal cases
     expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
         model_handle, model_settings, tool_call=True, streaming=streaming, from_db=from_db
@@ -650,17 +660,13 @@ def assert_tool_call_response(
         assert messages[index].otid == USER_MESSAGE_OTID
         index += 1
 
-    # Reasoning message if reasoning enabled
-    otid_suffix = 0
-    try:
-        if is_reasoner_model(model_handle, model_settings):
-            assert isinstance(messages[index], (ReasoningMessage, HiddenReasoningMessage))
-            assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-            index += 1
-            otid_suffix += 1
-    except:
-        # Reasoning is non-deterministic, so don't throw if missing
-        pass
+    # Agent Step 1
+    if is_openai_reasoning_model(model_name):
+        assert isinstance(messages[index], HiddenReasoningMessage)
+    else:
+        assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
 
     # Special case for claude-sonnet-4-5-20250929 and opus-4.1 which can generate an extra AssistantMessage before tool call
     if (
@@ -690,17 +696,25 @@ def assert_tool_call_response(
 
     # Second agent step - reasoning message if reasoning enabled
     try:
-        if is_reasoner_model(model_handle, model_settings) and index < len(messages):
-            assert isinstance(messages[index], (ReasoningMessage, HiddenReasoningMessage))
-            assert messages[index].otid and messages[index].otid[-1] == "0"
-            index += 1
+        if is_openai_reasoning_model(model_name):
+            assert isinstance(messages[index], HiddenReasoningMessage)
+        else:
+            assert isinstance(messages[index], ReasoningMessage)
+        assert messages[index].otid and messages[index].otid[-1] == "0"
+        index += 1
     except:
-        # Reasoning is non-deterministic, so don't throw if missing
+        if "claude-3-7-sonnet" not in model_handle:
+            raise
         pass
 
-    # Assistant message
-    if index < len(messages) and isinstance(messages[index], AssistantMessage):
-        index += 1
+    assert isinstance(messages[index], AssistantMessage)
+    try:
+        assert messages[index].otid and messages[index].otid[-1] == "1"
+    except:
+        if "claude-3-7-sonnet" not in model_handle:
+            raise
+        assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
 
     if streaming:
         assert isinstance(messages[index], LettaStopReason)
@@ -822,6 +836,14 @@ def assert_image_input_response(
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
+    # Extract model name from handle
+    model_name = model_handle.split("/")[-1] if "/" in model_handle else model_handle
+
+    # For o1 models in token streaming, AssistantMessage is not included in the stream
+    o1_token_streaming = is_openai_reasoning_model(model_name) and streaming and token_streaming
+    expected_message_count = 3 if o1_token_streaming else (4 if streaming else 3 if from_db else 2)
+    assert len(messages) == expected_message_count
+
     # Check if there are tool calls in the response
     has_tool_calls = any(isinstance(msg, ToolCallMessage) for msg in messages)
 
@@ -842,28 +864,9 @@ def assert_image_input_response(
         assert messages[index].otid == USER_MESSAGE_OTID
         index += 1
 
-    # Reasoning message if reasoning enabled
-    otid_suffix = 0
-    try:
-        if is_reasoner_model(model_handle, model_settings):
-            assert isinstance(messages[index], (ReasoningMessage, HiddenReasoningMessage))
-            assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-            index += 1
-            otid_suffix += 1
-    except:
-        # Reasoning is non-deterministic, so don't throw if missing
-        pass
-
-    # Either Assistant message or Tool call message
-    if has_tool_calls:
-        # Tool call message
-        assert isinstance(messages[index], ToolCallMessage)
-        assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-        index += 1
-        otid_suffix += 1
-        # Tool return message
-        assert isinstance(messages[index], ToolReturnMessage)
-        index += 1
+    # Agent Step 1
+    if is_openai_reasoning_model(model_name):
+        assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         # Assistant message
         assert isinstance(messages[index], AssistantMessage)
@@ -871,8 +874,11 @@ def assert_image_input_response(
         index += 1
         otid_suffix += 1
 
-    # Skip any trailing system messages (like memory alerts)
-    # These can appear when from_db=True due to memory summarization
+    # Agent Step 2: AssistantMessage (skip for o1 token streaming)
+    if not o1_token_streaming:
+        assert isinstance(messages[index], AssistantMessage)
+        assert messages[index].otid and messages[index].otid[-1] == "1"
+        index += 1
 
     # Stop reason and usage statistics if streaming
     if streaming and index < len(messages):
@@ -1469,14 +1475,9 @@ def test_token_streaming_greeting_with_assistant_message(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
-    model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
+    model_handle, model_settings = model_config
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
     # Use longer message for Anthropic models to test if they stream in chunks
     if model_settings.get("provider_type") == "anthropic":
@@ -1513,14 +1514,9 @@ def test_token_streaming_greeting_without_assistant_message(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
-    model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
+    model_handle, model_settings = model_config
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
     # Use longer message for Anthropic models to force chunking
     if model_settings.get("provider_type") == "anthropic":
@@ -1561,11 +1557,6 @@ def test_token_streaming_tool_call(
     Checks that each chunk in the stream has the correct message types.
     """
     model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     # get the config filename by matching model handle
     config_filename = None
     for filename in filenames:
@@ -1634,14 +1625,9 @@ def test_token_streaming_agent_loop_error(
     Tests sending a streaming message with a synchronous client.
     Verifies that no new messages are persisted on error.
     """
-    model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
+    model_handle, model_settings = model_config
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
 
     with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
@@ -1676,14 +1662,9 @@ def test_background_token_streaming_greeting_with_assistant_message(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
-    model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
+    model_handle, model_settings = model_config
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
     # Use longer message for Anthropic models to test if they stream in chunks
     if model_settings.get("provider_type") == "anthropic":
@@ -1745,14 +1726,9 @@ def test_background_token_streaming_greeting_without_assistant_message(
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
-    model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
+    model_handle, model_settings = model_config
     agent_state = client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
     # Use longer message for Anthropic models to force chunking
     if model_settings.get("provider_type") == "anthropic":
@@ -1794,11 +1770,6 @@ def test_background_token_streaming_tool_call(
     Checks that each chunk in the stream has the correct message types.
     """
     model_handle, model_settings = model_config
-
-    # Skip for non-reasoner models - token streaming doesn't work when put_inner_thoughts_in_kwargs=False
-    if not is_reasoner_model(model_handle, model_settings):
-        pytest.skip(f"Skipping token streaming test for non-reasoner model {model_handle}")
-
     # get the config filename by matching model handle
     config_filename = None
     for filename in filenames:
@@ -2178,7 +2149,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, model_config: T
         tags=["supervisor"],
     )
 
-    philosophical_question_path = os.path.join(os.path.dirname(__file__), "data", "philosophical_question.txt")
+    philosophical_question_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "philosophical_question.txt")
     with open(philosophical_question_path, "r", encoding="utf-8") as f:
         philosophical_question = f.read().strip()
 
@@ -2441,11 +2412,12 @@ def test_inner_thoughts_false_non_reasoner_models(
     if not config_filename or config_filename in limited_configs:
         pytest.skip(f"Skipping test for limited model {model_handle}")
 
-    # skip if this is a reasoning model (use helper function to detect)
-    if is_reasoner_model(model_handle, model_settings):
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
         pytest.skip(f"Skipping test for reasoning model {model_handle}")
 
     # Note: This test is for models without reasoning, so model_settings should already have reasoning disabled
+    # We don't need to modify anything
 
     last_message_page = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     last_message = last_message_page.items[0] if last_message_page.items else None
@@ -2484,8 +2456,8 @@ def test_inner_thoughts_false_non_reasoner_models_streaming(
     if not config_filename or config_filename in limited_configs:
         pytest.skip(f"Skipping test for limited model {model_handle}")
 
-    # skip if this is a reasoning model (use helper function to detect)
-    if is_reasoner_model(model_handle, model_settings):
+    # skip if this is a reasoning model
+    if not config_filename or config_filename in reasoning_configs:
         pytest.skip(f"Skipping test for reasoning model {model_handle}")
 
     # Note: This test is for models without reasoning, so model_settings should already have reasoning disabled

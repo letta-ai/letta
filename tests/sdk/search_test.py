@@ -15,8 +15,6 @@ from letta_client import Letta
 from letta_client.types import CreateBlockParam, MessageCreateParam
 
 from letta.config import LettaConfig
-from letta.schemas.message import MessageSearchResult
-from letta.schemas.tool import ToolSearchResult
 from letta.server.rest_api.routers.v1.passages import PassageSearchResult
 from letta.server.server import SyncServer
 from letta.settings import model_settings, settings

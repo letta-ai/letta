@@ -12,14 +12,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta
-from letta_client.types import (
-    AgentState,
-    AnthropicModelSettings,
-    JsonSchemaResponseFormat,
-    MessageCreateParam,
-    OpenAIModelSettings,
-    ToolReturnMessage,
-)
+from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
 from letta_client.types.agents import AssistantMessage, ReasoningMessage, Run, ToolCallMessage, UserMessage
 from letta_client.types.agents.letta_streaming_response import LettaPing, LettaStopReason, LettaUsageStatistics
 
