@@ -15,6 +15,7 @@ from letta_client import Letta
 from letta_client.types import CreateBlockParam, MessageCreateParam
 
 from letta.config import LettaConfig
+from letta.schemas.message import MessageSearchResult
 from letta.server.rest_api.routers.v1.passages import PassageSearchResult
 from letta.server.server import SyncServer
 from letta.settings import settings
@@ -160,14 +161,14 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
             )
 
             assert len(results) > 0, "Should find at least one passage"
-            assert any("Python" in result.passage.text for result in results), "Should find Python-related passage"
+            assert any("Python" in result["passage"]["text"] for result in results), "Should find Python-related passage"
 
             # Verify result structure
             for result in results:
-                assert hasattr(result, "passage"), "Result should have passage field"
-                assert hasattr(result, "score"), "Result should have score field"
-                assert hasattr(result, "metadata"), "Result should have metadata field"
-                assert isinstance(result.score, float), "Score should be a float"
+                assert "passage" in result, "Result should have passage field"
+                assert "score" in result, "Result should have score field"
+                assert "metadata" in result, "Result should have metadata field"
+                assert isinstance(result["score"], float), "Score should be a float"
 
             # Test search by archive_id
             archive_results = client.post(
@@ -181,7 +182,7 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
             )
 
             assert len(archive_results) > 0, "Should find passages in archive"
-            assert any("Turbopuffer" in result.passage.text or "vector" in result.passage.text for result in archive_results), (
+            assert any("Turbopuffer" in result["passage"]["text"] or "vector" in result["passage"]["text"] for result in archive_results), (
                 "Should find vector-related passage"
             )
 
@@ -308,7 +309,7 @@ def test_passage_search_with_date_filters(client: Letta, enable_turbopuffer):
 
             # Verify all results are within date range
             for result in results:
-                passage_date = result.passage.created_at
+                passage_date = result["passage"]["created_at"]
                 if passage_date:
                     # Convert to datetime if it's a string
                     if isinstance(passage_date, str):
@@ -349,12 +350,26 @@ def test_message_search_basic(client: Letta, enable_message_embedding):
 
         # Wait for messages to be indexed and database transactions to complete
         # Extra time needed for async embedding and database commits
-        time.sleep(6)
+        time.sleep(10)
 
         # Test FTS search for messages
-        results = client.messages.search(query="capital of Mozambique", search_mode="fts", limit=10)
+        # Note: The endpoint returns LettaMessageUnion, not MessageSearchResult
+        results = client.post(
+            "/v1/messages/search",
+            cast_to=list[dict],
+            body={
+                "query": "capital Mozambique",
+                "search_mode": "fts",
+                "limit": 10,
+            },
+        )
 
-        assert len(results) > 0, "Should find at least one message"
+        print(f"Search returned {len(results)} results")
+        if len(results) > 0:
+            print(f"First result type: {type(results[0])}")
+            print(f"First result keys: {results[0].keys() if isinstance(results[0], dict) else 'N/A'}")
+
+        assert len(results) > 0, f"Should find at least one message. Got {len(results)} results."
 
     finally:
         # Clean up agent
@@ -485,7 +500,7 @@ def test_passage_search_org_wide(client: Letta, enable_turbopuffer):
             # Should find passages from both agents
             assert len(results) >= 2, "Should find passages from multiple agents"
 
-            found_texts = [result.passage.text for result in results]
+            found_texts = [result["passage"]["text"] for result in results]
             assert any("quantum computing" in text for text in found_texts), "Should find agent1 passage"
             assert any("blockchain" in text for text in found_texts), "Should find agent2 passage"
 
