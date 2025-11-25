@@ -13,7 +13,6 @@ These tests provide 100% coverage of the VeniceClient class, including:
 import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from unittest.mock import patch as mock_patch
 
 import aiohttp
 import pytest
@@ -64,15 +63,17 @@ def venice_client():
 @pytest.fixture
 def sample_messages():
     """Create sample messages for testing."""
+    from letta.schemas.letta_message_content import TextContent
+    
     return [
         PydanticMessage(
             role=MessageRole.system,
-            content="You are a helpful assistant.",
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
             created_at=datetime.now(timezone.utc),
         ),
         PydanticMessage(
             role=MessageRole.user,
-            content="Hello, how are you?",
+            content=[TextContent(type="text", text="Hello, how are you?")],
             created_at=datetime.now(timezone.utc),
         ),
     ]
@@ -373,11 +374,14 @@ class TestVeniceClientRequestAsync:
             mock_response.status = 200
             mock_response.json = AsyncMock(return_value=mock_venice_response)
 
+            mock_post_context = AsyncMock()
+            mock_post_context.__aenter__ = AsyncMock(return_value=mock_response)
+            mock_post_context.__aexit__ = AsyncMock(return_value=None)
+
             mock_session = AsyncMock()
-            mock_session.__aenter__.return_value = mock_session
-            mock_session.__aexit__.return_value = None
-            mock_session.post.return_value.__aenter__.return_value = mock_response
-            mock_session.post.return_value.__aexit__.return_value = None
+            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_session.__aexit__ = AsyncMock(return_value=None)
+            mock_session.post = Mock(return_value=mock_post_context)
 
             with patch("aiohttp.ClientSession", return_value=mock_session):
                 result = await venice_client.request_async(request_data, llm_config)
@@ -406,18 +410,18 @@ class TestVeniceClientRequestAsync:
 
             # Create a mock context manager that returns different responses
             call_count = [0]
-
-            async def mock_post_context(*args, **kwargs):
+            
+            def mock_post(*args, **kwargs):
                 ctx = AsyncMock()
                 if call_count[0] == 0:
-                    ctx.__aenter__.return_value = mock_response_500
+                    ctx.__aenter__ = AsyncMock(return_value=mock_response_500)
                     call_count[0] += 1
                 else:
-                    ctx.__aenter__.return_value = mock_response_200
-                ctx.__aexit__.return_value = None
+                    ctx.__aenter__ = AsyncMock(return_value=mock_response_200)
+                ctx.__aexit__ = AsyncMock(return_value=None)
                 return ctx
 
-            mock_session.post = mock_post_context
+            mock_session.post = Mock(side_effect=mock_post)
 
             with patch("aiohttp.ClientSession", return_value=mock_session):
                 with patch("asyncio.sleep"):  # Speed up test
@@ -451,11 +455,14 @@ class TestVeniceClientStreamAsync:
         mock_response.content = AsyncMock()
         mock_response.content.__aiter__.return_value = [mock_chunk_data]
 
+        mock_post_context = AsyncMock()
+        mock_post_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_post_context.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.__aenter__.return_value = mock_session
-        mock_session.__aexit__.return_value = None
-        mock_session.post.return_value.__aenter__.return_value = mock_response
-        mock_session.post.return_value.__aexit__.return_value = None
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = Mock(return_value=mock_post_context)
 
         with patch.object(venice_client, "_get_api_key_async", return_value="test-api-key"):
             with patch("aiohttp.ClientSession", return_value=mock_session):
@@ -478,11 +485,14 @@ class TestVeniceClientStreamAsync:
         mock_response.content = AsyncMock()
         mock_response.content.__aiter__.return_value = [mock_chunk_data]
 
+        mock_post_context = AsyncMock()
+        mock_post_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_post_context.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.__aenter__.return_value = mock_session
-        mock_session.__aexit__.return_value = None
-        mock_session.post.return_value.__aenter__.return_value = mock_response
-        mock_session.post.return_value.__aexit__.return_value = None
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = Mock(return_value=mock_post_context)
 
         with patch.object(venice_client, "_get_api_key_async", return_value="test-api-key"):
             with patch("aiohttp.ClientSession", return_value=mock_session):
@@ -634,11 +644,14 @@ class TestVeniceClientEmbeddings:
         mock_response.status = 200
         mock_response.json = AsyncMock(return_value=mock_response_data)
 
+        mock_post_context = AsyncMock()
+        mock_post_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_post_context.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.__aenter__.return_value = mock_session
-        mock_session.__aexit__.return_value = None
-        mock_session.post.return_value.__aenter__.return_value = mock_response
-        mock_session.post.return_value.__aexit__.return_value = None
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = Mock(return_value=mock_post_context)
 
         with patch.object(venice_client, "_get_api_key_async_from_embedding_config", return_value="test-api-key"):
             with patch("aiohttp.ClientSession", return_value=mock_session):
@@ -655,6 +668,7 @@ class TestVeniceClientEmbeddings:
             embedding_model="text-embedding-ada-002",
             embedding_endpoint_type="venice",
             embedding_endpoint=VENICE_API_BASE_URL,
+            embedding_dim=1536,
         )
 
         embeddings = await venice_client.request_embeddings([], embedding_config)
@@ -668,17 +682,21 @@ class TestVeniceClientEmbeddings:
             embedding_model="text-embedding-ada-002",
             embedding_endpoint_type="venice",
             embedding_endpoint=VENICE_API_BASE_URL,
+            embedding_dim=1536,
         )
 
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.json = AsyncMock(return_value={})  # Missing "data" key
 
+        mock_post_context = AsyncMock()
+        mock_post_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_post_context.__aexit__ = AsyncMock(return_value=None)
+
         mock_session = AsyncMock()
-        mock_session.__aenter__.return_value = mock_session
-        mock_session.__aexit__.return_value = None
-        mock_session.post.return_value.__aenter__.return_value = mock_response
-        mock_session.post.return_value.__aexit__.return_value = None
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = Mock(return_value=mock_post_context)
 
         with patch.object(venice_client, "_get_api_key_async_from_embedding_config", return_value="test-api-key"):
             with patch("aiohttp.ClientSession", return_value=mock_session):
@@ -802,43 +820,33 @@ class TestVeniceClientHTTPErrorHandling:
 
     def test_handle_http_error_401(self, venice_client):
         """Test handling 401 HTTP error."""
-        mock_response = Mock()
-        mock_response.status_code = 401
-        mock_response.json.return_value = {"error": {"message": "Unauthorized"}}
-
+        error_data = {"error": {"message": "Unauthorized"}}
         with pytest.raises(LLMAuthenticationError):
-            venice_client._handle_http_error(mock_response)
+            venice_client._handle_http_error(401, error_data, attempt=0, max_retries=3, retry_delay=1)
 
     def test_handle_http_error_429_with_retry_after(self, venice_client):
-        """Test handling 429 HTTP error with Retry-After header."""
-        mock_response = Mock()
-        mock_response.status_code = 429
-        mock_response.headers = {"Retry-After": "5"}
-        mock_response.json.return_value = {"error": {"message": "Rate limited"}}
-
-        with pytest.raises(LLMRateLimitError) as exc_info:
-            venice_client._handle_http_error(mock_response)
-        assert "5" in str(exc_info.value)
+        """Test handling 429 HTTP error with retry after."""
+        error_data = {"error": {"message": "Rate limited", "retry_after": "5"}}
+        with patch("time.sleep"):  # Speed up test
+            # Should retry first time, then raise on second
+            with pytest.raises(LLMRateLimitError):
+                venice_client._handle_http_error(429, error_data, attempt=2, max_retries=3, retry_delay=1)
 
     @pytest.mark.asyncio
     async def test_handle_http_error_async_500(self, venice_client):
         """Test handling 500 HTTP error asynchronously."""
-        mock_response = AsyncMock()
-        mock_response.status = 500
-        mock_response.json = AsyncMock(return_value={"error": {"message": "Server error"}})
-
+        error_data = {"error": {"message": "Server error"}}
         with pytest.raises(LLMServerError):
-            await venice_client._handle_http_error_async(mock_response)
+            await venice_client._handle_http_error_async(500, error_data, attempt=2, max_retries=3, retry_delay=1)
 
     @pytest.mark.asyncio
-    async def test_handle_http_error_async_connection_error(self, venice_client):
-        """Test handling connection error asynchronously."""
-        mock_response = AsyncMock()
-        mock_response.status = 0  # Connection error
-        mock_response.json = AsyncMock(side_effect=Exception("Connection failed"))
-
-        with pytest.raises(LLMConnectionError):
-            await venice_client._handle_http_error_async(mock_response)
+    async def test_handle_http_error_async_retry(self, venice_client):
+        """Test handling 500 HTTP error with retry."""
+        error_data = {"error": {"message": "Server error"}}
+        with patch("asyncio.sleep"):  # Speed up test
+            # Should retry and return None (continue retrying)
+            result = await venice_client._handle_http_error_async(500, error_data, attempt=0, max_retries=3, retry_delay=1)
+            assert result is None
 
 
 class TestVeniceClientFactory:

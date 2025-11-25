@@ -111,16 +111,18 @@ class TestVeniceProviderAPIKeyValidation:
     @pytest.mark.asyncio
     async def test_check_api_key_invalid(self):
         """Test API key validation with invalid key."""
+        from letta.errors import LLMAuthenticationError
+        
         provider = VeniceProvider(
             name="venice",
             api_key="invalid-key-12345",
             base_url="https://api.venice.ai/api/v1",
         )
 
-        from letta.errors import LLMAuthenticationError
-
-        with pytest.raises(LLMAuthenticationError):
-            await provider.check_api_key()
+        # Mock the API call to return an authentication error
+        with patch("letta.llm_api.venice.venice_get_model_list_async", side_effect=Exception("401 Unauthorized")):
+            with pytest.raises(LLMAuthenticationError):
+                await provider.check_api_key()
 
     @pytest.mark.asyncio
     async def test_check_api_key_missing(self):

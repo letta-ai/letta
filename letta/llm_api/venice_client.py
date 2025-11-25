@@ -528,6 +528,7 @@ class VeniceClient(LLMClientBase):
             model=embedding_config.embedding_model,
             model_endpoint_type="venice",
             model_endpoint=embedding_config.embedding_endpoint,
+            context_window=128000,  # Default context window for embeddings
             provider_name=getattr(embedding_config, "provider_name", None),
             provider_category=getattr(embedding_config, "provider_category", None),
         )
