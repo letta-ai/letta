@@ -230,20 +230,24 @@ def trace_method(func):
                 param_items = param_items[1:]
 
             # Parameters to skip entirely (known to be large)
+            # This is opt-out: only skip specific large objects
             SKIP_PARAMS = {
                 "agent_state",
                 "messages",
                 "in_context_messages",
                 "message_sequence",
-                "content",
+                "content",  # File content, large text
                 "tool_returns",
                 "memory",
                 "sources",
                 "context",
-                "resource_id",
-                "source_code",
-                "request_data",
-                "system",
+                "source_code",  # Full code files
+                "system",  # System prompts
+                "text_chunks",  # Large arrays of text
+                "embeddings",  # Vector arrays
+                "embedding",  # Single vectors
+                "file_bytes",  # Binary data
+                "chunks",  # Large chunk arrays
             }
 
             # Max size for parameter value strings (1KB)
