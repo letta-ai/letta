@@ -106,17 +106,16 @@ def approve_tool_call(client: Letta, agent_id: str, tool_call_id: str):
     client.agents.messages.create(
         agent_id=agent_id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -187,17 +186,16 @@ def test_send_approval_without_pending_request(client, agent):
         client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                ApprovalCreateParam(
-                    approve=True,  # legacy
-                    approval_request_id=FAKE_REQUEST_ID,  # legacy
-                    approvals=[
+                {
+                    "type": "approval",
+                    "approvals": [
                         {
                             "type": "approval",
                             "approve": True,
                             "tool_call_id": FAKE_REQUEST_ID,
                         },
                     ],
-                ),
+                },
             ],
         )
 
@@ -211,7 +209,7 @@ def test_send_user_message_with_pending_request(client, agent):
     with pytest.raises(APIError, match="Please approve or deny the pending request before continuing"):
         client.agents.messages.create(
             agent_id=agent.id,
-            messages=[MessageCreateParam(role="user", content="hi")],
+            messages=[{"role": "user", "content": "hi"}],
         )
 
     approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
@@ -227,17 +225,16 @@ def test_send_approval_message_with_incorrect_request_id(client, agent):
         client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                ApprovalCreateParam(
-                    approve=True,  # legacy
-                    approval_request_id=FAKE_REQUEST_ID,  # legacy
-                    approvals=[
+                {
+                    "type": "approval",
+                    "approvals": [
                         {
                             "type": "approval",
                             "approve": True,
                             "tool_call_id": FAKE_REQUEST_ID,
                         },
                     ],
-                ),
+                },
             ],
         )
 
@@ -317,17 +314,16 @@ def test_invoke_tool_after_turning_off_requires_approval(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
         stream_tokens=True,
     )
@@ -391,17 +387,16 @@ def test_approve_tool_call_request(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
         stream_tokens=True,
     )
@@ -440,17 +435,16 @@ def test_approve_cursor_fetch(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -477,17 +471,16 @@ def test_approve_with_context_check(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
         stream_tokens=True,
     )
@@ -515,17 +508,16 @@ def test_approve_and_follow_up(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
                         "tool_call_id": tool_call_id,
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -558,17 +550,16 @@ def test_approve_and_follow_up_with_error(
         response = client.agents.messages.stream(
             agent_id=agent.id,
             messages=[
-                ApprovalCreateParam(
-                    approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                    approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                    approvals=[
+                {
+                    "type": "approval",
+                    "approvals": [
                         {
                             "type": "approval",
                             "approve": True,
                             "tool_call_id": tool_call_id,
                         },
                     ],
-                ),
+                },
             ],
             stream_tokens=True,
         )
@@ -612,11 +603,9 @@ def test_deny_tool_call_request(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": False,
@@ -624,7 +613,7 @@ def test_deny_tool_call_request(
                         "reason": f"You don't need to call the tool, the secret code is {SECRET_CODE}",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -662,11 +651,9 @@ def test_deny_cursor_fetch(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": False,
@@ -674,7 +661,7 @@ def test_deny_cursor_fetch(
                         "reason": f"You don't need to call the tool, the secret code is {SECRET_CODE}",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -700,11 +687,9 @@ def test_deny_with_context_check(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason="Cancelled by user. Instead of responding, wait for next user input before replying.",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": False,
@@ -712,7 +697,7 @@ def test_deny_with_context_check(
                         "reason": "Cancelled by user. Instead of responding, wait for next user input before replying.",
                     },
                 ],
-            ),
+            },
         ],
         stream_tokens=True,
     )
@@ -740,11 +725,9 @@ def test_deny_and_follow_up(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": False,
@@ -752,7 +735,7 @@ def test_deny_and_follow_up(
                         "reason": f"You don't need to call the tool, the secret code is {SECRET_CODE}",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -785,11 +768,9 @@ def test_deny_and_follow_up_with_error(
         response = client.agents.messages.stream(
             agent_id=agent.id,
             messages=[
-                ApprovalCreateParam(
-                    approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                    approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                    reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                    approvals=[
+                {
+                    "type": "approval",
+                    "approvals": [
                         {
                             "type": "approval",
                             "approve": False,
@@ -797,7 +778,7 @@ def test_deny_and_follow_up_with_error(
                             "reason": f"You don't need to call the tool, the secret code is {SECRET_CODE}",
                         },
                     ],
-                ),
+                },
             ],
             stream_tokens=True,
         )
@@ -837,11 +818,9 @@ def test_client_side_tool_call_request(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "tool",
                         "tool_call_id": tool_call_id,
@@ -849,7 +828,7 @@ def test_client_side_tool_call_request(
                         "status": "success",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -889,11 +868,9 @@ def test_client_side_tool_call_cursor_fetch(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "tool",
                         "tool_call_id": tool_call_id,
@@ -901,7 +878,7 @@ def test_client_side_tool_call_cursor_fetch(
                         "status": "success",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -930,11 +907,9 @@ def test_client_side_tool_call_with_context_check(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason="Cancelled by user. Instead of responding, wait for next user input before replying.",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "tool",
                         "tool_call_id": tool_call_id,
@@ -942,7 +917,7 @@ def test_client_side_tool_call_with_context_check(
                         "status": "success",
                     },
                 ],
-            ),
+            },
         ],
         stream_tokens=True,
     )
@@ -970,11 +945,9 @@ def test_client_side_tool_call_and_follow_up(
     client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "tool",
                         "tool_call_id": tool_call_id,
@@ -982,7 +955,7 @@ def test_client_side_tool_call_and_follow_up(
                         "status": "success",
                     },
                 ],
-            ),
+            },
         ],
     )
 
@@ -1015,11 +988,9 @@ def test_client_side_tool_call_and_follow_up_with_error(
         response = client.agents.messages.stream(
             agent_id=agent.id,
             messages=[
-                ApprovalCreateParam(
-                    approve=True,  # legacy (passing incorrect value to ensure it is overridden)
-                    approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                    reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",  # legacy
-                    approvals=[
+                {
+                    "type": "approval",
+                    "approvals": [
                         {
                             "type": "tool",
                             "tool_call_id": tool_call_id,
@@ -1027,7 +998,7 @@ def test_client_side_tool_call_and_follow_up_with_error(
                             "status": "success",
                         },
                     ],
-                ),
+                },
             ],
             stream_tokens=True,
         )
@@ -1089,10 +1060,9 @@ def test_parallel_tool_calling(
     response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
-            ApprovalCreateParam(
-                approve=False,  # legacy (passing incorrect value to ensure it is overridden)
-                approval_request_id=FAKE_REQUEST_ID,  # legacy (passing incorrect value to ensure it is overridden)
-                approvals=[
+            {
+                "type": "approval",
+                "approvals": [
                     {
                         "type": "approval",
                         "approve": True,
@@ -1110,7 +1080,7 @@ def test_parallel_tool_calling(
                         "status": "success",
                     },
                 ],
-            ),
+            },
         ],
     )
 
