@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import Field
 
 from letta.log import get_logger
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers.base import Provider
@@ -159,16 +160,60 @@ class VeniceProvider(Provider):
         configs.sort(key=lambda x: x.model)
         return configs
 
-    async def list_embedding_models_async(self) -> list:
+    async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
         """
-        List available embedding models from Venice API.
+        List available embedding models for Venice API.
         
-        Currently Venice may not have a separate embeddings endpoint,
-        so this returns an empty list for now.
+        Note: Venice API's /models endpoint does not return embedding models,
+        but embedding models are available via the /embeddings endpoint. This method
+        returns a hardcoded list of common Venice embedding models that are known to work.
         
         Returns:
-            Empty list (embeddings not yet supported)
+            List of EmbeddingConfig objects for available embedding models
         """
-        # TODO: Implement when Venice embeddings are available
-        return []
+        from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
+        from letta.schemas.embedding_config import EmbeddingConfig
+        
+        # Venice doesn't list embedding models in /models endpoint, but they work via /embeddings
+        # Hardcode common embedding models (similar to OpenAI's approach)
+        embedding_models = [
+            EmbeddingConfig(
+                embedding_model="text-embedding-ada-002",
+                embedding_endpoint_type="venice",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1024,  # Venice returns 1024 dim for this model
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
+                batch_size=32,
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="venice",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1024,  # Venice returns 1024 dim for this model
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-3-small", is_embedding=True),
+                batch_size=32,
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-large",
+                embedding_endpoint_type="venice",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1024,  # Venice returns 1024 dim for this model
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-3-large", is_embedding=True),
+                batch_size=32,
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-bge-m3",
+                embedding_endpoint_type="venice",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1024,  # Venice returns 1024 dim for this model
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-bge-m3", is_embedding=True),
+                batch_size=32,
+            ),
+        ]
+        
+        return embedding_models
 

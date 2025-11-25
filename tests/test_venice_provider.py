@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.providers.venice import VeniceProvider
 from letta.settings import model_settings
 
@@ -84,10 +85,26 @@ class TestVeniceProviderModelListing:
 
     @pytest.mark.asyncio
     async def test_list_embedding_models_async(self, venice_provider):
-        """Test listing embedding models (currently returns empty list)."""
+        """Test listing embedding models (hardcoded list since Venice doesn't list them in /models)."""
         embedding_models = await venice_provider.list_embedding_models_async()
-        # Currently Venice doesn't have separate embeddings, so should return empty
-        assert embedding_models == []
+
+        # Should return hardcoded list of common embedding models
+        assert len(embedding_models) == 4
+        assert all(isinstance(model, EmbeddingConfig) for model in embedding_models)
+        assert all(model.embedding_endpoint_type == "venice" for model in embedding_models)
+        assert all(model.handle.startswith("venice/") for model in embedding_models)
+        
+        # Check specific models
+        model_ids = {m.embedding_model for m in embedding_models}
+        assert "text-embedding-ada-002" in model_ids
+        assert "text-embedding-3-small" in model_ids
+        assert "text-embedding-3-large" in model_ids
+        assert "text-embedding-bge-m3" in model_ids
+        
+        # Check dimensions (Venice returns 1024 for all)
+        ada_model = next((m for m in embedding_models if m.embedding_model == "text-embedding-ada-002"), None)
+        assert ada_model is not None
+        assert ada_model.embedding_dim == 1024
 
     @pytest.mark.asyncio
     async def test_list_llm_models_filters_text_models(self, venice_provider):
