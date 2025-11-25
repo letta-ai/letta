@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlparse
 
 import httpx
 
-from letta import system
+from letta import __version__, system
 from letta.errors import LettaImageFetchError
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import Base64Image, ImageContent, ImageSourceType, TextContent
@@ -17,8 +17,9 @@ async def _fetch_image_from_url(url: str) -> tuple[bytes, str | None]:
     Async helper to fetch image from URL without blocking the event loop.
     """
     timeout = httpx.Timeout(15.0, connect=5.0)
+    headers = {"User-Agent": f"Letta/{__version__}"}
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
             image_response = await client.get(url, follow_redirects=True)
             image_response.raise_for_status()
             image_bytes = image_response.content
