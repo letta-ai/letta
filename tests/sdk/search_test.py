@@ -18,7 +18,9 @@ from letta.config import LettaConfig
 from letta.schemas.message import MessageSearchResult
 from letta.server.rest_api.routers.v1.passages import PassageSearchResult
 from letta.server.server import SyncServer
-from letta.settings import settings
+from letta.settings import model_settings, settings
+
+DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
 
 
 def cleanup_agent_with_messages(client: Letta, agent_id: str):
@@ -41,7 +43,7 @@ def cleanup_agent_with_messages(client: Letta, agent_id: str):
             if should_use_tpuf_for_messages():
                 tpuf_client = TurbopufferClient()
                 # Delete all messages for this agent from Turbopuffer
-                asyncio.run(tpuf_client.delete_all_messages(agent_id))
+                asyncio.run(tpuf_client.delete_all_messages(agent_id, DEFAULT_ORG_ID))
         except Exception as e:
             print(f"Warning: Failed to clean up Turbopuffer messages for agent {agent_id}: {e}")
 
@@ -328,7 +330,10 @@ def test_passage_search_with_date_filters(client: Letta, enable_turbopuffer):
         cleanup_agent_with_messages(client, agent.id)
 
 
-@pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+@pytest.mark.skipif(
+    not (settings.use_tpuf and settings.tpuf_api_key and model_settings.openai_api_key and settings.embed_all_messages),
+    reason="Message search requires Turbopuffer, OpenAI, and message embedding to be enabled",
+)
 def test_message_search_basic(client: Letta, enable_message_embedding):
     """Test basic message search functionality through the SDK"""
     # Create an agent
@@ -342,7 +347,7 @@ def test_message_search_basic(client: Letta, enable_message_embedding):
     try:
         # Send messages to the agent
         test_messages = [
-            "What is the capital of Mozambique?",
+            "What is the capital of Saudi Arabia?",
         ]
 
         for msg_text in test_messages:
@@ -356,9 +361,9 @@ def test_message_search_basic(client: Letta, enable_message_embedding):
         # Note: The endpoint returns LettaMessageUnion, not MessageSearchResult
         results = client.post(
             "/v1/messages/search",
-            cast_to=list[dict],
+            cast_to=list[MessageSearchResult],
             body={
-                "query": "capital Mozambique",
+                "query": "capital Saudi Arabia",
                 "search_mode": "fts",
                 "limit": 10,
             },
