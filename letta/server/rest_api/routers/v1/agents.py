@@ -101,6 +101,7 @@ async def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
             "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+        deprecated=True,
     ),
     include: List[AgentRelationships] = Query(
         [],
@@ -815,6 +816,7 @@ async def retrieve_agent(
             "Using this can optimize performance by reducing unnecessary joins."
             "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+        deprecated=True,
     ),
     include: List[AgentRelationships] = Query(
         [],

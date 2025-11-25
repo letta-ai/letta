@@ -149,6 +149,7 @@ async def list_agents_for_block(
             "Using this can optimize performance by reducing unnecessary joins."
             "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+        deprecated=True,
     ),
     include: List[str] = Query(
         [],
