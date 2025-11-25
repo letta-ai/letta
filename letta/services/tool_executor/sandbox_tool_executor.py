@@ -53,6 +53,11 @@ class SandboxToolExecutor(ToolExecutor):
         # Merge fetched credentials with provided sandbox_env_vars
         if sandbox_env_vars is None:
             sandbox_env_vars = {}
+
+        # inject some extra env such as PROJECT_ID from agent_state
+        if agent_state and agent_state.project_id:
+          fetched_credentials["PROJECT_ID"] = agent_state.project_id
+
         sandbox_env_vars = {**fetched_credentials, **sandbox_env_vars}
 
         try:
