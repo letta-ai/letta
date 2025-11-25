@@ -708,9 +708,110 @@ class TestVeniceClientReasoningModel:
     """Test reasoning model detection."""
 
     def test_is_reasoning_model_false(self, venice_client, llm_config):
-        """Test that Venice models are not reasoning models."""
-        result = venice_client.is_reasoning_model(llm_config)
-        assert result is False
+        """Test that non-reasoning Venice models return False."""
+        # Mock the API response with a non-reasoning model
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "id": "llama-3.3-70b",
+                    "type": "text",
+                    "model_spec": {
+                        "traits": ["text", "chat"],
+                        "capabilities": {"supportsFunctionCalling": True},
+                    },
+                }
+            ]
+        }
+        
+        with patch.object(venice_client, "_get_api_key", return_value="test-api-key"):
+            with patch.object(venice_client, "_get_base_url", return_value=VENICE_API_BASE_URL):
+                with patch("requests.get", return_value=mock_response):
+                    result = venice_client.is_reasoning_model(llm_config)
+                    assert result is False
+
+    def test_is_reasoning_model_true(self, venice_client, llm_config):
+        """Test that reasoning Venice models return True."""
+        # Update config to use a reasoning model
+        llm_config.model = "o1-preview"
+        llm_config.handle = "venice/o1-preview"
+        
+        # Mock the API response with a reasoning model
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "id": "o1-preview",
+                    "type": "text",
+                    "model_spec": {
+                        "traits": ["reasoning", "o1", "text"],
+                        "capabilities": {"supportsFunctionCalling": True},
+                    },
+                }
+            ]
+        }
+        
+        with patch.object(venice_client, "_get_api_key", return_value="test-api-key"):
+            with patch.object(venice_client, "_get_base_url", return_value=VENICE_API_BASE_URL):
+                with patch("requests.get", return_value=mock_response):
+                    result = venice_client.is_reasoning_model(llm_config)
+                    assert result is True
+
+    def test_is_reasoning_model_with_handle(self, venice_client, llm_config):
+        """Test reasoning model detection when model is in handle format."""
+        llm_config.model = "venice/o3-mini"
+        llm_config.handle = "venice/o3-mini"
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "id": "o3-mini",
+                    "type": "text",
+                    "model_spec": {
+                        "traits": ["reasoning", "o3", "thinking"],
+                        "capabilities": {"supportsFunctionCalling": True},
+                    },
+                }
+            ]
+        }
+        
+        with patch.object(venice_client, "_get_api_key", return_value="test-api-key"):
+            with patch.object(venice_client, "_get_base_url", return_value=VENICE_API_BASE_URL):
+                with patch("requests.get", return_value=mock_response):
+                    result = venice_client.is_reasoning_model(llm_config)
+                    assert result is True
+
+    def test_is_reasoning_model_not_found(self, venice_client, llm_config):
+        """Test that missing models default to False."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "id": "other-model",
+                    "type": "text",
+                    "model_spec": {"traits": []},
+                }
+            ]
+        }
+        
+        with patch.object(venice_client, "_get_api_key", return_value="test-api-key"):
+            with patch.object(venice_client, "_get_base_url", return_value=VENICE_API_BASE_URL):
+                with patch("requests.get", return_value=mock_response):
+                    result = venice_client.is_reasoning_model(llm_config)
+                    assert result is False
+
+    def test_is_reasoning_model_api_error(self, venice_client, llm_config):
+        """Test that API errors default to False."""
+        with patch.object(venice_client, "_get_api_key", return_value="test-api-key"):
+            with patch.object(venice_client, "_get_base_url", return_value=VENICE_API_BASE_URL):
+                with patch("requests.get", side_effect=requests.exceptions.RequestException("API error")):
+                    result = venice_client.is_reasoning_model(llm_config)
+                    assert result is False
 
 
 class TestVeniceClientHTTPErrorHandling:

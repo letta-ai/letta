@@ -652,18 +652,69 @@ class VeniceClient(LLMClientBase):
         """
         Check if the Venice model supports native reasoning capabilities.
         
-        Currently, Venice models do not support native reasoning features like
-        OpenAI's o1/o3 models or Anthropic's reasoning models. This method returns
-        False for all Venice models.
+        Queries the Venice API to get model metadata and checks the model's traits
+        to determine if it supports reasoning. Models with reasoning capabilities
+        will have relevant traits in their model_spec.traits field.
         
         Args:
             llm_config: LLM configuration containing model information
             
         Returns:
-            bool: Always returns False (Venice models are not reasoning models)
+            bool: True if the model supports reasoning, False otherwise
         """
-        # Venice models are not currently reasoning models
-        return False
+        # Extract model ID from handle (format: venice/{model_id}) or use model directly
+        model_id = llm_config.model
+        if "/" in model_id:
+            model_id = model_id.split("/", 1)[1]
+        
+        try:
+            # Get API key and base URL
+            api_key = self._get_api_key(llm_config)
+            base_url = self._get_base_url(llm_config)
+            
+            # Normalize base URL to ensure it ends with /api/v1
+            if not base_url.endswith("/api/v1"):
+                if base_url.endswith("/"):
+                    base_url = base_url.rstrip("/")
+                base_url = f"{base_url}/api/v1" if not base_url.endswith("/api/v1") else base_url
+            
+            # Query Venice API synchronously to get model metadata
+            models_url = f"{base_url}/models"
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            
+            response = requests.get(models_url, headers=headers, timeout=VENICE_DEFAULT_TIMEOUT)
+            response.raise_for_status()
+            response_data = response.json()
+            
+            # Find the specific model in the response
+            models = response_data.get("data", [])
+            for model in models:
+                if model.get("id") == model_id:
+                    # Check model_spec.traits for reasoning indicators
+                    model_spec = model.get("model_spec", {})
+                    traits = model_spec.get("traits", [])
+                    
+                    # Check if any trait indicates reasoning capabilities
+                    # Common indicators: "reasoning", "reasoner", "thinking", "o1", "o3"
+                    reasoning_indicators = ["reasoning", "reasoner", "thinking", "o1", "o3", "o4"]
+                    for trait in traits:
+                        if isinstance(trait, str):
+                            trait_lower = trait.lower()
+                            if any(indicator in trait_lower for indicator in reasoning_indicators):
+                                return True
+                    
+                    return False
+            
+            # Model not found in API response
+            logger.warning(f"Venice model {model_id} not found in API response, defaulting to False")
+            return False
+            
+        except Exception as e:
+            # If we can't query the API, log and default to False
+            logger.warning(f"Failed to check reasoning model status for {model_id}: {e}, defaulting to False")
+            return False
 
     def handle_llm_error(self, e: Exception) -> Exception:
         """
