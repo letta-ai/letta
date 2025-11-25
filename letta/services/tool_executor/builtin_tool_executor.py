@@ -51,6 +51,18 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             raise ValueError("E2B_API_KEY is not set")
 
         sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
+
+        # Inject source code from agent's tools to enable programmatic tool calling
+        # This allows Claude to compose tools in a single code execution, e.g.:
+        #   run_code("result = add(multiply(4, 5), 6)")
+        if language == "python" and agent_state and agent_state.tools:
+            tool_source_code = ""
+            for tool in agent_state.tools:
+                if tool.source_code:
+                    tool_source_code += tool.source_code + "\n\n"
+            if tool_source_code:
+                code = tool_source_code + code
+
         params = {"code": code}
         if language != "python":
             # Leave empty for python
