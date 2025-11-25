@@ -112,6 +112,7 @@ class Model(LLMConfig, ModelBase):
             enable_reasoner=llm_config.enable_reasoner,
             reasoning_effort=llm_config.reasoning_effort,
             max_reasoning_tokens=llm_config.max_reasoning_tokens,
+            effort=llm_config.effort,
             frequency_penalty=llm_config.frequency_penalty,
             compatibility_type=llm_config.compatibility_type,
             verbosity=llm_config.verbosity,

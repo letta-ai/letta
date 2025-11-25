@@ -441,6 +441,9 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.enable_reasoner and config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
+                # Set default effort level for Claude Opus 4.5
+                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                    config.effort = "medium"
                 return config
 
             # Google Gemini 2.5 Pro and Gemini 3: not possible to disable
@@ -495,6 +498,9 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
+                # Set default effort level for Claude Opus 4.5
+                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                    config.effort = "medium"
             elif cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
