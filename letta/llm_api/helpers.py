@@ -1,7 +1,8 @@
 import copy
 import json
+import logging
 from collections import OrderedDict
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import requests
 
@@ -10,6 +11,13 @@ from letta.helpers.json_helpers import json_dumps
 from letta.log import get_logger
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
+from letta.schemas.response_format import (
+    JsonObjectResponseFormat,
+    JsonSchemaResponseFormat,
+    ResponseFormatType,
+    ResponseFormatUnion,
+    TextResponseFormat,
+)
 from letta.settings import summarizer_settings
 from letta.utils import count_tokens, printd
 
@@ -164,6 +172,61 @@ def convert_to_structured_output(openai_function: dict, allow_optional: bool = F
         structured_output["parameters"]["required"] = openai_function["parameters"].get("required", [])
 
     return structured_output
+
+
+def convert_response_format_to_responses_api(
+    response_format: Optional["ResponseFormatUnion"],
+) -> Optional[dict]:
+    """
+    Convert Letta's ResponseFormatUnion to OpenAI Responses API text.format structure.
+
+    The Responses API uses a different structure than Chat Completions:
+    text={
+        "format": {
+            "type": "json_schema",
+            "name": "...",
+            "strict": True,
+            "schema": {...}
+        }
+    }
+
+    Args:
+        response_format: Letta ResponseFormatUnion object
+
+    Returns:
+        Dict with format structure for Responses API, or None
+    """
+    if response_format is None:
+        return None
+
+    # Text format - return None since it's the default
+    if isinstance(response_format, TextResponseFormat):
+        return None
+
+    # JSON object format - not directly supported in Responses API
+    # Users should use json_schema instead
+    elif isinstance(response_format, JsonObjectResponseFormat):
+        logger.warning(
+            "json_object response format is not supported in Responses API. "
+            "Use json_schema with a proper schema instead. Skipping response_format."
+        )
+        return None
+
+    # JSON schema format - this is what Responses API supports
+    elif isinstance(response_format, JsonSchemaResponseFormat):
+        json_schema_dict = response_format.json_schema
+
+        # Ensure required fields are present
+        if "schema" not in json_schema_dict:
+            logger.warning("json_schema missing 'schema' field, skipping response_format")
+            return None
+
+        return {
+            "type": "json_schema",
+            "name": json_schema_dict.get("name", "response_schema"),
+            "schema": json_schema_dict["schema"],
+            "strict": json_schema_dict.get("strict", True),  # Default to strict mode
+        }
 
 
 def make_post_request(url: str, headers: dict[str, str], data: dict[str, Any]) -> dict[str, Any]:

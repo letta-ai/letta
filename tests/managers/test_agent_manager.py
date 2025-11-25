@@ -1542,6 +1542,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "enable_reasoner",
         "reasoning_effort",
         "effort",
+        "response_format",
         "max_reasoning_tokens",
         "frequency_penalty",
         "compatibility_type",

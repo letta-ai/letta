@@ -59,7 +59,13 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
 
 
 class ResponseFormat(BaseModel):
-    type: str = Field(default="text", pattern="^(text|json_object)$")
+    """
+    Response format for OpenAI Chat Completions API.
+    Can be a simple type string or a dict with nested json_schema.
+    """
+
+    # Allow either simple dict or complex nested structure
+    model_config = {"extra": "allow"}  # Allow extra fields for json_schema
 
 
 ## tool_choice ##
@@ -126,7 +132,7 @@ class ChatCompletionRequest(BaseModel):
     max_completion_tokens: Optional[int] = None
     n: Optional[int] = 1
     presence_penalty: Optional[float] = 0
-    response_format: Optional[ResponseFormat] = None
+    response_format: Optional[Union[ResponseFormat, Dict[str, Any]]] = None
     seed: Optional[int] = None
     stop: Optional[Union[str, List[str]]] = None
     stream: Optional[bool] = False

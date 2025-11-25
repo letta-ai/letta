@@ -23974,7 +23974,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [
@@ -28173,7 +28174,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [
@@ -29004,6 +29006,36 @@
             "description": "Deprecated: Use model_settings to configure parallel tool calls instead. If set to True, enables parallel tool calling. Defaults to False.",
             "default": false,
             "deprecated": true
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
           }
         },
         "type": "object",
@@ -31185,6 +31217,36 @@
             "description": "Deprecated: If set to True, enables parallel tool calling.",
             "default": false,
             "deprecated": true
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
           },
           "max_context_window": {
             "type": "integer",
@@ -37005,7 +37067,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
             "deprecated": true
           },
           "max_tokens": {
@@ -38356,7 +38418,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [

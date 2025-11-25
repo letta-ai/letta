@@ -6,6 +6,7 @@ from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import AgentType, ProviderCategory
+from letta.schemas.response_format import ResponseFormatUnion
 
 if TYPE_CHECKING:
     from letta.schemas.model import ModelSettings
@@ -98,6 +99,10 @@ class LLMConfig(BaseModel):
         False,
         description="Deprecated: Use model_settings to configure parallel tool calls instead. If set to True, enables parallel tool calling. Defaults to False.",
         deprecated=True,
+    )
+    response_format: Optional[ResponseFormatUnion] = Field(
+        None,
+        description="The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings.",
     )
 
     @model_validator(mode="before")

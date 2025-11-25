@@ -25,7 +25,12 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
-from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, unpack_all_inner_thoughts_from_kwargs
+from letta.llm_api.helpers import (
+    add_inner_thoughts_to_functions,
+    convert_response_format_to_responses_api,
+    convert_to_structured_output,
+    unpack_all_inner_thoughts_from_kwargs,
+)
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
@@ -52,6 +57,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.openai.responses_request import ResponsesRequest
+from letta.schemas.response_format import JsonSchemaResponseFormat
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
@@ -339,11 +345,22 @@ class OpenAIClient(LLMClientBase):
             parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
+        # Handle text configuration (verbosity and response format)
+        text_config_kwargs = {}
+
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
-            # data.verbosity = llm_config.verbosity
-            # https://cookbook.openai.com/examples/gpt-5/gpt-5_new_params_and_tools
-            data.text = ResponseTextConfigParam(verbosity=llm_config.verbosity)
+            text_config_kwargs["verbosity"] = llm_config.verbosity
+
+        # Add response_format support for structured outputs via text.format
+        if hasattr(llm_config, "response_format") and llm_config.response_format is not None:
+            format_dict = convert_response_format_to_responses_api(llm_config.response_format)
+            if format_dict is not None:
+                text_config_kwargs["format"] = format_dict
+
+        # Set text config if we have any parameters
+        if text_config_kwargs:
+            data.text = ResponseTextConfigParam(**text_config_kwargs)
 
         # Add reasoning effort control for reasoning models
         # Only set reasoning if effort is not "none" (GPT-5.1 uses "none" to disable reasoning)
@@ -500,6 +517,16 @@ class OpenAIClient(LLMClientBase):
 
         if tools and supports_parallel_tool_calling(model):
             data.parallel_tool_calls = False
+
+        # Add response_format support for structured outputs
+        if hasattr(llm_config, "response_format") and llm_config.response_format is not None:
+            # For Chat Completions API, we need the full nested structure
+            if isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+                # Convert to the OpenAI SDK format
+                data.response_format = {"type": "json_schema", "json_schema": llm_config.response_format.json_schema}
+            else:
+                # For text or json_object, just pass the type
+                data.response_format = {"type": llm_config.response_format.type}
 
         # always set user id for openai requests
         if self.actor:

@@ -299,7 +299,11 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
-    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
+    response_format: Optional[ResponseFormatUnion] = Field(
+        None,
+        description="Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+        deprecated=True,
+    )
     timezone: Optional[str] = Field(None, description="The timezone of the agent (IANA format).")
     max_files_open: Optional[int] = Field(
         None,
@@ -447,7 +451,7 @@ class UpdateAgent(BaseModel):
     )
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
-        description="Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+        description="Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
         deprecated=True,
     )
     max_tokens: Optional[int] = Field(

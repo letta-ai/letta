@@ -12,7 +12,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta
-from letta_client.types import AgentState, MessageCreateParam, ToolReturnMessage
+from letta_client.types import AgentState, JsonSchemaResponseFormat, MessageCreateParam, OpenAIModelSettings, ToolReturnMessage
 from letta_client.types.agents import AssistantMessage, ReasoningMessage, Run, ToolCallMessage, UserMessage
 from letta_client.types.agents.letta_streaming_response import LettaPing, LettaStopReason, LettaUsageStatistics
 
@@ -901,3 +901,89 @@ async def test_tool_call(
     assert run_id is not None
     run = await client.runs.retrieve(run_id=run_id)
     assert run.status == ("cancelled" if cancellation == "with_cancellation" else "completed")
+
+
+@pytest.mark.parametrize(
+    "model_handle,api_type",
+    [
+        ("openai/gpt-4o", "chat_completions"),
+        ("openai/gpt-5", "responses"),
+    ],
+)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_json_schema_response_format(
+    disable_e2b_api_key: Any,
+    client: AsyncLetta,
+    model_handle: str,
+    api_type: str,
+) -> None:
+    """
+    Test JsonSchemaResponseFormat with both Chat Completions API (gpt-4o) and Responses API (gpt-5).
+
+    This test verifies that:
+    1. Agents can be created with json_schema response_format via model_settings
+    2. The schema is properly stored in the agent's model_settings
+    3. Messages sent to the agent produce responses conforming to the schema
+    4. Both APIs (Chat Completions and Responses) handle structured outputs correctly
+    """
+    # Define the structured output schema
+    response_schema = {
+        "name": "capital_response",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "response": {"type": "string", "description": "The answer to the question"},
+                "justification": {"type": "string", "description": "Why this is the answer"},
+            },
+            "required": ["response", "justification"],
+            "additionalProperties": False,
+        },
+    }
+
+    # Create model settings with json_schema response format
+    model_settings = OpenAIModelSettings(
+        provider_type="openai", response_format=JsonSchemaResponseFormat(type="json_schema", json_schema=response_schema)
+    )
+
+    # Create agent with structured output configuration
+    agent_state = await client.agents.create(
+        name=f"test_structured_agent_{model_handle.replace('/', '_')}",
+        model=model_handle,
+        model_settings=model_settings,
+        embedding="openai/text-embedding-3-small",
+        agent_type="letta_v1_agent",
+    )
+
+    try:
+        # Send a message to the agent
+        message_response = await client.agents.messages.create(
+            agent_id=agent_state.id, messages=[MessageCreateParam(role="user", content="What is the capital of France?")]
+        )
+
+        # Verify we got a response
+        assert len(message_response.messages) > 0, "Should have received at least one message"
+
+        # Find the assistant message and verify it contains valid JSON matching the schema
+        assistant_message = None
+        for msg in message_response.messages:
+            if isinstance(msg, AssistantMessage):
+                assistant_message = msg
+                break
+
+        assert assistant_message is not None, "Should have received an AssistantMessage"
+
+        # Parse the content as JSON
+        parsed_content = json.loads(assistant_message.content)
+
+        # Verify the JSON has the required fields from our schema
+        assert "response" in parsed_content, "JSON should contain 'response' field"
+        assert "justification" in parsed_content, "JSON should contain 'justification' field"
+        assert isinstance(parsed_content["response"], str), "'response' field should be a string"
+        assert isinstance(parsed_content["justification"], str), "'justification' field should be a string"
+        assert len(parsed_content["response"]) > 0, "'response' field should not be empty"
+        assert len(parsed_content["justification"]) > 0, "'justification' field should not be empty"
+
+    finally:
+        # Cleanup
+        await client.agents.delete(agent_state.id)
