@@ -27,7 +27,16 @@ class VeniceProvider(Provider):
 
     async def check_api_key(self):
         """
-        Check if the Venice API key is valid by attempting to list models.
+        Validate Venice API key by attempting to list models from the API.
+        
+        Makes a test request to the Venice models endpoint. If the request succeeds,
+        the API key is considered valid. If it fails with 401/authentication error,
+        raises LLMAuthenticationError.
+        
+        Raises:
+            ValueError: If no API key is provided
+            LLMAuthenticationError: If API key is invalid (401 Unauthorized)
+            LLMError: For other validation errors
         """
         from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
         
@@ -50,10 +59,18 @@ class VeniceProvider(Provider):
 
     async def _get_models_async(self) -> list[dict]:
         """
-        Get raw model list from Venice API.
+        Fetch raw model list from Venice API.
+        
+        Retrieves the complete list of available models from Venice API, including
+        both text and embedding models. The API key is decrypted from Secret storage
+        before making the request.
         
         Returns:
-            List of model dictionaries from Venice API
+            list[dict]: List of model dictionaries from Venice API response.
+            Each dict contains: id, type, model_spec, capabilities, etc.
+            
+        Raises:
+            AssertionError: If API response format is unexpected (not a list)
         """
         from letta.llm_api.venice import venice_get_model_list_async
         
@@ -84,15 +101,18 @@ class VeniceProvider(Provider):
 
     def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:
         """
-        Convert Venice API model data to LLMConfig format.
+        Convert Venice API model data to Letta LLMConfig format.
         
-        Filters for text models and extracts context window from model_spec.
+        Filters for text models only (skips embedding models), extracts context window
+        from model_spec.availableContextTokens, and creates LLMConfig objects with
+        proper handles (venice/{model_id}). Models are sorted alphabetically by model ID.
         
         Args:
-            data: List of model dictionaries from Venice API
+            data: List of raw model dictionaries from Venice API
             
         Returns:
-            List of LLMConfig objects
+            list[LLMConfig]: List of LLMConfig objects for text models, sorted by model ID.
+            Each config includes: model, handle, context_window, provider_name, etc.
         """
         configs = []
         for model in data:

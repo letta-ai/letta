@@ -7,8 +7,9 @@ It extracts and adapts code from the venice-ai-sdk to work within Letta's archit
 
 import asyncio
 import json
+import os
 import time
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, AsyncGenerator, List, Optional
 
 import aiohttp
 import requests
@@ -16,7 +17,6 @@ from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.errors import (
-    ErrorCode,
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
@@ -92,7 +92,6 @@ class VeniceClient(LLMClientBase):
         api_key, _, _ = self.get_byok_overrides(llm_config)
         
         if not api_key:
-            import os
             api_key = os.environ.get("VENICE_API_KEY")
         
         if not api_key:
@@ -118,7 +117,6 @@ class VeniceClient(LLMClientBase):
         api_key, _, _ = await self.get_byok_overrides_async(llm_config)
         
         if not api_key:
-            import os
             api_key = os.environ.get("VENICE_API_KEY")
         
         if not api_key:
@@ -154,21 +152,29 @@ class VeniceClient(LLMClientBase):
         tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         """
-        Constructs a request object in the expected data format for Venice API.
+        Construct request payload in OpenAI-compatible format for Venice API.
         
-        Venice API uses OpenAI-compatible format, so we can leverage OpenAI message conversion.
+        Venice API uses OpenAI-compatible request format, so we leverage Letta's
+        OpenAI message conversion utilities. Converts Letta messages to OpenAI format,
+        handles image content, and supports tool/function calling.
+        
+        Venice-specific notes:
+        - Does not support inner thoughts in kwargs (put_inner_thoughts_in_kwargs=False)
+        - Does not support developer role (use_developer_message=False)
+        - Uses OpenAI-compatible tool format
         
         Args:
-            agent_type: The type of agent making the request
-            messages: List of messages in the conversation
-            llm_config: LLM configuration
-            tools: List of tool definitions
-            force_tool_call: Optional tool name to force a call to
-            requires_subsequent_tool_call: Whether a subsequent tool call is required
-            tool_return_truncation_chars: Optional truncation length for tool returns
+            agent_type: Type of agent making the request (affects message formatting)
+            messages: List of Letta PydanticMessage objects to convert
+            llm_config: LLM configuration (model, temperature, max_tokens, etc.)
+            tools: List of tool definition dictionaries (OpenAI function format)
+            force_tool_call: Optional tool name to force a specific tool call
+            requires_subsequent_tool_call: If True, sets tool_choice to "required"
+            tool_return_truncation_chars: Optional truncation length (not used by Venice directly)
             
         Returns:
-            Dictionary containing the request data for Venice API
+            dict: Request payload dictionary with keys: model, messages, temperature,
+            max_tokens, tools, tool_choice (if tools provided)
         """
         # Convert messages to OpenAI-compatible format (Venice uses OpenAI format)
         # Venice doesn't support inner thoughts in kwargs, so set to False
@@ -215,17 +221,25 @@ class VeniceClient(LLMClientBase):
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
-        Performs synchronous request to Venice API and returns raw response.
+        Performs synchronous HTTP POST request to Venice API chat completions endpoint.
+        
+        Implements retry logic with exponential backoff for rate limits (429) and server errors (5xx).
+        Retries up to VENICE_DEFAULT_MAX_RETRIES times with increasing delays.
         
         Args:
-            request_data: The request data dictionary
-            llm_config: LLM configuration
+            request_data: Request payload dictionary (model, messages, tools, etc.)
+            llm_config: LLM configuration containing API key and endpoint settings
             
         Returns:
-            Dictionary containing the raw API response
+            Dictionary containing raw Venice API response (OpenAI-compatible format)
             
         Raises:
-            LLMError: If the request fails
+            LLMAuthenticationError: If API key is missing or invalid (401)
+            LLMRateLimitError: If rate limit exceeded after retries (429)
+            LLMTimeoutError: If request times out after retries
+            LLMConnectionError: If connection fails after retries
+            LLMServerError: If server error occurs after retries (5xx)
+            LLMBadRequestError: For client errors (400, 422)
         """
         api_key = self._get_api_key(llm_config)
         base_url = self._get_base_url(llm_config)
@@ -236,7 +250,7 @@ class VeniceClient(LLMClientBase):
             "Content-Type": "application/json",
         }
         
-        # Make request with retry logic
+        # Retry configuration: exponential backoff for rate limits and server errors
         max_retries = VENICE_DEFAULT_MAX_RETRIES
         retry_delay = VENICE_DEFAULT_RETRY_DELAY
         
@@ -249,31 +263,34 @@ class VeniceClient(LLMClientBase):
                     timeout=VENICE_DEFAULT_TIMEOUT,
                 )
                 
-                # Handle errors
+                # Handle HTTP errors (4xx, 5xx) - may trigger retry for rate limits/server errors
                 if response.status_code >= 400:
                     error_data = self._parse_error_response(response)
                     self._handle_http_error(response.status_code, error_data, attempt, max_retries, retry_delay)
-                    continue  # Retry if applicable
+                    continue  # Retry if applicable (rate limit or server error)
                 
-                # Success
+                # Success: return parsed JSON response
                 return response.json()
                 
             except requests.exceptions.Timeout:
+                # Timeout: retry with exponential backoff unless last attempt
                 if attempt == max_retries - 1:
                     raise LLMTimeoutError("Request to Venice API timed out")
-                time.sleep(retry_delay * (2 ** attempt))
+                time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff: 1s, 2s, 4s...
                 continue
                 
             except requests.exceptions.ConnectionError as e:
+                # Connection error: retry with exponential backoff unless last attempt
                 if attempt == max_retries - 1:
                     raise LLMConnectionError(f"Failed to connect to Venice API: {str(e)}")
                 time.sleep(retry_delay * (2 ** attempt))
                 continue
                 
             except requests.exceptions.RequestException as e:
+                # Other request exceptions: don't retry, fail immediately
                 raise LLMConnectionError(f"Request to Venice API failed: {str(e)}")
         
-        # Should not reach here, but just in case
+        # Fallback: should not reach here if retry logic works correctly
         raise LLMServerError("Request to Venice API failed after retries")
 
     @trace_method
@@ -337,19 +354,24 @@ class VeniceClient(LLMClientBase):
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
-        Performs asynchronous streaming request to Venice API.
+        Performs asynchronous streaming request to Venice API using Server-Sent Events (SSE).
+        
+        Parses SSE format responses (`data: {...}`) and converts to OpenAI ChatCompletionChunk format.
+        Handles both SSE-prefixed lines and raw JSON lines for compatibility.
         
         Args:
-            request_data: The request data dictionary
-            llm_config: LLM configuration
+            request_data: Request payload dictionary (will have stream=True added)
+            llm_config: LLM configuration containing API key and endpoint settings
             
         Returns:
-            AsyncStream of ChatCompletionChunk objects
+            AsyncStream[ChatCompletionChunk]: Async context manager and iterator for streaming chunks
             
         Raises:
-            LLMError: If the request fails
+            LLMAuthenticationError: If API key is missing or invalid (401)
+            LLMBadRequestError: For client errors (400, 422)
+            LLMConnectionError: If connection fails during streaming
         """
-        # Set stream to True
+        # Enable streaming mode in request
         request_data["stream"] = True
         
         api_key = await self._get_api_key_async(llm_config)
@@ -364,7 +386,16 @@ class VeniceClient(LLMClientBase):
         timeout = aiohttp.ClientTimeout(total=VENICE_DEFAULT_TIMEOUT)
         
         async def _stream_generator() -> AsyncGenerator[ChatCompletionChunk, None]:
-            """Internal generator for streaming responses."""
+            """
+            Internal async generator that parses SSE stream and yields ChatCompletionChunk objects.
+            
+            Handles two formats:
+            1. SSE format: `data: {...}` - strips "data: " prefix before parsing
+            2. Raw JSON: Direct JSON lines (fallback for non-SSE responses)
+            
+            Skips empty lines and invalid JSON gracefully.
+            Stops on `[DONE]` marker or end of stream.
+            """
             try:
                 async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(
@@ -372,63 +403,76 @@ class VeniceClient(LLMClientBase):
                         json=request_data,
                         headers=headers,
                     ) as response:
+                        # Check for HTTP errors before parsing stream
                         if response.status >= 400:
                             error_data = await self._parse_error_response_async(response)
                             self._map_venice_error_to_letta_error(response.status, error_data)
                         
-                        # Parse SSE stream
+                        # Parse SSE stream line by line
                         async for line in response.content:
                             line_str = line.decode("utf-8").strip()
                             
+                            # Skip empty lines
                             if not line_str:
                                 continue
                             
-                            # Handle Server-Sent Events format
+                            # Handle Server-Sent Events format: "data: {...}"
                             if line_str.startswith("data: "):
                                 data_content = line_str[6:]  # Remove "data: " prefix
+                                # Check for stream termination marker
                                 if data_content.strip() == "[DONE]":
                                     break
                                 
                                 try:
                                     chunk_data = json.loads(data_content)
-                                    # Convert to ChatCompletionChunk format
+                                    # Convert Venice chunk format to OpenAI ChatCompletionChunk
                                     chunk = self._convert_chunk_to_openai_format(chunk_data)
                                     yield chunk
                                 except json.JSONDecodeError:
+                                    # Skip invalid JSON gracefully
                                     continue
                             else:
-                                # Try to parse as JSON directly
+                                # Fallback: try parsing as raw JSON (for non-SSE responses)
                                 try:
                                     chunk_data = json.loads(line_str)
                                     chunk = self._convert_chunk_to_openai_format(chunk_data)
                                     yield chunk
                                 except json.JSONDecodeError:
+                                    # Skip invalid JSON gracefully
                                     continue
                                     
             except aiohttp.ClientError as e:
                 raise LLMConnectionError(f"Failed to stream from Venice API: {str(e)}")
         
-        # Return an AsyncStream-like object
-        # OpenAI's AsyncStream is used with `async with stream:` and `async for chunk in stream:`
-        # So it needs to be both an async context manager and async iterator
+        # Return AsyncStream-compatible wrapper that implements both async context manager
+        # and async iterator protocols (required by OpenAI's AsyncStream interface)
         class VeniceAsyncStream:
+            """
+            Wrapper class that makes the async generator compatible with OpenAI's AsyncStream interface.
+            
+            Implements both async context manager (`__aenter__`, `__aexit__`) and async iterator
+            (`__aiter__`, `__anext__`) protocols for seamless integration with Letta's streaming infrastructure.
+            """
             def __init__(self, generator: AsyncGenerator[ChatCompletionChunk, None]):
                 self._generator = generator
-                self._iter = None
+                self._iter = None  # Lazy initialization of iterator
             
             async def __aenter__(self):
+                """Initialize iterator when entering async context."""
                 self._iter = self._generator.__aiter__()
                 return self
             
             async def __aexit__(self, exc_type, exc_val, exc_tb):
-                # Clean up if needed
+                """Clean up iterator when exiting async context."""
                 self._iter = None
                 return False
             
             def __aiter__(self):
+                """Return self as async iterator."""
                 return self
             
             async def __anext__(self):
+                """Get next chunk from stream, initializing iterator if needed."""
                 if self._iter is None:
                     self._iter = self._generator.__aiter__()
                 try:
@@ -441,17 +485,24 @@ class VeniceClient(LLMClientBase):
     @trace_method
     async def request_embeddings(self, texts: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
         """
-        Generate embeddings for a batch of texts.
+        Generate embeddings for a batch of texts using Venice API.
+        
+        Uses OpenAI-compatible embeddings endpoint. Returns embeddings sorted by index
+        to maintain input order. Supports batch processing of multiple texts in a single request.
         
         Args:
-            texts: List of texts to generate embeddings for
-            embedding_config: Configuration for the embedding model
+            texts: List of text strings to generate embeddings for
+            embedding_config: Embedding configuration containing model and endpoint settings
             
         Returns:
-            List of embeddings (each is a list of floats)
+            List[List[float]]: List of embedding vectors, each vector is a list of floats.
+            Order matches input texts order (sorted by index from API response).
             
         Raises:
-            LLMError: If the request fails
+            LLMAuthenticationError: If API key is missing or invalid (401)
+            LLMBadRequestError: For client errors (400, 422)
+            LLMServerError: For server errors (5xx) or invalid response format
+            LLMConnectionError: If connection fails
         """
         if not texts:
             return []
@@ -536,7 +587,6 @@ class VeniceClient(LLMClientBase):
         api_key, _, _ = await self.get_byok_overrides_async(temp_llm_config)
         
         if not api_key:
-            import os
             api_key = os.environ.get("VENICE_API_KEY")
         
         if not api_key:
@@ -554,15 +604,18 @@ class VeniceClient(LLMClientBase):
         llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
-        Converts Venice API response format into OpenAI ChatCompletionResponse format.
+        Convert Venice API response (OpenAI-compatible format) to Letta ChatCompletionResponse.
+        
+        Venice API uses OpenAI-compatible response format, so conversion is straightforward.
+        Extracts choices, messages, tool calls, and usage statistics from response.
         
         Args:
-            response_data: Raw response from Venice API
-            input_messages: Original input messages
-            llm_config: LLM configuration
+            response_data: Raw JSON response dictionary from Venice API
+            input_messages: Original input messages (used for context, not directly in conversion)
+            llm_config: LLM configuration (used for model name fallback)
             
         Returns:
-            ChatCompletionResponse object
+            ChatCompletionResponse: Standardized Letta response object with choices, usage, etc.
         """
         # Venice API uses OpenAI-compatible format, so conversion should be straightforward
         choices = []
@@ -597,26 +650,34 @@ class VeniceClient(LLMClientBase):
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         """
-        Returns True if the model is a native reasoning model.
+        Check if the Venice model supports native reasoning capabilities.
+        
+        Currently, Venice models do not support native reasoning features like
+        OpenAI's o1/o3 models or Anthropic's reasoning models. This method returns
+        False for all Venice models.
         
         Args:
-            llm_config: LLM configuration
+            llm_config: LLM configuration containing model information
             
         Returns:
-            False (Venice models are not currently reasoning models)
+            bool: Always returns False (Venice models are not reasoning models)
         """
         # Venice models are not currently reasoning models
         return False
 
     def handle_llm_error(self, e: Exception) -> Exception:
         """
-        Maps Venice-specific errors to common LLMError types.
+        Map generic exceptions to appropriate Letta LLMError types.
+        
+        Handles common exception types (timeouts, connection errors) and maps them
+        to specific LLMError subclasses. If exception is already an LLMError, returns
+        it unchanged.
         
         Args:
-            e: The original exception
+            e: Original exception from Venice API or HTTP client
             
         Returns:
-            An LLMError subclass
+            Exception: LLMError subclass (LLMTimeoutError, LLMConnectionError, or LLMError)
         """
         # If it's already an LLMError, return as-is
         from letta.errors import LLMError
@@ -639,17 +700,41 @@ class VeniceClient(LLMClientBase):
     # Helper methods
 
     def _parse_error_response(self, response: requests.Response) -> dict:
-        """Parse error response from requests.Response."""
+        """
+        Parse error response from synchronous requests.Response object.
+        
+        Attempts to parse JSON error response. Falls back to text response if JSON
+        parsing fails. Always returns a dict with "error" key for consistent error handling.
+        
+        Args:
+            response: requests.Response object from failed HTTP request
+            
+        Returns:
+            dict: Error data dictionary with "error" key containing error details
+        """
         try:
             return response.json() or {}
         except Exception:
+            # Fallback: use response text if JSON parsing fails
             return {"error": {"message": response.text or "Unknown error"}}
 
     async def _parse_error_response_async(self, response: aiohttp.ClientResponse) -> dict:
-        """Parse error response from aiohttp.ClientResponse."""
+        """
+        Parse error response from asynchronous aiohttp.ClientResponse object.
+        
+        Attempts to parse JSON error response. Falls back to text response if JSON
+        parsing fails. Always returns a dict with "error" key for consistent error handling.
+        
+        Args:
+            response: aiohttp.ClientResponse object from failed HTTP request
+            
+        Returns:
+            dict: Error data dictionary with "error" key containing error details
+        """
         try:
             return await response.json() or {}
         except Exception:
+            # Fallback: use response text if JSON parsing fails
             text = await response.text()
             return {"error": {"message": text or "Unknown error"}}
 
@@ -661,22 +746,41 @@ class VeniceClient(LLMClientBase):
         max_retries: int,
         retry_delay: int,
     ) -> None:
-        """Handle HTTP errors with retry logic."""
+        """
+        Handle HTTP errors with exponential backoff retry logic.
+        
+        Retries are attempted for:
+        - Rate limit errors (429): May include retry_after header from API
+        - Server errors (5xx): Transient errors that may resolve on retry
+        
+        Uses exponential backoff: delay = retry_delay * (2 ** attempt)
+        If API provides retry_after value, uses that instead.
+        
+        Args:
+            status_code: HTTP status code from response
+            error_data: Error response dictionary (may contain retry_after)
+            attempt: Current retry attempt number (0-indexed)
+            max_retries: Maximum number of retry attempts
+            retry_delay: Base delay in seconds for exponential backoff
+            
+        Raises:
+            LLMError: If retries exhausted or error is not retryable (4xx except 429)
+        """
         is_rate_limited = status_code == 429
         is_server_error = status_code >= 500
         
         # Retry on rate limit or server errors if attempts remain
         if (is_rate_limited or is_server_error) and attempt < max_retries - 1:
-            # Calculate retry delay
+            # Calculate retry delay: prefer API's retry_after, otherwise exponential backoff
             retry_after = error_data.get("error", {}).get("retry_after")
             if retry_after:
-                delay = int(retry_after)
+                delay = int(retry_after)  # Use API-specified delay
             else:
-                delay = retry_delay * (2 ** attempt)
+                delay = retry_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s...
             time.sleep(delay)
             return  # Continue to retry
         
-        # No retry or attempts exhausted: raise error
+        # No retry or attempts exhausted: map to appropriate error and raise
         self._map_venice_error_to_letta_error(status_code, error_data)
 
     async def _handle_http_error_async(
@@ -687,7 +791,26 @@ class VeniceClient(LLMClientBase):
         max_retries: int,
         retry_delay: int,
     ) -> None:
-        """Handle HTTP errors with retry logic (async)."""
+        """
+        Handle HTTP errors with exponential backoff retry logic (async version).
+        
+        Retries are attempted for:
+        - Rate limit errors (429): May include retry_after header from API
+        - Server errors (5xx): Transient errors that may resolve on retry
+        
+        Uses exponential backoff: delay = retry_delay * (2 ** attempt)
+        If API provides retry_after value, uses that instead.
+        
+        Args:
+            status_code: HTTP status code from response
+            error_data: Error response dictionary (may contain retry_after)
+            attempt: Current retry attempt number (0-indexed)
+            max_retries: Maximum number of retry attempts
+            retry_delay: Base delay in seconds for exponential backoff
+            
+        Raises:
+            LLMError: If retries exhausted or error is not retryable (4xx except 429)
+        """
         import asyncio
         
         is_rate_limited = status_code == 429
@@ -708,13 +831,35 @@ class VeniceClient(LLMClientBase):
         self._map_venice_error_to_letta_error(status_code, error_data)
 
     def _map_venice_error_to_letta_error(self, status_code: int, error_data: dict) -> None:
-        """Map Venice API errors to Letta error types."""
+        """
+        Map Venice API HTTP status codes to appropriate Letta LLMError subclasses.
+        
+        Error mapping follows standard HTTP status code conventions:
+        - 4xx: Client errors (authentication, bad request, not found, etc.)
+        - 5xx: Server errors (internal server error, service unavailable, etc.)
+        - 429: Rate limiting (special case, may trigger retries)
+        
+        Args:
+            status_code: HTTP status code from Venice API response
+            error_data: Error response dictionary from Venice API
+            
+        Raises:
+            LLMAuthenticationError: For 401 Unauthorized
+            LLMPermissionDeniedError: For 403 Forbidden
+            LLMNotFoundError: For 404 Not Found
+            LLMRateLimitError: For 429 Too Many Requests
+            LLMBadRequestError: For 400 Bad Request or unknown 4xx errors
+            LLMUnprocessableEntityError: For 422 Unprocessable Entity
+            LLMServerError: For 5xx Server Errors
+        """
         error_obj = error_data.get("error", {})
+        # Handle both string and dict error formats from Venice API
         if isinstance(error_obj, str):
             error_message = error_obj
         else:
             error_message = error_obj.get("message", "Unknown error")
         
+        # Map status codes to Letta error types
         if status_code == 401:
             raise LLMAuthenticationError(f"Venice API authentication failed: {error_message}")
         elif status_code == 403:
@@ -730,10 +875,22 @@ class VeniceClient(LLMClientBase):
         elif status_code >= 500:
             raise LLMServerError(f"Venice API server error: {error_message}")
         else:
+            # Default fallback for unknown status codes
             raise LLMBadRequestError(f"Venice API error ({status_code}): {error_message}")
 
     def _convert_tool_calls(self, tool_calls: Optional[List[dict]]) -> Optional[List]:
-        """Convert Venice tool calls to OpenAI format."""
+        """
+        Convert Venice API tool calls format to Letta's OpenAI-compatible ToolCall format.
+        
+        Venice API uses OpenAI-compatible tool call format, so conversion extracts
+        function name, arguments, and tool call ID from Venice response.
+        
+        Args:
+            tool_calls: List of tool call dictionaries from Venice API response, or None
+            
+        Returns:
+            Optional[List[ToolCall]]: List of ToolCall objects, or None if no tool calls
+        """
         if not tool_calls:
             return None
         
@@ -755,7 +912,18 @@ class VeniceClient(LLMClientBase):
         return result if result else None
 
     def _convert_chunk_to_openai_format(self, chunk_data: dict) -> ChatCompletionChunk:
-        """Convert Venice streaming chunk to OpenAI ChatCompletionChunk format."""
+        """
+        Convert Venice streaming chunk dictionary to OpenAI ChatCompletionChunk object.
+        
+        Venice API uses OpenAI-compatible streaming format, so conversion extracts
+        chunk ID, choices with deltas, and metadata from Venice response.
+        
+        Args:
+            chunk_data: Dictionary containing streaming chunk data from Venice API
+            
+        Returns:
+            ChatCompletionChunk: OpenAI-compatible chunk object for Letta's streaming infrastructure
+        """
         # This is a simplified conversion - may need adjustment based on actual Venice format
         choices = []
         for choice_data in chunk_data.get("choices", []):

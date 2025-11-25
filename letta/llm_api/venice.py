@@ -17,18 +17,24 @@ async def venice_get_model_list_async(
     client: Optional[httpx.AsyncClient] = None,
 ) -> dict:
     """
-    Get list of available models from Venice API.
+    Query Venice API to get list of available models.
+    
+    Normalizes URL to ensure it ends with `/api/v1` and constructs the models endpoint.
+    Supports reusing an existing httpx.AsyncClient for connection pooling.
     
     Args:
-        url: Base URL for Venice API (e.g., "https://api.venice.ai/api/v1")
-        api_key: API key for authentication
-        client: Optional httpx.AsyncClient to reuse
+        url: Base URL for Venice API (will be normalized to end with `/api/v1`)
+        api_key: Optional API key for authentication (if None, request may be unauthenticated)
+        client: Optional httpx.AsyncClient to reuse (if None, creates and closes a new client)
         
     Returns:
-        Dictionary with "data" key containing list of model objects
+        dict: Response dictionary with "data" key containing list of model objects.
+        Each model object contains: id, type, model_spec, etc.
         
     Raises:
-        httpx.HTTPStatusError: If the request fails
+        httpx.HTTPStatusError: If HTTP request fails (4xx, 5xx status codes)
+        httpx.RequestError: If request fails due to network/connection issues
+        Exception: For any other unexpected errors
     """
     # Ensure URL ends with /api/v1
     if not url.endswith("/api/v1"):
