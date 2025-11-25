@@ -1275,6 +1275,51 @@
         }
       }
     },
+    "/v1/tools/search": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Search Tools",
+        "description": "Search tools using semantic search.\n\nRequires tool embedding to be enabled (embed_tools=True). Uses vector search,\nfull-text search, or hybrid mode to find tools matching the query.\n\nReturns tools ranked by relevance with their search scores.",
+        "operationId": "search_tools",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ToolSearchResult"
+                  },
+                  "title": "Response Search Tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/add-base-tools": {
       "post": {
         "tags": ["tools"],
@@ -36391,6 +36436,125 @@
         "type": "object",
         "required": ["source_code", "args"],
         "title": "ToolRunFromSource"
+      },
+      "ToolSearchRequest": {
+        "properties": {
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query",
+            "description": "Text query for semantic search."
+          },
+          "search_mode": {
+            "type": "string",
+            "enum": ["vector", "fts", "hybrid"],
+            "title": "Search Mode",
+            "description": "Search mode: vector, fts, or hybrid.",
+            "default": "hybrid"
+          },
+          "tool_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Types",
+            "description": "Filter by tool types (e.g., 'custom', 'letta_core')."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Filter by tags (match any)."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return.",
+            "default": 50
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ToolSearchRequest",
+        "description": "Request model for searching tools using semantic search."
+      },
+      "ToolSearchResult": {
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/Tool",
+            "description": "The matched tool."
+          },
+          "embedded_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedded Text",
+            "description": "The embedded text content used for matching."
+          },
+          "fts_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fts Rank",
+            "description": "Full-text search rank position."
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank",
+            "description": "Vector search rank position."
+          },
+          "combined_score": {
+            "type": "number",
+            "title": "Combined Score",
+            "description": "Combined relevance score (RRF for hybrid mode)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool", "combined_score"],
+        "title": "ToolSearchResult",
+        "description": "Result from a tool search operation."
       },
       "ToolType": {
         "type": "string",

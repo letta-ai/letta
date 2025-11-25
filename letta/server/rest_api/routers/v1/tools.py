@@ -31,7 +31,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolUpdate
+from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolSearchRequest, ToolSearchResult, ToolUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
@@ -269,6 +269,46 @@ async def list_tools(
         search=search,
         return_only_letta_tools=return_only_letta_tools,
     )
+
+
+@router.post("/search", response_model=List[ToolSearchResult], operation_id="search_tools")
+async def search_tools(
+    request: ToolSearchRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Search tools using semantic search.
+
+    Requires tool embedding to be enabled (embed_tools=True). Uses vector search,
+    full-text search, or hybrid mode to find tools matching the query.
+
+    Returns tools ranked by relevance with their search scores.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    try:
+        results = await server.tool_manager.search_tools_async(
+            actor=actor,
+            query_text=request.query,
+            search_mode=request.search_mode,
+            tool_types=request.tool_types,
+            tags=request.tags,
+            limit=request.limit,
+        )
+
+        return [
+            ToolSearchResult(
+                tool=tool,
+                embedded_text=None,  # Could be populated if needed
+                fts_rank=metadata.get("fts_rank"),
+                vector_rank=metadata.get("vector_rank"),
+                combined_score=metadata.get("combined_score", 0.0),
+            )
+            for tool, metadata in results
+        ]
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/", response_model=Tool, operation_id="create_tool")

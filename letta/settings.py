@@ -334,6 +334,7 @@ class Settings(BaseSettings):
     tpuf_api_key: Optional[str] = None
     tpuf_region: str = "gcp-us-central1"
     embed_all_messages: bool = False
+    embed_tools: bool = False
 
     # For encryption
     encryption_key: Optional[str] = None
