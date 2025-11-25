@@ -191,22 +191,26 @@ class AsyncToolSandboxBase(ABC):
 
         # Initialize Letta client if needed
         if inject_letta_client:
-            from letta.settings import settings
-
             lines.extend(
                 [
                     "# Initialize Letta client for tool execution",
-                    "letta_client = Letta(",
-                    f"    base_url={repr(settings.default_base_url)},",
-                    f"    token={repr(settings.default_token)}",
-                    ")",
-                    "# Compatibility shim for client.agents.get",
-                    "try:",
-                    "    _agents = letta_client.agents",
-                    "    if not hasattr(_agents, 'get') and hasattr(_agents, 'retrieve'):",
-                    "        setattr(_agents, 'get', _agents.retrieve)",
-                    "except Exception:",
-                    "    pass",
+                    "import os",
+                    "letta_client = None",
+                    "if os.getenv('LETTA_API_KEY'):",
+                    "    # Check letta_client version to use correct parameter name",
+                    "    from packaging import version as pkg_version",
+                    "    import letta_client as lc_module",
+                    "    lc_version = pkg_version.parse(lc_module.__version__)",
+                    "    if lc_version < pkg_version.parse('1.0.0'):",
+                    "        letta_client = Letta(",
+                    "            base_url=os.getenv('LETTA_BASE_URL', 'http://localhost:8283'),",
+                    "            token=os.getenv('LETTA_API_KEY')",
+                    "        )",
+                    "    else:",
+                    "        letta_client = Letta(",
+                    "            base_url=os.getenv('LETTA_BASE_URL', 'http://localhost:8283'),",
+                    "            api_key=os.getenv('LETTA_API_KEY')",
+                    "        )",
                 ]
             )
 
@@ -393,5 +397,8 @@ class AsyncToolSandboxBase(ABC):
 
         if additional_env_vars:
             env.update(additional_env_vars)
+
+        # Filter out None values to prevent subprocess errors
+        env = {k: v for k, v in env.items() if v is not None}
 
         return env

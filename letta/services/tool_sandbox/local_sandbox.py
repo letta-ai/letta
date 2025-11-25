@@ -80,6 +80,9 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         if additional_env_vars:
             env.update(additional_env_vars)
 
+        # Filter out None values to prevent subprocess errors
+        env = {k: v for k, v in env.items() if v is not None}
+
         # Make sure sandbox directory exists
         sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)
         if not await asyncio.to_thread(lambda: os.path.exists(sandbox_dir) and os.path.isdir(sandbox_dir)):
