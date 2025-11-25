@@ -10,13 +10,13 @@ from pathlib import Path
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import Letta, McpTool, ToolCallMessage, ToolReturnMessage
+from letta_client import Letta
+from letta_client.types import MessageCreateParam, Tool, ToolReturnMessage
+from letta_client.types.agents import ToolCallMessage
 
 from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import MessageCreate
 from tests.utils import wait_for_server
 
 
@@ -152,39 +152,41 @@ def agent_state(client):
 
 @pytest.mark.asyncio
 async def test_sse_mcp_server(client, agent_state):
+    mcp_server_name = "deepwiki"
+    server_url = "https://mcp.deepwiki.com/sse"
+    sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
+
+    # Create MCP server using new API - convert 'type' to 'mcp_server_type' for 1.0 API
+    config_dict = sse_mcp_config.model_dump()
+    config_dict["mcp_server_type"] = config_dict.pop("type")
+    config_dict.pop("server_name")  # server_name is passed separately
+    server = client.mcp_servers.create(server_name=mcp_server_name, config=config_dict)
+
     try:
-        mcp_server_name = "deepwiki"
-        server_url = "https://mcp.deepwiki.com/sse"
-        sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
-        client.tools.add_mcp_server(request=sse_mcp_config)
+        # Check that it's in the server list
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name in server_names
 
-        # Check that it's in the server mapping
-        mcp_server_mapping = client.tools.list_mcp_servers()
-        assert mcp_server_name in mcp_server_mapping
-
-        # Check tools
-        tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        # Check tools - now tools are automatically registered
+        tools = client.mcp_servers.tools.list(mcp_server_id=server.id)
         assert len(tools) > 0
-        assert isinstance(tools[0], McpTool)
+        assert isinstance(tools[0], Tool)
 
         # Test with the ask_question tool which is one of the available deepwiki tools
         ask_question_tool = next((t for t in tools if t.name == "ask_question"), None)
         assert ask_question_tool is not None, f"ask_question tool not found. Available tools: {[t.name for t in tools]}"
 
-        # Check that the tool is executable
-        letta_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
-
         tool_args = {"repoName": "facebook/react", "question": "What is React?"}
 
-        # Add to agent, have agent invoke tool
-        client.agents.tools.attach(agent_id=agent_state.id, tool_id=letta_tool.id)
+        # Add to agent - tool is already registered, just attach it
+        client.agents.tools.attach(agent_id=agent_state.id, tool_id=ask_question_tool.id)
+
+        # Create message using MessageCreateParam
         response = client.agents.messages.create(
             agent_id=agent_state.id,
             messages=[
-                MessageCreate(
-                    role="user",
-                    content=[TextContent(text=f"Use the `{letta_tool.name}` tool with these arguments: {tool_args}.")],
-                )
+                MessageCreateParam(role="user", content=f"Use the `{ask_question_tool.name}` tool with these arguments: {tool_args}.")
             ],
         )
         seq = response.messages
@@ -200,8 +202,10 @@ async def test_sse_mcp_server(client, agent_state):
         # Check that we got some content back
         assert len(tr.tool_return.strip()) > 0, f"Expected non-empty tool return, got: {tr.tool_return}"
     finally:
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
-        assert mcp_server_name not in client.tools.list_mcp_servers()
+        client.mcp_servers.delete(mcp_server_id=server.id)
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name not in server_names
 
 
 def test_stdio_mcp_server(client, agent_state, server_url):
@@ -218,32 +222,32 @@ def test_stdio_mcp_server(client, agent_state, server_url):
         args=args,
     )
 
+    # Create MCP server using new API - convert 'type' to 'mcp_server_type' for 1.0 API
+    config_dict = stdio_config.model_dump()
+    config_dict["mcp_server_type"] = config_dict.pop("type")
+    config_dict.pop("server_name")  # server_name is passed separately
+    server = client.mcp_servers.create(server_name=mcp_server_name, config=config_dict)
+
     try:
-        client.tools.add_mcp_server(request=stdio_config)
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name in server_names
 
-        servers = client.tools.list_mcp_servers()
-        assert mcp_server_name in servers
-
-        tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        # Get tools - now automatically registered
+        tools = client.mcp_servers.tools.list(mcp_server_id=server.id)
         assert tools, "Expected at least one tool from the weather MCP server"
         assert any(t.name == "get_alerts" for t in tools), f"Got: {[t.name for t in tools]}"
 
         get_alerts = next(t for t in tools if t.name == "get_alerts")
 
-        letta_tool = client.tools.add_mcp_tool(
-            mcp_server_name=mcp_server_name,
-            mcp_tool_name=get_alerts.name,
-        )
+        # Tool is already registered, just attach it
+        client.agents.tools.attach(agent_id=agent_state.id, tool_id=get_alerts.id)
 
-        client.agents.tools.attach(agent_id=agent_state.id, tool_id=letta_tool.id)
-
+        # Create message using MessageCreateParam
         response = client.agents.messages.create(
             agent_id=agent_state.id,
             messages=[
-                MessageCreate(
-                    role="user",
-                    content=[TextContent(text=(f"Use the `{letta_tool.name}` tool with these arguments: {{'state': 'CA'}}."))],
-                )
+                MessageCreateParam(role="user", content=f"Use the `{get_alerts.name}` tool with these arguments: {{'state': 'CA'}}.")
             ],
         )
 
@@ -258,8 +262,10 @@ def test_stdio_mcp_server(client, agent_state, server_url):
         # make sure there's at least some payload
         assert len(ret.tool_return.strip()) >= 10, f"Expected at least 10 characters in tool_return, got {len(ret.tool_return.strip())}"
     finally:
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
-        assert mcp_server_name not in client.tools.list_mcp_servers()
+        client.mcp_servers.delete(mcp_server_id=server.id)
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name not in server_names
 
 
 # Optional OpenAI validation test for MCP-normalized schema
@@ -347,31 +353,42 @@ async def test_streamable_http_mcp_server_update_schema_no_docstring_required(cl
     Without the fix, calling add_mcp_tool a second time for the same MCP tool
     triggers a docstring-based schema derivation on a generated wrapper that has
     no docstring, causing a 500. With the fix in place, updates should succeed.
+
+    With 1.0 API, tools are automatically registered when server is created,
+    so this test verifies that tools can be retrieved multiple times without issues.
     """
     mcp_server_name = f"deepwiki_http_{uuid.uuid4().hex[:6]}"
     mcp_url = "https://mcp.deepwiki.com/mcp"
 
     http_mcp_config = StreamableHTTPServerConfig(server_name=mcp_server_name, server_url=mcp_url)
+
+    # Create MCP server using new API - convert 'type' to 'mcp_server_type' for 1.0 API
+    config_dict = http_mcp_config.model_dump()
+    config_dict["mcp_server_type"] = config_dict.pop("type")
+    config_dict.pop("server_name")  # server_name is passed separately
+    server = client.mcp_servers.create(server_name=mcp_server_name, config=config_dict)
+
     try:
-        client.tools.add_mcp_server(request=http_mcp_config)
-
         # Ensure server is registered
-        servers = client.tools.list_mcp_servers()
-        assert mcp_server_name in servers
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name in server_names
 
-        # Fetch available tools from server
-        tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        # Fetch available tools from server - tools are automatically registered
+        tools = client.mcp_servers.tools.list(mcp_server_id=server.id)
         assert tools, "Expected at least one tool from deepwiki streamable-http MCP server"
         ask_question_tool = next((t for t in tools if t.name == "ask_question"), None)
         assert ask_question_tool is not None, f"ask_question tool not found. Available: {[t.name for t in tools]}"
 
-        # Initial create
-        letta_tool_1 = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
+        # Verify tool is accessible
+        letta_tool_1 = client.mcp_servers.tools.retrieve(mcp_server_id=server.id, tool_id=ask_question_tool.id)
         assert letta_tool_1 is not None
 
-        # Update path (re-register same tool); should not attempt Python docstring schema derivation
-        letta_tool_2 = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
+        # Retrieve again - should work without issues
+        letta_tool_2 = client.mcp_servers.tools.retrieve(mcp_server_id=server.id, tool_id=ask_question_tool.id)
         assert letta_tool_2 is not None
     finally:
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
-        assert mcp_server_name not in client.tools.list_mcp_servers()
+        client.mcp_servers.delete(mcp_server_id=server.id)
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name not in server_names
