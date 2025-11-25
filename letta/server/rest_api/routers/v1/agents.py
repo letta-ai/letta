@@ -1596,6 +1596,7 @@ async def cancel_message(
                 statuses=[RunStatus.created, RunStatus.running],
                 ascending=False,
                 agent_id=agent_id,  # NOTE: this will override agent_ids if provided
+                limit=100,  # Limit to 10 most recent active runs for cancellation
             )
             run_ids = [run.id for run in run_ids]
         else:
