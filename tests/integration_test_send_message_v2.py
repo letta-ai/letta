@@ -224,6 +224,11 @@ def assert_tool_call_response(
     assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
     index += 1
 
+    # If cancellation happens before tool return, we might get LettaStopReason directly
+    if with_cancellation and index < len(messages) and isinstance(messages[index], LettaStopReason):
+        assert messages[index].stop_reason == "cancelled"
+        return  # Skip remaining assertions for very early cancellation
+
     # Tool return message
     otid_suffix = 0
     assert isinstance(messages[index], ToolReturnMessage)
