@@ -1,6 +1,7 @@
 import importlib
 from typing import List, Optional, Set, Union
 
+from pydantic import ValidationError
 from sqlalchemy import and_, func, or_, select
 
 from letta.constants import (
@@ -878,18 +879,26 @@ class ToolManager:
         async with db_registry.async_session() as session:
             try:
                 tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
-                tool_pydantic = tool.to_pydantic()
 
-                # Check if tool had Modal deployment and delete it
-                tool_requests_modal = tool_pydantic.metadata_ and tool_pydantic.metadata_.get("sandbox") == "modal"
-                modal_configured = tool_settings.modal_sandbox_enabled
+                # Try to convert to Pydantic to check for Modal cleanup
+                # If this fails (corrupted tool), skip Modal cleanup and just delete
+                try:
+                    tool_pydantic = tool.to_pydantic()
 
-                if tool_pydantic.tool_type == ToolType.CUSTOM and tool_requests_modal and modal_configured:
-                    try:
-                        await self.delete_modal_app(tool_pydantic, actor)
-                    except Exception as e:
-                        logger.warning(f"Failed to delete Modal app for tool {tool_pydantic.name}: {e}")
-                        # Continue with tool deletion even if Modal cleanup fails
+                    # Check if tool had Modal deployment and delete it
+                    tool_requests_modal = tool_pydantic.metadata_ and tool_pydantic.metadata_.get("sandbox") == "modal"
+                    modal_configured = tool_settings.modal_sandbox_enabled
+
+                    if tool_pydantic.tool_type == ToolType.CUSTOM and tool_requests_modal and modal_configured:
+                        try:
+                            await self.delete_modal_app(tool_pydantic, actor)
+                        except Exception as e:
+                            logger.warning(f"Failed to delete Modal app for tool {tool_pydantic.name}: {e}")
+                            # Continue with tool deletion even if Modal cleanup fails
+                except (ValueError, ValidationError) as e:
+                    # Tool is corrupted and can't be converted to Pydantic
+                    # Skip Modal cleanup and just delete the tool from database
+                    logger.warning(f"Skipping Modal cleanup for corrupted tool {tool_id}: {e}")
 
                 await tool.hard_delete_async(db_session=session, actor=actor)
             except NoResultFound:
