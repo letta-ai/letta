@@ -521,7 +521,9 @@ class Message(BaseMessage):
                         run_id=self.run_id,
                     )
                 )
-
+            elif isinstance(content_part, ToolCallContent):
+                # for Gemini, we need to pass in tool calls as part of the content
+                continue
             else:
                 logger.warning(f"Unrecognized content part in assistant message: {content_part}")
 
