@@ -12,6 +12,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.passage import Passage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 from letta.validators import AgentId, ArchiveId, PassageId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
@@ -60,14 +61,18 @@ async def create_archive(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    if archive.embedding_config is None and archive.embedding is None:
-        raise LettaInvalidArgumentError("Either embedding_config or embedding must be provided")
-
     embedding_config = archive.embedding_config
-    if embedding_config is None and archive.embedding is not None:
-        handle = archive.embedding
+    if embedding_config is None:
+        embedding_handle = archive.embedding
+        if embedding_handle is None:
+            if settings.default_embedding_handle is None:
+                raise LettaInvalidArgumentError(
+                    "Must specify either embedding or embedding_config in request", argument_name="default_embedding_handle"
+                )
+            else:
+                embedding_handle = settings.default_embedding_handle
         embedding_config = await server.get_embedding_config_from_handle_async(
-            handle=handle,
+            handle=embedding_handle,
             actor=actor,
         )
 
