@@ -29,7 +29,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage, "get_sandbox_id": self.get_sandbox_id, "run_bash": self.run_bash}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage, "get_sandbox_id": self.get_sandbox_id, "run_bash": self.run_bash, "run_ls": self.run_ls, "open_file": self.open_file}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -50,14 +50,32 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         if tool_settings.e2b_api_key is None:
             raise ValueError("E2B_API_KEY is not set")
 
-        sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
-        params = {"code": code}
-        if language != "python":
-            # Leave empty for python
-            params["language"] = language
+        try:
+            sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
+            params = {"code": code}
+            if language != "python":
+                # Leave empty for python
+                params["language"] = language
 
-        res = self._llm_friendly_result(await sbx.run_code(**params))
-        return json.dumps(res, ensure_ascii=False)
+            execution = await sbx.run_code(**params)
+            res = self._llm_friendly_result(execution)
+            return json.dumps(res, ensure_ascii=False)
+        except Exception as e:
+            # Catch any errors (including ExecutionError) and return them in a JSON-serializable format
+            error_info = {
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e),
+                }
+            }
+            # Add traceback if available
+            import traceback
+            try:
+                error_info["error"]["traceback"] = traceback.format_exc()
+            except Exception:
+                pass
+            
+            return json.dumps(error_info, ensure_ascii=False)
 
     def _llm_friendly_result(self, res):
         out = {
@@ -69,7 +87,26 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         }
         err = getattr(res, "error", None)
         if err is not None:
-            out["error"] = err
+            # Convert ExecutionError or other non-serializable errors to a dict
+            try:
+                # Try to serialize the error directly first (for simple errors)
+                json.dumps(err)
+                out["error"] = err
+            except (TypeError, ValueError):
+                # If not serializable, extract error details into a dict
+                error_dict = {}
+                if hasattr(err, "name"):
+                    error_dict["name"] = str(err.name)
+                if hasattr(err, "value"):
+                    error_dict["value"] = str(err.value)
+                if hasattr(err, "traceback"):
+                    error_dict["traceback"] = str(err.traceback)
+                if hasattr(err, "__class__"):
+                    error_dict["type"] = err.__class__.__name__
+                # Fallback: if we can't extract anything, use string representation
+                if not error_dict:
+                    error_dict["message"] = str(err)
+                out["error"] = error_dict
         return out
 
     @trace_method
@@ -313,8 +350,97 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         try:
             sbx = await AsyncSandbox.connect(api_key=tool_settings.e2b_api_key, sandbox_id=sandbox_id)
 
-            res = self._llm_friendly_result(await sbx.run_code(command, language="bash"))
+            execution = await sbx.run_code(command, language="bash")
+            res = self._llm_friendly_result(execution)
 
             return json.dumps(res, ensure_ascii=False)
         except Exception as e:
-            raise Exception(f"Error running bash command: {str(e)}")
+            # Catch any errors (including ExecutionError) and return them in a JSON-serializable format
+            error_info = {
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e),
+                }
+            }
+            # Add traceback if available
+            import traceback
+            try:
+                error_info["error"]["traceback"] = traceback.format_exc()
+            except Exception:
+                pass
+            
+            return json.dumps(error_info, ensure_ascii=False)
+
+
+    async def run_ls(self, agent_state: "AgentState") -> str:
+        """
+        Run ls in the agent's sandbox.
+
+        Args:
+            agent_state: The agent state
+
+        Returns:
+            JSON-encoded string containing the ls results
+        """
+        from e2b_code_interpreter import AsyncSandbox
+
+        if tool_settings.e2b_api_key is None:
+            raise ValueError("E2B_API_KEY is not set")
+
+        sandbox_id = agent_state.metadata.get("sandbox_id")
+        if not sandbox_id:
+            raise ValueError("Sandbox ID is not set in agent state metadata")
+
+        try:
+            sbx = await AsyncSandbox.connect(api_key=tool_settings.e2b_api_key, sandbox_id=sandbox_id)
+
+            execution = await sbx.run_code("ls", language="bash")
+            res = self._llm_friendly_result(execution)
+
+            return json.dumps(res, ensure_ascii=False)
+        except Exception as e:
+            # Catch any errors (including ExecutionError) and return them in a JSON-serializable format
+            error_info = {
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e),
+                }
+            }
+            # Add traceback if available
+            import traceback
+            try:
+                error_info["error"]["traceback"] = traceback.format_exc()
+            except Exception:
+                pass
+            
+            return json.dumps(error_info, ensure_ascii=False)
+
+
+    async def open_file(self, agent_state: "AgentState", file_path: str) -> str:
+        """
+        Open a file in the agent's sandbox.
+
+        Args:
+            agent_state: The agent state
+            file_path: The path to the file to open
+
+        Returns:
+            JSON-encoded string containing the file contents
+        """
+        from e2b_code_interpreter import AsyncSandbox
+
+        if tool_settings.e2b_api_key is None:
+            raise ValueError("E2B_API_KEY is not set")
+
+        sandbox_id = agent_state.metadata.get("sandbox_id")
+        if not sandbox_id:
+            raise ValueError("Sandbox ID is not set in agent state metadata")
+
+        try:
+            sbx = await AsyncSandbox.connect(api_key=tool_settings.e2b_api_key, sandbox_id=sandbox_id)
+
+            res = await sbx.files.read(file_path)
+
+            return res
+        except Exception as e:
+            raise Exception(f"Error opening file: {str(e)}")

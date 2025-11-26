@@ -86,3 +86,25 @@ async def run_bash(command: str) -> str:
     """
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
 
+
+async def run_ls() -> str:
+    """
+    Run ls command in the agent's sandbox.
+
+    Returns:
+        JSON-encoded string containing ls results
+    """
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
+
+async def open_file(self, file_path: str) -> str:
+    """
+    Open a file in the agent's sandbox.
+
+    Args:
+        file_path: The path to the file to open
+
+    Returns:
+        JSON-encoded string containing the file contents
+    """
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
