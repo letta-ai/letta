@@ -688,6 +688,9 @@ class TurbopufferClient:
         # build date filter conditions
         date_filters = []
         if start_date:
+            # Convert to UTC to match stored timestamps
+            if start_date.tzinfo is not None:
+                start_date = start_date.astimezone(timezone.utc)
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
             # if end_date has no time component (is at midnight), adjust to end of day
@@ -697,6 +700,9 @@ class TurbopufferClient:
 
                 # add 1 day and subtract 1 microsecond to get 23:59:59.999999
                 end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
+            # Convert to UTC to match stored timestamps
+            if end_date.tzinfo is not None:
+                end_date = end_date.astimezone(timezone.utc)
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters
@@ -829,6 +835,9 @@ class TurbopufferClient:
         # build date filter conditions
         date_filters = []
         if start_date:
+            # Convert to UTC to match stored timestamps
+            if start_date.tzinfo is not None:
+                start_date = start_date.astimezone(timezone.utc)
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
             # if end_date has no time component (is at midnight), adjust to end of day
@@ -838,6 +847,9 @@ class TurbopufferClient:
 
                 # add 1 day and subtract 1 microsecond to get 23:59:59.999999
                 end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
+            # Convert to UTC to match stored timestamps
+            if end_date.tzinfo is not None:
+                end_date = end_date.astimezone(timezone.utc)
             date_filters.append(("created_at", "Lte", end_date))
 
         # build project_id filter if provided
@@ -988,6 +1000,9 @@ class TurbopufferClient:
 
         # date filters
         if start_date:
+            # Convert to UTC to match stored timestamps
+            if start_date.tzinfo is not None:
+                start_date = start_date.astimezone(timezone.utc)
             all_filters.append(("created_at", "Gte", start_date))
         if end_date:
             # make end_date inclusive of the entire day
@@ -995,6 +1010,9 @@ class TurbopufferClient:
                 from datetime import timedelta
 
                 end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
+            # Convert to UTC to match stored timestamps
+            if end_date.tzinfo is not None:
+                end_date = end_date.astimezone(timezone.utc)
             all_filters.append(("created_at", "Lte", end_date))
 
         # combine filters
