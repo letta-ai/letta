@@ -9254,8 +9254,12 @@
                   "type": "null"
                 }
               ],
+              "description": "[DEPRECATED: Use X-Project-Id header instead] Filter identities by project ID",
+              "deprecated": true,
               "title": "Project Id"
-            }
+            },
+            "description": "[DEPRECATED: Use X-Project-Id header instead] Filter identities by project ID",
+            "deprecated": true
           },
           {
             "name": "identifier_key",
