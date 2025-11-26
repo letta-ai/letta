@@ -62,7 +62,7 @@ from letta.server.server import SyncServer
 from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.services.streaming_service import StreamingService
-from letta.settings import settings
+from letta.settings import settings, tool_settings
 from letta.utils import is_1_0_sdk_version, safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, ToolId
 
@@ -2105,3 +2105,154 @@ async def capture_messages(
         run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
 
     return JSONResponse({"success": True, "messages_created": len(response_messages), "run_ids": run_ids})
+
+
+
+
+
+class AttachSandboxRequest(BaseModel):
+    """Request body for attaching a sandbox to an agent."""
+    timeout: Optional[int] = Field(None, description="Optional timeout in seconds for sandbox creation.")
+
+
+@router.patch("/{agent_id}/sandbox/attach", response_model=Optional[AgentState], operation_id="attach_sandbox_to_agent")
+async def attach_sandbox_to_agent(
+    agent_id: AgentId,
+    request: Optional[AttachSandboxRequest] = Body(None),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Attaches a sandbox to an agent and stores its ID in the agent's metadata.
+
+    In current implementation, we create a new sandbox for each agent
+    and assume each agent has just one corresponding sandbox.
+    """
+    from e2b_code_interpreter import AsyncSandbox
+    from letta.settings import tool_settings
+    
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    
+    # Get the current agent to preserve existing metadata
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    
+    try:
+        if tool_settings.e2b_api_key is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="E2B_API_KEY is not set. Cannot create a new sandbox."
+            )
+
+        # Create a new sandbox (uses auto_pause=True)
+        if request and request.timeout:
+            sandbox = await AsyncSandbox.beta_create(api_key=tool_settings.e2b_api_key, timeout=request.timeout, auto_pause=True)
+        else:
+            sandbox = await AsyncSandbox.beta_create(api_key=tool_settings.e2b_api_key, auto_pause=True)
+        
+        sandbox_id = sandbox.sandbox_id
+        
+        # Update agent metadata with sandbox_id
+        current_metadata = agent.metadata or {}
+        current_metadata["sandbox_id"] = sandbox_id
+        
+        update_agent = UpdateAgent(metadata=current_metadata)
+        await server.agent_manager.update_agent_async(
+            agent_id=agent_id,
+            agent_update=update_agent,
+            actor=actor
+        )
+        
+        if is_1_0_sdk_version(headers):
+            return None
+        # TODO: Unfortunately we need this to preserve our current API behavior (as per previous functions in this file)
+        return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        
+    except Exception as e:
+        logger.error(f"Error attaching sandbox to agent {agent_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to attach sandbox: {str(e)}"
+        )
+
+
+@router.post("/{agent_id}/sandbox/upload", response_model=Dict[str, Any], operation_id="upload_file_to_agent_sandbox")
+async def upload_file_to_agent_sandbox(
+    agent_id: AgentId,
+    file: UploadFile = File(...),
+    path: Optional[str] = Form(None, description="Optional path in the sandbox where the file should be uploaded. If not provided, uses the filename in the current working directory."),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Upload a file to the agent's sandbox.
+    
+    Requires that a sandbox has been attached to the agent via the /sandbox/attach endpoint.
+    The sandbox_id should be stored in agent.metadata['sandbox_id'].
+    """
+    from e2b_code_interpreter import AsyncSandbox
+
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    
+    # Get the agent and check for sandbox_id in metadata
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+    
+    sandbox_id = None
+    if agent.metadata:
+        sandbox_id = agent.metadata.get("sandbox_id")
+    
+    if not sandbox_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No sandbox attached to this agent. Please attach a sandbox first using /sandbox/attach endpoint."
+        )
+    
+    try:
+        # Try to connect to the existing sandbox
+        if tool_settings.e2b_api_key is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="E2B_API_KEY is not set in tool_settings. Cannot connect to sandbox."
+            )
+        sandbox = await AsyncSandbox.connect(api_key=tool_settings.e2b_api_key, sandbox_id=sandbox_id)
+        
+        # Set the file path in the sandbox
+        if path:
+            sandbox_file_path = path
+        else:
+            # If no path is provided, use the uploaded filename in the current working directory
+            sandbox_file_path = file.filename or "uploaded_file"
+        
+        content = await file.read()  # bytes
+        try:
+            # Make sandbox directory if it doesn't exist
+            dir_path = '/'.join(sandbox_file_path.split('/')[:-1])
+            if dir_path:
+                await sandbox.run_code(f"mkdir -p {dir_path}", language="bash")
+            
+            await sandbox.files.write(sandbox_file_path, content)
+            
+        except Exception as e:
+            import traceback
+            error_traceback = traceback.format_exc()
+            logger.error(f"Error uploading file to sandbox for agent {agent_id}: {str(e)}\n{error_traceback}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload file to sandbox: {str(e)}"
+            )
+        
+        return {
+            "status": "success",
+            "message": f"File uploaded successfully to {sandbox_file_path}",
+            "sandbox_id": sandbox_id,
+            "file_path": sandbox_file_path,
+            "file_size": len(content),
+            "filename": file.filename,
+        }
+
+    # If sandbox connection fails, raise an error
+    except Exception as e:
+        logger.error(f"Error uploading file to sandbox for agent {agent_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload file to sandbox: {str(e)}"
+        )
