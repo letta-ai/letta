@@ -585,6 +585,51 @@ def test_approve_and_follow_up_with_error(
         assert messages[2].message_type == "tool_return_message"
 
 
+def test_approve_with_user_message(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "approval",
+                        "approve": True,
+                        "tool_call_id": tool_call_id,
+                    },
+                ],
+            },
+            {
+                "type": "message",
+                "role": "user",
+                "content": "The secret code should not contain any special characters.",
+            },
+        ],
+    )
+
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert messages[0].message_type in ["reasoning_message", "assistant_message", "tool_call_message"]
+    assert messages[-2].message_type == "stop_reason"
+    assert messages[-1].message_type == "usage_statistics"
+
+
 # ------------------------------
 # Deny Test Cases
 # ------------------------------
@@ -790,6 +835,51 @@ def test_deny_and_follow_up_with_error(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) > 2
+    assert messages[-2].message_type == "stop_reason"
+    assert messages[-1].message_type == "usage_statistics"
+
+
+def test_deny_with_user_message(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "approval",
+                        "approve": False,
+                        "tool_call_id": tool_call_id,
+                    },
+                ],
+            },
+            {
+                "type": "message",
+                "role": "user",
+                "content": f"Actually, you don't need to call the tool, the secret code is {SECRET_CODE}",
+            },
+        ],
+    )
+
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
     )
 
     messages = accumulate_chunks(response)
@@ -1010,6 +1100,52 @@ def test_client_side_tool_call_and_follow_up_with_error(
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) > 2
+    assert messages[-2].message_type == "stop_reason"
+    assert messages[-1].message_type == "usage_statistics"
+
+
+def test_client_side_tool_call_with_user_message(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+            {
+                "type": "message",
+                "role": "user",
+                "content": "The secret code should not contain any special characters.",
+            },
+        ],
+    )
+
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
     )
 
     messages = accumulate_chunks(response)

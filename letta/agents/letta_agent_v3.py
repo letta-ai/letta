@@ -114,9 +114,17 @@ class LettaAgentV3(LettaAgentV2):
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
             input_messages, self.agent_state, self.message_manager, self.actor, run_id
         )
+        follow_up_messages = []
+        if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
+            follow_up_messages = input_messages_to_persist[1:]
+            input_messages_to_persist = [input_messages_to_persist[0]]
+
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
         for i in range(max_steps):
+            if i == 1 and follow_up_messages:
+                input_messages_to_persist = follow_up_messages
+                follow_up_messages = []
             response = self._step(
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
@@ -237,8 +245,16 @@ class LettaAgentV3(LettaAgentV2):
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
                 input_messages, self.agent_state, self.message_manager, self.actor, run_id
             )
+            follow_up_messages = []
+            if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
+                follow_up_messages = input_messages_to_persist[1:]
+                input_messages_to_persist = [input_messages_to_persist[0]]
+
             in_context_messages = in_context_messages + input_messages_to_persist
             for i in range(max_steps):
+                if i == 1 and follow_up_messages:
+                    input_messages_to_persist = follow_up_messages
+                    follow_up_messages = []
                 response = self._step(
                     messages=in_context_messages + self.response_messages,
                     input_messages_to_persist=input_messages_to_persist,

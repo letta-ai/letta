@@ -144,7 +144,7 @@ async def _prepare_in_context_messages_no_persist_async(
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     # Check for approval-related message validation
-    if len(input_messages) == 1 and input_messages[0].type == "approval":
+    if input_messages[0].type == "approval":
         # User is trying to send an approval response
         if current_in_context_messages and current_in_context_messages[-1].role != "approval":
             raise ValueError(
@@ -155,6 +155,11 @@ async def _prepare_in_context_messages_no_persist_async(
         new_in_context_messages = create_approval_response_message_from_input(
             agent_state=agent_state, input_message=input_messages[0], run_id=run_id
         )
+        if len(input_messages) > 1:
+            follow_up_messages = await create_input_messages(
+                input_messages=input_messages[1:], agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+            )
+            new_in_context_messages.extend(follow_up_messages)
     else:
         # User is trying to send a regular message
         if current_in_context_messages and current_in_context_messages[-1].role == "approval":
