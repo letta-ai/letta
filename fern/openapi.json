@@ -1915,7 +1915,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest"
+                "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__tools__ToolExecuteRequest"
               }
             }
           }
@@ -5237,6 +5237,74 @@
                     }
                   ],
                   "title": "Response Modify Approval For Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/tools/{tool_name}/run": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Run Tool For Agent",
+        "description": "Trigger a tool by name on a specific agent, providing the necessary arguments.\n\nThis endpoint executes a tool that is attached to the agent, using the agent's\nstate and environment variables for execution context.",
+        "operationId": "run_tool_for_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          },
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__ToolExecuteRequest",
+                "default": {
+                  "args": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolExecutionResult"
                 }
               }
             }
@@ -11791,7 +11859,7 @@
       "post": {
         "tags": ["mcp-servers"],
         "summary": "Run Mcp Tool",
-        "description": "Execute a specific MCP tool\n\nThe request body should contain the tool arguments in the MCPToolExecuteRequest format.",
+        "description": "Execute a specific MCP tool\n\nThe request body should contain the tool arguments in the ToolExecuteRequest format.",
         "operationId": "mcp_run_tool",
         "parameters": [
           {
@@ -11817,7 +11885,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/letta__schemas__mcp_server__MCPToolExecuteRequest",
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__ToolExecuteRequest",
                 "default": {
                   "args": {}
                 }
@@ -39480,19 +39548,19 @@
         "title": "UpdateStreamableHTTPMCPServer",
         "description": "Update a Streamable HTTP MCP server"
       },
-      "letta__schemas__mcp_server__MCPToolExecuteRequest": {
+      "letta__schemas__mcp_server__ToolExecuteRequest": {
         "properties": {
           "args": {
             "additionalProperties": true,
             "type": "object",
             "title": "Args",
-            "description": "Arguments to pass to the MCP tool"
+            "description": "Arguments to pass to the tool"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "MCPToolExecuteRequest",
-        "description": "Request to execute an MCP tool by IDs."
+        "title": "ToolExecuteRequest",
+        "description": "Request to execute a tool."
       },
       "letta__schemas__mcp_server__UpdateSSEMCPServer": {
         "properties": {
@@ -40082,17 +40150,17 @@
         ],
         "title": "ToolSchema"
       },
-      "letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest": {
+      "letta__server__rest_api__routers__v1__tools__ToolExecuteRequest": {
         "properties": {
           "args": {
             "additionalProperties": true,
             "type": "object",
             "title": "Args",
-            "description": "Arguments to pass to the MCP tool"
+            "description": "Arguments to pass to the tool"
           }
         },
         "type": "object",
-        "title": "MCPToolExecuteRequest"
+        "title": "ToolExecuteRequest"
       },
       "openai__types__chat__chat_completion_message_function_tool_call__Function": {
         "properties": {

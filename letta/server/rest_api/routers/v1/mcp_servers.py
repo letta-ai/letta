@@ -10,7 +10,7 @@ from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.mcp_server import (
     CreateMCPServerRequest,
     MCPServerUnion,
-    MCPToolExecuteRequest,
+    ToolExecuteRequest,
     UpdateMCPServerRequest,
     convert_generic_to_union,
     convert_update_to_internal,
@@ -164,12 +164,12 @@ async def run_mcp_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
-    request: MCPToolExecuteRequest = Body(default=MCPToolExecuteRequest()),
+    request: ToolExecuteRequest = Body(default=ToolExecuteRequest()),
 ):
     """
     Execute a specific MCP tool
 
-    The request body should contain the tool arguments in the MCPToolExecuteRequest format.
+    The request body should contain the tool arguments in the ToolExecuteRequest format.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 

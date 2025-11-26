@@ -757,15 +757,15 @@ async def generate_json_schema(
 
 
 # TODO: @jnjpng move this and other models above to appropriate file for schemas
-class MCPToolExecuteRequest(BaseModel):
-    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+class ToolExecuteRequest(BaseModel):
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the tool")
 
 
 @router.post("/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute", operation_id="execute_mcp_tool")
 async def execute_mcp_tool(
     mcp_server_name: str,
     tool_name: str,
-    request: MCPToolExecuteRequest = Body(...),
+    request: ToolExecuteRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

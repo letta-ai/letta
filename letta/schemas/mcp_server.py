@@ -259,10 +259,10 @@ class MCPServerResyncResult(LettaBase):
     added: List[str] = Field(default_factory=list, description="List of added tool names")
 
 
-class MCPToolExecuteRequest(LettaBase):
-    """Request to execute an MCP tool by IDs."""
+class ToolExecuteRequest(LettaBase):
+    """Request to execute a tool."""
 
-    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the tool")
 
 
 # Wrapper models for API requests with discriminated unions

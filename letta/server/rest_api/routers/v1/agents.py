@@ -43,6 +43,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.mcp_server import ToolExecuteRequest
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
     ArchivalMemorySearchResult,
@@ -55,6 +56,7 @@ from letta.schemas.passage import Passage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.source import BaseSource, Source
 from letta.schemas.tool import BaseTool, Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -596,6 +598,72 @@ async def modify_approval_for_tool(
         return None
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
+@router.post("/{agent_id}/tools/{tool_name}/run", response_model=ToolExecutionResult, operation_id="run_tool_for_agent")
+async def run_tool_for_agent(
+    agent_id: AgentId,
+    tool_name: str,
+    request: ToolExecuteRequest = Body(default=ToolExecuteRequest()),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Trigger a tool by name on a specific agent, providing the necessary arguments.
+
+    This endpoint executes a tool that is attached to the agent, using the agent's
+    state and environment variables for execution context.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Get agent with tools and environment variables
+    agent = await server.agent_manager.get_agent_by_id_async(
+        agent_id=agent_id,
+        actor=actor,
+        include_relationships=["tools", "tool_exec_environment_variables"],
+    )
+
+    # Find the tool by name among attached tools
+    tool = None
+    if agent.tools:
+        for t in agent.tools:
+            if t.name == tool_name:
+                tool = t
+                break
+
+    if tool is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tool '{tool_name}' not found or not attached to agent '{agent_id}'",
+        )
+
+    # Build environment variables dict from agent secrets
+    sandbox_env_vars = {}
+    if agent.tool_exec_environment_variables:
+        for env_var in agent.tool_exec_environment_variables:
+            sandbox_env_vars[env_var.key] = env_var.value
+
+    # Create tool execution manager and execute the tool
+    from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
+
+    tool_execution_manager = ToolExecutionManager(
+        agent_state=agent,
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        run_manager=server.run_manager,
+        passage_manager=server.passage_manager,
+        actor=actor,
+        sandbox_env_vars=sandbox_env_vars,
+    )
+
+    tool_execution_result = await tool_execution_manager.execute_tool_async(
+        function_name=tool_name,
+        function_args=request.args,
+        tool=tool,
+    )
+
+    return tool_execution_result
 
 
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent", deprecated=True)
