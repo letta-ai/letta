@@ -25,7 +25,11 @@ router = APIRouter(prefix="/identities", tags=["identities"])
 @router.get("/", tags=["identities"], response_model=List[Identity], operation_id="list_identities")
 async def list_identities(
     name: Optional[str] = Query(None),
-    project_id: Optional[str] = Query(None),
+    project_id: Optional[str] = Query(
+        None,
+        deprecated=True,
+        description="[DEPRECATED: Use X-Project-Id header instead] Filter identities by project ID",
+    ),
     identifier_key: Optional[str] = Query(None),
     identity_type: Optional[IdentityType] = Query(None),
     before: Optional[str] = Query(
