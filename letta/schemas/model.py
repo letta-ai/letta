@@ -262,6 +262,7 @@ class AnthropicModelSettings(ModelSettings):
     thinking: AnthropicThinking = Field(
         AnthropicThinking(type="enabled", budget_tokens=1024), description="The thinking configuration for the model."
     )
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
 
     # gpt-5 models only
     verbosity: Optional[Literal["low", "medium", "high"]] = Field(
@@ -288,6 +289,7 @@ class AnthropicModelSettings(ModelSettings):
             "verbosity": self.verbosity,
             "parallel_tool_calls": self.parallel_tool_calls,
             "effort": self.effort,
+            "response_format": self.response_format,
         }
 
 

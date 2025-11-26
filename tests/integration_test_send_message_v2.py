@@ -12,7 +12,14 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import AsyncLetta
-from letta_client.types import AgentState, JsonSchemaResponseFormat, MessageCreateParam, OpenAIModelSettings, ToolReturnMessage
+from letta_client.types import (
+    AgentState,
+    AnthropicModelSettings,
+    JsonSchemaResponseFormat,
+    MessageCreateParam,
+    OpenAIModelSettings,
+    ToolReturnMessage,
+)
 from letta_client.types.agents import AssistantMessage, ReasoningMessage, Run, ToolCallMessage, UserMessage
 from letta_client.types.agents.letta_streaming_response import LettaPing, LettaStopReason, LettaUsageStatistics
 
@@ -904,10 +911,11 @@ async def test_tool_call(
 
 
 @pytest.mark.parametrize(
-    "model_handle,api_type",
+    "model_handle,provider_type",
     [
-        ("openai/gpt-4o", "chat_completions"),
-        ("openai/gpt-5", "responses"),
+        ("openai/gpt-4o", "openai"),
+        ("openai/gpt-5", "openai"),
+        ("anthropic/claude-sonnet-4-5-20250929", "anthropic"),
     ],
 )
 @pytest.mark.asyncio(loop_scope="function")
@@ -915,16 +923,16 @@ async def test_json_schema_response_format(
     disable_e2b_api_key: Any,
     client: AsyncLetta,
     model_handle: str,
-    api_type: str,
+    provider_type: str,
 ) -> None:
     """
-    Test JsonSchemaResponseFormat with both Chat Completions API (gpt-4o) and Responses API (gpt-5).
+    Test JsonSchemaResponseFormat with OpenAI and Anthropic models.
 
     This test verifies that:
     1. Agents can be created with json_schema response_format via model_settings
     2. The schema is properly stored in the agent's model_settings
     3. Messages sent to the agent produce responses conforming to the schema
-    4. Both APIs (Chat Completions and Responses) handle structured outputs correctly
+    4. Both OpenAI and Anthropic handle structured outputs correctly
     """
     # Define the structured output schema
     response_schema = {
@@ -941,10 +949,15 @@ async def test_json_schema_response_format(
         },
     }
 
-    # Create model settings with json_schema response format
-    model_settings = OpenAIModelSettings(
-        provider_type="openai", response_format=JsonSchemaResponseFormat(type="json_schema", json_schema=response_schema)
-    )
+    # Create model settings with json_schema response format based on provider
+    if provider_type == "openai":
+        model_settings = OpenAIModelSettings(
+            provider_type="openai", response_format=JsonSchemaResponseFormat(type="json_schema", json_schema=response_schema)
+        )
+    else:
+        model_settings = AnthropicModelSettings(
+            provider_type="anthropic", response_format=JsonSchemaResponseFormat(type="json_schema", json_schema=response_schema)
+        )
 
     # Create agent with structured output configuration
     agent_state = await client.agents.create(

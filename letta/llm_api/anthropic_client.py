@@ -45,6 +45,7 @@ from letta.schemas.openai.chat_completion_response import (
     ToolCall,
     UsageStatistics,
 )
+from letta.schemas.response_format import JsonSchemaResponseFormat
 from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -80,6 +81,10 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
+        # Structured outputs beta
+        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+            betas.append("structured-outputs-2025-11-13")
+
         if betas:
             response = client.beta.messages.create(**request_data, betas=betas)
         else:
@@ -113,6 +118,10 @@ class AnthropicClient(LLMClientBase):
         # Context management for Opus 4.5 to preserve thinking blocks (improves cache hits)
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
+
+        # Structured outputs beta
+        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+            betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = await client.beta.messages.create(**request_data, betas=betas)
@@ -154,6 +163,10 @@ class AnthropicClient(LLMClientBase):
         # Context management for Opus 4.5 to preserve thinking blocks (improves cache hits)
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
+
+        # Structured outputs beta
+        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+            betas.append("structured-outputs-2025-11-13")
 
         return await client.beta.messages.create(**request_data, betas=betas)
 
@@ -310,6 +323,13 @@ class AnthropicClient(LLMClientBase):
                         "keep": "all",  # Preserve all thinking blocks for maximum cache performance
                     }
                 ]
+            }
+
+        # Structured outputs via response_format
+        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+            data["output_format"] = {
+                "type": "json_schema",
+                "schema": llm_config.response_format.json_schema["schema"],
             }
 
         # Tools
