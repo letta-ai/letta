@@ -389,6 +389,10 @@ async def import_agent(
         file_size_mb = len(serialized_data) / (1024 * 1024)
         logger.info(f"Agent import: loaded {file_size_mb:.2f} MB into memory")
         agent_json = json.loads(serialized_data)
+
+        # Handle double-encoded JSON (if the result is a string, parse it again)
+        if isinstance(agent_json, str):
+            agent_json = json.loads(agent_json)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
