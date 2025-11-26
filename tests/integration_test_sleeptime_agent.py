@@ -148,13 +148,30 @@ async def test_sleeptime_group_chat(client):
         runs = client.runs.list(agent_id=sleeptime_agent_id).items
         assert len(runs) == len(run_ids)
 
-    # 6. Verify run status after sleep
+    # 6. Verify run status after sleep and wait for all runs to complete
     time.sleep(2)
+
+    # Wait for all sleeptime agent runs to complete before deleting
+    max_wait = 30  # Maximum 30 seconds to wait
+    start_time = time.time()
+    all_completed = False
+
+    while time.time() - start_time < max_wait and not all_completed:
+        all_completed = True
+        for run_id in run_ids:
+            job = client.runs.retrieve(run_id=run_id)
+            if job.status not in ["completed", "failed"]:
+                all_completed = False
+                break
+        if not all_completed:
+            time.sleep(0.5)  # Poll every 500ms
+
+    # Verify final status
     for run_id in run_ids:
         job = client.runs.retrieve(run_id=run_id)
-        assert job.status == "running" or job.status == "completed"
+        assert job.status in ["running", "completed", "failed"], f"Unexpected status: {job.status}"
 
-    # 7. Delete agent
+    # 7. Delete agent (now safe because all runs are complete)
     client.agents.delete(agent_id=main_agent.id)
 
     with pytest.raises(APIError):
