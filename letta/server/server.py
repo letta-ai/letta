@@ -541,6 +541,10 @@ class SyncServer(object):
 
         # update with model_settings
         if request.model_settings is not None:
+            if request.llm_config is None:
+                # Get the current agent's llm_config if not already set
+                agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+                request.llm_config = agent.llm_config.model_copy()
             update_llm_config_params = request.model_settings._to_legacy_config_params()
             request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
 
