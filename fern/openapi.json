@@ -10034,6 +10034,51 @@
         }
       }
     },
+    "/v1/_internal_agents/count": {
+      "get": {
+        "tags": ["_internal_agents"],
+        "summary": "Count Agents",
+        "description": "Get the total number of agents for a user, with option to exclude hidden agents.",
+        "operationId": "count_internal_agents",
+        "parameters": [
+          {
+            "name": "exclude_hidden",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, excludes hidden agents from the count. If False, includes all agents.",
+              "default": true,
+              "title": "Exclude Hidden"
+            },
+            "description": "If True, excludes hidden agents from the count. If False, includes all agents."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Internal Agents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}": {
       "patch": {
         "tags": ["_internal_agents"],

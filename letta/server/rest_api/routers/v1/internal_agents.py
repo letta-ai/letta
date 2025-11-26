@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Query
 
 from letta.schemas.block import Block, BlockUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -6,6 +6,28 @@ from letta.server.server import SyncServer
 from letta.validators import AgentId
 
 router = APIRouter(prefix="/_internal_agents", tags=["_internal_agents"])
+
+
+@router.get("/count", response_model=int, operation_id="count_internal_agents")
+async def count_agents(
+    exclude_hidden: bool = Query(True, description="If True, excludes hidden agents from the count. If False, includes all agents."),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get the total number of agents for a user, with option to exclude hidden agents.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # When exclude_hidden=True, we want show_hidden_agents=False
+    # When exclude_hidden=False, we want show_hidden_agents=True
+    show_hidden_agents = not exclude_hidden
+
+    # Always use count_agents_async to ensure proper filtering
+    return await server.agent_manager.count_agents_async(
+        actor=actor,
+        show_hidden_agents=show_hidden_agents,
+    )
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_internal_core_memory_block")
