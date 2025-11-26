@@ -815,15 +815,18 @@ def assert_image_input_response(
 ) -> None:
     """
     Asserts that the messages list follows the expected sequence:
-    ReasoningMessage -> AssistantMessage.
+    ReasoningMessage -> AssistantMessage or ToolCallMessage -> ToolReturnMessage.
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
     messages = [
         msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
     ]
 
+    # Check if there are tool calls in the response
+    has_tool_calls = any(isinstance(msg, ToolCallMessage) for msg in messages)
+
     expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
-        model_handle, model_settings, streaming=streaming, from_db=from_db
+        model_handle, model_settings, tool_call=has_tool_calls, streaming=streaming, from_db=from_db
     )
     # Allow for extra system messages (like memory alerts) when from_db=True
     if from_db:
@@ -851,11 +854,22 @@ def assert_image_input_response(
         # Reasoning is non-deterministic, so don't throw if missing
         pass
 
-    # Assistant message
-    assert isinstance(messages[index], AssistantMessage)
-    assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
-    index += 1
-    otid_suffix += 1
+    # Either Assistant message or Tool call message
+    if has_tool_calls:
+        # Tool call message
+        assert isinstance(messages[index], ToolCallMessage)
+        assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
+        index += 1
+        otid_suffix += 1
+        # Tool return message
+        assert isinstance(messages[index], ToolReturnMessage)
+        index += 1
+    else:
+        # Assistant message
+        assert isinstance(messages[index], AssistantMessage)
+        assert messages[index].otid and messages[index].otid[-1] == str(otid_suffix)
+        index += 1
+        otid_suffix += 1
 
     # Skip any trailing system messages (like memory alerts)
     # These can appear when from_db=True due to memory summarization
