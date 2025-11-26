@@ -10045,16 +10045,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Labels to include (e.g. human, persona)",
+              "description": "Label to include (alphanumeric, hyphens, underscores only)",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label"
             },
-            "description": "Labels to include (e.g. human, persona)"
+            "description": "Label to include (alphanumeric, hyphens, underscores only)"
           },
           {
             "name": "templates_only",
@@ -10075,16 +10079,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[a-zA-Z0-9 _-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Name of the block",
+              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
+              "examples": ["My Agent", "test_tool", "default-config"],
               "title": "Name"
             },
-            "description": "Name of the block"
+            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
           },
           {
             "name": "identity_id",
@@ -10093,16 +10101,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 45,
+                  "maxLength": 45,
+                  "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier id",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
             },
-            "description": "Search agents by identifier id"
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "identifier_keys",
@@ -10231,16 +10243,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label Search"
             },
-            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+            "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
           },
           {
             "name": "description_search",
@@ -10249,16 +10265,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
               "title": "Description Search"
             },
-            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+            "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions."
           },
           {
             "name": "value_search",
@@ -10267,16 +10285,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
               "title": "Value Search"
             },
-            "description": "Search blocks by value. If provided, returns blocks that match this value."
+            "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values."
           },
           {
             "name": "connected_to_agents_count_gt",
@@ -11939,16 +11959,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Labels to include (e.g. human, persona)",
+              "description": "Label to include (alphanumeric, hyphens, underscores only)",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label"
             },
-            "description": "Labels to include (e.g. human, persona)"
+            "description": "Label to include (alphanumeric, hyphens, underscores only)"
           },
           {
             "name": "templates_only",
@@ -11969,16 +11993,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[a-zA-Z0-9 _-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Name of the block",
+              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
+              "examples": ["My Agent", "test_tool", "default-config"],
               "title": "Name"
             },
-            "description": "Name of the block"
+            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
           },
           {
             "name": "identity_id",
@@ -11987,16 +12015,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 45,
+                  "maxLength": 45,
+                  "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier id",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
             },
-            "description": "Search agents by identifier id"
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "identifier_keys",
@@ -12125,16 +12157,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label Search"
             },
-            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+            "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
           },
           {
             "name": "description_search",
@@ -12143,16 +12179,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
               "title": "Description Search"
             },
-            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+            "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions."
           },
           {
             "name": "value_search",
@@ -12161,16 +12199,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
               "title": "Value Search"
             },
-            "description": "Search blocks by value. If provided, returns blocks that match this value."
+            "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values."
           },
           {
             "name": "connected_to_agents_count_gt",
