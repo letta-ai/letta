@@ -401,6 +401,30 @@ def agent_state_ok(agent_state, value: int) -> str:
     return "ok"
 
 
+def client_ok(client, value: int) -> str:
+    """Ignores client param (injected Letta client).
+
+    Args:
+        value (int): Some value.
+
+    Returns:
+        str: Status.
+    """
+    return "ok"
+
+
+def all_reserved_params_ok(agent_state, client, value: int) -> str:
+    """Ignores all reserved params.
+
+    Args:
+        value (int): Some value.
+
+    Returns:
+        str: Status.
+    """
+    return "ok"
+
+
 class Dummy:
     def method(self, bar: int) -> str:  # keeps an explicit self
         """Bound-method example.
@@ -446,6 +470,8 @@ def missing_param_doc(x: int, y: int) -> str:
     [
         (good_function, None),
         (agent_state_ok, None),
+        (client_ok, None),  # client is a reserved param (injected Letta client)
+        (all_reserved_params_ok, None),  # all reserved params together
         (Dummy.method, None),  # unbound method keeps `self`
         (good_function_no_return, None),
         (no_doc, "has no docstring"),
@@ -455,6 +481,28 @@ def missing_param_doc(x: int, y: int) -> str:
 )
 def test_google_style_docstring_validation(fn, regex):
     _check(fn, regex)
+
+
+def test_reserved_params_excluded_from_schema():
+    """Test that reserved params (agent_state, client) are excluded from generated schema."""
+    from letta.functions.schema_generator import generate_schema
+
+    # Test with client param
+    schema = generate_schema(client_ok)
+    assert "client" not in schema["parameters"]["properties"], "client should be excluded from schema"
+    assert "value" in schema["parameters"]["properties"], "value should be in schema"
+
+    # Test with agent_state param
+    schema = generate_schema(agent_state_ok)
+    assert "agent_state" not in schema["parameters"]["properties"], "agent_state should be excluded from schema"
+    assert "value" in schema["parameters"]["properties"], "value should be in schema"
+
+    # Test with all reserved params
+    schema = generate_schema(all_reserved_params_ok)
+    assert "agent_state" not in schema["parameters"]["properties"], "agent_state should be excluded from schema"
+    assert "client" not in schema["parameters"]["properties"], "client should be excluded from schema"
+    assert "value" in schema["parameters"]["properties"], "value should be in schema"
+    assert schema["parameters"]["required"] == ["value"], "only value should be required"
 
 
 def test_complex_nested_anyof_schema_to_structured_output():

@@ -67,7 +67,7 @@ class AsyncToolSandboxBase(ABC):
                 self.inject_agent_state = False
 
             # Check for Letta client and agent_id injection
-            self.inject_letta_client = "letta_client" in tool_arguments or "client" in tool_arguments
+            self.inject_letta_client = "client" in tool_arguments
             self.inject_agent_id = "agent_id" in tool_arguments
 
             self.is_async_function = self._detect_async_function()
@@ -195,20 +195,18 @@ class AsyncToolSandboxBase(ABC):
                 [
                     "# Initialize Letta client for tool execution",
                     "import os",
-                    "letta_client = None",
+                    "client = None",
                     "if os.getenv('LETTA_API_KEY'):",
                     "    # Check letta_client version to use correct parameter name",
                     "    from packaging import version as pkg_version",
                     "    import letta_client as lc_module",
                     "    lc_version = pkg_version.parse(lc_module.__version__)",
                     "    if lc_version < pkg_version.parse('1.0.0'):",
-                    "        letta_client = Letta(",
-                    "            base_url=os.getenv('LETTA_BASE_URL', 'http://localhost:8283'),",
+                    "        client = Letta(",
                     "            token=os.getenv('LETTA_API_KEY')",
                     "        )",
                     "    else:",
-                    "        letta_client = Letta(",
-                    "            base_url=os.getenv('LETTA_BASE_URL', 'http://localhost:8283'),",
+                    "        client = Letta(",
                     "            api_key=os.getenv('LETTA_API_KEY')",
                     "        )",
                 ]
@@ -346,9 +344,7 @@ class AsyncToolSandboxBase(ABC):
             # Check if the function expects 'client' or 'letta_client'
             tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
             if "client" in tool_arguments:
-                param_list.append("client=letta_client")
-            elif "letta_client" in tool_arguments:
-                param_list.append("letta_client=letta_client")
+                param_list.append("client=client")
 
         if self.inject_agent_id:
             param_list.append("agent_id=agent_id")

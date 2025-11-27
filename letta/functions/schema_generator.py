@@ -5,7 +5,7 @@ from docstring_parser import parse
 from pydantic import BaseModel
 from typing_extensions import Literal
 
-from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM
+from letta.constants import REQUEST_HEARTBEAT_DESCRIPTION, REQUEST_HEARTBEAT_PARAM, TOOL_RESERVED_KWARGS
 from letta.functions.mcp_client.types import MCPTool
 from letta.log import get_logger
 
@@ -34,7 +34,7 @@ def validate_google_style_docstring(function):
     # 3. Args and Returns sections should be properly formatted
 
     sig = inspect.signature(function)
-    has_params = any(param.name not in ["self", "agent_state"] for param in sig.parameters.values())
+    has_params = any(param.name not in TOOL_RESERVED_KWARGS for param in sig.parameters.values())
 
     # Check for Args section if function has parameters
     if has_params and "Args:" not in docstring:
@@ -51,7 +51,7 @@ def validate_google_style_docstring(function):
 
         # Check that each parameter is documented
         for param in sig.parameters.values():
-            if param.name in ["self", "agent_state"]:
+            if param.name in TOOL_RESERVED_KWARGS:
                 continue
             if f"{param.name} (" not in args_section and f"{param.name}:" not in args_section:
                 raise ValueError(
@@ -448,12 +448,9 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
         "parameters": {"type": "object", "properties": {}, "required": []},
     }
 
-    # TODO: ensure that 'agent' keyword is reserved for `Agent` class
-
     for param in sig.parameters.values():
-        # Exclude 'self' parameter
-        # TODO: eventually remove this (only applies to BASE_TOOLS)
-        if param.name in ["self", "agent_state"]:  # Add agent_manager to excluded
+        # Exclude reserved parameters that are injected by the system
+        if param.name in TOOL_RESERVED_KWARGS:
             continue
 
         # Assert that the parameter has a type annotation
