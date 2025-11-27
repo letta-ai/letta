@@ -1287,7 +1287,7 @@ async def test_local_sandbox_with_client_injection(disable_e2b_api_key, list_too
     # Verify the script contains Letta client initialization
     assert "from letta_client import Letta" in script, "Script should import Letta client"
     assert "LETTA_API_KEY" in script, "Script should check for LETTA_API_KEY"
-    assert "letta_client = Letta(" in script or "letta_client = None" in script, "Script should initialize Letta client"
+    assert "client = Letta(" in script or "client = None" in script, "Script should initialize Letta client"
 
     # Run the tool and verify it works
     result = await sandbox.run(agent_state=None)
@@ -1345,6 +1345,6 @@ async def test_e2b_sandbox_with_client_injection(check_e2b_key_is_set, list_tool
     # Verify the script contains Letta client initialization
     assert "from letta_client import Letta" in script, "Script should import Letta client"
     assert "LETTA_API_KEY" in script, "Script should check for LETTA_API_KEY"
-    assert "letta_client = Letta(" in script or "letta_client = None" in script, "Script should initialize Letta client"
+    assert "client = Letta(" in script or "client = None" in script, "Script should initialize Letta client"
 
     # Cannot run the tool since E2B is remote
