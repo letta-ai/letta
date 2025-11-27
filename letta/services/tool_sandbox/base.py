@@ -27,6 +27,9 @@ class AsyncToolSandboxBase(ABC):
         tool_name: str,
         args: JsonDict,
         user,
+        tool_id: str,
+        agent_id: Optional[str] = None,
+        project_id: Optional[str] = None,
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
@@ -34,6 +37,9 @@ class AsyncToolSandboxBase(ABC):
         self.tool_name = tool_name
         self.args = args
         self.user = user
+        self.agent_id = agent_id
+        self.project_id = project_id
+        self.tool_id = tool_id
         self.tool = tool_object
 
         # Store provided values or create manager to fetch them later
@@ -393,6 +399,13 @@ class AsyncToolSandboxBase(ABC):
 
         if additional_env_vars:
             env.update(additional_env_vars)
+
+        # Inject agent, project, and tool IDs as environment variables
+        if self.agent_id:
+            env["LETTA_AGENT_ID"] = self.agent_id
+        if self.project_id:
+            env["LETTA_PROJECT_ID"] = self.project_id
+        env["LETTA_TOOL_ID"] = self.tool_id
 
         # Filter out None values to prevent subprocess errors
         env = {k: v for k, v in env.items() if v is not None}

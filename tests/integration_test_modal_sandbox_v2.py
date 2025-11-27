@@ -269,6 +269,7 @@ class TestModalV2BasicExecution:
             tool_name="calculate",
             args={"operation": "add", "a": 5, "b": 3},
             user=test_user,
+            tool_id=basic_tool.id,
             tool_object=basic_tool,
         )
 
@@ -281,6 +282,7 @@ class TestModalV2BasicExecution:
             tool_name="calculate",
             args={"operation": "divide", "a": 10, "b": 2},
             user=test_user,
+            tool_id=basic_tool.id,
             tool_object=basic_tool,
         )
 
@@ -296,6 +298,7 @@ class TestModalV2BasicExecution:
             tool_name="calculate",
             args={"operation": "divide", "a": 10, "b": 0},
             user=test_user,
+            tool_id=basic_tool.id,
             tool_object=basic_tool,
         )
 
@@ -308,6 +311,7 @@ class TestModalV2BasicExecution:
             tool_name="calculate",
             args={"operation": "unknown", "a": 1, "b": 2},
             user=test_user,
+            tool_id=basic_tool.id,
             tool_object=basic_tool,
         )
 
@@ -322,6 +326,7 @@ class TestModalV2BasicExecution:
             tool_name="fetch_data",
             args={"url": "https://example.com", "delay": 0.01},
             user=test_user,
+            tool_id=async_tool.id,
             tool_object=async_tool,
         )
 
@@ -344,6 +349,7 @@ class TestModalV2BasicExecution:
                 tool_name="calculate",
                 args={"operation": "add", "a": i, "b": i + 1},
                 user=test_user,
+                tool_id=basic_tool.id,
                 tool_object=basic_tool,
             )
             for i in range(5)
@@ -594,6 +600,7 @@ class TestModalV2Persistence:
                 tool_name="calculate",
                 args={"operation": "add", "a": 1, "b": 1},
                 user=mock_user,
+                tool_id=basic_tool.id,
                 tool_object=basic_tool,
                 sandbox_config=config1,
             )
@@ -602,6 +609,7 @@ class TestModalV2Persistence:
                 tool_name="calculate",
                 args={"operation": "add", "a": 2, "b": 2},
                 user=mock_user,
+                tool_id=basic_tool.id,
                 tool_object=basic_tool,
                 sandbox_config=config2,
             )
@@ -696,6 +704,7 @@ def calculate(operation: str, a: float, b: float) -> float:
                         tool_name="integration_test",
                         args={"operation": "add", "a": 5, "b": 3},
                         user=mock_user,
+                        tool_id=tool.id,
                         tool_object=tool,
                         sandbox_config=sandbox_config,
                     )
@@ -791,6 +800,7 @@ class TestModalV2DeploymentStats:
                 tool_name=tool.name,
                 args={},
                 user=test_user,
+                tool_id=tool.id,
                 tool_object=tool,
             )
             await sandbox.run()

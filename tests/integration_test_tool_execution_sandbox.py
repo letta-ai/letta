@@ -497,7 +497,9 @@ def memory_clear(label: str, agent_id: str, client: "Letta"):
     # Simulate tool execution with the reserved keywords
     # This would normally happen during agent execution, but we'll test the tool directly
     # Create the sandbox for the tool
-    sandbox = AsyncToolSandboxLocal(tool_name="memory_clear", args={"label": "test_block"}, user=test_user, tool_object=created_tool)
+    sandbox = AsyncToolSandboxLocal(
+        tool_name="memory_clear", args={"label": "test_block"}, user=test_user, tool_id=created_tool.id, tool_object=created_tool
+    )
 
     # Initialize the sandbox to detect reserved keywords
     await sandbox._init_async()
