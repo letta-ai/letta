@@ -70,6 +70,7 @@ dependencies = [
     "trafilatura",
     "readability-lxml",
     "google-genai>=1.15.0",
+    "voyageai>=0.3.5",
     "datadog>=0.49.1",
     "psutil>=5.9.0",
 ]

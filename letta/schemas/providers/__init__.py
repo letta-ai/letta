@@ -17,6 +17,7 @@ from .openai import OpenAIProvider
 from .openrouter import OpenRouterProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
+from .voyageai import VoyageAIProvider
 from .xai import XAIProvider
 
 __all__ = [
@@ -42,6 +43,7 @@ __all__ = [
     "OpenAIProvider",
     "TogetherProvider",
     "VLLMProvider",  # Replaces ChatCompletions and Completions
+    "VoyageAIProvider",
     "XAIProvider",
     "OpenRouterProvider",
 ]

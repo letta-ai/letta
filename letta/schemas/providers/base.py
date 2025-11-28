@@ -185,6 +185,7 @@ class Provider(ProviderBase):
             OpenAIProvider,
             TogetherProvider,
             VLLMProvider,
+            VoyageAIProvider,
             XAIProvider,
         )
 
@@ -224,6 +225,8 @@ class Provider(ProviderBase):
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
                 return BedrockProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.voyageai:
+                return VoyageAIProvider(**self.model_dump(exclude_none=True))
             case _:
                 raise ValueError(f"Unknown provider type: {self.provider_type}")
 
