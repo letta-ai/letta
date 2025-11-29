@@ -78,6 +78,33 @@ class AnthropicTokenCounter(TokenCounter):
         return Message.to_anthropic_dicts_from_list(messages, current_model=self.model)
 
 
+class ApproxTokenCounter(TokenCounter):
+    """Fast approximate token counter using byte-based heuristic (bytes / 4).
+
+    This is the same approach codex-cli uses - a simple approximation that assumes
+    ~4 bytes per token on average for English text. Much faster than tiktoken
+    and doesn't require loading tokenizer models into memory.
+
+    Just serializes the input to JSON and divides byte length by 4.
+    """
+
+    APPROX_BYTES_PER_TOKEN = 4
+
+    def __init__(self, model: str | None = None):
+        # Model is optional since we don't actually use a tokenizer
+        self.model = model
+
+    def _approx_token_count(self, text: str) -> int:
+        """Approximate token count: ceil(byte_len / 4)"""
+        if not text:
+            return 0
+        byte_len = len(text.encode("utf-8"))
+        return (byte_len + self.APPROX_BYTES_PER_TOKEN - 1) // self.APPROX_BYTES_PER_TOKEN
+
+    def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
+        return Message.to_openai_dicts_from_list(messages)
+
+
 class GeminiTokenCounter(TokenCounter):
     """Token counter using Google's Gemini token counting API"""
 

@@ -30,6 +30,7 @@ from letta.utils import safe_create_task
 logger = get_logger(__name__)
 
 
+# NOTE: legacy, new version is functional
 class Summarizer:
     """
     Handles summarization or trimming of conversation messages based on
@@ -407,7 +408,13 @@ def simple_message_wrapper(openai_msg: dict) -> Message:
         raise ValueError(f"Unknown role: {openai_msg['role']}")
 
 
-async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: User, include_ack: bool = True) -> str:
+async def simple_summary(
+    messages: List[Message],
+    llm_config: LLMConfig,
+    actor: User,
+    include_ack: bool = True,
+    prompt: str | None = None,
+) -> str:
     """Generate a simple summary from a list of messages.
 
     Intentionally kept functional due to the simplicity of the prompt.
@@ -422,7 +429,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
     assert llm_client is not None
 
     # Prepare the messages payload to send to the LLM
-    system_prompt = gpt_summarize.SYSTEM
+    system_prompt = prompt or gpt_summarize.SYSTEM
     # Build the initial transcript without clamping to preserve fidelity
     # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
