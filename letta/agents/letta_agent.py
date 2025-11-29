@@ -42,7 +42,13 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreateBase
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    FunctionCall,
+    ToolCall,
+    UsageStatistics,
+    UsageStatisticsCompletionTokenDetails,
+    UsageStatisticsPromptTokenDetails,
+)
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
@@ -1077,6 +1083,15 @@ class LettaAgent(BaseAgent):
                     usage.completion_tokens += interface.output_tokens
                     usage.prompt_tokens += interface.input_tokens
                     usage.total_tokens += interface.input_tokens + interface.output_tokens
+                    # Aggregate cache and reasoning tokens if available from streaming interface
+                    if hasattr(interface, "cached_tokens") and interface.cached_tokens:
+                        usage.cached_input_tokens += interface.cached_tokens
+                    if hasattr(interface, "cache_read_tokens") and interface.cache_read_tokens:
+                        usage.cached_input_tokens += interface.cache_read_tokens
+                    if hasattr(interface, "cache_creation_tokens") and interface.cache_creation_tokens:
+                        usage.cache_write_tokens += interface.cache_creation_tokens
+                    if hasattr(interface, "reasoning_tokens") and interface.reasoning_tokens:
+                        usage.reasoning_tokens += interface.reasoning_tokens
                     MetricRegistry().message_output_tokens.record(
                         usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                     )
@@ -1124,6 +1139,21 @@ class LettaAgent(BaseAgent):
 
                     # Update step with actual usage now that we have it (if step was created)
                     if logged_step:
+                        # Build detailed token breakdowns from LettaUsageStatistics
+                        prompt_details = None
+                        if usage.cached_input_tokens or usage.cache_write_tokens:
+                            prompt_details = UsageStatisticsPromptTokenDetails(
+                                cached_tokens=usage.cached_input_tokens,
+                                cache_read_tokens=usage.cached_input_tokens,
+                                cache_creation_tokens=usage.cache_write_tokens,
+                            )
+
+                        completion_details = None
+                        if usage.reasoning_tokens:
+                            completion_details = UsageStatisticsCompletionTokenDetails(
+                                reasoning_tokens=usage.reasoning_tokens,
+                            )
+
                         await self.step_manager.update_step_success_async(
                             self.actor,
                             step_id,
@@ -1131,6 +1161,8 @@ class LettaAgent(BaseAgent):
                                 completion_tokens=usage.completion_tokens,
                                 prompt_tokens=usage.prompt_tokens,
                                 total_tokens=usage.total_tokens,
+                                prompt_tokens_details=prompt_details,
+                                completion_tokens_details=completion_details,
                             ),
                             stop_reason,
                         )

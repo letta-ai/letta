@@ -23,7 +23,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.run_metrics import RunMetrics as PydanticRunMetrics
 from letta.schemas.step import Step as PydanticStep
-from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.usage import LettaUsageStatistics, normalize_cache_tokens, normalize_reasoning_tokens
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.agent_manager import AgentManager
@@ -469,6 +469,13 @@ class RunManager:
             total_usage.completion_tokens += step.completion_tokens
             total_usage.total_tokens += step.total_tokens
             total_usage.step_count += 1
+
+            # Aggregate cache and reasoning tokens from detailed breakdowns using normalized helpers
+            cached_input, cache_write = normalize_cache_tokens(step.prompt_tokens_details)
+            total_usage.cached_input_tokens += cached_input
+            total_usage.cache_write_tokens += cache_write
+            total_usage.reasoning_tokens += normalize_reasoning_tokens(step.completion_tokens_details)
+
         return total_usage
 
     @enforce_types

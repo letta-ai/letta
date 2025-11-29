@@ -537,6 +537,10 @@ class SimpleOpenAIStreamingInterface:
         self.input_tokens = 0
         self.output_tokens = 0
 
+        # Cache and reasoning token tracking
+        self.cached_tokens = 0
+        self.reasoning_tokens = 0
+
         # Fallback token counters (using tiktoken cl200k-base)
         self.fallback_input_tokens = 0
         self.fallback_output_tokens = 0
@@ -702,6 +706,16 @@ class SimpleOpenAIStreamingInterface:
         if chunk.usage:
             self.input_tokens += chunk.usage.prompt_tokens
             self.output_tokens += chunk.usage.completion_tokens
+            # Capture cache token details (OpenAI)
+            if hasattr(chunk.usage, "prompt_tokens_details") and chunk.usage.prompt_tokens_details:
+                details = chunk.usage.prompt_tokens_details
+                if hasattr(details, "cached_tokens") and details.cached_tokens:
+                    self.cached_tokens += details.cached_tokens
+            # Capture reasoning token details (OpenAI o1/o3)
+            if hasattr(chunk.usage, "completion_tokens_details") and chunk.usage.completion_tokens_details:
+                details = chunk.usage.completion_tokens_details
+                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens:
+                    self.reasoning_tokens += details.reasoning_tokens
 
         if chunk.choices:
             choice = chunk.choices[0]
@@ -845,6 +859,14 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.letta_message_id = Message.generate_id()
         self.model = model
         self.final_response: Optional[ParsedResponse] = None
+
+        # Token counters
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+        # Cache and reasoning token tracking
+        self.cached_tokens = 0
+        self.reasoning_tokens = 0
 
     # -------- Mapping helpers (no broad try/except) --------
     def _record_tool_mapping(self, event: object, item: object) -> tuple[str | None, str | None, int | None, str | None]:
@@ -1270,6 +1292,16 @@ class SimpleOpenAIResponsesStreamingInterface:
             self.input_tokens = event.response.usage.input_tokens
             self.output_tokens = event.response.usage.output_tokens
             self.message_id = event.response.id
+            # Capture cache token details (Responses API uses input_tokens_details)
+            if hasattr(event.response.usage, "input_tokens_details") and event.response.usage.input_tokens_details:
+                details = event.response.usage.input_tokens_details
+                if hasattr(details, "cached_tokens") and details.cached_tokens:
+                    self.cached_tokens = details.cached_tokens
+            # Capture reasoning token details (Responses API uses output_tokens_details)
+            if hasattr(event.response.usage, "output_tokens_details") and event.response.usage.output_tokens_details:
+                details = event.response.usage.output_tokens_details
+                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens:
+                    self.reasoning_tokens = details.reasoning_tokens
             return
 
         else:

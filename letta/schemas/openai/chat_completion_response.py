@@ -78,13 +78,17 @@ class Choice(BaseModel):
 
 
 class UsageStatisticsPromptTokenDetails(BaseModel):
-    cached_tokens: int = 0
+    cached_tokens: int = 0  # OpenAI/Gemini: tokens served from cache
+    cache_read_tokens: int = 0  # Anthropic: tokens read from cache
+    cache_creation_tokens: int = 0  # Anthropic: tokens written to cache
     # NOTE: OAI specific
     # audio_tokens: int = 0
 
     def __add__(self, other: "UsageStatisticsPromptTokenDetails") -> "UsageStatisticsPromptTokenDetails":
         return UsageStatisticsPromptTokenDetails(
             cached_tokens=self.cached_tokens + other.cached_tokens,
+            cache_read_tokens=self.cache_read_tokens + other.cache_read_tokens,
+            cache_creation_tokens=self.cache_creation_tokens + other.cache_creation_tokens,
         )
 
 

@@ -630,10 +630,30 @@ class GoogleVertexClient(LLMClientBase):
             #     "totalTokenCount": 36
             #   }
             if response.usage_metadata:
+                # Extract cache token data if available (Gemini uses cached_content_token_count)
+                prompt_tokens_details = None
+                if hasattr(response.usage_metadata, "cached_content_token_count") and response.usage_metadata.cached_content_token_count:
+                    from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+
+                    prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                        cached_tokens=response.usage_metadata.cached_content_token_count,
+                    )
+
+                # Extract thinking/reasoning token data if available (Gemini uses thoughts_token_count)
+                completion_tokens_details = None
+                if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count:
+                    from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
+
+                    completion_tokens_details = UsageStatisticsCompletionTokenDetails(
+                        reasoning_tokens=response.usage_metadata.thoughts_token_count,
+                    )
+
                 usage = UsageStatistics(
                     prompt_tokens=response.usage_metadata.prompt_token_count,
                     completion_tokens=response.usage_metadata.candidates_token_count,
                     total_tokens=response.usage_metadata.total_token_count,
+                    prompt_tokens_details=prompt_tokens_details,
+                    completion_tokens_details=completion_tokens_details,
                 )
             else:
                 # Count it ourselves

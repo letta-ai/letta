@@ -848,6 +848,16 @@ class AnthropicClient(LLMClientBase):
             ),
         )
 
+        # Build prompt tokens details with cache data if available
+        prompt_tokens_details = None
+        if hasattr(response.usage, "cache_read_input_tokens") or hasattr(response.usage, "cache_creation_input_tokens"):
+            from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+
+            prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                cache_read_tokens=getattr(response.usage, "cache_read_input_tokens", 0) or 0,
+                cache_creation_tokens=getattr(response.usage, "cache_creation_input_tokens", 0) or 0,
+            )
+
         chat_completion_response = ChatCompletionResponse(
             id=response.id,
             choices=[choice],
@@ -857,6 +867,7 @@ class AnthropicClient(LLMClientBase):
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=prompt_tokens + completion_tokens,
+                prompt_tokens_details=prompt_tokens_details,
             ),
         )
         if llm_config.put_inner_thoughts_in_kwargs:
