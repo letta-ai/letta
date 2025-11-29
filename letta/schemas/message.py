@@ -1795,7 +1795,9 @@ class Message(BaseMessage):
 
                     parts.append(function_call_part)
             else:
-                if not native_content:
+                # Only add single text_content if we don't have multiple content items
+                # (multi-content case is handled below at the len(self.content) > 1 block)
+                if not native_content and not (self.content and len(self.content) > 1):
                     assert text_content is not None
                     parts.append({"text": text_content})
 
