@@ -1,7 +1,7 @@
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, Literal, Optional
 
 from opentelemetry.trace import Span
 
@@ -23,6 +23,7 @@ from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEAR
 from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
+from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
@@ -32,6 +33,7 @@ from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, Letta
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, ToolCallDenial, UsageStatistics
 from letta.schemas.step import StepProgression
@@ -44,8 +46,11 @@ from letta.server.rest_api.utils import (
     create_parallel_tool_messages_from_llm_response,
 )
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
+from letta.services.summarizer.summarizer_all import summarize_all
+from letta.services.summarizer.summarizer_config import SummarizerConfig, get_default_summarizer_config
+from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
 from letta.settings import settings, summarizer_settings
-from letta.system import package_function_response
+from letta.system import package_function_response, package_summarize_message_no_counts
 from letta.utils import log_telemetry, validate_function_response
 
 
@@ -1262,3 +1267,93 @@ class LettaAgentV3(LettaAgentV2):
             terminal_tools=terminal_tool_names,
         )
         return allowed_tools
+
+    @trace_method
+    async def summarize_conversation_history(
+        self,
+        # The messages already in the context window
+        in_context_messages: list[Message],
+        # The messages produced by the agent in this step
+        new_letta_messages: list[Message],
+        # The token usage from the most recent LLM call (prompt + completion)
+        total_tokens: int | None = None,
+        # If force, then don't do any counting, just summarize
+        force: bool = False,
+    ) -> list[Message]:
+        trigger_summarization = force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window)
+        if not trigger_summarization:
+            # just update the message_ids
+            # TODO: gross to handle this here: we should move persistence elsewhere
+            new_in_context_messages = in_context_messages + new_letta_messages
+            message_ids = [m.id for m in new_in_context_messages]
+            await self.agent_manager.update_message_ids_async(
+                agent_id=self.agent_state.id,
+                message_ids=message_ids,
+                actor=self.actor,
+            )
+            self.agent_state.message_ids = message_ids
+            return new_in_context_messages
+
+        # Use agent's summarizer_config if set, otherwise fall back to defaults
+        # TODO: add this back
+        # summarizer_config = self.agent_state.summarizer_config or get_default_summarizer_config(self.agent_state.llm_config)
+        summarizer_config = get_default_summarizer_config(self.agent_state.llm_config._to_model_settings())
+
+        if summarizer_config.mode == "all":
+            summary_message_str = await summarize_all(
+                actor=self.actor,
+                summarizer_config=summarizer_config,
+                in_context_messages=in_context_messages,
+                new_messages=new_letta_messages,
+            )
+            new_in_context_messages = []
+        elif summarizer_config.mode == "sliding_window":
+            summary_message_str, new_in_context_messages = await summarize_via_sliding_window(
+                actor=self.actor,
+                llm_config=self.agent_state.llm_config,
+                summarizer_config=summarizer_config,
+                in_context_messages=in_context_messages,
+                new_messages=new_letta_messages,
+            )
+        else:
+            raise ValueError(f"Invalid summarizer mode: {summarizer_config.mode}")
+
+        # Persist the summary message to DB
+        summary_message_str_packed = package_summarize_message_no_counts(
+            summary=summary_message_str,
+            timezone=self.agent_state.timezone,
+        )
+        summary_message_obj = (
+            await convert_message_creates_to_messages(
+                message_creates=[
+                    MessageCreate(
+                        role=MessageRole.user,
+                        content=[TextContent(text=summary_message_str_packed)],
+                    )
+                ],
+                agent_id=self.agent_state.id,
+                timezone=self.agent_state.timezone,
+                # We already packed, don't pack again
+                wrap_user_message=False,
+                wrap_system_message=False,
+                run_id=None,  # TODO: add this
+            )
+        )[0]
+        await self.message_manager.create_many_messages_async(
+            pydantic_msgs=[summary_message_obj],
+            actor=self.actor,
+            project_id=self.agent_state.project_id,
+            template_id=self.agent_state.template_id,
+        )
+
+        # Update the message_ids in the agent state
+        new_in_context_messages = [in_context_messages[0], summary_message_obj] + new_in_context_messages
+        new_in_context_message_ids = [m.id for m in new_in_context_messages]
+        await self.agent_manager.update_message_ids_async(
+            agent_id=self.agent_state.id,
+            message_ids=new_in_context_message_ids,
+            actor=self.actor,
+        )
+        self.agent_state.message_ids = new_in_context_messages
+
+        return new_in_context_messages

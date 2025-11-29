@@ -205,6 +205,9 @@ def test_send_user_message_with_pending_request(client, agent):
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
     )
+    print("RESPONSE", response)
+    for message in response.messages:
+        print("MESSAGE", message)
 
     with pytest.raises(APIError, match="Please approve or deny the pending request before continuing"):
         client.agents.messages.create(

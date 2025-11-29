@@ -602,3 +602,64 @@ async def test_summarize_truncates_large_tool_return(server: SyncServer, actor, 
     # (they may have been completely removed during aggressive summarization)
     if not tool_returns_found:
         print("Tool returns were completely removed during summarization")
+
+
+# ======================================================================================================================
+# SummarizerConfig Mode Tests (with pytest.patch)
+# ======================================================================================================================
+
+from letta.services.summarizer.enums import SummarizationMode
+
+SUMMARIZATION_MODES = [
+    SummarizationMode.STATIC_MESSAGE_BUFFER,
+    SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER,
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", SUMMARIZATION_MODES, ids=[m.value for m in SUMMARIZATION_MODES])
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMConfig, mode: SummarizationMode):
+    """
+    Test summarization with different modes and LLM configurations.
+    """
+    from unittest.mock import patch
+
+    # Create a conversation with enough messages to trigger summarization
+    messages = []
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}: Test message {i}.")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}: Acknowledged message {i}.")],
+            )
+        )
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    with patch("letta.agents.letta_agent_v2.summarizer_settings") as mock_settings:
+        mock_settings.mode = mode
+        mock_settings.message_buffer_limit = 10
+        mock_settings.message_buffer_min = 3
+        mock_settings.partial_evict_summarizer_percentage = 0.30
+        mock_settings.max_summarizer_retries = 3
+
+        agent_loop = LettaAgentV2(agent_state=agent_state, actor=actor)
+        assert agent_loop.summarizer.mode == mode
+
+        result = await agent_loop.summarize_conversation_history(
+            in_context_messages=in_context_messages,
+            new_letta_messages=[],
+            total_tokens=None,
+            force=True,
+        )
+
+        assert isinstance(result, list)
+        assert len(result) >= 1
+        print(f"{mode.value} with {llm_config.model}: {len(in_context_messages)} -> {len(result)} messages")

@@ -24,6 +24,7 @@ from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
+from letta.services.summarizer.summarizer_config import SummarizerConfig
 from letta.utils import calculate_file_defaults_based_on_context_window, create_random_username
 
 
@@ -86,6 +87,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings used by the agent.")
+
+    # TODO: add this back
+    # summarizer_config: Optional[SummarizerConfig] = Field(None, description="The summarizer configuration used by the agent.")
 
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
@@ -241,6 +245,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
+
+    # TODO: add this back
+    # summarizer_config: Optional[SummarizerConfig] = Field(None, description="The summarizer configuration used by the agent.")
 
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(
@@ -434,6 +441,10 @@ class UpdateAgent(BaseModel):
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
+
+    # TODO: add this back
+    # summarizer_config: Optional[SummarizerConfig] = Field(None, description="The summarizer configuration used by the agent.")
+
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     reasoning: Optional[bool] = Field(
         None,
