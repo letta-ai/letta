@@ -234,7 +234,10 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                         # "stop_reason": "",
                         # "stop_sequence": None,
                         "type": "message",
-                        "usage": {
+                        # Use raw_usage if available for transparent provider trace logging, else fallback
+                        "usage": self.interface.raw_usage
+                        if hasattr(self.interface, "raw_usage") and self.interface.raw_usage
+                        else {
                             "input_tokens": self.usage.prompt_tokens,
                             "output_tokens": self.usage.completion_tokens,
                         },

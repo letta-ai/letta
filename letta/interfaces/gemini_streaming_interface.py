@@ -86,6 +86,9 @@ class SimpleGeminiStreamingInterface:
         # None means "not reported by provider", 0 means "provider reported 0"
         self.thinking_tokens: int | None = None
 
+        # Raw usage from provider (for transparent logging in provider trace)
+        self.raw_usage: dict | None = None
+
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
         for content in self.content_parts:
@@ -191,6 +194,20 @@ class SimpleGeminiStreamingInterface:
             # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
             if hasattr(usage_metadata, "thoughts_token_count") and usage_metadata.thoughts_token_count is not None:
                 self.thinking_tokens = usage_metadata.thoughts_token_count
+            # Store raw usage for transparent provider trace logging
+            try:
+                self.raw_usage = (
+                    usage_metadata.to_json_dict()
+                    if hasattr(usage_metadata, "to_json_dict")
+                    else {
+                        "prompt_token_count": usage_metadata.prompt_token_count,
+                        "candidates_token_count": usage_metadata.candidates_token_count,
+                        "total_token_count": usage_metadata.total_token_count,
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Failed to capture raw_usage from Gemini: {e}")
+                self.raw_usage = None
 
         if not event.candidates or len(event.candidates) == 0:
             return

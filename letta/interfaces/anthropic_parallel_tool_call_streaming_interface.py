@@ -98,6 +98,9 @@ class SimpleAnthropicStreamingInterface:
         self.cache_read_tokens = 0
         self.cache_creation_tokens = 0
 
+        # Raw usage from provider (for transparent logging in provider trace)
+        self.raw_usage: dict | None = None
+
         # reasoning object trackers
         self.reasoning_messages = []
 
@@ -473,6 +476,13 @@ class SimpleAnthropicStreamingInterface:
                 self.cache_read_tokens += usage.cache_read_input_tokens
             if hasattr(usage, "cache_creation_input_tokens") and usage.cache_creation_input_tokens:
                 self.cache_creation_tokens += usage.cache_creation_input_tokens
+
+            # Store raw usage for transparent provider trace logging
+            try:
+                self.raw_usage = usage.model_dump(exclude_none=True)
+            except Exception as e:
+                logger.error(f"Failed to capture raw_usage from Anthropic: {e}")
+                self.raw_usage = None
 
         elif isinstance(event, BetaRawMessageDeltaEvent):
             self.output_tokens += event.usage.output_tokens
