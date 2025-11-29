@@ -166,8 +166,11 @@ class SimpleGeminiStreamingInterface:
         if usage_metadata:
             if usage_metadata.prompt_token_count:
                 self.input_tokens = usage_metadata.prompt_token_count
-            if usage_metadata.total_token_count:
-                self.output_tokens = usage_metadata.total_token_count - usage_metadata.prompt_token_count
+            # Use candidates_token_count directly for output tokens.
+            # Do NOT use (total_token_count - prompt_token_count) as that incorrectly
+            # includes thinking/reasoning tokens which can be 10-100x the actual output.
+            if usage_metadata.candidates_token_count:
+                self.output_tokens = usage_metadata.candidates_token_count
 
         if not event.candidates or len(event.candidates) == 0:
             return
