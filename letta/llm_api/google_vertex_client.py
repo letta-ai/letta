@@ -3,8 +3,7 @@ import json
 import uuid
 from typing import AsyncIterator, List, Optional
 
-from google import genai
-from google.genai import errors
+from google.genai import Client, errors
 from google.genai.types import (
     FunctionCallingConfig,
     FunctionCallingConfigMode,
@@ -51,7 +50,7 @@ class GoogleVertexClient(LLMClientBase):
 
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
-        return genai.Client(
+        return Client(
             vertexai=True,
             project=model_settings.google_cloud_project,
             location=model_settings.google_cloud_location,
@@ -142,11 +141,15 @@ class GoogleVertexClient(LLMClientBase):
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncIterator[GenerateContentResponse]:
         client = self._get_client()
-        return await client.aio.models.generate_content_stream(
+        response = await client.aio.models.generate_content_stream(
             model=llm_config.model,
             contents=request_data["contents"],
             config=request_data["config"],
         )
+        # Direct yield - keeps response alive in generator's local scope throughout iteration
+        # This is required because the SDK's connection lifecycle is tied to the response object
+        async for chunk in response:
+            yield chunk
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:

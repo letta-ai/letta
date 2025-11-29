@@ -112,7 +112,12 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
 
         # Start the streaming request (map provider errors to common LLMError types)
         try:
-            stream = await self.llm_client.stream_async(request_data, self.llm_config)
+            # Gemini uses async generator pattern (no await) to maintain connection lifecycle
+            # Other providers return awaitables that resolve to iterators
+            if self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
+                stream = self.llm_client.stream_async(request_data, self.llm_config)
+            else:
+                stream = await self.llm_client.stream_async(request_data, self.llm_config)
         except Exception as e:
             raise self.llm_client.handle_llm_error(e)
 
