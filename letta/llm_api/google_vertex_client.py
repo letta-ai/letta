@@ -37,7 +37,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.openai.chat_completion_request import Tool
+from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings, settings
 from letta.utils import get_tool_call_id
@@ -832,3 +832,54 @@ class GoogleVertexClient(LLMClientBase):
 
         # Fallback to base implementation for other errors
         return super().handle_llm_error(e)
+
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+        """
+        Count tokens for the given messages and tools using the Gemini token counting API.
+
+        Args:
+            messages: List of message dicts in Google AI format (with 'role' and 'parts' keys)
+            model: The model to use for token counting (defaults to gemini-2.0-flash-lite)
+            tools: List of OpenAI-style Tool objects to include in the count
+
+        Returns:
+            The total token count for the input
+        """
+        from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
+
+        client = self._get_client()
+
+        # Default model for token counting if not specified
+        count_model = model or GOOGLE_MODEL_FOR_API_KEY_CHECK
+
+        # Build the contents parameter
+        # If no messages provided, use empty string (like the API key check)
+        if messages is None or len(messages) == 0:
+            contents = ""
+        else:
+            # Messages should already be in Google format (role + parts)
+            contents = messages
+
+        try:
+            # Count message tokens
+            result = await client.aio.models.count_tokens(
+                model=count_model,
+                contents=contents,
+            )
+            total_tokens = result.total_tokens
+
+            # Count tool tokens separately by serializing to text
+            # The Gemini count_tokens API doesn't support a tools parameter directly
+            if tools and len(tools) > 0:
+                # Serialize tools to JSON text and count those tokens
+                tools_text = json.dumps([t.model_dump() for t in tools])
+                tools_result = await client.aio.models.count_tokens(
+                    model=count_model,
+                    contents=tools_text,
+                )
+                total_tokens += tools_result.total_tokens
+
+        except Exception as e:
+            raise self.handle_llm_error(e)
+
+        return total_tokens

@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.anthropic_client import AnthropicClient
+from letta.llm_api.google_vertex_client import GoogleVertexClient
 from letta.otel.tracing import trace_method
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
@@ -75,6 +76,54 @@ class AnthropicTokenCounter(TokenCounter):
 
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
         return Message.to_anthropic_dicts_from_list(messages, current_model=self.model)
+
+
+class GeminiTokenCounter(TokenCounter):
+    """Token counter using Google's Gemini token counting API"""
+
+    def __init__(self, gemini_client: GoogleVertexClient, model: str):
+        self.client = gemini_client
+        self.model = model
+
+    @trace_method
+    @async_redis_cache(
+        key_func=lambda self, text: f"gemini_text_tokens:{self.model}:{hashlib.sha256(text.encode()).hexdigest()[:16]}",
+        prefix="token_counter",
+        ttl_s=3600,  # cache for 1 hour
+    )
+    async def count_text_tokens(self, text: str) -> int:
+        if not text:
+            return 0
+        # For text counting, wrap in a simple user message format for Google
+        return await self.client.count_tokens(model=self.model, messages=[{"role": "user", "parts": [{"text": text}]}])
+
+    @trace_method
+    @async_redis_cache(
+        key_func=lambda self,
+        messages: f"gemini_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
+        prefix="token_counter",
+        ttl_s=3600,  # cache for 1 hour
+    )
+    async def count_message_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        if not messages:
+            return 0
+        return await self.client.count_tokens(model=self.model, messages=messages)
+
+    @trace_method
+    @async_redis_cache(
+        key_func=lambda self,
+        tools: f"gemini_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
+        prefix="token_counter",
+        ttl_s=3600,  # cache for 1 hour
+    )
+    async def count_tool_tokens(self, tools: List[OpenAITool]) -> int:
+        if not tools:
+            return 0
+        return await self.client.count_tokens(model=self.model, tools=tools)
+
+    def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
+        google_messages = Message.to_google_dicts_from_list(messages, current_model=self.model)
+        return google_messages
 
 
 class TiktokenCounter(TokenCounter):
