@@ -542,6 +542,9 @@ class SimpleOpenAIStreamingInterface:
         self.cached_tokens: int | None = None
         self.reasoning_tokens: int | None = None
 
+        # Raw usage from provider (for transparent logging in provider trace)
+        self.raw_usage: dict | None = None
+
         # Fallback token counters (using tiktoken cl200k-base)
         self.fallback_input_tokens = 0
         self.fallback_output_tokens = 0
@@ -707,6 +710,12 @@ class SimpleOpenAIStreamingInterface:
         if chunk.usage:
             self.input_tokens += chunk.usage.prompt_tokens
             self.output_tokens += chunk.usage.completion_tokens
+            # Store raw usage for transparent provider trace logging
+            try:
+                self.raw_usage = chunk.usage.model_dump(exclude_none=True)
+            except Exception as e:
+                logger.error(f"Failed to capture raw_usage from OpenAI chat completion chunk: {e}")
+                self.raw_usage = None
             # Capture cache token details (OpenAI)
             # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
             if hasattr(chunk.usage, "prompt_tokens_details") and chunk.usage.prompt_tokens_details:
@@ -875,6 +884,9 @@ class SimpleOpenAIResponsesStreamingInterface:
         # None means "not reported by provider", 0 means "provider reported 0"
         self.cached_tokens: int | None = None
         self.reasoning_tokens: int | None = None
+
+        # Raw usage from provider (for transparent logging in provider trace)
+        self.raw_usage: dict | None = None
 
     # -------- Mapping helpers (no broad try/except) --------
     def _record_tool_mapping(self, event: object, item: object) -> tuple[str | None, str | None, int | None, str | None]:
@@ -1300,6 +1312,12 @@ class SimpleOpenAIResponsesStreamingInterface:
             self.input_tokens = event.response.usage.input_tokens
             self.output_tokens = event.response.usage.output_tokens
             self.message_id = event.response.id
+            # Store raw usage for transparent provider trace logging
+            try:
+                self.raw_usage = event.response.usage.model_dump(exclude_none=True)
+            except Exception as e:
+                logger.error(f"Failed to capture raw_usage from OpenAI Responses API: {e}")
+                self.raw_usage = None
             # Capture cache token details (Responses API uses input_tokens_details)
             # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
             if hasattr(event.response.usage, "input_tokens_details") and event.response.usage.input_tokens_details:
