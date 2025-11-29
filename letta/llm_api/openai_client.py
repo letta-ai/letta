@@ -630,6 +630,25 @@ class OpenAIClient(LLMClientBase):
             completion_tokens = usage.get("output_tokens") or 0
             total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
 
+            # Extract detailed token breakdowns (Responses API uses input_tokens_details/output_tokens_details)
+            prompt_tokens_details = None
+            input_details = usage.get("input_tokens_details", {}) or {}
+            if input_details.get("cached_tokens"):
+                from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+
+                prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                    cached_tokens=input_details.get("cached_tokens") or 0,
+                )
+
+            completion_tokens_details = None
+            output_details = usage.get("output_tokens_details", {}) or {}
+            if output_details.get("reasoning_tokens"):
+                from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
+
+                completion_tokens_details = UsageStatisticsCompletionTokenDetails(
+                    reasoning_tokens=output_details.get("reasoning_tokens") or 0,
+                )
+
             # Extract assistant message text from the outputs list
             outputs = response_data.get("output") or []
             assistant_text_parts = []
@@ -692,6 +711,8 @@ class OpenAIClient(LLMClientBase):
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
+                    prompt_tokens_details=prompt_tokens_details,
+                    completion_tokens_details=completion_tokens_details,
                 ),
             )
 

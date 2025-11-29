@@ -408,6 +408,12 @@ class StepManager:
             if stop_reason:
                 step.stop_reason = stop_reason.stop_reason
 
+            # Persist detailed token breakdowns if available
+            if usage.prompt_tokens_details:
+                step.prompt_tokens_details = usage.prompt_tokens_details.model_dump()
+            if usage.completion_tokens_details:
+                step.completion_tokens_details = usage.completion_tokens_details.model_dump()
+
             await session.commit()
             pydantic_step = step.to_pydantic()
 

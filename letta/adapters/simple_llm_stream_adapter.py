@@ -158,11 +158,34 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             if not output_tokens and hasattr(self.interface, "fallback_output_tokens"):
                 output_tokens = self.interface.fallback_output_tokens
 
+            # Extract cache token data (OpenAI/Gemini use cached_tokens)
+            cached_input_tokens = 0
+            if hasattr(self.interface, "cached_tokens") and self.interface.cached_tokens:
+                cached_input_tokens = self.interface.cached_tokens
+            # Anthropic uses cache_read_tokens for cache hits
+            elif hasattr(self.interface, "cache_read_tokens") and self.interface.cache_read_tokens:
+                cached_input_tokens = self.interface.cache_read_tokens
+
+            # Extract cache write tokens (Anthropic only)
+            cache_write_tokens = 0
+            if hasattr(self.interface, "cache_creation_tokens") and self.interface.cache_creation_tokens:
+                cache_write_tokens = self.interface.cache_creation_tokens
+
+            # Extract reasoning tokens (OpenAI o1/o3 models use reasoning_tokens, Gemini uses thinking_tokens)
+            reasoning_tokens = 0
+            if hasattr(self.interface, "reasoning_tokens") and self.interface.reasoning_tokens:
+                reasoning_tokens = self.interface.reasoning_tokens
+            elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens:
+                reasoning_tokens = self.interface.thinking_tokens
+
             self.usage = LettaUsageStatistics(
                 step_count=1,
                 completion_tokens=output_tokens or 0,
                 prompt_tokens=input_tokens or 0,
                 total_tokens=(input_tokens or 0) + (output_tokens or 0),
+                cached_input_tokens=cached_input_tokens,
+                cache_write_tokens=cache_write_tokens,
+                reasoning_tokens=reasoning_tokens,
             )
         else:
             # Default usage statistics if not available

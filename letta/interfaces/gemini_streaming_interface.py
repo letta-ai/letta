@@ -74,6 +74,16 @@ class SimpleGeminiStreamingInterface:
         # Sadly, Gemini's encrypted reasoning logic forces us to store stream parts in state
         self.content_parts: List[ReasoningContent | TextContent | ToolCallContent] = []
 
+        # Token counters
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+        # Cache token tracking (Gemini uses cached_content_token_count)
+        self.cached_tokens = 0
+
+        # Thinking/reasoning token tracking (Gemini uses thoughts_token_count)
+        self.thinking_tokens = 0
+
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
         for content in self.content_parts:
@@ -171,6 +181,12 @@ class SimpleGeminiStreamingInterface:
             # includes thinking/reasoning tokens which can be 10-100x the actual output.
             if usage_metadata.candidates_token_count:
                 self.output_tokens = usage_metadata.candidates_token_count
+            # Capture cache token data (Gemini uses cached_content_token_count)
+            if hasattr(usage_metadata, "cached_content_token_count") and usage_metadata.cached_content_token_count:
+                self.cached_tokens = usage_metadata.cached_content_token_count
+            # Capture thinking/reasoning token data (Gemini uses thoughts_token_count)
+            if hasattr(usage_metadata, "thoughts_token_count") and usage_metadata.thoughts_token_count:
+                self.thinking_tokens = usage_metadata.thoughts_token_count
 
         if not event.candidates or len(event.candidates) == 0:
             return

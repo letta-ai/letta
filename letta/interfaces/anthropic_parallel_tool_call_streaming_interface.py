@@ -94,6 +94,10 @@ class SimpleAnthropicStreamingInterface:
         self.output_tokens = 0
         self.model = None
 
+        # cache tracking (Anthropic-specific)
+        self.cache_read_tokens = 0
+        self.cache_creation_tokens = 0
+
         # reasoning object trackers
         self.reasoning_messages = []
 
@@ -462,6 +466,13 @@ class SimpleAnthropicStreamingInterface:
             self.input_tokens += event.message.usage.input_tokens
             self.output_tokens += event.message.usage.output_tokens
             self.model = event.message.model
+
+            # Capture cache data if available
+            usage = event.message.usage
+            if hasattr(usage, "cache_read_input_tokens") and usage.cache_read_input_tokens:
+                self.cache_read_tokens += usage.cache_read_input_tokens
+            if hasattr(usage, "cache_creation_input_tokens") and usage.cache_creation_input_tokens:
+                self.cache_creation_tokens += usage.cache_creation_input_tokens
 
         elif isinstance(event, BetaRawMessageDeltaEvent):
             self.output_tokens += event.usage.output_tokens

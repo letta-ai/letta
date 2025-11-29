@@ -37,7 +37,13 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    FunctionCall,
+    ToolCall,
+    UsageStatistics,
+    UsageStatisticsCompletionTokenDetails,
+    UsageStatisticsPromptTokenDetails,
+)
 from letta.schemas.step import Step, StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool import Tool
@@ -850,6 +856,21 @@ class LettaAgentV2(BaseAgentV2):
 
         # Update step with actual usage now that we have it (if step was created)
         if logged_step:
+            # Build detailed token breakdowns from LettaUsageStatistics
+            prompt_details = None
+            if self.usage.cached_input_tokens or self.usage.cache_write_tokens:
+                prompt_details = UsageStatisticsPromptTokenDetails(
+                    cached_tokens=self.usage.cached_input_tokens,
+                    cache_read_tokens=self.usage.cached_input_tokens,  # Normalized from various providers
+                    cache_creation_tokens=self.usage.cache_write_tokens,
+                )
+
+            completion_details = None
+            if self.usage.reasoning_tokens:
+                completion_details = UsageStatisticsCompletionTokenDetails(
+                    reasoning_tokens=self.usage.reasoning_tokens,
+                )
+
             await self.step_manager.update_step_success_async(
                 self.actor,
                 step_metrics.id,
@@ -857,6 +878,8 @@ class LettaAgentV2(BaseAgentV2):
                     completion_tokens=self.usage.completion_tokens,
                     prompt_tokens=self.usage.prompt_tokens,
                     total_tokens=self.usage.total_tokens,
+                    prompt_tokens_details=prompt_details,
+                    completion_tokens_details=completion_details,
                 ),
                 self.stop_reason,
             )
@@ -867,6 +890,10 @@ class LettaAgentV2(BaseAgentV2):
         self.usage.completion_tokens += step_usage_stats.completion_tokens
         self.usage.prompt_tokens += step_usage_stats.prompt_tokens
         self.usage.total_tokens += step_usage_stats.total_tokens
+        # Aggregate cache and reasoning token fields
+        self.usage.cached_input_tokens += step_usage_stats.cached_input_tokens
+        self.usage.cache_write_tokens += step_usage_stats.cache_write_tokens
+        self.usage.reasoning_tokens += step_usage_stats.reasoning_tokens
 
     @trace_method
     async def _handle_ai_response(
