@@ -47,6 +47,7 @@ class Model(LLMConfig, ModelBase):
         "bedrock",
         "deepseek",
         "xai",
+        "venice",
     ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
     context_window: int = Field(
         ..., description="Deprecated: Use 'max_context_window' field instead. The context window size for the model.", deprecated=True

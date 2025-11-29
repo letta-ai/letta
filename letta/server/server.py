@@ -313,6 +313,15 @@ class SyncServer(object):
                     api_key=model_settings.openrouter_api_key,
                 )
             )
+        if model_settings.venice_api_key:
+            from letta.schemas.providers.venice import VeniceProvider
+
+            self._enabled_providers.append(
+                VeniceProvider(
+                    name="venice",
+                    api_key=model_settings.venice_api_key,
+                )
+            )
 
     async def init_async(self, init_with_default_org_and_user: bool = True):
         # Make default user and org

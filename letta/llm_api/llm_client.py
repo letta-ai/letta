@@ -93,6 +93,13 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.venice:
+                from letta.llm_api.venice_client import VeniceClient
+
+                return VeniceClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case _:
                 from letta.llm_api.openai_client import OpenAIClient
 
