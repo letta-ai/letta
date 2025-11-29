@@ -99,9 +99,9 @@ class LettaUsageStatistics(BaseModel):
         prompt_tokens (int): The number of tokens in the prompt.
         total_tokens (int): The total number of tokens processed by the agent.
         step_count (int): The number of steps taken by the agent.
-        cached_input_tokens (int): The number of input tokens served from cache.
-        cache_write_tokens (int): The number of input tokens written to cache (Anthropic only).
-        reasoning_tokens (int): The number of reasoning/thinking tokens generated.
+        cached_input_tokens (Optional[int]): The number of input tokens served from cache. None if not reported.
+        cache_write_tokens (Optional[int]): The number of input tokens written to cache. None if not reported.
+        reasoning_tokens (Optional[int]): The number of reasoning/thinking tokens generated. None if not reported.
     """
 
     message_type: Literal["usage_statistics"] = "usage_statistics"
@@ -113,8 +113,16 @@ class LettaUsageStatistics(BaseModel):
     run_ids: Optional[List[str]] = Field(None, description="The background task run IDs associated with the agent interaction")
 
     # Cache tracking (common across providers)
-    cached_input_tokens: int = Field(0, description="The number of input tokens served from cache.")
-    cache_write_tokens: int = Field(0, description="The number of input tokens written to cache (Anthropic only).")
+    # None means provider didn't report this data, 0 means provider reported 0
+    cached_input_tokens: Optional[int] = Field(
+        None, description="The number of input tokens served from cache. None if not reported by provider."
+    )
+    cache_write_tokens: Optional[int] = Field(
+        None, description="The number of input tokens written to cache (Anthropic only). None if not reported by provider."
+    )
 
     # Reasoning token tracking
-    reasoning_tokens: int = Field(0, description="The number of reasoning/thinking tokens generated.")
+    # None means provider didn't report this data, 0 means provider reported 0
+    reasoning_tokens: Optional[int] = Field(
+        None, description="The number of reasoning/thinking tokens generated. None if not reported by provider."
+    )

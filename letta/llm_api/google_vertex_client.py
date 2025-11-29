@@ -631,8 +631,12 @@ class GoogleVertexClient(LLMClientBase):
             #   }
             if response.usage_metadata:
                 # Extract cache token data if available (Gemini uses cached_content_token_count)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
                 prompt_tokens_details = None
-                if hasattr(response.usage_metadata, "cached_content_token_count") and response.usage_metadata.cached_content_token_count:
+                if (
+                    hasattr(response.usage_metadata, "cached_content_token_count")
+                    and response.usage_metadata.cached_content_token_count is not None
+                ):
                     from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
 
                     prompt_tokens_details = UsageStatisticsPromptTokenDetails(
@@ -640,8 +644,9 @@ class GoogleVertexClient(LLMClientBase):
                     )
 
                 # Extract thinking/reasoning token data if available (Gemini uses thoughts_token_count)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
                 completion_tokens_details = None
-                if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count:
+                if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count is not None:
                     from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
 
                     completion_tokens_details = UsageStatisticsCompletionTokenDetails(

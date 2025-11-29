@@ -79,10 +79,12 @@ class SimpleGeminiStreamingInterface:
         self.output_tokens = 0
 
         # Cache token tracking (Gemini uses cached_content_token_count)
-        self.cached_tokens = 0
+        # None means "not reported by provider", 0 means "provider reported 0"
+        self.cached_tokens: int | None = None
 
         # Thinking/reasoning token tracking (Gemini uses thoughts_token_count)
-        self.thinking_tokens = 0
+        # None means "not reported by provider", 0 means "provider reported 0"
+        self.thinking_tokens: int | None = None
 
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
@@ -182,10 +184,12 @@ class SimpleGeminiStreamingInterface:
             if usage_metadata.candidates_token_count:
                 self.output_tokens = usage_metadata.candidates_token_count
             # Capture cache token data (Gemini uses cached_content_token_count)
-            if hasattr(usage_metadata, "cached_content_token_count") and usage_metadata.cached_content_token_count:
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
+            if hasattr(usage_metadata, "cached_content_token_count") and usage_metadata.cached_content_token_count is not None:
                 self.cached_tokens = usage_metadata.cached_content_token_count
             # Capture thinking/reasoning token data (Gemini uses thoughts_token_count)
-            if hasattr(usage_metadata, "thoughts_token_count") and usage_metadata.thoughts_token_count:
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
+            if hasattr(usage_metadata, "thoughts_token_count") and usage_metadata.thoughts_token_count is not None:
                 self.thinking_tokens = usage_metadata.thoughts_token_count
 
         if not event.candidates or len(event.candidates) == 0:
