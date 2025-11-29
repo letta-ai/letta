@@ -78,30 +78,44 @@ class Choice(BaseModel):
 
 
 class UsageStatisticsPromptTokenDetails(BaseModel):
-    cached_tokens: int = 0  # OpenAI/Gemini: tokens served from cache
-    cache_read_tokens: int = 0  # Anthropic: tokens read from cache
-    cache_creation_tokens: int = 0  # Anthropic: tokens written to cache
+    # None means provider didn't report this field, 0 means provider reported 0
+    cached_tokens: Optional[int] = None  # OpenAI/Gemini: tokens served from cache
+    cache_read_tokens: Optional[int] = None  # Anthropic: tokens read from cache
+    cache_creation_tokens: Optional[int] = None  # Anthropic: tokens written to cache
     # NOTE: OAI specific
     # audio_tokens: int = 0
 
     def __add__(self, other: "UsageStatisticsPromptTokenDetails") -> "UsageStatisticsPromptTokenDetails":
+        # Helper to add optional ints (None + None = None, None + N = N, N + M = N+M)
+        def add_optional(a: Optional[int], b: Optional[int]) -> Optional[int]:
+            if a is None and b is None:
+                return None
+            return (a or 0) + (b or 0)
+
         return UsageStatisticsPromptTokenDetails(
-            cached_tokens=self.cached_tokens + other.cached_tokens,
-            cache_read_tokens=self.cache_read_tokens + other.cache_read_tokens,
-            cache_creation_tokens=self.cache_creation_tokens + other.cache_creation_tokens,
+            cached_tokens=add_optional(self.cached_tokens, other.cached_tokens),
+            cache_read_tokens=add_optional(self.cache_read_tokens, other.cache_read_tokens),
+            cache_creation_tokens=add_optional(self.cache_creation_tokens, other.cache_creation_tokens),
         )
 
 
 class UsageStatisticsCompletionTokenDetails(BaseModel):
-    reasoning_tokens: int = 0
+    # None means provider didn't report this field, 0 means provider reported 0
+    reasoning_tokens: Optional[int] = None
     # NOTE: OAI specific
     # audio_tokens: int = 0
     # accepted_prediction_tokens: int = 0
     # rejected_prediction_tokens: int = 0
 
     def __add__(self, other: "UsageStatisticsCompletionTokenDetails") -> "UsageStatisticsCompletionTokenDetails":
+        # Helper to add optional ints (None + None = None, None + N = N, N + M = N+M)
+        def add_optional(a: Optional[int], b: Optional[int]) -> Optional[int]:
+            if a is None and b is None:
+                return None
+            return (a or 0) + (b or 0)
+
         return UsageStatisticsCompletionTokenDetails(
-            reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            reasoning_tokens=add_optional(self.reasoning_tokens, other.reasoning_tokens),
         )
 
 

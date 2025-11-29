@@ -538,8 +538,9 @@ class SimpleOpenAIStreamingInterface:
         self.output_tokens = 0
 
         # Cache and reasoning token tracking
-        self.cached_tokens = 0
-        self.reasoning_tokens = 0
+        # None means "not reported by provider", 0 means "provider reported 0"
+        self.cached_tokens: int | None = None
+        self.reasoning_tokens: int | None = None
 
         # Fallback token counters (using tiktoken cl200k-base)
         self.fallback_input_tokens = 0
@@ -707,14 +708,20 @@ class SimpleOpenAIStreamingInterface:
             self.input_tokens += chunk.usage.prompt_tokens
             self.output_tokens += chunk.usage.completion_tokens
             # Capture cache token details (OpenAI)
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
             if hasattr(chunk.usage, "prompt_tokens_details") and chunk.usage.prompt_tokens_details:
                 details = chunk.usage.prompt_tokens_details
-                if hasattr(details, "cached_tokens") and details.cached_tokens:
+                if hasattr(details, "cached_tokens") and details.cached_tokens is not None:
+                    if self.cached_tokens is None:
+                        self.cached_tokens = 0
                     self.cached_tokens += details.cached_tokens
             # Capture reasoning token details (OpenAI o1/o3)
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
             if hasattr(chunk.usage, "completion_tokens_details") and chunk.usage.completion_tokens_details:
                 details = chunk.usage.completion_tokens_details
-                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens:
+                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens is not None:
+                    if self.reasoning_tokens is None:
+                        self.reasoning_tokens = 0
                     self.reasoning_tokens += details.reasoning_tokens
 
         if chunk.choices:
@@ -865,8 +872,9 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.output_tokens = 0
 
         # Cache and reasoning token tracking
-        self.cached_tokens = 0
-        self.reasoning_tokens = 0
+        # None means "not reported by provider", 0 means "provider reported 0"
+        self.cached_tokens: int | None = None
+        self.reasoning_tokens: int | None = None
 
     # -------- Mapping helpers (no broad try/except) --------
     def _record_tool_mapping(self, event: object, item: object) -> tuple[str | None, str | None, int | None, str | None]:
@@ -1293,14 +1301,16 @@ class SimpleOpenAIResponsesStreamingInterface:
             self.output_tokens = event.response.usage.output_tokens
             self.message_id = event.response.id
             # Capture cache token details (Responses API uses input_tokens_details)
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
             if hasattr(event.response.usage, "input_tokens_details") and event.response.usage.input_tokens_details:
                 details = event.response.usage.input_tokens_details
-                if hasattr(details, "cached_tokens") and details.cached_tokens:
+                if hasattr(details, "cached_tokens") and details.cached_tokens is not None:
                     self.cached_tokens = details.cached_tokens
             # Capture reasoning token details (Responses API uses output_tokens_details)
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
             if hasattr(event.response.usage, "output_tokens_details") and event.response.usage.output_tokens_details:
                 details = event.response.usage.output_tokens_details
-                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens:
+                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens is not None:
                     self.reasoning_tokens = details.reasoning_tokens
             return
 

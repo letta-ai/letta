@@ -159,23 +159,26 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 output_tokens = self.interface.fallback_output_tokens
 
             # Extract cache token data (OpenAI/Gemini use cached_tokens)
-            cached_input_tokens = 0
-            if hasattr(self.interface, "cached_tokens") and self.interface.cached_tokens:
+            # None means provider didn't report, 0 means provider reported 0
+            cached_input_tokens = None
+            if hasattr(self.interface, "cached_tokens") and self.interface.cached_tokens is not None:
                 cached_input_tokens = self.interface.cached_tokens
             # Anthropic uses cache_read_tokens for cache hits
-            elif hasattr(self.interface, "cache_read_tokens") and self.interface.cache_read_tokens:
+            elif hasattr(self.interface, "cache_read_tokens") and self.interface.cache_read_tokens is not None:
                 cached_input_tokens = self.interface.cache_read_tokens
 
             # Extract cache write tokens (Anthropic only)
-            cache_write_tokens = 0
-            if hasattr(self.interface, "cache_creation_tokens") and self.interface.cache_creation_tokens:
+            # None means provider didn't report, 0 means provider reported 0
+            cache_write_tokens = None
+            if hasattr(self.interface, "cache_creation_tokens") and self.interface.cache_creation_tokens is not None:
                 cache_write_tokens = self.interface.cache_creation_tokens
 
             # Extract reasoning tokens (OpenAI o1/o3 models use reasoning_tokens, Gemini uses thinking_tokens)
-            reasoning_tokens = 0
-            if hasattr(self.interface, "reasoning_tokens") and self.interface.reasoning_tokens:
+            # None means provider didn't report, 0 means provider reported 0
+            reasoning_tokens = None
+            if hasattr(self.interface, "reasoning_tokens") and self.interface.reasoning_tokens is not None:
                 reasoning_tokens = self.interface.reasoning_tokens
-            elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens:
+            elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens is not None:
                 reasoning_tokens = self.interface.thinking_tokens
 
             self.usage = LettaUsageStatistics(

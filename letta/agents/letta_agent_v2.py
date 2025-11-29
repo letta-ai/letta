@@ -857,16 +857,18 @@ class LettaAgentV2(BaseAgentV2):
         # Update step with actual usage now that we have it (if step was created)
         if logged_step:
             # Build detailed token breakdowns from LettaUsageStatistics
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached/reasoning tokens")
+            # Only include fields that were actually reported by the provider
             prompt_details = None
-            if self.usage.cached_input_tokens or self.usage.cache_write_tokens:
+            if self.usage.cached_input_tokens is not None or self.usage.cache_write_tokens is not None:
                 prompt_details = UsageStatisticsPromptTokenDetails(
-                    cached_tokens=self.usage.cached_input_tokens,
-                    cache_read_tokens=self.usage.cached_input_tokens,  # Normalized from various providers
-                    cache_creation_tokens=self.usage.cache_write_tokens,
+                    cached_tokens=self.usage.cached_input_tokens if self.usage.cached_input_tokens is not None else None,
+                    cache_read_tokens=self.usage.cached_input_tokens if self.usage.cached_input_tokens is not None else None,
+                    cache_creation_tokens=self.usage.cache_write_tokens if self.usage.cache_write_tokens is not None else None,
                 )
 
             completion_details = None
-            if self.usage.reasoning_tokens:
+            if self.usage.reasoning_tokens is not None:
                 completion_details = UsageStatisticsCompletionTokenDetails(
                     reasoning_tokens=self.usage.reasoning_tokens,
                 )
@@ -890,10 +892,13 @@ class LettaAgentV2(BaseAgentV2):
         self.usage.completion_tokens += step_usage_stats.completion_tokens
         self.usage.prompt_tokens += step_usage_stats.prompt_tokens
         self.usage.total_tokens += step_usage_stats.total_tokens
-        # Aggregate cache and reasoning token fields
-        self.usage.cached_input_tokens += step_usage_stats.cached_input_tokens
-        self.usage.cache_write_tokens += step_usage_stats.cache_write_tokens
-        self.usage.reasoning_tokens += step_usage_stats.reasoning_tokens
+        # Aggregate cache and reasoning token fields (handle None values)
+        if step_usage_stats.cached_input_tokens is not None:
+            self.usage.cached_input_tokens = (self.usage.cached_input_tokens or 0) + step_usage_stats.cached_input_tokens
+        if step_usage_stats.cache_write_tokens is not None:
+            self.usage.cache_write_tokens = (self.usage.cache_write_tokens or 0) + step_usage_stats.cache_write_tokens
+        if step_usage_stats.reasoning_tokens is not None:
+            self.usage.reasoning_tokens = (self.usage.reasoning_tokens or 0) + step_usage_stats.reasoning_tokens
 
     @trace_method
     async def _handle_ai_response(

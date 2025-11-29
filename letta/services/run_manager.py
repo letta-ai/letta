@@ -471,10 +471,15 @@ class RunManager:
             total_usage.step_count += 1
 
             # Aggregate cache and reasoning tokens from detailed breakdowns using normalized helpers
+            # Handle None defaults: only set if we have data, accumulate if already set
             cached_input, cache_write = normalize_cache_tokens(step.prompt_tokens_details)
-            total_usage.cached_input_tokens += cached_input
-            total_usage.cache_write_tokens += cache_write
-            total_usage.reasoning_tokens += normalize_reasoning_tokens(step.completion_tokens_details)
+            if cached_input > 0 or total_usage.cached_input_tokens is not None:
+                total_usage.cached_input_tokens = (total_usage.cached_input_tokens or 0) + cached_input
+            if cache_write > 0 or total_usage.cache_write_tokens is not None:
+                total_usage.cache_write_tokens = (total_usage.cache_write_tokens or 0) + cache_write
+            reasoning = normalize_reasoning_tokens(step.completion_tokens_details)
+            if reasoning > 0 or total_usage.reasoning_tokens is not None:
+                total_usage.reasoning_tokens = (total_usage.reasoning_tokens or 0) + reasoning
 
         return total_usage
 

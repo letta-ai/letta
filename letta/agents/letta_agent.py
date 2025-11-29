@@ -1083,15 +1083,15 @@ class LettaAgent(BaseAgent):
                     usage.completion_tokens += interface.output_tokens
                     usage.prompt_tokens += interface.input_tokens
                     usage.total_tokens += interface.input_tokens + interface.output_tokens
-                    # Aggregate cache and reasoning tokens if available from streaming interface
-                    if hasattr(interface, "cached_tokens") and interface.cached_tokens:
-                        usage.cached_input_tokens += interface.cached_tokens
-                    if hasattr(interface, "cache_read_tokens") and interface.cache_read_tokens:
-                        usage.cached_input_tokens += interface.cache_read_tokens
-                    if hasattr(interface, "cache_creation_tokens") and interface.cache_creation_tokens:
-                        usage.cache_write_tokens += interface.cache_creation_tokens
-                    if hasattr(interface, "reasoning_tokens") and interface.reasoning_tokens:
-                        usage.reasoning_tokens += interface.reasoning_tokens
+                    # Aggregate cache and reasoning tokens if available from streaming interface (handle None defaults)
+                    if hasattr(interface, "cached_tokens") and interface.cached_tokens is not None:
+                        usage.cached_input_tokens = (usage.cached_input_tokens or 0) + interface.cached_tokens
+                    if hasattr(interface, "cache_read_tokens") and interface.cache_read_tokens is not None:
+                        usage.cached_input_tokens = (usage.cached_input_tokens or 0) + interface.cache_read_tokens
+                    if hasattr(interface, "cache_creation_tokens") and interface.cache_creation_tokens is not None:
+                        usage.cache_write_tokens = (usage.cache_write_tokens or 0) + interface.cache_creation_tokens
+                    if hasattr(interface, "reasoning_tokens") and interface.reasoning_tokens is not None:
+                        usage.reasoning_tokens = (usage.reasoning_tokens or 0) + interface.reasoning_tokens
                     MetricRegistry().message_output_tokens.record(
                         usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                     )
@@ -1140,16 +1140,18 @@ class LettaAgent(BaseAgent):
                     # Update step with actual usage now that we have it (if step was created)
                     if logged_step:
                         # Build detailed token breakdowns from LettaUsageStatistics
+                        # Use `is not None` to capture 0 values (meaning "provider reported 0 cached/reasoning tokens")
+                        # Only include fields that were actually reported by the provider
                         prompt_details = None
-                        if usage.cached_input_tokens or usage.cache_write_tokens:
+                        if usage.cached_input_tokens is not None or usage.cache_write_tokens is not None:
                             prompt_details = UsageStatisticsPromptTokenDetails(
-                                cached_tokens=usage.cached_input_tokens,
-                                cache_read_tokens=usage.cached_input_tokens,
-                                cache_creation_tokens=usage.cache_write_tokens,
+                                cached_tokens=usage.cached_input_tokens if usage.cached_input_tokens is not None else None,
+                                cache_read_tokens=usage.cached_input_tokens if usage.cached_input_tokens is not None else None,
+                                cache_creation_tokens=usage.cache_write_tokens if usage.cache_write_tokens is not None else None,
                             )
 
                         completion_details = None
-                        if usage.reasoning_tokens:
+                        if usage.reasoning_tokens is not None:
                             completion_details = UsageStatisticsCompletionTokenDetails(
                                 reasoning_tokens=usage.reasoning_tokens,
                             )
