@@ -1280,8 +1280,14 @@ class LettaAgentV3(LettaAgentV2):
         force: bool = False,
     ) -> list[Message]:
         trigger_summarization = force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window)
+
+        # no summarization if the last message is an approval request
+        latest_messages = in_context_messages + new_letta_messages
+        pending_approval = latest_messages[-1].role == "approval" and len(latest_messages[-1].tool_calls) > 0
+        if pending_approval:
+            trigger_summarization = False
         self.logger.info(
-            f"trigger_summarization: {trigger_summarization}, total_tokens: {total_tokens}, context_window: {self.agent_state.llm_config.context_window}"
+            f"trigger_summarization: {trigger_summarization}, total_tokens: {total_tokens}, context_window: {self.agent_state.llm_config.context_window}, pending_approval: {pending_approval}"
         )
         if not trigger_summarization:
             # just update the message_ids
