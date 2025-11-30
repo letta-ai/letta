@@ -469,4 +469,4 @@ DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"
 
 # Reserved keyword arguments that are injected by the system into tool functions, not provided by the LLM
 # These parameters are excluded from tool schema generation
-TOOL_RESERVED_KWARGS = ["self", "agent_state", "client"]
+TOOL_RESERVED_KWARGS = ["self", "agent_state"]

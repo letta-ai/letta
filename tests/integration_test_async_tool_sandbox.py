@@ -1217,28 +1217,25 @@ async def test_e2b_sandbox_async_per_agent_env(check_e2b_key_is_set, async_get_e
 
 @pytest.fixture
 async def list_tools_with_client_tool(test_user):
-    """Tool that uses injected client to list tools.
+    """Tool that uses the client (available in sandbox scope) to list tools.
 
-    Note: This fixture uses ToolManager directly instead of the client API
-    because it needs to create a tool with a custom schema that excludes
-    the 'client' parameter (which is injected by the sandbox, not passed by the LLM).
+    Note: The `client` variable is always available in the sandbox scope,
+    so tools can access it directly without declaring it as a parameter.
     """
     from letta.schemas.enums import ToolType
     from letta.schemas.tool import Tool as PydanticTool
 
     source_code = '''
-def list_tools_via_client(client: "Letta") -> str:
+def list_tools_via_client() -> str:
     """
-    List available tools using the injected Letta client.
-
-    Args:
-        client: Letta client instance (injected by system)
+    List available tools using the Letta client available in sandbox scope.
 
     Returns:
         str: Comma-separated list of tool names
     """
+    # `client` is always available in the sandbox scope
     if not client:
-        return "ERROR: client not injected"
+        return "ERROR: client not available in scope"
 
     try:
         tools = client.tools.list()
@@ -1248,19 +1245,19 @@ def list_tools_via_client(client: "Letta") -> str:
         return f"ERROR: {str(e)}"
 '''
 
-    # Create the tool with proper schema (client is injected, not in schema)
+    # Create the tool with proper schema
     tool = PydanticTool(
         name="list_tools_via_client",
-        description="List tools using injected client",
+        description="List tools using client available in sandbox scope",
         source_code=source_code,
         source_type="python",
         tool_type=ToolType.CUSTOM,
     )
 
-    # Manually set schema without 'client' parameter since it's injected
+    # Schema has no parameters since client is accessed from scope, not passed as arg
     tool.json_schema = {
         "name": "list_tools_via_client",
-        "description": "List tools using injected client",
+        "description": "List tools using client available in sandbox scope",
         "parameters": {"type": "object", "properties": {}, "required": []},
     }
 
@@ -1296,8 +1293,8 @@ async def test_local_sandbox_with_client_injection(disable_e2b_api_key, list_too
 
     await sandbox._init_async()
 
-    # Verify that client injection was detected
-    assert sandbox.inject_letta_client is True, "Tool should be detected as needing client injection"
+    # Verify that client injection is enabled (always True now)
+    assert sandbox.inject_letta_client is True, "Client injection should always be enabled"
 
     # Generate the execution script to verify client initialization code is present
     script = await sandbox.generate_execution_script(agent_state=None)
@@ -1324,8 +1321,10 @@ async def test_local_sandbox_with_client_injection(disable_e2b_api_key, list_too
     print(result)
     assert "Found" in str(result.func_return), f"Tool should list tools when client is available: {result.func_return}"
 
-    # Verify client was injected successfully (connection may fail if no server is running)
-    assert "ERROR: client not injected" not in str(result.func_return), "Client should be injected when LETTA_API_KEY is set"
+    # Verify client was available in scope (connection may fail if no server is running)
+    assert "ERROR: client not available in scope" not in str(result.func_return), (
+        "Client should be available in scope when LETTA_API_KEY is set"
+    )
 
 
 @pytest.mark.asyncio
@@ -1355,8 +1354,8 @@ async def test_e2b_sandbox_with_client_injection(check_e2b_key_is_set, list_tool
 
     await sandbox._init_async()
 
-    # Verify that client injection was detected
-    assert sandbox.inject_letta_client is True, "Tool should be detected as needing client injection"
+    # Verify that client injection is enabled (always True now)
+    assert sandbox.inject_letta_client is True, "Client injection should always be enabled"
 
     # Generate the execution script to verify client initialization code is present
     script = await sandbox.generate_execution_script(agent_state=None)
