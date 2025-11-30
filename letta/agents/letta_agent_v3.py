@@ -69,7 +69,6 @@ class LettaAgentV3(LettaAgentV2):
     def _initialize_state(self):
         super()._initialize_state()
         self._require_tool_call = False
-        self.last_step_usage = None
         self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
 
     def _compute_tool_return_truncation_chars(self) -> int:
@@ -83,11 +82,6 @@ class LettaAgentV3(LettaAgentV2):
         except Exception:
             cap = 5000
         return max(5000, cap)
-
-    def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
-        """Override to track per-step usage for context limit checks"""
-        self.last_step_usage = step_usage_stats
-        super()._update_global_usage_stats(step_usage_stats)
 
     @trace_method
     async def step(

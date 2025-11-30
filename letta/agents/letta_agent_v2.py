@@ -629,6 +629,7 @@ class LettaAgentV2(BaseAgentV2):
         self.should_continue = True
         self.stop_reason = None
         self.usage = LettaUsageStatistics()
+        self.last_step_usage: LettaUsageStatistics | None = None  # Per-step usage for Step token details
         self.job_update_metadata = None
         self.last_function_response = None
         self.response_messages = []
@@ -856,30 +857,34 @@ class LettaAgentV2(BaseAgentV2):
 
         # Update step with actual usage now that we have it (if step was created)
         if logged_step:
-            # Build detailed token breakdowns from LettaUsageStatistics
+            # Use per-step usage for Step token details (not accumulated self.usage)
+            # Each Step should store its own per-step values, not accumulated totals
+            step_usage = self.last_step_usage if self.last_step_usage else self.usage
+
+            # Build detailed token breakdowns from per-step LettaUsageStatistics
             # Use `is not None` to capture 0 values (meaning "provider reported 0 cached/reasoning tokens")
             # Only include fields that were actually reported by the provider
             prompt_details = None
-            if self.usage.cached_input_tokens is not None or self.usage.cache_write_tokens is not None:
+            if step_usage.cached_input_tokens is not None or step_usage.cache_write_tokens is not None:
                 prompt_details = UsageStatisticsPromptTokenDetails(
-                    cached_tokens=self.usage.cached_input_tokens if self.usage.cached_input_tokens is not None else None,
-                    cache_read_tokens=self.usage.cached_input_tokens if self.usage.cached_input_tokens is not None else None,
-                    cache_creation_tokens=self.usage.cache_write_tokens if self.usage.cache_write_tokens is not None else None,
+                    cached_tokens=step_usage.cached_input_tokens if step_usage.cached_input_tokens is not None else None,
+                    cache_read_tokens=step_usage.cached_input_tokens if step_usage.cached_input_tokens is not None else None,
+                    cache_creation_tokens=step_usage.cache_write_tokens if step_usage.cache_write_tokens is not None else None,
                 )
 
             completion_details = None
-            if self.usage.reasoning_tokens is not None:
+            if step_usage.reasoning_tokens is not None:
                 completion_details = UsageStatisticsCompletionTokenDetails(
-                    reasoning_tokens=self.usage.reasoning_tokens,
+                    reasoning_tokens=step_usage.reasoning_tokens,
                 )
 
             await self.step_manager.update_step_success_async(
                 self.actor,
                 step_metrics.id,
                 UsageStatistics(
-                    completion_tokens=self.usage.completion_tokens,
-                    prompt_tokens=self.usage.prompt_tokens,
-                    total_tokens=self.usage.total_tokens,
+                    completion_tokens=step_usage.completion_tokens,
+                    prompt_tokens=step_usage.prompt_tokens,
+                    total_tokens=step_usage.total_tokens,
                     prompt_tokens_details=prompt_details,
                     completion_tokens_details=completion_details,
                 ),
@@ -888,6 +893,10 @@ class LettaAgentV2(BaseAgentV2):
         return StepProgression.FINISHED, step_metrics
 
     def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
+        # Save per-step usage for Step token details (before accumulating)
+        self.last_step_usage = step_usage_stats
+
+        # Accumulate into global usage
         self.usage.step_count += step_usage_stats.step_count
         self.usage.completion_tokens += step_usage_stats.completion_tokens
         self.usage.prompt_tokens += step_usage_stats.prompt_tokens

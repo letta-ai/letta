@@ -116,6 +116,10 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             if not output_tokens and hasattr(self.interface, "fallback_output_tokens"):
                 output_tokens = self.interface.fallback_output_tokens
 
+            # NOTE: For Anthropic, input_tokens is NON-cached only, so total_tokens here
+            # undercounts the actual total (missing cache_read + cache_creation tokens).
+            # For OpenAI/Gemini, input_tokens is already the total, so this is correct.
+            # See simple_llm_stream_adapter.py for the proper provider-aware calculation.
             self.usage = LettaUsageStatistics(
                 step_count=1,
                 completion_tokens=output_tokens or 0,

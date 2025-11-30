@@ -485,11 +485,19 @@ class SimpleAnthropicStreamingInterface:
                 self.raw_usage = None
 
         elif isinstance(event, BetaRawMessageDeltaEvent):
-            self.output_tokens += event.usage.output_tokens
+            # Per Anthropic docs: "The token counts shown in the usage field of the
+            # message_delta event are *cumulative*." So we assign, not accumulate.
+            self.output_tokens = event.usage.output_tokens
 
         elif isinstance(event, BetaRawMessageStopEvent):
-            # Don't do anything here! We don't want to stop the stream.
-            pass
+            # Update raw_usage with final accumulated values for accurate provider trace logging
+            if self.raw_usage:
+                self.raw_usage["input_tokens"] = self.input_tokens
+                self.raw_usage["output_tokens"] = self.output_tokens
+                if self.cache_read_tokens:
+                    self.raw_usage["cache_read_input_tokens"] = self.cache_read_tokens
+                if self.cache_creation_tokens:
+                    self.raw_usage["cache_creation_input_tokens"] = self.cache_creation_tokens
 
         elif isinstance(event, BetaRawContentBlockStopEvent):
             # Finalize the tool_use block at this index using accumulated deltas
