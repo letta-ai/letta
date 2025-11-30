@@ -181,11 +181,16 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens is not None:
                 reasoning_tokens = self.interface.thinking_tokens
 
+            # Per Anthropic docs: "Total input tokens in a request is the summation of
+            # input_tokens, cache_creation_input_tokens, and cache_read_input_tokens."
+            # We need actual total for context window limit checks (summarization trigger).
+            actual_input_tokens = (input_tokens or 0) + (cached_input_tokens or 0) + (cache_write_tokens or 0)
+
             self.usage = LettaUsageStatistics(
                 step_count=1,
                 completion_tokens=output_tokens or 0,
                 prompt_tokens=input_tokens or 0,
-                total_tokens=(input_tokens or 0) + (output_tokens or 0),
+                total_tokens=actual_input_tokens + (output_tokens or 0),
                 cached_input_tokens=cached_input_tokens,
                 cache_write_tokens=cache_write_tokens,
                 reasoning_tokens=reasoning_tokens,
