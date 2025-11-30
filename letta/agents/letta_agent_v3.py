@@ -1308,22 +1308,31 @@ class LettaAgentV3(LettaAgentV2):
         summarizer_config = get_default_summarizer_config(self.agent_state.llm_config._to_model_settings())
 
         if summarizer_config.mode == "all":
-            summary_message_str = await summarize_all(
+            summary_message_str, new_in_context_messages = await summarize_all(
                 actor=self.actor,
                 llm_config=self.agent_state.llm_config,
                 summarizer_config=summarizer_config,
                 in_context_messages=in_context_messages,
                 new_messages=new_letta_messages,
             )
-            new_in_context_messages = []
         elif summarizer_config.mode == "sliding_window":
-            summary_message_str, new_in_context_messages = await summarize_via_sliding_window(
-                actor=self.actor,
-                llm_config=self.agent_state.llm_config,
-                summarizer_config=summarizer_config,
-                in_context_messages=in_context_messages,
-                new_messages=new_letta_messages,
-            )
+            try:
+                summary_message_str, new_in_context_messages = await summarize_via_sliding_window(
+                    actor=self.actor,
+                    llm_config=self.agent_state.llm_config,
+                    summarizer_config=summarizer_config,
+                    in_context_messages=in_context_messages,
+                    new_messages=new_letta_messages,
+                )
+            except Exception as e:
+                self.logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+                summary_message_str, new_in_context_messages = await summarize_all(
+                    actor=self.actor,
+                    llm_config=self.agent_state.llm_config,
+                    summarizer_config=summarizer_config,
+                    in_context_messages=in_context_messages,
+                    new_messages=new_letta_messages,
+                )
         else:
             raise ValueError(f"Invalid summarizer mode: {summarizer_config.mode}")
 
