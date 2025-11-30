@@ -27,9 +27,11 @@ async def summarize_all(
     - The summary string
     """
     all_in_context_messages = in_context_messages + new_messages
+    messages_to_summarize = all_in_context_messages[1:]
 
+    # TODO: add fallback in case this has a context window error
     summary_message_str = await simple_summary(
-        messages=all_in_context_messages,
+        messages=messages_to_summarize,
         llm_config=llm_config,
         actor=actor,
         include_ack=bool(summarizer_config.prompt_acknowledgement),
@@ -40,4 +42,4 @@ async def summarize_all(
         logger.warning(f"Summary length {len(summary_message_str)} exceeds clip length {summarizer_config.clip_chars}. Truncating.")
         summary_message_str = summary_message_str[: summarizer_config.clip_chars] + "... [summary truncated to fit]"
 
-    return summary_message_str
+    return summary_message_str, []
