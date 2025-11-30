@@ -1280,6 +1280,9 @@ class LettaAgentV3(LettaAgentV2):
         force: bool = False,
     ) -> list[Message]:
         trigger_summarization = force or (total_tokens and total_tokens > self.agent_state.llm_config.context_window)
+        self.logger.info(
+            f"trigger_summarization: {trigger_summarization}, total_tokens: {total_tokens}, context_window: {self.agent_state.llm_config.context_window}"
+        )
         if not trigger_summarization:
             # just update the message_ids
             # TODO: gross to handle this here: we should move persistence elsewhere
@@ -1301,6 +1304,7 @@ class LettaAgentV3(LettaAgentV2):
         if summarizer_config.mode == "all":
             summary_message_str = await summarize_all(
                 actor=self.actor,
+                llm_config=self.agent_state.llm_config,
                 summarizer_config=summarizer_config,
                 in_context_messages=in_context_messages,
                 new_messages=new_letta_messages,
@@ -1353,6 +1357,6 @@ class LettaAgentV3(LettaAgentV2):
             message_ids=new_in_context_message_ids,
             actor=self.actor,
         )
-        self.agent_state.message_ids = new_in_context_messages
+        self.agent_state.message_ids = new_in_context_message_ids
 
         return new_in_context_messages

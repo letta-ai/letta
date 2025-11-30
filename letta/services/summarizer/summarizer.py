@@ -447,9 +447,12 @@ async def simple_summary(
         ]
     input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
     # Build a local LLMConfig for v1-style summarization which uses native content and must not
-    # include inner thoughts in kwargs to avoid conflicts in Anthropic formatting
+    # include inner thoughts in kwargs to avoid conflicts in Anthropic formatting.
+    # We also disable enable_reasoner to avoid extended thinking requirements (Anthropic requires
+    # assistant messages to start with thinking blocks when extended thinking is enabled).
     summarizer_llm_config = LLMConfig(**llm_config.model_dump())
     summarizer_llm_config.put_inner_thoughts_in_kwargs = False
+    summarizer_llm_config.enable_reasoner = False
 
     request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, summarizer_llm_config, tools=[])
     try:
@@ -532,7 +535,7 @@ async def simple_summary(
                     logger.info(f"Full fallback summarization payload: {request_data}")
                     raise llm_client.handle_llm_error(fallback_error_b)
 
-    response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
+    response = await llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")
         # TODO raise an error error instead?

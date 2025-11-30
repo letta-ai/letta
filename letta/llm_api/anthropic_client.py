@@ -764,7 +764,7 @@ class AnthropicClient(LLMClientBase):
     # TODO: Input messages doesn't get used here
     # TODO: Clean up this interface
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],

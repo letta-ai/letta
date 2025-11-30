@@ -609,7 +609,7 @@ class OpenAIClient(LLMClientBase):
         return is_openai_reasoning_model(llm_config.model)
 
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],  # Included for consistency, maybe used later

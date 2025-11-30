@@ -337,7 +337,7 @@ class LettaAgent(BaseAgent):
                     log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
                     try:
-                        response = llm_client.convert_response_to_chat_completion(
+                        response = await llm_client.convert_response_to_chat_completion(
                             response_data, in_context_messages, agent_state.llm_config
                         )
                     except ValueError as e:
@@ -681,7 +681,7 @@ class LettaAgent(BaseAgent):
                     log_event("agent.step.llm_response.received")  # [3^]
 
                     try:
-                        response = llm_client.convert_response_to_chat_completion(
+                        response = await llm_client.convert_response_to_chat_completion(
                             response_data, in_context_messages, agent_state.llm_config
                         )
                     except ValueError as e:

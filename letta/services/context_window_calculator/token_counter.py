@@ -1,15 +1,22 @@
 import hashlib
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.llm_api.google_vertex_client import GoogleVertexClient
+from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import ProviderType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
-from letta.utils import count_tokens
+
+if TYPE_CHECKING:
+    from letta.schemas.llm_config import LLMConfig
+    from letta.schemas.user import User
+
+logger = get_logger(__name__)
 
 
 class TokenCounter(ABC):
@@ -101,6 +108,22 @@ class ApproxTokenCounter(TokenCounter):
         byte_len = len(text.encode("utf-8"))
         return (byte_len + self.APPROX_BYTES_PER_TOKEN - 1) // self.APPROX_BYTES_PER_TOKEN
 
+    async def count_text_tokens(self, text: str) -> int:
+        if not text:
+            return 0
+        return self._approx_token_count(text)
+
+    async def count_message_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        if not messages:
+            return 0
+        return self._approx_token_count(json.dumps(messages))
+
+    async def count_tool_tokens(self, tools: List[OpenAITool]) -> int:
+        if not tools:
+            return 0
+        functions = [t.model_dump() for t in tools]
+        return self._approx_token_count(json.dumps(functions))
+
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
         return Message.to_openai_dicts_from_list(messages)
 
@@ -178,7 +201,14 @@ class TiktokenCounter(TokenCounter):
         logger.debug(f"TiktokenCounter.count_text_tokens: model={self.model}, text_length={text_length}, preview={repr(text_preview)}")
 
         try:
-            result = count_tokens(text)
+            import tiktoken
+
+            try:
+                encoding = tiktoken.encoding_for_model(self.model)
+            except KeyError:
+                logger.debug(f"Model {self.model} not found in tiktoken. Using cl100k_base encoding.")
+                encoding = tiktoken.get_encoding("cl100k_base")
+            result = len(encoding.encode(text))
             logger.debug(f"TiktokenCounter.count_text_tokens: completed successfully, tokens={result}")
             return result
         except Exception as e:
@@ -234,3 +264,54 @@ class TiktokenCounter(TokenCounter):
 
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
         return Message.to_openai_dicts_from_list(messages)
+
+
+def create_token_counter(
+    model_endpoint_type: ProviderType,
+    model: Optional[str] = None,
+    actor: "User" = None,
+    agent_id: Optional[str] = None,
+) -> "TokenCounter":
+    """
+    Factory function to create the appropriate token counter based on model configuration.
+
+    Returns:
+        The appropriate TokenCounter instance
+    """
+    from letta.llm_api.llm_client import LLMClient
+    from letta.settings import model_settings, settings
+
+    # Use Gemini token counter for Google Vertex and Google AI
+    use_gemini = model_endpoint_type in ("google_vertex", "google_ai")
+
+    # Use Anthropic token counter if:
+    # 1. The model endpoint type is anthropic, OR
+    # 2. We're in PRODUCTION and anthropic_api_key is available (and not using Gemini)
+    use_anthropic = model_endpoint_type == "anthropic"
+
+    if use_gemini:
+        client = LLMClient.create(provider_type=model_endpoint_type, actor=actor)
+        token_counter = GeminiTokenCounter(client, model)
+        logger.info(
+            f"Using GeminiTokenCounter for agent_id={agent_id}, model={model}, "
+            f"model_endpoint_type={model_endpoint_type}, "
+            f"environment={settings.environment}"
+        )
+    elif use_anthropic:
+        anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
+        counter_model = model if model_endpoint_type == "anthropic" else None
+        token_counter = AnthropicTokenCounter(anthropic_client, counter_model)
+        logger.info(
+            f"Using AnthropicTokenCounter for agent_id={agent_id}, model={counter_model}, "
+            f"model_endpoint_type={model_endpoint_type}, "
+            f"environment={settings.environment}"
+        )
+    else:
+        token_counter = ApproxTokenCounter()
+        logger.info(
+            f"Using ApproxTokenCounter for agent_id={agent_id}, model={model}, "
+            f"model_endpoint_type={model_endpoint_type}, "
+            f"environment={settings.environment}"
+        )
+
+    return token_counter

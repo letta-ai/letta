@@ -54,12 +54,12 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.server.rest_api.utils import decrement_message_uuid
+from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.streaming_utils import (
     FunctionArgumentsStreamHandler,
     JSONInnerThoughtsExtractor,
     sanitize_streamed_message_content,
 )
-from letta.utils import count_tokens
 
 logger = get_logger(__name__)
 
@@ -83,6 +83,10 @@ class OpenAIStreamingInterface:
         step_id: str | None = None,
     ):
         self.use_assistant_message = use_assistant_message
+
+        # Create token counter for fallback token counting (when API doesn't return usage)
+        # Use openai endpoint type for approximate counting in streaming context
+        self._fallback_token_counter = create_token_counter(model_endpoint_type="openai")
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
@@ -301,7 +305,8 @@ class OpenAIStreamingInterface:
                     updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
 
                     if self.is_openai_proxy:
-                        self.fallback_output_tokens += count_tokens(tool_call.function.arguments)
+                        # Use approximate counting for fallback (sync method)
+                        self.fallback_output_tokens += self._fallback_token_counter._approx_token_count(tool_call.function.arguments)
 
                     # If we have inner thoughts, we should output them as a chunk
                     if updates_inner_thoughts:

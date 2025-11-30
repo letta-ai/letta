@@ -19,7 +19,7 @@ from letta.schemas.response_format import (
     TextResponseFormat,
 )
 from letta.settings import summarizer_settings
-from letta.utils import count_tokens, printd
+from letta.utils import printd
 
 logger = get_logger(__name__)
 
@@ -394,97 +394,3 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
         logger.warning(f"Did not find tool call in message: {str(message)}")
 
     return rewritten_choice
-
-
-def calculate_summarizer_cutoff(in_context_messages: List[Message], token_counts: List[int], logger: "logging.Logger") -> int:
-    if len(in_context_messages) != len(token_counts):
-        raise ValueError(
-            f"Given in_context_messages has different length from given token_counts: {len(in_context_messages)} != {len(token_counts)}"
-        )
-
-    in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
-
-    if summarizer_settings.evict_all_messages:
-        logger.info("Evicting all messages...")
-        return len(in_context_messages)
-    else:
-        # Start at index 1 (past the system message),
-        # and collect messages for summarization until we reach the desired truncation token fraction (eg 50%)
-        # We do the inverse of `desired_memory_token_pressure` to get what we need to remove
-        desired_token_count_to_summarize = int(sum(token_counts) * (1 - summarizer_settings.desired_memory_token_pressure))
-        logger.info(f"desired_token_count_to_summarize={desired_token_count_to_summarize}")
-
-        tokens_so_far = 0
-        cutoff = 0
-        for i, msg in enumerate(in_context_messages_openai):
-            # Skip system
-            if i == 0:
-                continue
-            cutoff = i
-            tokens_so_far += token_counts[i]
-
-            if msg["role"] not in ["user", "tool", "function"] and tokens_so_far >= desired_token_count_to_summarize:
-                # Break if the role is NOT a user or tool/function and tokens_so_far is enough
-                break
-            elif len(in_context_messages) - cutoff - 1 <= summarizer_settings.keep_last_n_messages:
-                # Also break if we reached the `keep_last_n_messages` threshold
-                # NOTE: This may be on a user, tool, or function in theory
-                logger.warning(
-                    f"Breaking summary cutoff early on role={msg['role']} because we hit the `keep_last_n_messages`={summarizer_settings.keep_last_n_messages}"
-                )
-                break
-
-        # includes the tool response to be summarized after a tool call so we don't have any hanging tool calls after trimming.
-        if i + 1 < len(in_context_messages_openai) and in_context_messages_openai[i + 1]["role"] == "tool":
-            cutoff += 1
-
-        logger.info(f"Evicting {cutoff}/{len(in_context_messages)} messages...")
-        return cutoff + 1
-
-
-def get_token_counts_for_messages(in_context_messages: List[Message]) -> List[int]:
-    in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
-    token_counts = [count_tokens(str(msg)) for msg in in_context_messages_openai]
-    return token_counts
-
-
-def is_context_overflow_error(exception: Union[requests.exceptions.RequestException, Exception]) -> bool:
-    """Checks if an exception is due to context overflow (based on common OpenAI response messages)"""
-    from letta.utils import printd
-
-    match_string = OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
-
-    # Backwards compatibility with openai python package/client v0.28 (pre-v1 client migration)
-    if match_string in str(exception):
-        printd(f"Found '{match_string}' in str(exception)={(str(exception))}")
-        return True
-
-    # Based on python requests + OpenAI REST API (/v1)
-    elif isinstance(exception, requests.exceptions.HTTPError):
-        if exception.response is not None and "application/json" in exception.response.headers.get("Content-Type", ""):
-            try:
-                error_details = exception.response.json()
-                if "error" not in error_details:
-                    printd(f"HTTPError occurred, but couldn't find error field: {error_details}")
-                    return False
-                else:
-                    error_details = error_details["error"]
-
-                # Check for the specific error code
-                if error_details.get("code") == "context_length_exceeded":
-                    printd(f"HTTPError occurred, caught error code {error_details.get('code')}")
-                    return True
-                # Soft-check for "maximum context length" inside of the message
-                elif error_details.get("message") and "maximum context length" in error_details.get("message"):
-                    printd(f"HTTPError occurred, found '{match_string}' in error message contents ({error_details})")
-                    return True
-                else:
-                    printd(f"HTTPError occurred, but unknown error message: {error_details}")
-                    return False
-            except ValueError:
-                # JSON decoding failed
-                printd(f"HTTPError occurred ({exception}), but no JSON error message.")
-
-    # Generic fail
-    else:
-        return False

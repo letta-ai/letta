@@ -670,19 +670,25 @@ class SyncServer(object):
     async def insert_archival_memory_async(
         self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]
     ) -> List[Passage]:
+        from letta.services.context_window_calculator.token_counter import create_token_counter
         from letta.settings import settings
-        from letta.utils import count_tokens
+
+        # Get the agent object (loaded in memory)
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Check token count against limit
-        token_count = count_tokens(memory_contents)
+        token_counter = create_token_counter(
+            model_endpoint_type=agent_state.llm_config.model_endpoint_type,
+            model=agent_state.llm_config.model,
+            actor=actor,
+            agent_id=agent_id,
+        )
+        token_count = await token_counter.count_text_tokens(memory_contents)
         if token_count > settings.archival_memory_token_limit:
             raise LettaInvalidArgumentError(
                 message=f"Archival memory content exceeds token limit of {settings.archival_memory_token_limit} tokens (found {token_count} tokens)",
                 argument_name="memory_contents",
             )
-
-        # Get the agent object (loaded in memory)
-        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Use passage manager which handles dual-write to Turbopuffer if enabled
         passages = await self.passage_manager.insert_passage(

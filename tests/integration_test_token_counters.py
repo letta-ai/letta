@@ -169,8 +169,8 @@ async def test_count_empty_text_tokens(llm_config: LLMConfig):
     from letta.llm_api.google_vertex_client import GoogleVertexClient
     from letta.services.context_window_calculator.token_counter import (
         AnthropicTokenCounter,
+        ApproxTokenCounter,
         GeminiTokenCounter,
-        TiktokenCounter,
     )
 
     if llm_config.model_endpoint_type == "anthropic":
@@ -179,7 +179,7 @@ async def test_count_empty_text_tokens(llm_config: LLMConfig):
         client = GoogleAIClient() if llm_config.model_endpoint_type == "google_ai" else GoogleVertexClient()
         token_counter = GeminiTokenCounter(client, llm_config.model)
     else:
-        token_counter = TiktokenCounter(llm_config.model)
+        token_counter = ApproxTokenCounter()
 
     token_count = await token_counter.count_text_tokens("")
     assert token_count == 0
@@ -194,8 +194,8 @@ async def test_count_empty_messages_tokens(llm_config: LLMConfig):
     from letta.llm_api.google_vertex_client import GoogleVertexClient
     from letta.services.context_window_calculator.token_counter import (
         AnthropicTokenCounter,
+        ApproxTokenCounter,
         GeminiTokenCounter,
-        TiktokenCounter,
     )
 
     if llm_config.model_endpoint_type == "anthropic":
@@ -204,7 +204,7 @@ async def test_count_empty_messages_tokens(llm_config: LLMConfig):
         client = GoogleAIClient() if llm_config.model_endpoint_type == "google_ai" else GoogleVertexClient()
         token_counter = GeminiTokenCounter(client, llm_config.model)
     else:
-        token_counter = TiktokenCounter(llm_config.model)
+        token_counter = ApproxTokenCounter()
 
     token_count = await token_counter.count_message_tokens([])
     assert token_count == 0
@@ -219,8 +219,8 @@ async def test_count_empty_tools_tokens(llm_config: LLMConfig):
     from letta.llm_api.google_vertex_client import GoogleVertexClient
     from letta.services.context_window_calculator.token_counter import (
         AnthropicTokenCounter,
+        ApproxTokenCounter,
         GeminiTokenCounter,
-        TiktokenCounter,
     )
 
     if llm_config.model_endpoint_type == "anthropic":
@@ -229,7 +229,7 @@ async def test_count_empty_tools_tokens(llm_config: LLMConfig):
         client = GoogleAIClient() if llm_config.model_endpoint_type == "google_ai" else GoogleVertexClient()
         token_counter = GeminiTokenCounter(client, llm_config.model)
     else:
-        token_counter = TiktokenCounter(llm_config.model)
+        token_counter = ApproxTokenCounter()
 
     token_count = await token_counter.count_tool_tokens([])
     assert token_count == 0

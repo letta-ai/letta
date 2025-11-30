@@ -401,7 +401,7 @@ class DeepseekClient(OpenAIClient):
         return response_stream
 
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],  # Included for consistency, maybe used later
@@ -413,5 +413,5 @@ class DeepseekClient(OpenAIClient):
         """
         response = ChatCompletionResponse(**response_data)
         if response.choices[0].message.tool_calls:
-            return super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
+            return await super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
         return convert_deepseek_response_to_chatcompletion(response)
