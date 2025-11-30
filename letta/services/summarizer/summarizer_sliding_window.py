@@ -73,8 +73,8 @@ async def summarize_via_sliding_window(
 
     # Starts at N% (eg 70%), and increments up until 100%
     message_count_cutoff_percent = max(
-        1 - summarizer_config.sliding_window_percentage, 10
-    )  # Some arbitrary minimum value to avoid negatives from badly configured summarizer percentage
+        1 - summarizer_config.sliding_window_percentage, 0.10
+    )  # Some arbitrary minimum value (10%) to avoid negatives from badly configured summarizer percentage
     found_cutoff = False
 
     # Count tokens with system prompt, and message past cutoff point
@@ -98,8 +98,8 @@ async def summarize_via_sliding_window(
         if post_summarization_buffer_tokens <= summarizer_config.sliding_window_percentage * llm_config.context_window:
             found_cutoff = True
         else:
-            message_count_cutoff_percent += 10
-            if message_count_cutoff_percent >= 100:
+            message_count_cutoff_percent += 0.10
+            if message_count_cutoff_percent >= 1.0:
                 message_cutoff_index = total_message_count
                 break
 
