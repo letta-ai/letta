@@ -616,11 +616,9 @@ async def run_tool_for_agent(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # Get agent with tools and environment variables
+    # Get agent with all relationships
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id=agent_id,
-        actor=actor,
-        include_relationships=["tools", "tool_exec_environment_variables"],
+        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
     )
 
     # Find the tool by name among attached tools
@@ -663,6 +661,11 @@ async def run_tool_for_agent(
         tool=tool,
     )
 
+    # don't return a result if the tool execution failed
+    if tool_execution_result.status == "error":
+        tool_execution_result.func_return = None
+    # remove deprecated agent_state field
+    tool_execution_result.agent_state = None
     return tool_execution_result
 
 

@@ -36950,7 +36950,8 @@
                 "type": "null"
               }
             ],
-            "description": "The agent state"
+            "description": "The agent state",
+            "deprecated": true
           },
           "stdout": {
             "anyOf": [
