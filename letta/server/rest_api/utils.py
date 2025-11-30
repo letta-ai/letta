@@ -213,6 +213,80 @@ def create_approval_response_message_from_input(
     ]
 
 
+def create_tool_returns_for_denials(
+    tool_calls: List[OpenAIToolCall],
+    denial_reason: str,
+    timezone: str,
+) -> List[ToolReturn]:
+    """
+    Create ToolReturn objects with error status for denied tool calls.
+
+    This is used when tool calls are denied either by:
+    - User explicitly denying approval
+    - Run cancellation (automated denial)
+
+    Args:
+        tool_calls: List of tool calls that were denied
+        denial_reason: Reason for denial (e.g., user reason or cancellation message)
+        timezone: Agent timezone for timestamp formatting
+
+    Returns:
+        List of ToolReturn objects with error status
+    """
+    tool_returns = []
+    for tool_call in tool_calls:
+        tool_call_id = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+        packaged_function_response = package_function_response(
+            was_success=False,
+            response_string=f"Error: request to call tool denied. User reason: {denial_reason}",
+            timezone=timezone,
+        )
+        tool_return = ToolReturn(
+            tool_call_id=tool_call_id,
+            func_response=packaged_function_response,
+            status="error",
+        )
+        tool_returns.append(tool_return)
+    return tool_returns
+
+
+def create_tool_message_from_returns(
+    agent_id: str,
+    model: str,
+    tool_returns: List[ToolReturn],
+    run_id: Optional[str] = None,
+    step_id: Optional[str] = None,
+) -> Message:
+    """
+    Create a tool message with error returns for denied/failed tool calls.
+
+    This creates a properly formatted tool message that can be added to the
+    conversation history to reflect tool call denials or failures.
+
+    Args:
+        agent_id: ID of the agent
+        model: Model identifier
+        tool_returns: List of ToolReturn objects (typically with error status)
+        run_id: Optional run ID
+        step_id: Optional step ID
+
+    Returns:
+        Message with role="tool" containing the tool returns
+    """
+    return Message(
+        role=MessageRole.tool,
+        content=[TextContent(text=tr.func_response) for tr in tool_returns],
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[],
+        tool_call_id=tool_returns[0].tool_call_id if tool_returns else None,
+        tool_returns=tool_returns,
+        run_id=run_id,
+        step_id=step_id,
+        created_at=get_utc_time(),
+    )
+
+
 def create_approval_request_message_from_llm_response(
     agent_id: str,
     model: str,

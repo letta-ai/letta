@@ -1659,6 +1659,7 @@ async def cancel_message(
 
     Note to cancel active runs associated with an agent, redis is required.
     """
+    # TODO: WHY DOES THIS CANCEL A LIST OF RUNS?
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
@@ -1685,12 +1686,12 @@ async def cancel_message(
         if run.metadata.get("lettuce"):
             lettuce_client = await LettuceClient.create()
             await lettuce_client.cancel(run_id)
-        success = await server.run_manager.update_run_by_id_async(
-            run_id=run_id,
-            update=RunUpdate(status=RunStatus.cancelled),
-            actor=actor,
-        )
-        results[run_id] = "cancelled" if success else "failed"
+        try:
+            run = await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
+        except Exception as e:
+            results[run_id] = "failed"
+            continue
+        results[run_id] = "cancelled"
     return results
 
 
