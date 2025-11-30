@@ -72,8 +72,8 @@ class AsyncToolSandboxBase(ABC):
             else:
                 self.inject_agent_state = False
 
-            # Check for Letta client and agent_id injection
-            self.inject_letta_client = "client" in tool_arguments
+            # Always inject Letta client (available as `client` variable in sandbox)
+            self.inject_letta_client = True
             self.inject_agent_id = "agent_id" in tool_arguments
 
             self.is_async_function = self._detect_async_function()
@@ -183,9 +183,16 @@ class AsyncToolSandboxBase(ABC):
         if inject_agent_state:
             lines.extend(["import letta", "from letta import *"])  # noqa: F401
 
-        # Import Letta client if needed
+        # Import Letta client if available (wrapped in try/except for sandboxes without letta_client installed)
         if inject_letta_client:
-            lines.append("from letta_client import Letta")
+            lines.extend(
+                [
+                    "try:",
+                    "    from letta_client import Letta",
+                    "except ImportError:",
+                    "    Letta = None",
+                ]
+            )
 
         if schema_imports:
             lines.append(schema_imports.rstrip())
@@ -195,14 +202,14 @@ class AsyncToolSandboxBase(ABC):
         else:
             lines.append("agent_state = None")
 
-        # Initialize Letta client if needed
+        # Initialize Letta client if needed (client is always available as a variable, may be None)
         if inject_letta_client:
             lines.extend(
                 [
                     "# Initialize Letta client for tool execution",
                     "import os",
                     "client = None",
-                    "if os.getenv('LETTA_API_KEY'):",
+                    "if Letta is not None and os.getenv('LETTA_API_KEY'):",
                     "    # Check letta_client version to use correct parameter name",
                     "    from packaging import version as pkg_version",
                     "    import letta_client as lc_module",
@@ -346,11 +353,8 @@ class AsyncToolSandboxBase(ABC):
         if self.inject_agent_state:
             param_list.append("agent_state=agent_state")
 
-        if self.inject_letta_client:
-            # Check if the function expects 'client' or 'letta_client'
-            tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
-            if "client" in tool_arguments:
-                param_list.append("client=client")
+        # Note: client is always available as a variable in the sandbox scope
+        # Tools should access it directly rather than receiving it as a parameter
 
         if self.inject_agent_id:
             param_list.append("agent_id=agent_id")
