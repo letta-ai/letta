@@ -195,6 +195,8 @@ PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
 REQUEST_HEARTBEAT_DESCRIPTION = "Request an immediate heartbeat after function execution. You MUST set this value to `True` if you want to send a follow-up message or run a follow-up tool call (chain multiple tools together). If set to `False` (the default), then the chain of execution will end immediately after this function call."
 
+# Automated tool call denials
+TOOL_CALL_DENIAL_ON_CANCEL = "The user cancelled the request, so the tool call was denied."
 
 # Structured output models
 STRUCTURED_OUTPUT_MODELS = {"gpt-4o", "gpt-4o-mini"}

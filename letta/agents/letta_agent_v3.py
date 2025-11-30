@@ -44,6 +44,7 @@ from letta.server.rest_api.utils import (
     create_approval_request_message_from_llm_response,
     create_letta_messages_from_llm_response,
     create_parallel_tool_messages_from_llm_response,
+    create_tool_returns_for_denials,
 )
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
@@ -701,6 +702,14 @@ class LettaAgentV3(LettaAgentV2):
         finally:
             self.logger.debug("Running cleanup for agent loop run: %s", run_id)
             self.logger.info("Running final update. Step Progression: %s", step_progression)
+
+            # update message ids
+            message_ids = [m.id for m in messages]
+            await self.agent_manager.update_message_ids_async(
+                agent_id=self.agent_state.id,
+                message_ids=message_ids,
+                actor=self.actor,
+            )
             try:
                 if step_progression == StepProgression.FINISHED:
                     if not self.should_continue:
@@ -932,19 +941,15 @@ class LettaAgentV3(LettaAgentV2):
 
         # 4. Handle denial cases
         if tool_call_denials:
+            # Convert ToolCallDenial objects to ToolReturn objects using shared helper
+            # Group denials by reason to potentially batch them, but for now process individually
             for tool_call_denial in tool_call_denials:
-                tool_call_id = tool_call_denial.id or f"call_{uuid.uuid4().hex[:8]}"
-                packaged_function_response = package_function_response(
-                    was_success=False,
-                    response_string=f"Error: request to call tool denied. User reason: {tool_call_denial.reason}",
+                denial_returns = create_tool_returns_for_denials(
+                    tool_calls=[tool_call_denial],
+                    denial_reason=tool_call_denial.reason,
                     timezone=agent_state.timezone,
                 )
-                tool_return = ToolReturn(
-                    tool_call_id=tool_call_id,
-                    func_response=packaged_function_response,
-                    status="error",
-                )
-                result_tool_returns.append(tool_return)
+                result_tool_returns.extend(denial_returns)
 
         # 5. Unified tool execution path (works for both single and multiple tools)
 
