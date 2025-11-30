@@ -80,7 +80,7 @@ from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager, validate_block_limit_constraint
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
-from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, GeminiTokenCounter, TiktokenCounter
+from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
@@ -3286,48 +3286,13 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        # Determine which token counter to use based on provider
-        model_endpoint_type = agent_state.llm_config.model_endpoint_type
-
-        # Use Gemini token counter for Google Vertex and Google AI
-        use_gemini = model_endpoint_type in ("google_vertex", "google_ai")
-
-        # Use Anthropic token counter if:
-        # 1. The model endpoint type is anthropic, OR
-        # 2. We're in PRODUCTION and anthropic_api_key is available (and not using Gemini)
-        use_anthropic = model_endpoint_type == "anthropic" or (
-            not use_gemini and settings.environment == "PRODUCTION" and model_settings.anthropic_api_key is not None
+        # Create the appropriate token counter based on model configuration
+        token_counter = create_token_counter(
+            model_endpoint_type=agent_state.llm_config.model_endpoint_type,
+            model=agent_state.llm_config.model,
+            actor=actor,
+            agent_id=agent_id,
         )
-
-        if use_gemini:
-            # Use native Gemini token counting API
-
-            client = LLMClient.create(provider_type=agent_state.llm_config.model_endpoint_type, actor=actor)
-            model = agent_state.llm_config.model
-
-            token_counter = GeminiTokenCounter(client, model)
-            logger.info(
-                f"Using GeminiTokenCounter for agent_id={agent_id}, model={model}, "
-                f"model_endpoint_type={model_endpoint_type}, "
-                f"environment={settings.environment}"
-            )
-        elif use_anthropic:
-            anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
-            model = agent_state.llm_config.model if model_endpoint_type == "anthropic" else None
-
-            token_counter = AnthropicTokenCounter(anthropic_client, model)  # noqa
-            logger.info(
-                f"Using AnthropicTokenCounter for agent_id={agent_id}, model={model}, "
-                f"model_endpoint_type={model_endpoint_type}, "
-                f"environment={settings.environment}"
-            )
-        else:
-            token_counter = TiktokenCounter(agent_state.llm_config.model)
-            logger.info(
-                f"Using TiktokenCounter for agent_id={agent_id}, model={agent_state.llm_config.model}, "
-                f"model_endpoint_type={model_endpoint_type}, "
-                f"environment={settings.environment}"
-            )
 
         try:
             result = await calculator.calculate_context_window(

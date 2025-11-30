@@ -47,7 +47,9 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
         # Convert response to chat completion format
-        self.chat_completions_response = self.llm_client.convert_response_to_chat_completion(self.response_data, messages, self.llm_config)
+        self.chat_completions_response = await self.llm_client.convert_response_to_chat_completion(
+            self.response_data, messages, self.llm_config
+        )
 
         # Extract reasoning content from the response
         if self.chat_completions_response.choices[0].message.reasoning_content:

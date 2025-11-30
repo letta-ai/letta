@@ -31,7 +31,6 @@ from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
-from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
@@ -404,7 +403,7 @@ class GoogleVertexClient(LLMClientBase):
         return request_data
 
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
@@ -661,10 +660,13 @@ class GoogleVertexClient(LLMClientBase):
                     completion_tokens_details=completion_tokens_details,
                 )
             else:
-                # Count it ourselves
+                # Count it ourselves using the Gemini token counting API
                 assert input_messages is not None, "Didn't get UsageMetadata from the API response, so input_messages is required"
-                prompt_tokens = count_tokens(json_dumps(input_messages))  # NOTE: this is a very rough approximation
-                completion_tokens = count_tokens(json_dumps(openai_response_message.model_dump()))  # NOTE: this is also approximate
+                google_messages = PydanticMessage.to_google_dicts_from_list(input_messages, current_model=llm_config.model)
+                prompt_tokens = await self.count_tokens(messages=google_messages, model=llm_config.model)
+                # For completion tokens, wrap the response content in Google format
+                completion_content = [{"role": "model", "parts": [{"text": json_dumps(openai_response_message.model_dump())}]}]
+                completion_tokens = await self.count_tokens(messages=completion_content, model=llm_config.model)
                 total_tokens = prompt_tokens + completion_tokens
                 usage = UsageStatistics(
                     prompt_tokens=prompt_tokens,

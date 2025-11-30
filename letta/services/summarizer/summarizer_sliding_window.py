@@ -1,19 +1,17 @@
 from typing import List, Tuple
 
 from letta.helpers.message_helper import convert_message_creates_to_messages
-from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageRole, ProviderType
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
-from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, ApproxTokenCounter
+from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.message_manager import MessageManager
 from letta.services.summarizer.summarizer import simple_summary
 from letta.services.summarizer.summarizer_config import SummarizerConfig
-from letta.settings import model_settings, settings
 from letta.system import package_summarize_message_no_counts
 
 logger = get_logger(__name__)
@@ -26,21 +24,21 @@ APPROX_TOKEN_SAFETY_MARGIN = 1.3
 
 
 async def count_tokens(actor: User, llm_config: LLMConfig, messages: List[Message]) -> int:
-    # If the model is an Anthropic model, use the Anthropic token counter (accurate)
-    if llm_config.model_endpoint_type == "anthropic":
-        anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
-        token_counter = AnthropicTokenCounter(anthropic_client, llm_config.model)
-        converted_messages = token_counter.convert_messages(messages)
-        return await token_counter.count_message_tokens(converted_messages)
+    """Count tokens in messages using the appropriate token counter for the model configuration."""
+    token_counter = create_token_counter(
+        model_endpoint_type=llm_config.model_endpoint_type,
+        model=llm_config.model,
+        actor=actor,
+    )
+    converted_messages = token_counter.convert_messages(messages)
+    tokens = await token_counter.count_message_tokens(converted_messages)
 
-    else:
-        # Otherwise, use approximate count (bytes / 4) with safety margin
-        # This is much faster than tiktoken and doesn't require loading tokenizer models
-        token_counter = ApproxTokenCounter(llm_config.model)
-        converted_messages = token_counter.convert_messages(messages)
-        tokens = await token_counter.count_message_tokens(converted_messages)
-        # Apply safety margin to avoid underestimating and keeping too many messages
+    # Apply safety margin for approximate counting to avoid underestimating
+    from letta.services.context_window_calculator.token_counter import ApproxTokenCounter
+
+    if isinstance(token_counter, ApproxTokenCounter):
         return int(tokens * APPROX_TOKEN_SAFETY_MARGIN)
+    return tokens
 
 
 async def summarize_via_sliding_window(
@@ -110,9 +108,9 @@ async def summarize_via_sliding_window(
 
     summary_message_str = await simple_summary(
         messages=messages_to_summarize,
-        llm_config=summarizer_config.summarizer_model,
+        llm_config=llm_config,
         actor=actor,
-        include_ack=summarizer_config.prompt_acknowledgement,
+        include_ack=bool(summarizer_config.prompt_acknowledgement),
         prompt=summarizer_config.prompt,
     )
 

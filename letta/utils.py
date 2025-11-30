@@ -812,13 +812,13 @@ class OpenAIBackcompatUnpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 
-def count_tokens(s: str, model: str = "gpt-4") -> int:
-    try:
-        encoding = tiktoken.encoding_for_model(model)
-    except KeyError:
-        print("Falling back to cl100k base for token counting.")
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(s))
+# def count_tokens(s: str, model: str = "gpt-4") -> int:
+#    try:
+#        encoding = tiktoken.encoding_for_model(model)
+#    except KeyError:
+#        print("Falling back to cl100k base for token counting.")
+#        encoding = tiktoken.get_encoding("cl100k_base")
+#    return len(encoding.encode(s))
 
 
 def printd(*args, **kwargs):

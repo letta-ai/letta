@@ -1,16 +1,11 @@
-from typing import List, Tuple
+from typing import List
 
-from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
-from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message_content import TextContent
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.message import Message
 from letta.schemas.user import User
-from letta.services.message_manager import MessageManager
 from letta.services.summarizer.summarizer import simple_summary
 from letta.services.summarizer.summarizer_config import SummarizerConfig
-from letta.system import package_summarize_message_no_counts
 
 logger = get_logger(__name__)
 
@@ -18,6 +13,8 @@ logger = get_logger(__name__)
 async def summarize_all(
     # Required to tag LLM calls
     actor: User,
+    # LLM config for the summarizer model
+    llm_config: LLMConfig,
     # Actual summarization configuration
     summarizer_config: SummarizerConfig,
     in_context_messages: List[Message],
@@ -33,9 +30,9 @@ async def summarize_all(
 
     summary_message_str = await simple_summary(
         messages=all_in_context_messages,
-        llm_config=summarizer_config.summarizer_model,
+        llm_config=llm_config,
         actor=actor,
-        include_ack=summarizer_config.prompt_acknowledgement,
+        include_ack=bool(summarizer_config.prompt_acknowledgement),
         prompt=summarizer_config.prompt,
     )
 
