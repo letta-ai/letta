@@ -80,6 +80,10 @@ async def summarize_via_sliding_window(
         # Mark the approximate cutoff
         message_cutoff_index = round(message_count_cutoff_percent * len(all_in_context_messages))
 
+        # we've reached the maximum message cutoff
+        if message_cutoff_index >= total_message_count:
+            break
+
         # Walk up the list until we find the first assistant message
         for i in range(message_cutoff_index, total_message_count):
             if all_in_context_messages[i].role == MessageRole.assistant:
