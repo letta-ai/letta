@@ -822,6 +822,9 @@ class LettaAgentV2(BaseAgentV2):
             project_id=self.agent_state.project_id,
             status=StepStatus.PENDING,
         )
+
+        # Also create step metrics early and update at the end of the step
+        self._record_step_metrics(step_id=step_id, step_metrics=step_metrics, run_id=run_id)
         return StepProgression.START, logged_step, step_metrics, agent_step_span
 
     @trace_method

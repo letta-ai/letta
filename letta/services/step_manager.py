@@ -511,12 +511,33 @@ class StepManager:
             if step.organization_id != actor.organization_id:
                 raise Exception("Unauthorized")
 
-            if allow_partial:
-                try:
-                    metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            try:
+                metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+
+                if allow_partial:
                     return metrics.to_pydantic()
-                except NoResultFound:
-                    pass
+
+                # Update existing metrics
+                if llm_request_ns is not None:
+                    metrics.llm_request_ns = llm_request_ns
+                if tool_execution_ns is not None:
+                    metrics.tool_execution_ns = tool_execution_ns
+                if step_ns is not None:
+                    metrics.step_ns = step_ns
+                if agent_id is not None:
+                    metrics.agent_id = agent_id
+                if run_id is not None:
+                    metrics.run_id = run_id
+                if project_id is not None:
+                    metrics.project_id = project_id
+                if template_id is not None:
+                    metrics.template_id = template_id
+                if base_template_id is not None:
+                    metrics.base_template_id = base_template_id
+                await session.commit()
+                return metrics.to_pydantic()
+            except NoResultFound:
+                pass
 
             metrics_data = {
                 "id": step_id,
