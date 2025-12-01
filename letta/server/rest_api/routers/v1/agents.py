@@ -16,6 +16,7 @@ from letta.agents.agent_loop import AgentLoop
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.letta_agent import LettaAgent
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.errors import (
@@ -2107,7 +2108,7 @@ async def summarize_messages(
     ]
 
     if agent_eligible and model_compatible:
-        agent_loop = LettaAgentV2(agent_state=agent, actor=actor)
+        agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
         await agent_loop.summarize_conversation_history(
             in_context_messages=in_context_messages,

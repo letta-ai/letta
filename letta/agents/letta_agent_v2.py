@@ -1208,6 +1208,7 @@ class LettaAgentV2(BaseAgentV2):
         total_tokens: int | None = None,
         force: bool = False,
     ) -> list[Message]:
+        self.logger.warning("Running deprecated v2 summarizer. This should be removed in the future.")
         # always skip summarization if last message is an approval request message
         skip_summarization = False
         latest_messages = in_context_messages + new_letta_messages
