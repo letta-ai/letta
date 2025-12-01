@@ -126,6 +126,10 @@ class Secret(BaseModel):
         # Use cached value if available, but only if it looks like plaintext
         # or we're confident we can decrypt it
         if self._plaintext_cache is not None:
+            # If this was explicitly created as plaintext, trust the cache
+            # This prevents false positives from is_encrypted() heuristic
+            if not self.was_encrypted:
+                return self._plaintext_cache
             # If we have a cache but the stored value looks encrypted and we have no key,
             # we should not use the cache
             if CryptoUtils.is_encrypted(self.encrypted_value) and not CryptoUtils.is_encryption_available():
