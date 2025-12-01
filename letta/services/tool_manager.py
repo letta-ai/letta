@@ -201,8 +201,11 @@ class ToolManager:
         self, pydantic_tool: PydanticTool, actor: PydanticUser, bypass_name_check: bool = False, modal_sandbox_enabled: bool = False
     ) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
+        from letta.otel.tracing import tracer
+
         if pydantic_tool.tool_type == ToolType.CUSTOM and not pydantic_tool.json_schema:
-            generated_schema = generate_schema_for_tool_creation(pydantic_tool)
+            with tracer.start_as_current_span("generate_schema_for_tool_creation"):
+                generated_schema = generate_schema_for_tool_creation(pydantic_tool)
             if generated_schema:
                 pydantic_tool.json_schema = generated_schema
             else:
@@ -229,7 +232,8 @@ class ToolManager:
         current_tool = await self.get_tool_by_name_async(tool_name=pydantic_tool.name, actor=actor)
         if current_tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
+            with tracer.start_as_current_span("pydantic_tool.model_dump"):
+                update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
             update_data["organization_id"] = actor.organization_id
 
             # If there's anything to update
@@ -239,9 +243,11 @@ class ToolManager:
                 updated_tool_type = None
                 if "tool_type" in update_data:
                     updated_tool_type = update_data.get("tool_type")
+                with tracer.start_as_current_span("ToolUpdate_initialization"):
+                    tool_update = ToolUpdate(**update_data)
                 tool = await self.update_tool_by_id_async(
                     current_tool.id,
-                    ToolUpdate(**update_data),
+                    tool_update,
                     actor,
                     updated_tool_type=updated_tool_type,
                     modal_sandbox_enabled=modal_sandbox_enabled,

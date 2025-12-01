@@ -7,12 +7,14 @@ from letta.functions.functions import derive_openai_json_schema
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.tool import Tool as PydanticTool
 
 logger = get_logger(__name__)
 
 
+@trace_method
 def generate_schema_for_tool_creation(
     tool: PydanticTool,
 ) -> Optional[dict]:
@@ -45,8 +47,10 @@ def generate_schema_for_tool_creation(
     if tool.source_type == ToolSourceType.typescript:
         try:
             from letta.functions.typescript_parser import derive_typescript_json_schema
+            from letta.otel.tracing import tracer
 
-            schema = derive_typescript_json_schema(source_code=tool.source_code)
+            with tracer.start_as_current_span("derive_typescript_json_schema"):
+                schema = derive_typescript_json_schema(source_code=tool.source_code)
             import json
 
             schema_size_kb = len(json.dumps(schema)) / 1024
@@ -58,16 +62,21 @@ def generate_schema_for_tool_creation(
 
     # Python tools (default if not specified for backwards compatibility)
     elif tool.source_type == ToolSourceType.python or tool.source_type is None:
+        from letta.otel.tracing import tracer
+
         # If args_json_schema is provided, use it to generate full schema
         if tool.args_json_schema:
-            name, description = get_function_name_and_docstring(tool.source_code, tool.name)
-            args_schema = generate_model_from_args_json_schema(tool.args_json_schema)
-            schema = generate_schema_from_args_schema_v2(
-                args_schema=args_schema,
-                name=name,
-                description=description,
-                append_heartbeat=False,
-            )
+            with tracer.start_as_current_span("get_function_name_and_docstring"):
+                name, description = get_function_name_and_docstring(tool.source_code, tool.name)
+            with tracer.start_as_current_span("generate_model_from_args_json_schema"):
+                args_schema = generate_model_from_args_json_schema(tool.args_json_schema)
+            with tracer.start_as_current_span("generate_schema_from_args_schema_v2"):
+                schema = generate_schema_from_args_schema_v2(
+                    args_schema=args_schema,
+                    name=name,
+                    description=description,
+                    append_heartbeat=False,
+                )
             import json
 
             schema_size_kb = len(json.dumps(schema)) / 1024
@@ -76,7 +85,8 @@ def generate_schema_for_tool_creation(
         # Otherwise, attempt to parse from docstring with best effort
         else:
             try:
-                schema = derive_openai_json_schema(source_code=tool.source_code)
+                with tracer.start_as_current_span("derive_openai_json_schema"):
+                    schema = derive_openai_json_schema(source_code=tool.source_code)
                 import json
 
                 schema_size_kb = len(json.dumps(schema)) / 1024
