@@ -35,8 +35,8 @@ class TestSecret:
         finally:
             settings.encryption_key = original_key
 
-    def test_from_plaintext_without_key(self):
-        """Test creating a Secret from plaintext without encryption key (fallback behavior)."""
+    def test_from_plaintext_without_key_stores_plaintext(self):
+        """Test creating a Secret from plaintext without encryption key stores as plaintext."""
         from letta.settings import settings
 
         # Clear encryption key
@@ -46,10 +46,10 @@ class TestSecret:
         try:
             plaintext = "my-plaintext-value"
 
-            # Should now handle gracefully and store as plaintext
+            # Should store as plaintext in _enc column when no encryption key
             secret = Secret.from_plaintext(plaintext)
 
-            # Should store the plaintext value
+            # Should store the plaintext value directly in encrypted_value
             assert secret.encrypted_value == plaintext
             assert secret.get_plaintext() == plaintext
             assert not secret.was_encrypted
@@ -103,8 +103,14 @@ class TestSecret:
         finally:
             settings.encryption_key = original_key
 
-    def test_from_db_with_plaintext_value(self):
-        """Test creating a Secret from database with plaintext value (backward compatibility)."""
+    def test_from_db_with_plaintext_value_fallback(self, caplog):
+        """Test creating a Secret from database with only plaintext value falls back with error logging.
+
+        Note: In Phase 1 of migration, from_db() prefers encrypted but falls back to plaintext
+        with error logging to help identify unmigrated data.
+        """
+        import logging
+
         from letta.settings import settings
 
         original_key = settings.encryption_key
@@ -113,13 +119,16 @@ class TestSecret:
         try:
             plaintext = "legacy-plaintext"
 
-            # When only plaintext is provided, should encrypt it
-            secret = Secret.from_db(encrypted_value=None, plaintext_value=plaintext)
+            # When only plaintext is provided, should fall back to plaintext with error logging
+            with caplog.at_level(logging.ERROR):
+                secret = Secret.from_db(encrypted_value=None, plaintext_value=plaintext)
 
-            # Should encrypt the plaintext
-            assert secret.encrypted_value is not None
-            assert secret.was_encrypted is False
+            # Should use the plaintext value (fallback)
             assert secret.get_plaintext() == plaintext
+
+            # Should have logged an error about reading from plaintext column
+            assert "MIGRATION_NEEDED" in caplog.text
+            assert "plaintext column" in caplog.text
         finally:
             settings.encryption_key = original_key
 

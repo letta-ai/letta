@@ -50,20 +50,20 @@ class Provider(ProviderBase):
             self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
 
     def get_api_key_secret(self) -> Secret:
-        """Get the API key as a Secret object, preferring encrypted over plaintext."""
+        """Get the API key as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         # If api_key_enc is already a Secret, return it
         if self.api_key_enc is not None:
             return self.api_key_enc
-        # Otherwise, create from plaintext api_key
-        return Secret.from_db(None, self.api_key)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.api_key)
 
     def get_access_key_secret(self) -> Secret:
-        """Get the access key as a Secret object, preferring encrypted over plaintext."""
+        """Get the access key as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         # If access_key_enc is already a Secret, return it
         if self.access_key_enc is not None:
             return self.access_key_enc
-        # Otherwise, create from plaintext access_key
-        return Secret.from_db(None, self.access_key)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.access_key)
 
     def set_api_key_secret(self, secret: Secret) -> None:
         """Set API key from a Secret object, directly storing the Secret."""

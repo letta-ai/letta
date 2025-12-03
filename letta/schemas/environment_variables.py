@@ -21,12 +21,12 @@ class EnvironmentVariableBase(OrmMetadataBase):
     value_enc: Secret | None = Field(None, description="Encrypted value as Secret object")
 
     def get_value_secret(self) -> Secret:
-        """Get the value as a Secret object, preferring encrypted over plaintext."""
+        """Get the value as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         # If value_enc is already a Secret, return it
         if self.value_enc is not None:
             return self.value_enc
-        # Otherwise, create from plaintext value
-        return Secret.from_db(None, self.value)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.value)
 
     def set_value_secret(self, secret: Secret) -> None:
         """Set value from a Secret object, directly storing the Secret."""
