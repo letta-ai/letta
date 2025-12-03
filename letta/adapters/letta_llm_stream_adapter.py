@@ -5,6 +5,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.otel.tracing import log_attributes, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
@@ -139,6 +140,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     def supports_token_streaming(self) -> bool:
         return True
 
+    @trace_method
     def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
         """
         Log provider trace data for telemetry purposes in a fire-and-forget manner.
@@ -151,32 +153,44 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             step_id: The step ID associated with this request for logging purposes
             actor: The user associated with this request for logging purposes
         """
-        if step_id is None or actor is None or not settings.track_provider_trace:
+        if step_id is None or actor is None:
             return
 
-        safe_create_task(
-            self.telemetry_manager.create_provider_trace_async(
-                actor=actor,
-                provider_trace_create=ProviderTraceCreate(
-                    request_json=self.request_data,
-                    response_json={
-                        "content": {
-                            "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
-                            "reasoning": [content.model_dump_json() for content in self.reasoning_content],
-                        },
-                        "id": self.interface.message_id,
-                        "model": self.interface.model,
-                        "role": "assistant",
-                        # "stop_reason": "",
-                        # "stop_sequence": None,
-                        "type": "message",
-                        "usage": {
-                            "input_tokens": self.usage.prompt_tokens,
-                            "output_tokens": self.usage.completion_tokens,
-                        },
-                    },
-                    step_id=step_id,  # Use original step_id for telemetry
-                ),
-            ),
-            label="create_provider_trace",
+        response_json = {
+            "content": {
+                "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
+                "reasoning": [content.model_dump_json() for content in self.reasoning_content],
+            },
+            "id": self.interface.message_id,
+            "model": self.interface.model,
+            "role": "assistant",
+            # "stop_reason": "",
+            # "stop_sequence": None,
+            "type": "message",
+            "usage": {
+                "input_tokens": self.usage.prompt_tokens,
+                "output_tokens": self.usage.completion_tokens,
+            },
+        }
+
+        log_attributes(
+            {
+                "step_id": step_id,
+                "actor": actor,
+                "request_data": self.request_data,
+                "response_data": response_json,
+            }
         )
+
+        if settings.track_provider_trace:
+            safe_create_task(
+                self.telemetry_manager.create_provider_trace_async(
+                    actor=actor,
+                    provider_trace_create=ProviderTraceCreate(
+                        request_json=self.request_data,
+                        response_json=response_json,
+                        step_id=step_id,  # Use original step_id for telemetry
+                    ),
+                ),
+                label="create_provider_trace",
+            )
