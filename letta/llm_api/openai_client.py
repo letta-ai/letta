@@ -1,7 +1,7 @@
 import asyncio
 import os
 import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
@@ -1101,6 +1101,11 @@ def fill_image_content_in_responses_input(openai_message_list: List[dict], pydan
             pm = user_msgs[user_idx]
             user_idx += 1
 
+            existing_content = item.get("content")
+            if _is_responses_style_content(existing_content):
+                rewritten.append(item)
+                continue
+
             # Only rewrite if the pydantic message actually contains multiple parts or images
             if not isinstance(pm.content, list) or (len(pm.content) == 1 and pm.content[0].type == MessageContentType.text):
                 rewritten.append(item)
@@ -1128,3 +1133,17 @@ def fill_image_content_in_responses_input(openai_message_list: List[dict], pydan
             rewritten.append(item)
 
     return rewritten
+
+
+def _is_responses_style_content(content: Optional[Any]) -> bool:
+    if not isinstance(content, list):
+        return False
+
+    allowed_types = {"input_text", "input_image"}
+    for part in content:
+        if not isinstance(part, dict):
+            return False
+        part_type = part.get("type")
+        if part_type not in allowed_types:
+            return False
+    return True

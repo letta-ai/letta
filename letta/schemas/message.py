@@ -43,6 +43,7 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_message_content import (
     ImageContent,
+    ImageSourceType,
     LettaMessageContentUnion,
     OmittedReasoningContent,
     ReasoningContent,
@@ -1309,13 +1310,12 @@ class Message(BaseMessage):
             )
 
         elif self.role == "user":
-            # TODO do we need to do a swap to placeholder text here for images?
+            assert self.content, vars(self)
             assert all([isinstance(c, TextContent) or isinstance(c, ImageContent) for c in self.content]), vars(self)
 
             user_dict = {
                 "role": self.role.value if hasattr(self.role, "value") else self.role,
-                # TODO support multi-modal
-                "content": self.content[0].text,
+                "content": self._build_responses_user_content(),
             }
 
             # Optional field, do not include if null or invalid
@@ -1396,6 +1396,53 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return message_dicts
+
+    def _build_responses_user_content(self) -> List[dict]:
+        content_parts: List[dict] = []
+        for content in self.content or []:
+            if isinstance(content, TextContent):
+                content_parts.append({"type": "input_text", "text": content.text})
+            elif isinstance(content, ImageContent):
+                image_part = self._image_content_to_responses_part(content)
+                if image_part:
+                    content_parts.append(image_part)
+
+        if not content_parts:
+            content_parts.append({"type": "input_text", "text": ""})
+
+        return content_parts
+
+    @staticmethod
+    def _image_content_to_responses_part(image_content: ImageContent) -> Optional[dict]:
+        image_url = Message._image_source_to_data_url(image_content)
+        if not image_url:
+            return None
+
+        detail = getattr(image_content.source, "detail", None) or "auto"
+        return {"type": "input_image", "image_url": image_url, "detail": detail}
+
+    @staticmethod
+    def _image_source_to_data_url(image_content: ImageContent) -> Optional[str]:
+        source = image_content.source
+
+        if source.type == ImageSourceType.base64:
+            data = getattr(source, "data", None)
+            if not data:
+                return None
+            media_type = getattr(source, "media_type", None) or "image/png"
+            return f"data:{media_type};base64,{data}"
+
+        if source.type == ImageSourceType.url:
+            return getattr(source, "url", None)
+
+        if source.type == ImageSourceType.letta:
+            data = getattr(source, "data", None)
+            if not data:
+                return None
+            media_type = getattr(source, "media_type", None) or "image/png"
+            return f"data:{media_type};base64,{data}"
+
+        return None
 
     @staticmethod
     def to_openai_responses_dicts_from_list(
