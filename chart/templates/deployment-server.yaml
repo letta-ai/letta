@@ -1,0 +1,96 @@
+{{- if .Values.server.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "letta.fullname" . }}-server
+  labels:
+    {{- include "letta.server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.server.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "letta.server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "letta.server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "letta.serviceAccountName" . }}
+      containers:
+      - name: server
+        image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+        imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.server.ports.http }}
+          protocol: TCP
+        - name: api
+          containerPort: {{ .Values.server.ports.api }}
+          protocol: TCP
+        env:
+        - name: LETTA_PG_URI
+          value: {{ include "letta.db.uri" . | quote }}
+        - name: LETTA_PG_USER
+          value: {{ include "letta.db.user" . | quote }}
+        - name: LETTA_PG_PASSWORD
+          value: {{ include "letta.db.password" . | quote }}
+        - name: LETTA_PG_DB
+          value: {{ include "letta.db.name" . | quote }}
+        - name: LETTA_PG_HOST
+          value: {{ include "letta.db.host" . | quote }}
+        - name: LETTA_PG_PORT
+          value: {{ include "letta.db.port" . | quote }}
+        {{- range $key, $value := .Values.server.env }}
+        {{- if $value }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: api
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: api
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.server.resources | nindent 10 }}
+      {{- if and .Values.database.enabled (not .Values.externalDatabase.enabled) }}
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ include "letta.db.host" . }} {{ include "letta.db.port" . }}; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
