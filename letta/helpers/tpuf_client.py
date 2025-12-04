@@ -972,6 +972,12 @@ class TurbopufferClient:
         if query_text and search_mode in ["vector", "hybrid"]:
             embeddings = await self._generate_embeddings([query_text], actor)
             query_embedding = embeddings[0]
+
+        # Check if we should fallback to timestamp-based retrieval
+        if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
+            # Fallback to retrieving most recent messages when no search query is provided
+            search_mode = "timestamp"
+
         # namespace is org-scoped
         namespace_name = await self._get_message_namespace_name(organization_id)
 
