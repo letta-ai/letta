@@ -1,0 +1,161 @@
+# Default values for letta
+replicaCount: 1
+
+# Database configuration
+database:
+  enabled: true
+  image:
+    repository: ankane/pgvector
+    tag: v0.5.1
+    pullPolicy: IfNotPresent
+  
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    size: 10Gi
+    accessMode: ReadWriteOnce
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Database credentials
+  postgres:
+    user: letta
+    password: letta  # Change this in production!
+    database: letta
+    port: 5432
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5432
+
+# External database configuration
+# Use this when you have an external PostgreSQL database (e.g., managed database service)
+# When enabled, the internal database will be disabled
+externalDatabase:
+  enabled: false
+  host: ""  # External database hostname or IP
+  port: 5432
+  user: letta
+  password: ""  # Set this via --set or secrets
+  database: letta
+  # Optional: Full connection URI (if provided, takes precedence over individual fields)
+  uri: ""
+
+# Server configuration
+server:
+  enabled: true
+  image:
+    repository: letta/letta
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  ports:
+    http: 8083
+    api: 8283
+  
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  
+  # Environment variables
+  env:
+    LETTA_DEBUG: "True"
+    # API Keys - should be set via secrets in production
+    OPENAI_API_KEY: ""
+    GROQ_API_KEY: ""
+    ANTHROPIC_API_KEY: ""
+    OLLAMA_BASE_URL: ""
+    AZURE_API_KEY: ""
+    AZURE_BASE_URL: ""
+    AZURE_API_VERSION: ""
+    GEMINI_API_KEY: ""
+    VLLM_API_BASE: ""
+    OPENLLM_AUTH_TYPE: ""
+    OPENLLM_API_KEY: ""
+    LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    CLICKHOUSE_ENDPOINT: ""
+    CLICKHOUSE_DATABASE: ""
+    CLICKHOUSE_USERNAME: ""
+    CLICKHOUSE_PASSWORD: ""
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 8083
+        targetPort: 8083
+      api:
+        port: 8283
+        targetPort: 8283
+
+# Nginx configuration
+nginx:
+  enabled: true
+  image:
+    repository: nginx
+    tag: stable-alpine3.17-slim
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  
+  service:
+    type: LoadBalancer  # Change to ClusterIP and use Ingress if preferred
+    port: 80
+    targetPort: 80
+
+# Ingress configuration (optional)
+# Works with any ingress controller (nginx, traefik, etc.)
+ingress:
+  enabled: false
+  className: ""  # Ingress class name (e.g., "nginx", "traefik")
+  annotations: {}
+  hosts:
+    - host: letta.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # Service to route to (nginx or server)
+  serviceName: nginx  # Options: "nginx" or "server"
+  servicePort: 80     # Port of the selected service
+
+# Global settings
+global:
+  # Service account
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  
+  # Image pull secrets
+  imagePullSecrets: []
+  
+  # Node selector
+  nodeSelector: {}
+  
+  # Tolerations
+  tolerations: []
+  
+  # Affinity
+  affinity: {}
+
