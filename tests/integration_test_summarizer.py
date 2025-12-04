@@ -720,6 +720,105 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
         print(f"Mode '{mode}' with {llm_config.model}: {len(in_context_messages)} -> {len(result)} messages")
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+async def test_v3_summarize_hard_eviction_when_still_over_threshold(
+    server: SyncServer,
+    actor,
+    llm_config: LLMConfig,
+    caplog,
+):
+    """Regression test: ensure V3 summarizer does a hard eviction when
+    summarization fails to bring the context size below the proactive
+    summarization threshold.
+
+    This test simulates the edge case that previously led to summarization
+    loops:
+
+    1. A large pre-summarization token count triggers summarization.
+    2. Even after summarization, the (mocked) post-summarization token count
+       is still above the trigger threshold.
+    3. We verify that LettaAgentV3:
+       - Logs an error about summarization failing to reduce context size.
+       - Evicts all prior messages, keeping only the system message.
+       - Updates `context_token_estimate` to the token count of the minimal
+         context so future steps don't keep re-triggering summarization based
+         on a stale, oversized value.
+    """
+
+    # Build a small but non-trivial conversation with an explicit system
+    # message so that after hard eviction we expect to keep exactly that one
+    # message.
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        ),
+        PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(type="text", text="User message 0: hello")],
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            content=[TextContent(type="text", text="Assistant response 0: hi there")],
+        ),
+    ]
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    # Create the V3 agent loop
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+    # We don't care which summarizer mode is used here; we just need
+    # summarize_conversation_history to run and then hit the branch where the
+    # *post*-summarization token count is still above the proactive
+    # summarization threshold. We simulate that by patching the
+    # letta_agent_v3-level count_tokens helper to report an extremely large
+    # token count for the first call (post-summary) and a small count for the
+    # second call (after hard eviction).
+    with patch("letta.agents.letta_agent_v3.count_tokens") as mock_count_tokens:
+        # First call: pretend the summarized context is still huge relative to
+        # this model's context window so that we always trigger the
+        # hard-eviction path. Second call: minimal context (system only) is
+        # small.
+        context_limit = llm_config.context_window or 100_000
+        huge_tokens = context_limit * 10  # safely above any reasonable trigger
+        mock_count_tokens.side_effect = [huge_tokens, 10]
+
+        caplog.set_level("ERROR")
+
+        result = await agent_loop.summarize_conversation_history(
+            in_context_messages=in_context_messages,
+            new_letta_messages=[],
+            # total_tokens is not used when force=True for triggering, but we
+            # set it to a large value for clarity.
+            total_tokens=llm_config.context_window * 2 if llm_config.context_window else None,
+            force=True,
+        )
+
+    # We should have made exactly two token-count calls: one for the
+    # summarized context, one for the hard-evicted minimal context.
+    assert mock_count_tokens.call_count == 2
+
+    # After hard eviction, only the system message should remain in-context.
+    assert isinstance(result, list)
+    assert len(result) == 1, f"Expected only the system message after hard eviction, got {len(result)} messages"
+    assert result[0].role == MessageRole.system
+
+    # Agent state should also reflect exactly one message id.
+    assert len(agent_loop.agent_state.message_ids) == 1
+
+    # context_token_estimate should be updated to the minimal token count
+    # (second side-effect value from count_tokens), rather than the original
+    # huge value.
+    assert agent_loop.context_token_estimate == 10
+
+    # Verify that we logged an error about summarization failing to reduce
+    # context size.
+    error_logs = [rec for rec in caplog.records if "Summarization failed to sufficiently reduce context size" in rec.getMessage()]
+    assert error_logs, "Expected an error log when summarization fails to reduce context size sufficiently"
+
+
 # ======================================================================================================================
 # Sliding Window Summarizer Unit Tests
 # ======================================================================================================================

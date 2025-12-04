@@ -49,7 +49,10 @@ from letta.server.rest_api.utils import (
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
 from letta.services.summarizer.summarizer_config import SummarizerConfig, get_default_summarizer_config
-from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
+from letta.services.summarizer.summarizer_sliding_window import (
+    count_tokens,
+    summarize_via_sliding_window,
+)
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response, package_summarize_message_no_counts
 from letta.utils import log_telemetry, validate_function_response
@@ -71,6 +74,11 @@ class LettaAgentV3(LettaAgentV2):
         super()._initialize_state()
         self._require_tool_call = False
         self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
+        # Approximate token count for the *current* in-context buffer, used
+        # only for proactive summarization / eviction logic. This is derived
+        # from per-step usage but can be updated after summarization without
+        # affecting step-level telemetry.
+        self.context_token_estimate: int | None = None
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -141,8 +149,8 @@ class LettaAgentV3(LettaAgentV2):
 
             # Proactive summarization if approaching context limit
             if (
-                self.last_step_usage
-                and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                self.context_token_estimate is not None
+                and self.context_token_estimate > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
                 and not self.agent_state.message_buffer_autoclear
             ):
                 self.logger.warning(
@@ -153,7 +161,7 @@ class LettaAgentV3(LettaAgentV2):
                 in_context_messages = await self.summarize_conversation_history(
                     in_context_messages=in_context_messages,
                     new_letta_messages=self.response_messages,
-                    total_tokens=self.last_step_usage.total_tokens,
+                    total_tokens=self.context_token_estimate,
                     force=True,
                 )
 
@@ -167,11 +175,11 @@ class LettaAgentV3(LettaAgentV2):
 
         # Rebuild context window after stepping (safety net)
         if not self.agent_state.message_buffer_autoclear:
-            if self.last_step_usage:
+            if self.context_token_estimate is not None:
                 await self.summarize_conversation_history(
                     in_context_messages=in_context_messages,
                     new_letta_messages=self.response_messages,
-                    total_tokens=self.last_step_usage.total_tokens,
+                    total_tokens=self.context_token_estimate,
                     force=False,
                 )
             else:
@@ -276,8 +284,8 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Proactive summarization if approaching context limit
                 if (
-                    self.last_step_usage
-                    and self.last_step_usage.total_tokens > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
+                    self.context_token_estimate is not None
+                    and self.context_token_estimate > self.agent_state.llm_config.context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
                     and not self.agent_state.message_buffer_autoclear
                 ):
                     self.logger.warning(
@@ -288,7 +296,7 @@ class LettaAgentV3(LettaAgentV2):
                     in_context_messages = await self.summarize_conversation_history(
                         in_context_messages=in_context_messages,
                         new_letta_messages=self.response_messages,
-                        total_tokens=self.last_step_usage.total_tokens,
+                        total_tokens=self.context_token_estimate,
                         force=True,
                     )
 
@@ -304,11 +312,11 @@ class LettaAgentV3(LettaAgentV2):
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
 
             if not self.agent_state.message_buffer_autoclear:
-                if self.last_step_usage:
+                if self.context_token_estimate is not None:
                     await self.summarize_conversation_history(
                         in_context_messages=in_context_messages,
                         new_letta_messages=self.response_messages,
-                        total_tokens=self.last_step_usage.total_tokens,
+                        total_tokens=self.context_token_estimate,
                         force=False,
                     )
                 else:
@@ -1364,7 +1372,8 @@ class LettaAgentV3(LettaAgentV2):
             template_id=self.agent_state.template_id,
         )
 
-        # Update the message_ids in the agent state
+        # Update the message_ids in the agent state to include the summary
+        # plus whatever tail we decided to keep.
         new_in_context_messages = [in_context_messages[0], summary_message_obj] + new_in_context_messages
         new_in_context_message_ids = [m.id for m in new_in_context_messages]
         await self.agent_manager.update_message_ids_async(
@@ -1373,5 +1382,72 @@ class LettaAgentV3(LettaAgentV2):
             actor=self.actor,
         )
         self.agent_state.message_ids = new_in_context_message_ids
+
+        # After summarization, recompute an approximate token count for the
+        # updated in-context messages so that subsequent summarization
+        # decisions don't keep firing based on a stale, pre-summarization
+        # total_tokens value.
+        try:
+            new_total_tokens = await count_tokens(
+                actor=self.actor,
+                llm_config=self.agent_state.llm_config,
+                messages=new_in_context_messages,
+            )
+
+            context_limit = self.agent_state.llm_config.context_window
+            trigger_threshold = int(context_limit * SUMMARIZATION_TRIGGER_MULTIPLIER)
+
+            # If even after summarization the context is still at or above
+            # the proactive summarization threshold, treat this as a hard
+            # failure: log loudly and evict all prior conversation state
+            # (keeping only the system message) to avoid getting stuck in
+            # repeated summarization loops.
+            if new_total_tokens > trigger_threshold:
+                self.logger.error(
+                    "Summarization failed to sufficiently reduce context size: "
+                    f"post-summarization tokens={new_total_tokens}, "
+                    f"threshold={trigger_threshold}, context_window={context_limit}. "
+                    "Evicting all prior messages without a summary to break potential loops.",
+                )
+
+                # Keep only the system message in-context.
+                system_message = in_context_messages[0]
+                new_in_context_messages = [system_message]
+                new_in_context_message_ids = [system_message.id]
+
+                await self.agent_manager.update_message_ids_async(
+                    agent_id=self.agent_state.id,
+                    message_ids=new_in_context_message_ids,
+                    actor=self.actor,
+                )
+                self.agent_state.message_ids = new_in_context_message_ids
+
+                # Recompute token usage for this minimal context and update
+                # context_token_estimate so future checks see the reduced size.
+                try:
+                    minimal_tokens = await count_tokens(
+                        actor=self.actor,
+                        llm_config=self.agent_state.llm_config,
+                        messages=new_in_context_messages,
+                    )
+                    self.context_token_estimate = minimal_tokens
+                except Exception as inner_e:
+                    self.logger.warning(
+                        f"Failed to recompute token usage after hard eviction: {inner_e}",
+                        exc_info=True,
+                    )
+
+                return new_in_context_messages
+
+            # Normal case: summarization succeeded in bringing us below the
+            # proactive threshold. Update context_token_estimate so future
+            # summarization checks reason over the *post*-summarization
+            # context size.
+            self.context_token_estimate = new_total_tokens
+        except Exception as e:  # best-effort; never block the agent on this
+            self.logger.warning(
+                f"Failed to recompute token usage after summarization: {e}",
+                exc_info=True,
+            )
 
         return new_in_context_messages

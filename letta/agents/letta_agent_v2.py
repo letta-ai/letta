@@ -899,6 +899,14 @@ class LettaAgentV2(BaseAgentV2):
         # Save per-step usage for Step token details (before accumulating)
         self.last_step_usage = step_usage_stats
 
+        # For newer agent loops (e.g. V3), we also maintain a running
+        # estimate of the current context size derived from the latest
+        # step's total tokens. This can then be safely adjusted after
+        # summarization without mutating the historical per-step usage
+        # stored in Step metrics.
+        if hasattr(self, "context_token_estimate"):
+            self.context_token_estimate = step_usage_stats.total_tokens
+
         # Accumulate into global usage
         self.usage.step_count += step_usage_stats.step_count
         self.usage.completion_tokens += step_usage_stats.completion_tokens
