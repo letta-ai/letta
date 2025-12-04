@@ -58,6 +58,37 @@ def extract_assistant_message(response_data: dict) -> str:
         return ""
 
 
+def prepare_anthropic_headers(request: Request) -> dict | None:
+    skip_headers = {
+        "host",
+        "connection",
+        "content-length",
+        "transfer-encoding",
+        "content-encoding",
+        "te",
+        "upgrade",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "authorization",
+    }
+
+    anthropic_headers = {}
+    for key, value in request.headers.items():
+        if key.lower() not in skip_headers:
+            anthropic_headers[key] = value
+
+    # Fallback to letta's anthropic api key if not provided
+    if "x-api-key" not in anthropic_headers and "anthropic-api-key" not in anthropic_headers:
+        anthropic_api_key = model_settings.anthropic_api_key
+        if anthropic_api_key:
+            anthropic_headers["x-api-key"] = anthropic_api_key
+
+    if "content-type" not in anthropic_headers:
+        anthropic_headers["content-type"] = "application/json"
+
+    return anthropic_headers
+
+
 def format_memory_blocks(blocks) -> str:
     blocks_with_content = [block for block in blocks if block.value]
 
@@ -254,26 +285,14 @@ async def anthropic_messages_proxy(
             logger.info(f"  [{i}] {msg[:200]}{'...' if len(msg) > 200 else ''}")
         logger.info("=" * 70)
 
-    # Get Anthropic API key from headers or fall back to settings
-    # Claude Code sends X-Api-Key header (normalized to x-api-key by FastAPI)
-    # Priority: x-api-key header (from Claude Code) > server settings (fallback)
-    # anthropic_api_key = request.headers.get("x-api-key") or model_settings.anthropic_api_key
-    anthropic_api_key = model_settings.anthropic_api_key
-
-    if not anthropic_api_key:
+    anthropic_headers = prepare_anthropic_headers(request)
+    if not anthropic_headers:
         logger.error("[Anthropic Proxy] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required. Pass via anthropic-api-key or x-api-key header."}}',
             status_code=401,
             media_type="application/json",
         )
-
-    # Prepare headers for Anthropic API
-    anthropic_headers = {
-        "x-api-key": anthropic_api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
 
     # Check if this is a streaming request
     try:
@@ -461,27 +480,16 @@ async def anthropic_catchall_proxy(
     # Reconstruct the full path
     path = f"v1/{endpoint}"
 
-    logger.info(f"Proxying catch-all request: {request.method} /{path}")
+    logger.info(f"[Anthropic Proxy] Proxying catch-all request: {request.method} /{path}")
 
-    # Get Anthropic API key from headers or fall back to settings
-    # Claude Code sends X-Api-Key header (normalized to x-api-key by FastAPI)
-    # Priority: x-api-key header (from Claude Code) > server settings (fallback)
-    # anthropic_api_key = request.headers.get("x-api-key") or model_settings.anthropic_api_key
-    anthropic_api_key = model_settings.anthropic_api_key
-    if not anthropic_api_key:
+    anthropic_headers = prepare_anthropic_headers(request)
+    if not anthropic_headers:
         logger.error("[Anthropic Proxy] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required"}}',
             status_code=401,
             media_type="application/json",
         )
-
-    # Prepare headers for Anthropic API
-    anthropic_headers = {
-        "x-api-key": anthropic_api_key,
-        "anthropic-version": request.headers.get("anthropic-version", "2023-06-01"),
-        "content-type": request.headers.get("content-type", "application/json"),
-    }
 
     # Forward the request to Anthropic API
     async with httpx.AsyncClient(timeout=300.0) as client:
