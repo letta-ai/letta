@@ -1488,13 +1488,12 @@ class AgentManager:
         self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False, needs_agent_state: bool = True
     ) -> Optional[PydanticAgentState]:
         """
-        Removes all in-context messages for the specified agent except the original system message by:
+        Clears all in-context messages for the specified agent except the original system message by:
           1) Preserving the first message ID (original system message).
-          2) Deleting all other messages for the agent.
-          3) Updating the agent's message_ids to only contain the system message.
-          4) Optionally adding default initial messages after the system message.
+          2) Updating the agent's message_ids to only contain the system message.
+          3) Optionally adding default initial messages after the system message.
 
-        This action is destructive and cannot be undone once committed.
+        Note: This only clears messages from the agent's context, it does not delete them from the database.
 
         Args:
             add_default_initial_messages: If true, adds the default initial messages after resetting.
@@ -1517,11 +1516,6 @@ class AgentManager:
                 raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 
             system_message_id = agent.message_ids[0]
-
-        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor, exclude_ids=[system_message_id])
-
-        async with db_registry.async_session() as session:
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
 
