@@ -1,3 +1,4 @@
+import json
 from typing import AsyncGenerator, List
 
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
@@ -256,10 +257,8 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
 
         log_attributes(
             {
-                "step_id": step_id,
-                "actor": actor,
-                "request_data": self.request_data,
-                "response_data": response_json,
+                "request_data": json.dumps(self.request_data),
+                "response_data": json.dumps(response_json),
             }
         )
 

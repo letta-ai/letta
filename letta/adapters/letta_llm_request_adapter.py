@@ -1,3 +1,4 @@
+import json
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -105,10 +106,8 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
 
         log_attributes(
             {
-                "step_id": step_id,
-                "actor": actor,
-                "request_data": self.request_data,
-                "response_data": self.response_data,
+                "request_data": json.dumps(self.request_data),
+                "response_data": json.dumps(self.response_data),
             }
         )
 
