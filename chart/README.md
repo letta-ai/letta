@@ -43,25 +43,68 @@ helm install letta ./chart \
 
 ### Install with Secrets
 
-For production deployments, it's recommended to use Kubernetes Secrets for sensitive data:
+For production deployments, it's **strongly recommended** to use Kubernetes Secrets for all sensitive data. The chart supports two approaches:
+
+#### Option 1: Let Helm Create the Secret (Recommended)
+
+The chart can automatically create a secret from values:
 
 ```bash
-# Create a secret for API keys
-kubectl create secret generic letta-api-keys \
-  --from-literal=OPENAI_API_KEY=your-key \
-  --from-literal=ANTHROPIC_API_KEY=your-key \
-  --from-literal=GROQ_API_KEY=your-key
-
-# Create a secret for database credentials
-kubectl create secret generic letta-db-credentials \
-  --from-literal=POSTGRES_USER=letta \
-  --from-literal=POSTGRES_PASSWORD=secure-password \
-  --from-literal=POSTGRES_DB=letta
-
-# Update values.yaml to reference these secrets
-# Then install
-helm install letta ./chart -f values-with-secrets.yaml
+helm install letta ./chart \
+  --set secrets.create=true \
+  --set secrets.databasePassword=your-secure-password \
+  --set secrets.openaiApiKey=your-openai-key \
+  --set secrets.anthropicApiKey=your-anthropic-key \
+  --set secrets.groqApiKey=your-groq-key
 ```
+
+Or use a values file:
+
+```yaml
+# secrets-values.yaml
+secrets:
+  create: true
+  databasePassword: "your-secure-password"
+  openaiApiKey: "sk-..."
+  anthropicApiKey: "sk-ant-..."
+  groqApiKey: "gsk_..."
+  azureApiKey: "your-azure-key"
+  geminiApiKey: "your-gemini-key"
+  openllmApiKey: "your-openllm-key"
+
+externalDatabase:
+  enabled: true
+  host: "db.example.com"
+  # These will be stored in the secret
+  user: "letta"
+  password: "secure-password"
+  database: "letta"
+```
+
+```bash
+helm install letta ./chart -f secrets-values.yaml
+```
+
+#### Option 2: Use Existing Secret
+
+If you prefer to manage secrets separately:
+
+```bash
+# Create secret manually
+kubectl create secret generic letta-secrets \
+  --from-literal=database-password=secure-password \
+  --from-literal=openai-api-key=sk-... \
+  --from-literal=anthropic-api-key=sk-ant-... \
+  --from-literal=external-database-host=db.example.com \
+  --from-literal=external-database-password=secure-password
+
+# Reference it in values
+helm install letta ./chart \
+  --set secrets.create=false \
+  --set secrets.existingSecret=letta-secrets
+```
+
+**Note**: When using `existingSecret`, ensure the secret keys match the expected names (see Secrets Parameters section below).
 
 ## Configuration
 
@@ -145,6 +188,34 @@ The following table lists the configurable parameters and their default values:
 | `ingress.tls` | TLS configuration | `[]` |
 | `ingress.serviceName` | Service to route to ("nginx" or "server") | `nginx` |
 | `ingress.servicePort` | Port of the selected service | `80` |
+
+### Secrets Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `secrets.create` | Create a new secret | `true` |
+| `secrets.existingSecret` | Name of existing secret to use | `""` |
+| `secrets.name` | Secret name (auto-generated if empty) | `""` |
+| `secrets.databasePassword` | Internal database password | `""` |
+| `secrets.externalDatabaseHost` | External database host | `""` |
+| `secrets.externalDatabaseUser` | External database user | `""` |
+| `secrets.externalDatabasePassword` | External database password | `""` |
+| `secrets.externalDatabaseName` | External database name | `""` |
+| `secrets.externalDatabaseUri` | External database full URI | `""` |
+| `secrets.openaiApiKey` | OpenAI API key | `""` |
+| `secrets.groqApiKey` | Groq API key | `""` |
+| `secrets.anthropicApiKey` | Anthropic API key | `""` |
+| `secrets.azureApiKey` | Azure API key | `""` |
+| `secrets.geminiApiKey` | Gemini API key | `""` |
+| `secrets.openllmApiKey` | OpenLLM API key | `""` |
+| `secrets.clickhouseUsername` | ClickHouse username | `""` |
+| `secrets.clickhousePassword` | ClickHouse password | `""` |
+
+**Secret Key Names**: When using `existingSecret`, the secret must contain these keys:
+- `database-password`
+- `external-database-host`, `external-database-user`, `external-database-password`, `external-database-name`, `external-database-uri`
+- `openai-api-key`, `groq-api-key`, `anthropic-api-key`, `azure-api-key`, `gemini-api-key`, `openllm-api-key`
+- `clickhouse-username`, `clickhouse-password`
 
 ## Usage Examples
 
@@ -238,10 +309,20 @@ externalDatabase:
   host: "your-db-host.example.com"
   port: 5432
   user: "letta"
-  password: "your-secure-password"  # Or use secrets
+  password: "your-secure-password"  # Will be stored in secret if secrets.create=true
   database: "letta"
   # Optional: Use full URI instead of individual fields
   # uri: "postgresql://user:password@host:5432/database"
+
+# Recommended: Store credentials in secrets
+secrets:
+  create: true
+  externalDatabaseHost: "your-db-host.example.com"
+  externalDatabaseUser: "letta"
+  externalDatabasePassword: "your-secure-password"
+  externalDatabaseName: "letta"
+  # Or use full URI
+  # externalDatabaseUri: "postgresql://user:password@host:5432/database"
 ```
 
 Or install with inline values:
@@ -372,17 +453,24 @@ kubectl describe pvc <pvc-name>
 
 ## Security Considerations
 
-1. **Secrets Management**: Never commit secrets to values.yaml. Use Kubernetes Secrets or external secret management systems (e.g., Sealed Secrets, External Secrets Operator, Vault)
+1. **Secrets Management**: 
+   - **Never commit secrets to values.yaml or git repositories**
+   - Always use Kubernetes Secrets for sensitive data (passwords, API keys, database credentials)
+   - Use `--set` flags or secret management tools (Sealed Secrets, External Secrets Operator, Vault, etc.)
+   - When using `secrets.create=true`, values are base64 encoded in the secret
+   - For production, prefer `secrets.existingSecret` with secrets created via `kubectl` or secret management tools
 
-2. **Database Password**: Change the default database password in production
+2. **Database Password**: Change the default database password in production and store it in secrets
 
-3. **API Keys**: Store API keys in Kubernetes Secrets and reference them via `envFrom`
+3. **API Keys**: All API keys are automatically stored in secrets when `secrets.create=true` and referenced via `secretKeyRef` in the deployment
 
-4. **Network Policies**: Consider implementing NetworkPolicies to restrict pod-to-pod communication
+4. **External Database**: When using external databases, store all credentials (host, user, password, URI) in secrets
 
-5. **RBAC**: The chart creates a ServiceAccount. Configure RBAC as needed for your security requirements
+5. **Network Policies**: Consider implementing NetworkPolicies to restrict pod-to-pod communication
 
-6. **TLS/SSL**: Enable TLS for production deployments using Ingress with TLS certificates
+6. **RBAC**: The chart creates a ServiceAccount. Configure RBAC as needed for your security requirements
+
+7. **TLS/SSL**: Enable TLS for production deployments using Ingress with TLS certificates
 
 ## Contributing
 

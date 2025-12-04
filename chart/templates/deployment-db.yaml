@@ -30,8 +30,17 @@ spec:
         env:
         - name: POSTGRES_USER
           value: {{ .Values.database.postgres.user | quote }}
+        {{- $secretName := include "letta.secretName" . }}
+        {{- if and $secretName (or .Values.secrets.databasePassword .Values.database.postgres.password) }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: database-password
+        {{- else }}
         - name: POSTGRES_PASSWORD
           value: {{ .Values.database.postgres.password | quote }}
+        {{- end }}
         - name: POSTGRES_DB
           value: {{ .Values.database.postgres.database | quote }}
         volumeMounts:

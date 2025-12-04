@@ -32,6 +32,82 @@ spec:
           containerPort: {{ .Values.server.ports.api }}
           protocol: TCP
         env:
+        {{- $secretName := include "letta.secretName" . }}
+        {{- if $secretName }}
+        {{- if .Values.externalDatabase.enabled }}
+        {{- if or .Values.secrets.externalDatabaseUri .Values.externalDatabase.uri }}
+        - name: LETTA_PG_URI
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: external-database-uri
+        {{- else }}
+        - name: LETTA_PG_URI
+          value: {{ include "letta.db.uri" . | quote }}
+        {{- end }}
+        {{- if or .Values.secrets.externalDatabaseHost .Values.externalDatabase.host }}
+        - name: LETTA_PG_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: external-database-host
+        {{- else }}
+        - name: LETTA_PG_HOST
+          value: {{ include "letta.db.host" . | quote }}
+        {{- end }}
+        {{- if or .Values.secrets.externalDatabaseUser .Values.externalDatabase.user }}
+        - name: LETTA_PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: external-database-user
+        {{- else }}
+        - name: LETTA_PG_USER
+          value: {{ include "letta.db.user" . | quote }}
+        {{- end }}
+        {{- if or .Values.secrets.externalDatabasePassword .Values.externalDatabase.password }}
+        - name: LETTA_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: external-database-password
+        {{- else }}
+        - name: LETTA_PG_PASSWORD
+          value: {{ include "letta.db.password" . | quote }}
+        {{- end }}
+        {{- if or .Values.secrets.externalDatabaseName .Values.externalDatabase.database }}
+        - name: LETTA_PG_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: external-database-name
+        {{- else }}
+        - name: LETTA_PG_DB
+          value: {{ include "letta.db.name" . | quote }}
+        {{- end }}
+        {{- else }}
+        - name: LETTA_PG_USER
+          value: {{ include "letta.db.user" . | quote }}
+        {{- if or .Values.secrets.databasePassword .Values.database.postgres.password }}
+        - name: LETTA_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: database-password
+        {{- else }}
+        - name: LETTA_PG_PASSWORD
+          value: {{ include "letta.db.password" . | quote }}
+        {{- end }}
+        - name: LETTA_PG_DB
+          value: {{ include "letta.db.name" . | quote }}
+        - name: LETTA_PG_HOST
+          value: {{ include "letta.db.host" . | quote }}
+        - name: LETTA_PG_URI
+          value: {{ include "letta.db.uri" . | quote }}
+        {{- end }}
+        - name: LETTA_PG_PORT
+          value: {{ include "letta.db.port" . | quote }}
+        {{- else }}
         - name: LETTA_PG_URI
           value: {{ include "letta.db.uri" . | quote }}
         - name: LETTA_PG_USER
@@ -44,10 +120,69 @@ spec:
           value: {{ include "letta.db.host" . | quote }}
         - name: LETTA_PG_PORT
           value: {{ include "letta.db.port" . | quote }}
+        {{- end }}
         {{- range $key, $value := .Values.server.env }}
         {{- if $value }}
         - name: {{ $key }}
           value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if $secretName }}
+        {{- if .Values.secrets.openaiApiKey }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: openai-api-key
+        {{- end }}
+        {{- if .Values.secrets.groqApiKey }}
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: groq-api-key
+        {{- end }}
+        {{- if .Values.secrets.anthropicApiKey }}
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: anthropic-api-key
+        {{- end }}
+        {{- if .Values.secrets.azureApiKey }}
+        - name: AZURE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: azure-api-key
+        {{- end }}
+        {{- if .Values.secrets.geminiApiKey }}
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: gemini-api-key
+        {{- end }}
+        {{- if .Values.secrets.openllmApiKey }}
+        - name: OPENLLM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: openllm-api-key
+        {{- end }}
+        {{- if .Values.secrets.clickhouseUsername }}
+        - name: CLICKHOUSE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: clickhouse-username
+        {{- end }}
+        {{- if .Values.secrets.clickhousePassword }}
+        - name: CLICKHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: clickhouse-password
         {{- end }}
         {{- end }}
         livenessProbe:

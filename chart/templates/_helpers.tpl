@@ -177,3 +177,16 @@ Service account name
 {{- end }}
 {{- end }}
 
+{{/*
+Secret name
+*/}}
+{{- define "letta.secretName" -}}
+{{- if .Values.secrets.existingSecret }}
+{{- .Values.secrets.existingSecret }}
+{{- else if .Values.secrets.create }}
+{{- default (printf "%s-secrets" (include "letta.fullname" .)) .Values.secrets.name }}
+{{- else }}
+{{- "" }}
+{{- end }}
+{{- end }}
+

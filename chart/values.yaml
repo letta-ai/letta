@@ -26,7 +26,7 @@ database:
   # Database credentials
   postgres:
     user: letta
-    password: letta  # Change this in production!
+    password: letta  # Only used if secrets.create=true and secrets.databasePassword not set
     database: letta
     port: 5432
   
@@ -40,12 +40,13 @@ database:
 # When enabled, the internal database will be disabled
 externalDatabase:
   enabled: false
-  host: ""  # External database hostname or IP
+  host: ""  # External database hostname or IP (or use secrets)
   port: 5432
-  user: letta
-  password: ""  # Set this via --set or secrets
-  database: letta
+  user: letta  # Only used if secrets.create=true and secrets.externalDatabaseUser not set
+  password: ""  # Only used if secrets.create=true and secrets.externalDatabasePassword not set
+  database: letta  # Only used if secrets.create=true and secrets.externalDatabaseName not set
   # Optional: Full connection URI (if provided, takes precedence over individual fields)
+  # Should be stored in secrets.externalDatabaseUri for production
   uri: ""
 
 # Server configuration
@@ -70,26 +71,17 @@ server:
       memory: "4Gi"
       cpu: "2000m"
   
-  # Environment variables
+  # Environment variables (non-sensitive)
   env:
     LETTA_DEBUG: "True"
-    # API Keys - should be set via secrets in production
-    OPENAI_API_KEY: ""
-    GROQ_API_KEY: ""
-    ANTHROPIC_API_KEY: ""
     OLLAMA_BASE_URL: ""
-    AZURE_API_KEY: ""
     AZURE_BASE_URL: ""
     AZURE_API_VERSION: ""
-    GEMINI_API_KEY: ""
     VLLM_API_BASE: ""
     OPENLLM_AUTH_TYPE: ""
-    OPENLLM_API_KEY: ""
     LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ""
     CLICKHOUSE_ENDPOINT: ""
     CLICKHOUSE_DATABASE: ""
-    CLICKHOUSE_USERNAME: ""
-    CLICKHOUSE_PASSWORD: ""
   
   # Service configuration
   service:
@@ -158,4 +150,38 @@ global:
   
   # Affinity
   affinity: {}
+
+# Secrets configuration
+# All sensitive values should be stored in Kubernetes Secrets
+secrets:
+  # Create a new secret (set to false to use existingSecret)
+  create: true
+  
+  # Name of existing secret to use (if create=false)
+  existingSecret: ""
+  
+  # Secret name (only used if create=true)
+  name: ""  # Auto-generated if empty
+  
+  # Database credentials (internal database)
+  databasePassword: ""  # If empty and create=true, uses database.postgres.password
+  
+  # External database credentials
+  externalDatabaseHost: ""
+  externalDatabaseUser: ""
+  externalDatabasePassword: ""
+  externalDatabaseName: ""
+  externalDatabaseUri: ""  # Full connection URI
+  
+  # API Keys
+  openaiApiKey: ""
+  groqApiKey: ""
+  anthropicApiKey: ""
+  azureApiKey: ""
+  geminiApiKey: ""
+  openllmApiKey: ""
+  
+  # ClickHouse credentials
+  clickhouseUsername: ""
+  clickhousePassword: ""
 
