@@ -126,8 +126,8 @@ async def modify_identity(
     return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
 
 
-@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
-async def upsert_identity_properties(
+@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_properties_for_identity")
+async def upsert_properties_for_identity(
     identity_id: IdentityId,
     properties: List[IdentityProperty] = Body(...),
     server: "SyncServer" = Depends(get_letta_server),

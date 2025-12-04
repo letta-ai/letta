@@ -423,6 +423,9 @@ async def initialize_message_sequence_async(
     )
     first_user_message = get_login_event(agent_state.timezone)  # event letting Letta know the user just logged in
 
+    if agent_state.agent_type == AgentType.letta_v1_agent:
+        return [{"role": "system", "content": full_system_message}]
+
     if include_initial_boot_message:
         llm_config = agent_state.llm_config
         uuid_str = str(uuid.uuid4())
@@ -819,7 +822,7 @@ def get_column_names_from_includes_params(
     include_relationships: Optional[List[str]] = None, includes: Optional[List[str]] = None
 ) -> Set[str]:
     include_mapping = {
-        "agent.blocks": ["core_memory"],
+        "agent.blocks": ["core_memory", "file_agents"],
         "agent.identities": ["identities"],
         "agent.managed_group": ["multi_agent_group"],
         "agent.secrets": ["tool_exec_environment_variables"],
@@ -1173,7 +1176,8 @@ async def build_source_passage_query(
 
 async def build_agent_passage_query(
     actor: User,
-    agent_id: str,  # Required for agent passages
+    agent_id: Optional[str] = None,
+    archive_id: Optional[str] = None,
     query_text: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -1183,7 +1187,11 @@ async def build_agent_passage_query(
     ascending: bool = True,
     embedding_config: Optional[EmbeddingConfig] = None,
 ) -> Select:
-    """Build query for agent passages with all filters applied."""
+    """Build query for agent/archive passages with all filters applied.
+
+    Can provide agent_id, archive_id, both, or neither (org-wide search).
+    If both are provided, agent_id takes precedence.
+    """
 
     # Handle embedding for vector search
     embedded_text = None
@@ -1200,12 +1208,23 @@ async def build_agent_passage_query(
         embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-    # Base query for agent passages - join through archives_agents
-    query = (
-        select(ArchivalPassage)
-        .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
-        .where(ArchivesAgents.agent_id == agent_id, ArchivalPassage.organization_id == actor.organization_id)
-    )
+    # Base query for passages
+    if agent_id:
+        # Query for agent passages - join through archives_agents
+        # Agent_id takes precedence if both agent_id and archive_id are provided
+        query = (
+            select(ArchivalPassage)
+            .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
+            .where(ArchivesAgents.agent_id == agent_id, ArchivalPassage.organization_id == actor.organization_id)
+        )
+    elif archive_id:
+        # Query for archive passages directly
+        query = select(ArchivalPassage).where(
+            ArchivalPassage.archive_id == archive_id, ArchivalPassage.organization_id == actor.organization_id
+        )
+    else:
+        # Org-wide search - all passages in organization
+        query = select(ArchivalPassage).where(ArchivalPassage.organization_id == actor.organization_id)
 
     # Apply filters
     if start_date:

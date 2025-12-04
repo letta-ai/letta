@@ -12,6 +12,8 @@ class ExperimentalParams(BaseModel):
 
     message_async: Optional[bool] = None
     letta_v1_agent: Optional[bool] = None
+    letta_v1_agent_message_async: Optional[bool] = None
+    modal_sandbox: Optional[bool] = None
 
 
 class HeaderParams(BaseModel):
@@ -31,6 +33,8 @@ def get_headers(
     sdk_version: Optional[str] = Header(None, alias="X-Stainless-Package-Version"),
     message_async: Optional[str] = Header(None, alias="X-Experimental-Message-Async"),
     letta_v1_agent: Optional[str] = Header(None, alias="X-Experimental-Letta-V1-Agent"),
+    letta_v1_agent_message_async: Optional[str] = Header(None, alias="X-Experimental-Letta-V1-Agent-Message-Async"),
+    modal_sandbox: Optional[str] = Header(None, alias="X-Experimental-Modal-Sandbox"),
 ) -> HeaderParams:
     """Dependency injection function to extract common headers from requests."""
     return HeaderParams(
@@ -41,6 +45,8 @@ def get_headers(
         experimental_params=ExperimentalParams(
             message_async=(message_async == "true") if message_async else None,
             letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,
+            letta_v1_agent_message_async=(letta_v1_agent_message_async == "true") if letta_v1_agent_message_async else None,
+            modal_sandbox=(modal_sandbox == "true") if modal_sandbox else None,
         ),
     )
 

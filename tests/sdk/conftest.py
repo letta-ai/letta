@@ -48,14 +48,12 @@ def server_url() -> str:
 
 # This fixture creates a client for each test module
 @pytest.fixture(scope="session")
-def client(server_url):
-    print("Running client tests with server:", server_url)
-
-    # Overide the base_url if the LETTA_API_URL is set
-    api_url = os.getenv("LETTA_API_URL")
-    base_url = api_url if api_url else server_url
-    # create the Letta client
-    yield Letta(base_url=base_url, token=None, timeout=300.0)
+def client(server_url: str) -> Letta:
+    """
+    Creates and returns a synchronous Letta REST client for testing.
+    """
+    client_instance = Letta(base_url=server_url)
+    yield client_instance
 
 
 def skip_test_if_not_implemented(handler, resource_name, test_name):
@@ -68,7 +66,7 @@ def create_test_module(
     id_param_name: str,
     create_params: List[Tuple[str, Dict[str, Any], Dict[str, Any], Optional[Exception]]] = [],
     upsert_params: List[Tuple[str, Dict[str, Any], Dict[str, Any], Optional[Exception]]] = [],
-    modify_params: List[Tuple[str, Dict[str, Any], Dict[str, Any], Optional[Exception]]] = [],
+    update_params: List[Tuple[str, Dict[str, Any], Dict[str, Any], Optional[Exception]]] = [],
     list_params: List[Tuple[Dict[str, Any], int]] = [],
 ) -> Dict[str, Any]:
     """Create a test module for a resource.
@@ -80,7 +78,7 @@ def create_test_module(
         resource_name: Name of the resource (e.g., "blocks", "tools")
         id_param_name: Name of the ID parameter (e.g., "block_id", "tool_id")
         create_params: List of (name, params, expected_error) tuples for create tests
-        modify_params: List of (name, params, expected_error) tuples for modify tests
+        update_params: List of (name, params, expected_error) tuples for update tests
         list_params: List of (query_params, expected_count) tuples for list tests
 
     Returns:
@@ -138,11 +136,7 @@ def create_test_module(
         expected_values = processed_params | processed_extra_expected
         for key, value in expected_values.items():
             if hasattr(item, key):
-                if key == "model" or key == "embedding":
-                    # NOTE: add back these tests after v1 migration
-                    continue
-                print(f"item.{key}: {getattr(item, key)}")
-                assert custom_model_dump(getattr(item, key)) == value, f"For key {key}, expected {value}, but got {getattr(item, key)}"
+                assert custom_model_dump(getattr(item, key)) == value
 
     @pytest.mark.order(1)
     def test_retrieve(handler):
@@ -180,9 +174,9 @@ def create_test_module(
                 assert custom_model_dump(getattr(item, key)) == value
 
     @pytest.mark.order(3)
-    def test_modify(handler, caren_agent, name, params, extra_expected_values, expected_error):
-        """Test modifying a resource."""
-        skip_test_if_not_implemented(handler, resource_name, "modify")
+    def test_update(handler, caren_agent, name, params, extra_expected_values, expected_error):
+        """Test updating a resource."""
+        skip_test_if_not_implemented(handler, resource_name, "update")
         if name not in test_item_ids:
             pytest.skip(f"Item '{name}' not found in test_items")
 
@@ -192,7 +186,7 @@ def create_test_module(
         processed_extra_expected = preprocess_params(extra_expected_values, caren_agent)
 
         try:
-            item = handler.modify(**processed_params)
+            item = handler.update(**processed_params)
         except Exception as e:
             if expected_error is not None:
                 assert isinstance(e, expected_error), f"Expected error with type {expected_error}, but got {type(e)}: {e}"
@@ -254,7 +248,7 @@ def create_test_module(
         "test_create": pytest.mark.parametrize("name, params, extra_expected_values, expected_error", create_params)(test_create),
         "test_retrieve": test_retrieve,
         "test_upsert": pytest.mark.parametrize("name, params, extra_expected_values, expected_error", upsert_params)(test_upsert),
-        "test_modify": pytest.mark.parametrize("name, params, extra_expected_values, expected_error", modify_params)(test_modify),
+        "test_update": pytest.mark.parametrize("name, params, extra_expected_values, expected_error", update_params)(test_update),
         "test_delete": test_delete,
         "test_list": pytest.mark.parametrize("query_params, count", list_params)(test_list),
     }

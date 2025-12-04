@@ -71,6 +71,20 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "dd.version"):
             log_data["dd.version"] = getattr(record, "dd.version")
 
+        # Add OpenTelemetry trace correlation (for OTEL → Datadog integration)
+        try:
+            from opentelemetry import trace
+
+            span = trace.get_current_span()
+            if span and span.get_span_context().is_valid:
+                ctx = span.get_span_context()
+                # Format trace_id and span_id as Datadog expects (decimal strings)
+                log_data["dd.trace_id"] = str(ctx.trace_id)
+                log_data["dd.span_id"] = str(ctx.span_id)
+        except Exception:
+            # Fail silently if OTEL is not available
+            pass
+
         # Add exception info if present
         if record.exc_info:
             log_data["exception"] = {
@@ -123,8 +137,8 @@ class DatadogEnvFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         """Add Datadog attributes to log record if Datadog is enabled."""
         if telemetry_settings.enable_datadog:
-            record.dd_env = telemetry_settings.datadog_env
-            record.dd_service = "letta-server"
+            record.dd_env = settings.environment or "development"
+            record.dd_service = telemetry_settings.datadog_service_name
         else:
             # Provide defaults to prevent attribute errors if filter is applied incorrectly
             record.dd_env = ""

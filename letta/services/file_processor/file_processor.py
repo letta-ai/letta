@@ -1,3 +1,5 @@
+import asyncio
+import time
 from typing import List
 
 from mistralai import OCRPageObject, OCRResponse, OCRUsageInfo
@@ -55,7 +57,14 @@ class FileProcessor:
         try:
             all_chunks = []
             for page in ocr_response.pages:
-                chunks = text_chunker.chunk_text(page)
+                # Run CPU-intensive chunking in thread pool to avoid blocking event loop
+                chunking_start = time.time()
+                chunks = await asyncio.to_thread(text_chunker.chunk_text, page)
+                chunking_duration = time.time() - chunking_start
+
+                if chunking_duration > 0.5:
+                    logger.warning(f"Slow chunking operation for {filename}: {chunking_duration:.2f}s")
+
                 if not chunks:
                     log_event(
                         "file_processor.chunking_failed",
@@ -97,7 +106,14 @@ class FileProcessor:
                 all_chunks = []
 
                 for page in ocr_response.pages:
-                    chunks = text_chunker.default_chunk_text(page)
+                    # Run CPU-intensive default chunking in thread pool to avoid blocking event loop
+                    chunking_start = time.time()
+                    chunks = await asyncio.to_thread(text_chunker.default_chunk_text, page)
+                    chunking_duration = time.time() - chunking_start
+
+                    if chunking_duration > 0.5:
+                        logger.warning(f"Slow default chunking operation for {filename}: {chunking_duration:.2f}s")
+
                     if not chunks:
                         log_event(
                             "file_processor.default_chunking_failed",
@@ -308,6 +324,7 @@ class FileProcessor:
             return []
 
         content = file_metadata.content
+        processing_start = time.time()
         try:
             # Create OCR response from existing content
             ocr_response = self._create_ocr_response_from_content(content)
@@ -345,7 +362,10 @@ class FileProcessor:
                     file_id=file_metadata.id, actor=self.actor, total_chunks=len(all_passages), chunks_embedded=0
                 )
 
-            logger.info(f"Successfully processed imported file {filename}: {len(all_passages)} passages")
+            processing_duration = time.time() - processing_start
+            logger.info(
+                f"Successfully processed imported file {filename}: {len(all_passages)} passages (total time: {processing_duration:.2f}s)"
+            )
             log_event(
                 "file_processor.import_processing_completed",
                 {
@@ -353,6 +373,7 @@ class FileProcessor:
                     "file_id": str(file_metadata.id),
                     "total_passages": len(all_passages),
                     "status": FileProcessingStatus.COMPLETED.value,
+                    "total_duration_seconds": processing_duration,
                 },
             )
 

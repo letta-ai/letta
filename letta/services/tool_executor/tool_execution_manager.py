@@ -1,4 +1,5 @@
 import asyncio
+import json
 import traceback
 from typing import Any, Dict, Optional, Type
 
@@ -122,9 +123,9 @@ class ToolExecutionManager:
             status = result.status
 
             # trim result
-            return_str = str(result.func_return)
+            # Convert to string representation, preserving dict structure when within limit
+            return_str = json.dumps(result.func_return) if isinstance(result.func_return, dict) else str(result.func_return)
             if len(return_str) > tool.return_char_limit:
-                # TODO: okay that this become a string?
                 result.func_return = FUNCTION_RETURN_VALUE_TRUNCATED(return_str, len(return_str), tool.return_char_limit)
             return result
 

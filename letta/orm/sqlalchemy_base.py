@@ -567,15 +567,18 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     @handle_db_timeout
     async def hard_delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> None:
         """Permanently removes the record from the database asynchronously."""
-        logger.debug(f"Hard deleting {self.__class__.__name__} with ID: {self.id} with actor={actor} (async)")
+        # Capture ID before deletion attempt to avoid lazy loading in exception handler
+        obj_id = self.id
+        obj_class = self.__class__.__name__
+        logger.debug(f"Hard deleting {obj_class} with ID: {obj_id} with actor={actor} (async)")
 
         try:
             await db_session.delete(self)
             await db_session.commit()
         except Exception as e:
             await db_session.rollback()
-            logger.exception(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}")
-            raise ValueError(f"Failed to hard delete {self.__class__.__name__} with ID {self.id}: {e}")
+            logger.exception(f"Failed to hard delete {obj_class} with ID {obj_id}")
+            raise ValueError(f"Failed to hard delete {obj_class} with ID {obj_id}: {e}")
 
     @classmethod
     @handle_db_timeout

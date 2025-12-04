@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -206,3 +206,23 @@ class ToolRunFromSource(LettaBase):
     )
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+
+
+class ToolSearchRequest(LettaBase):
+    """Request model for searching tools using semantic search."""
+
+    query: Optional[str] = Field(None, description="Text query for semantic search.")
+    search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode: vector, fts, or hybrid.")
+    tool_types: Optional[List[str]] = Field(None, description="Filter by tool types (e.g., 'custom', 'letta_core').")
+    tags: Optional[List[str]] = Field(None, description="Filter by tags (match any).")
+    limit: int = Field(50, description="Maximum number of results to return.", ge=1, le=100)
+
+
+class ToolSearchResult(LettaBase):
+    """Result from a tool search operation."""
+
+    tool: Tool = Field(..., description="The matched tool.")
+    embedded_text: Optional[str] = Field(None, description="The embedded text content used for matching.")
+    fts_rank: Optional[int] = Field(None, description="Full-text search rank position.")
+    vector_rank: Optional[int] = Field(None, description="Vector search rank position.")
+    combined_score: float = Field(..., description="Combined relevance score (RRF for hybrid mode).")

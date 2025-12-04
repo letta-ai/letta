@@ -5,7 +5,7 @@ IDENTITIES_CREATE_PARAMS = [
     ("caren2", {"identifier_key": "456", "name": "caren", "identity_type": "user"}, {}, None),
 ]
 
-IDENTITIES_MODIFY_PARAMS = [
+IDENTITIES_UPDATE_PARAMS = [
     ("caren1", {"properties": [{"key": "email", "value": "caren@letta.com", "type": "string"}]}, {}, None),
     ("caren2", {"properties": [{"key": "email", "value": "caren@gmail.com", "type": "string"}]}, {}, None),
 ]
@@ -37,7 +37,7 @@ globals().update(
         id_param_name="identity_id",
         create_params=IDENTITIES_CREATE_PARAMS,
         upsert_params=IDENTITIES_UPSERT_PARAMS,
-        modify_params=IDENTITIES_MODIFY_PARAMS,
+        update_params=IDENTITIES_UPDATE_PARAMS,
         list_params=IDENTITIES_LIST_PARAMS,
     )
 )

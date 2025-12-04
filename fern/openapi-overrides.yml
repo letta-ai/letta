@@ -6,7 +6,49 @@ servers:
     description: Self-hosted
     x-fern-server-name: Self-hosted
 
+components:
+  schemas:
+    UpdateMCPServerRequest:
+      x-fern-ignore: true
+    CreateMCPServerRequest:
+      x-fern-ignore: true
+    StdioMCPServer:
+      x-fern-ignore: true
+    SSEMCPServer:
+      x-fern-ignore: true
+    StreamableHTTPMCPServer:
+      x-fern-ignore: true
+
 paths:
+  /v1/mcp-servers/:
+    get:
+      x-fern-ignore: true
+    post:
+      x-fern-ignore: true
+  /v1/mcp-servers/{mcp_server_id}:
+    get:
+      x-fern-ignore: true
+    patch:
+      x-fern-ignore: true
+    delete:
+      x-fern-ignore: true
+  /v1/mcp-servers/{mcp_server_id}/tools:
+    get:
+      x-fern-ignore: true
+  /v1/mcp-servers/{mcp_server_id}/tools/{tool_id}:
+    get:
+      x-fern-ignore: true
+  /v1/mcp-servers/{mcp_server_id}/tools/{tool_id}/run:
+    post:
+      x-fern-ignore: true
+  /v1/mcp-servers/{mcp_server_id}/refresh:
+    post:
+      x-fern-ignore: true
+    patch:
+      x-fern-ignore: true
+  /v1/mcp-servers/connect/{mcp_server_id}:
+    post:
+      x-fern-ignore: true
   /v1/tools/{tool_id}:
     get:
       x-fern-sdk-group-name:
@@ -573,6 +615,7 @@ paths:
                   - $ref: '#/components/schemas/SummaryMessage'
                   - $ref: '#/components/schemas/EventMessage'
                   - $ref: '#/components/schemas/LettaPing'
+                  - $ref: '#/components/schemas/LettaErrorMessage'
                   - $ref: '#/components/schemas/LettaStopReason'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
   /v1/agents/{agent_id}/messages/cancel:

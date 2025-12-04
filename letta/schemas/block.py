@@ -110,7 +110,7 @@ class BlockResponse(Block):
 
 class FileBlock(Block):
     file_id: str = Field(..., description="Unique identifier of the file.")
-    source_id: str = Field(..., description="Unique identifier of the source.")
+    source_id: str = Field(..., description="Deprecated: Use `folder_id` field instead. Unique identifier of the source.", deprecated=True)
     is_open: bool = Field(..., description="True if the agent currently has the file open.")
     last_accessed_at: Optional[datetime] = Field(
         None,

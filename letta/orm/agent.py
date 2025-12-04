@@ -164,6 +164,8 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         lazy="selectin",
         viewonly=True,
         back_populates="manager_agent",
+        foreign_keys="[Group.manager_agent_id]",
+        uselist=False,
     )
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="raise")
     file_agents: Mapped[List["FileAgent"]] = relationship(

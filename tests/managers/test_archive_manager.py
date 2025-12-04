@@ -137,6 +137,7 @@ async def test_archive_manager_get_agents_for_archive_async(server: SyncServer, 
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_agent_2",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -175,6 +176,7 @@ async def test_archive_manager_race_condition_handling(server: SyncServer, defau
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_agent_race_condition",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -431,6 +433,7 @@ async def test_archive_manager_attach_agent_to_archive_async(server: SyncServer,
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_attach_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -486,6 +489,7 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_detach_agent_1",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -497,6 +501,7 @@ async def test_archive_manager_detach_agent_from_archive_async(server: SyncServe
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_detach_agent_2",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -560,6 +565,7 @@ async def test_archive_manager_attach_detach_idempotency(server: SyncServer, def
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="idempotency_test_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -588,6 +594,7 @@ async def test_archive_manager_attach_detach_idempotency(server: SyncServer, def
     non_existent_agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="never_attached_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -625,6 +632,7 @@ async def test_archive_manager_detach_with_multiple_archives(server: SyncServer,
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="multi_test_agent_1",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -636,6 +644,7 @@ async def test_archive_manager_detach_with_multiple_archives(server: SyncServer,
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="multi_test_agent_2",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -691,6 +700,7 @@ async def test_archive_manager_detach_deleted_agent(server: SyncServer, default_
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_to_be_deleted",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -735,6 +745,7 @@ async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncSe
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="cascade_test_agent_1",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -746,6 +757,7 @@ async def test_archive_manager_cascade_delete_on_archive_deletion(server: SyncSe
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="cascade_test_agent_2",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -816,6 +828,7 @@ async def test_archive_manager_list_agents_with_pagination(server: SyncServer, d
         agent = await server.agent_manager.create_agent_async(
             agent_create=CreateAgent(
                 name=f"pagination_test_agent_{i}",
+                agent_type="memgpt_v2_agent",
                 memory_blocks=[],
                 llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -872,6 +885,7 @@ async def test_archive_manager_get_default_archive_for_agent_async(server: SyncS
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_default_archive_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -941,6 +955,7 @@ async def test_archive_manager_get_agents_with_include_parameter(server: SyncSer
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="test_include_agent",
+            agent_type="memgpt_v2_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),

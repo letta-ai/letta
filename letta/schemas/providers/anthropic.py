@@ -93,6 +93,11 @@ MODEL_LIST = [
         "name": "claude-3-5-haiku-latest",
         "context_window": 200000,
     },
+    ## Opus 4.5
+    {
+        "name": "claude-opus-4-5-20251101",
+        "context_window": 200000,
+    },
 ]
 
 

@@ -1,10 +1,15 @@
 import logging
 import os
+import threading
+import time
 from datetime import datetime, timezone
 from typing import Generator
 
 import pytest
+import requests
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
+from dotenv import load_dotenv
+from letta_client import Letta
 
 from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
@@ -14,6 +19,52 @@ from letta.settings import tool_settings
 
 def pytest_configure(config):
     logging.basicConfig(level=logging.DEBUG)
+
+
+@pytest.fixture(scope="session")
+def server_url() -> str:
+    """
+    Provides the URL for the Letta server.
+    If LETTA_SERVER_URL is not set, starts the server in a background thread
+    and polls until it's accepting connections.
+    """
+
+    def _run_server() -> None:
+        load_dotenv()
+        from letta.server.rest_api.app import start_server
+
+        start_server(debug=True)
+
+    url: str = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
+
+    if not os.getenv("LETTA_SERVER_URL"):
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+
+        # Poll until the server is up (or timeout)
+        timeout_seconds = 30
+        deadline = time.time() + timeout_seconds
+        while time.time() < deadline:
+            try:
+                resp = requests.get(url + "/v1/health")
+                if resp.status_code < 500:
+                    break
+            except requests.exceptions.RequestException:
+                pass
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
+
+    return url
+
+
+@pytest.fixture(scope="session")
+def client(server_url: str) -> Letta:
+    """
+    Creates and returns a synchronous Letta REST client for testing.
+    """
+    client_instance = Letta(base_url=server_url)
+    yield client_instance
 
 
 @pytest.fixture(scope="session", autouse=True)

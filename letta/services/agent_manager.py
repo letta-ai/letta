@@ -420,7 +420,8 @@ class AgentManager:
 
         supplied_ids = set(agent_create.tool_ids or [])
 
-        source_ids = agent_create.source_ids or []
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        source_ids = agent_create.folder_ids if agent_create.folder_ids else (agent_create.source_ids or [])
 
         # Create default source if requested
         if agent_create.include_default_source:
@@ -641,7 +642,7 @@ class AgentManager:
                     except Exception as e:
                         logger.error(f"Failed to attach files: {e}")
             except Exception as e:
-                logger.error(f"====> Failed to attach files from sources: {e}")
+                logger.error(f"Failed to attach files from sources: {e}")
                 import traceback
 
                 traceback.print_exc()
@@ -724,7 +725,9 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticAgentState:
         new_tools = set(agent_update.tool_ids or [])
-        new_sources = set(agent_update.source_ids or [])
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        folder_ids_to_update = agent_update.folder_ids if agent_update.folder_ids is not None else agent_update.source_ids
+        new_sources = set(folder_ids_to_update or [])
         new_blocks = set(agent_update.block_ids or [])
         new_idents = set(agent_update.identity_ids or [])
         new_tags = set(agent_update.tags or [])
@@ -781,7 +784,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tools"])
 
-            if agent_update.source_ids is not None:
+            # Update sources if either folder_ids or source_ids (deprecated) is provided
+            if agent_update.folder_ids is not None or agent_update.source_ids is not None:
                 await self._replace_pivot_rows_async(
                     session,
                     SourcesAgents.__table__,
@@ -1481,8 +1485,8 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def reset_messages_async(
-        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False
-    ) -> PydanticAgentState:
+        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False, needs_agent_state: bool = True
+    ) -> Optional[PydanticAgentState]:
         """
         Removes all in-context messages for the specified agent except the original system message by:
           1) Preserving the first message ID (original system message).
@@ -1496,9 +1500,10 @@ class AgentManager:
             add_default_initial_messages: If true, adds the default initial messages after resetting.
             agent_id (str): The ID of the agent whose messages will be reset.
             actor (PydanticUser): The user performing this action.
+            needs_agent_state: If True, returns the updated agent state. If False, returns None (for performance optimization)
 
         Returns:
-            PydanticAgentState: The updated agent state with only the original system message preserved.
+            Optional[PydanticAgentState]: The updated agent state with only the original system message preserved, or None if needs_agent_state=False.
         """
         async with db_registry.async_session() as session:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1519,7 +1524,12 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
-            agent_state = await agent.to_pydantic_async(include_relationships=["sources"])
+
+            # Only convert to pydantic if we need to return it or add initial messages
+            if add_default_initial_messages or needs_agent_state:
+                agent_state = await agent.to_pydantic_async(include_relationships=["sources"] if add_default_initial_messages else None)
+            else:
+                agent_state = None
 
         # Optionally add default initial messages after the system message
         if add_default_initial_messages:
@@ -1689,6 +1699,8 @@ class AgentManager:
 
             # Commit the changes
             agent = await agent.update_async(session, actor=actor)
+            # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
+            # or even better, not refresh at all.
             return await agent.to_pydantic_async()
 
     @enforce_types
@@ -1849,6 +1861,8 @@ class AgentManager:
 
             # Get agent without loading relationships for return value
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
+            # or even better, not refresh at all.
             return await agent.to_pydantic_async()
 
     # ======================================================================================================================
@@ -2155,6 +2169,7 @@ class AgentManager:
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
+        archive_id: Optional[str] = None,
         limit: Optional[int] = 50,
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
@@ -2169,17 +2184,26 @@ class AgentManager:
     ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Lists all passages attached to an agent."""
         # Check if we should use Turbopuffer for vector search
-        if embed_query and agent_id and query_text and embedding_config:
-            # Get archive IDs for the agent
-            archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
+        # Support searching by either agent_id or archive_id directly
+        if embed_query and query_text and embedding_config:
+            target_archive_id = None
 
-            if archive_ids:
-                # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
-                if len(archive_ids) > 1:
-                    raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+            if agent_id:
+                # Get archive IDs for the agent
+                archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
 
+                if archive_ids:
+                    # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
+                    if len(archive_ids) > 1:
+                        raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+                    target_archive_id = archive_ids[0]
+            elif archive_id:
+                # Use the provided archive_id directly
+                target_archive_id = archive_id
+
+            if target_archive_id:
                 # Get archive to check vector_db_provider
-                archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_ids[0], actor=actor)
+                archive = await self.archive_manager.get_archive_by_id_async(archive_id=target_archive_id, actor=actor)
 
                 # Use Turbopuffer for vector search if archive is configured for TPUF
                 if archive.vector_db_provider == VectorDBProvider.TPUF:
@@ -2198,7 +2222,7 @@ class AgentManager:
                     tpuf_client = TurbopufferClient()
                     # use hybrid search to combine vector and full-text search
                     passages_with_scores = await tpuf_client.query_passages(
-                        archive_id=archive_ids[0],
+                        archive_id=target_archive_id,
                         query_text=query_text,  # pass text for potential hybrid search
                         search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
@@ -2211,14 +2235,13 @@ class AgentManager:
 
                     # Return full tuples with metadata
                     return passages_with_scores
-            else:
-                return []
 
         # Fall back to SQL-based search for non-vector queries or NATIVE archives
         async with db_registry.async_session() as session:
             main_query = await build_agent_passage_query(
                 actor=actor,
                 agent_id=agent_id,
+                archive_id=archive_id,
                 query_text=query_text,
                 start_date=start_date,
                 end_date=end_date,

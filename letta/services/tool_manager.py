@@ -1,6 +1,7 @@
 import importlib
 from typing import List, Optional, Set, Union
 
+from pydantic import ValidationError
 from sqlalchemy import and_, func, or_, select
 
 from letta.constants import (
@@ -18,7 +19,9 @@ from letta.constants import (
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MAX_TOOL_NAME_LENGTH,
     MCP_TOOL_TAG_NAME_PREFIX,
+    MODAL_DEFAULT_PYTHON_VERSION,
     MODAL_DEFAULT_TOOL_NAME,
+    MODAL_SAFE_IMPORT_MODULES,
 )
 from letta.errors import LettaInvalidArgumentError, LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
@@ -38,7 +41,7 @@ from letta.services.helpers.agent_manager_helper import calculate_multi_agent_to
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
 from letta.services.tool_schema_generator import generate_schema_for_tool_creation, generate_schema_for_tool_update
 from letta.settings import settings, tool_settings
-from letta.utils import enforce_types, printd
+from letta.utils import enforce_types, fire_and_forget, printd
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -57,7 +60,9 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
     from letta_client import Letta
 
     packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
-    packages.append("letta_client")
+    for package in MODAL_SAFE_IMPORT_MODULES:
+        packages.append(package)
+    packages.append("letta_client>=1.1.1")
     packages.append("letta")  # Base letta without extras
     packages.append("asyncpg>=0.30.0")  # Fixes asyncpg import error
     packages.append("psycopg2-binary>=2.9.10")  # PostgreSQL adapter (pre-compiled, no build required)
@@ -73,7 +78,7 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
         secrets_dict.update(sandbox_env_vars)
 
     @modal_app.function(
-        image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
+        image=modal.Image.debian_slim(python_version=MODAL_DEFAULT_PYTHON_VERSION).pip_install(packages),
         restrict_modal_access=True,
         timeout=10,
         secrets=[modal.Secret.from_dict(secrets_dict)],
@@ -112,22 +117,23 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
                 print("Passing agent_state as dict to tool", file=sys.stderr)
                 reconstructed_agent_state = agent_state
 
-        # Set environment variables
         if env_vars:
             for key, value in env_vars.items():
                 os.environ[key] = str(value)
 
+        # TODO: directly instantiate the letta client once we upgrade to 1.0.0+ in core
         # Initialize the Letta client
-        if letta_api_key:
-            letta_client = Letta(token=letta_api_key, base_url=os.environ.get("LETTA_API_URL", "https://api.letta.com"))
-        else:
-            letta_client = None
+        # if letta_api_key:
+        #     letta_client = Letta(token=letta_api_key, base_url=os.environ.get("LETTA_API_URL", "https://api.letta.com"))
+        # else:
+        #     letta_client = None
 
         tool_namespace = {
             "__builtins__": __builtins__,  # Include built-in functions
-            "_letta_client": letta_client,  # Make letta_client available
+            # "_letta_client": letta_client,  # Make letta_client available
             "os": os,  # Include os module for env vars access
             "agent_id": agent_id,
+            "_LETTA_API_KEY": letta_api_key,
             # Add any other modules/variables the tool might need
         }
 
@@ -192,7 +198,7 @@ class ToolManager:
     @enforce_types
     @trace_method
     async def create_or_update_tool_async(
-        self, pydantic_tool: PydanticTool, actor: PydanticUser, bypass_name_check: bool = False
+        self, pydantic_tool: PydanticTool, actor: PydanticUser, bypass_name_check: bool = False, modal_sandbox_enabled: bool = False
     ) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         if pydantic_tool.tool_type == ToolType.CUSTOM and not pydantic_tool.json_schema:
@@ -234,7 +240,11 @@ class ToolManager:
                 if "tool_type" in update_data:
                     updated_tool_type = update_data.get("tool_type")
                 tool = await self.update_tool_by_id_async(
-                    current_tool.id, ToolUpdate(**update_data), actor, updated_tool_type=updated_tool_type
+                    current_tool.id,
+                    ToolUpdate(**update_data),
+                    actor,
+                    updated_tool_type=updated_tool_type,
+                    modal_sandbox_enabled=modal_sandbox_enabled,
                 )
             else:
                 printd(
@@ -243,7 +253,7 @@ class ToolManager:
                 tool = await self.get_tool_by_id_async(current_tool.id, actor=actor)
             return tool
 
-        return await self.create_tool_async(pydantic_tool, actor=actor)
+        return await self.create_tool_async(pydantic_tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled)
 
     @enforce_types
     async def create_mcp_server(
@@ -278,7 +288,9 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    async def create_tool_async(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
+    async def create_tool_async(
+        self, pydantic_tool: PydanticTool, actor: PydanticUser, modal_sandbox_enabled: bool = False
+    ) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         # Generate schema only if not provided (only for custom tools)
 
@@ -286,6 +298,12 @@ class ToolManager:
             # Auto-generate description if not provided
             if pydantic_tool.description is None and pydantic_tool.json_schema:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
+
+            # Add sandbox:modal to metadata if flag is enabled
+            if modal_sandbox_enabled:
+                if pydantic_tool.metadata_ is None:
+                    pydantic_tool.metadata_ = {}
+                pydantic_tool.metadata_["sandbox"] = "modal"
 
             # Add tool hash to metadata for Modal deployment tracking
             tool_hash = compute_tool_hash(pydantic_tool)
@@ -319,6 +337,15 @@ class ToolManager:
 
             if created_tool.tool_type == ToolType.CUSTOM and tool_requests_modal and modal_configured:
                 await self.create_or_update_modal_app(created_tool, actor)
+
+            # Embed tool in Turbopuffer if enabled
+            from letta.helpers.tpuf_client import should_use_tpuf_for_tools
+
+            if should_use_tpuf_for_tools():
+                fire_and_forget(
+                    self._embed_tool_background(created_tool, actor),
+                    task_name=f"embed_tool_{created_tool.id}",
+                )
 
             return created_tool
 
@@ -699,6 +726,7 @@ class ToolManager:
         actor: PydanticUser,
         updated_tool_type: Optional[ToolType] = None,
         bypass_name_check: bool = False,
+        modal_sandbox_enabled: bool = False,
     ) -> PydanticTool:
         """Update a tool by its ID with the given ToolUpdate object."""
         # Fetch current tool early to allow conditional logic based on tool type
@@ -777,6 +805,26 @@ class ToolManager:
         if updated_tool_type:
             updated_tool_pydantic.tool_type = updated_tool_type
 
+        # Handle sandbox:modal metadata based on flag
+        if modal_sandbox_enabled:
+            # Add sandbox:modal to metadata if flag is enabled
+            if updated_tool_pydantic.metadata_ is None:
+                updated_tool_pydantic.metadata_ = {}
+            updated_tool_pydantic.metadata_["sandbox"] = "modal"
+            # Update the update_data to reflect this change if metadata was in the update
+            if "metadata_" not in update_data:
+                update_data["metadata_"] = updated_tool_pydantic.metadata_
+            else:
+                update_data["metadata_"]["sandbox"] = "modal"
+        else:
+            # Remove sandbox:modal from metadata if flag is not enabled
+            if updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal":
+                updated_tool_pydantic.metadata_ = {k: v for k, v in updated_tool_pydantic.metadata_.items() if k != "sandbox"}
+                if not updated_tool_pydantic.metadata_:  # If metadata becomes empty, set to None
+                    updated_tool_pydantic.metadata_ = None
+                # Update the update_data to reflect this change
+                update_data["metadata_"] = updated_tool_pydantic.metadata_
+
         # Check if we need to redeploy the Modal app due to changes
         # Compute this before the session to avoid issues
         tool_requests_modal = updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal"
@@ -830,6 +878,28 @@ class ToolManager:
             logger.info(f"Deploying Modal app for tool {updated_tool.id} with new hash: {new_hash}")
             await self.create_or_update_modal_app(updated_tool, actor)
 
+        # Update embedding in Turbopuffer if enabled (delete old, insert new)
+        from letta.helpers.tpuf_client import should_use_tpuf_for_tools
+
+        if should_use_tpuf_for_tools():
+
+            async def update_tool_embedding():
+                try:
+                    from letta.helpers.tpuf_client import TurbopufferClient
+
+                    tpuf_client = TurbopufferClient()
+                    # Delete old and re-insert (simpler than update)
+                    await tpuf_client.delete_tools(actor.organization_id, [updated_tool.id])
+                    await tpuf_client.insert_tools([updated_tool], actor.organization_id, actor)
+                    logger.info(f"Successfully updated tool {updated_tool.id} in Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to update tool {updated_tool.id} in Turbopuffer: {e}")
+
+            fire_and_forget(
+                update_tool_embedding(),
+                task_name=f"update_tool_embedding_{updated_tool.id}",
+            )
+
         return updated_tool
 
     @enforce_types
@@ -840,7 +910,42 @@ class ToolManager:
         async with db_registry.async_session() as session:
             try:
                 tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
+
+                # Try to convert to Pydantic to check for Modal cleanup
+                # If this fails (corrupted tool), skip Modal cleanup and just delete
+                try:
+                    tool_pydantic = tool.to_pydantic()
+
+                    # Check if tool had Modal deployment and delete it
+                    tool_requests_modal = tool_pydantic.metadata_ and tool_pydantic.metadata_.get("sandbox") == "modal"
+                    modal_configured = tool_settings.modal_sandbox_enabled
+
+                    if tool_pydantic.tool_type == ToolType.CUSTOM and tool_requests_modal and modal_configured:
+                        try:
+                            await self.delete_modal_app(tool_pydantic, actor)
+                        except Exception as e:
+                            logger.warning(f"Failed to delete Modal app for tool {tool_pydantic.name}: {e}")
+                            # Continue with tool deletion even if Modal cleanup fails
+                except (ValueError, ValidationError) as e:
+                    # Tool is corrupted and can't be converted to Pydantic
+                    # Skip Modal cleanup and just delete the tool from database
+                    logger.warning(f"Skipping Modal cleanup for corrupted tool {tool_id}: {e}")
+
                 await tool.hard_delete_async(db_session=session, actor=actor)
+
+                # Delete from Turbopuffer if enabled
+                from letta.helpers.tpuf_client import should_use_tpuf_for_tools
+
+                if should_use_tpuf_for_tools():
+                    try:
+                        from letta.helpers.tpuf_client import TurbopufferClient
+
+                        tpuf_client = TurbopufferClient()
+                        await tpuf_client.delete_tools(actor.organization_id, [tool_id])
+                        logger.info(f"Successfully deleted tool {tool_id} from Turbopuffer")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete tool {tool_id} from Turbopuffer: {e}")
+
             except NoResultFound:
                 raise ValueError(f"Tool with id {tool_id} not found.")
 
@@ -996,7 +1101,6 @@ class ToolManager:
                     tools.append(created_tool)
         return tools
 
-    # MODAL RELATED METHODS
     @trace_method
     async def create_or_update_modal_app(self, tool: PydanticTool, actor: PydanticUser):
         """Create a Modal app with the tool function registered"""
@@ -1025,7 +1129,7 @@ class ToolManager:
         modal_app = modal_tool_wrapper(tool, actor, sandbox_env_vars)
 
         # Deploy the app first
-        with modal.enable_output():
+        with modal.enable_output(show_progress=False):
             try:
                 deploy = modal_app.deploy()
             except Exception as e:
@@ -1041,3 +1145,116 @@ class ToolManager:
             logger.warning(f"Failed to configure autoscaler for Modal function {modal_app.name}: {e}")
 
         return deploy
+
+    async def delete_modal_app(self, tool: PydanticTool, actor: PydanticUser):
+        """Delete a Modal app deployment for the tool"""
+        try:
+            # Generate the app name for this tool
+            modal_app_name = generate_modal_function_name(tool.id, actor.organization_id)
+
+            # Try to delete the app
+            # TODO: we need to soft delete, and then potentially stop via the CLI, no programmatic way to delete currently
+            # try:
+            #     app = modal.App.from_name(modal_app_name)
+            #     await app.delete_async()
+            #     logger.info(f"Deleted Modal app {modal_app_name} for tool {tool.name}")
+            # except modal.exception.NotFoundError:
+            #     logger.info(f"Modal app {modal_app_name} not found, may have been already deleted")
+            # except Exception as e:
+            #     logger.warning(f"Failed to delete Modal app {modal_app_name}: {e}")
+
+        except Exception as e:
+            logger.error(f"Error during Modal app deletion for tool {tool.name}: {e}")
+            raise
+
+    async def _embed_tool_background(
+        self,
+        tool: PydanticTool,
+        actor: PydanticUser,
+    ) -> None:
+        """Background task to embed a tool in Turbopuffer.
+
+        Args:
+            tool: The tool to embed
+            actor: User performing the action
+        """
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+
+            tpuf_client = TurbopufferClient()
+            await tpuf_client.insert_tools(
+                tools=[tool],
+                organization_id=actor.organization_id,
+                actor=actor,
+            )
+            logger.info(f"Successfully embedded tool {tool.id} in Turbopuffer")
+        except Exception as e:
+            logger.error(f"Failed to embed tool {tool.id} in Turbopuffer: {e}")
+
+    @enforce_types
+    @trace_method
+    async def search_tools_async(
+        self,
+        actor: PydanticUser,
+        query_text: Optional[str] = None,
+        search_mode: str = "hybrid",
+        tool_types: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        limit: int = 50,
+    ) -> List[tuple[PydanticTool, dict]]:
+        """
+        Search tools using Turbopuffer semantic search.
+
+        Args:
+            actor: User performing the search
+            query_text: Text query for semantic search
+            search_mode: "vector", "fts", or "hybrid" (default: "hybrid")
+            tool_types: Optional list of tool types to filter by
+            tags: Optional list of tags to filter by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of (tool, metadata) tuples where metadata contains search scores
+
+        Raises:
+            ValueError: If Turbopuffer is not enabled for tools
+        """
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_tools
+
+        if not should_use_tpuf_for_tools():
+            raise ValueError("Tool semantic search requires tool embedding to be enabled (embed_tools=True).")
+
+        tpuf_client = TurbopufferClient()
+        results = await tpuf_client.query_tools(
+            organization_id=actor.organization_id,
+            actor=actor,
+            query_text=query_text,
+            search_mode=search_mode,
+            top_k=limit,
+            tool_types=tool_types,
+            tags=tags,
+        )
+
+        if not results:
+            return []
+
+        # Fetch full tool objects from database
+        tool_ids = [tool_dict["id"] for tool_dict, _, _ in results]
+        tools = []
+        for tool_id in tool_ids:
+            try:
+                tool = await self.get_tool_by_id_async(tool_id, actor=actor)
+                tools.append(tool)
+            except Exception:
+                pass  # Tool may have been deleted
+
+        tool_map = {tool.id: tool for tool in tools}
+
+        # Build result list preserving order and including metadata
+        result_list = []
+        for tool_dict, _, metadata in results:
+            tool_id = tool_dict["id"]
+            if tool_id in tool_map:
+                result_list.append((tool_map[tool_id], metadata))
+
+        return result_list

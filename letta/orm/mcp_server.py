@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import JSON, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.orm.custom_columns import MCPStdioServerConfigColumn
@@ -13,7 +13,7 @@ from letta.schemas.enums import MCPServerType
 from letta.schemas.mcp import MCPServer
 
 if TYPE_CHECKING:
-    pass
+    from letta.orm.organization import Organization
 
 
 class MCPServer(SqlalchemyBase, OrganizationMixin):
@@ -56,6 +56,9 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
     metadata_: Mapped[Optional[dict]] = mapped_column(
         JSON, default=lambda: {}, doc="A dictionary of additional metadata for the MCP server."
     )
+
+    # relationships
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="mcp_servers")
 
 
 class MCPTools(SqlalchemyBase, OrganizationMixin):

@@ -61,7 +61,7 @@ async def list_runs(
     after: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
     ),
-    limit: Optional[int] = Query(100, description="Maximum number of runs to return", le=1000),
+    limit: Optional[int] = Query(100, description="Maximum number of runs to return", ge=1, le=1000),
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
@@ -132,7 +132,7 @@ async def list_active_runs(
         agent_ids = None
 
     active_runs = await runs_manager.list_runs(
-        actor=actor, statuses=[RunStatus.created, RunStatus.running], agent_ids=agent_ids, background=background
+        actor=actor, statuses=[RunStatus.created, RunStatus.running], agent_ids=agent_ids, background=background, limit=100
     )
 
     return active_runs
@@ -160,9 +160,9 @@ RunMessagesResponse = Annotated[
 @router.get(
     "/{run_id}/messages",
     response_model=RunMessagesResponse,
-    operation_id="list_run_messages",
+    operation_id="list_messages_for_run",
 )
-async def list_run_messages(
+async def list_messages_for_run(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -183,8 +183,8 @@ async def list_run_messages(
     return await server.run_manager.get_run_messages(run_id=run_id, actor=actor, before=before, after=after, limit=limit, order=order)
 
 
-@router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="retrieve_run_usage")
-async def retrieve_run_usage(
+@router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="retrieve_usage_for_run")
+async def retrieve_usage_for_run(
     run_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
@@ -215,9 +215,9 @@ async def retrieve_metrics_for_run(
 @router.get(
     "/{run_id}/steps",
     response_model=List[Step],
-    operation_id="list_run_steps",
+    operation_id="list_steps_for_run",
 )
-async def list_run_steps(
+async def list_steps_for_run(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -262,7 +262,7 @@ async def delete_run(
 @router.post(
     "/{run_id}/stream",
     response_model=None,
-    operation_id="retrieve_stream",
+    operation_id="retrieve_stream_for_run",
     responses={
         200: {
             "description": "Successful response",
@@ -282,6 +282,7 @@ async def delete_run(
                             {"$ref": "#/components/schemas/ApprovalRequestMessage"},
                             {"$ref": "#/components/schemas/ApprovalResponseMessage"},
                             {"$ref": "#/components/schemas/LettaPing"},
+                            {"$ref": "#/components/schemas/LettaErrorMessage"},
                             {"$ref": "#/components/schemas/LettaStopReason"},
                             {"$ref": "#/components/schemas/LettaUsageStatistics"},
                         ]
@@ -291,7 +292,7 @@ async def delete_run(
         }
     },
 )
-async def retrieve_stream(
+async def retrieve_stream_for_run(
     run_id: str,
     request: RetrieveStreamRequest = Body(None),
     headers: HeaderParams = Depends(get_headers),

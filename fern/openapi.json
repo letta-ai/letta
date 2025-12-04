@@ -215,9 +215,9 @@
     "/v1/archives/{archive_id}": {
       "get": {
         "tags": ["archives"],
-        "summary": "Get Archive By Id",
+        "summary": "Retrieve Archive",
         "description": "Get a single archive by its ID.",
-        "operationId": "get_archive_by_id",
+        "operationId": "retrieve_archive",
         "parameters": [
           {
             "name": "archive_id",
@@ -336,15 +336,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Archive"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1282,6 +1275,51 @@
         }
       }
     },
+    "/v1/tools/search": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Search Tools",
+        "description": "Search tools using semantic search.\n\nRequires tool embedding to be enabled (embed_tools=True). Uses vector search,\nfull-text search, or hybrid mode to find tools matching the query.\n\nReturns tools ranked by relevance with their search scores.",
+        "operationId": "search_tools",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ToolSearchResult"
+                  },
+                  "title": "Response Search Tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/add-base-tools": {
       "post": {
         "tags": ["tools"],
@@ -1877,7 +1915,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest"
+                "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__tools__ToolExecuteRequest"
               }
             }
           }
@@ -3623,9 +3661,9 @@
     "/v1/folders/{folder_id}/files": {
       "get": {
         "tags": ["folders"],
-        "summary": "List Folder Files",
+        "summary": "List Files For Folder",
         "description": "List paginated files associated with a data folder.",
-        "operationId": "list_folder_files",
+        "operationId": "list_files_for_folder",
         "parameters": [
           {
             "name": "folder_id",
@@ -3746,7 +3784,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FileMetadata"
                   },
-                  "title": "Response List Folder Files"
+                  "title": "Response List Files For Folder"
                 }
               }
             }
@@ -4060,9 +4098,11 @@
                 }
               ],
               "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+              "deprecated": true,
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+            "deprecated": true
           },
           {
             "name": "include",
@@ -4743,9 +4783,11 @@
                 }
               ],
               "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+              "deprecated": true,
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+            "deprecated": true
           },
           {
             "name": "include",
@@ -5212,6 +5254,74 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/tools/{tool_name}/run": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Run Tool For Agent",
+        "description": "Trigger a tool by name on a specific agent, providing the necessary arguments.\n\nThis endpoint executes a tool that is attached to the agent, using the agent's\nstate and environment variables for execution context.",
+        "operationId": "run_tool_for_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 42,
+              "maxLength": 42,
+              "pattern": "^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the agent in the format 'agent-<uuid4>'",
+              "examples": ["agent-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Agent Id"
+            },
+            "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          },
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__ToolExecuteRequest",
+                "default": {
+                  "args": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolExecutionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/sources/attach/{source_id}": {
       "patch": {
         "tags": ["agents"],
@@ -5319,7 +5429,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Attach Folder To Agent"
                 }
               }
             }
@@ -5444,7 +5562,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Detach Folder From Agent"
                 }
               }
             }
@@ -7782,7 +7908,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentState"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Reset Messages"
                 }
               }
             }
@@ -9557,8 +9691,8 @@
     "/v1/identities/{identity_id}/properties": {
       "put": {
         "tags": ["identities", "identities"],
-        "summary": "Upsert Identity Properties",
-        "operationId": "upsert_identity_properties",
+        "summary": "Upsert Properties For Identity",
+        "operationId": "upsert_properties_for_identity",
         "parameters": [
           {
             "name": "identity_id",
@@ -9900,6 +10034,51 @@
         }
       }
     },
+    "/v1/_internal_agents/count": {
+      "get": {
+        "tags": ["_internal_agents"],
+        "summary": "Count Agents",
+        "description": "Get the total number of agents for a user, with option to exclude hidden agents.",
+        "operationId": "count_internal_agents",
+        "parameters": [
+          {
+            "name": "exclude_hidden",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, excludes hidden agents from the count. If False, includes all agents.",
+              "default": true,
+              "title": "Exclude Hidden"
+            },
+            "description": "If True, excludes hidden agents from the count. If False, includes all agents."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Internal Agents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}": {
       "patch": {
         "tags": ["_internal_agents"],
@@ -9979,16 +10158,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Labels to include (e.g. human, persona)",
+              "description": "Label to include (alphanumeric, hyphens, underscores only)",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label"
             },
-            "description": "Labels to include (e.g. human, persona)"
+            "description": "Label to include (alphanumeric, hyphens, underscores only)"
           },
           {
             "name": "templates_only",
@@ -10009,16 +10192,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[a-zA-Z0-9 _-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Name of the block",
+              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
+              "examples": ["My Agent", "test_tool", "default-config"],
               "title": "Name"
             },
-            "description": "Name of the block"
+            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
           },
           {
             "name": "identity_id",
@@ -10027,16 +10214,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 45,
+                  "maxLength": 45,
+                  "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier id",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
             },
-            "description": "Search agents by identifier id"
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "identifier_keys",
@@ -10165,16 +10356,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label Search"
             },
-            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+            "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
           },
           {
             "name": "description_search",
@@ -10183,16 +10378,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
               "title": "Description Search"
             },
-            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+            "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions."
           },
           {
             "name": "value_search",
@@ -10201,16 +10398,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
               "title": "Value Search"
             },
-            "description": "Search blocks by value. If provided, returns blocks that match this value."
+            "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values."
           },
           {
             "name": "connected_to_agents_count_gt",
@@ -10500,9 +10699,11 @@
                 }
               ],
               "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+              "deprecated": true,
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+            "deprecated": true
           },
           {
             "name": "include",
@@ -10765,7 +10966,8 @@
               "anyOf": [
                 {
                   "type": "integer",
-                  "maximum": 1000
+                  "maximum": 1000,
+                  "minimum": 1
                 },
                 {
                   "type": "null"
@@ -11376,18 +11578,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/CreateStdioMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CreateSSEMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CreateStreamableHTTPMCPServer"
-                  }
-                ],
-                "title": "Request"
+                "$ref": "#/components/schemas/CreateMCPServerRequest"
               }
             }
           }
@@ -11473,9 +11664,9 @@
     "/v1/mcp-servers/{mcp_server_id}": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "Get Mcp Server",
+        "summary": "Retrieve Mcp Server",
         "description": "Get a specific MCP server",
-        "operationId": "mcp_get_mcp_server",
+        "operationId": "mcp_retrieve_mcp_server",
         "parameters": [
           {
             "name": "mcp_server_id",
@@ -11504,7 +11695,7 @@
                       "$ref": "#/components/schemas/StreamableHTTPMCPServer"
                     }
                   ],
-                  "title": "Response Mcp Get Mcp Server"
+                  "title": "Response Mcp Retrieve Mcp Server"
                 }
               }
             }
@@ -11574,18 +11765,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer"
-                  },
-                  {
-                    "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
-                  }
-                ],
-                "title": "Request"
+                "$ref": "#/components/schemas/UpdateMCPServerRequest"
               }
             }
           }
@@ -11628,9 +11808,9 @@
     "/v1/mcp-servers/{mcp_server_id}/tools": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "List Mcp Tools By Server",
+        "summary": "List Tools For Mcp Server",
         "description": "Get a list of all tools for a specific MCP server",
-        "operationId": "mcp_list_mcp_tools_by_server",
+        "operationId": "mcp_list_tools_for_mcp_server",
         "parameters": [
           {
             "name": "mcp_server_id",
@@ -11652,7 +11832,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Tool"
                   },
-                  "title": "Response Mcp List Mcp Tools By Server"
+                  "title": "Response Mcp List Tools For Mcp Server"
                 }
               }
             }
@@ -11673,9 +11853,9 @@
     "/v1/mcp-servers/{mcp_server_id}/tools/{tool_id}": {
       "get": {
         "tags": ["mcp-servers"],
-        "summary": "Get Mcp Tool",
+        "summary": "Retrieve Mcp Tool",
         "description": "Get a specific MCP tool by its ID",
-        "operationId": "mcp_get_mcp_tool",
+        "operationId": "mcp_retrieve_mcp_tool",
         "parameters": [
           {
             "name": "mcp_server_id",
@@ -11724,7 +11904,7 @@
       "post": {
         "tags": ["mcp-servers"],
         "summary": "Run Mcp Tool",
-        "description": "Execute a specific MCP tool\n\nThe request body should contain the tool arguments in the MCPToolExecuteRequest format.",
+        "description": "Execute a specific MCP tool\n\nThe request body should contain the tool arguments in the ToolExecuteRequest format.",
         "operationId": "mcp_run_tool",
         "parameters": [
           {
@@ -11750,7 +11930,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/letta__schemas__mcp_server__MCPToolExecuteRequest",
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__ToolExecuteRequest",
                 "default": {
                   "args": {}
                 }
@@ -11892,16 +12072,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Labels to include (e.g. human, persona)",
+              "description": "Label to include (alphanumeric, hyphens, underscores only)",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label"
             },
-            "description": "Labels to include (e.g. human, persona)"
+            "description": "Label to include (alphanumeric, hyphens, underscores only)"
           },
           {
             "name": "templates_only",
@@ -11922,16 +12106,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[a-zA-Z0-9 _-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Name of the block",
+              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
+              "examples": ["My Agent", "test_tool", "default-config"],
               "title": "Name"
             },
-            "description": "Name of the block"
+            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
           },
           {
             "name": "identity_id",
@@ -11940,16 +12128,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 45,
+                  "maxLength": 45,
+                  "pattern": "^identity-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier id",
+              "description": "The ID of the identity in the format 'identity-<uuid4>'",
+              "examples": ["identity-123e4567-e89b-42d3-8456-426614174000"],
               "title": "Identity Id"
             },
-            "description": "Search agents by identifier id"
+            "description": "The ID of the identity in the format 'identity-<uuid4>'"
           },
           {
             "name": "identifier_keys",
@@ -12078,16 +12270,20 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.",
+              "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
+              "examples": ["human", "persona", "the_label_of-a-block"],
               "title": "Label Search"
             },
-            "description": "Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."
+            "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
           },
           {
             "name": "description_search",
@@ -12096,16 +12292,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.",
+              "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
               "title": "Description Search"
             },
-            "description": "Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions."
+            "description": "Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions."
           },
           {
             "name": "value_search",
@@ -12114,16 +12312,18 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search blocks by value. If provided, returns blocks that match this value.",
+              "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
               "title": "Value Search"
             },
-            "description": "Search blocks by value. If provided, returns blocks that match this value."
+            "description": "Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values."
           },
           {
             "name": "connected_to_agents_count_gt",
@@ -12543,9 +12743,11 @@
                 }
               ],
               "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+              "deprecated": true,
               "title": "Include Relationships"
             },
-            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.This is a legacy parameter, and no longer supported after 1.0.0 SDK versions.",
+            "deprecated": true
           },
           {
             "name": "include",
@@ -12732,10 +12934,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Only list jobs associated with the source.",
+              "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+              "deprecated": true,
               "title": "Source Id"
             },
-            "description": "Only list jobs associated with the source."
+            "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+            "deprecated": true
           },
           {
             "name": "before",
@@ -12894,10 +13098,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Only list jobs associated with the source.",
+              "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+              "deprecated": true,
               "title": "Source Id"
             },
-            "description": "Only list jobs associated with the source."
+            "description": "Deprecated: Use `folder_id` parameter instead. Only list jobs associated with the source.",
+            "deprecated": true
           },
           {
             "name": "before",
@@ -13723,7 +13929,8 @@
               "anyOf": [
                 {
                   "type": "integer",
-                  "maximum": 1000
+                  "maximum": 1000,
+                  "minimum": 1
                 },
                 {
                   "type": "null"
@@ -13970,9 +14177,9 @@
     "/v1/runs/{run_id}/messages": {
       "get": {
         "tags": ["runs"],
-        "summary": "List Run Messages",
+        "summary": "List Messages For Run",
         "description": "Get response messages associated with a run.",
-        "operationId": "list_run_messages",
+        "operationId": "list_messages_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14075,7 +14282,7 @@
                   "items": {
                     "$ref": "#/components/schemas/LettaMessageUnion"
                   },
-                  "title": "Response List Run Messages"
+                  "title": "Response List Messages For Run"
                 }
               }
             }
@@ -14096,9 +14303,9 @@
     "/v1/runs/{run_id}/usage": {
       "get": {
         "tags": ["runs"],
-        "summary": "Retrieve Run Usage",
+        "summary": "Retrieve Usage For Run",
         "description": "Get usage statistics for a run.",
-        "operationId": "retrieve_run_usage",
+        "operationId": "retrieve_usage_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14178,9 +14385,9 @@
     "/v1/runs/{run_id}/steps": {
       "get": {
         "tags": ["runs"],
-        "summary": "List Run Steps",
+        "summary": "List Steps For Run",
         "description": "Get steps associated with a run with filtering options.",
-        "operationId": "list_run_steps",
+        "operationId": "list_steps_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14283,7 +14490,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Step"
                   },
-                  "title": "Response List Run Steps"
+                  "title": "Response List Steps For Run"
                 }
               }
             }
@@ -14304,8 +14511,8 @@
     "/v1/runs/{run_id}/stream": {
       "post": {
         "tags": ["runs"],
-        "summary": "Retrieve Stream",
-        "operationId": "retrieve_stream",
+        "summary": "Retrieve Stream For Run",
+        "operationId": "retrieve_stream_for_run",
         "parameters": [
           {
             "name": "run_id",
@@ -14366,6 +14573,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/LettaPing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LettaErrorMessage"
                     },
                     {
                       "$ref": "#/components/schemas/LettaStopReason"
@@ -15287,6 +15497,205 @@
         }
       }
     },
+    "/v1/messages/": {
+      "get": {
+        "tags": ["messages"],
+        "summary": "List All Messages",
+        "description": "List messages across all agents for the current user.",
+        "operationId": "list_all_messages",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LettaMessageUnion"
+                  },
+                  "title": "Response List All Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/search": {
+      "post": {
+        "tags": ["messages"],
+        "summary": "Search All Messages",
+        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
+        "operationId": "search_all_messages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchAllMessagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/SystemMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/UserMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/HiddenReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolCallMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolReturnMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/AssistantMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalRequestMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalResponseMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SummaryMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/EventMessage"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "message_type",
+                      "mapping": {
+                        "system_message": "#/components/schemas/SystemMessage",
+                        "user_message": "#/components/schemas/UserMessage",
+                        "reasoning_message": "#/components/schemas/ReasoningMessage",
+                        "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+                        "tool_call_message": "#/components/schemas/ToolCallMessage",
+                        "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                        "assistant_message": "#/components/schemas/AssistantMessage",
+                        "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
+                        "summary": "#/components/schemas/SummaryMessage",
+                        "event": "#/components/schemas/EventMessage"
+                      }
+                    }
+                  },
+                  "title": "Response Search All Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
@@ -15664,6 +16073,51 @@
         }
       }
     },
+    "/v1/passages/search": {
+      "post": {
+        "tags": ["passages"],
+        "summary": "Search Passages",
+        "description": "Search passages across the organization with optional agent and archive filtering.\nReturns passages with relevance scores.\n\nThis endpoint supports semantic search through passages:\n- If neither agent_id nor archive_id is provided, searches ALL passages in the organization\n- If agent_id is provided, searches passages across all archives attached to that agent\n- If archive_id is provided, searches passages within that specific archive\n- If both are provided, agent_id takes precedence",
+        "operationId": "search_passages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PassageSearchResult"
+                  },
+                  "title": "Response Search Passages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/voice-beta/{agent_id}/chat/completions": {
       "post": {
         "tags": ["voice"],
@@ -15878,6 +16332,23 @@
                             }
                           },
                           "required": ["field", "operator", "value"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": ["agentId"]
+                            },
+                            "operator": {
+                              "type": "string",
+                              "enum": ["eq"]
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["field", "operator", "value"]
                         }
                       ]
                     }
@@ -16006,7 +16477,7 @@
     "/v1/templates/{project_id}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
-        "summary": "Create agents from a template (Cloud-only)",
+        "summary": "Create Agents From Template",
         "tags": ["templates"],
         "parameters": [
           {
@@ -16025,7 +16496,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest. This endpoint is not available for self-hosted Letta."
           }
         ],
         "operationId": "templates.createAgentsFromTemplate",
@@ -16141,7 +16612,7 @@
     "/v1/templates/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
-        "summary": "Create agents from a template (Cloud-only)",
+        "summary": "Create Agents From Template",
         "tags": ["templates"],
         "parameters": [
           {
@@ -16151,10 +16622,10 @@
             "schema": {
               "type": "string"
             },
-            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest. This endpoint is not available for self-hosted Letta."
           }
         ],
-        "operationId": "templates.createAgentsFromTemplateWithHeader",
+        "operationId": "templates.createAgentsFromTemplateNoProject",
         "requestBody": {
           "description": "Body",
           "content": {
@@ -16240,7 +16711,34 @@
         },
         "responses": {
           "201": {
-            "description": "201"
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of created agent IDs"
+                    },
+                    "group_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Optional group ID if agents were created in a group"
+                    },
+                    "deployment_id": {
+                      "type": "string",
+                      "description": "The deployment ID for the created agents"
+                    }
+                  },
+                  "required": ["agent_ids", "group_id", "deployment_id"],
+                  "description": "Response containing created agent IDs and associated metadata"
+                }
+              }
+            }
           },
           "402": {
             "description": "402",
@@ -16410,6 +16908,145 @@
                     }
                   },
                   "required": ["templates", "has_next_page"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new template from an existing agent or agent file",
+        "summary": "Create template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [],
+        "operationId": "templates.createTemplateNoProject",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["agent"]
+                      },
+                      "agent_id": {
+                        "type": "string",
+                        "description": "The ID of the agent to use as a template, can be from any project"
+                      },
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "description": "Optional custom name for the template. If not provided, a random name will be generated."
+                      }
+                    },
+                    "required": ["type", "agent_id"],
+                    "summary": "From Agent",
+                    "description": "Create a template from an existing agent"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["agent_file"]
+                      },
+                      "agent_file": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "nullable": true
+                        },
+                        "description": "The agent file to use as a template, this should be a JSON file exported from the platform"
+                      },
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "description": "Optional custom name for the template. If not provided, a random name will be generated."
+                      },
+                      "update_existing_tools": {
+                        "type": "boolean",
+                        "description": "If true, update existing custom tools source_code and json_schema (source_type cannot be changed)"
+                      }
+                    },
+                    "required": ["type", "agent_file"],
+                    "summary": "From Agent File",
+                    "description": "Create a template from an uploaded agent file"
+                  }
+                ],
+                "summary": "Create template",
+                "description": "The type of template to create, currently only agent templates are supported"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The exact name of the template"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "project_slug": {
+                      "type": "string"
+                    },
+                    "latest_version": {
+                      "type": "string",
+                      "description": "The latest version of the template"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "template_deployment_slug": {
+                      "type": "string",
+                      "description": "The full name of the template, including version and project slug"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "When the template was last updated"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "id",
+                    "project_id",
+                    "project_slug",
+                    "latest_version",
+                    "template_deployment_slug",
+                    "updated_at"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
@@ -17014,7 +17651,13 @@
                               },
                               "reasoning_effort": {
                                 "type": "string",
-                                "enum": ["minimal", "low", "medium", "high"],
+                                "enum": [
+                                  "none",
+                                  "minimal",
+                                  "low",
+                                  "medium",
+                                  "high"
+                                ],
                                 "nullable": true
                               },
                               "per_file_view_window_char_limit": {
@@ -17533,6 +18176,70 @@
           },
           "400": {
             "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{template_name}": {
+      "delete": {
+        "description": "Deletes all versions of a template with the specified name",
+        "summary": "Delete template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name (without version)"
+          }
+        ],
+        "operationId": "templates.deleteTemplateNoProject",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
             "content": {
               "application/json": {
                 "schema": {
@@ -18540,6 +19247,102 @@
             }
           }
         }
+      },
+      "post": {
+        "description": "Create a new project",
+        "summary": "Create Project (Cloud-only)",
+        "tags": ["projects"],
+        "parameters": [],
+        "operationId": "projects.createProject",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name", "slug", "id"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}": {
+      "delete": {
+        "description": "Delete a project by ID",
+        "summary": "Delete Project (Cloud-only)",
+        "tags": ["projects"],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "operationId": "projects.deleteProject",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -19156,7 +19959,8 @@
             },
             "type": "array",
             "title": "Sources",
-            "description": "The sources used by the agent."
+            "description": "Deprecated: Use `folders` field instead. The sources used by the agent.",
+            "deprecated": true
           },
           "tags": {
             "items": {
@@ -19497,6 +20301,36 @@
               "budget_tokens": 1024
             }
           },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          },
           "verbosity": {
             "anyOf": [
               {
@@ -19509,6 +20343,19 @@
             ],
             "title": "Verbosity",
             "description": "Soft control for how verbose model output should be, used for GPT-5 models."
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "Effort level for Opus 4.5 model (controls token conservation). Not setting this gives similar performance to 'high'."
           }
         },
         "type": "object",
@@ -21499,6 +22346,54 @@
             "format": "binary",
             "title": "File"
           },
+          "override_existing_tools": {
+            "type": "boolean",
+            "title": "Override Existing Tools",
+            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+            "default": true
+          },
+          "strip_messages": {
+            "type": "boolean",
+            "title": "Strip Messages",
+            "description": "If set to True, strips all messages from the agent before importing.",
+            "default": false
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
+            "description": "Secrets as a JSON string to pass to the agent for tool execution."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "If provided, overrides the agent name with this value."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "Embedding handle to override with."
+          },
           "append_copy_suffix": {
             "type": "boolean",
             "title": "Append Copy Suffix",
@@ -21516,13 +22411,8 @@
               }
             ],
             "title": "Override Name",
-            "description": "If provided, overrides the agent name with this value."
-          },
-          "override_existing_tools": {
-            "type": "boolean",
-            "title": "Override Existing Tools",
-            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
-            "default": true
+            "description": "If provided, overrides the agent name with this value. Use 'name' instead.",
+            "deprecated": true
           },
           "override_embedding_handle": {
             "anyOf": [
@@ -21534,7 +22424,8 @@
               }
             ],
             "title": "Override Embedding Handle",
-            "description": "Override import with specific embedding handle."
+            "description": "Override import with specific embedding handle. Use 'embedding' instead.",
+            "deprecated": true
           },
           "project_id": {
             "anyOf": [
@@ -21546,13 +22437,8 @@
               }
             ],
             "title": "Project Id",
-            "description": "The project ID to associate the uploaded agent with."
-          },
-          "strip_messages": {
-            "type": "boolean",
-            "title": "Strip Messages",
-            "description": "If set to True, strips all messages from the agent before importing.",
-            "default": false
+            "description": "The project ID to associate the uploaded agent with. This is now passed via headers.",
+            "deprecated": true
           },
           "env_vars_json": {
             "anyOf": [
@@ -21564,7 +22450,8 @@
               }
             ],
             "title": "Env Vars Json",
-            "description": "Environment variables as a JSON string to pass to the agent for tool execution."
+            "description": "Environment variables as a JSON string to pass to the agent for tool execution. Use 'secrets' instead.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -23074,7 +23961,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -23615,7 +24518,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [
@@ -23676,8 +24580,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           }
         },
@@ -23913,15 +24816,49 @@
         "title": "CreateBlock",
         "description": "Create a block"
       },
-      "CreateSSEMCPServer": {
+      "CreateMCPServerRequest": {
         "properties": {
           "server_name": {
             "type": "string",
             "title": "Server Name",
-            "description": "The name of the server"
+            "description": "The name of the MCP server"
           },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+          "config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateStdioMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/CreateSSEMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/CreateStreamableHTTPMCPServer"
+              }
+            ],
+            "title": "Config",
+            "description": "The MCP server configuration (Stdio, SSE, or Streamable HTTP)",
+            "discriminator": {
+              "propertyName": "mcp_server_type",
+              "mapping": {
+                "sse": "#/components/schemas/CreateSSEMCPServer",
+                "stdio": "#/components/schemas/CreateStdioMCPServer",
+                "streamable_http": "#/components/schemas/CreateStreamableHTTPMCPServer"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["server_name", "config"],
+        "title": "CreateMCPServerRequest",
+        "description": "Request to create a new MCP server with configuration."
+      },
+      "CreateSSEMCPServer": {
+        "properties": {
+          "mcp_server_type": {
+            "type": "string",
+            "const": "sse",
+            "title": "Mcp Server Type",
             "default": "sse"
           },
           "server_url": {
@@ -23969,20 +24906,18 @@
             "description": "Custom HTTP headers to include with requests"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url"],
         "title": "CreateSSEMCPServer",
         "description": "Create a new SSE MCP server"
       },
       "CreateStdioMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "stdio",
+            "title": "Mcp Server Type",
             "default": "stdio"
           },
           "command": {
@@ -24014,20 +24949,18 @@
             "description": "Environment variables to set"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "command", "args"],
+        "required": ["command", "args"],
         "title": "CreateStdioMCPServer",
         "description": "Create a new Stdio MCP server"
       },
       "CreateStreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
             "default": "streamable_http"
           },
           "server_url": {
@@ -24075,8 +25008,9 @@
             "description": "Custom HTTP headers to include with requests"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url"],
         "title": "CreateStreamableHTTPMCPServer",
         "description": "Create a new Streamable HTTP MCP server"
       },
@@ -24843,7 +25777,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source."
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source.",
+            "deprecated": true
           },
           "file_name": {
             "type": "string",
@@ -25116,7 +26051,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source."
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source.",
+            "deprecated": true
           },
           "is_open": {
             "type": "boolean",
@@ -25164,7 +26100,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "The unique identifier of the source associated with the document."
+            "description": "Deprecated: Use `folder_id` field instead. The unique identifier of the source associated with the document.",
+            "deprecated": true
           },
           "file_name": {
             "anyOf": [
@@ -25353,7 +26290,8 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "The unique identifier of the source associated with the document."
+            "description": "Deprecated: Use `folder_id` field instead. The unique identifier of the source associated with the document.",
+            "deprecated": true
           },
           "file_name": {
             "anyOf": [
@@ -27239,7 +28177,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -27764,7 +28718,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [
@@ -27825,8 +28780,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "deployment_id": {
@@ -28463,7 +29417,7 @@
             ],
             "title": "Put Inner Thoughts In Kwargs",
             "description": "Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
-            "default": true
+            "default": false
           },
           "handle": {
             "anyOf": [
@@ -28505,7 +29459,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["minimal", "low", "medium", "high"]
+                "enum": ["none", "minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -28519,6 +29473,19 @@
             "title": "Max Reasoning Tokens",
             "description": "Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
             "default": 0
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'."
           },
           "frequency_penalty": {
             "anyOf": [
@@ -28580,8 +29547,39 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "If set to True, enables parallel tool calling. Defaults to False.",
-            "default": false
+            "description": "Deprecated: Use model_settings to configure parallel tool calls instead. If set to True, enables parallel tool calling. Defaults to False.",
+            "default": false,
+            "deprecated": true
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
           }
         },
         "type": "object",
@@ -28886,6 +29884,41 @@
         "type": "object",
         "required": ["agent_id"],
         "title": "LettaBatchRequest"
+      },
+      "LettaErrorMessage": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "error_message",
+            "title": "Message Type",
+            "description": "The type of the message.",
+            "default": "error_message"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run ID",
+            "description": "The ID of the run."
+          },
+          "error_type": {
+            "type": "string",
+            "title": "Error Type",
+            "description": "The type of error."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "The error message."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "An optional error detail."
+          }
+        },
+        "type": "object",
+        "required": ["message_type", "run_id", "error_type", "message"],
+        "title": "LettaErrorMessage",
+        "description": "Error messages are used to notify the client of an error that occurred during the agent's execution."
       },
       "LettaImage": {
         "properties": {
@@ -29361,6 +30394,9 @@
             "$ref": "#/components/schemas/LettaPing"
           },
           {
+            "$ref": "#/components/schemas/LettaErrorMessage"
+          },
+          {
             "$ref": "#/components/schemas/LettaStopReason"
           },
           {
@@ -29375,6 +30411,7 @@
             "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
             "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
             "assistant_message": "#/components/schemas/AssistantMessage",
+            "error_message": "#/components/schemas/LettaErrorMessage",
             "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
             "ping": "#/components/schemas/LettaPing",
             "reasoning_message": "#/components/schemas/ReasoningMessage",
@@ -30265,6 +31302,18 @@
             "title": "Roles",
             "description": "Filter messages by role"
           },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Filter messages by agent ID"
+          },
           "project_id": {
             "anyOf": [
               {
@@ -30615,7 +31664,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["minimal", "low", "medium", "high"]
+                "enum": ["none", "minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -30631,6 +31680,19 @@
             "description": "Deprecated: Configurable thinking budget for extended thinking.",
             "default": 0,
             "deprecated": true
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'."
           },
           "frequency_penalty": {
             "anyOf": [
@@ -30699,6 +31761,36 @@
             "description": "Deprecated: If set to True, enables parallel tool calling.",
             "default": false,
             "deprecated": true
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
           },
           "max_context_window": {
             "type": "integer",
@@ -30886,7 +31978,7 @@
         "properties": {
           "reasoning_effort": {
             "type": "string",
-            "enum": ["minimal", "low", "medium", "high"],
+            "enum": ["none", "minimal", "low", "medium", "high"],
             "title": "Reasoning Effort",
             "description": "The reasoning effort to use when generating text reasoning models",
             "default": "minimal"
@@ -31234,7 +32326,8 @@
               }
             ],
             "title": "Source Id",
-            "description": "The data source of the passage."
+            "description": "Deprecated: Use `folder_id` field instead. The data source of the passage.",
+            "deprecated": true
           },
           "file_id": {
             "anyOf": [
@@ -31374,6 +32467,122 @@
         "required": ["text"],
         "title": "PassageCreateRequest",
         "description": "Request model for creating a passage in an archive."
+      },
+      "PassageSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Text query for semantic search"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Filter passages by agent ID"
+          },
+          "archive_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Id",
+            "description": "Filter passages by archive ID"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Optional list of tags to filter search results"
+          },
+          "tag_match_mode": {
+            "type": "string",
+            "enum": ["any", "all"],
+            "title": "Tag Match Mode",
+            "description": "How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags",
+            "default": "any"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return",
+            "default": 50
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Filter results to passages created after this datetime"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Filter results to passages created before this datetime"
+          }
+        },
+        "type": "object",
+        "required": ["query"],
+        "title": "PassageSearchRequest",
+        "description": "Request model for searching passages across archives."
+      },
+      "PassageSearchResult": {
+        "properties": {
+          "passage": {
+            "$ref": "#/components/schemas/Passage",
+            "description": "The passage object"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Relevance score"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Additional metadata about the search result"
+          }
+        },
+        "type": "object",
+        "required": ["passage", "score"],
+        "title": "PassageSearchResult",
+        "description": "Result from a passage search operation with scoring details."
       },
       "PipRequirement": {
         "properties": {
@@ -32523,13 +33732,10 @@
       },
       "SSEMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "sse",
+            "title": "Mcp Server Type",
             "default": "sse"
           },
           "server_url": {
@@ -32582,10 +33788,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url", "server_name"],
         "title": "SSEMCPServer",
         "description": "An SSE MCP server"
       },
@@ -32954,6 +34166,59 @@
         "enum": ["e2b", "modal", "local"],
         "title": "SandboxType"
       },
+      "SearchAllMessagesRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Text query for full-text search"
+          },
+          "search_mode": {
+            "type": "string",
+            "enum": ["vector", "fts", "hybrid"],
+            "title": "Search Mode",
+            "description": "Search mode to use",
+            "default": "hybrid"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return",
+            "default": 50
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Filter messages created after this date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Filter messages created on or before this date"
+          }
+        },
+        "type": "object",
+        "required": ["query"],
+        "title": "SearchAllMessagesRequest"
+      },
       "SleeptimeManager": {
         "properties": {
           "manager_type": {
@@ -33321,12 +34586,14 @@
           "source_id": {
             "type": "string",
             "title": "Source Id",
-            "description": "Unique identifier of the source"
+            "description": "Deprecated: Use `folder_id` field instead. Unique identifier of the source",
+            "deprecated": true
           },
           "source_name": {
             "type": "string",
             "title": "Source Name",
-            "description": "Name of the source"
+            "description": "Deprecated: Use `folder_name` field instead. Name of the source",
+            "deprecated": true
           },
           "file_count": {
             "type": "integer",
@@ -33425,13 +34692,10 @@
       },
       "StdioMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "stdio",
+            "title": "Mcp Server Type",
             "default": "stdio"
           },
           "command": {
@@ -33468,10 +34732,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "command", "args"],
+        "required": ["command", "args", "server_name"],
         "title": "StdioMCPServer",
         "description": "A Stdio MCP server"
       },
@@ -33974,13 +35244,10 @@
       },
       "StreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
+          "mcp_server_type": {
             "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
             "default": "streamable_http"
           },
           "server_url": {
@@ -34033,10 +35300,16 @@
             "title": "Id",
             "description": "The human-friendly ID of the Mcp_server",
             "examples": ["mcp_server-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the MCP server"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": ["server_name", "server_url"],
+        "required": ["server_url", "server_name"],
         "title": "StreamableHTTPMCPServer",
         "description": "A Streamable HTTP MCP server"
       },
@@ -35663,6 +36936,125 @@
         "required": ["source_code", "args"],
         "title": "ToolRunFromSource"
       },
+      "ToolSearchRequest": {
+        "properties": {
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query",
+            "description": "Text query for semantic search."
+          },
+          "search_mode": {
+            "type": "string",
+            "enum": ["vector", "fts", "hybrid"],
+            "title": "Search Mode",
+            "description": "Search mode: vector, fts, or hybrid.",
+            "default": "hybrid"
+          },
+          "tool_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Types",
+            "description": "Filter by tool types (e.g., 'custom', 'letta_core')."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Filter by tags (match any)."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return.",
+            "default": 50
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ToolSearchRequest",
+        "description": "Request model for searching tools using semantic search."
+      },
+      "ToolSearchResult": {
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/Tool",
+            "description": "The matched tool."
+          },
+          "embedded_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedded Text",
+            "description": "The embedded text content used for matching."
+          },
+          "fts_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fts Rank",
+            "description": "Full-text search rank position."
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank",
+            "description": "Vector search rank position."
+          },
+          "combined_score": {
+            "type": "number",
+            "title": "Combined Score",
+            "description": "Combined relevance score (RRF for hybrid mode)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool", "combined_score"],
+        "title": "ToolSearchResult",
+        "description": "Result from a tool search operation."
+      },
       "ToolType": {
         "type": "string",
         "enum": [
@@ -35917,7 +37309,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -36291,8 +37699,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "response_format": {
@@ -36323,7 +37730,7 @@
               }
             ],
             "title": "Response Format",
-            "description": "Deprecated: Use `model` field to configure response format instead. The response format for the agent.",
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
             "deprecated": true
           },
           "max_tokens": {
@@ -36466,6 +37873,50 @@
         "type": "object",
         "required": ["content"],
         "title": "UpdateAssistantMessage"
+      },
+      "UpdateMCPServerRequest": {
+        "properties": {
+          "server_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Name",
+            "description": "The name of the MCP server"
+          },
+          "config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer"
+              },
+              {
+                "$ref": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
+              }
+            ],
+            "title": "Config",
+            "description": "The MCP server configuration updates (Stdio, SSE, or Streamable HTTP)",
+            "discriminator": {
+              "propertyName": "mcp_server_type",
+              "mapping": {
+                "sse": "#/components/schemas/letta__schemas__mcp_server__UpdateSSEMCPServer",
+                "stdio": "#/components/schemas/letta__schemas__mcp_server__UpdateStdioMCPServer",
+                "streamable_http": "#/components/schemas/letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["config"],
+        "title": "UpdateMCPServerRequest",
+        "description": "Request to update an existing MCP server configuration."
       },
       "UpdateReasoningMessage": {
         "properties": {
@@ -37073,7 +38524,23 @@
               }
             ],
             "title": "Source Ids",
-            "description": "The ids of the sources used by the agent."
+            "description": "Deprecated: Use `folder_ids` field instead. The ids of the sources used by the agent.",
+            "deprecated": true
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ids",
+            "description": "The ids of the folders used by the agent."
           },
           "block_ids": {
             "anyOf": [
@@ -37614,7 +39081,8 @@
               }
             ],
             "title": "Response Format",
-            "description": "The response format for the agent."
+            "description": "Deprecated: Use `model_settings` field to configure response format instead. The response format for the agent.",
+            "deprecated": true
           },
           "timezone": {
             "anyOf": [
@@ -37675,8 +39143,7 @@
               }
             ],
             "title": "Parallel Tool Calls",
-            "description": "Deprecated: Use `model` field to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
-            "default": false,
+            "description": "Deprecated: Use `model_settings` to configure parallel tool calls instead. If set to True, enables parallel tool calling.",
             "deprecated": true
           },
           "id": {
@@ -38376,33 +39843,27 @@
         "title": "UpdateStreamableHTTPMCPServer",
         "description": "Update a Streamable HTTP MCP server"
       },
-      "letta__schemas__mcp_server__MCPToolExecuteRequest": {
+      "letta__schemas__mcp_server__ToolExecuteRequest": {
         "properties": {
           "args": {
             "additionalProperties": true,
             "type": "object",
             "title": "Args",
-            "description": "Arguments to pass to the MCP tool"
+            "description": "Arguments to pass to the tool"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "MCPToolExecuteRequest",
-        "description": "Request to execute an MCP tool by IDs."
+        "title": "ToolExecuteRequest",
+        "description": "Request to execute a tool."
       },
       "letta__schemas__mcp_server__UpdateSSEMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "sse",
+            "title": "Mcp Server Type",
+            "default": "sse"
           },
           "server_url": {
             "anyOf": [
@@ -38414,31 +39875,7 @@
               }
             ],
             "title": "Server Url",
-            "description": "The URL of the SSE MCP server"
-          },
-          "auth_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Token",
-            "description": "The authentication token or API key value"
-          },
-          "token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Token",
-            "description": "The authentication token (internal)"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -38451,6 +39888,18 @@
             ],
             "title": "Auth Header",
             "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
           },
           "custom_headers": {
             "anyOf": [
@@ -38465,27 +39914,22 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom headers to send with requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["server_url"],
         "title": "UpdateSSEMCPServer",
         "description": "Update schema for SSE MCP server - all fields optional"
       },
       "letta__schemas__mcp_server__UpdateStdioMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "stdio",
+            "title": "Mcp Server Type",
+            "default": "stdio"
           },
           "command": {
             "anyOf": [
@@ -38497,7 +39941,7 @@
               }
             ],
             "title": "Command",
-            "description": "The command to run the MCP server"
+            "description": "The command to run (MCP 'local' client will run this command)"
           },
           "args": {
             "anyOf": [
@@ -38532,22 +39976,17 @@
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["command", "args"],
         "title": "UpdateStdioMCPServer",
         "description": "Update schema for Stdio MCP server - all fields optional"
       },
       "letta__schemas__mcp_server__UpdateStreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the MCP server"
+          "mcp_server_type": {
+            "type": "string",
+            "const": "streamable_http",
+            "title": "Mcp Server Type",
+            "default": "streamable_http"
           },
           "server_url": {
             "anyOf": [
@@ -38559,31 +39998,7 @@
               }
             ],
             "title": "Server Url",
-            "description": "The URL of the Streamable HTTP MCP server"
-          },
-          "auth_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Token",
-            "description": "The authentication token or API key value"
-          },
-          "token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Token",
-            "description": "The authentication token (internal)"
+            "description": "The URL of the server"
           },
           "auth_header": {
             "anyOf": [
@@ -38596,6 +40011,18 @@
             ],
             "title": "Auth Header",
             "description": "The name of the authentication header (e.g., 'Authorization')"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "The authentication token or API key value"
           },
           "custom_headers": {
             "anyOf": [
@@ -38610,11 +40037,12 @@
               }
             ],
             "title": "Custom Headers",
-            "description": "Custom headers to send with requests"
+            "description": "Custom HTTP headers to include with requests"
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["server_url"],
         "title": "UpdateStreamableHTTPMCPServer",
         "description": "Update schema for Streamable HTTP MCP server - all fields optional"
       },
@@ -39017,17 +40445,17 @@
         ],
         "title": "ToolSchema"
       },
-      "letta__server__rest_api__routers__v1__tools__MCPToolExecuteRequest": {
+      "letta__server__rest_api__routers__v1__tools__ToolExecuteRequest": {
         "properties": {
           "args": {
             "additionalProperties": true,
             "type": "object",
             "title": "Args",
-            "description": "Arguments to pass to the MCP tool"
+            "description": "Arguments to pass to the tool"
           }
         },
         "type": "object",
-        "title": "MCPToolExecuteRequest"
+        "title": "ToolExecuteRequest"
       },
       "openai__types__chat__chat_completion_message_function_tool_call__Function": {
         "properties": {

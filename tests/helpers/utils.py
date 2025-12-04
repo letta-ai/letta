@@ -1,7 +1,7 @@
 import functools
 import os
 import time
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from letta_client import AsyncLetta, Letta
 
@@ -294,22 +294,32 @@ def upload_file_and_wait(
     """Helper function to upload a file and wait for processing to complete"""
     with open(file_path, "rb") as f:
         if duplicate_handling:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
+            file_metadata = client.folders.files.upload(folder_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
         else:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
+            file_metadata = client.folders.files.upload(folder_id=source_id, file=f, name=name)
 
     # wait for the file to be processed
     start_time = time.time()
-    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+    file_metadata_id = file_metadata.id
+    processing_status = file_metadata.processing_status
+    while processing_status != "completed" and processing_status != "error":
         if time.time() - start_time > max_wait:
             raise TimeoutError(f"File processing timed out after {max_wait} seconds")
         time.sleep(1)
-        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
-        print("Waiting for file processing to complete...", file_metadata.processing_status)
+        file_metadata = client.get(
+            path=f"/v1/sources/{source_id}/files/{file_metadata_id}",
+            cast_to=dict[str, Any],
+        )
+        print("Waiting for file processing to complete...", file_metadata["processing_status"])
+        processing_status = file_metadata["processing_status"]
 
-    if file_metadata.processing_status == "error":
+    if isinstance(file_metadata, dict) and file_metadata["processing_status"] == "error":
+        raise RuntimeError(f"File processing failed: {file_metadata['error_message']}")
+    elif hasattr(file_metadata, "processing_status") and file_metadata.processing_status == "error":
         raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
 
+    if not isinstance(file_metadata, dict):
+        file_metadata = file_metadata.model_dump()
     return file_metadata
 
 

@@ -460,6 +460,11 @@ class SyncServer(object):
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
                 )
 
+        # update with model_settings
+        if request.model_settings is not None:
+            update_llm_config_params = request.model_settings._to_legacy_config_params()
+            request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
+
         # Copy parallel_tool_calls from request to llm_config if provided
         if request.parallel_tool_calls is not None:
             request.llm_config.parallel_tool_calls = request.parallel_tool_calls
@@ -491,9 +496,11 @@ class SyncServer(object):
         log_event(name="end create_agent db")
 
         log_event(name="start insert_files_into_context_window db")
-        if request.source_ids:
-            for source_id in request.source_ids:
-                files = await self.file_manager.list_files(source_id, actor, include_content=True)
+        # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
+        folder_ids_to_attach = request.folder_ids if request.folder_ids else request.source_ids
+        if folder_ids_to_attach:
+            for folder_id in folder_ids_to_attach:
+                files = await self.file_manager.list_files(folder_id, actor, include_content=True)
                 await self.agent_manager.insert_files_into_context_window(
                     agent_state=main_agent, file_metadata_with_content=files, actor=actor
                 )
@@ -534,6 +541,10 @@ class SyncServer(object):
 
         # update with model_settings
         if request.model_settings is not None:
+            if request.llm_config is None:
+                # Get the current agent's llm_config if not already set
+                agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+                request.llm_config = agent.llm_config.model_copy()
             update_llm_config_params = request.model_settings._to_legacy_config_params()
             request.llm_config = request.llm_config.model_copy(update=update_llm_config_params)
 
@@ -760,6 +771,51 @@ class SyncServer(object):
             # Get agent state to determine if it's a react agent
             agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
             text_is_assistant_message = agent_state.agent_type == AgentType.letta_v1_agent
+
+            records = Message.to_letta_messages_from_list(
+                messages=records,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+                include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
+            )
+
+        if reverse:
+            records = records[::-1]
+
+        return records
+
+    async def get_all_messages_recall_async(
+        self,
+        actor: User,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+        limit: Optional[int] = 100,
+        group_id: Optional[str] = None,
+        reverse: Optional[bool] = False,
+        return_message_object: bool = True,
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        include_err: Optional[bool] = None,
+    ) -> Union[List[Message], List[LettaMessage]]:
+        records = await self.message_manager.list_messages(
+            agent_id=None,
+            actor=actor,
+            after=after,
+            before=before,
+            limit=limit,
+            ascending=not reverse,
+            group_id=group_id,
+            include_err=include_err,
+        )
+
+        if not return_message_object:
+            # NOTE: We are assuming all messages are coming from letta_v1_agent. This may lead to slightly incorrect assistant message handling.
+            # text_is_assistant_message = agent_state.agent_type == AgentType.letta_v1_agent
+            text_is_assistant_message = True
 
             records = Message.to_letta_messages_from_list(
                 messages=records,
@@ -1298,6 +1354,7 @@ class SyncServer(object):
                 actor=actor,
                 sandbox_env_vars=tool_env_vars,
             )
+
             # TODO: Integrate sandbox result
             tool_execution_result = await tool_execution_manager.execute_tool_async(
                 function_name=tool_name,
@@ -1318,6 +1375,7 @@ class SyncServer(object):
                 id="null",
                 tool_call_id="null",
                 date=get_utc_time(),
+                name=tool_name,
                 status=tool_execution_result.status,
                 tool_return=str(tool_execution_result.func_return),
                 stdout=tool_execution_result.stdout,
@@ -1341,6 +1399,7 @@ class SyncServer(object):
                 id="null",
                 tool_call_id="null",
                 date=get_utc_time(),
+                name=tool.name,
                 status="error",
                 tool_return=func_return,
                 stdout=[],
@@ -1350,7 +1409,7 @@ class SyncServer(object):
 
     # MCP wrappers
     # TODO support both command + SSE servers (via config)
-    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    async def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """List the MCP servers in the config (doesn't test that they are actually working)"""
 
         # TODO implement non-flatfile mechanism
@@ -1363,12 +1422,16 @@ class SyncServer(object):
         # Attempt to read from ~/.letta/mcp_config.json
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if os.path.exists(mcp_config_path):
-            with open(mcp_config_path, "r") as f:
-                try:
-                    mcp_config = json.load(f)
-                except Exception as e:
-                    logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
-                    return mcp_server_list
+
+            def _read_config():
+                with open(mcp_config_path, "r") as f:
+                    return json.load(f)
+
+            try:
+                mcp_config = await asyncio.to_thread(_read_config)
+            except Exception as e:
+                logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                return mcp_server_list
 
                 # Proper formatting is "mcpServers" key at the top level,
                 # then a dict with the MCP server name as the key,
@@ -1475,18 +1538,22 @@ class SyncServer(object):
         # Add to the server file
         current_mcp_servers[server_config.server_name] = server_config
 
-        # Write out the file, and make sure to in include the top-level mcpConfig
+        # Write out the file, and make sure to in include the top-level mcpConfig (wrapped to avoid blocking event loop)
         try:
             new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
-            with open(mcp_config_path, "w") as f:
-                json.dump(new_mcp_file, f, indent=4)
+
+            def _write_config():
+                with open(mcp_config_path, "w") as f:
+                    json.dump(new_mcp_file, f, indent=4)
+
+            await asyncio.to_thread(_write_config)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
             raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")
 
         return list(current_mcp_servers.values())
 
-    def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    async def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """Delete a server config from the MCP config file"""
 
         # TODO implement non-flatfile mechanism
@@ -1501,7 +1568,7 @@ class SyncServer(object):
 
         # If the file does exist, attempt to parse it get calling get_mcp_servers
         try:
-            current_mcp_servers = self.get_mcp_servers()
+            current_mcp_servers = await self.get_mcp_servers()
         except Exception as e:
             # Raise an error telling the user to fix the config file
             logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
@@ -1515,11 +1582,15 @@ class SyncServer(object):
         # Remove from the server file
         del current_mcp_servers[server_name]
 
-        # Write out the file, and make sure to in include the top-level mcpConfig
+        # Write out the file, and make sure to in include the top-level mcpConfig (wrapped to avoid blocking event loop)
         try:
             new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
-            with open(mcp_config_path, "w") as f:
-                json.dump(new_mcp_file, f, indent=4)
+
+            def _write_config():
+                with open(mcp_config_path, "w") as f:
+                    json.dump(new_mcp_file, f, indent=4)
+
+            await asyncio.to_thread(_write_config)
         except Exception as e:
             logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
             raise LettaInvalidArgumentError(f"Failed to write MCP config file {mcp_config_path}")

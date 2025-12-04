@@ -370,20 +370,32 @@ class GoogleVertexClient(LLMClientBase):
         #   - Range: -1, 0, or 512-24576
         # TODO when using v3 agent loop, properly support the native thinking in Gemini
 
-        # Add thinking_config for flash
+        # Add thinking_config for all Gemini reasoning models (2.5 series)
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
-        if "flash" in llm_config.model:
-            # Gemini flash models may fail to call tools even with FunctionCallingConfigMode.ANY if thinking is fully disabled, set to minimum to prevent tool call failure
-            thinking_budget = llm_config.max_reasoning_tokens if llm_config.enable_reasoner else self.get_thinking_budget(llm_config.model)
-            if thinking_budget <= 0:
-                logger.error(
-                    f"Thinking budget of {thinking_budget} for Gemini reasoning model {llm_config.model}, this will likely cause tool call failures"
+        if self.is_reasoning_model(llm_config) or "flash" in llm_config.model:
+            if llm_config.model.startswith("gemini-3"):
+                # letting thinking_level to default to high by not specifying thinking_budget
+                thinking_config = ThinkingConfig(include_thoughts=True)
+            else:
+                # Gemini reasoning models may fail to call tools even with FunctionCallingConfigMode.ANY if thinking is fully disabled, set to minimum to prevent tool call failure
+                thinking_budget = (
+                    llm_config.max_reasoning_tokens if llm_config.enable_reasoner else self.get_thinking_budget(llm_config.model)
                 )
-            thinking_config = ThinkingConfig(
-                thinking_budget=(thinking_budget),
-                include_thoughts=(thinking_budget > 1),
-            )
+                if thinking_budget <= 0:
+                    logger.warning(
+                        f"Thinking budget of {thinking_budget} for Gemini reasoning model {llm_config.model}, this will likely cause tool call failures"
+                    )
+                    # For models that require thinking mode (2.5 Pro, 3.x), override with minimum valid budget
+                    if llm_config.model.startswith("gemini-2.5-pro"):
+                        thinking_budget = 128
+                        logger.warning(
+                            f"Overriding thinking_budget to {thinking_budget} for model {llm_config.model} which requires thinking mode"
+                        )
+                thinking_config = ThinkingConfig(
+                    thinking_budget=(thinking_budget),
+                    include_thoughts=(thinking_budget > 1),
+                )
             request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
         return request_data
@@ -514,6 +526,8 @@ class GoogleVertexClient(LLMClientBase):
                         try:
                             # Structured output tool call
                             function_call = json_loads(response_message.text)
+
+                            # Access dict keys - will raise TypeError/KeyError if not a dict or missing keys
                             function_name = function_call["name"]
                             function_args = function_call["args"]
                             assert isinstance(function_args, dict), function_args
@@ -551,9 +565,13 @@ class GoogleVertexClient(LLMClientBase):
                                     openai_response_message.tool_calls = []
                                 openai_response_message.tool_calls.append(tool_call)
 
-                        except json.decoder.JSONDecodeError:
+                        except (json.decoder.JSONDecodeError, ValueError, TypeError, KeyError, AssertionError) as e:
                             if candidate.finish_reason == "MAX_TOKENS":
                                 raise LLMServerError("Could not parse response data from LLM: exceeded max token limit")
+                            # Log the parsing error for debugging
+                            logger.warning(
+                                f"Failed to parse structured output from LLM response: {e}. Response text: {response_message.text[:500]}"
+                            )
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
@@ -658,16 +676,24 @@ class GoogleVertexClient(LLMClientBase):
     # | 2.5 Pro         | Dynamic thinking: Model decides when and how much to think        | 128-32768    | N/A: Cannot disable        | thinkingBudget = -1     |
     # | 2.5 Flash       | Dynamic thinking: Model decides when and how much to think        | 0-24576      | thinkingBudget = 0         | thinkingBudget = -1     |
     # | 2.5 Flash Lite  | Model does not think                                              | 512-24576    | thinkingBudget = 0         | thinkingBudget = -1     |
+    # | 3.x             | Dynamic thinking: Model decides when and how much to think        | 128-?        | N/A: Cannot disable        | thinkingBudget = -1     |
     def get_thinking_budget(self, model: str) -> bool:
         if model_settings.gemini_force_minimum_thinking_budget:
             if all(substring in model for substring in ["2.5", "flash", "lite"]):
                 return 512
             elif all(substring in model for substring in ["2.5", "flash"]):
                 return 1
+        # Gemini 3 and 2.5 Pro require thinking mode and cannot have budget 0
+        if model.startswith("gemini-3") or model.startswith("gemini-2.5-pro"):
+            return 128  # Minimum valid budget for models that require thinking
         return 0
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
-        return llm_config.model.startswith("gemini-2.5-flash") or llm_config.model.startswith("gemini-2.5-pro")
+        return (
+            llm_config.model.startswith("gemini-2.5-flash")
+            or llm_config.model.startswith("gemini-2.5-pro")
+            or llm_config.model.startswith("gemini-3")
+        )
 
     def is_malformed_function_call(self, response_data: dict) -> dict:
         response = GenerateContentResponse(**response_data)

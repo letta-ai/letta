@@ -118,6 +118,7 @@ async def test_create_internal_template_objects(server: SyncServer, default_user
     agent = await server.agent_manager.create_agent_async(
         InternalTemplateAgentCreate(
             name="template-agent",
+            agent_type="memgpt_v2_agent",
             base_template_id=base_template_id,
             template_id=template_id,
             deployment_id=deployment_id,

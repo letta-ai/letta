@@ -16,8 +16,8 @@ class FileStats(LettaBase):
 class SourceStats(LettaBase):
     """Aggregated metadata for a source"""
 
-    source_id: str = Field(..., description="Unique identifier of the source")
-    source_name: str = Field(..., description="Name of the source")
+    source_id: str = Field(..., description="Deprecated: Use `folder_id` field instead. Unique identifier of the source", deprecated=True)
+    source_name: str = Field(..., description="Deprecated: Use `folder_name` field instead. Name of the source", deprecated=True)
     file_count: int = Field(0, description="Number of files in the source")
     total_size: int = Field(0, description="Total size of all files in bytes")
     files: List[FileStats] = Field(default_factory=list, description="List of file statistics")

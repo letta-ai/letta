@@ -1,0 +1,9 @@
+{
+  "handle": "bedrock/arn:aws:bedrock:us-east-1:474668403324:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
+  "model_settings": {
+    "provider_type": "bedrock",
+    "temperature": 0.7,
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false
+  }
+}

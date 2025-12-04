@@ -1,0 +1,11 @@
+{
+  "handle": "openai/gpt-5",
+  "model_settings": {
+    "provider_type": "openai",
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false,
+    "reasoning": {
+      "reasoning_effort": "minimal"
+    }
+  }
+}

@@ -462,7 +462,6 @@ class LettaAgentV2(BaseAgentV2):
                             messages = await self.summarize_conversation_history(
                                 in_context_messages=messages,
                                 new_letta_messages=self.response_messages,
-                                llm_config=self.agent_state.llm_config,
                                 force=True,
                             )
                         else:

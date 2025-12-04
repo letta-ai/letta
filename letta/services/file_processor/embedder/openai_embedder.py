@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import List, Optional, Tuple, cast
 
 from letta.llm_api.llm_client import LLMClient
@@ -13,6 +14,10 @@ from letta.services.file_processor.embedder.base_embedder import BaseEmbedder
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
+
+# Global semaphore shared across ALL embedding operations to prevent overwhelming OpenAI API
+# This ensures that even when processing multiple files concurrently, we don't exceed rate limits
+_GLOBAL_EMBEDDING_SEMAPHORE = asyncio.Semaphore(3)
 
 
 class OpenAIEmbedder(BaseEmbedder):
@@ -134,6 +139,7 @@ class OpenAIEmbedder(BaseEmbedder):
         chunk_indices = [i for i, _ in valid_chunks]
         chunks_to_embed = [chunk for _, chunk in valid_chunks]
 
+        embedding_start = time.time()
         logger.info(f"Generating embeddings for {len(chunks_to_embed)} chunks using {self.embedding_config.embedding_model}")
         log_event(
             "embedder.generation_started",
@@ -163,20 +169,23 @@ class OpenAIEmbedder(BaseEmbedder):
             {"total_batches": len(batches), "batch_size": self.embedding_config.batch_size, "total_chunks": len(chunks_to_embed)},
         )
 
+        # Use global semaphore to limit concurrent embedding requests across ALL file processing
+        # This prevents rate limiting even when processing multiple files simultaneously
         async def process(batch: List[str], indices: List[int]):
-            try:
-                return await self._embed_batch(batch, indices)
-            except Exception as e:
-                logger.error("Failed to embed batch of size %s: %s", len(batch), e)
-                log_event("embedder.batch_failed", {"batch_size": len(batch), "error": str(e), "error_type": type(e).__name__})
-                raise
+            async with _GLOBAL_EMBEDDING_SEMAPHORE:
+                try:
+                    return await self._embed_batch(batch, indices)
+                except Exception as e:
+                    logger.error("Failed to embed batch of size %s: %s", len(batch), e)
+                    log_event("embedder.batch_failed", {"batch_size": len(batch), "error": str(e), "error_type": type(e).__name__})
+                    raise
 
-        # Execute all batches concurrently with semaphore control
+        # Execute all batches with global semaphore control to limit concurrency
         tasks = [process(batch, indices) for batch, indices in zip(batches, batch_indices)]
 
         log_event(
             "embedder.concurrent_processing_started",
-            {"concurrent_tasks": len(tasks)},
+            {"concurrent_tasks": len(tasks), "max_concurrent_global": 3},
         )
         results = await asyncio.gather(*tasks)
         log_event("embedder.concurrent_processing_completed", {"batches_processed": len(results)})
@@ -202,9 +211,16 @@ class OpenAIEmbedder(BaseEmbedder):
             )
             passages.append(passage)
 
-        logger.info(f"Successfully generated {len(passages)} embeddings")
+        embedding_duration = time.time() - embedding_start
+        logger.info(f"Successfully generated {len(passages)} embeddings (took {embedding_duration:.2f}s)")
         log_event(
             "embedder.generation_completed",
-            {"passages_created": len(passages), "total_chunks_processed": len(chunks_to_embed), "file_id": file_id, "source_id": source_id},
+            {
+                "passages_created": len(passages),
+                "total_chunks_processed": len(chunks_to_embed),
+                "file_id": file_id,
+                "source_id": source_id,
+                "duration_seconds": embedding_duration,
+            },
         )
         return passages

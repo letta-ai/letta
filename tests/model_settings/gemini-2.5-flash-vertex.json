@@ -1,0 +1,13 @@
+{
+  "handle": "google_vertex/gemini-2.5-flash",
+  "model_settings": {
+    "provider_type": "google_vertex",
+    "temperature": 0.7,
+    "max_output_tokens": 65536,
+    "parallel_tool_calls": false,
+    "thinking_config": {
+      "include_thoughts": true,
+      "thinking_budget": 1024
+    }
+  }
+}

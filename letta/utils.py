@@ -854,11 +854,14 @@ def parse_json(string) -> dict:
         raise e
 
 
-def validate_function_response(function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True) -> str:
+def validate_function_response(function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True) -> Any:
     """Check to make sure that a function used by Letta returned a valid response. Truncates to return_char_limit if necessary.
 
-    This makes sure that we can coerce the function_response into a string that meets our criteria. We handle some soft coercion.
+    This makes sure that we can coerce the function_response into a string or dict that meets our criteria. We handle some soft coercion.
     If strict is True, we raise a ValueError if function_response is not a string or None.
+
+    Returns:
+        str or dict: Validated response. Dicts are returned as-is to avoid double JSON encoding by package_function_response.
     """
     if isinstance(function_response, str):
         function_response_string = function_response
@@ -870,9 +873,17 @@ def validate_function_response(function_response: Any, return_char_limit: int, s
         raise ValueError(f"Strict mode violation. Function returned type: {type(function_response).__name__}")
 
     elif isinstance(function_response, dict):
-        # As functions can return arbitrary data, if there's already nesting somewhere in the response, it's difficult
-        # for us to not result in double escapes.
-        function_response_string = json_dumps(function_response)
+        # For dicts, check if truncation is needed
+        if truncate and return_char_limit:
+            # Convert to JSON string to check size
+            json_str = json_dumps(function_response)
+            if len(json_str) > return_char_limit:
+                # If truncation is needed, return truncated string
+                logger.warning(f"function return was over limit ({len(json_str)} > {return_char_limit}) and was truncated")
+                return f"{json_str[:return_char_limit]}... [NOTE: function output was truncated since it exceeded the character limit ({len(json_str)} > {return_char_limit})]"
+        # Otherwise return dict as-is to avoid double JSON encoding
+        # package_function_response will handle the final JSON serialization
+        return function_response
     else:
         logger.debug(f"Function returned type {type(function_response).__name__}. Coercing to string.")
         function_response_string = str(function_response)
@@ -1110,6 +1121,19 @@ def get_background_task_count() -> int:
 
 @trace_method
 def safe_create_task(coro, label: str = "background task"):
+    # Check if coro is an async generator instead of a coroutine
+    if inspect.isasyncgen(coro):
+        raise TypeError(
+            f"{label}: Cannot create task from async generator. "
+            "Async generators must be consumed with 'async for', not 'await'. "
+            "If you need to run an async generator as a task, wrap it in an async function."
+        )
+
+    if not inspect.iscoroutine(coro):
+        raise TypeError(
+            f"{label}: Expected a coroutine, got {type(coro).__name__}. Make sure you're calling the async function with () parentheses."
+        )
+
     async def wrapper():
         try:
             await coro

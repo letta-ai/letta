@@ -103,7 +103,7 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             if additional_env_vars is None:
                 letta_api_key = None
             else:
-                letta_api_key = additional_env_vars.get("LETTA_API_KEY", None)
+                letta_api_key = additional_env_vars.get("LETTA_SECRET_API_KEY", None)
 
             # Construct dynamic env vars
             # Priority order (later overrides earlier):

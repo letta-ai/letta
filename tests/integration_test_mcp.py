@@ -8,7 +8,10 @@ from pathlib import Path
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta, MessageCreate, ToolCallMessage, ToolReturnMessage
+from letta_client import Letta
+from letta_client.types import MessageCreateParam
+from letta_client.types.agents.tool_call_message import ToolCallMessage
+from letta_client.types.tool_return_message import ToolReturnMessage
 
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.agent import AgentState
@@ -98,31 +101,32 @@ def agent_state(client: Letta, mcp_server_name: str, mock_mcp_server_config: Std
     Creates an agent with MCP tools attached for testing.
     """
     # Register the MCP server
-    client.tools.add_mcp_server(request=mock_mcp_server_config)
-
-    # Verify server is registered
-    servers = client.tools.list_mcp_servers()
-    assert mcp_server_name in servers, f"MCP server {mcp_server_name} not found in {servers}"
+    mcp_server = client.mcp_servers.create(
+        server_name=mcp_server_name,
+        config={
+            "command": mock_mcp_server_config.command,
+            "args": mock_mcp_server_config.args,
+            "env": mock_mcp_server_config.env if hasattr(mock_mcp_server_config, "env") else None,
+            "mcp_server_type": "stdio",
+        },
+    )
 
     # List available MCP tools
-    mcp_tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+    mcp_tools = client.mcp_servers.tools.list(mcp_server_id=mcp_server.id)
     assert len(mcp_tools) > 0, "No tools found from MCP server"
 
-    # Add the echo and add tools to Letta
+    # Get the echo and add tools from MCP server
     echo_tool = next((t for t in mcp_tools if t.name == "echo"), None)
     add_tool = next((t for t in mcp_tools if t.name == "add"), None)
 
     assert echo_tool is not None, "echo tool not found"
     assert add_tool is not None, "add tool not found"
 
-    letta_echo_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name="echo")
-    letta_add_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name="add")
-
-    # Create agent with the MCP tools
+    # Create agent with the MCP tools (use tool IDs directly)
     agent = client.agents.create(
         name=f"test_mcp_agent_{uuid.uuid4().hex[:8]}",
         include_base_tools=True,
-        tool_ids=[letta_echo_tool.id, letta_add_tool.id],
+        tool_ids=[echo_tool.id, add_tool.id],
         memory_blocks=[
             {
                 "label": "human",
@@ -143,13 +147,13 @@ def agent_state(client: Letta, mcp_server_name: str, mock_mcp_server_config: Std
     # Cleanup
     try:
         client.agents.delete(agent.id)
-    except Exception as e:
-        print(f"Warning: Failed to delete agent {agent.id}: {e}")
+    except Exception:
+        pass
 
     try:
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
-    except Exception as e:
-        print(f"Warning: Failed to delete MCP server {mcp_server_name}: {e}")
+        client.mcp_servers.delete(mcp_server_id=mcp_server.id)
+    except Exception:
+        pass
 
 
 # ------------------------------
@@ -166,7 +170,7 @@ def test_mcp_echo_tool(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content=f"Use the echo tool to echo back this exact message: '{test_message}'",
             )
@@ -204,7 +208,7 @@ def test_mcp_add_tool(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content=f"Use the add tool to add {a} and {b}.",
             )
@@ -239,7 +243,7 @@ def test_mcp_multiple_tools_in_sequence(client: Letta, agent_state: AgentState):
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content="First use the add tool to add 10 and 20. Then use the echo tool to echo back the result you got from the add tool.",
             )
@@ -269,15 +273,24 @@ def test_mcp_server_listing(client: Letta, mcp_server_name: str, mock_mcp_server
     Test that MCP server registration and tool listing works correctly.
     """
     # Register the MCP server
-    client.tools.add_mcp_server(request=mock_mcp_server_config)
+    mcp_server = client.mcp_servers.create(
+        server_name=mcp_server_name,
+        config={
+            "command": mock_mcp_server_config.command,
+            "args": mock_mcp_server_config.args,
+            "env": mock_mcp_server_config.env if hasattr(mock_mcp_server_config, "env") else None,
+            "mcp_server_type": "stdio",
+        },
+    )
 
     try:
         # Verify server is in the list
-        servers = client.tools.list_mcp_servers()
-        assert mcp_server_name in servers, f"MCP server {mcp_server_name} not found in {servers}"
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name in server_names, f"MCP server {mcp_server_name} not found in {server_names}"
 
         # List available tools
-        mcp_tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        mcp_tools = client.mcp_servers.tools.list(mcp_server_id=mcp_server.id)
         assert len(mcp_tools) > 0, "No tools found from MCP server"
 
         # Verify expected tools are present
@@ -288,9 +301,10 @@ def test_mcp_server_listing(client: Letta, mcp_server_name: str, mock_mcp_server
 
     finally:
         # Cleanup
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
-        servers = client.tools.list_mcp_servers()
-        assert mcp_server_name not in servers, f"MCP server {mcp_server_name} should be deleted but is still in {servers}"
+        client.mcp_servers.delete(mcp_server_id=mcp_server.id)
+        servers = client.mcp_servers.list()
+        server_names = [s.server_name for s in servers]
+        assert mcp_server_name not in server_names, f"MCP server {mcp_server_name} should be deleted but is still in {server_names}"
 
 
 def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_server_config: StdioServerConfig):
@@ -302,24 +316,29 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
     - Optional nested object with arrays of objects
     """
     # Register the MCP server
-    client.tools.add_mcp_server(request=mock_mcp_server_config)
+    mcp_server = client.mcp_servers.create(
+        server_name=mcp_server_name,
+        config={
+            "command": mock_mcp_server_config.command,
+            "args": mock_mcp_server_config.args,
+            "env": mock_mcp_server_config.env if hasattr(mock_mcp_server_config, "env") else None,
+            "mcp_server_type": "stdio",
+        },
+    )
 
     try:
         # List available tools
-        mcp_tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        mcp_tools = client.mcp_servers.tools.list(mcp_server_id=mcp_server.id)
 
         # Find the complex schema tool
         complex_tool = next((t for t in mcp_tools if t.name == "get_parameter_type_description"), None)
         assert complex_tool is not None, f"get_parameter_type_description tool not found. Available: {[t.name for t in mcp_tools]}"
 
-        # Add it to Letta
-        letta_complex_tool = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name="get_parameter_type_description")
-
-        # Create agent with the complex tool
+        # Create agent with the complex tool (use tool ID directly)
         agent = client.agents.create(
             name=f"test_complex_schema_{uuid.uuid4().hex[:8]}",
             include_base_tools=True,
-            tool_ids=[letta_complex_tool.id],
+            tool_ids=[complex_tool.id],
             memory_blocks=[
                 {
                     "label": "human",
@@ -339,7 +358,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user", content='Use the get_parameter_type_description tool with preset "a" to get parameter information.'
                 )
             ],
@@ -363,7 +382,7 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
         response = client.agents.messages.create(
             agent_id=agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user",
                     content="Use the get_parameter_type_description tool with these arguments: "
                     'preset="b", connected_service_descriptor="test-service", '
@@ -393,4 +412,4 @@ def test_mcp_complex_schema_tool(client: Letta, mcp_server_name: str, mock_mcp_s
 
     finally:
         # Cleanup MCP server
-        client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
+        client.mcp_servers.delete(mcp_server_id=mcp_server.id)

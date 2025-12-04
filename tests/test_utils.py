@@ -569,14 +569,12 @@ def test_validate_function_response_none_input():
 
 
 def test_validate_function_response_dict_input():
-    """Test that dict inputs are JSON serialized"""
+    """Test that dict inputs are returned as-is (not pre-serialized) to avoid double JSON encoding"""
     test_dict = {"key": "value", "number": 42}
     response = validate_function_response(test_dict, return_char_limit=100)
-    # Response should be valid JSON string
-    import json
-
-    parsed = json.loads(response)
-    assert parsed == test_dict
+    # Response should be the dict itself, not a JSON string
+    assert isinstance(response, dict)
+    assert response == test_dict
 
 
 def test_validate_function_response_other_types():
@@ -641,14 +639,12 @@ def test_validate_function_response_exact_limit():
 
 
 def test_validate_function_response_complex_dict():
-    """Test with complex nested dictionary"""
+    """Test with complex nested dictionary - should be returned as-is"""
     complex_dict = {"nested": {"key": "value"}, "list": [1, 2, {"inner": "dict"}], "null": None, "bool": True}
     response = validate_function_response(complex_dict, return_char_limit=1000)
-    # Should be valid JSON
-    import json
-
-    parsed = json.loads(response)
-    assert parsed == complex_dict
+    # Should be the dict itself, not a JSON string
+    assert isinstance(response, dict)
+    assert response == complex_dict
 
 
 def test_validate_function_response_dict_truncation():

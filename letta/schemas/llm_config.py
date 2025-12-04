@@ -6,6 +6,7 @@ from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.enums import AgentType, ProviderCategory
+from letta.schemas.response_format import ResponseFormatUnion
 
 if TYPE_CHECKING:
     from letta.schemas.model import ModelSettings
@@ -54,7 +55,7 @@ class LLMConfig(BaseModel):
     model_wrapper: Optional[str] = Field(None, description="The wrapper for the model.")
     context_window: int = Field(..., description="The context window size for the model.")
     put_inner_thoughts_in_kwargs: Optional[bool] = Field(
-        True,
+        False,
         description="Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
     )
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
@@ -69,13 +70,17 @@ class LLMConfig(BaseModel):
     enable_reasoner: bool = Field(
         True, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
-    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]] = Field(
         None,
         description="The reasoning effort to use when generating text reasoning models",
     )
     max_reasoning_tokens: int = Field(
         0,
         description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
+    )
+    effort: Optional[Literal["low", "medium", "high"]] = Field(
+        None,
+        description="The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'.",
     )
     frequency_penalty: Optional[float] = Field(
         None,  # Can also deafult to 0.0?
@@ -90,7 +95,15 @@ class LLMConfig(BaseModel):
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
-    parallel_tool_calls: Optional[bool] = Field(False, description="If set to True, enables parallel tool calling. Defaults to False.")
+    parallel_tool_calls: Optional[bool] = Field(
+        False,
+        description="Deprecated: Use model_settings to configure parallel tool calls instead. If set to True, enables parallel tool calling. Defaults to False.",
+        deprecated=True,
+    )
+    response_format: Optional[ResponseFormatUnion] = Field(
+        None,
+        description="The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -105,7 +118,7 @@ class LLMConfig(BaseModel):
 
         # Set max_tokens defaults based on model
         if values.get("max_tokens") is None:
-            if model == "gpt-5":
+            if model.startswith("gpt-5"):  # Covers both gpt-5 and gpt-5.1
                 values["max_tokens"] = 16384
             elif model == "gpt-4.1":
                 values["max_tokens"] = 8192
@@ -113,8 +126,8 @@ class LLMConfig(BaseModel):
 
         # Set context_window defaults if not provided
         if values.get("context_window") is None:
-            if model == "gpt-5":
-                values["context_window"] = 128000
+            if model.startswith("gpt-5"):  # Covers both gpt-5 and gpt-5.1
+                values["context_window"] = 272000
             elif model == "gpt-4.1":
                 values["context_window"] = 256000
             elif model == "gpt-4o" or model == "gpt-4o-mini":
@@ -123,7 +136,7 @@ class LLMConfig(BaseModel):
                 values["context_window"] = 8192
 
         # Set verbosity defaults for GPT-5 models
-        if model == "gpt-5" and values.get("verbosity") is None:
+        if model.startswith("gpt-5") and values.get("verbosity") is None:
             values["verbosity"] = "medium"
 
         return values
@@ -150,11 +163,11 @@ class LLMConfig(BaseModel):
         if model is None:
             return values
 
-        # Define models where we want put_inner_thoughts_in_kwargs to be False
-        avoid_put_inner_thoughts_in_kwargs = ["gpt-4"]
-
+        # Default put_inner_thoughts_in_kwargs to False for all models
+        # Reasoning models (o1, o3, o4, claude-sonnet-4, etc.) will have this set to False below
+        # Non-reasoner models should also default to False to avoid unwanted reasoning token generation
         if values.get("put_inner_thoughts_in_kwargs") is None:
-            values["put_inner_thoughts_in_kwargs"] = False if model in avoid_put_inner_thoughts_in_kwargs else True
+            values["put_inner_thoughts_in_kwargs"] = False
 
         # For the o1/o3 series from OpenAI, set to False by default
         # We can set this flag to `true` if desired, which will enable "double-think"
@@ -168,6 +181,7 @@ class LLMConfig(BaseModel):
             or model.startswith("claude-sonnet-4")
             or model.startswith("claude-opus-4")
             or model.startswith("claude-haiku-4-5")
+            or model.startswith("claude-opus-4-5")
         ):
             values["put_inner_thoughts_in_kwargs"] = False
 
@@ -239,8 +253,19 @@ class LLMConfig(BaseModel):
                 model_endpoint_type="openai",
                 model_endpoint="https://api.openai.com/v1",
                 model_wrapper=None,
-                context_window=128000,
+                context_window=272000,
                 reasoning_effort="minimal",
+                verbosity="medium",
+                max_tokens=16384,
+            )
+        elif model_name == "gpt-5.1":
+            return cls(
+                model="gpt-5.1",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=272000,  # Same as GPT-5
+                reasoning_effort="none",  # Default to "none" for GPT-5.1
                 verbosity="medium",
                 max_tokens=16384,
             )
@@ -357,6 +382,7 @@ class LLMConfig(BaseModel):
             or config.model.startswith("claude-sonnet-4")
             or config.model.startswith("claude-3-7-sonnet")
             or config.model.startswith("claude-haiku-4-5")
+            or config.model.startswith("claude-opus-4-5")
         )
 
     @classmethod
@@ -388,7 +414,7 @@ class LLMConfig(BaseModel):
         - Google Gemini (2.5 family): force disabled until native reasoning supported
         - All others: disabled (no simulated reasoning via kwargs)
         """
-        from letta.llm_api.openai_client import does_not_support_minimal_reasoning
+        from letta.llm_api.openai_client import does_not_support_minimal_reasoning, supports_none_reasoning_effort
 
         # V1 agent policy: do not allow simulated reasoning for non-native models
         if agent_type is not None and agent_type == AgentType.letta_v1_agent:
@@ -397,8 +423,11 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
+                    # GPT-5.1 models default to "none" reasoning effort (their unique feature)
+                    if supports_none_reasoning_effort(config.model):
+                        config.reasoning_effort = "none"  # Always default to "none" for GPT-5.1
                     # Codex models cannot use "minimal" reasoning effort
-                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
+                    elif config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"
@@ -408,17 +437,22 @@ class LLMConfig(BaseModel):
 
             # Anthropic 3.7/4 and Gemini: toggle honored
             is_google_reasoner_with_configurable_thinking = (
-                cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config)
-            ) and not config.model.startswith("gemini-2.5-pro")
+                (cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config))
+                and not config.model.startswith("gemini-2.5-pro")
+                and not config.model.startswith("gemini-3")
+            )
             if cls.is_anthropic_reasoning_model(config) or is_google_reasoner_with_configurable_thinking:
                 config.enable_reasoner = bool(reasoning)
                 config.put_inner_thoughts_in_kwargs = False
                 if config.enable_reasoner and config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
+                # Set default effort level for Claude Opus 4.5
+                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                    config.effort = "medium"
                 return config
 
-            # Google Gemini 2.5 Pro: not possible to disable
-            if config.model.startswith("gemini-2.5-pro"):
+            # Google Gemini 2.5 Pro and Gemini 3: not possible to disable
+            if config.model.startswith("gemini-2.5-pro") or config.model.startswith("gemini-3"):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.max_reasoning_tokens == 0:
@@ -433,21 +467,27 @@ class LLMConfig(BaseModel):
 
         if not reasoning:
             if cls.is_openai_reasoning_model(config):
-                logger.warning("Reasoning cannot be disabled for OpenAI o1/o3/gpt-5 models")
-                config.put_inner_thoughts_in_kwargs = False
-                config.enable_reasoner = True
-                if config.reasoning_effort is None:
-                    # GPT-5 models default to minimal, others to medium
-                    # Codex models cannot use "minimal" reasoning effort
-                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
-                        config.reasoning_effort = "minimal"
-                    else:
-                        config.reasoning_effort = "medium"
+                # GPT-5.1 models can actually disable reasoning using "none" effort
+                if supports_none_reasoning_effort(config.model):
+                    config.put_inner_thoughts_in_kwargs = False
+                    config.enable_reasoner = True
+                    config.reasoning_effort = "none"
+                else:
+                    logger.warning("Reasoning cannot be disabled for OpenAI o1/o3/gpt-5 models")
+                    config.put_inner_thoughts_in_kwargs = False
+                    config.enable_reasoner = True
+                    if config.reasoning_effort is None:
+                        # GPT-5 models default to minimal, others to medium
+                        # Codex models cannot use "minimal" reasoning effort
+                        if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
+                            config.reasoning_effort = "minimal"
+                        else:
+                            config.reasoning_effort = "medium"
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
-            elif config.model.startswith("gemini-2.5-pro"):
-                logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
+            elif config.model.startswith("gemini-2.5-pro") or config.model.startswith("gemini-3"):
+                logger.warning(f"Reasoning cannot be disabled for {config.model} model")
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 config.enable_reasoner = True
@@ -463,6 +503,9 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
+                # Set default effort level for Claude Opus 4.5
+                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                    config.effort = "medium"
             elif cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
@@ -471,9 +514,12 @@ class LLMConfig(BaseModel):
             elif cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
+                    # GPT-5.1 models default to "none" even when reasoning is enabled
+                    if supports_none_reasoning_effort(config.model):
+                        config.reasoning_effort = "none"  # Default to "none" for GPT-5.1
                     # GPT-5 models default to minimal, others to medium
                     # Codex models cannot use "minimal" reasoning effort
-                    if config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
+                    elif config.model.startswith("gpt-5") and not does_not_support_minimal_reasoning(config.model):
                         config.reasoning_effort = "minimal"
                     else:
                         config.reasoning_effort = "medium"

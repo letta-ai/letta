@@ -267,9 +267,11 @@ class RunManager:
 
                 query = await _apply_pagination_async(query, before, after, session, ascending=ascending)
 
-            # Apply limit
-            if limit:
-                query = query.limit(limit)
+            # Apply limit (always enforce a maximum to prevent unbounded queries)
+            # If no limit specified, default to 100; enforce maximum of 1000
+            effective_limit = limit if limit is not None else 100
+            effective_limit = min(effective_limit, 1000)
+            query = query.limit(effective_limit)
 
             result = await session.execute(query)
             rows = result.all()

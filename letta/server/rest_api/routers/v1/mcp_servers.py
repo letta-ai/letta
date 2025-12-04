@@ -8,10 +8,10 @@ from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig,
 from letta.log import get_logger
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.mcp_server import (
-    CreateMCPServerUnion,
+    CreateMCPServerRequest,
     MCPServerUnion,
-    MCPToolExecuteRequest,
-    UpdateMCPServerUnion,
+    ToolExecuteRequest,
+    UpdateMCPServerRequest,
     convert_generic_to_union,
     convert_update_to_internal,
 )
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
     operation_id="mcp_create_mcp_server",
 )
 async def create_mcp_server(
-    request: CreateMCPServerUnion = Body(...),
+    request: CreateMCPServerRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -49,7 +49,7 @@ async def create_mcp_server(
     """
     # TODO: add the tools to the MCP server table we made.
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    new_server = await server.mcp_server_manager.create_mcp_server_from_config_with_tools(request, actor=actor)
+    new_server = await server.mcp_server_manager.create_mcp_server_from_request(request, actor=actor)
     return convert_generic_to_union(new_server)
 
 
@@ -73,9 +73,9 @@ async def list_mcp_servers(
 @router.get(
     "/{mcp_server_id}",
     response_model=MCPServerUnion,
-    operation_id="mcp_get_mcp_server",
+    operation_id="mcp_retrieve_mcp_server",
 )
-async def get_mcp_server(
+async def retrieve_mcp_server(
     mcp_server_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -112,7 +112,7 @@ async def delete_mcp_server(
 )
 async def update_mcp_server(
     mcp_server_id: str,
-    request: UpdateMCPServerUnion = Body(...),
+    request: UpdateMCPServerRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -128,8 +128,8 @@ async def update_mcp_server(
     return convert_generic_to_union(updated_server)
 
 
-@router.get("/{mcp_server_id}/tools", response_model=List[Tool], operation_id="mcp_list_mcp_tools_by_server")
-async def list_mcp_tools_by_server(
+@router.get("/{mcp_server_id}/tools", response_model=List[Tool], operation_id="mcp_list_tools_for_mcp_server")
+async def list_tools_for_mcp_server(
     mcp_server_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -143,8 +143,8 @@ async def list_mcp_tools_by_server(
     return tools
 
 
-@router.get("/{mcp_server_id}/tools/{tool_id}", response_model=Tool, operation_id="mcp_get_mcp_tool")
-async def get_mcp_tool(
+@router.get("/{mcp_server_id}/tools/{tool_id}", response_model=Tool, operation_id="mcp_retrieve_mcp_tool")
+async def retrieve_mcp_tool(
     mcp_server_id: str,
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -164,12 +164,12 @@ async def run_mcp_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
-    request: MCPToolExecuteRequest = Body(default=MCPToolExecuteRequest()),
+    request: ToolExecuteRequest = Body(default=ToolExecuteRequest()),
 ):
     """
     Execute a specific MCP tool
 
-    The request body should contain the tool arguments in the MCPToolExecuteRequest format.
+    The request body should contain the tool arguments in the ToolExecuteRequest format.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 

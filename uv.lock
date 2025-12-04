@@ -209,20 +209,21 @@ wheels = [
 
 [[package]]
 name = "anthropic"
-version = "0.64.0"
+version = "0.75.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "distro" },
+    { name = "docstring-parser" },
     { name = "httpx" },
     { name = "jiter" },
     { name = "pydantic" },
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/4f/f2b880cba1a76f3acc7d5eb2ae217632eac1b8cef5ed3027493545c59eba/anthropic-0.64.0.tar.gz", hash = "sha256:3d496c91a63dff64f451b3e8e4b238a9640bf87b0c11d0b74ddc372ba5a3fe58", size = 427893, upload-time = "2025-08-13T17:09:49.915Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/1f/08e95f4b7e2d35205ae5dcbb4ae97e7d477fc521c275c02609e2931ece2d/anthropic-0.75.0.tar.gz", hash = "sha256:e8607422f4ab616db2ea5baacc215dd5f028da99ce2f022e33c7c535b29f3dfb", size = 439565, upload-time = "2025-11-24T20:41:45.28Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/b2/2d268bcd5d6441df9dc0ebebc67107657edb8b0150d3fda1a5b81d1bec45/anthropic-0.64.0-py3-none-any.whl", hash = "sha256:6f5f7d913a6a95eb7f8e1bda4e75f76670e8acd8d4cd965e02e2a256b0429dd1", size = 297244, upload-time = "2025-08-13T17:09:47.908Z" },
+    { url = "https://files.pythonhosted.org/packages/60/1c/1cd02b7ae64302a6e06724bf80a96401d5313708651d277b1458504a1730/anthropic-0.75.0-py3-none-any.whl", hash = "sha256:ea8317271b6c15d80225a9f3c670152746e88805a7a61e14d4a374577164965b", size = 388164, upload-time = "2025-11-24T20:41:43.587Z" },
 ]
 
 [[package]]
@@ -1471,38 +1472,6 @@ wheels = [
 ]
 
 [[package]]
-name = "google-api-core"
-version = "2.27.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-auth" },
-    { name = "googleapis-common-protos" },
-    { name = "proto-plus" },
-    { name = "protobuf" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/da/99/6c8b44ecc28026fd9441d7fcc5434ee1b3976c491f2f810b464c4702c975/google_api_core-2.27.0.tar.gz", hash = "sha256:d32e2f5dd0517e91037169e75bf0a9783b255aff1d11730517c0b2b29e9db06a", size = 168851, upload-time = "2025-10-22T23:54:14.195Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/93/ecf9f7caa99c71e969091e9a78789f11b2dea5c684917eab7c54a8d13560/google_api_core-2.27.0-py3-none-any.whl", hash = "sha256:779a380db4e21a4ee3d717cf8efbf324e53900bf37e1ffb273e5348a9916dd42", size = 167110, upload-time = "2025-10-22T23:54:12.805Z" },
-]
-
-[[package]]
-name = "google-api-python-client"
-version = "2.185.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-core" },
-    { name = "google-auth" },
-    { name = "google-auth-httplib2" },
-    { name = "httplib2" },
-    { name = "uritemplate" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/5a/6f9b49d67ea91376305fdb8bbf2877c746d756e45fd8fb7d2e32d6dad19b/google_api_python_client-2.185.0.tar.gz", hash = "sha256:aa1b338e4bb0f141c2df26743f6b46b11f38705aacd775b61971cbc51da089c3", size = 13885609, upload-time = "2025-10-17T15:00:35.623Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/28/be3b17bd6a190c8c2ec9e4fb65d43e6ecd7b7a1bb19ccc1d9ab4f687a58c/google_api_python_client-2.185.0-py3-none-any.whl", hash = "sha256:00fe173a4b346d2397fbe0d37ac15368170dfbed91a0395a66ef2558e22b93fc", size = 14453595, upload-time = "2025-10-17T15:00:33.176Z" },
-]
-
-[[package]]
 name = "google-auth"
 version = "2.40.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1515,32 +1484,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/9e/9b/e92ef23b84fa10a64
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/63/b19553b658a1692443c62bd07e5868adaa0ad746a0751ba62c59568cd45b/google_auth-2.40.3-py2.py3-none-any.whl", hash = "sha256:1370d4593e86213563547f97a92752fc658456fe4514c809544f330fed45a7ca", size = 216137, upload-time = "2025-06-04T18:04:55.573Z" },
 ]
-
-[[package]]
-name = "google-auth-httplib2"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-auth" },
-    { name = "httplib2" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/56/be/217a598a818567b28e859ff087f347475c807a5649296fb5a817c58dacef/google-auth-httplib2-0.2.0.tar.gz", hash = "sha256:38aa7badf48f974f1eb9861794e9c0cb2a0511a4ec0679b1f886d108f5640e05", size = 10842, upload-time = "2023-12-12T17:40:30.722Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/8a/fe34d2f3f9470a27b01c9e76226965863f153d5fbe276f83608562e49c04/google_auth_httplib2-0.2.0-py2.py3-none-any.whl", hash = "sha256:b65a0a2123300dd71281a7bf6e64d65a0759287df52729bdd1ae2e47dc311a3d", size = 9253, upload-time = "2023-12-12T17:40:13.055Z" },
-]
-
-[[package]]
-name = "google-cloud-profiler"
-version = "4.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-    { name = "google-auth-httplib2" },
-    { name = "protobuf" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/44/be/fa9b4915315c764a38b42aac1a6355bb65deb5cb8a97c1a01c0de425780d/google-cloud-profiler-4.1.0.tar.gz", hash = "sha256:2d90f9c6d4c075ad6d43752ae39424c3d0bad63e6549a2c761881f9a235067ae", size = 32305, upload-time = "2023-08-16T16:57:56.332Z" }
 
 [[package]]
 name = "google-genai"
@@ -1852,18 +1795,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
-]
-
-[[package]]
-name = "httplib2"
-version = "0.31.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyparsing" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/52/77/6653db69c1f7ecfe5e3f9726fdadc981794656fcd7d98c4209fecfea9993/httplib2-0.31.0.tar.gz", hash = "sha256:ac7ab497c50975147d4f7b1ade44becc7df2f8954d42b38b3d69c515f531135c", size = 250759, upload-time = "2025-09-11T12:16:03.403Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/a2/0d269db0f6163be503775dc8b6a6fa15820cc9fdc866f6ba608d86b721f2/httplib2-0.31.0-py3-none-any.whl", hash = "sha256:b9cd78abea9b4e43a7714c6e0f8b6b8561a6fc1e95d5dbd367f5bf0ef35f5d24", size = 91148, upload-time = "2025-09-11T12:16:01.803Z" },
 ]
 
 [[package]]
@@ -2404,7 +2335,7 @@ wheels = [
 
 [[package]]
 name = "letta"
-version = "0.14.0"
+version = "0.15.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiomultiprocess" },
@@ -2446,6 +2377,7 @@ dependencies = [
     { name = "orjson" },
     { name = "pathvalidate" },
     { name = "prettytable" },
+    { name = "psutil" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyhumps" },
@@ -2534,7 +2466,6 @@ postgres = [
 ]
 profiling = [
     { name = "ddtrace" },
-    { name = "google-cloud-profiler" },
 ]
 redis = [
     { name = "redis" },
@@ -2556,7 +2487,7 @@ requires-dist = [
     { name = "aiosqlite", marker = "extra == 'desktop'", specifier = ">=0.21.0" },
     { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.21.0" },
     { name = "alembic", specifier = ">=1.13.3" },
-    { name = "anthropic", specifier = ">=0.49.0" },
+    { name = "anthropic", specifier = ">=0.75.0" },
     { name = "apscheduler", specifier = ">=3.11.0" },
     { name = "async-lru", marker = "extra == 'desktop'", specifier = ">=2.0.5" },
     { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.30.0" },
@@ -2578,7 +2509,6 @@ requires-dist = [
     { name = "faker", specifier = ">=36.1.0" },
     { name = "fastapi", marker = "extra == 'desktop'", specifier = ">=0.115.6" },
     { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.115.6" },
-    { name = "google-cloud-profiler", marker = "extra == 'profiling'", specifier = ">=4.1.0" },
     { name = "google-genai", specifier = ">=1.15.0" },
     { name = "granian", extras = ["uvloop", "reload"], marker = "extra == 'experimental'", specifier = ">=2.3.2" },
     { name = "grpcio", specifier = ">=1.68.1" },
@@ -2592,7 +2522,7 @@ requires-dist = [
     { name = "langchain", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'desktop'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
-    { name = "letta-client", specifier = ">=0.1.319" },
+    { name = "letta-client", specifier = ">=1.1.2" },
     { name = "llama-index", specifier = ">=0.12.2" },
     { name = "llama-index-embeddings-openai", specifier = ">=0.3.1" },
     { name = "locust", marker = "extra == 'desktop'", specifier = ">=2.31.5" },
@@ -2620,6 +2550,7 @@ requires-dist = [
     { name = "pinecone", extras = ["asyncio"], marker = "extra == 'pinecone'", specifier = ">=7.3.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "prettytable", specifier = ">=3.9.0" },
+    { name = "psutil", specifier = ">=5.9.0" },
     { name = "psycopg2", marker = "extra == 'postgres'", specifier = ">=2.9.10" },
     { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.10.6" },
@@ -2668,18 +2599,19 @@ provides-extras = ["postgres", "redis", "pinecone", "sqlite", "experimental", "s
 
 [[package]]
 name = "letta-client"
-version = "0.1.319"
+version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
     { name = "httpx" },
-    { name = "httpx-sse" },
     { name = "pydantic" },
-    { name = "pydantic-core" },
+    { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/48/8a70ff23e9adcf7b3a9262b03fd0576eae03bafb61b7d229e1059c16ce7c/letta_client-0.1.319.tar.gz", hash = "sha256:30a2bd63d5e27759ca57a3850f2be3d81d828e90b5a7a6c35285b4ecceaafc74", size = 197085, upload-time = "2025-09-08T23:17:40.636Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/28/8c/b31ad4bc3fad1c563b4467762b67f7eca7bc65cb2c0c2ca237b6b6a485ae/letta_client-1.1.2.tar.gz", hash = "sha256:2687b3aebc31401db4f273719db459b2a7a2a527779b87d56c53d2bdf664e4d3", size = 231825, upload-time = "2025-11-21T03:06:06.737Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/78/52d64b29ce0ffcd5cc3f1318a5423c9ead95c1388e8a95bd6156b7335ad3/letta_client-0.1.319-py3-none-any.whl", hash = "sha256:e93cda21d39de21bf2353f1aa71e82054eac209156bd4f1780efff85949a32d3", size = 493310, upload-time = "2025-09-08T23:17:39.134Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/22/ec950b367a3cc5e2c8ae426e84c13a2d824ea4e337dbd7b94300a1633929/letta_client-1.1.2-py3-none-any.whl", hash = "sha256:86d9c6f2f9e773965f2107898584e8650f3843f938604da9fd1dfe6a462af533", size = 357516, upload-time = "2025-11-21T03:06:05.559Z" },
 ]
 
 [[package]]
@@ -4192,18 +4124,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9a/4c/b0fe775a2bdd01e176b14b574be679d84fc83958335790f7c9a686c1f468/propcache-0.3.2-cp313-cp313t-win32.whl", hash = "sha256:f86e5d7cd03afb3a1db8e9f9f6eff15794e79e791350ac48a8c924e6f439f394", size = 41175, upload-time = "2025-06-09T22:55:38.436Z" },
     { url = "https://files.pythonhosted.org/packages/a4/ff/47f08595e3d9b5e149c150f88d9714574f1a7cbd89fe2817158a952674bf/propcache-0.3.2-cp313-cp313t-win_amd64.whl", hash = "sha256:9704bedf6e7cbe3c65eca4379a9b53ee6a83749f047808cbb5044d40d7d72198", size = 44857, upload-time = "2025-06-09T22:55:39.687Z" },
     { url = "https://files.pythonhosted.org/packages/cc/35/cc0aaecf278bb4575b8555f2b137de5ab821595ddae9da9d3cd1da4072c7/propcache-0.3.2-py3-none-any.whl", hash = "sha256:98f1ec44fb675f5052cccc8e609c46ed23a35a1cfd18545ad4e29002d858a43f", size = 12663, upload-time = "2025-06-09T22:56:04.484Z" },
-]
-
-[[package]]
-name = "proto-plus"
-version = "1.26.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f4/ac/87285f15f7cce6d4a008f33f1757fb5a13611ea8914eb58c3d0d26243468/proto_plus-1.26.1.tar.gz", hash = "sha256:21a515a4c4c0088a773899e23c7bbade3d18f9c66c73edd4c7ee3816bc96a012", size = 56142, upload-time = "2025-03-10T15:54:38.843Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/6d/280c4c2ce28b1593a19ad5239c8b826871fc6ec275c21afc8e1820108039/proto_plus-1.26.1-py3-none-any.whl", hash = "sha256:13285478c2dcf2abb829db158e1047e2f1e8d63a077d94263c2b88b043c75a66", size = 50163, upload-time = "2025-03-10T15:54:37.335Z" },
 ]
 
 [[package]]
@@ -5735,15 +5655,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
-]
-
-[[package]]
-name = "uritemplate"
-version = "4.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/98/60/f174043244c5306c9988380d2cb10009f91563fc4b31293d27e17201af56/uritemplate-4.2.0.tar.gz", hash = "sha256:480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e", size = 33267, upload-time = "2025-06-02T15:12:06.318Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl", hash = "sha256:962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686", size = 11488, upload-time = "2025-06-02T15:12:03.405Z" },
 ]
 
 [[package]]

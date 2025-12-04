@@ -7,7 +7,15 @@ from letta.schemas.block import Block, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.utils import is_1_0_sdk_version
-from letta.validators import BlockId
+from letta.validators import (
+    BlockDescriptionSearchQuery,
+    BlockId,
+    BlockLabelQuery,
+    BlockLabelSearchQuery,
+    BlockNameQuery,
+    BlockValueSearchQuery,
+    IdentityIdQuery,
+)
 
 if TYPE_CHECKING:
     pass
@@ -18,10 +26,10 @@ router = APIRouter(prefix="/_internal_blocks", tags=["_internal_blocks"])
 @router.get("/", response_model=List[Block], operation_id="list_internal_blocks")
 async def list_blocks(
     # query parameters
-    label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
+    label: BlockLabelQuery = None,
     templates_only: bool = Query(False, description="Whether to include only templates"),
-    name: Optional[str] = Query(None, description="Name of the block"),
-    identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
+    name: BlockNameQuery = None,
+    identity_id: IdentityIdQuery = None,
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
     project_id: Optional[str] = Query(None, description="Search blocks by project id"),
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
@@ -37,21 +45,9 @@ async def list_blocks(
         "asc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
-    label_search: Optional[str] = Query(
-        None,
-        description=("Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."),
-    ),
-    description_search: Optional[str] = Query(
-        None,
-        description=(
-            "Search blocks by description. If provided, returns blocks that match this description. "
-            "This is a full-text search on block descriptions."
-        ),
-    ),
-    value_search: Optional[str] = Query(
-        None,
-        description=("Search blocks by value. If provided, returns blocks that match this value."),
-    ),
+    label_search: BlockLabelSearchQuery = None,
+    description_search: BlockDescriptionSearchQuery = None,
+    value_search: BlockValueSearchQuery = None,
     connected_to_agents_count_gt: Optional[int] = Query(
         None,
         description=(
@@ -149,6 +145,7 @@ async def list_agents_for_block(
             "Using this can optimize performance by reducing unnecessary joins."
             "This is a legacy parameter, and no longer supported after 1.0.0 SDK versions."
         ),
+        deprecated=True,
     ),
     include: List[str] = Query(
         [],

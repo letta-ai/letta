@@ -239,6 +239,11 @@ LLM_MAX_TOKENS = {
     "gpt-5-nano": 272000,
     "gpt-5-nano-2025-08-07": 272000,
     "gpt-5-codex": 272000,
+    # gpt-5.1
+    "gpt-5.1": 272000,
+    "gpt-5.1-2025-11-13": 272000,
+    "gpt-5.1-codex": 272000,
+    "gpt-5.1-codex-mini": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
@@ -457,6 +462,6 @@ MODAL_DEFAULT_MAX_CONCURRENT_INPUTS = 1
 MODAL_DEFAULT_PYTHON_VERSION = "3.12"
 
 # Security settings
-MODAL_SAFE_IMPORT_MODULES = {"typing", "pydantic", "datetime", "enum", "uuid", "decimal"}
+MODAL_SAFE_IMPORT_MODULES = {"typing", "pydantic", "datetime", "uuid"}  # decimal, enum
 # Default handle for model used to generate tools
 DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"

@@ -23,7 +23,11 @@ class FileMetadataBase(LettaBase):
     __id_prefix__ = PrimitiveType.FILE.value
 
     # Core file metadata fields
-    source_id: str = Field(..., description="The unique identifier of the source associated with the document.")
+    source_id: str = Field(
+        ...,
+        description="Deprecated: Use `folder_id` field instead. The unique identifier of the source associated with the document.",
+        deprecated=True,
+    )
     file_name: Optional[str] = Field(None, description="The name of the file.")
     original_file_name: Optional[str] = Field(None, description="The original name of the file as uploaded.")
     file_path: Optional[str] = Field(None, description="The path to the file.")
@@ -66,7 +70,7 @@ class FileAgentBase(LettaBase):
     # Core file-agent association fields
     agent_id: str = Field(..., description="Unique identifier of the agent.")
     file_id: str = Field(..., description="Unique identifier of the file.")
-    source_id: str = Field(..., description="Unique identifier of the source.")
+    source_id: str = Field(..., description="Deprecated: Use `folder_id` field instead. Unique identifier of the source.", deprecated=True)
     file_name: str = Field(..., description="Name of the file.")
     is_open: bool = Field(True, description="True if the agent currently has the file open.")
     visible_content: Optional[str] = Field(

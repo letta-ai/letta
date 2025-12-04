@@ -12,6 +12,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.passage import Passage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 from letta.validators import AgentId, ArchiveId, PassageId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
@@ -60,14 +61,18 @@ async def create_archive(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    if archive.embedding_config is None and archive.embedding is None:
-        raise LettaInvalidArgumentError("Either embedding_config or embedding must be provided")
-
     embedding_config = archive.embedding_config
-    if embedding_config is None and archive.embedding is not None:
-        handle = f"{archive.embedding.provider}/{archive.embedding.model}"
+    if embedding_config is None:
+        embedding_handle = archive.embedding
+        if embedding_handle is None:
+            if settings.default_embedding_handle is None:
+                raise LettaInvalidArgumentError(
+                    "Must specify either embedding or embedding_config in request", argument_name="default_embedding_handle"
+                )
+            else:
+                embedding_handle = settings.default_embedding_handle
         embedding_config = await server.get_embedding_config_from_handle_async(
-            handle=handle,
+            handle=embedding_handle,
             actor=actor,
         )
 
@@ -115,8 +120,8 @@ async def list_archives(
     return archives
 
 
-@router.get("/{archive_id}", response_model=PydanticArchive, operation_id="get_archive_by_id")
-async def get_archive_by_id(
+@router.get("/{archive_id}", response_model=PydanticArchive, operation_id="retrieve_archive")
+async def retrieve_archive(
     archive_id: ArchiveId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -150,7 +155,7 @@ async def modify_archive(
     )
 
 
-@router.delete("/{archive_id}", response_model=PydanticArchive, operation_id="delete_archive")
+@router.delete("/{archive_id}", status_code=204, operation_id="delete_archive")
 async def delete_archive(
     archive_id: ArchiveId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -160,10 +165,11 @@ async def delete_archive(
     Delete an archive by its ID.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.archive_manager.delete_archive_async(
+    await server.archive_manager.delete_archive_async(
         archive_id=archive_id,
         actor=actor,
     )
+    return None
 
 
 @router.get("/{archive_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_archive")

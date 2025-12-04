@@ -21,6 +21,7 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, RE
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
+from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
@@ -273,6 +274,7 @@ class Message(BaseMessage):
         return str(uuid.uuid4())
 
     @staticmethod
+    @trace_method
     def to_letta_messages_from_list(
         messages: List[Message],
         use_assistant_message: bool = True,
@@ -519,7 +521,9 @@ class Message(BaseMessage):
                         run_id=self.run_id,
                     )
                 )
-
+            elif isinstance(content_part, ToolCallContent):
+                # for Gemini, we need to pass in tool calls as part of the content
+                continue
             else:
                 logger.warning(f"Unrecognized content part in assistant message: {content_part}")
 
@@ -1749,6 +1753,15 @@ class Message(BaseMessage):
                 parts.append({"text": text_content})
 
             if self.tool_calls is not None:
+                # Check if there's a signature in the content that should be included with function calls
+                # Google Vertex requires thought_signature to be echoed back in function calls
+                thought_signature = None
+                if self.content and current_model == self.model:
+                    for content in self.content:
+                        # Check for signature in ReasoningContent, TextContent, or ToolCallContent
+                        if isinstance(content, (ReasoningContent, TextContent, ToolCallContent)):
+                            thought_signature = getattr(content, "signature", None)
+
                 # NOTE: implied support for multiple calls
                 for tool_call in self.tool_calls:
                     function_name = tool_call.function.name
@@ -1768,14 +1781,19 @@ class Message(BaseMessage):
                     if strip_request_heartbeat:
                         function_args.pop(REQUEST_HEARTBEAT_PARAM, None)
 
-                    parts.append(
-                        {
-                            "functionCall": {
-                                "name": function_name,
-                                "args": function_args,
-                            }
+                    # Build the function call part
+                    function_call_part = {
+                        "functionCall": {
+                            "name": function_name,
+                            "args": function_args,
                         }
-                    )
+                    }
+
+                    # Include thought_signature if we found one
+                    if thought_signature is not None:
+                        function_call_part["thought_signature"] = thought_signature
+
+                    parts.append(function_call_part)
             else:
                 if not native_content:
                     assert text_content is not None
@@ -2144,8 +2162,17 @@ class MessageSearchRequest(BaseModel):
     query: Optional[str] = Field(None, description="Text query for full-text search")
     search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
     roles: Optional[List[MessageRole]] = Field(None, description="Filter messages by role")
+    agent_id: Optional[str] = Field(None, description="Filter messages by agent ID")
     project_id: Optional[str] = Field(None, description="Filter messages by project ID")
     template_id: Optional[str] = Field(None, description="Filter messages by template ID")
+    limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
+    start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
+    end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
+
+
+class SearchAllMessagesRequest(BaseModel):
+    query: str = Field(..., description="Text query for full-text search")
+    search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")

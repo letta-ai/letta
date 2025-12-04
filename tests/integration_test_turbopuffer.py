@@ -801,7 +801,7 @@ def test_should_use_tpuf_for_messages_settings():
 
 
 def test_message_text_extraction(server, default_user):
-    """Test extraction of text from various message content structures"""
+    """Test extraction of text from various message content structures including ReasoningContent"""
     manager = server.message_manager
 
     # Test 1: List with single string-like TextContent
@@ -875,6 +875,76 @@ def test_message_text_extraction(server, default_user):
         text6
         == '{"content": "User said: Tool call: search({\\n  \\"query\\": \\"test\\"\\n}) Tool result: Found 5 results I should help the user"}'
     )
+
+    # Test 7: ReasoningContent only (edge case)
+    msg7 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[ReasoningContent(is_native=True, reasoning="This is my internal reasoning process", signature="reasoning-abc123")],
+        agent_id="test-agent",
+    )
+    text7 = manager._extract_message_text(msg7)
+    assert "This is my internal reasoning process" in text7
+
+    # Test 8: ReasoningContent with empty reasoning (should handle gracefully)
+    msg8 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[
+            ReasoningContent(
+                is_native=True,
+                reasoning="",  # Empty reasoning
+                signature="empty-reasoning",
+            ),
+            TextContent(text="But I have text content"),
+        ],
+        agent_id="test-agent",
+    )
+    text8 = manager._extract_message_text(msg8)
+    assert "But I have text content" in text8
+
+    # Test 9: Multiple ReasoningContent items
+    msg9 = PydanticMessage(
+        role=MessageRole.assistant,
+        content=[
+            ReasoningContent(is_native=True, reasoning="First thought", signature="step-1"),
+            ReasoningContent(is_native=True, reasoning="Second thought", signature="step-2"),
+            TextContent(text="Final answer"),
+        ],
+        agent_id="test-agent",
+    )
+    text9 = manager._extract_message_text(msg9)
+    assert "First thought" in text9
+    assert "Second thought" in text9
+    assert "Final answer" in text9
+
+    # Test 10: ReasoningContent in _combine_assistant_tool_messages
+    assistant_with_reasoning = PydanticMessage(
+        id="message-c19dbdc7-ba2f-4bf2-a469-64b5aed2c01d",
+        role=MessageRole.assistant,
+        content=[ReasoningContent(is_native=True, reasoning="I need to search for information", signature="reasoning-xyz")],
+        agent_id="test-agent",
+        tool_calls=[
+            {"id": "call-456", "type": "function", "function": {"name": "web_search", "arguments": '{"query": "Python tutorials"}'}}
+        ],
+    )
+
+    tool_response = PydanticMessage(
+        id="message-16134e76-40fa-48dd-92a8-3e0d9256d79a",
+        role=MessageRole.tool,
+        name="web_search",
+        tool_call_id="call-456",
+        content=[TextContent(text="Found 10 Python tutorials")],
+        agent_id="test-agent",
+    )
+
+    # Test that combination preserves reasoning content
+    combined_msgs = manager._combine_assistant_tool_messages([assistant_with_reasoning, tool_response])
+    assert len(combined_msgs) == 1
+    combined_text = combined_msgs[0].content[0].text
+
+    # Should contain the reasoning text
+    assert "search for information" in combined_text or "I need to" in combined_text
+    assert "web_search" in combined_text
+    assert "Found 10 Python tutorials" in combined_text
 
 
 @pytest.mark.asyncio
@@ -2095,3 +2165,59 @@ async def test_message_template_id_filtering(server, sarah_agent, default_user, 
     await tpuf_client.delete_messages(
         agent_id=sarah_agent.id, organization_id=default_user.organization_id, message_ids=[message_a.id, message_b.id]
     )
+
+
+@pytest.mark.asyncio
+async def test_system_messages_not_embedded_during_agent_creation(server, default_user, enable_message_embedding):
+    """Test that system messages are filtered out before being passed to the embedding pipeline during agent creation"""
+    from unittest.mock import AsyncMock, patch
+
+    from letta.schemas.agent import CreateAgent
+    from letta.schemas.llm_config import LLMConfig
+
+    # Mock the _embed_messages_background method to track what messages are passed to it
+    messages_passed_to_embed = []
+
+    original_embed = server.message_manager._embed_messages_background
+
+    async def mock_embed(messages, actor, agent_id, project_id=None, template_id=None):
+        # Capture what messages are being passed to embedding
+        messages_passed_to_embed.extend(messages)
+        # Call the original method
+        return await original_embed(messages, actor, agent_id, project_id, template_id)
+
+    with patch.object(server.message_manager, "_embed_messages_background", mock_embed):
+        # Create agent with initial messages (which includes a system message)
+        agent = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name="TestSystemMessageAgent",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+        # Get all messages created for the agent
+        all_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=default_user)
+
+        # Verify that at least one system message was created
+        system_messages = [msg for msg in all_messages if msg.role == MessageRole.system]
+        assert len(system_messages) > 0, "No system messages were created during agent creation"
+
+        print(messages_passed_to_embed)
+        print(system_messages)
+        print(all_messages)
+
+        # Verify that NO system messages were passed to the embedding pipeline
+        system_messages_in_embed = [msg for msg in messages_passed_to_embed if msg.role == MessageRole.system]
+        assert len(system_messages_in_embed) == 0, (
+            f"System messages should not be embedded, but {len(system_messages_in_embed)} were passed to embedding pipeline"
+        )
+
+        # Clean up
+        try:
+            await server.agent_manager.delete_agent_async(agent.id, default_user)
+        except:
+            pass

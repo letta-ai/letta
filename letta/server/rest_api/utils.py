@@ -155,7 +155,9 @@ def capture_sentry_exception(e: BaseException):
         sentry_sdk.capture_exception(e)
 
 
-def create_input_messages(input_messages: List[MessageCreate], agent_id: str, timezone: str, run_id: str, actor: User) -> List[Message]:
+async def create_input_messages(
+    input_messages: List[MessageCreate], agent_id: str, timezone: str, run_id: str, actor: User
+) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
 
@@ -163,7 +165,7 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     we should unify this when it's clear what message attributes we need.
     """
 
-    messages = convert_message_creates_to_messages(
+    messages = await convert_message_creates_to_messages(
         input_messages, agent_id, timezone, run_id, wrap_user_message=False, wrap_system_message=False
     )
     return messages
@@ -521,9 +523,10 @@ def create_parallel_tool_messages_from_llm_response(
         agent_id=agent_id,
         model=model,
         tool_calls=[],
-        tool_call_id=tool_returns[0].tool_call_id,  # For legacy reasons, set to first one
+        tool_call_id=tool_returns[0].tool_call_id if tool_returns else None,  # For legacy reasons, set to first one
         created_at=get_utc_time(),
         batch_item_id=llm_batch_item_id,
+        name=tool_call_specs[0].get("name") if tool_call_specs else None,  # For legacy reasons, set to first one
         tool_returns=tool_returns,
         run_id=run_id,
     )
@@ -695,3 +698,181 @@ def get_user_message_from_chat_completions_request(completion_request: Completio
     for message in reversed(messages):
         if message["role"] == "user":
             return [MessageCreate(role=MessageRole.user, content=[TextContent(text=message["content"])])]
+
+
+# ============================================================================
+# Message Capture Utilities (for Anthropic proxy and other external APIs)
+# ============================================================================
+
+
+async def capture_and_persist_messages(
+    server,
+    agent,
+    actor,
+    user_messages: list[str],
+    assistant_message: str,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Capture user and assistant messages and persist them to the database.
+
+    Args:
+        server: SyncServer instance
+        agent_id: Agent ID to associate messages with
+        actor: Actor performing the operation
+        user_messages: List of user message texts
+        assistant_message: Assistant response text
+        model: Optional model name used for the response
+
+    Returns:
+        dict with success status, message count, and any run IDs
+    """
+    messages_to_persist = []
+
+    # Add user messages
+    for user_msg in user_messages:
+        messages_to_persist.append(
+            Message(
+                role=MessageRole.user,
+                content=[TextContent(text=user_msg)],
+                agent_id=agent.id,
+                tool_calls=None,
+                tool_call_id=None,
+                created_at=get_utc_time(),
+            )
+        )
+
+    # Add assistant response
+    if assistant_message:
+        messages_to_persist.append(
+            Message(
+                role=MessageRole.assistant,
+                content=[TextContent(text=assistant_message)],
+                agent_id=agent.id,
+                model=model,
+                tool_calls=None,
+                tool_call_id=None,
+                created_at=get_utc_time(),
+            )
+        )
+
+    # Persist to database
+    response_messages = await server.message_manager.create_many_messages_async(messages_to_persist, actor=actor)
+
+    logger.info(f"Persisted {len(response_messages)} messages for agent {agent.id}")
+
+    # Check if sleeptime agents need to run
+    run_ids = []
+    try:
+        sleeptime_group = (
+            agent.multi_agent_group if agent.multi_agent_group and agent.multi_agent_group.manager_type == "sleeptime" else None
+        )
+
+        if sleeptime_group:
+            from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
+
+            sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
+            sleeptime_agent_loop.response_messages = response_messages
+            run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+            logger.info(f"Triggered sleeptime agents, run_ids: {run_ids}")
+
+    except Exception as e:
+        logger.warning(f"Failed to run sleeptime agents: {e}")
+
+    return {
+        "success": True,
+        "messages_created": len(response_messages),
+        "run_ids": run_ids,
+    }
+
+
+async def get_or_create_claude_code_agent(
+    server,
+    actor,
+):
+    """
+    Get or create a special agent for Claude Code sessions.
+
+    Args:
+        server: SyncServer instance
+        actor: Actor performing the operation (user ID)
+
+    Returns:
+        Agent ID
+    """
+    from letta.schemas.agent import CreateAgent
+
+    # Create short user identifier from UUID (first 8 chars)
+    if actor:
+        user_short_id = str(actor.id)[:8] if hasattr(actor, "id") else str(actor)[:8]
+    else:
+        user_short_id = "default"
+
+    agent_name = f"claude-code-{user_short_id}"
+
+    try:
+        # Try to find existing agent by name (most reliable)
+        # Note: Search by name only, not tags, since name is unique and more reliable
+        logger.debug(f"Searching for agent with name: {agent_name}")
+        agents = await server.agent_manager.list_agents_async(
+            actor=actor,
+            limit=10,  # Get a few in case of duplicates
+            name=agent_name,
+            include=["agent.blocks", "agent.managed_group", "agent.tags"],
+        )
+
+        # list_agents_async returns a list directly, not an object with .agents
+        logger.debug(f"Agent search returned {len(agents) if agents else 0} results")
+        if agents and len(agents) > 0:
+            # Return the first matching agent
+            logger.info(f"Found existing Claude Code agent: {agents[0].id} (name: {agent_name})")
+            return agents[0]
+        else:
+            logger.debug(f"No existing agent found with name: {agent_name}")
+
+    except Exception as e:
+        logger.warning(f"Could not find existing agent: {e}", exc_info=True)
+
+    # Create new agent
+    try:
+        logger.info(f"Creating new Claude Code agent: {agent_name}")
+
+        # Create minimal agent config
+        agent_config = CreateAgent(
+            name=agent_name,
+            description="Agent for capturing Claude Code conversations",
+            memory_blocks=[
+                {
+                    "label": "human",
+                    "value": "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
+                    "description": "A memory block for keeping track of the human (user) the agent is interacting with.",
+                },
+                {
+                    "label": "persona",
+                    "value": "This is my section of core memory devoted to information myself.\nThere's nothing here yet.\nI should update this memory over time as I develop my personality.",
+                    "description": "A memory block for storing the agent's core personality details and behavior profile.",
+                },
+                {
+                    "label": "project",
+                    "value": "This is my section of core memory devoted to information about what the agent is working on.\nI don't yet know anything about it.\nI should update this memory over time with high level understanding and learnings.",
+                    "description": "A memory block for storing the information about the project the agent is working on.",
+                },
+            ],
+            tags=["claude-code"],
+            enable_sleeptime=True,
+            agent_type="letta_v1_agent",
+            model="anthropic/claude-sonnet-4-5-20250929",
+            embedding="openai/text-embedding-ada-002",
+        )
+
+        new_agent = await server.create_agent_async(
+            request=agent_config,
+            actor=actor,
+        )
+
+        logger.info(f"Created Claude Code agent {new_agent.name}: {new_agent.id}")
+        return new_agent
+
+    except Exception as e:
+        logger.exception(f"Failed to create Claude Code agent: {e}")
+        raise

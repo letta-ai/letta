@@ -52,7 +52,7 @@ async def list_runs(
     after: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come after this run ID in the specified sort order"
     ),
-    limit: Optional[int] = Query(100, description="Maximum number of runs to return", le=1000),
+    limit: Optional[int] = Query(100, description="Maximum number of runs to return", ge=1, le=1000),
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for runs by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),

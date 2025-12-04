@@ -110,6 +110,15 @@ class ContextWindowCalculator:
         messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids[1:], actor=actor)
         in_context_messages = [system_message_compiled] + messages
 
+        # Filter out None messages (can occur when system message is missing)
+        original_count = len(in_context_messages)
+        in_context_messages = [m for m in in_context_messages if m is not None]
+        if len(in_context_messages) < original_count:
+            logger.warning(
+                f"Filtered out {original_count - len(in_context_messages)} None messages for agent {agent_state.id}. "
+                f"This typically indicates missing system message or corrupted message data."
+            )
+
         # Convert messages to appropriate format
         converted_messages = token_counter.convert_messages(in_context_messages)
 

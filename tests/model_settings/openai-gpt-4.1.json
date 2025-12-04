@@ -1,0 +1,9 @@
+{
+  "handle": "openai/gpt-4.1-2025-04-14",
+  "model_settings": {
+    "provider_type": "openai",
+    "temperature": 0.7,
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false
+  }
+}

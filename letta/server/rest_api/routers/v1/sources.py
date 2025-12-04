@@ -1,3 +1,4 @@
+import asyncio
 import mimetypes
 import os
 import tempfile
@@ -469,9 +470,12 @@ async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: 
     with tempfile.TemporaryDirectory() as tmpdirname:
         file_path = os.path.join(tmpdirname, filename)
 
-        # Write the file to the sanitized path
-        with open(file_path, "wb") as buffer:
-            buffer.write(bytes)
+        # Write the file to the sanitized path (wrapped to avoid blocking event loop)
+        def _write_file():
+            with open(file_path, "wb") as buffer:
+                buffer.write(bytes)
+
+        await asyncio.to_thread(_write_file)
 
         # Pass the file to load_file_to_source
         await server.load_file_to_source(source_id, file_path, job_id, actor)

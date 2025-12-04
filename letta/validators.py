@@ -1,9 +1,9 @@
 import inspect
 import re
 from functools import wraps
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import Path
+from fastapi import Path, Query
 
 from letta.errors import LettaInvalidArgumentError
 from letta.schemas.enums import PrimitiveType  # PrimitiveType is now in schemas.enums
@@ -124,3 +124,101 @@ def raise_on_invalid_id(param_name: str, expected_prefix: PrimitiveType):
         return wrapper
 
     return decorator
+
+
+# =============================================================================
+# Query Parameter Validators
+# =============================================================================
+# Format validators for common query parameters to match frontend constraints
+
+
+def _create_id_query_validator(primitive: str):
+    """
+    Creates a Query validator for ID parameters with format validation.
+
+    Args:
+        primitive: The primitive type prefix (e.g., "agent", "tool")
+
+    Returns:
+        A Query validator with pattern matching
+    """
+    return Query(
+        description=f"The ID of the {primitive} in the format '{primitive}-<uuid4>'",
+        pattern=PRIMITIVE_ID_PATTERNS[primitive].pattern,
+        examples=[f"{primitive}-123e4567-e89b-42d3-8456-426614174000"],
+        min_length=len(primitive) + 1 + 36,
+        max_length=len(primitive) + 1 + 36,
+    )
+
+
+# Query parameter ID validators with format checking
+AgentIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.AGENT.value)]
+ToolIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.TOOL.value)]
+SourceIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.SOURCE.value)]
+BlockIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.BLOCK.value)]
+MessageIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.MESSAGE.value)]
+RunIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.RUN.value)]
+JobIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.JOB.value)]
+GroupIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.GROUP.value)]
+IdentityIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.IDENTITY.value)]
+
+
+# =============================================================================
+# String Field Validators
+# =============================================================================
+# Format validators for common string fields
+
+# Label validator: alphanumeric, hyphens, underscores, max 50 chars
+BlockLabelQuery = Annotated[
+    Optional[str],
+    Query(
+        description="Label to include (alphanumeric, hyphens, underscores only)",
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        min_length=1,
+        max_length=50,
+        examples=["human", "persona", "the_label_of-a-block"],
+    ),
+]
+
+
+# Name validator: similar to label but allows spaces, max 100 chars
+BlockNameQuery = Annotated[
+    Optional[str],
+    Query(
+        description="Name filter (alphanumeric, spaces, hyphens, underscores)",
+        pattern=r"^[a-zA-Z0-9 _-]+$",
+        min_length=1,
+        max_length=100,
+        examples=["My Agent", "test_tool", "default-config"],
+    ),
+]
+
+# Search query validator: general text search, max 200 chars
+BlockLabelSearchQuery = Annotated[
+    Optional[str],
+    Query(
+        description="Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        min_length=1,
+        max_length=50,
+        examples=["human", "persona", "the_label_of-a-block"],
+    ),
+]
+
+BlockValueSearchQuery = Annotated[
+    Optional[str],
+    Query(
+        description="Search blocks by value. If provided, returns blocks whose value matches the search query. This is a full-text search on block values.",
+        min_length=1,
+        max_length=200,
+    ),
+]
+
+BlockDescriptionSearchQuery = Annotated[
+    Optional[str],
+    Query(
+        description="Search blocks by description. If provided, returns blocks whose description matches the search query. This is a full-text search on block descriptions.",
+        min_length=1,
+        max_length=200,
+    ),
+]

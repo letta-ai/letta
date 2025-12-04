@@ -5,6 +5,7 @@ import logging
 import os
 import platform
 import sys
+import threading
 from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
@@ -14,6 +15,7 @@ import uvicorn
 
 # Enable Python fault handler to get stack traces on segfaults
 faulthandler.enable()
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -54,7 +56,7 @@ from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.otel.tracing import get_trace_id
-from letta.schemas.letta_message import create_letta_message_union_schema, create_letta_ping_schema
+from letta.schemas.letta_message import create_letta_error_message_schema, create_letta_message_union_schema, create_letta_ping_schema
 from letta.schemas.letta_message_content import (
     create_letta_assistant_message_content_union_schema,
     create_letta_message_content_union_schema,
@@ -67,7 +69,7 @@ from letta.server.global_exception_handler import setup_global_exception_handler
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, ProfilerContextMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -101,6 +103,7 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaPing"] = create_letta_ping_schema()
+    letta_docs["components"]["schemas"]["LettaErrorMessage"] = create_letta_error_message_schema()
 
     # Update the app's schema with our modified version
     app.openapi_schema = letta_docs
@@ -133,18 +136,29 @@ async def lifespan(app_: FastAPI):
     """
     worker_id = os.getpid()
 
-    if telemetry_settings.profiler:
-        try:
-            import googlecloudprofiler
+    # Initialize event loop watchdog
+    try:
+        import asyncio
 
-            googlecloudprofiler.start(
-                service="memgpt-server",
-                service_version=str(letta_version),
-                verbose=3,
-            )
-            logger.info("Profiler started.")
-        except Exception as exc:
-            logger.info("Profiler not enabled: %", exc)
+        from letta.monitoring.event_loop_watchdog import start_watchdog
+
+        loop = asyncio.get_running_loop()
+        start_watchdog(loop, check_interval=5.0, timeout_threshold=15.0)
+        logger.info(f"[Worker {worker_id}] Event loop watchdog started")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to start watchdog: {e}")
+
+    # Pre-download NLTK data to avoid blocking during requests (fallback if Docker build failed)
+    try:
+        import asyncio
+
+        import nltk
+
+        logger.info(f"[Worker {worker_id}] Checking NLTK data availability...")
+        await asyncio.to_thread(nltk.download, "punkt_tab", quiet=True)
+        logger.info(f"[Worker {worker_id}] NLTK data ready")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to download NLTK data: {e}")
 
     # logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
     # logger.info(f"[Worker {worker_id}] Initializing database connections")
@@ -174,6 +188,7 @@ async def lifespan(app_: FastAPI):
 
     # Cleanup on shutdown
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
+
     try:
         from letta.jobs.scheduler import shutdown_scheduler_and_release_lock
 
@@ -214,7 +229,7 @@ def create_application() -> "FastAPI":
     if telemetry_settings.enable_datadog:
         try:
             dd_env = settings.environment or "development"
-            print(f"▶ Initializing Datadog profiling (env={dd_env})")
+            print(f"▶ Initializing Datadog tracing (env={dd_env})")
 
             # Configure environment variables before importing ddtrace (must be set in environment before importing ddtrace)
             os.environ.setdefault("DD_ENV", dd_env)
@@ -222,32 +237,33 @@ def create_application() -> "FastAPI":
             os.environ.setdefault("DD_VERSION", letta_version)
             os.environ.setdefault("DD_AGENT_HOST", telemetry_settings.datadog_agent_host)
             os.environ.setdefault("DD_TRACE_AGENT_PORT", str(telemetry_settings.datadog_agent_port))
-            os.environ.setdefault("DD_PROFILING_ENABLED", "true")
+            os.environ.setdefault("DD_PROFILING_ENABLED", str(telemetry_settings.datadog_profiling_enabled).lower())
             os.environ.setdefault("DD_PROFILING_MEMORY_ENABLED", str(telemetry_settings.datadog_profiling_memory_enabled).lower())
             os.environ.setdefault("DD_PROFILING_HEAP_ENABLED", str(telemetry_settings.datadog_profiling_heap_enabled).lower())
 
-            from ddtrace.profiling import Profiler
+            if telemetry_settings.datadog_profiling_enabled:
+                from ddtrace.profiling import Profiler
 
-            # Initialize and start profiler
-            profiler = Profiler(
-                env=dd_env,
-                service=telemetry_settings.datadog_service_name,
-                version=letta_version,
-            )
-            profiler.start()
+                # Initialize and start profiler
+                profiler = Profiler(
+                    env=dd_env,
+                    service=telemetry_settings.datadog_service_name,
+                    version=letta_version,
+                )
+                profiler.start()
 
-            # Log Git metadata for source code integration
-            git_info = ""
-            if telemetry_settings.datadog_git_commit_sha:
-                git_info = f", commit={telemetry_settings.datadog_git_commit_sha[:8]}"
-            if telemetry_settings.datadog_git_repository_url:
-                git_info += f", repo={telemetry_settings.datadog_git_repository_url}"
+                # Log Git metadata for source code integration
+                git_info = ""
+                if telemetry_settings.datadog_git_commit_sha:
+                    git_info = f", commit={telemetry_settings.datadog_git_commit_sha[:8]}"
+                if telemetry_settings.datadog_git_repository_url:
+                    git_info += f", repo={telemetry_settings.datadog_git_repository_url}"
 
-            logger.info(
-                f"Datadog profiling enabled: env={dd_env}, "
-                f"service={telemetry_settings.datadog_service_name}, "
-                f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
-            )
+                logger.info(
+                    f"Datadog profiling enabled: env={dd_env}, "
+                    f"service={telemetry_settings.datadog_service_name}, "
+                    f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
+                )
         except Exception as e:
             logger.error(f"Failed to initialize Datadog profiling: {e}", exc_info=True)
             if SENTRY_ENABLED:
@@ -549,9 +565,6 @@ def create_application() -> "FastAPI":
 
     # Add reverse proxy middleware to handle X-Forwarded-* headers
     # app.add_middleware(ReverseProxyMiddleware, base_path=settings.server_base_path)
-
-    if telemetry_settings.profiler:
-        app.add_middleware(ProfilerContextMiddleware)
 
     # Add unified logging middleware - enriches log context and logs exceptions
     app.add_middleware(LoggingMiddleware)

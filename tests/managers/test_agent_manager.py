@@ -166,6 +166,7 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user)
 
     create_agent_request = CreateAgent(
         name="test_default_source_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -196,6 +197,7 @@ async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServe
     # Test with excluded provider (openai)
     create_agent_request = CreateAgent(
         name="test_excluded_provider_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),  # This has model_endpoint_type="openai"
@@ -225,6 +227,7 @@ async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncS
     # Test with non-excluded provider (together)
     create_agent_request = CreateAgent(
         name="test_non_excluded_provider_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig(
@@ -321,6 +324,7 @@ async def test_create_agent_with_default_source(server: SyncServer, default_user
 
     create_agent_request = CreateAgent(
         name="test_default_source_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -355,6 +359,7 @@ async def test_create_agent_with_default_source(server: SyncServer, default_user
     # Test with include_default_source=False
     create_agent_request_no_source = CreateAgent(
         name="test_no_default_source_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -413,6 +418,7 @@ async def test_get_context_window_basic(
 async def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -442,6 +448,7 @@ async def test_create_agent_passed_in_initial_messages(server: SyncServer, defau
 async def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -472,6 +479,7 @@ async def test_create_agent_with_json_in_system_message(server: SyncServer, defa
         "{'query1' : 'reason1', 'query2' : 'reason2'}"
     )
     create_agent_request = CreateAgent(
+        agent_type="memgpt_v2_agent",
         system=system_prompt,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -527,6 +535,7 @@ async def test_agent_file_defaults_based_on_context_window(server: SyncServer, d
     llm_config_small.context_window = 8000
     create_agent_request = CreateAgent(
         name="test_agent_small_context",
+        agent_type="memgpt_v2_agent",
         llm_config=llm_config_small,
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
@@ -547,6 +556,7 @@ async def test_agent_file_defaults_based_on_context_window(server: SyncServer, d
     llm_config_medium.context_window = 32000
     create_agent_request = CreateAgent(
         name="test_agent_medium_context",
+        agent_type="memgpt_v2_agent",
         llm_config=llm_config_medium,
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
@@ -567,6 +577,7 @@ async def test_agent_file_defaults_based_on_context_window(server: SyncServer, d
     llm_config_large.context_window = 128000
     create_agent_request = CreateAgent(
         name="test_agent_large_context",
+        agent_type="memgpt_v2_agent",
         llm_config=llm_config_large,
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
@@ -591,6 +602,7 @@ async def test_agent_file_defaults_explicit_values(server: SyncServer, default_u
     llm_config_explicit.context_window = 32000  # would normally get defaults of 5 and 30k
     create_agent_request = CreateAgent(
         name="test_agent_explicit_values",
+        agent_type="memgpt_v2_agent",
         llm_config=llm_config_explicit,
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
@@ -775,6 +787,7 @@ async def test_list_agents_ascending(server: SyncServer, default_user):
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_oldest",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -789,6 +802,7 @@ async def test_list_agents_ascending(server: SyncServer, default_user):
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_newest",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -808,6 +822,7 @@ async def test_list_agents_descending(server: SyncServer, default_user):
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_oldest",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -822,6 +837,7 @@ async def test_list_agents_descending(server: SyncServer, default_user):
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_newest",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -841,6 +857,7 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_requires_approval",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -858,6 +875,7 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_error",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -875,6 +893,7 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_no_stop_reason",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -908,6 +927,7 @@ async def test_count_agents_with_filters(server: SyncServer, default_user):
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_requires_approval",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -925,6 +945,7 @@ async def test_count_agents_with_filters(server: SyncServer, default_user):
     agent2 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_error",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -942,6 +963,7 @@ async def test_count_agents_with_filters(server: SyncServer, default_user):
     agent3 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_completed",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -959,6 +981,7 @@ async def test_count_agents_with_filters(server: SyncServer, default_user):
     agent4 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent_no_stop_reason",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
@@ -1019,6 +1042,7 @@ async def test_list_agents_ordering_and_pagination(server: SyncServer, default_u
         agent = await server.agent_manager.create_agent_async(
             agent_create=CreateAgent(
                 name=name,
+                agent_type="memgpt_v2_agent",
                 memory_blocks=[],
                 llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
@@ -1095,6 +1119,7 @@ async def test_agent_environment_variables_encrypt_on_create(server: SyncServer,
     # Create agent with secrets
     agent_create = CreateAgent(
         name="test-agent-with-secrets",
+        agent_type="memgpt_v2_agent",
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
         include_base_tools=False,
@@ -1146,6 +1171,7 @@ async def test_agent_environment_variables_decrypt_on_read(server: SyncServer, d
     # Create agent with secrets
     agent_create = CreateAgent(
         name="test-agent-read-secrets",
+        agent_type="memgpt_v2_agent",
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
         include_base_tools=False,
@@ -1192,6 +1218,7 @@ async def test_agent_environment_variables_update_encryption(server: SyncServer,
     # Create agent with initial secrets
     agent_create = CreateAgent(
         name="test-agent-update-secrets",
+        agent_type="memgpt_v2_agent",
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
         include_base_tools=False,
@@ -1514,6 +1541,8 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "max_tokens",
         "enable_reasoner",
         "reasoning_effort",
+        "effort",
+        "response_format",
         "max_reasoning_tokens",
         "frequency_penalty",
         "compatibility_type",
@@ -1607,6 +1636,7 @@ async def test_agent_state_relationship_loads(server: SyncServer, default_user, 
 
     create_agent_request = CreateAgent(
         name="test_default_source_agent",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
@@ -1702,6 +1732,7 @@ async def test_create_template_agent_with_files_from_sources(server: SyncServer,
     # Create agent using InternalTemplateAgentCreate with the source
     create_agent_request = InternalTemplateAgentCreate(
         name="test_template_agent_with_files",
+        agent_type="memgpt_v2_agent",
         system="test system",
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),

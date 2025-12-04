@@ -28,12 +28,12 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import ApprovalReturn, LettaMessage, MessageType
+from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, ToolCallDenial, UsageStatistics
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -47,10 +47,6 @@ from letta.services.helpers.tool_parser_helper import runtime_override_tool_json
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.utils import log_telemetry, validate_function_response
-
-
-class ToolCallDenial(ToolCall):
-    reason: Optional[str] = None
 
 
 class LettaAgentV3(LettaAgentV2):
@@ -118,9 +114,17 @@ class LettaAgentV3(LettaAgentV2):
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
             input_messages, self.agent_state, self.message_manager, self.actor, run_id
         )
+        follow_up_messages = []
+        if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
+            follow_up_messages = input_messages_to_persist[1:]
+            input_messages_to_persist = [input_messages_to_persist[0]]
+
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
         for i in range(max_steps):
+            if i == 1 and follow_up_messages:
+                input_messages_to_persist = follow_up_messages
+                follow_up_messages = []
             response = self._step(
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
@@ -241,8 +245,16 @@ class LettaAgentV3(LettaAgentV2):
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
                 input_messages, self.agent_state, self.message_manager, self.actor, run_id
             )
+            follow_up_messages = []
+            if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
+                follow_up_messages = input_messages_to_persist[1:]
+                input_messages_to_persist = [input_messages_to_persist[0]]
+
             in_context_messages = in_context_messages + input_messages_to_persist
             for i in range(max_steps):
+                if i == 1 and follow_up_messages:
+                    input_messages_to_persist = follow_up_messages
+                    follow_up_messages = []
                 response = self._step(
                     messages=in_context_messages + self.response_messages,
                     input_messages_to_persist=input_messages_to_persist,
@@ -320,15 +332,16 @@ class LettaAgentV3(LettaAgentV2):
                 # Raise if no chunks sent yet (response not started, can return error status code)
                 raise
             else:
+                yield f"data: {self.stop_reason.model_dump_json()}\n\n"
+
                 # Mid-stream error: yield error event to client in SSE format
-                error_chunk = {
-                    "error": {
-                        "type": "internal_error",
-                        "message": "An error occurred during agent execution.",
-                        "detail": str(e),
-                    }
-                }
-                yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type="internal_error",
+                    message="An error occurred during agent execution.",
+                    detail=str(e),
+                )
+                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
 
                 # Return immediately - don't fall through to finish chunks
                 # This prevents sending end_turn finish chunks after an error
@@ -362,15 +375,16 @@ class LettaAgentV3(LettaAgentV2):
             if self.stop_reason is None:
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
 
+            yield f"data: {self.stop_reason.model_dump_json()}\n\n"
+
             # Send error event
-            error_chunk = {
-                "error": {
-                    "type": "cleanup_error",
-                    "message": "An error occurred during stream finalization.",
-                    "detail": str(cleanup_error),
-                }
-            }
-            yield f"event: error\ndata: {json.dumps(error_chunk)}\n\n"
+            error_message = LettaErrorMessage(
+                run_id=run_id,
+                error_type="cleanup_error",
+                message="An error occurred during stream finalization.",
+                detail=str(cleanup_error),
+            )
+            yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
             # Note: we don't send finish chunks here since we already errored
 
     @trace_method
@@ -558,7 +572,6 @@ class LettaAgentV3(LettaAgentV2):
                             return
 
                         step_progression, step_metrics = self._step_checkpoint_llm_request_start(step_metrics, agent_step_span)
-
                         invocation = llm_adapter.invoke_llm(
                             request_data=request_data,
                             messages=messages,
@@ -642,15 +655,16 @@ class LettaAgentV3(LettaAgentV2):
             self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
             if llm_adapter.supports_token_streaming():
-                # Stream each tool return if tools were executed
-                response_tool_returns = [msg for msg in aggregated_persisted if msg.role == "tool"]
-                for tr in response_tool_returns:
-                    # Skip streaming for aggregated parallel tool returns (no per-call tool_call_id)
-                    if tr.tool_call_id is None and tr.tool_returns:
-                        continue
-                    tool_return_letta = tr.to_letta_messages()[0]
-                    if include_return_message_types is None or tool_return_letta.message_type in include_return_message_types:
-                        yield tool_return_letta
+                if tool_calls:
+                    # Stream each tool return if tools were executed
+                    response_tool_returns = [msg for msg in aggregated_persisted if msg.role == "tool"]
+                    for tr in response_tool_returns:
+                        # Skip streaming for aggregated parallel tool returns (no per-call tool_call_id)
+                        if tr.tool_call_id is None and tr.tool_returns:
+                            continue
+                        tool_return_letta = tr.to_letta_messages()[0]
+                        if include_return_message_types is None or tool_return_letta.message_type in include_return_message_types:
+                            yield tool_return_letta
             else:
                 filter_user_messages = [m for m in aggregated_persisted[new_message_idx:] if m.role != "user"]
                 letta_messages = Message.to_letta_messages_from_list(

@@ -1,16 +1,37 @@
+import asyncio
 import base64
 import mimetypes
 from urllib.parse import unquote, urlparse
 
 import httpx
 
-from letta import system
+from letta import __version__, system
+from letta.errors import LettaImageFetchError
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import Base64Image, ImageContent, ImageSourceType, TextContent
 from letta.schemas.message import Message, MessageCreate
 
 
-def convert_message_creates_to_messages(
+async def _fetch_image_from_url(url: str) -> tuple[bytes, str | None]:
+    """
+    Async helper to fetch image from URL without blocking the event loop.
+    """
+    timeout = httpx.Timeout(15.0, connect=5.0)
+    headers = {"User-Agent": f"Letta/{__version__}"}
+    try:
+        async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
+            image_response = await client.get(url, follow_redirects=True)
+            image_response.raise_for_status()
+            image_bytes = image_response.content
+            image_media_type = image_response.headers.get("content-type")
+            return image_bytes, image_media_type
+    except (httpx.RemoteProtocolError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        raise LettaImageFetchError(url=url, reason=str(e))
+    except Exception as e:
+        raise LettaImageFetchError(url=url, reason=f"Unexpected error: {e}")
+
+
+async def convert_message_creates_to_messages(
     message_creates: list[MessageCreate],
     agent_id: str,
     timezone: str,
@@ -18,7 +39,8 @@ def convert_message_creates_to_messages(
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
 ) -> list[Message]:
-    return [
+    # Process all messages concurrently
+    tasks = [
         _convert_message_create_to_message(
             message_create=create,
             agent_id=agent_id,
@@ -29,9 +51,10 @@ def convert_message_creates_to_messages(
         )
         for create in message_creates
     ]
+    return await asyncio.gather(*tasks)
 
 
-def _convert_message_create_to_message(
+async def _convert_message_create_to_message(
     message_create: MessageCreate,
     agent_id: str,
     timezone: str,
@@ -51,10 +74,16 @@ def _convert_message_create_to_message(
     else:
         raise ValueError("Message content is empty or invalid")
 
-    assert message_create.role in {MessageRole.user, MessageRole.system}, f"Invalid message role: {message_create.role}"
+    # Validate message role (assistant messages are allowed but won't be wrapped)
+    assert message_create.role in {
+        MessageRole.user,
+        MessageRole.system,
+        MessageRole.assistant,
+    }, f"Invalid message role: {message_create.role}"
+
     for content in message_content:
         if isinstance(content, TextContent):
-            # Apply wrapping if needed
+            # Apply wrapping only to user and system messages
             if message_create.role == MessageRole.user and wrap_user_message:
                 content.text = system.package_user_message(user_message=content.text, timezone=timezone)
             elif message_create.role == MessageRole.system and wrap_system_message:
@@ -70,20 +99,20 @@ def _convert_message_create_to_message(
                     parsed = urlparse(url)
                     file_path = unquote(parsed.path)
 
-                    # Read file directly from filesystem
-                    with open(file_path, "rb") as f:
-                        image_bytes = f.read()
+                    # Read file directly from filesystem (wrapped to avoid blocking event loop)
+                    def _read_file():
+                        with open(file_path, "rb") as f:
+                            return f.read()
+
+                    image_bytes = await asyncio.to_thread(_read_file)
 
                     # Guess media type from file extension
                     image_media_type, _ = mimetypes.guess_type(file_path)
                     if not image_media_type:
                         image_media_type = "image/jpeg"  # default fallback
                 else:
-                    # Handle http(s):// URLs using httpx
-                    image_response = httpx.get(url)
-                    image_response.raise_for_status()
-                    image_bytes = image_response.content
-                    image_media_type = image_response.headers.get("content-type")
+                    # Handle http(s):// URLs using async httpx
+                    image_bytes, image_media_type = await _fetch_image_from_url(url)
                     if not image_media_type:
                         image_media_type, _ = mimetypes.guess_type(url)
 

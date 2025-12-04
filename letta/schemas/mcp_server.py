@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from pydantic import Field
 
@@ -23,16 +23,33 @@ class BaseMCPServer(LettaBase):
 
 
 # Create Schemas (for POST requests)
-class CreateStdioMCPServer(StdioServerConfig):
+class CreateStdioMCPServer(LettaBase):
     """Create a new Stdio MCP server"""
 
+    mcp_server_type: Literal[MCPServerType.STDIO] = MCPServerType.STDIO
+    command: str = Field(..., description="The command to run (MCP 'local' client will run this command)")
+    args: List[str] = Field(..., description="The arguments to pass to the command")
+    env: Optional[dict[str, str]] = Field(None, description="Environment variables to set")
 
-class CreateSSEMCPServer(SSEServerConfig):
+
+class CreateSSEMCPServer(LettaBase):
     """Create a new SSE MCP server"""
 
+    mcp_server_type: Literal[MCPServerType.SSE] = MCPServerType.SSE
+    server_url: str = Field(..., description="The URL of the server")
+    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
-class CreateStreamableHTTPMCPServer(StreamableHTTPServerConfig):
+
+class CreateStreamableHTTPMCPServer(LettaBase):
     """Create a new Streamable HTTP MCP server"""
+
+    mcp_server_type: Literal[MCPServerType.STREAMABLE_HTTP] = MCPServerType.STREAMABLE_HTTP
+    server_url: str = Field(..., description="The URL of the server")
+    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
 
 CreateMCPServerUnion = Union[CreateStdioMCPServer, CreateSSEMCPServer, CreateStreamableHTTPMCPServer]
@@ -42,21 +59,21 @@ class StdioMCPServer(CreateStdioMCPServer):
     """A Stdio MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
-    type: MCPServerType = MCPServerType.STDIO
+    server_name: str = Field(..., description="The name of the MCP server")
 
 
 class SSEMCPServer(CreateSSEMCPServer):
     """An SSE MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
-    type: MCPServerType = MCPServerType.SSE
+    server_name: str = Field(..., description="The name of the MCP server")
 
 
 class StreamableHTTPMCPServer(CreateStreamableHTTPMCPServer):
     """A Streamable HTTP MCP server"""
 
     id: str = BaseMCPServer.generate_id_field()
-    type: MCPServerType = MCPServerType.STREAMABLE_HTTP
+    server_name: str = Field(..., description="The name of the MCP server")
 
 
 MCPServerUnion = Union[StdioMCPServer, SSEMCPServer, StreamableHTTPMCPServer]
@@ -67,34 +84,30 @@ MCPServerUnion = Union[StdioMCPServer, SSEMCPServer, StreamableHTTPMCPServer]
 class UpdateStdioMCPServer(LettaBase):
     """Update schema for Stdio MCP server - all fields optional"""
 
-    server_name: Optional[str] = Field(None, description="The name of the MCP server")
-    command: Optional[str] = Field(None, description="The command to run the MCP server")
-    args: Optional[List[str]] = Field(None, description="The arguments to pass to the command")
-    env: Optional[Dict[str, str]] = Field(None, description="Environment variables to set")
+    mcp_server_type: Literal[MCPServerType.STDIO] = MCPServerType.STDIO
+    command: Optional[str] = Field(..., description="The command to run (MCP 'local' client will run this command)")
+    args: Optional[List[str]] = Field(..., description="The arguments to pass to the command")
+    env: Optional[dict[str, str]] = Field(None, description="Environment variables to set")
 
 
 class UpdateSSEMCPServer(LettaBase):
     """Update schema for SSE MCP server - all fields optional"""
 
-    server_name: Optional[str] = Field(None, description="The name of the MCP server")
-    server_url: Optional[str] = Field(None, description="The URL of the SSE MCP server")
-    # Accept both `auth_token` (API surface) and `token` (internal ORM naming)
-    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
-    token: Optional[str] = Field(None, description="The authentication token (internal)")
+    mcp_server_type: Literal[MCPServerType.SSE] = MCPServerType.SSE
+    server_url: Optional[str] = Field(..., description="The URL of the server")
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
-    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom headers to send with requests")
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
 
 class UpdateStreamableHTTPMCPServer(LettaBase):
     """Update schema for Streamable HTTP MCP server - all fields optional"""
 
-    server_name: Optional[str] = Field(None, description="The name of the MCP server")
-    server_url: Optional[str] = Field(None, description="The URL of the Streamable HTTP MCP server")
-    # Accept both `auth_token` (API surface) and `token` (internal ORM naming)
-    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
-    token: Optional[str] = Field(None, description="The authentication token (internal)")
+    mcp_server_type: Literal[MCPServerType.STREAMABLE_HTTP] = MCPServerType.STREAMABLE_HTTP
+    server_url: Optional[str] = Field(..., description="The URL of the server")
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
-    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom headers to send with requests")
+    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
+    custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
 
 UpdateMCPServerUnion = Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer]
@@ -246,10 +259,31 @@ class MCPServerResyncResult(LettaBase):
     added: List[str] = Field(default_factory=list, description="List of added tool names")
 
 
-class MCPToolExecuteRequest(LettaBase):
-    """Request to execute an MCP tool by IDs."""
+class ToolExecuteRequest(LettaBase):
+    """Request to execute a tool."""
 
-    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the tool")
+
+
+# Wrapper models for API requests with discriminated unions
+class CreateMCPServerRequest(LettaBase):
+    """Request to create a new MCP server with configuration."""
+
+    server_name: str = Field(..., description="The name of the MCP server")
+    config: Annotated[
+        CreateMCPServerUnion,
+        Field(..., discriminator="mcp_server_type", description="The MCP server configuration (Stdio, SSE, or Streamable HTTP)"),
+    ]
+
+
+class UpdateMCPServerRequest(LettaBase):
+    """Request to update an existing MCP server configuration."""
+
+    server_name: Optional[str] = Field(None, description="The name of the MCP server")
+    config: Annotated[
+        UpdateMCPServerUnion,
+        Field(..., discriminator="mcp_server_type", description="The MCP server configuration updates (Stdio, SSE, or Streamable HTTP)"),
+    ]
 
 
 def convert_generic_to_union(server) -> MCPServerUnion:
@@ -275,7 +309,7 @@ def convert_generic_to_union(server) -> MCPServerUnion:
         return StdioMCPServer(
             id=server.id,
             server_name=server.server_name,
-            type=MCPServerType.STDIO,
+            mcp_server_type=MCPServerType.STDIO,
             command=server.stdio_config.command if server.stdio_config else None,
             args=server.stdio_config.args if server.stdio_config else None,
             env=server.stdio_config.env if server.stdio_config else None,
@@ -284,7 +318,7 @@ def convert_generic_to_union(server) -> MCPServerUnion:
         return SSEMCPServer(
             id=server.id,
             server_name=server.server_name,
-            type=MCPServerType.SSE,
+            mcp_server_type=MCPServerType.SSE,
             server_url=server.server_url,
             auth_header="Authorization" if server.token else None,
             auth_token=f"Bearer {server.token}" if server.token else None,
@@ -294,7 +328,7 @@ def convert_generic_to_union(server) -> MCPServerUnion:
         return StreamableHTTPMCPServer(
             id=server.id,
             server_name=server.server_name,
-            type=MCPServerType.STREAMABLE_HTTP,
+            mcp_server_type=MCPServerType.STREAMABLE_HTTP,
             server_url=server.server_url,
             auth_header="Authorization" if server.token else None,
             auth_token=f"Bearer {server.token}" if server.token else None,
@@ -304,12 +338,27 @@ def convert_generic_to_union(server) -> MCPServerUnion:
         raise ValueError(f"Unknown server type: {server.server_type}")
 
 
-def convert_update_to_internal(request: Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer]):
-    """Convert external API update models to internal UpdateMCPServer union used by the manager.
+def convert_update_to_internal(request: UpdateMCPServerRequest):
+    """Convert external UpdateMCPServerRequest to internal UpdateMCPServer union used by the manager.
 
-    - Flattens stdio fields into StdioServerConfig inside UpdateStdioMCPServer
-    - Maps `auth_token` to `token` for HTTP-based transports
-    - Ignores `auth_header` at update time (header is derived from token)
+    External API Request Structure (UpdateMCPServerRequest):
+    - server_name: Optional[str] (at top level)
+    - config: UpdateMCPServerUnion
+        - UpdateStdioMCPServer: command, args, env (flat fields)
+        - UpdateSSEMCPServer: server_url, auth_header, auth_token, custom_headers
+        - UpdateStreamableHTTPMCPServer: server_url, auth_header, auth_token, custom_headers
+
+    Internal Layer (schemas/mcp.py):
+    - UpdateStdioMCPServer: server_name, stdio_config (wrapped in StdioServerConfig)
+    - UpdateSSEMCPServer: server_name, server_url, token (not auth_token!), custom_headers
+    - UpdateStreamableHTTPMCPServer: server_name, server_url, auth_header, auth_token, custom_headers
+
+    This function:
+    1. Extracts server_name from request (top level)
+    2. Wraps stdio fields into StdioServerConfig
+    3. Maps auth_token → token for SSE (internal uses 'token')
+    4. Passes through auth_header + auth_token for StreamableHTTP
+    5. Strips 'Bearer ' prefix from tokens if present
     """
     # Local import to avoid circulars
     from letta.functions.mcp_client.types import MCPServerType as MCPType, StdioServerConfig as StdioCfg
@@ -319,32 +368,78 @@ def convert_update_to_internal(request: Union[UpdateStdioMCPServer, UpdateSSEMCP
         UpdateStreamableHTTPMCPServer as InternalUpdateHTTP,
     )
 
-    if isinstance(request, UpdateStdioMCPServer):
+    config = request.config
+    server_name = request.server_name
+
+    if isinstance(config, UpdateStdioMCPServer):
+        # For Stdio: wrap command/args/env into StdioServerConfig
         stdio_cfg = None
-        # Only build stdio_config if command and args are explicitly provided to avoid overwriting existing config
-        if request.command is not None and request.args is not None:
+        # Only build stdio_config if command and args are explicitly provided
+        if config.command is not None and config.args is not None:
+            # Note: server_name in StdioServerConfig should match the parent server's name
+            # Use empty string as placeholder if server_name update is not provided
             stdio_cfg = StdioCfg(
-                server_name=request.server_name or "",
+                server_name=server_name or "",  # Will be overwritten by manager if needed
                 type=MCPType.STDIO,
-                command=request.command,
-                args=request.args,
-                env=request.env,
+                command=config.command,
+                args=config.args,
+                env=config.env,
             )
+
+        # Build kwargs with only non-None values
         kwargs: dict = {}
-        if request.server_name is not None:
-            kwargs["server_name"] = request.server_name
+        if server_name is not None:
+            kwargs["server_name"] = server_name
         if stdio_cfg is not None:
             kwargs["stdio_config"] = stdio_cfg
+
         return InternalUpdateStdio(**kwargs)
-    elif isinstance(request, UpdateSSEMCPServer):
-        token_value = request.auth_token or request.token
-        return InternalUpdateSSE(
-            server_name=request.server_name, server_url=request.server_url, token=token_value, custom_headers=request.custom_headers
-        )
-    elif isinstance(request, UpdateStreamableHTTPMCPServer):
-        token_value = request.auth_token or request.token
-        return InternalUpdateHTTP(
-            server_name=request.server_name, server_url=request.server_url, auth_token=token_value, custom_headers=request.custom_headers
-        )
+
+    elif isinstance(config, UpdateSSEMCPServer):
+        # For SSE: map auth_token → token, strip Bearer prefix if present
+        token_value = None
+        if config.auth_token is not None:
+            # Strip 'Bearer ' prefix if present (internal storage doesn't include prefix)
+            token_value = config.auth_token
+            if token_value.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
+                token_value = token_value[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
+
+        # Build kwargs with only non-None values
+        kwargs: dict = {}
+        if server_name is not None:
+            kwargs["server_name"] = server_name
+        if config.server_url is not None:
+            kwargs["server_url"] = config.server_url
+        if token_value is not None:
+            kwargs["token"] = token_value
+        if config.custom_headers is not None:
+            kwargs["custom_headers"] = config.custom_headers
+
+        return InternalUpdateSSE(**kwargs)
+
+    elif isinstance(config, UpdateStreamableHTTPMCPServer):
+        # For StreamableHTTP: pass through auth_header + auth_token, strip Bearer prefix if present
+        auth_token_value = None
+        if config.auth_token is not None:
+            # Strip 'Bearer ' prefix if present (internal storage doesn't include prefix)
+            auth_token_value = config.auth_token
+            if auth_token_value.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
+                auth_token_value = auth_token_value[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
+
+        # Build kwargs with only non-None values
+        kwargs: dict = {}
+        if server_name is not None:
+            kwargs["server_name"] = server_name
+        if config.server_url is not None:
+            kwargs["server_url"] = config.server_url
+        if config.auth_header is not None:
+            kwargs["auth_header"] = config.auth_header
+        if auth_token_value is not None:
+            kwargs["auth_token"] = auth_token_value
+        if config.custom_headers is not None:
+            kwargs["custom_headers"] = config.custom_headers
+
+        return InternalUpdateHTTP(**kwargs)
+
     else:
-        raise TypeError(f"Unsupported update request type: {type(request)}")
+        raise TypeError(f"Unsupported update config type: {type(config)}")

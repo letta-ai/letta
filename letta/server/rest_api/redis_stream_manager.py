@@ -9,7 +9,8 @@ from typing import AsyncIterator, Dict, List, Optional
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
 from letta.schemas.enums import RunStatus
-from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.letta_message import LettaErrorMessage
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.run import RunUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.streaming_response import RunCancelledException
@@ -266,8 +267,21 @@ async def create_background_stream_processor(
                 saw_done = True
             else:
                 # No stop_reason and no terminal - this is an error condition
-                error_chunk = {"error": "Stream ended unexpectedly without stop_reason", "code": "STREAM_INCOMPLETE"}
-                await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=False)
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type="stream_incomplete",
+                    message="Stream ended unexpectedly without stop_reason.",
+                    detail=None,
+                )
+                # Write error chunks to Redis instead of yielding (this is a background task, not a generator)
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.error).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(
+                    run_id=run_id, data=f"event: error\ndata: {error_message.model_dump_json()}\n\n", is_complete=False
+                )
                 await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
                 saw_error = True
                 saw_done = True
@@ -284,8 +298,17 @@ async def create_background_stream_processor(
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
-        error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
-        await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=False)
+        stop_reason = StopReasonType.error.value
+        error_message = LettaErrorMessage(
+            run_id=run_id,
+            error_type="internal_error",
+            message="An unknown error occurred with the LLM streaming request.",
+            detail=str(e),
+        )
+        await writer.write_chunk(
+            run_id=run_id, data=f"data: {LettaStopReason(stop_reason=stop_reason).model_dump_json()}\n\n", is_complete=False
+        )
+        await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {error_message.model_dump_json()}\n\n", is_complete=False)
         await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
         saw_error = True
         saw_done = True

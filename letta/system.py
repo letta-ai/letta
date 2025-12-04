@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Any, Optional
 
 from letta.log import get_logger
 
@@ -147,11 +147,21 @@ def package_user_message(
     return json_dumps(packaged_message)
 
 
-def package_function_response(was_success: bool, response_string: str, timezone: str | None) -> str:
+def package_function_response(was_success: bool, response_string: Any, timezone: str | None) -> str:
+    """Package a function response with status and timestamp.
+
+    Args:
+        was_success: Whether the function execution succeeded
+        response_string: The function response - can be a string or dict. Dicts are NOT pre-encoded to avoid double JSON encoding.
+        timezone: The timezone to use for the timestamp
+
+    Returns:
+        JSON string with status, message, and time
+    """
     formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
         "status": "OK" if was_success else "Failed",
-        "message": response_string,
+        "message": response_string,  # Can be str or dict - json_dumps handles both
         "time": formatted_time,
     }
 
@@ -263,6 +273,5 @@ def unpack_message(packed_message: str) -> str:
             return packed_message
 
         if message_type != "user_message":
-            logger.warning(f"Expected type to be 'user_message', but was '{message_type}', so not unpacking: '{packed_message}'")
             return packed_message
         return message_json.get("message")

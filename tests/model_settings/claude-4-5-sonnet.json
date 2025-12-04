@@ -1,0 +1,13 @@
+{
+  "handle": "anthropic/claude-sonnet-4-5-20250929",
+  "model_settings": {
+    "provider_type": "anthropic",
+    "temperature": 1.0,
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false,
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 1024
+    }
+  }
+}

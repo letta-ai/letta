@@ -1,6 +1,6 @@
 instances:
   - url: https://letta.docs.buildwithfern.com
-    custom-domain: https://docs.letta.com
+    custom-domain: https://docs-legacy.letta.com
 title: Letta
 
 default-language: typescript

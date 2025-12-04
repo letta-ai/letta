@@ -7,8 +7,7 @@ from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
-from letta.constants import MAX_TOOL_NAME_LENGTH
-from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE
+from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE, MAX_TOOL_NAME_LENGTH
 from letta.errors import (
     LettaInvalidArgumentError,
     LettaInvalidMCPSchemaError,
@@ -32,7 +31,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolUpdate
+from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolSearchRequest, ToolSearchResult, ToolUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
@@ -272,6 +271,46 @@ async def list_tools(
     )
 
 
+@router.post("/search", response_model=List[ToolSearchResult], operation_id="search_tools")
+async def search_tools(
+    request: ToolSearchRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Search tools using semantic search.
+
+    Requires tool embedding to be enabled (embed_tools=True). Uses vector search,
+    full-text search, or hybrid mode to find tools matching the query.
+
+    Returns tools ranked by relevance with their search scores.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    try:
+        results = await server.tool_manager.search_tools_async(
+            actor=actor,
+            query_text=request.query,
+            search_mode=request.search_mode,
+            tool_types=request.tool_types,
+            tags=request.tags,
+            limit=request.limit,
+        )
+
+        return [
+            ToolSearchResult(
+                tool=tool,
+                embedded_text=None,  # Could be populated if needed
+                fts_rank=metadata.get("fts_rank"),
+                vector_rank=metadata.get("vector_rank"),
+                combined_score=metadata.get("combined_score", 0.0),
+            )
+            for tool, metadata in results
+        ]
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/", response_model=Tool, operation_id="create_tool")
 async def create_tool(
     request: ToolCreate = Body(...),
@@ -283,7 +322,10 @@ async def create_tool(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     tool = Tool(**request.model_dump(exclude_unset=True))
-    return await server.tool_manager.create_or_update_tool_async(pydantic_tool=tool, actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    return await server.tool_manager.create_or_update_tool_async(
+        pydantic_tool=tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
 
 
 @router.put("/", response_model=Tool, operation_id="upsert_tool")
@@ -296,7 +338,10 @@ async def upsert_tool(
     Create or update a tool
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    tool = await server.tool_manager.create_or_update_tool_async(
+        pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
     return tool
 
 
@@ -311,7 +356,10 @@ async def modify_tool(
     Update an existing tool
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+    modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    tool = await server.tool_manager.update_tool_by_id_async(
+        tool_id=tool_id, tool_update=request, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+    )
     return tool
 
 
@@ -365,7 +413,7 @@ async def list_mcp_servers(
     Get a list of all configured MCP servers
     """
     if tool_settings.mcp_read_from_config:
-        return server.get_mcp_servers()
+        return await server.get_mcp_servers()
     else:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
@@ -541,7 +589,7 @@ async def delete_mcp_server_from_config(
     """
     if tool_settings.mcp_read_from_config:
         # write to config file
-        return server.delete_mcp_server_from_config(server_name=mcp_server_name)
+        return await server.delete_mcp_server_from_config(server_name=mcp_server_name)
     else:
         # log to DB
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
@@ -709,15 +757,15 @@ async def generate_json_schema(
 
 
 # TODO: @jnjpng move this and other models above to appropriate file for schemas
-class MCPToolExecuteRequest(BaseModel):
-    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+class ToolExecuteRequest(BaseModel):
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the tool")
 
 
 @router.post("/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute", operation_id="execute_mcp_tool")
 async def execute_mcp_tool(
     mcp_server_name: str,
     tool_name: str,
-    request: MCPToolExecuteRequest = Body(...),
+    request: ToolExecuteRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):

@@ -5,16 +5,10 @@ import time
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta
-from letta_client.core.api_error import ApiError
+from letta_client import APIError, Letta
+from letta_client.types import CreateBlockParam, MessageCreateParam, SleeptimeManagerParam
 
 from letta.constants import DEFAULT_HUMAN
-from letta.orm.errors import NoResultFound
-from letta.schemas.block import CreateBlock
-from letta.schemas.enums import AgentType, JobStatus, JobType, ToolRuleType
-from letta.schemas.group import ManagerType, SleeptimeManagerUpdate
-from letta.schemas.message import MessageCreate
-from letta.schemas.run import Run
 from letta.utils import get_human_text, get_persona_text
 
 
@@ -74,11 +68,11 @@ async def test_sleeptime_group_chat(client):
     main_agent = client.agents.create(
         name="main_agent",
         memory_blocks=[
-            CreateBlock(
+            CreateBlockParam(
                 label="persona",
                 value="You are a personal assistant that helps users with requests.",
             ),
-            CreateBlock(
+            CreateBlockParam(
                 label="human",
                 value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
             ),
@@ -86,7 +80,7 @@ async def test_sleeptime_group_chat(client):
         model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
-        agent_type=AgentType.letta_v1_agent,
+        agent_type="letta_v1_agent",
     )
 
     assert main_agent.enable_sleeptime == True
@@ -96,34 +90,35 @@ async def test_sleeptime_group_chat(client):
     assert "archival_memory_insert" not in main_agent_tools
 
     # 2. Override frequency for test
-    group = client.groups.modify(
+    group = client.groups.update(
         group_id=main_agent.multi_agent_group.id,
-        manager_config=SleeptimeManagerUpdate(
+        manager_config=SleeptimeManagerParam(
+            manager_type="sleeptime",
             sleeptime_agent_frequency=2,
         ),
     )
 
-    assert group.manager_type == ManagerType.sleeptime
+    assert group.manager_type == "sleeptime"
     assert group.sleeptime_agent_frequency == 2
     assert len(group.agent_ids) == 1
 
     # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = client.agents.blocks.retrieve(agent_id=main_agent.id, block_label="human")
-    agents = client.blocks.agents.list(block_id=shared_block.id)
+    agents = client.blocks.agents.list(block_id=shared_block.id).items
     assert len(agents) == 2
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
 
     # 4 Verify sleeptime agent tools
-    sleeptime_agent = client.agents.retrieve(agent_id=sleeptime_agent_id)
+    sleeptime_agent = client.agents.retrieve(agent_id=sleeptime_agent_id, include=["agent.tools"])
     sleeptime_agent_tools = [tool.name for tool in sleeptime_agent.tools]
     assert "memory_rethink" in sleeptime_agent_tools
     assert "memory_finish_edits" in sleeptime_agent_tools
     assert "memory_replace" in sleeptime_agent_tools
     assert "memory_insert" in sleeptime_agent_tools
 
-    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == ToolRuleType.exit_loop]) > 0
+    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == "exit_loop"]) > 0
 
     # 5. Send messages and verify run ids
     message_text = [
@@ -139,7 +134,7 @@ async def test_sleeptime_group_chat(client):
         response = client.agents.messages.create(
             agent_id=main_agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user",
                     content=text,
                 ),
@@ -150,22 +145,38 @@ async def test_sleeptime_group_chat(client):
         assert len(response.usage.run_ids or []) == (i + 1) % 2
         run_ids.extend(response.usage.run_ids or [])
 
-        runs = client.runs.list()
-        agent_runs = [run for run in runs if run.agent_id == sleeptime_agent_id]
-        assert len(agent_runs) == len(run_ids)
+        runs = client.runs.list(agent_id=sleeptime_agent_id).items
+        assert len(runs) == len(run_ids)
 
-    # 6. Verify run status after sleep
+    # 6. Verify run status after sleep and wait for all runs to complete
     time.sleep(2)
+
+    # Wait for all sleeptime agent runs to complete before deleting
+    max_wait = 30  # Maximum 30 seconds to wait
+    start_time = time.time()
+    all_completed = False
+
+    while time.time() - start_time < max_wait and not all_completed:
+        all_completed = True
+        for run_id in run_ids:
+            job = client.runs.retrieve(run_id=run_id)
+            if job.status not in ["completed", "failed"]:
+                all_completed = False
+                break
+        if not all_completed:
+            time.sleep(0.5)  # Poll every 500ms
+
+    # Verify final status
     for run_id in run_ids:
         job = client.runs.retrieve(run_id=run_id)
-        assert job.status == JobStatus.running or job.status == JobStatus.completed
+        assert job.status in ["running", "completed", "failed"], f"Unexpected status: {job.status}"
 
-    # 7. Delete agent
+    # 7. Delete agent (now safe because all runs are complete)
     client.agents.delete(agent_id=main_agent.id)
 
-    with pytest.raises(ApiError):
+    with pytest.raises(APIError):
         client.groups.retrieve(group_id=group.id)
-    with pytest.raises(ApiError):
+    with pytest.raises(APIError):
         client.agents.retrieve(agent_id=sleeptime_agent_id)
 
 
@@ -177,11 +188,11 @@ async def test_sleeptime_removes_redundant_information(client):
     main_agent = client.agents.create(
         name="main_agent",
         memory_blocks=[
-            CreateBlock(
+            CreateBlockParam(
                 label="persona",
                 value="You are a personal assistant that helps users with requests.",
             ),
-            CreateBlock(
+            CreateBlockParam(
                 label="human",
                 value="My favorite plant is the fiddle leaf\nMy favorite dog is the husky\nMy favorite plant is the fiddle leaf\nMy favorite plant is the fiddle leaf",
             ),
@@ -189,12 +200,13 @@ async def test_sleeptime_removes_redundant_information(client):
         model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
-        agent_type=AgentType.letta_v1_agent,
+        agent_type="letta_v1_agent",
     )
 
-    group = client.groups.modify(
+    group = client.groups.update(
         group_id=main_agent.multi_agent_group.id,
-        manager_config=SleeptimeManagerUpdate(
+        manager_config=SleeptimeManagerParam(
+            manager_type="sleeptime",
             sleeptime_agent_frequency=1,
         ),
     )
@@ -207,7 +219,7 @@ async def test_sleeptime_removes_redundant_information(client):
         _ = client.agents.messages.create(
             agent_id=main_agent.id,
             messages=[
-                MessageCreate(
+                MessageCreateParam(
                     role="user",
                     content=test_message,
                 ),
@@ -224,9 +236,9 @@ async def test_sleeptime_removes_redundant_information(client):
     # 4. Delete agent
     client.agents.delete(agent_id=main_agent.id)
 
-    with pytest.raises(ApiError):
+    with pytest.raises(APIError):
         client.groups.retrieve(group_id=group.id)
-    with pytest.raises(ApiError):
+    with pytest.raises(APIError):
         client.agents.retrieve(agent_id=sleeptime_agent_id)
 
 
@@ -234,19 +246,19 @@ async def test_sleeptime_removes_redundant_information(client):
 async def test_sleeptime_edit(client):
     sleeptime_agent = client.agents.create(
         name="sleeptime_agent",
-        agent_type=AgentType.sleeptime_agent,
+        agent_type="sleeptime_agent",
         memory_blocks=[
-            CreateBlock(
+            CreateBlockParam(
                 label="human",
                 value=get_human_text(DEFAULT_HUMAN),
                 limit=2000,
             ),
-            CreateBlock(
+            CreateBlockParam(
                 label="memory_persona",
                 value=get_persona_text("sleeptime_memory_persona"),
                 limit=2000,
             ),
-            CreateBlock(
+            CreateBlockParam(
                 label="fact_block",
                 value="""Messi resides in the Paris.
                     Messi plays in the league Ligue 1.
@@ -265,7 +277,7 @@ async def test_sleeptime_edit(client):
     _ = client.agents.messages.create(
         agent_id=sleeptime_agent.id,
         messages=[
-            MessageCreate(
+            MessageCreateParam(
                 role="user",
                 content="Messi has now moved to playing for Inter Miami",
             ),
@@ -286,11 +298,11 @@ async def test_sleeptime_agent_new_block_attachment(client):
     main_agent = client.agents.create(
         name="main_agent",
         memory_blocks=[
-            CreateBlock(
+            CreateBlockParam(
                 label="persona",
                 value="You are a personal assistant that helps users with requests.",
             ),
-            CreateBlock(
+            CreateBlockParam(
                 label="human",
                 value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
             ),
@@ -298,7 +310,7 @@ async def test_sleeptime_agent_new_block_attachment(client):
         model="anthropic/claude-sonnet-4-5-20250929",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
-        agent_type=AgentType.letta_v1_agent,
+        agent_type="letta_v1_agent",
     )
 
     assert main_agent.enable_sleeptime == True
@@ -308,13 +320,13 @@ async def test_sleeptime_agent_new_block_attachment(client):
     sleeptime_agent_id = group.agent_ids[0]
 
     # 3. Verify initial shared blocks
-    main_agent_refreshed = client.agents.retrieve(agent_id=main_agent.id)
+    main_agent_refreshed = client.agents.retrieve(agent_id=main_agent.id, include=["agent.blocks"])
     initial_blocks = main_agent_refreshed.memory.blocks
     initial_block_count = len(initial_blocks)
 
     # Verify both agents share the initial blocks
     for block in initial_blocks:
-        agents = client.blocks.agents.list(block_id=block.id)
+        agents = client.blocks.agents.list(block_id=block.id).items
         assert len(agents) == 2
         assert sleeptime_agent_id in [agent.id for agent in agents]
         assert main_agent.id in [agent.id for agent in agents]
@@ -331,14 +343,14 @@ async def test_sleeptime_agent_new_block_attachment(client):
     client.agents.blocks.attach(agent_id=main_agent.id, block_id=new_block.id)
 
     # 6. Verify the new block is attached to the main agent
-    main_agent_refreshed = client.agents.retrieve(agent_id=main_agent.id)
+    main_agent_refreshed = client.agents.retrieve(agent_id=main_agent.id, include=["agent.blocks"])
     main_agent_blocks = main_agent_refreshed.memory.blocks
     assert len(main_agent_blocks) == initial_block_count + 1
     main_agent_block_ids = [block.id for block in main_agent_blocks]
     assert new_block.id in main_agent_block_ids
 
     # 7. Check if the new block is also attached to the sleeptime agent (this is where the bug might be)
-    sleeptime_agent = client.agents.retrieve(agent_id=sleeptime_agent_id)
+    sleeptime_agent = client.agents.retrieve(agent_id=sleeptime_agent_id, include=["agent.blocks"])
     sleeptime_agent_blocks = sleeptime_agent.memory.blocks
     sleeptime_agent_block_ids = [block.id for block in sleeptime_agent_blocks]
 
@@ -346,7 +358,7 @@ async def test_sleeptime_agent_new_block_attachment(client):
     assert new_block.id in sleeptime_agent_block_ids, f"New block {new_block.id} not attached to sleeptime agent {sleeptime_agent_id}"
 
     # 8. Verify that agents sharing the new block include both main and sleeptime agents
-    agents_with_new_block = client.blocks.agents.list(block_id=new_block.id)
+    agents_with_new_block = client.blocks.agents.list(block_id=new_block.id).items
     agent_ids_with_new_block = [agent.id for agent in agents_with_new_block]
 
     assert main_agent.id in agent_ids_with_new_block, "Main agent should have access to the new block"

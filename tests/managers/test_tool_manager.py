@@ -538,6 +538,7 @@ async def test_attach_tool_with_default_requires_approval_on_creation(server: Sy
     agent = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
             name="agent11",
+            agent_type="memgpt_v2_agent",
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             tools=[bash_tool.name],

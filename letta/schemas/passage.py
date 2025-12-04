@@ -21,7 +21,9 @@ class PassageBase(OrmMetadataBase):
     archive_id: Optional[str] = Field(None, description="The unique identifier of the archive containing this passage.")
 
     # origin data source
-    source_id: Optional[str] = Field(None, description="The data source of the passage.")
+    source_id: Optional[str] = Field(
+        None, description="Deprecated: Use `folder_id` field instead. The data source of the passage.", deprecated=True
+    )
 
     # file association
     file_id: Optional[str] = Field(None, description="The unique identifier of the file associated with the passage.")

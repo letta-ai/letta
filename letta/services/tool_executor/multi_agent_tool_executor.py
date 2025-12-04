@@ -87,7 +87,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
         return str(results)
 
     async def _process_agent(self, agent_state: AgentState, message: str, actor: User) -> Dict[str, Any]:
-        from letta.agents.letta_agent_v2 import LettaAgentV2
+        from letta.agents.letta_agent_v3 import LettaAgentV3
 
         try:
             runs_manager = RunManager()
@@ -102,7 +102,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
                 actor=actor,
             )
 
-            letta_agent = LettaAgentV2(
+            letta_agent = LettaAgentV3(
                 agent_state=agent_state,
                 actor=self.actor,
             )
