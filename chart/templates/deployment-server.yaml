@@ -185,22 +185,24 @@ spec:
               key: clickhouse-password
         {{- end }}
         {{- end }}
+        {{- if .Values.server.healthChecks.enabled }}
         livenessProbe:
           httpGet:
-            path: /health
+            path: {{ .Values.server.healthChecks.livenessProbe.path }}
             port: api
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          initialDelaySeconds: {{ .Values.server.healthChecks.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.server.healthChecks.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.server.healthChecks.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.server.healthChecks.livenessProbe.failureThreshold }}
         readinessProbe:
           httpGet:
-            path: /health
+            path: {{ .Values.server.healthChecks.readinessProbe.path }}
             port: api
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+          initialDelaySeconds: {{ .Values.server.healthChecks.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.server.healthChecks.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.server.healthChecks.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.server.healthChecks.readinessProbe.failureThreshold }}
+        {{- end }}
         resources:
           {{- toYaml .Values.server.resources | nindent 10 }}
       {{- if and .Values.database.enabled (not .Values.externalDatabase.enabled) }}

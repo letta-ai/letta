@@ -56,13 +56,29 @@ server:
     repository: letta/letta
     tag: latest
     pullPolicy: IfNotPresent
-  
+
   replicaCount: 1
-  
+
   ports:
     http: 8083
     api: 8283
-  
+
+  # Health checks
+  healthChecks:
+    enabled: false  # Enable/disable liveness and readiness probes
+    livenessProbe:
+      path: /health
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
   resources:
     requests:
       memory: "1Gi"
@@ -101,7 +117,23 @@ nginx:
     repository: nginx
     tag: stable-alpine3.17-slim
     pullPolicy: IfNotPresent
-  
+
+  # Health checks
+  healthChecks:
+    enabled: false  # Enable/disable liveness and readiness probes
+    livenessProbe:
+      path: /
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      path: /
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
   resources:
     requests:
       memory: "64Mi"

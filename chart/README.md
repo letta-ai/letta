@@ -161,6 +161,9 @@ The following table lists the configurable parameters and their default values:
 | `server.replicaCount` | Number of server replicas | `1` |
 | `server.ports.http` | HTTP port | `8083` |
 | `server.ports.api` | API port | `8283` |
+| `server.healthChecks.enabled` | Enable health checks | `false` |
+| `server.healthChecks.livenessProbe.*` | Liveness probe configuration | See values.yaml |
+| `server.healthChecks.readinessProbe.*` | Readiness probe configuration | See values.yaml |
 | `server.resources.requests.memory` | Memory request | `1Gi` |
 | `server.resources.requests.cpu` | CPU request | `500m` |
 | `server.resources.limits.memory` | Memory limit | `4Gi` |
@@ -174,6 +177,9 @@ The following table lists the configurable parameters and their default values:
 | `nginx.enabled` | Enable nginx deployment | `true` |
 | `nginx.image.repository` | Nginx image repository | `nginx` |
 | `nginx.image.tag` | Nginx image tag | `stable-alpine3.17-slim` |
+| `nginx.healthChecks.enabled` | Enable health checks | `false` |
+| `nginx.healthChecks.livenessProbe.*` | Liveness probe configuration | See values.yaml |
+| `nginx.healthChecks.readinessProbe.*` | Readiness probe configuration | See values.yaml |
 | `nginx.service.type` | Service type | `LoadBalancer` |
 | `nginx.service.port` | Service port | `80` |
 

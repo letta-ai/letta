@@ -31,18 +31,24 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
+        {{- if .Values.nginx.healthChecks.enabled }}
         livenessProbe:
           httpGet:
-            path: /
+            path: {{ .Values.nginx.healthChecks.livenessProbe.path }}
             port: http
-          initialDelaySeconds: 10
-          periodSeconds: 10
+          initialDelaySeconds: {{ .Values.nginx.healthChecks.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.healthChecks.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.nginx.healthChecks.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.nginx.healthChecks.livenessProbe.failureThreshold }}
         readinessProbe:
           httpGet:
-            path: /
+            path: {{ .Values.nginx.healthChecks.readinessProbe.path }}
             port: http
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          initialDelaySeconds: {{ .Values.nginx.healthChecks.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.healthChecks.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.nginx.healthChecks.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.nginx.healthChecks.readinessProbe.failureThreshold }}
+        {{- end }}
         resources:
           {{- toYaml .Values.nginx.resources | nindent 10 }}
       volumes:
