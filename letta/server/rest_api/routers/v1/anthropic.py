@@ -95,7 +95,7 @@ def format_memory_blocks(blocks) -> str:
     if not blocks_with_content:
         return ""
 
-    memory_context = "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
+    memory_context = "<memory_blocks>\nYour memory has been enhanced by Letta, enabling you to remember information across sessions. The following memory blocks are currently engaged in your core memory unit:\n\n"
 
     for idx, block in enumerate(blocks_with_content):
         label = block.label or "block"
@@ -105,9 +105,10 @@ def format_memory_blocks(blocks) -> str:
         limit = block.limit if block.limit is not None else 0
 
         memory_context += f"<{label}>\n"
-        memory_context += "<description>\n"
-        memory_context += f"{desc}\n"
-        memory_context += "</description>\n"
+        if desc:
+            memory_context += "<description>\n"
+            memory_context += f"{desc}\n"
+            memory_context += "</description>\n"
         memory_context += "<metadata>\n"
         memory_context += f"- chars_current={chars_current}\n"
         memory_context += f"- chars_limit={limit}\n"
@@ -183,7 +184,7 @@ async def _inject_memory_context(
         # Handle both string and list system prompts
         if isinstance(existing_system, list):
             # If it's a list, prepend our context as a text block
-            modified_data["system"] = [{"type": "text", "text": memory_context.rstrip()}] + existing_system
+            modified_data["system"] = existing_system + [{"type": "text", "text": memory_context.rstrip()}]
         elif existing_system:
             # If it's a non-empty string, prepend our context
             modified_data["system"] = memory_context + existing_system
@@ -266,23 +267,22 @@ async def anthropic_messages_proxy(
 
     actor = await server.user_manager.get_actor_or_default_async(headers.actor_id)
 
-    # Extract and log user messages
-    user_messages = extract_user_messages(body)
+    # Extract all user messages from request
+    all_user_messages = extract_user_messages(body)
 
-    # Check if this is a system/metadata request (Claude Code internal)
-    # These start with <system-reminder> and shouldn't be captured
-    is_system_request = False
-    if user_messages:
-        first_message = user_messages[0] if len(user_messages) > 0 else ""
-        if first_message.startswith("<system-reminder>"):
-            is_system_request = True
-            logger.debug("[Anthropic Proxy] Skipping capture/memory for system request")
+    # Only capture the LAST user message (the new one the user just sent)
+    # Claude Code sends full conversation history, but we only want to persist the new message
+    user_messages = [all_user_messages[-1]] if all_user_messages else []
+
+    # Check if this is a system/metadata request
+    is_system_request = len(user_messages) == 0 or user_messages[0].startswith("<system-reminder>")
+    if is_system_request:
+        logger.debug("[Anthropic Proxy] Skipping capture/memory for system request")
 
     if user_messages and not is_system_request:
         logger.info("=" * 70)
-        logger.info("📨 CAPTURED USER MESSAGE(S):")
-        for i, msg in enumerate(user_messages, 1):
-            logger.info(f"  [{i}] {msg[:200]}{'...' if len(msg) > 200 else ''}")
+        logger.info("📨 CAPTURED USER MESSAGE (latest only):")
+        logger.info(f"  {user_messages[0][:200]}{'...' if len(user_messages[0]) > 200 else ''}")
         logger.info("=" * 70)
 
     anthropic_headers = prepare_anthropic_headers(request)
