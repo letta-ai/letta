@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
@@ -19,6 +19,18 @@ class EnvironmentVariableBase(OrmMetadataBase):
     # Encrypted field (stored as Secret object, serialized to string for DB)
     # Secret class handles validation and serialization automatically via __get_pydantic_core_schema__
     value_enc: Secret | None = Field(None, description="Encrypted value as Secret object")
+
+    # TODO: deprecate value and use value_enc
+    @model_validator(mode="after")
+    def populate_value_from_encrypted(self) -> "EnvironmentVariableBase":
+        """Populate value field from value_enc if value is empty but value_enc exists.
+
+        This ensures API responses include the decrypted value in the `value` field
+        for backwards compatibility with clients that read from `value`.
+        """
+        if (not self.value or self.value == "") and self.value_enc is not None:
+            self.value = self.value_enc.get_plaintext() or ""
+        return self
 
     def get_value_secret(self) -> Secret:
         """Get the value as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""

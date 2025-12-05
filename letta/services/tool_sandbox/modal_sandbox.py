@@ -145,7 +145,7 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             # Add agent-specific environment variables (these override sandbox-level)
             if agent_state and agent_state.secrets:
                 for secret in agent_state.secrets:
-                    env_vars[secret.key] = secret.value
+                    env_vars[secret.key] = secret.get_value_secret().get_plaintext()
 
             # Add any additional env vars passed at runtime (highest priority)
             if additional_env_vars:
