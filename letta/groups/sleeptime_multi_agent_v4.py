@@ -110,6 +110,11 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         if self.group.sleeptime_agent_frequency is None or (
             turns_counter is not None and turns_counter % self.group.sleeptime_agent_frequency == 0
         ):
+            # Skip sleeptime processing if no response messages were generated
+            if not last_response_messages:
+                self.logger.warning("No response messages generated, skipping sleeptime agent processing")
+                return self.run_ids
+
             last_processed_message_id = await self.group_manager.get_last_processed_message_id_and_update_async(
                 group_id=self.group.id, last_processed_message_id=last_response_messages[-1].id, actor=self.actor
             )
