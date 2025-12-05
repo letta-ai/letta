@@ -34,8 +34,11 @@ def extract_user_messages(body: bytes) -> list[str]:
                     user_messages.append(content)
                 elif isinstance(content, list):
                     for block in content:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            user_messages.append(block.get("text", ""))
+                        if isinstance(block, dict):
+                            if block.get("type") == "text":
+                                user_messages.append(block.get("text", ""))
+                            elif block.get("type") == "image":
+                                user_messages.append("[IMAGE]")
 
         return user_messages
     except Exception as e:
