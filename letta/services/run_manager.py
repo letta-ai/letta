@@ -8,6 +8,7 @@ from httpx import AsyncClient
 from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
+from letta.log_context import update_log_context
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
@@ -73,6 +74,8 @@ class RunManager:
 
             run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
 
+            update_log_context(run_id=run.id)
+
             # Create run metrics with start timestamp
             import time
 
@@ -93,6 +96,7 @@ class RunManager:
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_by_id(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Get a run by its ID."""
+        update_log_context(run_id=run_id)
         async with db_registry.async_session() as session:
             run = await RunModel.read_async(db_session=session, identifier=run_id, actor=actor, access_type=AccessType.ORGANIZATION)
             if not run:
@@ -102,6 +106,7 @@ class RunManager:
     @enforce_types
     async def get_run_with_status(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Get a run by its ID and update status from Lettuce if applicable."""
+        update_log_context(run_id=run_id)
         run = await self.get_run_by_id(run_id=run_id, actor=actor)
 
         use_lettuce = run.metadata and run.metadata.get("lettuce")
