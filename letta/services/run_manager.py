@@ -310,6 +310,7 @@ class RunManager:
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @trace_method
     async def update_run_by_id_async(
         self, run_id: str, update: RunUpdate, actor: PydanticUser, refresh_result_messages: bool = True
     ) -> PydanticRun:
