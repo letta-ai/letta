@@ -53,6 +53,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             if user_agent:
                 context["agent_id"] = user_agent
 
+            run_id_header = request.headers.get("x-run-id") or request.headers.get("run-id")
+            if run_id_header:
+                context["run_id"] = run_id_header
+
             path = request.url.path
             path_parts = [p for p in path.split("/") if p]
 
