@@ -73,7 +73,6 @@ class LettaAgentV3(LettaAgentV2):
     def _initialize_state(self):
         super()._initialize_state()
         self._require_tool_call = False
-        self.response_messages_for_metadata = []  # Separate accumulator for streaming job metadata
         # Approximate token count for the *current* in-context buffer, used
         # only for proactive summarization / eviction logic. This is derived
         # from per-step usage but can be updated after summarization without
@@ -118,6 +117,7 @@ class LettaAgentV3(LettaAgentV2):
         """
         self._initialize_state()
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
+        response_letta_messages = []
 
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
             input_messages, self.agent_state, self.message_manager, self.actor, run_id
@@ -128,7 +128,6 @@ class LettaAgentV3(LettaAgentV2):
             input_messages_to_persist = [input_messages_to_persist[0]]
 
         in_context_messages = in_context_messages + input_messages_to_persist
-        response_letta_messages = []
         for i in range(max_steps):
             if i == 1 and follow_up_messages:
                 input_messages_to_persist = follow_up_messages
@@ -235,6 +234,7 @@ class LettaAgentV3(LettaAgentV2):
         """
         self._initialize_state()
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
+        response_letta_messages = []
         first_chunk = True
 
         if stream_tokens:
@@ -273,6 +273,7 @@ class LettaAgentV3(LettaAgentV2):
                     request_start_timestamp_ns=request_start_timestamp_ns,
                 )
                 async for chunk in response:
+                    response_letta_messages.append(chunk)
                     if first_chunk:
                         request_span = self._request_checkpoint_ttft(request_span, request_start_timestamp_ns)
                     yield f"data: {chunk.model_dump_json()}\n\n"
@@ -358,14 +359,7 @@ class LettaAgentV3(LettaAgentV2):
         # Cleanup and finalize (only runs if no exception occurred)
         try:
             if run_id:
-                letta_messages = Message.to_letta_messages_from_list(
-                    self.response_messages_for_metadata,  # Use separate accumulator to preserve all messages
-                    use_assistant_message=False,  # NOTE: set to false
-                    reverse=False,
-                    # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
-                    text_is_assistant_message=True,
-                )
-                result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+                result = LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
                 if self.job_update_metadata is None:
                     self.job_update_metadata = {}
                 self.job_update_metadata["result"] = result.model_dump(mode="json")
@@ -659,7 +653,6 @@ class LettaAgentV3(LettaAgentV2):
 
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(aggregated_persisted[new_message_idx:])
-            self.response_messages_for_metadata.extend(aggregated_persisted[new_message_idx:])  # Track for job metadata
 
             if llm_adapter.supports_token_streaming():
                 if tool_calls:
