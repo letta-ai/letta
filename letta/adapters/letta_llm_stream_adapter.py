@@ -1,4 +1,3 @@
-import json
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -6,7 +5,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
-from letta.otel.tracing import log_attributes, trace_method
+from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
@@ -174,10 +173,13 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             },
         }
 
+        # Store response data for future reference
+        self.response_data = response_json
+
         log_attributes(
             {
-                "request_data": json.dumps(self.request_data),
-                "response_data": json.dumps(self.response_data),
+                "request_data": safe_json_dumps(self.request_data),
+                "response_data": safe_json_dumps(response_json),
             }
         )
 

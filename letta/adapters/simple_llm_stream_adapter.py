@@ -6,7 +6,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_parallel_tool_call_streaming_interface import SimpleAnthropicStreamingInterface
 from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInterface
 from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
-from letta.otel.tracing import log_attributes, trace_method
+from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import LettaMessageContentUnion
@@ -257,8 +257,8 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
 
         log_attributes(
             {
-                "request_data": json.dumps(self.request_data),
-                "response_data": json.dumps(response_json),
+                "request_data": safe_json_dumps(self.request_data),
+                "response_data": safe_json_dumps(response_json),
             }
         )
 
