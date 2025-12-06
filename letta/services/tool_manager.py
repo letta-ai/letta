@@ -31,7 +31,7 @@ from letta.log import get_logger
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
-from letta.otel.tracing import trace_method
+from letta.otel.tracing import trace_method, tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import PrimitiveType, SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
@@ -201,8 +201,6 @@ class ToolManager:
         self, pydantic_tool: PydanticTool, actor: PydanticUser, bypass_name_check: bool = False, modal_sandbox_enabled: bool = False
     ) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
-        from letta.otel.tracing import tracer
-
         if pydantic_tool.tool_type == ToolType.CUSTOM and not pydantic_tool.json_schema:
             with tracer.start_as_current_span("generate_schema_for_tool_creation"):
                 generated_schema = generate_schema_for_tool_creation(pydantic_tool)
@@ -234,10 +232,12 @@ class ToolManager:
             # Put to dict and remove fields that should not be reset
             with tracer.start_as_current_span("pydantic_tool.model_dump"):
                 update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
-            update_data["organization_id"] = actor.organization_id
 
-            # If there's anything to update
-            if update_data:
+            # Check if any field in update_data actually differs from the current tool
+            current_tool_data = current_tool.model_dump()
+            needs_update = any(current_tool_data.get(key) != value for key, value in update_data.items())
+
+            if needs_update:
                 # In case we want to update the tool type
                 # Useful if we are shuffling around base tools
                 updated_tool_type = None
@@ -738,154 +738,158 @@ class ToolManager:
         # Fetch current tool early to allow conditional logic based on tool type
         current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
 
-        # Handle schema updates for custom tools
-        new_schema = None
-        if current_tool.tool_type == ToolType.CUSTOM:
-            if tool_update.json_schema is not None:
-                new_schema = tool_update.json_schema
-            elif tool_update.args_json_schema is not None:
-                # Generate full schema from args_json_schema
-                generated_schema = generate_schema_for_tool_update(
-                    current_tool=current_tool,
-                    json_schema=None,
-                    args_json_schema=tool_update.args_json_schema,
-                    source_code=tool_update.source_code,
-                    source_type=tool_update.source_type,
-                )
-                if generated_schema:
-                    tool_update.json_schema = generated_schema
-                    new_schema = generated_schema
+        with tracer.start_as_current_span("ToolUpdate_schema_updates"):
+            # Handle schema updates for custom tools
+            new_schema = None
+            if current_tool.tool_type == ToolType.CUSTOM:
+                if tool_update.json_schema is not None:
+                    new_schema = tool_update.json_schema
+                elif tool_update.args_json_schema is not None:
+                    # Generate full schema from args_json_schema
+                    generated_schema = generate_schema_for_tool_update(
+                        current_tool=current_tool,
+                        json_schema=None,
+                        args_json_schema=tool_update.args_json_schema,
+                        source_code=tool_update.source_code,
+                        source_type=tool_update.source_type,
+                    )
+                    if generated_schema:
+                        tool_update.json_schema = generated_schema
+                        new_schema = generated_schema
 
-        # Now model_dump with the potentially updated schema
-        update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
+            # Now model_dump with the potentially updated schema
+            update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
 
-        # Determine the final schema and name
-        if new_schema:
-            new_name = new_schema.get("name", current_tool.name)
-        elif "json_schema" in update_data:
-            new_schema = update_data["json_schema"]
-            new_name = new_schema.get("name", current_tool.name)
-        else:
-            # Keep existing schema
-            new_schema = current_tool.json_schema
-            new_name = current_tool.name
-
-        # Handle explicit name updates
-        if "name" in update_data and update_data["name"] != current_tool.name:
-            # Name is being explicitly changed
-            new_name = update_data["name"]
-            # Update the json_schema name to match if there's a schema
+            # Determine the final schema and name
             if new_schema:
-                new_schema = new_schema.copy()
-                new_schema["name"] = new_name
-                update_data["json_schema"] = new_schema
-        elif new_schema and new_name != current_tool.name:
-            # Schema provides a different name but name wasn't explicitly changed
-            update_data["name"] = new_name
-            # raise ValueError(
-            #    f"JSON schema name '{new_name}' conflicts with current tool name '{current_tool.name}'. Update the name field explicitly if you want to rename the tool."
-            # )
-
-        # If name changes, enforce uniqueness
-        if new_name != current_tool.name:
-            name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
-            if name_exists:
-                raise LettaToolNameConflictError(tool_name=new_name)
-
-        # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
-        if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
-            raise LettaToolNameSchemaMismatchError(
-                tool_name=new_name,
-                json_schema_name=new_schema.get("name") if new_schema else None,
-                source_code=update_data.get("source_code"),
-            )
-
-        # Create a preview of the updated tool by merging current tool with updates
-        # This allows us to compute the hash before the database session
-        updated_tool_pydantic = current_tool.model_copy(deep=True)
-        for key, value in update_data.items():
-            setattr(updated_tool_pydantic, key, value)
-        if new_schema is not None:
-            updated_tool_pydantic.json_schema = new_schema
-            updated_tool_pydantic.name = new_name
-        if updated_tool_type:
-            updated_tool_pydantic.tool_type = updated_tool_type
-
-        # Handle sandbox:modal metadata based on flag
-        if modal_sandbox_enabled:
-            # Add sandbox:modal to metadata if flag is enabled
-            if updated_tool_pydantic.metadata_ is None:
-                updated_tool_pydantic.metadata_ = {}
-            updated_tool_pydantic.metadata_["sandbox"] = "modal"
-            # Update the update_data to reflect this change if metadata was in the update
-            if "metadata_" not in update_data:
-                update_data["metadata_"] = updated_tool_pydantic.metadata_
+                new_name = new_schema.get("name", current_tool.name)
+            elif "json_schema" in update_data:
+                new_schema = update_data["json_schema"]
+                new_name = new_schema.get("name", current_tool.name)
             else:
-                update_data["metadata_"]["sandbox"] = "modal"
-        else:
-            # Remove sandbox:modal from metadata if flag is not enabled
-            if updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal":
-                updated_tool_pydantic.metadata_ = {k: v for k, v in updated_tool_pydantic.metadata_.items() if k != "sandbox"}
-                if not updated_tool_pydantic.metadata_:  # If metadata becomes empty, set to None
-                    updated_tool_pydantic.metadata_ = None
-                # Update the update_data to reflect this change
-                update_data["metadata_"] = updated_tool_pydantic.metadata_
+                # Keep existing schema
+                new_schema = current_tool.json_schema
+                new_name = current_tool.name
 
-        # Check if we need to redeploy the Modal app due to changes
-        # Compute this before the session to avoid issues
-        tool_requests_modal = updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal"
-        modal_configured = tool_settings.modal_sandbox_enabled
-        should_check_modal = tool_requests_modal and modal_configured and updated_tool_pydantic.tool_type == ToolType.CUSTOM
+            # Handle explicit name updates
+            if "name" in update_data and update_data["name"] != current_tool.name:
+                # Name is being explicitly changed
+                new_name = update_data["name"]
+                # Update the json_schema name to match if there's a schema
+                if new_schema:
+                    new_schema = new_schema.copy()
+                    new_schema["name"] = new_name
+                    update_data["json_schema"] = new_schema
+            elif new_schema and new_name != current_tool.name:
+                # Schema provides a different name but name wasn't explicitly changed
+                update_data["name"] = new_name
+                # raise ValueError(
+                #    f"JSON schema name '{new_name}' conflicts with current tool name '{current_tool.name}'. Update the name field explicitly if you want to rename the tool."
+                # )
 
-        # Compute hash before session if needed
-        new_hash = None
-        old_hash = None
-        needs_modal_deployment = False
+            # If name changes, enforce uniqueness
+            if new_name != current_tool.name:
+                name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
+                if name_exists:
+                    raise LettaToolNameConflictError(tool_name=new_name)
 
-        if should_check_modal:
-            new_hash = compute_tool_hash(updated_tool_pydantic)
-            old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
-            needs_modal_deployment = new_hash != old_hash
+            # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
+            if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
+                raise LettaToolNameSchemaMismatchError(
+                    tool_name=new_name,
+                    json_schema_name=new_schema.get("name") if new_schema else None,
+                    source_code=update_data.get("source_code"),
+                )
 
-        # Now perform the update within the session
-        async with db_registry.async_session() as session:
-            # Fetch the tool by ID
-            tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
-
-            # Update tool attributes with only the fields that were explicitly set
+        with tracer.start_as_current_span("ToolUpdate_preview_update"):
+            # Create a preview of the updated tool by merging current tool with updates
+            # This allows us to compute the hash before the database session
+            updated_tool_pydantic = current_tool.model_copy(deep=True)
             for key, value in update_data.items():
-                setattr(tool, key, value)
-
-            # If we already computed the new schema, apply it
+                setattr(updated_tool_pydantic, key, value)
             if new_schema is not None:
-                tool.json_schema = new_schema
-                tool.name = new_name
-
+                updated_tool_pydantic.json_schema = new_schema
+                updated_tool_pydantic.name = new_name
             if updated_tool_type:
-                tool.tool_type = updated_tool_type
+                updated_tool_pydantic.tool_type = updated_tool_type
 
-            # Save the updated tool to the database
-            tool = await tool.update_async(db_session=session, actor=actor)
-            updated_tool = tool.to_pydantic()
+            # Handle sandbox:modal metadata based on flag
+            if modal_sandbox_enabled:
+                # Add sandbox:modal to metadata if flag is enabled
+                if updated_tool_pydantic.metadata_ is None:
+                    updated_tool_pydantic.metadata_ = {}
+                updated_tool_pydantic.metadata_["sandbox"] = "modal"
+                # Update the update_data to reflect this change if metadata was in the update
+                if "metadata_" not in update_data:
+                    update_data["metadata_"] = updated_tool_pydantic.metadata_
+                else:
+                    update_data["metadata_"]["sandbox"] = "modal"
+            else:
+                # Remove sandbox:modal from metadata if flag is not enabled
+                if updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal":
+                    updated_tool_pydantic.metadata_ = {k: v for k, v in updated_tool_pydantic.metadata_.items() if k != "sandbox"}
+                    if not updated_tool_pydantic.metadata_:  # If metadata becomes empty, set to None
+                        updated_tool_pydantic.metadata_ = None
+                    # Update the update_data to reflect this change
+                    update_data["metadata_"] = updated_tool_pydantic.metadata_
 
-            # Update Modal hash in metadata if needed (inside session context)
-            if needs_modal_deployment:
-                if updated_tool.metadata_ is None:
-                    updated_tool.metadata_ = {}
-                updated_tool.metadata_["tool_hash"] = new_hash
+            # Check if we need to redeploy the Modal app due to changes
+            # Compute this before the session to avoid issues
+            tool_requests_modal = updated_tool_pydantic.metadata_ and updated_tool_pydantic.metadata_.get("sandbox") == "modal"
+            modal_configured = tool_settings.modal_sandbox_enabled
+            should_check_modal = tool_requests_modal and modal_configured and updated_tool_pydantic.tool_type == ToolType.CUSTOM
 
-                # Update the metadata in the database (still inside session)
-                tool.metadata_ = updated_tool.metadata_
+            # Compute hash before session if needed
+            new_hash = None
+            old_hash = None
+            needs_modal_deployment = False
+
+            if should_check_modal:
+                new_hash = compute_tool_hash(updated_tool_pydantic)
+                old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
+                needs_modal_deployment = new_hash != old_hash
+
+        with tracer.start_as_current_span("ToolUpdate_session_update"):
+            # Now perform the update within the session
+            async with db_registry.async_session() as session:
+                # Fetch the tool by ID
+                tool = await ToolModel.read_async(db_session=session, identifier=tool_id, actor=actor)
+
+                # Update tool attributes with only the fields that were explicitly set
+                for key, value in update_data.items():
+                    setattr(tool, key, value)
+
+                # If we already computed the new schema, apply it
+                if new_schema is not None:
+                    tool.json_schema = new_schema
+                    tool.name = new_name
+
+                if updated_tool_type:
+                    tool.tool_type = updated_tool_type
+
+                # Save the updated tool to the database
                 tool = await tool.update_async(db_session=session, actor=actor)
                 updated_tool = tool.to_pydantic()
 
-        # Deploy Modal app outside of session (it creates its own sessions)
-        if needs_modal_deployment:
-            logger.info(f"Deploying Modal app for tool {updated_tool.id} with new hash: {new_hash}")
-            await self.create_or_update_modal_app(updated_tool, actor)
+                # Update Modal hash in metadata if needed (inside session context)
+                if needs_modal_deployment:
+                    if updated_tool.metadata_ is None:
+                        updated_tool.metadata_ = {}
+                    updated_tool.metadata_["tool_hash"] = new_hash
 
-        # Update embedding in Turbopuffer if enabled (delete old, insert new)
-        from letta.helpers.tpuf_client import should_use_tpuf_for_tools
+                    # Update the metadata in the database (still inside session)
+                    tool.metadata_ = updated_tool.metadata_
+                    tool = await tool.update_async(db_session=session, actor=actor)
+                    updated_tool = tool.to_pydantic()
+
+        with tracer.start_as_current_span("ToolUpdate_modal_deployment"):
+            # Deploy Modal app outside of session (it creates its own sessions)
+            if needs_modal_deployment:
+                logger.info(f"Deploying Modal app for tool {updated_tool.id} with new hash: {new_hash}")
+                await self.create_or_update_modal_app(updated_tool, actor)
+
+            # Update embedding in Turbopuffer if enabled (delete old, insert new)
+            from letta.helpers.tpuf_client import should_use_tpuf_for_tools
 
         if should_use_tpuf_for_tools():
 
