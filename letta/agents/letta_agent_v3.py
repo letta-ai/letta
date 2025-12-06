@@ -146,6 +146,10 @@ class LettaAgentV3(LettaAgentV2):
             async for chunk in response:
                 response_letta_messages.append(chunk)
 
+            # Check if step was cancelled - break out of the step loop
+            if not self.should_continue and self.stop_reason.stop_reason == StopReasonType.cancelled.value:
+                break
+
             # Proactive summarization if approaching context limit
             if (
                 self.context_token_estimate is not None
@@ -280,7 +284,7 @@ class LettaAgentV3(LettaAgentV2):
                     first_chunk = False
 
                 # Check if step was cancelled - break out of the step loop
-                if not self.should_continue:
+                if not self.should_continue and self.stop_reason.stop_reason == StopReasonType.cancelled.value:
                     break
 
                 # Proactive summarization if approaching context limit
