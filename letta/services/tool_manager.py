@@ -227,7 +227,8 @@ class ToolManager:
                 )
 
         # check if the tool name already exists
-        current_tool = await self.get_tool_by_name_async(tool_name=pydantic_tool.name, actor=actor)
+        with tracer.start_as_current_span("get_tool_by_name_async"):
+            current_tool = await self.get_tool_by_name_async(tool_name=pydantic_tool.name, actor=actor)
         if current_tool:
             # Put to dict and remove fields that should not be reset
             with tracer.start_as_current_span("pydantic_tool.model_dump"):
@@ -245,21 +246,24 @@ class ToolManager:
                     updated_tool_type = update_data.get("tool_type")
                 with tracer.start_as_current_span("ToolUpdate_initialization"):
                     tool_update = ToolUpdate(**update_data)
-                tool = await self.update_tool_by_id_async(
-                    current_tool.id,
-                    tool_update,
-                    actor,
-                    updated_tool_type=updated_tool_type,
-                    modal_sandbox_enabled=modal_sandbox_enabled,
-                )
+                with tracer.start_as_current_span("update_tool_by_id_async"):
+                    tool = await self.update_tool_by_id_async(
+                        current_tool.id,
+                        tool_update,
+                        actor,
+                        updated_tool_type=updated_tool_type,
+                        modal_sandbox_enabled=modal_sandbox_enabled,
+                    )
             else:
                 printd(
                     f"`create_or_update_tool` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_tool.name}, but found existing tool with nothing to update."
                 )
-                tool = await self.get_tool_by_id_async(current_tool.id, actor=actor)
+                with tracer.start_as_current_span("get_tool_by_id_async"):
+                    tool = await self.get_tool_by_id_async(current_tool.id, actor=actor)
             return tool
 
-        return await self.create_tool_async(pydantic_tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled)
+        with tracer.start_as_current_span("create_tool_async"):
+            return await self.create_tool_async(pydantic_tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled)
 
     @enforce_types
     async def create_mcp_server(
