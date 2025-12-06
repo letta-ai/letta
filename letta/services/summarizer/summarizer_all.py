@@ -1,6 +1,7 @@
 from typing import List
 
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.user import User
@@ -10,6 +11,7 @@ from letta.services.summarizer.summarizer_config import SummarizerConfig
 logger = get_logger(__name__)
 
 
+@trace_method
 async def summarize_all(
     # Required to tag LLM calls
     actor: User,

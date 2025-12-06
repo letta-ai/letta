@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
@@ -41,6 +42,7 @@ async def count_tokens(actor: User, llm_config: LLMConfig, messages: List[Messag
     return tokens
 
 
+@trace_method
 async def summarize_via_sliding_window(
     # Required to tag LLM calls
     actor: User,

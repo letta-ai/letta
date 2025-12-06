@@ -408,6 +408,7 @@ def simple_message_wrapper(openai_msg: dict) -> Message:
         raise ValueError(f"Unknown role: {openai_msg['role']}")
 
 
+@trace_method
 async def simple_summary(
     messages: List[Message],
     llm_config: LLMConfig,
