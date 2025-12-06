@@ -176,6 +176,9 @@ class LettaAgentV3(LettaAgentV2):
 
             input_messages_to_persist = []
 
+            if i == max_steps - 1 and self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+
         # Rebuild context window after stepping (safety net)
         if not self.agent_state.message_buffer_autoclear:
             if self.context_token_estimate is not None:
@@ -313,9 +316,10 @@ class LettaAgentV3(LettaAgentV2):
 
                 input_messages_to_persist = []
 
-            if self.stop_reason is None:
-                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+                if i == max_steps - 1 and self.stop_reason is None:
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
 
+            # Rebuild context window after stepping (safety net)
             if not self.agent_state.message_buffer_autoclear:
                 if self.context_token_estimate is not None:
                     await self.summarize_conversation_history(
@@ -329,6 +333,9 @@ class LettaAgentV3(LettaAgentV2):
                         "Post-loop summarization skipped: last_step_usage is None. "
                         "No step completed successfully or usage stats were not updated."
                     )
+
+            if self.stop_reason is None:
+                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
 
         except Exception as e:
             self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
