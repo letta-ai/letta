@@ -617,6 +617,11 @@ class Message(BaseMessage):
                     message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
                 except KeyError:
                     raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
+
+                # Ensure content is a string (validate_function_response can return dict)
+                if isinstance(message_string, dict):
+                    message_string = json_dumps(message_string)
+
                 messages.append(
                     AssistantMessage(
                         id=self.id,
