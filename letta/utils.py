@@ -854,7 +854,9 @@ def parse_json(string) -> dict:
         raise e
 
 
-def validate_function_response(function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True) -> Any:
+def validate_function_response(
+    function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True
+) -> str | dict[str, Any]:
     """Check to make sure that a function used by Letta returned a valid response. Truncates to return_char_limit if necessary.
 
     This makes sure that we can coerce the function_response into a string or dict that meets our criteria. We handle some soft coercion.

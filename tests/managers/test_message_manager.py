@@ -1019,3 +1019,70 @@ async def test_convert_tool_calls_only_assistant_tools(server: SyncServer, sarah
     # check assistant messages content (they appear in reverse order)
     assert letta_messages[0].content == "Second message"
     assert letta_messages[1].content == "First message"
+
+
+@pytest.mark.asyncio
+async def test_convert_assistant_message_with_dict_content(server: SyncServer, sarah_agent, default_user):
+    """Test that send_message with dict content is properly serialized to JSON string
+
+    Regression test for bug where dict content like {'tofu': 1, 'mofu': 1, 'bofu': 1}
+    caused pydantic validation error because AssistantMessage.content expects a string.
+    """
+    import json
+
+    # Test case 1: Simple dict as message content
+    tool_calls = [
+        OpenAIToolCall(
+            id="call_1",
+            type="function",
+            function=OpenAIFunction(name="send_message", arguments='{"message": {"tofu": 1, "mofu": 1, "bofu": 1}}'),
+        ),
+    ]
+
+    message = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.assistant,
+        content=[TextContent(text="Sending structured data...")],
+        tool_calls=tool_calls,
+    )
+
+    # convert with assistant mode - should not raise validation error
+    letta_messages = message.to_letta_messages(use_assistant_message=True)
+
+    assert len(letta_messages) == 2
+    assert letta_messages[0].message_type == "assistant_message"
+    assert letta_messages[1].message_type == "reasoning_message"
+
+    # check that dict was serialized to JSON string
+    assistant_msg = letta_messages[0]
+    assert isinstance(assistant_msg.content, str)
+
+    # verify the JSON-serialized content can be parsed back
+    parsed_content = json.loads(assistant_msg.content)
+    assert parsed_content == {"tofu": 1, "mofu": 1, "bofu": 1}
+
+    # Test case 2: Nested dict with various types
+    tool_calls_nested = [
+        OpenAIToolCall(
+            id="call_2",
+            type="function",
+            function=OpenAIFunction(
+                name="send_message",
+                arguments='{"message": {"status": "success", "data": {"count": 42, "items": ["a", "b"]}, "meta": null}}',
+            ),
+        ),
+    ]
+
+    message_nested = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.assistant,
+        content=[TextContent(text="Sending complex data...")],
+        tool_calls=tool_calls_nested,
+    )
+
+    letta_messages_nested = message_nested.to_letta_messages(use_assistant_message=True)
+    assistant_msg_nested = letta_messages_nested[0]
+
+    assert isinstance(assistant_msg_nested.content, str)
+    parsed_nested = json.loads(assistant_msg_nested.content)
+    assert parsed_nested == {"status": "success", "data": {"count": 42, "items": ["a", "b"]}, "meta": None}
