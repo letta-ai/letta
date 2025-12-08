@@ -36194,6 +36194,18 @@
             ],
             "title": "Metadata",
             "description": "A dictionary of additional metadata for the tool."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project id of the tool."
           }
         },
         "additionalProperties": false,
@@ -39823,6 +39835,18 @@
             ],
             "title": "Metadata",
             "description": "A dictionary of additional metadata for the tool."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project id of the tool."
           }
         },
         "additionalProperties": false,

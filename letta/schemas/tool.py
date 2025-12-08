@@ -68,6 +68,9 @@ class Tool(BaseTool):
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     metadata_: Optional[Dict[str, Any]] = Field(default_factory=dict, description="A dictionary of additional metadata for the tool.")
 
+    # project scoping
+    project_id: Optional[str] = Field(None, description="The project id of the tool.")
+
     @model_validator(mode="after")
     def refresh_source_code_and_json_schema(self):
         """

@@ -1494,6 +1494,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "created_by_id",
         "last_updated_by_id",
         "metadata_",
+        "project_id",
     }
     actual_tool_fields = set(tool_fields.keys())
     if actual_tool_fields != expected_tool_fields:

@@ -615,6 +615,7 @@ class ToolManager:
         tool_ids: Optional[List[str]] = None,
         search: Optional[str] = None,
         return_only_letta_tools: bool = False,
+        project_id: Optional[str] = None,
     ) -> List[PydanticTool]:
         """List all tools with pagination support."""
         tools = await self._list_tools_async(
@@ -629,6 +630,7 @@ class ToolManager:
             tool_ids=tool_ids,
             search=search,
             return_only_letta_tools=return_only_letta_tools,
+            project_id=project_id,
         )
 
         # Check if all base tools are present if we requested all the tools w/o cursor
@@ -656,6 +658,7 @@ class ToolManager:
                     tool_ids=tool_ids,
                     search=search,
                     return_only_letta_tools=return_only_letta_tools,
+                    project_id=project_id,
                 )
 
         return tools
@@ -675,6 +678,7 @@ class ToolManager:
         tool_ids: Optional[List[str]] = None,
         search: Optional[str] = None,
         return_only_letta_tools: bool = False,
+        project_id: Optional[str] = None,
     ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         tools_to_delete = []
@@ -682,6 +686,10 @@ class ToolManager:
             # Use SQLAlchemy directly for all cases - more control and consistency
             # Start with base query
             query = select(ToolModel).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply project_id filter - include tools where project_id matches OR project_id is None (global tools)
+            if project_id is not None:
+                query = query.where(or_(ToolModel.project_id == project_id, ToolModel.project_id.is_(None)))
 
             # Apply tool_types filter
             if tool_types is not None:
@@ -791,12 +799,17 @@ class ToolManager:
         search: Optional[str] = None,
         return_only_letta_tools: bool = False,
         exclude_letta_tools: bool = False,
+        project_id: Optional[str] = None,
     ) -> int:
         """Count tools with the same filtering logic as list_tools_async."""
         async with db_registry.async_session() as session:
             # Use SQLAlchemy directly with COUNT query - same filtering logic as list_tools_async
             # Start with base query
             query = select(func.count(ToolModel.id)).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply project_id filter - include tools where project_id matches OR project_id is None (global tools)
+            if project_id is not None:
+                query = query.where(or_(ToolModel.project_id == project_id, ToolModel.project_id.is_(None)))
 
             # Apply tool_types filter
             if tool_types is not None:
