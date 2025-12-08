@@ -67,7 +67,7 @@ async def web_search(
 
 async def fetch_webpage(url: str) -> str:
     """
-    Fetch a webpage and convert it to markdown/text format using Jina AI reader.
+    Fetch a webpage and convert it to markdown/text format using Exa API (if available) or trafilatura/readability.
 
     Args:
         url: The URL of the webpage to fetch and convert
