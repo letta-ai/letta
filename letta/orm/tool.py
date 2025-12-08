@@ -30,6 +30,8 @@ class Tool(SqlalchemyBase, OrganizationMixin):
     __table_args__ = (
         UniqueConstraint("name", "organization_id", name="uix_name_organization"),
         Index("ix_tools_created_at_name", "created_at", "name"),
+        Index("ix_tools_organization_id", "organization_id"),
+        Index("ix_tools_organization_id_name", "organization_id", "name"),
     )
 
     name: Mapped[str] = mapped_column(doc="The display name of the tool.")
