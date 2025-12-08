@@ -188,9 +188,21 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 except Exception:
                     pass  # continue with just latest messages
 
-            transcript_summary = [stringify_message(message) for message in prior_messages + response_messages]
-            transcript_summary = [summary for summary in transcript_summary if summary is not None]
-            message_text = "\n".join(transcript_summary)
+            message_strings = [stringify_message(message) for message in prior_messages + response_messages]
+            message_strings = [s for s in message_strings if s is not None]
+            messages_text = "\n".join(message_strings)
+
+            message_text = (
+                "<system-reminder>\n"
+                "You are a sleeptime agent - a background agent that asynchronously processes conversations after they occur.\n\n"
+                "IMPORTANT: You are NOT the primary agent. You are reviewing a conversation that already happened between a primary agent and its user:\n"
+                '- Messages labeled "assistant" are from the primary agent (not you)\n'
+                '- Messages labeled "user" are from the primary agent\'s user\n\n'
+                "Your primary role is memory management. Review the conversation and use your memory tools to update any relevant memory blocks with information worth preserving. "
+                "Check your memory_persona block for any additional instructions or policies.\n"
+                "</system-reminder>\n\n"
+                f"Messages:\n{messages_text}"
+            )
 
             sleeptime_agent_messages = [
                 MessageCreate(
