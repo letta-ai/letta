@@ -78,6 +78,7 @@ async def summarize_via_sliding_window(
     found_cutoff = False
 
     # Count tokens with system prompt, and message past cutoff point
+    assistant_message_index = None  # Initialize to track if we found an assistant message
     while not found_cutoff:
         # Mark the approximate cutoff
         message_cutoff_index = round(message_count_cutoff_percent * len(all_in_context_messages))
@@ -109,6 +110,9 @@ async def summarize_via_sliding_window(
 
     # If we found the cutoff, summarize and return
     # If we didn't find the cutoff and we hit 100%, this is equivalent to complete summarization
+
+    if assistant_message_index is None:
+        raise ValueError("No assistant message found for sliding window summarization")  # fall back to complete summarization
 
     messages_to_summarize = all_in_context_messages[1:message_cutoff_index]
 
