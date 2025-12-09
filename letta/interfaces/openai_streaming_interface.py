@@ -625,7 +625,14 @@ class SimpleOpenAIStreamingInterface:
 
         if reasoning_content:
             combined_reasoning = "".join(reasoning_content)
-            merged_messages.append(ReasoningContent(is_native=True, reasoning=combined_reasoning, signature=None))
+            # Only reroute reasoning into content for DeepSeek streams when no assistant text was emitted
+            # and no tool calls were produced (i.e., a reasoning-only final answer).
+            is_deepseek = bool(self.model and self.model.startswith("deepseek"))
+            produced_tool_calls = bool(self._tool_calls_acc)
+            if is_deepseek and not concat_content_parts and not produced_tool_calls:
+                concat_content_parts.append(combined_reasoning)
+            else:
+                merged_messages.append(ReasoningContent(is_native=True, reasoning=combined_reasoning, signature=None))
 
         if concat_content_parts:
             merged_messages.append(TextContent(text="".join(concat_content_parts)))
