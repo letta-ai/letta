@@ -31,7 +31,7 @@ from letta.log import get_logger
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
-from letta.otel.tracing import trace_method
+from letta.otel.tracing import trace_method, tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import PrimitiveType, SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
@@ -205,8 +205,6 @@ class ToolManager:
         Uses atomic PostgreSQL ON CONFLICT DO UPDATE to prevent race conditions
         during concurrent upserts.
         """
-        from letta.otel.tracing import tracer
-
         if pydantic_tool.tool_type == ToolType.CUSTOM and not pydantic_tool.json_schema:
             with tracer.start_as_current_span("generate_schema_for_tool_creation"):
                 generated_schema = generate_schema_for_tool_creation(pydantic_tool)
@@ -238,21 +236,23 @@ class ToolManager:
 
         # Fallback for SQLite: use non-atomic check-then-act pattern
         current_tool = await self.get_tool_by_name_async(tool_name=pydantic_tool.name, actor=actor)
+
         if current_tool:
             # Put to dict and remove fields that should not be reset
-            with tracer.start_as_current_span("pydantic_tool.model_dump"):
-                update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
-            update_data["organization_id"] = actor.organization_id
+            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
 
-            # If there's anything to update
-            if update_data:
+            # Check if any field in update_data actually differs from the current tool
+            current_tool_data = current_tool.model_dump()
+            needs_update = any(current_tool_data.get(key) != value for key, value in update_data.items())
+
+            if needs_update:
                 # In case we want to update the tool type
                 # Useful if we are shuffling around base tools
                 updated_tool_type = None
                 if "tool_type" in update_data:
                     updated_tool_type = update_data.get("tool_type")
-                with tracer.start_as_current_span("ToolUpdate_initialization"):
-                    tool_update = ToolUpdate(**update_data)
+
+                tool_update = ToolUpdate(**update_data)
                 tool = await self.update_tool_by_id_async(
                     current_tool.id,
                     tool_update,
@@ -264,7 +264,7 @@ class ToolManager:
                 printd(
                     f"`create_or_update_tool` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_tool.name}, but found existing tool with nothing to update."
                 )
-                tool = await self.get_tool_by_id_async(current_tool.id, actor=actor)
+                return current_tool
             return tool
 
         return await self.create_tool_async(pydantic_tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled)
@@ -515,8 +515,8 @@ class ToolManager:
             return await self._upsert_tools_individually(pydantic_tools, actor, override_existing_tools)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
+    @trace_method
     async def get_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
         async with db_registry.async_session() as session:
@@ -548,8 +548,8 @@ class ToolManager:
             return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
+    @trace_method
     async def tool_exists_async(self, tool_id: str, actor: PydanticUser) -> bool:
         """Check if a tool exists and belongs to the user's organization (lightweight check)."""
         async with db_registry.async_session() as session:
@@ -865,8 +865,8 @@ class ToolManager:
             return await ToolModel.size_async(db_session=session, actor=actor, name=LETTA_TOOL_SET)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
+    @trace_method
     async def update_tool_by_id_async(
         self,
         tool_id: str,
@@ -1060,8 +1060,8 @@ class ToolManager:
         return updated_tool
 
     @enforce_types
-    @trace_method
     # @raise_on_invalid_id This is commented out bc it's called by _list_tools_async, when it encounters malformed tools (i.e. if id is invalid will fail validation on deletion)
+    @trace_method
     async def delete_tool_by_id_async(self, tool_id: str, actor: PydanticUser) -> None:
         """Delete a tool by its ID."""
         async with db_registry.async_session() as session:
