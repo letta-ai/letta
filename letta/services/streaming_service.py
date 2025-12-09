@@ -338,6 +338,7 @@ class StreamingService:
                         message="Stream ended unexpectedly without a terminal event.",
                         detail=None,
                     )
+                    error_data = {"error": error_message.model_dump()}
                     yield f"data: {stop_reason.model_dump_json()}\n\n"
                     yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                     yield "data: [DONE]\n\n"
@@ -362,6 +363,7 @@ class StreamingService:
                     message="The LLM request timed out. Please try again.",
                     detail=str(e),
                 )
+                error_data = {"error": error_message.model_dump()}
                 logger.error(f"Run {run_id} stopped with LLM timeout error: {e}, error_data: {error_message.model_dump()}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
@@ -376,6 +378,7 @@ class StreamingService:
                     message="Rate limit exceeded for LLM model provider. Please wait before making another request.",
                     detail=str(e),
                 )
+                error_data = {"error": error_message.model_dump()}
                 logger.warning(f"Run {run_id} stopped with LLM rate limit error: {e}, error_data: {error_message.model_dump()}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
@@ -383,7 +386,6 @@ class StreamingService:
                 yield "data: [DONE]\n\n"
             except LLMAuthenticationError as e:
                 run_status = RunStatus.failed
-                logger.warning(f"Run {run_id} stopped with LLM authentication error: {e}, error_data: {error_data}")
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
                     run_id=run_id,
@@ -391,13 +393,14 @@ class StreamingService:
                     message="Authentication failed with the LLM model provider.",
                     detail=str(e),
                 )
+                error_data = {"error": error_message.model_dump()}
+                logger.warning(f"Run {run_id} stopped with LLM authentication error: {e}, error_data: {error_message.model_dump()}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except LLMError as e:
                 run_status = RunStatus.failed
-                logger.error(f"Run {run_id} stopped with LLM error: {e}, error_data: {error_data}")
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
                     run_id=run_id,
@@ -405,13 +408,14 @@ class StreamingService:
                     message="An error occurred with the LLM request.",
                     detail=str(e),
                 )
+                error_data = {"error": error_message.model_dump()}
+                logger.error(f"Run {run_id} stopped with LLM error: {e}, error_data: {error_message.model_dump()}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
             except Exception as e:
                 run_status = RunStatus.failed
-                logger.error(f"Run {run_id} stopped with unknown error: {e}, error_data: {error_data}")
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
                 error_message = LettaErrorMessage(
                     run_id=run_id,
@@ -419,6 +423,8 @@ class StreamingService:
                     message="An unknown error occurred with the LLM streaming request.",
                     detail=str(e),
                 )
+                error_data = {"error": error_message.model_dump()}
+                logger.error(f"Run {run_id} stopped with unknown error: {e}, error_data: {error_message.model_dump()}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
