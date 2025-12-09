@@ -220,24 +220,38 @@ class LLMClientBase:
     def get_byok_overrides(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Returns the override key for the given llm config.
+        For both base and BYOK providers, fetch the API key from the database.
         """
         api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
+        # Fetch API key from database for both base and BYOK providers
+        # This ensures that base providers (from environment) also have their keys persisted and accessible
+        if llm_config.provider_category in [ProviderCategory.byok, ProviderCategory.base]:
             from letta.services.provider_manager import ProviderManager
 
             api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+            # If we got an empty string from the database (e.g., Letta provider), treat it as None
+            # so the client can fall back to environment variables or default behavior
+            if api_key == "":
+                api_key = None
 
         return api_key, None, None
 
     async def get_byok_overrides_async(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Returns the override key for the given llm config.
+        For both base and BYOK providers, fetch the API key from the database.
         """
         api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
+        # Fetch API key from database for both base and BYOK providers
+        # This ensures that base providers (from environment) also have their keys persisted and accessible
+        if llm_config.provider_category in [ProviderCategory.byok, ProviderCategory.base]:
             from letta.services.provider_manager import ProviderManager
 
             api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
+            # If we got an empty string from the database (e.g., Letta provider), treat it as None
+            # so the client can fall back to environment variables or default behavior
+            if api_key == "":
+                api_key = None
 
         return api_key, None, None
 
