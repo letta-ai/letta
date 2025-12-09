@@ -17099,6 +17099,10 @@
                     "type": "boolean",
                     "description": "If true, the core memories will be preserved in the template version when migrating agents"
                   },
+                  "preserve_sources_on_migration": {
+                    "type": "boolean",
+                    "description": "If true, existing agent folders/sources will be preserved and merged with template sources during migration. If false, agent sources will be replaced with template sources."
+                  },
                   "block_reconciliation_strategy": {
                     "type": "string",
                     "enum": ["reconcile-all", "preserve-deleted"],
@@ -18747,6 +18751,10 @@
                   "preserve_core_memories": {
                     "type": "boolean",
                     "description": "Whether to preserve existing core memories during migration"
+                  },
+                  "preserve_sources": {
+                    "type": "boolean",
+                    "description": "If true, existing agent sources will be preserved and merged with template sources during migration. If false, agent sources will be replaced with template sources."
                   },
                   "memory_variables": {
                     "type": "object",
