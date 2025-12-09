@@ -327,10 +327,27 @@ class RunManager:
                 needs_callback = True
                 callback_url = run.callback_url
 
+            # validate run lifecycle (only log the errors)
+            if run.status in {RunStatus.completed}:
+                if update.status not in {RunStatus.cancelled}:
+                    # a completed run can only be marked as cancelled
+                    logger.error(
+                        f"Run {run_id} is already completed with stop reason {run.stop_reason}, but is being marked as {update.status} with stop reason {update.stop_reason}"
+                    )
+                if update.stop_reason not in {StopReasonType.requires_approval}:
+                    # a completed run can only be cancelled if the stop reason is requires approval
+                    logger.error(
+                        f"Run {run_id} is already completed with stop reason {run.stop_reason}, but is being marked as {update.status} with stop reason {update.stop_reason}"
+                    )
+            if run.status in {RunStatus.failed, RunStatus.cancelled}:
+                logger.error(
+                    f"Run {run_id} is already in a terminal state {run.status} with stop reason {run.stop_reason}, but is being updated with data {update.model_dump()}"
+                )
+
             # Housekeeping only when the run is actually completing
             if not_completed_before and is_terminal_update:
                 if not update.stop_reason:
-                    logger.warning(f"Run {run_id} completed without a stop reason")
+                    logger.error(f"Run {run_id} completed without a stop reason")
                 if not update.completed_at:
                     logger.warning(f"Run {run_id} completed without a completed_at timestamp")
                     update.completed_at = get_utc_time().replace(tzinfo=None)
