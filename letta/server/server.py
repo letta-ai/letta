@@ -71,6 +71,7 @@ from letta.schemas.providers import (
     XAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
+from letta.schemas.secret import Secret
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -213,6 +214,7 @@ class SyncServer(object):
                 OpenAIProvider(
                     name="openai",
                     api_key=model_settings.openai_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
                     base_url=model_settings.openai_api_base,
                 )
             )
@@ -221,6 +223,7 @@ class SyncServer(object):
                 AnthropicProvider(
                     name="anthropic",
                     api_key=model_settings.anthropic_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.anthropic_api_key),
                 )
             )
         if model_settings.ollama_base_url:
@@ -237,6 +240,7 @@ class SyncServer(object):
                 GoogleAIProvider(
                     name="google_ai",
                     api_key=model_settings.gemini_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.gemini_api_key),
                 )
             )
         if model_settings.google_cloud_location and model_settings.google_cloud_project:
@@ -253,6 +257,7 @@ class SyncServer(object):
                 AzureProvider(
                     name="azure",
                     api_key=model_settings.azure_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.azure_api_key),
                     base_url=model_settings.azure_base_url,
                     api_version=model_settings.azure_api_version,
                 )
@@ -262,6 +267,7 @@ class SyncServer(object):
                 GroqProvider(
                     name="groq",
                     api_key=model_settings.groq_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.groq_api_key),
                 )
             )
         if model_settings.together_api_key:
@@ -269,6 +275,7 @@ class SyncServer(object):
                 TogetherProvider(
                     name="together",
                     api_key=model_settings.together_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.together_api_key),
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
             )
@@ -303,14 +310,27 @@ class SyncServer(object):
             )
             self._enabled_providers.append(LMStudioOpenAIProvider(name="lmstudio_openai", base_url=lmstudio_url))
         if model_settings.deepseek_api_key:
-            self._enabled_providers.append(DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key))
+            self._enabled_providers.append(
+                DeepSeekProvider(
+                    name="deepseek",
+                    api_key=model_settings.deepseek_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.deepseek_api_key),
+                )
+            )
         if model_settings.xai_api_key:
-            self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
+            self._enabled_providers.append(
+                XAIProvider(
+                    name="xai",
+                    api_key=model_settings.xai_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
+                )
+            )
         if model_settings.openrouter_api_key:
             self._enabled_providers.append(
                 OpenRouterProvider(
                     name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
                     api_key=model_settings.openrouter_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.openrouter_api_key),
                 )
             )
 
