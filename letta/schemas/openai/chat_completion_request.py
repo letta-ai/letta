@@ -31,6 +31,10 @@ class AssistantMessage(BaseModel):
     role: str = "assistant"
     name: Optional[str] = None
     tool_calls: Optional[List[ToolCall]] = None
+    reasoning_content: Optional[str] = None
+    reasoning_content_signature: Optional[str] = None
+    redacted_reasoning_content: Optional[str] = None
+    omitted_reasoning_content: Optional[bool] = None
 
 
 class ToolMessage(BaseModel):

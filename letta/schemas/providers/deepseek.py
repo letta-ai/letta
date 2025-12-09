@@ -25,9 +25,9 @@ class DeepSeekProvider(OpenAIProvider):
         # DeepSeek doesn't return context window in the model listing,
         # so these are hardcoded from their website
         if model_name == "deepseek-reasoner":
-            return 64000
+            return 128000
         elif model_name == "deepseek-chat":
-            return 64000
+            return 128000
         else:
             return None
 
