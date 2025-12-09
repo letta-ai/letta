@@ -1811,7 +1811,7 @@ async def _process_message_background(
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed),
+            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
             actor=actor,
         )
     except Exception as e:
@@ -1821,7 +1821,7 @@ async def _process_message_background(
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed),
+            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
             actor=actor,
         )
     finally:
@@ -1953,13 +1953,15 @@ async def send_message_async(
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
             from letta.services.run_manager import RunManager
 
+            error_str = str(e)
+
             async def update_failed_run():
                 runs_manager = RunManager()
                 from letta.schemas.enums import RunStatus
 
                 await runs_manager.update_run_by_id_async(
                     run_id=run.id,
-                    update=RunUpdate(status=RunStatus.failed),
+                    update=RunUpdate(status=RunStatus.failed, metadata={"error": error_str}),
                     actor=actor,
                 )
 
