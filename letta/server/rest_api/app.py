@@ -244,6 +244,16 @@ def create_application() -> "FastAPI":
             # Note: DD_LOGS_INJECTION, DD_APPSEC_ENABLED, DD_IAST_ENABLED, DD_APPSEC_SCA_ENABLED
             # are set via deployment configs and automatically picked up by ddtrace
 
+            # Initialize Datadog tracer for APM (distributed tracing)
+            import ddtrace
+
+            ddtrace.patch_all()  # Auto-instrument FastAPI, HTTP, DB, etc.
+            logger.info(
+                f"Datadog tracer initialized: env={dd_env}, "
+                f"service={telemetry_settings.datadog_service_name}, "
+                f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}"
+            )
+
             if telemetry_settings.datadog_profiling_enabled:
                 from ddtrace.profiling import Profiler
 
@@ -268,7 +278,7 @@ def create_application() -> "FastAPI":
                     f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
                 )
         except Exception as e:
-            logger.error(f"Failed to initialize Datadog profiling: {e}", exc_info=True)
+            logger.error(f"Failed to initialize Datadog tracing/profiling: {e}", exc_info=True)
             if SENTRY_ENABLED:
                 sentry_sdk.capture_exception(e)
             # Don't fail application startup if Datadog initialization fails
