@@ -143,8 +143,14 @@ class Secret(BaseModel):
         if self.encrypted_value is None:
             return None
 
-        # Use cached value if available
+        # Use cached value if available, but only if it looks like plaintext
+        # or we're confident we can decrypt it
         if self._plaintext_cache is not None:
+            # If this was explicitly created as plaintext, trust the cache
+            # This prevents false positives from is_encrypted() heuristic
+            if not self.was_encrypted:
+                return self._plaintext_cache
+            # For encrypted values, trust the cache (already decrypted previously)
             return self._plaintext_cache
 
         # Try to decrypt
