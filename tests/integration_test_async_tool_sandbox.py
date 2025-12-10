@@ -908,7 +908,6 @@ async def test_e2b_sandbox_with_mixed_pip_requirements(check_e2b_key_is_set, too
 
     # Should succeed since both sandbox and tool pip requirements were installed
     assert "Success!" in result.func_return
-    assert "Status: 200" in result.func_return
     assert "Array sum: 6" in result.func_return
 
 

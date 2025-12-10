@@ -172,7 +172,6 @@ async def _prepare_in_context_messages_no_persist_async(
             new_in_context_messages.extend(follow_up_messages)
     else:
         # User is trying to send a regular message
-        # if current_in_context_messages and current_in_context_messages[-1].role == "approval":
         if current_in_context_messages and current_in_context_messages[-1].is_approval_request():
             raise PendingApprovalError(pending_request_id=current_in_context_messages[-1].id)
 
