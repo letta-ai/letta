@@ -692,20 +692,28 @@ class LettaAgentV2(BaseAgentV2):
         curr_system_message = in_context_messages[0]
         curr_system_message_text = curr_system_message.content[0].text
 
-        # extract the dynamic section that includes memory blocks, tool rules, and directories
-        # this avoids timestamp comparison issues
-        def extract_dynamic_section(text):
-            start_marker = "</base_instructions>"
-            end_marker = "<memory_metadata>"
+        # Extract the memory section that includes <memory_blocks>, tool rules, and directories.
+        # This avoids timestamp comparison issues in <memory_metadata>, which is dynamic.
+        def extract_memory_section(text: str) -> str:
+            # Primary pattern: everything from <memory_blocks> up to <memory_metadata>
+            mem_start = text.find("<memory_blocks>")
+            meta_start = text.find("<memory_metadata>")
+            if mem_start != -1:
+                if meta_start != -1 and meta_start > mem_start:
+                    return text[mem_start:meta_start]
+                return text[mem_start:]
 
-            start_idx = text.find(start_marker)
-            end_idx = text.find(end_marker)
+            # Fallback pattern used in some legacy prompts: between </base_instructions> and <memory_metadata>
+            base_end = text.find("</base_instructions>")
+            if base_end != -1:
+                if meta_start != -1 and meta_start > base_end:
+                    return text[base_end + len("</base_instructions>") : meta_start]
+                return text[base_end + len("</base_instructions>") :]
 
-            if start_idx != -1 and end_idx != -1:
-                return text[start_idx:end_idx]
-            return text  # fallback to full text if markers not found
+            # Last resort: return full text
+            return text
 
-        curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
+        curr_memory_section = extract_memory_section(curr_system_message_text)
 
         # refresh files
         agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
@@ -717,10 +725,10 @@ class LettaAgentV2(BaseAgentV2):
             max_files_open=agent_state.max_files_open,
             llm_config=agent_state.llm_config,
         )
-        new_dynamic_section = extract_dynamic_section(curr_memory_str)
+        new_memory_section = extract_memory_section(curr_memory_str)
 
-        # compare just the dynamic sections (memory blocks, tool rules, directories)
-        if curr_dynamic_section == new_dynamic_section:
+        # compare just the memory sections (memory blocks, tool rules, directories)
+        if curr_memory_section.strip() == new_memory_section.strip():
             self.logger.debug(
                 f"Memory and sources haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
             )
