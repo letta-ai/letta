@@ -27,7 +27,7 @@ class XAIProvider(OpenAIProvider):
 
     provider_type: Literal[ProviderType.xai] = Field(ProviderType.xai, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
-    api_key: str = Field(..., description="API key for the xAI/Grok API.")
+    api_key: str | None = Field(None, description="API key for the xAI/Grok API.", deprecated=True)
     base_url: str = Field("https://api.x.ai/v1", description="Base URL for the xAI/Grok API.")
 
     def get_model_context_window_size(self, model_name: str) -> int | None:
@@ -38,7 +38,7 @@ class XAIProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         response = await openai_get_model_list_async(self.base_url, api_key=api_key)
 
         data = response.get("data", response)

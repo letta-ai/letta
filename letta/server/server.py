@@ -213,7 +213,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 OpenAIProvider(
                     name="openai",
-                    api_key=model_settings.openai_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
                     base_url=model_settings.openai_api_base,
                 )
@@ -222,7 +221,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 AnthropicProvider(
                     name="anthropic",
-                    api_key=model_settings.anthropic_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.anthropic_api_key),
                 )
             )
@@ -231,7 +229,6 @@ class SyncServer(object):
                 OllamaProvider(
                     name="ollama",
                     base_url=model_settings.ollama_base_url,
-                    api_key=None,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
             )
@@ -239,7 +236,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 GoogleAIProvider(
                     name="google_ai",
-                    api_key=model_settings.gemini_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.gemini_api_key),
                 )
             )
@@ -256,7 +252,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 AzureProvider(
                     name="azure",
-                    api_key=model_settings.azure_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.azure_api_key),
                     base_url=model_settings.azure_base_url,
                     api_version=model_settings.azure_api_version,
@@ -266,7 +261,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 GroqProvider(
                     name="groq",
-                    api_key=model_settings.groq_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.groq_api_key),
                 )
             )
@@ -274,7 +268,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 TogetherProvider(
                     name="together",
-                    api_key=model_settings.together_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.together_api_key),
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
@@ -313,7 +306,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 DeepSeekProvider(
                     name="deepseek",
-                    api_key=model_settings.deepseek_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.deepseek_api_key),
                 )
             )
@@ -321,7 +313,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 XAIProvider(
                     name="xai",
-                    api_key=model_settings.xai_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
                 )
             )
@@ -329,7 +320,6 @@ class SyncServer(object):
             self._enabled_providers.append(
                 OpenRouterProvider(
                     name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
-                    api_key=model_settings.openrouter_api_key,
                     api_key_enc=Secret.from_plaintext(model_settings.openrouter_api_key),
                 )
             )

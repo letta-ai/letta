@@ -11,12 +11,12 @@ class GroqProvider(OpenAIProvider):
     provider_type: Literal[ProviderType.groq] = Field(ProviderType.groq, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     base_url: str = "https://api.groq.com/openai/v1"
-    api_key: str = Field(..., description="API key for the Groq API.")
+    api_key: str | None = Field(None, description="API key for the Groq API.", deprecated=True)
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         response = await openai_get_model_list_async(self.base_url, api_key=api_key)
         configs = []
         for model in response["data"]:

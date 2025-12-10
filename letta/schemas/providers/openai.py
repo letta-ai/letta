@@ -19,14 +19,14 @@ DEFAULT_EMBEDDING_BATCH_SIZE = 1024
 class OpenAIProvider(Provider):
     provider_type: Literal[ProviderType.openai] = Field(ProviderType.openai, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
-    api_key: str = Field(..., description="API key for the OpenAI API.")
+    api_key: str | None = Field(None, description="API key for the OpenAI API.", deprecated=True)
     base_url: str = Field("https://api.openai.com/v1", description="Base URL for the OpenAI API.")
 
     async def check_api_key(self):
         from letta.llm_api.openai import openai_check_valid_api_key  # TODO: DO NOT USE THIS - old code path
 
         # Decrypt API key before using
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         openai_check_valid_api_key(self.base_url, api_key)
 
     async def _get_models_async(self) -> list[dict]:
@@ -40,7 +40,7 @@ class OpenAIProvider(Provider):
         extra_params = {"verbose": True} if "nebius.com" in self.base_url else None
 
         # Decrypt API key before using
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
 
         response = await openai_get_model_list_async(
             self.base_url,

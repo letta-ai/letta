@@ -36,7 +36,7 @@ class AzureProvider(Provider):
     base_url: str = Field(
         ..., description="Base URL for the Azure API endpoint. This should be specific to your org, e.g. `https://letta.openai.azure.com`."
     )
-    api_key: str = Field(..., description="API key for the Azure API.")
+    api_key: str | None = Field(None, description="API key for the Azure API.", deprecated=True)
     api_version: str = Field(default=LATEST_API_VERSION, description="API version for the Azure API")
 
     @field_validator("api_version", mode="before")
@@ -60,7 +60,7 @@ class AzureProvider(Provider):
     async def azure_openai_get_deployed_model_list(self) -> list:
         """https://learn.microsoft.com/en-us/rest/api/azureopenai/models/list?view=rest-azureopenai-2023-05-15&tabs=HTTP"""
 
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         client = AsyncAzureOpenAI(api_key=api_key, api_version=self.api_version, azure_endpoint=self.base_url)
 
         try:
@@ -169,7 +169,7 @@ class AzureProvider(Provider):
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
 
     async def check_api_key(self):
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         if not api_key:
             raise ValueError("No API key provided")
 
