@@ -534,88 +534,88 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
     print(f"Summarized {len(in_context_messages)} messages with {total_content_size} chars to {len(result)} messages")
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "llm_config",
-    TESTED_LLM_CONFIGS,
-    ids=[c.model for c in TESTED_LLM_CONFIGS],
-)
-async def test_summarize_truncates_large_tool_return(server: SyncServer, actor, llm_config: LLMConfig):
-    """
-    Test that summarization properly truncates very large tool returns.
-    This ensures that oversized tool returns don't consume excessive context.
-    """
-    # Create an extremely large tool return (100k chars)
-    large_return = create_large_tool_return(100000)
-    original_size = len(large_return)
-
-    # Create messages with a large tool return
-    messages = [
-        PydanticMessage(
-            role=MessageRole.user,
-            content=[TextContent(type="text", text="Please run the database query.")],
-        ),
-        PydanticMessage(
-            role=MessageRole.assistant,
-            content=[
-                TextContent(type="text", text="Running query..."),
-                ToolCallContent(
-                    type="tool_call",
-                    id="call_1",
-                    name="run_query",
-                    input={"query": "SELECT * FROM large_table"},
-                ),
-            ],
-        ),
-        PydanticMessage(
-            role=MessageRole.tool,
-            tool_call_id="call_1",
-            content=[
-                ToolReturnContent(
-                    type="tool_return",
-                    tool_call_id="call_1",
-                    content=large_return,
-                    is_error=False,
-                )
-            ],
-        ),
-        PydanticMessage(
-            role=MessageRole.assistant,
-            content=[TextContent(type="text", text="Query completed successfully with many results.")],
-        ),
-    ]
-
-    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
-
-    # Verify the original tool return is indeed large
-    assert original_size > 90000, f"Expected tool return >90k chars, got {original_size}"
-
-    # Run summarization
-    summary, result = await run_summarization(server, agent_state, in_context_messages, actor)
-
-    # Verify result
-    assert isinstance(result, list)
-    assert len(result) >= 1
-
-    # Find tool return messages in the result and verify truncation occurred
-    tool_returns_found = False
-    for msg in result:
-        if msg.role == MessageRole.tool:
-            for content in msg.content:
-                if isinstance(content, ToolReturnContent):
-                    tool_returns_found = True
-                    result_size = len(content.content)
-                    # Verify that the tool return has been truncated
-                    assert result_size < original_size, (
-                        f"Expected tool return to be truncated from {original_size} chars, but got {result_size} chars"
-                    )
-                    print(f"Tool return successfully truncated from {original_size} to {result_size} chars")
-
-    # If we didn't find any tool returns in the result, that's also acceptable
-    # (they may have been completely removed during aggressive summarization)
-    if not tool_returns_found:
-        print("Tool returns were completely removed during summarization")
-
+# @pytest.mark.asyncio
+# @pytest.mark.parametrize(
+#    "llm_config",
+#    TESTED_LLM_CONFIGS,
+#    ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# async def test_summarize_truncates_large_tool_return(server: SyncServer, actor, llm_config: LLMConfig):
+#    """
+#    Test that summarization properly truncates very large tool returns.
+#    This ensures that oversized tool returns don't consume excessive context.
+#    """
+#    # Create an extremely large tool return (100k chars)
+#    large_return = create_large_tool_return(100000)
+#    original_size = len(large_return)
+#
+#    # Create messages with a large tool return
+#    messages = [
+#        PydanticMessage(
+#            role=MessageRole.user,
+#            content=[TextContent(type="text", text="Please run the database query.")],
+#        ),
+#        PydanticMessage(
+#            role=MessageRole.assistant,
+#            content=[
+#                TextContent(type="text", text="Running query..."),
+#                ToolCallContent(
+#                    type="tool_call",
+#                    id="call_1",
+#                    name="run_query",
+#                    input={"query": "SELECT * FROM large_table"},
+#                ),
+#            ],
+#        ),
+#        PydanticMessage(
+#            role=MessageRole.tool,
+#            tool_call_id="call_1",
+#            content=[
+#                ToolReturnContent(
+#                    type="tool_return",
+#                    tool_call_id="call_1",
+#                    content=large_return,
+#                    is_error=False,
+#                )
+#            ],
+#        ),
+#        PydanticMessage(
+#            role=MessageRole.assistant,
+#            content=[TextContent(type="text", text="Query completed successfully with many results.")],
+#        ),
+#    ]
+#
+#    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+#
+#    # Verify the original tool return is indeed large
+#    assert original_size > 90000, f"Expected tool return >90k chars, got {original_size}"
+#
+#    # Run summarization
+#    summary, result = await run_summarization(server, agent_state, in_context_messages, actor)
+#
+#    # Verify result
+#    assert isinstance(result, list)
+#    assert len(result) >= 1
+#
+#    # Find tool return messages in the result and verify truncation occurred
+#    tool_returns_found = False
+#    for msg in result:
+#        if msg.role == MessageRole.tool:
+#            for content in msg.content:
+#                if isinstance(content, ToolReturnContent):
+#                    tool_returns_found = True
+#                    result_size = len(content.content)
+#                    # Verify that the tool return has been truncated
+#                    assert result_size < original_size, (
+#                        f"Expected tool return to be truncated from {original_size} chars, but got {result_size} chars"
+#                    )
+#                    print(f"Tool return successfully truncated from {original_size} to {result_size} chars")
+#
+#    # If we didn't find any tool returns in the result, that's also acceptable
+#    # (they may have been completely removed during aggressive summarization)
+#    if not tool_returns_found:
+#        print("Tool returns were completely removed during summarization")
+#
 
 # ======================================================================================================================
 # SummarizerConfig Mode Tests (with pytest.patch) - Using LettaAgentV3

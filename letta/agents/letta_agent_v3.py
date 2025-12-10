@@ -493,6 +493,9 @@ class LettaAgentV3(LettaAgentV2):
 
         input_messages_to_persist = input_messages_to_persist or []
 
+        if self.context_token_estimate is None:
+            self.logger.warning("Context token estimate is not set")
+
         step_progression = StepProgression.START
         # TODO(@caren): clean this up
         tool_calls, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
@@ -700,8 +703,10 @@ class LettaAgentV3(LettaAgentV2):
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(
                     step_metrics, agent_step_span, llm_adapter.llm_request_finish_timestamp_ns
                 )
-
+                # update metrics
                 self._update_global_usage_stats(llm_adapter.usage)
+                self.context_token_estimate = llm_adapter.usage.total_tokens
+                self.logger.info(f"Context token estimate after LLM request: {self.context_token_estimate}")
 
                 # Handle the AI response with the extracted data (supports multiple tool calls)
                 # Gather tool calls - check for multi-call API first, then fall back to single
@@ -776,7 +781,7 @@ class LettaAgentV3(LettaAgentV2):
                         yield message
 
             # check compaction
-            if self.context_token_estimate > self.agent_state.llm_config.context_window:
+            if self.context_token_estimate is not None and self.context_token_estimate > self.agent_state.llm_config.context_window:
                 summary_message, messages = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
                 # TODO: persist + return the summary message
                 # TODO: convert this to a SummaryMessage
@@ -1351,7 +1356,7 @@ class LettaAgentV3(LettaAgentV2):
         self.logger.info(f"Context token estimate after summarization: {self.context_token_estimate}")
 
         # if the trigger_threshold is provided, we need to make sure that the new token count is below it
-        if trigger_threshold is not None and self.context_token_estimate >= trigger_threshold:
+        if trigger_threshold is not None and self.context_token_estimate is not None and self.context_token_estimate >= trigger_threshold:
             # If even after summarization the context is still at or above
             # the proactive summarization threshold, treat this as a hard
             # failure: log loudly and evict all prior conversation state
@@ -1380,7 +1385,7 @@ class LettaAgentV3(LettaAgentV2):
             )
 
             # final edge case: the system prompt is the cause of the context overflow (raise error)
-            if self.context_token_estimate >= trigger_threshold:
+            if self.context_token_estimate is not None and self.context_token_estimate >= trigger_threshold:
                 await self._check_for_system_prompt_overflow(compacted_messages[0])
 
                 # raise an error if this is STILL not the problem
