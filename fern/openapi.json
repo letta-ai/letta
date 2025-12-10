@@ -16410,6 +16410,176 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/messages/schedule": {
+      "post": {
+        "description": "Schedule a message to be sent by the agent at a specified time or on a recurring basis.",
+        "summary": "Schedule Agent Message",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.scheduleAgentMessage",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "content": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string"
+                                },
+                                "signature": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["text"]
+                                }
+                              },
+                              "required": ["text"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "object",
+                                  "properties": {
+                                    "data": {
+                                      "type": "string"
+                                    },
+                                    "media_type": {
+                                      "type": "string"
+                                    },
+                                    "detail": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["base64"]
+                                    }
+                                  },
+                                  "required": ["data", "media_type"]
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["image"]
+                                }
+                              },
+                              "required": ["source", "type"]
+                            }
+                          ]
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["user", "assistant", "system"]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "otid": {
+                          "type": "string"
+                        },
+                        "sender_id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["message"]
+                        }
+                      },
+                      "required": ["content", "role"]
+                    }
+                  },
+                  "max_steps": {
+                    "type": "number"
+                  },
+                  "callback_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "include_return_message_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "schedule": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["one-time"]
+                          },
+                          "scheduled_at": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["scheduled_at"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["recurring"]
+                          },
+                          "cron_expression": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["type", "cron_expression"]
+                      }
+                    ]
+                  }
+                },
+                "required": ["messages", "schedule"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "next_scheduled_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/core-memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
