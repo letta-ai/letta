@@ -154,7 +154,7 @@ class ProviderManager:
     @trace_method
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
-        """Delete a provider and its associated models."""
+        """Delete a provider."""
         async with db_registry.async_session() as session:
             # Clear api key field
             existing_provider = await ProviderModel.read_async(
@@ -162,15 +162,6 @@ class ProviderManager:
             )
             existing_provider.api_key = None
             await existing_provider.update_async(session, actor=actor)
-
-            # Soft delete all models associated with this provider
-            provider_models = await ProviderModelORM.list_async(
-                db_session=session,
-                provider_id=provider_id,
-                check_is_deleted=True,
-            )
-            for model in provider_models:
-                await model.delete_async(session, actor=actor)
 
             # Soft delete in provider table
             await existing_provider.delete_async(session, actor=actor)
@@ -640,11 +631,11 @@ class ProviderManager:
                         await model.create_async(session)
                         logger.info(f"    ✓ Successfully created LLM model {llm_config.handle} with ID {model.id}")
                     except Exception as e:
-                        logger.info(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
+                        logger.error(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
                         # Log the full error details
                         import traceback
 
-                        logger.info(f"    Full traceback: {traceback.format_exc()}")
+                        logger.error(f"    Full traceback: {traceback.format_exc()}")
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
