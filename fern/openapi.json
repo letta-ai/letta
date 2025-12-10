@@ -16410,7 +16410,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/messages/schedule": {
+    "/v1/agents/{agent_id}/messages/scheduled": {
       "post": {
         "description": "Schedule a message to be sent by the agent at a specified time or on a recurring basis.",
         "summary": "Schedule Agent Message",
@@ -16441,49 +16441,56 @@
                         "content": {
                           "oneOf": [
                             {
-                              "type": "object",
-                              "properties": {
-                                "text": {
-                                  "type": "string"
-                                },
-                                "signature": {
-                                  "type": "string"
-                                },
-                                "type": {
-                                  "type": "string",
-                                  "enum": ["text"]
-                                }
-                              },
-                              "required": ["text"]
-                            },
-                            {
-                              "type": "object",
-                              "properties": {
-                                "source": {
+                              "oneOf": [
+                                {
                                   "type": "object",
                                   "properties": {
-                                    "data": {
+                                    "text": {
                                       "type": "string"
                                     },
-                                    "media_type": {
-                                      "type": "string"
-                                    },
-                                    "detail": {
+                                    "signature": {
                                       "type": "string"
                                     },
                                     "type": {
                                       "type": "string",
-                                      "enum": ["base64"]
+                                      "enum": ["text"]
                                     }
                                   },
-                                  "required": ["data", "media_type"]
+                                  "required": ["text"]
                                 },
-                                "type": {
-                                  "type": "string",
-                                  "enum": ["image"]
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "object",
+                                      "properties": {
+                                        "data": {
+                                          "type": "string"
+                                        },
+                                        "media_type": {
+                                          "type": "string"
+                                        },
+                                        "detail": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "type": "string",
+                                          "enum": ["base64"]
+                                        }
+                                      },
+                                      "required": ["data", "media_type"]
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["image"]
+                                    }
+                                  },
+                                  "required": ["source", "type"]
                                 }
-                              },
-                              "required": ["source", "type"]
+                              ]
+                            },
+                            {
+                              "type": "string"
                             }
                           ]
                         },
@@ -16573,6 +16580,63 @@
                     }
                   },
                   "required": ["id"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/messages/scheduled/{scheduled_message_id}": {
+      "delete": {
+        "description": "Delete a scheduled message by its ID for a specific agent.",
+        "summary": "Delete Scheduled Agent Message",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scheduled_message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.deleteScheduledAgentMessage",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["success"]
                 }
               }
             }
