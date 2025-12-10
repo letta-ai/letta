@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 class OpenRouterProvider(OpenAIProvider):
     provider_type: Literal[ProviderType.openai] = Field(ProviderType.openai, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
-    api_key: str = Field(..., description="API key for the OpenRouter API.")
+    api_key: str | None = Field(None, description="API key for the OpenRouter API.", deprecated=True)
     base_url: str = Field("https://openrouter.ai/api/v1", description="Base URL for the OpenRouter API.")
 
     def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:

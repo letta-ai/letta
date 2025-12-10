@@ -122,9 +122,12 @@ async def check_existing_provider(
     provider = await server.provider_manager.get_provider_async(provider_id=provider_id, actor=actor)
 
     # Create a ProviderCheck from the existing provider
+    api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
+    access_key = provider.access_key_enc.get_plaintext() if provider.access_key_enc else None
     provider_check = ProviderCheck(
         provider_type=provider.provider_type,
-        api_key=provider.api_key,
+        api_key=api_key,
+        access_key=access_key,
         base_url=provider.base_url,
     )
 

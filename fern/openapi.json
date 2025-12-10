@@ -33073,7 +33073,8 @@
               }
             ],
             "title": "Api Key",
-            "description": "API key or secret key used for requests to the provider."
+            "description": "API key or secret key used for requests to the provider.",
+            "deprecated": true
           },
           "base_url": {
             "anyOf": [
@@ -33097,7 +33098,8 @@
               }
             ],
             "title": "Access Key",
-            "description": "Access key used for requests to the provider."
+            "description": "Access key used for requests to the provider.",
+            "deprecated": true
           },
           "region": {
             "anyOf": [
