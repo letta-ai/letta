@@ -20,7 +20,7 @@ async def summarize_all(
     # Actual summarization configuration
     summarizer_config: SummarizerConfig,
     in_context_messages: List[Message],
-    new_messages: List[Message],
+    # new_messages: List[Message],
 ) -> str:
     """
     Summarize the entire conversation history into a single summary.
@@ -28,8 +28,7 @@ async def summarize_all(
     Returns:
     - The summary string
     """
-    all_in_context_messages = in_context_messages + new_messages
-    messages_to_summarize = all_in_context_messages[1:]
+    messages_to_summarize = in_context_messages[1:]
 
     # TODO: add fallback in case this has a context window error
     summary_message_str = await simple_summary(
@@ -44,4 +43,4 @@ async def summarize_all(
         logger.warning(f"Summary length {len(summary_message_str)} exceeds clip length {summarizer_config.clip_chars}. Truncating.")
         summary_message_str = summary_message_str[: summarizer_config.clip_chars] + "... [summary truncated to fit]"
 
-    return summary_message_str, []
+    return summary_message_str, [in_context_messages[0]]

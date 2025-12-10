@@ -17,6 +17,7 @@ class StopReasonType(str, Enum):
     tool_rule = "tool_rule"
     cancelled = "cancelled"
     requires_approval = "requires_approval"
+    context_window_overflow_in_system_prompt = "context_window_overflow_in_system_prompt"
 
     @property
     def run_status(self) -> RunStatus:
@@ -33,6 +34,7 @@ class StopReasonType(str, Enum):
             StopReasonType.no_tool_call,
             StopReasonType.invalid_llm_response,
             StopReasonType.llm_api_error,
+            StopReasonType.context_window_overflow_in_system_prompt,
         ):
             return RunStatus.failed
         elif self == StopReasonType.cancelled:

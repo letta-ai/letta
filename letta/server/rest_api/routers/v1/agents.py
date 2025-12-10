@@ -2112,13 +2112,12 @@ async def summarize_messages(
     if agent_eligible and model_compatible:
         agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-        await agent_loop.summarize_conversation_history(
-            in_context_messages=in_context_messages,
-            new_letta_messages=[],
-            total_tokens=None,
-            force=True,
+        summary_message, messages = await agent_loop.compact(
+            messages=in_context_messages,
         )
-        # Summarization completed, return 204 No Content
+
+        # update the agent state
+        await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
