@@ -32,7 +32,6 @@ from letta.config import LettaConfig
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.server.server import SyncServer
 from tests.helpers.utils import upload_file_and_wait
-from tests.utils import wait_for_server
 
 # Constants
 SERVER_PORT = 8283
@@ -107,7 +106,7 @@ def client() -> LettaSDKClient:
         print("Starting server thread")
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        wait_for_server(server_url, timeout=60)
+        time.sleep(5)
 
     print("Running client tests with server:", server_url)
     client = LettaSDKClient(base_url=server_url)

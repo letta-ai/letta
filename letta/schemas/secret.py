@@ -113,7 +113,7 @@ class Secret(BaseModel):
                 "MIGRATION_NEEDED: Reading from plaintext column instead of encrypted column. "
                 "This indicates data that hasn't been migrated to the _enc column yet. "
                 "Please run migrate data to _enc columns as plaintext columns will be deprecated.",
-                # stack_info=True,
+                stack_info=True,
             )
             return cls.from_plaintext(plaintext_value)
         return cls.from_plaintext(None)
