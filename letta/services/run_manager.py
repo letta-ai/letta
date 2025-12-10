@@ -686,17 +686,28 @@ class RunManager:
                 # Combine approval response and tool messages
                 new_messages = approval_response_messages + [tool_message]
 
-                # Insert the approval response and tool messages into the database
-                persisted_messages = await self.message_manager.create_many_messages_async(
-                    pydantic_msgs=new_messages,
-                    actor=actor,
-                    run_id=run_id,
-                )
-                logger.debug(f"Persisted {len(persisted_messages)} messages (approval + tool returns)")
+                # Checkpoint the new messages
+                from letta.agents.agent_loop import AgentLoop
 
-                # Update the agent's message_ids to include the new messages (approval + tool message)
-                agent_state.message_ids = agent_state.message_ids + [m.id for m in persisted_messages]
-                await self.agent_manager.update_message_ids_async(agent_id=agent_state.id, message_ids=agent_state.message_ids, actor=actor)
+                agent_loop = AgentLoop.load(agent_state=agent_state, actor=actor)
+                new_in_context_messages = current_in_context_messages + new_messages
+                await agent_loop._checkpoint_messages(
+                    run_id=run_id,
+                    step_id=approval_request_message.step_id,
+                    new_messages=new_messages,
+                    in_context_messages=new_in_context_messages,
+                )
+
+                # persisted_messages = await self.message_manager.create_many_messages_async(
+                #    pydantic_msgs=new_messages,
+                #    actor=actor,
+                #    run_id=run_id,
+                # )
+                # logger.debug(f"Persisted {len(persisted_messages)} messages (approval + tool returns)")
+
+                ## Update the agent's message_ids to include the new messages (approval + tool message)
+                # agent_state.message_ids = agent_state.message_ids + [m.id for m in persisted_messages]
+                # await self.agent_manager.update_message_ids_async(agent_id=agent_state.id, message_ids=agent_state.message_ids, actor=actor)
 
                 logger.debug(
                     f"Inserted approval response with {len(denials)} denials and tool return message for cancelled run {run_id}. "

@@ -25,6 +25,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     PendingApprovalError,
+    RunCancelError,
 )
 from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -1682,6 +1683,7 @@ async def cancel_message(
             run_ids = [run_id]
 
     results = {}
+    failed_to_cancel = []
     for run_id in run_ids:
         run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
         if run.metadata.get("lettuce"):
@@ -1691,8 +1693,14 @@ async def cancel_message(
             run = await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
         except Exception as e:
             results[run_id] = "failed"
+            logger.error(f"Failed to cancel run {run_id}: {str(e)}")
+            failed_to_cancel.append(run_id)
             continue
         results[run_id] = "cancelled"
+        logger.info(f"Cancelled run {run_id}")
+
+    if failed_to_cancel:
+        raise RunCancelError(f"Failed to cancel runs: {failed_to_cancel}")
     return results
 
 
