@@ -140,11 +140,16 @@ class GoogleVertexClient(LLMClientBase):
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncIterator[GenerateContentResponse]:
         client = self._get_client()
-        response = await client.aio.models.generate_content_stream(
-            model=llm_config.model,
-            contents=request_data["contents"],
-            config=request_data["config"],
-        )
+
+        try:
+            response = await client.aio.models.generate_content_stream(
+                model=llm_config.model,
+                contents=request_data["contents"],
+                config=request_data["config"],
+            )
+        except Exception as e:
+            logger.error(f"Error streaming Google Vertex request: {e} with request data: {json.dumps(request_data)}")
+            raise e
         # Direct yield - keeps response alive in generator's local scope throughout iteration
         # This is required because the SDK's connection lifecycle is tied to the response object
         async for chunk in response:

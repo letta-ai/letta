@@ -168,7 +168,12 @@ class AnthropicClient(LLMClientBase):
         if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
             betas.append("structured-outputs-2025-11-13")
 
-        return await client.beta.messages.create(**request_data, betas=betas)
+        # log failed requests
+        try:
+            return await client.beta.messages.create(**request_data, betas=betas)
+        except Exception as e:
+            logger.error(f"Error streaming Anthropic request: {e} with request data: {json.dumps(request_data)}")
+            raise e
 
     @trace_method
     async def send_llm_batch_request_async(

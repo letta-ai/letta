@@ -377,3 +377,10 @@ class AgentExportProcessingError(AgentFileExportError):
 
 class AgentFileImportError(Exception):
     """Exception raised during agent file import operations"""
+
+
+class RunCancelError(LettaError):
+    """Error raised when a run cannot be cancelled."""
+
+    def __init__(self, message: str):
+        super().__init__(message=message)

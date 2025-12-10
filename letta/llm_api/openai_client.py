@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import time
 from typing import Any, List, Optional
@@ -762,17 +763,25 @@ class OpenAIClient(LLMClientBase):
 
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
         if "input" in request_data and "messages" not in request_data:
-            response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
-                **request_data,
-                stream=True,
-                # stream_options={"include_usage": True},
-            )
+            try:
+                response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
+                    **request_data,
+                    stream=True,
+                    # stream_options={"include_usage": True},
+                )
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Responses request: {e} with request data: {json.dumps(request_data)}")
+                raise e
         else:
-            response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
-                **request_data,
-                stream=True,
-                stream_options={"include_usage": True},
-            )
+            try:
+                response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+                    **request_data,
+                    stream=True,
+                    stream_options={"include_usage": True},
+                )
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Chat Completions request: {e} with request data: {json.dumps(request_data)}")
+                raise e
         return response_stream
 
     @trace_method
