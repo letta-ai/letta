@@ -484,3 +484,90 @@ async def test_byok_provider_auto_syncs_models(provider_manager, default_user, m
     llm_config = await provider_manager.get_llm_config_from_handle(handle="my-openai-key/gpt-4o", actor=default_user)
     assert llm_config.model == "gpt-4o"
     assert llm_config.provider_name == "my-openai-key"
+
+
+# ======================================================================================================================
+# No Encryption Key Tests
+# ======================================================================================================================
+
+
+@pytest.fixture
+def no_encryption_key():
+    """Fixture to ensure NO encryption key is set for tests."""
+    original_key = settings.encryption_key
+    settings.encryption_key = None
+    yield None
+    settings.encryption_key = original_key
+
+
+@pytest.mark.asyncio
+async def test_provider_works_without_encryption_key(provider_manager, default_user, no_encryption_key):
+    """Test that providers can be created and read when no encryption key is configured.
+
+    When LETTA_ENCRYPTION_KEY is not set, the Secret class should store values as
+    plaintext in the _enc column and successfully retrieve them.
+    """
+    # Create a provider without encryption key configured
+    provider_create = ProviderCreate(
+        name="test-no-encryption-provider",
+        provider_type=ProviderType.openai,
+        api_key="sk-plaintext-key-12345",
+        base_url="https://api.openai.com/v1",
+    )
+
+    # Create provider - should work even without encryption
+    created_provider = await provider_manager.create_provider_async(provider_create, actor=default_user)
+
+    # Verify provider was created
+    assert created_provider is not None
+    assert created_provider.name == "test-no-encryption-provider"
+
+    # Verify api_key can be retrieved (stored as plaintext in _enc column)
+    assert created_provider.api_key_enc.get_plaintext() == "sk-plaintext-key-12345"
+
+    # Read the provider back from database
+    retrieved_provider = await provider_manager.get_provider_async(created_provider.id, actor=default_user)
+
+    # Verify round-trip works
+    assert retrieved_provider.api_key_enc.get_plaintext() == "sk-plaintext-key-12345"
+
+    # Verify the value in _enc column is actually plaintext (not encrypted)
+    async with db_registry.async_session() as session:
+        provider_orm = await ProviderModel.read_async(
+            db_session=session,
+            identifier=created_provider.id,
+            actor=default_user,
+        )
+
+        # The value should be stored as plaintext since no encryption key was available
+        assert provider_orm.api_key_enc is not None
+        # When no encryption key is set, the plaintext is stored directly
+        # so from_encrypted + get_plaintext should return the original value
+        assert Secret.from_encrypted(provider_orm.api_key_enc).get_plaintext() == "sk-plaintext-key-12345"
+
+
+@pytest.mark.asyncio
+async def test_provider_update_works_without_encryption_key(provider_manager, default_user, no_encryption_key):
+    """Test that provider updates work when no encryption key is configured."""
+    # Create initial provider
+    provider_create = ProviderCreate(
+        name="test-no-enc-update-provider",
+        provider_type=ProviderType.anthropic,
+        api_key="sk-ant-initial-key",
+    )
+
+    created_provider = await provider_manager.create_provider_async(provider_create, actor=default_user)
+
+    # Update the api_key
+    provider_update = ProviderUpdate(
+        api_key="sk-ant-updated-key",
+    )
+
+    updated_provider = await provider_manager.update_provider_async(created_provider.id, provider_update, actor=default_user)
+
+    # Verify the updated key is accessible
+    assert updated_provider.api_key_enc.get_plaintext() == "sk-ant-updated-key"
+
+    # Verify via database read
+    retrieved_provider = await provider_manager.get_provider_async(created_provider.id, actor=default_user)
+    assert retrieved_provider.api_key_enc.get_plaintext() == "sk-ant-updated-key"
