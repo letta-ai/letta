@@ -246,6 +246,11 @@ LLM_MAX_TOKENS = {
     "gpt-5.1-codex": 272000,
     "gpt-5.1-codex-mini": 272000,
     "gpt-5.1-codex-max": 272000,
+    # gpt-5.2
+    "gpt-5.2": 272000,
+    "gpt-5.2-2025-12-11": 272000,
+    "gpt-5.2-pro": 272000,
+    "gpt-5.2-pro-2025-12-11": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
