@@ -16602,63 +16602,6 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/messages/scheduled/{scheduled_message_id}": {
-      "delete": {
-        "description": "Delete a scheduled message by its ID for a specific agent.",
-        "summary": "Delete Scheduled Agent Message",
-        "tags": ["agents"],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "scheduled_message_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "agents.deleteScheduledAgentMessage",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {},
-                "nullable": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [true]
-                    }
-                  },
-                  "required": ["success"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/agents/{agent_id}/core-memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
@@ -19715,6 +19658,478 @@
                     }
                   },
                   "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduled-messages/{scheduled_message_id}": {
+      "delete": {
+        "description": "Delete a scheduled message by its ID for a specific agent.",
+        "summary": "Delete Scheduled Agent Message",
+        "tags": ["scheduledMessages"],
+        "parameters": [
+          {
+            "name": "scheduled_message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "scheduledMessages.deleteScheduledMessage",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "Retrieve a scheduled message by its ID for a specific agent.",
+        "summary": "Retrieve Scheduled Agent Message",
+        "tags": ["scheduledMessages"],
+        "parameters": [
+          {
+            "name": "scheduled_message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "scheduledMessages.retrieveScheduledMessage",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "content": {
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "signature": {
+                                              "type": "string",
+                                              "nullable": true
+                                            },
+                                            "type": {
+                                              "type": "string",
+                                              "enum": ["text"]
+                                            }
+                                          },
+                                          "required": ["text"]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "object",
+                                              "properties": {
+                                                "data": {
+                                                  "type": "string"
+                                                },
+                                                "media_type": {
+                                                  "type": "string"
+                                                },
+                                                "detail": {
+                                                  "type": "string"
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "enum": ["base64"]
+                                                }
+                                              },
+                                              "required": ["data", "media_type"]
+                                            },
+                                            "type": {
+                                              "type": "string",
+                                              "enum": ["image"]
+                                            }
+                                          },
+                                          "required": ["source", "type"]
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": ["user", "assistant", "system"]
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "otid": {
+                                "type": "string"
+                              },
+                              "sender_id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": ["message"]
+                              }
+                            },
+                            "required": ["content", "role"]
+                          }
+                        },
+                        "max_steps": {
+                          "type": "number"
+                        },
+                        "callback_url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "include_return_message_types": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "system_message",
+                              "user_message",
+                              "assistant_message",
+                              "reasoning_message",
+                              "hidden_reasoning_message",
+                              "tool_call_message",
+                              "tool_return_message",
+                              "approval_request_message",
+                              "approval_response_message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["messages"]
+                    },
+                    "schedule": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["one-time"]
+                            },
+                            "scheduled_at": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["scheduled_at"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["recurring"]
+                            },
+                            "cron_expression": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["type", "cron_expression"]
+                        }
+                      ]
+                    },
+                    "next_scheduled_time": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "agent_id",
+                    "message",
+                    "schedule",
+                    "next_scheduled_time"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduled-messages": {
+      "get": {
+        "description": "List all scheduled messages for a specific agent.",
+        "summary": "List Scheduled Agent Messages",
+        "tags": ["scheduledMessages"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "scheduledMessages.listScheduledMessages",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scheduled_messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "agent_id": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "object",
+                            "properties": {
+                              "messages": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "content": {
+                                      "oneOf": [
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "text": {
+                                                    "type": "string"
+                                                  },
+                                                  "signature": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                  },
+                                                  "type": {
+                                                    "type": "string",
+                                                    "enum": ["text"]
+                                                  }
+                                                },
+                                                "required": ["text"]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "source": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "data": {
+                                                        "type": "string"
+                                                      },
+                                                      "media_type": {
+                                                        "type": "string"
+                                                      },
+                                                      "detail": {
+                                                        "type": "string"
+                                                      },
+                                                      "type": {
+                                                        "type": "string",
+                                                        "enum": ["base64"]
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "data",
+                                                      "media_type"
+                                                    ]
+                                                  },
+                                                  "type": {
+                                                    "type": "string",
+                                                    "enum": ["image"]
+                                                  }
+                                                },
+                                                "required": ["source", "type"]
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "role": {
+                                      "type": "string",
+                                      "enum": ["user", "assistant", "system"]
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "otid": {
+                                      "type": "string"
+                                    },
+                                    "sender_id": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["message"]
+                                    }
+                                  },
+                                  "required": ["content", "role"]
+                                }
+                              },
+                              "max_steps": {
+                                "type": "number"
+                              },
+                              "callback_url": {
+                                "type": "string",
+                                "format": "uri"
+                              },
+                              "include_return_message_types": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "system_message",
+                                    "user_message",
+                                    "assistant_message",
+                                    "reasoning_message",
+                                    "hidden_reasoning_message",
+                                    "tool_call_message",
+                                    "tool_return_message",
+                                    "approval_request_message",
+                                    "approval_response_message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": ["messages"]
+                          },
+                          "schedule": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["one-time"]
+                                  },
+                                  "scheduled_at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["scheduled_at"]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["recurring"]
+                                  },
+                                  "cron_expression": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["type", "cron_expression"]
+                              }
+                            ]
+                          },
+                          "next_scheduled_time": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "agent_id",
+                          "message",
+                          "schedule",
+                          "next_scheduled_time"
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["scheduled_messages", "has_next_page"]
                 }
               }
             }
