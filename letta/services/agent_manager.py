@@ -3035,21 +3035,22 @@ class AgentManager:
         visible_content = "\n".join(content_lines)
         visible_content_map = {file_metadata_with_content.file_name: visible_content}
 
-        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
-        all_closed_files = await asyncio.gather(
-            *(
-                self.file_agent_manager.attach_files_bulk(
-                    agent_id=agent_state.id,
-                    files_metadata=[file_metadata_with_content],
-                    visible_content_map=visible_content_map,
-                    actor=actor,
-                    max_files_open=agent_state.max_files_open,
-                )
-                for agent_state in agent_states
+        all_closed_files: List[str] = []
+
+        for agent_state in agent_states:
+            # To avoid exhausting the db connection pool when many agents are attached,
+            # perform the operations sequentially instead of concurrently.
+            closed_for_agent = await self.file_agent_manager.attach_files_bulk(
+                agent_id=agent_state.id,
+                files_metadata=[file_metadata_with_content],
+                visible_content_map=visible_content_map,
+                actor=actor,
+                max_files_open=agent_state.max_files_open,
             )
-        )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+            all_closed_files.extend(closed_for_agent)
+
+        # Log if any files were closed
+        closed_files = all_closed_files
         if closed_files:
             logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
 
