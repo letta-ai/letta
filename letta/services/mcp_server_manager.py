@@ -610,31 +610,32 @@ class MCPServerManager:
             # Filter out invalid tools
             valid_tools = [tool for tool in mcp_tools if not (tool.health and tool.health.status == "INVALID")]
 
-            # Register in parallel
+            # Register tools sequentially to avoid exhausting database connection pool
+            # When an MCP server has many tools (e.g., 50+), concurrent tool creation and mapping
+            # can create too many simultaneous database connections, causing pool exhaustion errors
             if valid_tools:
-                tool_tasks = []
+                results = []
+                successful_count = 0
                 for mcp_tool in valid_tools:
                     tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
-                    task = self.tool_manager.create_mcp_tool_async(
-                        tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
-                    )
-                    tool_tasks.append(task)
+                    try:
+                        result = await self.tool_manager.create_mcp_tool_async(
+                            tool_create=tool_create,
+                            mcp_server_name=created_server.server_name,
+                            mcp_server_id=created_server.id,
+                            actor=actor,
+                        )
+                        results.append(result)
 
-                results = await asyncio.gather(*tool_tasks, return_exceptions=True)
-
-                # Create mappings in MCPTools table for successful tools
-                mapping_tasks = []
-                successful_count = 0
-                for result in results:
-                    if not isinstance(result, Exception) and result:
-                        # result should be a PydanticTool
-                        mapping_task = self.create_mcp_tool_mapping(created_server.id, result.id, actor)
-                        mapping_tasks.append(mapping_task)
-                        successful_count += 1
-
-                # Execute mapping creation in parallel
-                if mapping_tasks:
-                    await asyncio.gather(*mapping_tasks, return_exceptions=True)
+                        # Create mapping for successful tool
+                        if result:
+                            try:
+                                await self.create_mcp_tool_mapping(created_server.id, result.id, actor)
+                                successful_count += 1
+                            except Exception as e:
+                                logger.warning(f"Failed to create mapping for tool {result.id}: {e}")
+                    except Exception as e:
+                        results.append(e)
 
                 failed = len(results) - successful_count
                 logger.info(
