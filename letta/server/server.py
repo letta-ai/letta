@@ -1139,7 +1139,7 @@ class SyncServer(object):
                 provider_type=provider_type,
                 actor=actor,
             )
-            providers_from_db = [p.cast_to_subtype() for p in providers_from_db]
+            providers_from_db = [p.cast_to_subtype() for p in providers_from_db if p.provider_category == ProviderCategory.byok]
             providers.extend(providers_from_db)
 
         if provider_name is not None:
@@ -1256,7 +1256,8 @@ class SyncServer(object):
                 argument_name="provider_name",
             )
         elif len(providers) > 1:
-            raise LettaInvalidArgumentError(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            logger.warning(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            provider = providers[0]
         else:
             provider = providers[0]
 
