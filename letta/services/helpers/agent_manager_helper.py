@@ -1298,7 +1298,7 @@ def calculate_base_tools(is_v2: bool) -> Set[str]:
 
 def calculate_multi_agent_tools() -> Set[str]:
     """Calculate multi-agent tools, excluding local-only tools in production environment."""
-    if settings.environment == "PRODUCTION":
+    if settings.environment == "prod":
         return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
     else:
         return set(MULTI_AGENT_TOOLS)
