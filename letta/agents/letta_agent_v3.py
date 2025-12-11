@@ -675,16 +675,11 @@ class LettaAgentV3(LettaAgentV2):
                         raise e
                     except Exception as e:
                         if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
-                            # Retry case
-                            summary_message, messages = await self.compact(
-                                messages, trigger_threshold=self.agent_state.llm_config.context_window
-                            )
-
                             # checkpoint summarized messages
                             # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
-                                await self._checkpoint_messages(
-                                    run_id=run_id, step_id=step_id, new_messages=[summary_message], in_context_messages=messages
+                                summary_message, messages = await self.compact(
+                                    messages, trigger_threshold=self.agent_state.llm_config.context_window
                                 )
                             except SystemPromptTokenExceededError:
                                 self.stop_reason = LettaStopReason(
@@ -695,6 +690,12 @@ class LettaAgentV3(LettaAgentV2):
                                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                                 self.logger.error(f"Unknown error occured for summarization run {run_id}: {e}")
                                 raise e
+
+                            # update the messages
+                            await self._checkpoint_messages(
+                                run_id=run_id, step_id=step_id, new_messages=[summary_message], in_context_messages=messages
+                            )
+
                         else:
                             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                             self.logger.error(f"Unknown error occured for run {run_id}: {e}")
