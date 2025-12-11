@@ -20669,6 +20669,17 @@
             "title": "Model Settings",
             "description": "The model settings used by the agent."
           },
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compaction settings configuration used for compaction."
+          },
           "response_format": {
             "anyOf": [
               {
@@ -24254,6 +24265,53 @@
         "required": ["code"],
         "title": "CodeInput"
       },
+      "CompactionSettings": {
+        "properties": {
+          "model_settings": {
+            "$ref": "#/components/schemas/ModelSettings",
+            "description": "The model settings to use for summarization."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The prompt to use for summarization."
+          },
+          "prompt_acknowledgement": {
+            "type": "string",
+            "title": "Prompt Acknowledgement",
+            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
+          },
+          "clip_chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clip Chars",
+            "description": "The maximum length of the summary in characters. If none, no clipping is performed.",
+            "default": 2000
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["all", "sliding_window"],
+            "title": "Mode",
+            "description": "The type of summarization technique use.",
+            "default": "sliding_window"
+          },
+          "sliding_window_percentage": {
+            "type": "number",
+            "title": "Sliding Window Percentage",
+            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode).",
+            "default": 0.3
+          }
+        },
+        "type": "object",
+        "required": ["model_settings", "prompt", "prompt_acknowledgement"],
+        "title": "CompactionSettings"
+      },
       "ComparisonOperator": {
         "type": "string",
         "enum": ["eq", "gte", "lte"],
@@ -25050,6 +25108,17 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for the agent."
+          },
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compaction settings configuration used for compaction."
           },
           "context_window_limit": {
             "anyOf": [
@@ -29267,6 +29336,17 @@
             "title": "Model Settings",
             "description": "The model settings for the agent."
           },
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compaction settings configuration used for compaction."
+          },
           "context_window_limit": {
             "anyOf": [
               {
@@ -32636,6 +32716,25 @@
           "max_context_window"
         ],
         "title": "Model"
+      },
+      "ModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ModelSettings",
+        "description": "Schema for defining settings for a model"
       },
       "ModifyApprovalRequest": {
         "properties": {
@@ -38498,6 +38597,17 @@
             "title": "Model Settings",
             "description": "The model settings for the agent."
           },
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compaction settings configuration used for compaction."
+          },
           "context_window_limit": {
             "anyOf": [
               {
@@ -39712,6 +39822,17 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for the agent."
+          },
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compaction settings configuration used for compaction."
           },
           "context_window_limit": {
             "anyOf": [

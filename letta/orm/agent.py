@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
-from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
+from letta.orm.custom_columns import CompactionSettingsColumn, EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
 from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from letta.orm.run import Run
     from letta.orm.source import Source
     from letta.orm.tool import Tool
+    from letta.services.summarizer.summarizer_config import CompactionSettings
 
 
 class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin, AsyncAttrs):
@@ -73,6 +74,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     )
     embedding_config: Mapped[Optional[EmbeddingConfig]] = mapped_column(
         EmbeddingConfigColumn, doc="the embedding configuration object for this agent."
+    )
+    compaction_settings: Mapped[Optional[dict]] = mapped_column(
+        CompactionSettingsColumn, nullable=True, doc="the compaction settings configuration object for compaction."
     )
 
     # Tool rules
@@ -222,6 +226,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
             "llm_config": self.llm_config,
             "embedding_config": self.embedding_config,
+            "compaction_settings": self.compaction_settings,
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,
@@ -328,6 +333,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
             "llm_config": self.llm_config,
             "embedding_config": self.embedding_config,
+            "compaction_settings": self.compaction_settings,
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,

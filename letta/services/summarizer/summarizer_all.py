@@ -6,7 +6,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageRole
 from letta.schemas.user import User
 from letta.services.summarizer.summarizer import simple_summary
-from letta.services.summarizer.summarizer_config import SummarizerConfig
+from letta.services.summarizer.summarizer_config import CompactionSettings
 
 logger = get_logger(__name__)
 
@@ -18,7 +18,7 @@ async def summarize_all(
     # LLM config for the summarizer model
     llm_config: LLMConfig,
     # Actual summarization configuration
-    summarizer_config: SummarizerConfig,
+    summarizer_config: CompactionSettings,
     in_context_messages: List[Message],
     # new_messages: List[Message],
 ) -> str:

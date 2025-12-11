@@ -5,6 +5,7 @@ from letta.helpers.converters import (
     deserialize_agent_step_state,
     deserialize_approvals,
     deserialize_batch_request_result,
+    deserialize_compaction_settings,
     deserialize_create_batch_response,
     deserialize_embedding_config,
     deserialize_llm_config,
@@ -19,6 +20,7 @@ from letta.helpers.converters import (
     serialize_agent_step_state,
     serialize_approvals,
     serialize_batch_request_result,
+    serialize_compaction_settings,
     serialize_create_batch_response,
     serialize_embedding_config,
     serialize_llm_config,
@@ -57,6 +59,19 @@ class EmbeddingConfigColumn(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return deserialize_embedding_config(value)
+
+
+class CompactionSettingsColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing CompactionSettings as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_compaction_settings(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_compaction_settings(value)
 
 
 class ToolRulesColumn(TypeDecorator):

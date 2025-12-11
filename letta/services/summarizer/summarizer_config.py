@@ -6,7 +6,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.model import ModelSettings
 
 
-class SummarizerConfig(BaseModel):
+class CompactionSettings(BaseModel):
     # summarizer_model: LLMConfig = Field(default=..., description="The model to use for summarization.")
     model_settings: ModelSettings = Field(default=..., description="The model settings to use for summarization.")
     prompt: str = Field(default=..., description="The prompt to use for summarization.")
@@ -23,20 +23,20 @@ class SummarizerConfig(BaseModel):
     )
 
 
-def get_default_summarizer_config(model_settings: ModelSettings) -> SummarizerConfig:
-    """Build a default SummarizerConfig from global settings for backward compatibility.
+def get_default_compaction_settings(model_settings: ModelSettings) -> CompactionSettings:
+    """Build a default CompactionSettings from global settings for backward compatibility.
 
     Args:
         llm_config: The LLMConfig to use for the summarizer model (typically the agent's llm_config).
 
     Returns:
-        A SummarizerConfig with default values from global settings.
+        A CompactionSettings with default values from global settings.
     """
     from letta.constants import MESSAGE_SUMMARY_REQUEST_ACK
     from letta.prompts import gpt_summarize
     from letta.settings import summarizer_settings
 
-    return SummarizerConfig(
+    return CompactionSettings(
         mode="sliding_window",
         model_settings=model_settings,
         prompt=gpt_summarize.SYSTEM,

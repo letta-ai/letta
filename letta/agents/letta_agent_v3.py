@@ -48,7 +48,7 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
-from letta.services.summarizer.summarizer_config import SummarizerConfig, get_default_summarizer_config
+from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_compaction_settings
 from letta.services.summarizer.summarizer_sliding_window import (
     count_tokens,
     summarize_via_sliding_window,
@@ -1318,10 +1318,10 @@ class LettaAgentV3(LettaAgentV2):
         Simplified compaction method. Does NOT do any persistence (handled in the loop)
         """
         # compact the current in-context messages (self.in_context_messages)
-        # Use agent's summarizer_config if set, otherwise fall back to defaults
-        # TODO: add this back
-        # summarizer_config = self.agent_state.summarizer_config or get_default_summarizer_config(self.agent_state.llm_config)
-        summarizer_config = get_default_summarizer_config(self.agent_state.llm_config._to_model_settings())
+        # Use agent's compaction_settings if set, otherwise fall back to defaults
+        summarizer_config = self.agent_state.compaction_settings or get_default_compaction_settings(
+            self.agent_state.llm_config._to_model_settings()
+        )
         summarization_mode_used = summarizer_config.mode
         if summarizer_config.mode == "all":
             summary, compacted_messages = await summarize_all(

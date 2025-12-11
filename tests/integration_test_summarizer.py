@@ -618,12 +618,12 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
 #
 
 # ======================================================================================================================
-# SummarizerConfig Mode Tests (with pytest.patch) - Using LettaAgentV3
+# CompactionSettings Mode Tests (with pytest.patch) - Using LettaAgentV3
 # ======================================================================================================================
 
 from unittest.mock import patch
 
-from letta.services.summarizer.summarizer_config import SummarizerConfig, get_default_summarizer_config
+from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_compaction_settings
 
 # Test both summarizer modes: "all" summarizes entire history, "sliding_window" keeps recent messages
 SUMMARIZER_CONFIG_MODES: list[Literal["all", "sliding_window"]] = ["all", "sliding_window"]
@@ -634,7 +634,7 @@ SUMMARIZER_CONFIG_MODES: list[Literal["all", "sliding_window"]] = ["all", "slidi
 @pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
 async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMConfig, mode: Literal["all", "sliding_window"]):
     """
-    Test summarization with different SummarizerConfig modes using LettaAgentV3.
+    Test summarization with different CompactionSettings modes using LettaAgentV3.
 
     This test verifies that both summarization modes work correctly:
     - "all": Summarizes the entire conversation history into a single summary
@@ -674,11 +674,11 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
     # Persist the new messages
     new_letta_messages = await server.message_manager.create_many_messages_async(new_letta_messages, actor=actor)
 
-    # Create a custom SummarizerConfig with the desired mode
-    def mock_get_default_summarizer_config(model_settings):
-        config = get_default_summarizer_config(model_settings)
+    # Create a custom CompactionSettings with the desired mode
+    def mock_get_default_compaction_settings(model_settings):
+        config = get_default_compaction_settings(model_settings)
         # Override the mode
-        return SummarizerConfig(
+        return CompactionSettings(
             model_settings=config.model_settings,
             prompt=config.prompt,
             prompt_acknowledgement=config.prompt_acknowledgement,
@@ -687,7 +687,7 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
             sliding_window_percentage=config.sliding_window_percentage,
         )
 
-    with patch("letta.agents.letta_agent_v3.get_default_summarizer_config", mock_get_default_summarizer_config):
+    with patch("letta.agents.letta_agent_v3.get_default_compaction_settings", mock_get_default_compaction_settings):
         agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
 
         summary, result = await agent_loop.compact(messages=in_context_messages)
@@ -848,13 +848,13 @@ async def test_sliding_window_cutoff_index_does_not_exceed_message_count(server:
     the sliding window logic works with actual token counting.
     """
     from letta.schemas.model import ModelSettings
-    from letta.services.summarizer.summarizer_config import get_default_summarizer_config
+    from letta.services.summarizer.summarizer_config import get_default_compaction_settings
     from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
 
     # Create a real summarizer config using the default factory
     # Override sliding_window_percentage to 0.3 for this test
     model_settings = ModelSettings()  # Use defaults
-    summarizer_config = get_default_summarizer_config(model_settings)
+    summarizer_config = get_default_compaction_settings(model_settings)
     summarizer_config.sliding_window_percentage = 0.3
 
     # Create 65 messages (similar to the failing case in the bug report)
@@ -1401,11 +1401,11 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     """
     from letta.schemas.model import ModelSettings
     from letta.services.summarizer.summarizer_all import summarize_all
-    from letta.services.summarizer.summarizer_config import get_default_summarizer_config
+    from letta.services.summarizer.summarizer_config import get_default_compaction_settings
 
     # Create a summarizer config with "all" mode
     model_settings = ModelSettings()
-    summarizer_config = get_default_summarizer_config(model_settings)
+    summarizer_config = get_default_compaction_settings(model_settings)
     summarizer_config.mode = "all"
 
     # Create test messages - a simple conversation

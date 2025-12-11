@@ -81,6 +81,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
+from letta.schemas.model import ModelSettings
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
@@ -96,6 +97,7 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.settings import settings, tool_settings
 from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
@@ -524,6 +526,91 @@ async def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_compaction_settings(server: SyncServer, default_user, default_block):
+    """Test that agents can be created with custom compaction_settings"""
+    # Upsert base tools
+    await server.tool_manager.upsert_base_tools_async(actor=default_user)
+
+    # Create custom compaction settings
+    llm_config = LLMConfig.default_config("gpt-4o-mini")
+    model_settings = llm_config._to_model_settings()
+
+    compaction_settings = CompactionSettings(
+        model_settings=model_settings,
+        prompt="Custom summarization prompt",
+        prompt_acknowledgement="Acknowledged",
+        clip_chars=1500,
+        mode="all",
+        sliding_window_percentage=0.5,
+    )
+
+    # Create agent with compaction settings
+    create_agent_request = CreateAgent(
+        name="test_compaction_agent",
+        agent_type="memgpt_v2_agent",
+        system="test system",
+        llm_config=llm_config,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=True,
+        compaction_settings=compaction_settings,
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Verify compaction settings were stored correctly
+    assert created_agent.compaction_settings is not None
+    assert created_agent.compaction_settings.mode == "all"
+    assert created_agent.compaction_settings.clip_chars == 1500
+    assert created_agent.compaction_settings.sliding_window_percentage == 0.5
+    assert created_agent.compaction_settings.prompt == "Custom summarization prompt"
+    assert created_agent.compaction_settings.prompt_acknowledgement == "Acknowledged"
+
+    # Clean up
+    await server.agent_manager.delete_agent_async(agent_id=created_agent.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_compaction_settings(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    """Test that an agent's compaction_settings can be updated"""
+    agent, _ = comprehensive_test_agent_fixture
+
+    # Verify initial state (should be None or default)
+    assert agent.compaction_settings is None
+
+    # Create new compaction settings
+    llm_config = LLMConfig.default_config("gpt-4o-mini")
+    model_settings = llm_config._to_model_settings()
+
+    new_compaction_settings = CompactionSettings(
+        model_settings=model_settings,
+        prompt="Updated summarization prompt",
+        prompt_acknowledgement="Updated acknowledgement",
+        clip_chars=3000,
+        mode="sliding_window",
+        sliding_window_percentage=0.4,
+    )
+
+    # Update agent with compaction settings
+    update_agent_request = UpdateAgent(
+        compaction_settings=new_compaction_settings,
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_agent_request, actor=default_user)
+
+    # Verify compaction settings were updated correctly
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.mode == "sliding_window"
+    assert updated_agent.compaction_settings.clip_chars == 3000
+    assert updated_agent.compaction_settings.sliding_window_percentage == 0.4
+    assert updated_agent.compaction_settings.prompt == "Updated summarization prompt"
+    assert updated_agent.compaction_settings.prompt_acknowledgement == "Updated acknowledgement"
 
 
 @pytest.mark.asyncio
@@ -1282,6 +1369,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.source import Source
     from letta.schemas.tool import Tool
     from letta.schemas.tool_rule import ToolRule
+    from letta.services.summarizer.summarizer_config import CompactionSettings
 
     # Define the expected schema structure
     expected_schema = {
@@ -1298,6 +1386,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "agent_type": AgentType,
         # LLM information
         "llm_config": LLMConfig,
+        "compaction_settings": CompactionSettings,
         "model": str,
         "embedding": str,
         "embedding_config": EmbeddingConfig,

@@ -89,6 +89,32 @@ def deserialize_embedding_config(data: Optional[Dict]) -> Optional[EmbeddingConf
 
 
 # --------------------------
+# CompactionSettings Serialization
+# --------------------------
+
+
+def serialize_compaction_settings(config: Union[Optional["CompactionSettings"], Dict]) -> Optional[Dict]:
+    """Convert a CompactionSettings object into a JSON-serializable dictionary."""
+    if config:
+        # Import here to avoid circular dependency
+        from letta.services.summarizer.summarizer_config import CompactionSettings
+
+        if isinstance(config, CompactionSettings):
+            return config.model_dump(mode="json")
+    return config
+
+
+def deserialize_compaction_settings(data: Optional[Dict]) -> Optional["CompactionSettings"]:
+    """Convert a dictionary back into a CompactionSettings object."""
+    if data:
+        # Import here to avoid circular dependency
+        from letta.services.summarizer.summarizer_config import CompactionSettings
+
+        return CompactionSettings(**data)
+    return None
+
+
+# --------------------------
 # ToolRule Serialization
 # --------------------------
 
