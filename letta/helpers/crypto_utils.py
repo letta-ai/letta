@@ -9,6 +9,28 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from letta.settings import settings
 
+# Common API key prefixes that should not be considered encrypted
+# These are plaintext credentials that happen to be long strings
+PLAINTEXT_PREFIXES = (
+    "sk-",  # OpenAI, Anthropic
+    "pk-",  # Public keys
+    "api-",  # Generic API keys
+    "key-",  # Generic keys
+    "token-",  # Generic tokens
+    "Bearer ",  # Auth headers
+    "xoxb-",  # Slack bot tokens
+    "xoxp-",  # Slack user tokens
+    "ghp_",  # GitHub personal access tokens
+    "gho_",  # GitHub OAuth tokens
+    "ghu_",  # GitHub user-to-server tokens
+    "ghs_",  # GitHub server-to-server tokens
+    "ghr_",  # GitHub refresh tokens
+    "AKIA",  # AWS access key IDs
+    "ABIA",  # AWS STS tokens
+    "ACCA",  # AWS CloudFront
+    "ASIA",  # AWS temporary credentials
+)
+
 
 class CryptoUtils:
     """Utility class for AES-256-GCM encryption/decryption of sensitive data."""
@@ -127,8 +149,14 @@ class CryptoUtils:
         """
         Check if a string appears to be encrypted (base64 encoded with correct size).
 
-        This is a heuristic check and may have false positives.
+        This is a heuristic check that excludes common API key patterns to reduce
+        false positives. Strings matching known API key prefixes are assumed to be
+        plaintext credentials, not encrypted values.
         """
+        # Exclude strings that look like known API key formats
+        if any(value.startswith(prefix) for prefix in PLAINTEXT_PREFIXES):
+            return False
+
         try:
             decoded = base64.b64decode(value)
             # Check if length is consistent with our encryption format

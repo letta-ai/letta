@@ -233,3 +233,109 @@ class TestCryptoUtils:
             encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY_1)
             decrypted = CryptoUtils.decrypt(encrypted, self.MOCK_KEY_1)
             assert decrypted == plaintext, f"Whitespace handling failed for: {repr(plaintext)}"
+
+
+class TestIsEncrypted:
+    """Test suite for is_encrypted heuristic detection."""
+
+    MOCK_KEY = "test-master-key-1234567890abcdef"
+
+    def test_actually_encrypted_values_detected(self):
+        """Test that actually encrypted values are correctly identified."""
+        test_values = ["short", "medium length string", "a"]
+
+        for plaintext in test_values:
+            encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY)
+            assert CryptoUtils.is_encrypted(encrypted), f"Failed to detect encrypted value for: {plaintext}"
+
+    def test_openai_api_keys_not_detected(self):
+        """Test that OpenAI API keys are not detected as encrypted."""
+        openai_keys = [
+            "sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890ab",
+            "sk-proj-1234567890abcdefghijklmnopqrstuvwxyz",
+            "sk-ant-api03-1234567890abcdefghijklmnopqrstuvwxyz",
+        ]
+
+        for key in openai_keys:
+            assert not CryptoUtils.is_encrypted(key), f"OpenAI key incorrectly detected as encrypted: {key}"
+
+    def test_github_tokens_not_detected(self):
+        """Test that GitHub tokens are not detected as encrypted."""
+        github_tokens = [
+            "ghp_1234567890abcdefghijklmnopqrstuvwxyz",
+            "gho_1234567890abcdefghijklmnopqrstuvwxyz",
+            "ghu_1234567890abcdefghijklmnopqrstuvwxyz",
+            "ghs_1234567890abcdefghijklmnopqrstuvwxyz",
+            "ghr_1234567890abcdefghijklmnopqrstuvwxyz",
+        ]
+
+        for token in github_tokens:
+            assert not CryptoUtils.is_encrypted(token), f"GitHub token incorrectly detected as encrypted: {token}"
+
+    def test_aws_keys_not_detected(self):
+        """Test that AWS access keys are not detected as encrypted."""
+        aws_keys = [
+            "AKIAIOSFODNN7EXAMPLE",
+            "ASIAJEXAMPLEXEG2JICEA",
+            "ABIA1234567890ABCDEF",
+            "ACCA1234567890ABCDEF",
+        ]
+
+        for key in aws_keys:
+            assert not CryptoUtils.is_encrypted(key), f"AWS key incorrectly detected as encrypted: {key}"
+
+    def test_slack_tokens_not_detected(self):
+        """Test that Slack tokens are not detected as encrypted."""
+        slack_tokens = [
+            "xoxb-1234567890-1234567890123-abcdefghijklmnopqrstuvwx",
+            "xoxp-1234567890-1234567890123-1234567890123-abcdefghij",
+        ]
+
+        for token in slack_tokens:
+            assert not CryptoUtils.is_encrypted(token), f"Slack token incorrectly detected as encrypted: {token}"
+
+    def test_bearer_tokens_not_detected(self):
+        """Test that Bearer tokens are not detected as encrypted."""
+        bearer_tokens = [
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U",
+            "Bearer some-long-token-string-1234567890abcdefghijklmnop",
+        ]
+
+        for token in bearer_tokens:
+            assert not CryptoUtils.is_encrypted(token), f"Bearer token incorrectly detected as encrypted: {token}"
+
+    def test_generic_prefixes_not_detected(self):
+        """Test that strings with generic API key prefixes are not detected as encrypted."""
+        generic_keys = [
+            "pk-1234567890abcdefghijklmnopqrstuvwxyz",
+            "api-1234567890abcdefghijklmnopqrstuvwxyz",
+            "key-1234567890abcdefghijklmnopqrstuvwxyz",
+            "token-1234567890abcdefghijklmnopqrstuvwxyz",
+        ]
+
+        for key in generic_keys:
+            assert not CryptoUtils.is_encrypted(key), f"Generic key incorrectly detected as encrypted: {key}"
+
+    def test_short_strings_not_detected(self):
+        """Test that short strings are not detected as encrypted."""
+        short_strings = ["short", "abc", "1234567890", ""]
+
+        for s in short_strings:
+            assert not CryptoUtils.is_encrypted(s), f"Short string incorrectly detected as encrypted: {s}"
+
+    def test_invalid_base64_not_detected(self):
+        """Test that invalid base64 strings are not detected as encrypted."""
+        invalid_strings = [
+            "not-valid-base64!@#$",
+            "spaces are invalid",
+            "special!chars@here",
+        ]
+
+        for s in invalid_strings:
+            assert not CryptoUtils.is_encrypted(s), f"Invalid base64 incorrectly detected as encrypted: {s}"
+
+    def test_valid_base64_but_too_short_not_detected(self):
+        """Test that valid base64 strings that are too short are not detected."""
+        # base64 encode something short (less than SALT + IV + TAG + 1 = 45 bytes)
+        short_data = base64.b64encode(b"x" * 40).decode()
+        assert not CryptoUtils.is_encrypted(short_data)
