@@ -235,7 +235,7 @@ class Settings(BaseSettings):
     cors_origins: Optional[list] = cors_origins
     environment: Optional[str] = Field(
         default=None,
-        description="Application environment (PRODUCTION, DEV, CANARY, etc. - normalized to lowercase for OTEL tags)",
+        description="Application environment (prod, dev, canary, etc. - lowercase values used for OTEL tags)",
     )
 
     # SSE Streaming keepalive settings

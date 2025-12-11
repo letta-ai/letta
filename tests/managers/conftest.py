@@ -773,7 +773,7 @@ def dummy_successful_response() -> BetaMessageBatchIndividualResponse:
 # ======================================================================================================================
 
 
-@pytest.fixture(params=[None, "PRODUCTION"])
+@pytest.fixture(params=[None, "prod"])
 def set_letta_environment(request, monkeypatch):
     """Parametrized fixture to test with different environment settings."""
     from letta.settings import settings

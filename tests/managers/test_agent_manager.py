@@ -256,7 +256,7 @@ async def test_calculate_multi_agent_tools(set_letta_environment):
     """Test that calculate_multi_agent_tools excludes local-only tools in production."""
     result = calculate_multi_agent_tools()
 
-    if settings.environment == "PRODUCTION":
+    if settings.environment == "prod":
         # Production environment should exclude local-only tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert result == expected_tools, "Production should exclude local-only multi-agent tools"
@@ -283,7 +283,7 @@ async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncS
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
     tool_names = {tool.name for tool in tools}
 
-    if settings.environment == "PRODUCTION":
+    if settings.environment == "prod":
         # Production environment should exclude local-only multi-agent tools
         for local_only_tool in LOCAL_ONLY_MULTI_AGENT_TOOLS:
             assert local_only_tool not in tool_names, f"Local-only tool '{local_only_tool}' should not be upserted in production"
@@ -306,7 +306,7 @@ async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, s
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
     tool_names = {tool.name for tool in tools}
 
-    if settings.environment == "PRODUCTION":
+    if settings.environment == "prod":
         # Should only have non-local multi-agent tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert tool_names == expected_tools, "Production multi-agent upsert should exclude local-only tools"

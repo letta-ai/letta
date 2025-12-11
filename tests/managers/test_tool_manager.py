@@ -1278,7 +1278,7 @@ async def test_upsert_base_tools(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
 
     # Calculate expected tools accounting for production filtering
-    if settings.environment == "PRODUCTION":
+    if settings.environment == "prod":
         expected_tool_names = sorted(LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_tool_names = sorted(LETTA_TOOL_SET)
@@ -1330,7 +1330,7 @@ async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool
     tool_names = sorted([t.name for t in tools])
 
     # Adjust expected names for multi-agent tools in production
-    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and settings.environment == "PRODUCTION":
+    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and settings.environment == "prod":
         expected_sorted = sorted(set(expected_names) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_sorted = sorted(expected_names)
