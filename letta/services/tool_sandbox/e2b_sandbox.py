@@ -114,10 +114,8 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                     },
                 )
             elif execution.error:
-                # Tool errors are expected behavior - tools can raise exceptions as part of their normal operation
-                # Only log at debug level to avoid triggering Sentry alerts for expected errors
-                logger.debug(f"Tool {self.tool_name} raised a {execution.error.name}: {execution.error.value}")
-                logger.debug(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
+                logger.warning(f"Tool {self.tool_name} raised a {execution.error.name}: {execution.error.value}")
+                logger.warning(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
                 func_return = get_friendly_error_msg(
                     function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
                 )
