@@ -492,17 +492,23 @@ class MCPManager:
             # Filter out invalid tools
             valid_tools = [tool for tool in mcp_tools if not (tool.health and tool.health.status == "INVALID")]
 
-            # Register in parallel
+            # Register tools sequentially to avoid exhausting database connection pool
+            # When an MCP server has many tools (e.g., 50+), concurrent tool creation can create
+            # too many simultaneous database connections, causing pool exhaustion errors
             if valid_tools:
-                tool_tasks = []
+                results = []
                 for mcp_tool in valid_tools:
                     tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
-                    task = self.tool_manager.create_mcp_tool_async(
-                        tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
-                    )
-                    tool_tasks.append(task)
-
-                results = await asyncio.gather(*tool_tasks, return_exceptions=True)
+                    try:
+                        result = await self.tool_manager.create_mcp_tool_async(
+                            tool_create=tool_create,
+                            mcp_server_name=created_server.server_name,
+                            mcp_server_id=created_server.id,
+                            actor=actor,
+                        )
+                        results.append(result)
+                    except Exception as e:
+                        results.append(e)
 
                 successful = sum(1 for r in results if not isinstance(r, Exception))
                 failed = len(results) - successful
