@@ -92,13 +92,19 @@ def prepare_anthropic_headers(request: Request) -> dict | None:
     return anthropic_headers
 
 
-def format_memory_blocks(blocks) -> str:
+def format_memory_blocks(blocks, agent_id: str) -> str:
     blocks_with_content = [block for block in blocks if block.value]
 
     if not blocks_with_content:
         return ""
 
-    memory_context = "<memory_blocks>\nYour memory has been enhanced by Letta, enabling you to remember information across sessions. The following memory blocks are currently engaged in your core memory unit:\n\n"
+    memory_context = (
+        "<letta>\n"
+        "You have persistent memory powered by Letta that is maintained across conversations. "
+        "A background agent updates these memory blocks based on conversation content.\n"
+        "<memory_blocks>\n"
+        "The following memory blocks are currently engaged in your core memory unit:\n\n"
+    )
 
     for idx, block in enumerate(blocks_with_content):
         label = block.label or "block"
@@ -124,7 +130,20 @@ def format_memory_blocks(blocks) -> str:
         if idx != len(blocks_with_content) - 1:
             memory_context += "\n"
 
-    memory_context += "\n</memory_blocks>"
+    memory_context += "\n</memory_blocks>\n\n"
+    memory_context += (
+        "<memory_management>\n"
+        f"Users can view and edit their memory blocks at:\n"
+        f"https://app.letta.com/agents/{agent_id}\n\n"
+        "Share this link when users ask how to manage their memory, what you remember about them, or how to view, edit, or delete stored information.\n"
+        "</memory_management>\n\n"
+        "<documentation>\n"
+        "- Memory blocks: https://docs.letta.com/guides/agents/memory-blocks/index.md\n"
+        "- Full Letta documentation: https://docs.letta.com/llms.txt\n\n"
+        "Reference these when users ask how Letta memory works or want to learn more about the platform.\n"
+        "</documentation>\n"
+        "</letta>"
+    )
     return memory_context
 
 
@@ -168,7 +187,7 @@ async def _inject_memory_context(
         if not messages:
             return request_data
 
-        memory_context = format_memory_blocks(agent.blocks)
+        memory_context = format_memory_blocks(agent.blocks, agent.id)
 
         if not memory_context:
             logger.debug("[Anthropic Proxy] No memory blocks found, skipping memory injection")
