@@ -16441,53 +16441,57 @@
                         "content": {
                           "oneOf": [
                             {
-                              "oneOf": [
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "text": {
-                                      "type": "string"
-                                    },
-                                    "signature": {
-                                      "type": "string"
-                                    },
-                                    "type": {
-                                      "type": "string",
-                                      "enum": ["text"]
-                                    }
-                                  },
-                                  "required": ["text"]
-                                },
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "source": {
-                                      "type": "object",
-                                      "properties": {
-                                        "data": {
-                                          "type": "string"
-                                        },
-                                        "media_type": {
-                                          "type": "string"
-                                        },
-                                        "detail": {
-                                          "type": "string"
-                                        },
-                                        "type": {
-                                          "type": "string",
-                                          "enum": ["base64"]
-                                        }
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "text": {
+                                        "type": "string"
                                       },
-                                      "required": ["data", "media_type"]
+                                      "signature": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["text"]
+                                      }
                                     },
-                                    "type": {
-                                      "type": "string",
-                                      "enum": ["image"]
-                                    }
+                                    "required": ["text"]
                                   },
-                                  "required": ["source", "type"]
-                                }
-                              ]
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "object",
+                                        "properties": {
+                                          "data": {
+                                            "type": "string"
+                                          },
+                                          "media_type": {
+                                            "type": "string"
+                                          },
+                                          "detail": {
+                                            "type": "string"
+                                          },
+                                          "type": {
+                                            "type": "string",
+                                            "enum": ["base64"]
+                                          }
+                                        },
+                                        "required": ["data", "media_type"]
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["image"]
+                                      }
+                                    },
+                                    "required": ["source", "type"]
+                                  }
+                                ]
+                              }
                             },
                             {
                               "type": "string"
@@ -16525,7 +16529,18 @@
                   "include_return_message_types": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "system_message",
+                        "user_message",
+                        "assistant_message",
+                        "reasoning_message",
+                        "hidden_reasoning_message",
+                        "tool_call_message",
+                        "tool_return_message",
+                        "approval_request_message",
+                        "approval_response_message"
+                      ]
                     }
                   },
                   "schedule": {
