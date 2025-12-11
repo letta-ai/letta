@@ -269,6 +269,17 @@ class LLMConfig(BaseModel):
                 verbosity="medium",
                 max_tokens=16384,
             )
+        elif model_name == "gpt-5.2":
+            return cls(
+                model="gpt-5.2",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=272000,
+                reasoning_effort="none",  # Default to "none" for GPT-5.2
+                verbosity="medium",
+                max_tokens=16384,
+            )
         elif model_name == "letta":
             return cls(
                 model="memgpt-openai",
