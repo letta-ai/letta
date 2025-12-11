@@ -449,11 +449,15 @@ class FileManager:
                 *[file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix) for file in files]
             )
 
-            # if status checking is enabled, check all files concurrently
+            # if status checking is enabled, check all files sequentially to avoid db pool exhaustion
+            # Each status check may update the file in the database, so concurrent checks with many
+            # files can create too many simultaneous database connections
             if check_status_updates:
-                file_metadatas = await asyncio.gather(
-                    *[self.check_and_update_file_status(file_metadata, actor) for file_metadata in file_metadatas]
-                )
+                updated_file_metadatas = []
+                for file_metadata in file_metadatas:
+                    updated_metadata = await self.check_and_update_file_status(file_metadata, actor)
+                    updated_file_metadatas.append(updated_metadata)
+                file_metadatas = updated_file_metadatas
 
             return file_metadatas
 
