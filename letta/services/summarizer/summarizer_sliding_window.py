@@ -12,7 +12,7 @@ from letta.schemas.user import User
 from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.message_manager import MessageManager
 from letta.services.summarizer.summarizer import simple_summary
-from letta.services.summarizer.summarizer_config import SummarizerConfig
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.system import package_summarize_message_no_counts
 
 logger = get_logger(__name__)
@@ -48,7 +48,7 @@ async def summarize_via_sliding_window(
     actor: User,
     # Actual summarization configuration
     llm_config: LLMConfig,
-    summarizer_config: SummarizerConfig,
+    summarizer_config: CompactionSettings,
     in_context_messages: List[Message],
     # new_messages: List[Message],
 ) -> Tuple[str, List[Message]]:
