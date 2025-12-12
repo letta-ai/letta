@@ -2724,7 +2724,7 @@ requires-dist = [
     { name = "modal", marker = "extra == 'modal'", specifier = ">=1.1.0" },
     { name = "nltk", specifier = ">=3.8.1" },
     { name = "numpy", specifier = ">=2.1.0" },
-    { name = "openai", specifier = ">=1.99.9" },
+    { name = "openai", specifier = ">=2.11.0" },
     { name = "opentelemetry-api", specifier = "==1.30.0" },
     { name = "opentelemetry-exporter-otlp", specifier = "==1.30.0" },
     { name = "opentelemetry-instrumentation-requests", specifier = "==0.51b0" },
@@ -2948,15 +2948,15 @@ wheels = [
 
 [[package]]
 name = "llama-index-llms-openai"
-version = "0.6.11"
+version = "0.6.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "llama-index-core" },
     { name = "openai" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/ae/ebcaea9312899c5671f6ab25277aa1d463e74679ab57495c64ba5fdc7c9a/llama_index_llms_openai-0.6.11.tar.gz", hash = "sha256:ee19371691c6cd00f857a5daedae03101a01bf4d5efb4731b9d2583b66c36441", size = 25676, upload-time = "2025-12-12T13:05:47.652Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/36/78642da224528d9cc49fbebdc4571b57390764a36c63ef1ca4769e5b3f4d/llama_index_llms_openai-0.6.10.tar.gz", hash = "sha256:bce2621cb650d8fed69eda2712b804e6eb34559fcaeba92c54a3b5b3b3c69161", size = 25543, upload-time = "2025-11-27T22:25:34.014Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/1c/8428feb4c01fe278b0d6ccc4855664c00155fd6007e48042c8da52f1de16/llama_index_llms_openai-0.6.11-py3-none-any.whl", hash = "sha256:70860f361a74713316ab0caf88992ed3e7202b830f12c580439692b2fa38e579", size = 26692, upload-time = "2025-12-12T13:05:46.404Z" },
+    { url = "https://files.pythonhosted.org/packages/78/0f/f2972ac7787ba3e0d0128e445d82d4d4b1642837411645194c767d9a362f/llama_index_llms_openai-0.6.10-py3-none-any.whl", hash = "sha256:51bdc5855c56e3b303278a3172c1bfeeef9cdeb896772bd6666ad209890ea7d8", size = 26548, upload-time = "2025-11-27T22:25:35.102Z" },
 ]
 
 [[package]]
@@ -3748,7 +3748,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "2.12.0"
+version = "2.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3760,9 +3760,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/f9/fb8abeb4cdba6f24daf3d7781f42ceb1be1ff579eb20705899e617dd95f1/openai-2.12.0.tar.gz", hash = "sha256:cc6dcbcb8bccf05976d983f6516c5c1f447b71c747720f1530b61e8f858bcbc9", size = 626183, upload-time = "2025-12-15T16:17:15.097Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/8c/aa6aea6072f985ace9d6515046b9088ff00c157f9654da0c7b1e129d9506/openai-2.11.0.tar.gz", hash = "sha256:b3da01d92eda31524930b6ec9d7167c535e843918d7ba8a76b1c38f1104f321e", size = 624540, upload-time = "2025-12-11T19:11:58.539Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/a1/f055214448cb4b176e89459d889af9615fe7d927634fb5a2cecfb7674bc5/openai-2.12.0-py3-none-any.whl", hash = "sha256:7177998ce49ba3f90bcce8b5769a6666d90b1f328f0518d913aaec701271485a", size = 1066590, upload-time = "2025-12-15T16:17:13.301Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/f1/d9251b565fce9f8daeb45611e3e0d2f7f248429e40908dcee3b6fe1b5944/openai-2.11.0-py3-none-any.whl", hash = "sha256:21189da44d2e3d027b08c7a920ba4454b8b7d6d30ae7e64d9de11dbe946d4faa", size = 1064131, upload-time = "2025-12-11T19:11:56.816Z" },
 ]
 
 [[package]]
@@ -4761,11 +4761,11 @@ wheels = [
 
 [[package]]
 name = "pypdf"
-version = "6.4.2"
+version = "6.4.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bd/c2/b59b02ff7f2dc006799d2c5dc3a8877686890abdd915176ef799070edf17/pypdf-6.4.2.tar.gz", hash = "sha256:c466ff1272ffb4712c2348d2bbc3019bc93f1c62ccfaf50808e3b9f13c3dc527", size = 5275502, upload-time = "2025-12-14T14:30:58.58Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/e0/57f914ae9fedbc91fe3ebe74b78c88903943ec9c232b6da15947bb3bf8ab/pypdf-6.4.1.tar.gz", hash = "sha256:36eb0b52730fc3077d2b8d4122751e696d46af9ef9e5383db492df1ab0cc4647", size = 5275322, upload-time = "2025-12-07T14:19:27.922Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/99/3147435e15ccd97c0451efc3d13495dc22602e9887f81e64f1b135bae821/pypdf-6.4.2-py3-none-any.whl", hash = "sha256:014dcff867fd99fc0b6fc90ed1f7e1347ef2317ae038a489c2caa64106d268f4", size = 328212, upload-time = "2025-12-14T14:30:56.701Z" },
+    { url = "https://files.pythonhosted.org/packages/db/ef/68c0f473d8b8764b23f199450dfa035e6f2206e67e9bde5dd695bab9bdf0/pypdf-6.4.1-py3-none-any.whl", hash = "sha256:1782ee0766f0b77defc305f1eb2bafe738a2ef6313f3f3d2ee85b4542ba7e535", size = 328325, upload-time = "2025-12-07T14:19:26.286Z" },
 ]
 
 [[package]]
