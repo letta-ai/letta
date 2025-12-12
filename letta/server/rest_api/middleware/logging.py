@@ -109,7 +109,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             if context:
                 update_log_context(**context)
 
-            logger.info(
+            logger.debug(
                 f"Incoming request: {request.method} {request.url.path}",
                 extra={
                     "method": request.method,

@@ -675,12 +675,18 @@ class LettaAgentV3(LettaAgentV2):
                         raise e
                     except Exception as e:
                         if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
+                            # Retry case
+                            self.logger.info(
+                                f"Context window exceeded (error {e}), trying to compact messages attempt {llm_request_attempt + 1} of {summarizer_settings.max_summarizer_retries + 1}"
+                            )
                             # checkpoint summarized messages
                             # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
                                 summary_message, messages = await self.compact(
                                     messages, trigger_threshold=self.agent_state.llm_config.context_window
                                 )
+                                self.logger.info("Summarization succeeded, continuing to retry LLM request")
+                                continue
                             except SystemPromptTokenExceededError:
                                 self.stop_reason = LettaStopReason(
                                     stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value
@@ -783,6 +789,9 @@ class LettaAgentV3(LettaAgentV2):
 
             # check compaction
             if self.context_token_estimate is not None and self.context_token_estimate > self.agent_state.llm_config.context_window:
+                self.logger.info(
+                    f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
+                )
                 summary_message, messages = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
                 # TODO: persist + return the summary message
                 # TODO: convert this to a SummaryMessage

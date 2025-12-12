@@ -157,6 +157,9 @@ async def _prepare_in_context_messages_no_persist_async(
     if input_messages[0].type == "approval":
         # User is trying to send an approval response
         if current_in_context_messages and current_in_context_messages[-1].role != "approval":
+            logger.warn(
+                f"Cannot process approval response: No tool call is currently awaiting approval. Last message: {current_in_context_messages[-1]}"
+            )
             raise ValueError(
                 "Cannot process approval response: No tool call is currently awaiting approval. "
                 "Please send a regular message to interact with the agent."
