@@ -641,7 +641,7 @@ async def run_tool_for_agent(
     sandbox_env_vars = {}
     if agent.tool_exec_environment_variables:
         for env_var in agent.tool_exec_environment_variables:
-            sandbox_env_vars[env_var.key] = env_var.get_value_secret().get_plaintext()
+            sandbox_env_vars[env_var.key] = env_var.value_enc.get_plaintext() if env_var.value_enc else None
 
     # Create tool execution manager and execute the tool
     from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager

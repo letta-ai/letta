@@ -1185,7 +1185,7 @@ class LettaAgentV2(BaseAgentV2):
             agent_step_span.add_event(name="tool_execution_started")
 
         # Decrypt environment variable values
-        sandbox_env_vars = {var.key: var.get_value_secret().get_plaintext() for var in agent_state.secrets}
+        sandbox_env_vars = {var.key: var.value_enc.get_plaintext() if var.value_enc else None for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

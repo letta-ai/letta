@@ -1290,10 +1290,9 @@ async def test_agent_environment_variables_decrypt_on_read(server: SyncServer, d
     decrypted = secret_obj.value_enc.get_plaintext()
     assert decrypted == "test-value-67890"
 
-    # Verify get_value_secret() method works
-    value_secret = secret_obj.get_value_secret()
-    assert isinstance(value_secret, Secret)
-    assert value_secret.get_plaintext() == "test-value-67890"
+    # Verify direct value_enc access works
+    assert isinstance(secret_obj.value_enc, Secret)
+    assert secret_obj.value_enc.get_plaintext() == "test-value-67890"
 
 
 @pytest.mark.asyncio
