@@ -860,9 +860,42 @@ async def capture_and_persist_messages(
     }
 
 
+async def _backfill_agent_project_id(server, agent, actor, project_id: str):
+    """
+    Temporary helper to backfill project_id for legacy agents.
+
+    TODO(@caren): Remove this function after all existing Claude Code agents have been backfilled.
+
+    Args:
+        server: SyncServer instance
+        agent: Agent to update
+        actor: Actor performing the operation
+        project_id: Project ID to set
+
+    Returns:
+        Updated agent or original agent if update fails
+    """
+    from letta.schemas.agent import UpdateAgent
+
+    try:
+        updated_agent = await server.update_agent_async(
+            agent_id=agent.id,
+            request=UpdateAgent(project_id=project_id),
+            actor=actor,
+        )
+        logger.info(f"[Backfill] Successfully updated agent {agent.id} with project_id {project_id}")
+        return updated_agent
+    except Exception as e:
+        logger.warning(f"[Backfill] Failed to update agent project_id: {e}. Continuing with in-memory update.")
+        # Fallback: continue with in-memory update
+        agent.project_id = project_id
+        return agent
+
+
 async def get_or_create_claude_code_agent(
     server,
     actor,
+    project_id: Optional[str] = None,
 ):
     """
     Get or create a special agent for Claude Code sessions.
@@ -870,6 +903,7 @@ async def get_or_create_claude_code_agent(
     Args:
         server: SyncServer instance
         actor: Actor performing the operation (user ID)
+        project_id: Optional project ID to associate the agent with
 
     Returns:
         Agent ID
@@ -900,7 +934,15 @@ async def get_or_create_claude_code_agent(
         if agents and len(agents) > 0:
             # Return the first matching agent
             logger.info(f"Found existing Claude Code agent: {agents[0].id} (name: {agent_name})")
-            return agents[0]
+            agent = agents[0]
+
+            # Temporary patch: Fix project_id if it's missing (legacy bug)
+            # TODO(@caren): Remove this after all existing Claude Code agents have been backfilled
+            if not agent.project_id and project_id:
+                logger.info(f"[Backfill] Agent {agent.id} missing project_id, backfilling with {project_id}")
+                agent = await _backfill_agent_project_id(server, agent, actor, project_id)
+
+            return agent
         else:
             logger.debug(f"No existing agent found with name: {agent_name}")
 
@@ -909,7 +951,7 @@ async def get_or_create_claude_code_agent(
 
     # Create new agent
     try:
-        logger.info(f"Creating new Claude Code agent: {agent_name}")
+        logger.info(f"Creating new Claude Code agent: {agent_name} with project_id: {project_id}")
 
         # Create minimal agent config
         agent_config = CreateAgent(
@@ -937,6 +979,7 @@ async def get_or_create_claude_code_agent(
             agent_type="letta_v1_agent",
             model="anthropic/claude-sonnet-4-5-20250929",
             embedding="openai/text-embedding-ada-002",
+            project_id=project_id,
         )
 
         new_agent = await server.create_agent_async(
