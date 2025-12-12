@@ -165,10 +165,10 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     )
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
-        # Get environment variables for this agent specifically
+        # Get environment variables for this agent specifically (read from encrypted value_enc)
         per_agent_env_vars = {}
         for agent_env_var_obj in self.secrets:
-            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
+            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value_enc.get_plaintext() if agent_env_var_obj.value_enc else None
         return per_agent_env_vars
 
     @model_validator(mode="after")
