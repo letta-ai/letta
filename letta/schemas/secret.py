@@ -129,7 +129,10 @@ class Secret(BaseModel):
 
     def get_plaintext(self) -> Optional[str]:
         """
-        Get the decrypted plaintext value.
+        Get the decrypted plaintext value (synchronous version).
+
+        WARNING: This performs CPU-intensive PBKDF2 key derivation that can block for 100-500ms.
+        Use get_plaintext_async() in async contexts to avoid blocking the event loop.
 
         This should only be called when the plaintext is actually needed,
         such as when making an external API call.
@@ -185,6 +188,63 @@ class Secret(BaseModel):
                     self._plaintext_cache = self.encrypted_value
                     return self.encrypted_value
                 # Otherwise, it's corrupted or wrong key
+                logger.error("Failed to decrypt Secret value - data may be corrupted or wrong key")
+                raise
+
+            # Re-raise for other errors
+            raise
+
+    async def get_plaintext_async(self) -> Optional[str]:
+        """
+        Get the decrypted plaintext value (async version).
+
+        Runs the CPU-intensive PBKDF2 key derivation in a thread pool to avoid
+        blocking the event loop. This prevents the event loop freeze that occurs
+        when decrypting secrets synchronously during HTTP request handling.
+
+        This should be used in all async contexts (FastAPI endpoints, async services, etc.)
+        to avoid blocking the event loop for 100-500ms per decryption.
+
+        Returns:
+            The decrypted plaintext value, or None if the secret is empty
+        """
+        if self.encrypted_value is None:
+            return None
+
+        # Use cached value if available
+        if self._plaintext_cache is not None:
+            if not self.was_encrypted:
+                return self._plaintext_cache
+            return self._plaintext_cache
+
+        # Try to decrypt (async)
+        try:
+            plaintext = await CryptoUtils.decrypt_async(self.encrypted_value)
+            # Cache the decrypted value
+            self._plaintext_cache = plaintext
+            return plaintext
+        except ValueError as e:
+            error_msg = str(e)
+
+            # Handle missing encryption key - check if value is actually plaintext
+            if "No encryption key configured" in error_msg:
+                if CryptoUtils.is_encrypted(self.encrypted_value):
+                    logger.warning(
+                        "Cannot decrypt Secret value - no encryption key configured. "
+                        "The value was encrypted and requires the original key to decrypt."
+                    )
+                    return None
+                else:
+                    logger.debug("Secret value is plaintext (stored without encryption)")
+                    self._plaintext_cache = self.encrypted_value
+                    return self.encrypted_value
+
+            # Handle decryption failure - check if value might be plaintext
+            elif "Failed to decrypt data" in error_msg:
+                if not CryptoUtils.is_encrypted(self.encrypted_value):
+                    logger.debug("Secret value appears to be plaintext (stored without encryption)")
+                    self._plaintext_cache = self.encrypted_value
+                    return self.encrypted_value
                 logger.error("Failed to decrypt Secret value - data may be corrupted or wrong key")
                 raise
 

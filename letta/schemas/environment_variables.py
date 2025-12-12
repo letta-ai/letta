@@ -59,6 +59,33 @@ class SandboxEnvironmentVariableBase(EnvironmentVariableBase):
 class SandboxEnvironmentVariable(SandboxEnvironmentVariableBase):
     id: str = SandboxEnvironmentVariableBase.generate_id_field()
 
+    @classmethod
+    async def from_orm_async(cls, orm_obj) -> "SandboxEnvironmentVariable":
+        """
+        Create Pydantic model from ORM with async decryption.
+
+        This pre-decrypts value_enc asynchronously before model creation,
+        avoiding the synchronous decryption in the model validator.
+        """
+        data = {
+            "id": orm_obj.id,
+            "key": orm_obj.key,
+            "description": orm_obj.description,
+            "organization_id": orm_obj.organization_id,
+            "sandbox_config_id": orm_obj.sandbox_config_id,
+            "value": "",
+            "value_enc": None,
+        }
+
+        if orm_obj.value_enc:
+            secret = Secret.from_encrypted(orm_obj.value_enc)
+            data["value"] = await secret.get_plaintext_async() or ""
+            data["value_enc"] = secret
+        elif orm_obj.value:
+            data["value"] = orm_obj.value
+
+        return cls.model_validate(data)
+
 
 class SandboxEnvironmentVariableCreate(EnvironmentVariableCreateBase):
     pass
@@ -76,6 +103,33 @@ class AgentEnvironmentVariableBase(EnvironmentVariableBase):
 
 class AgentEnvironmentVariable(AgentEnvironmentVariableBase):
     id: str = AgentEnvironmentVariableBase.generate_id_field()
+
+    @classmethod
+    async def from_orm_async(cls, orm_obj) -> "AgentEnvironmentVariable":
+        """
+        Create Pydantic model from ORM with async decryption.
+
+        This pre-decrypts value_enc asynchronously before model creation,
+        avoiding the synchronous decryption in the model validator.
+        """
+        data = {
+            "id": orm_obj.id,
+            "key": orm_obj.key,
+            "description": orm_obj.description,
+            "organization_id": orm_obj.organization_id,
+            "agent_id": orm_obj.agent_id,
+            "value": "",
+            "value_enc": None,
+        }
+
+        if orm_obj.value_enc:
+            secret = Secret.from_encrypted(orm_obj.value_enc)
+            data["value"] = await secret.get_plaintext_async() or ""
+            data["value_enc"] = secret
+        elif orm_obj.value:
+            data["value"] = orm_obj.value
+
+        return cls.model_validate(data)
 
 
 class AgentEnvironmentVariableCreate(EnvironmentVariableCreateBase):
