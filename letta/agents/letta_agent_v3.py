@@ -823,7 +823,7 @@ class LettaAgentV3(LettaAgentV2):
                             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
                         if logged_step and step_id:
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, self.stop_reason.stop_reason)
-                    if not self.stop_reason.stop_reason == StopReasonType.context_window_overflow_in_system_prompt:
+                    if not self.stop_reason or self.stop_reason.stop_reason != StopReasonType.context_window_overflow_in_system_prompt:
                         # only return if the stop reason is not context window overflow in system prompt
                         return
                 if step_progression < StepProgression.STEP_LOGGED:
