@@ -363,12 +363,10 @@ class StepManager:
 
             await session.commit()
             pydantic_step = step.to_pydantic()
-
-            # Send webhook notification for step completion
-            webhook_service = WebhookService()
-            await webhook_service.notify_step_complete(step_id)
-
-            return pydantic_step
+        # Send webhook notification for step completion outside the DB session
+        webhook_service = WebhookService()
+        await webhook_service.notify_step_complete(step_id)
+        return pydantic_step
 
     @enforce_types
     @trace_method
@@ -416,12 +414,10 @@ class StepManager:
 
             await session.commit()
             pydantic_step = step.to_pydantic()
-
-            # Send webhook notification for step completion
-            webhook_service = WebhookService()
-            await webhook_service.notify_step_complete(step_id)
-
-            return pydantic_step
+        # Send webhook notification for step completion outside the DB session
+        webhook_service = WebhookService()
+        await webhook_service.notify_step_complete(step_id)
+        return pydantic_step
 
     @enforce_types
     @trace_method
@@ -458,12 +454,10 @@ class StepManager:
 
             await session.commit()
             pydantic_step = step.to_pydantic()
-
-            # Send webhook notification for step completion
-            webhook_service = WebhookService()
-            await webhook_service.notify_step_complete(step_id)
-
-            return pydantic_step
+        # Send webhook notification for step completion outside the DB session
+        webhook_service = WebhookService()
+        await webhook_service.notify_step_complete(step_id)
+        return pydantic_step
 
     @enforce_types
     @trace_method
