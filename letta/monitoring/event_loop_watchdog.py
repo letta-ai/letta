@@ -97,7 +97,7 @@ class EventLoopWatchdog:
                     pass
 
                 # ALWAYS log every check to prove watchdog is alive
-                logger.info(
+                logger.debug(
                     f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
                 )
 

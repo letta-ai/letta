@@ -292,7 +292,7 @@ def create_token_counter(
     if use_gemini:
         client = LLMClient.create(provider_type=model_endpoint_type, actor=actor)
         token_counter = GeminiTokenCounter(client, model)
-        logger.info(
+        logger.debug(
             f"Using GeminiTokenCounter for agent_id={agent_id}, model={model}, "
             f"model_endpoint_type={model_endpoint_type}, "
             f"environment={settings.environment}"
@@ -301,14 +301,14 @@ def create_token_counter(
         anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
         counter_model = model if model_endpoint_type == "anthropic" else None
         token_counter = AnthropicTokenCounter(anthropic_client, counter_model)
-        logger.info(
+        logger.debug(
             f"Using AnthropicTokenCounter for agent_id={agent_id}, model={counter_model}, "
             f"model_endpoint_type={model_endpoint_type}, "
             f"environment={settings.environment}"
         )
     else:
         token_counter = ApproxTokenCounter()
-        logger.info(
+        logger.debug(
             f"Using ApproxTokenCounter for agent_id={agent_id}, model={model}, "
             f"model_endpoint_type={model_endpoint_type}, "
             f"environment={settings.environment}"
