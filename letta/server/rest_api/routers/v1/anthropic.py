@@ -323,12 +323,15 @@ async def anthropic_messages_proxy(
         request_data = json.loads(body)
         is_streaming = request_data.get("stream", False)
         model_name = request_data.get("model")
+        project_id = request_data.get("project_id")
         logger.debug(f"[Anthropic Proxy] Request is streaming: {is_streaming}")
         logger.debug(f"[Anthropic Proxy] Model: {model_name}")
+        logger.debug(f"[Anthropic Proxy] Project ID: {project_id}")
     except Exception as e:
         logger.warning(f"[Anthropic Proxy] Failed to parse request body: {e}")
         is_streaming = False
         model_name = None
+        project_id = None
 
     # Get or create agent for Claude Code session (skip for system requests)
     # Note: Agent lookup and memory search are blocking operations before forwarding.
@@ -339,6 +342,7 @@ async def anthropic_messages_proxy(
             agent = await get_or_create_claude_code_agent(
                 server=server,
                 actor=actor,
+                project_id=project_id,
             )
             logger.debug(f"[Anthropic Proxy] Using agent ID: {agent.id}")
         except Exception as e:
