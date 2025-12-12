@@ -16,6 +16,7 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType
+from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -432,8 +433,10 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["identities"] = [i.to_pydantic() for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
-        state["tool_exec_environment_variables"] = tool_exec_environment_variables
-        state["secrets"] = tool_exec_environment_variables
+        # Convert ORM env vars to Pydantic with async decryption
+        env_vars_pydantic = [await PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables]
+        state["tool_exec_environment_variables"] = env_vars_pydantic
+        state["secrets"] = env_vars_pydantic
         state["model"] = self.llm_config.handle if self.llm_config else None
         state["model_settings"] = self.llm_config._to_model_settings() if self.llm_config else None
         state["embedding"] = self.embedding_config.handle if self.embedding_config else None
