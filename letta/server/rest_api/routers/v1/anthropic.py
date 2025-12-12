@@ -22,6 +22,7 @@ ANTHROPIC_API_BASE = "https://api.anthropic.com"
 
 
 def extract_user_messages(body: bytes) -> list[str]:
+    messages = []
     try:
         request_data = json.loads(body)
         messages = request_data.get("messages", [])
@@ -42,11 +43,12 @@ def extract_user_messages(body: bytes) -> list[str]:
 
         return user_messages
     except Exception as e:
-        logger.warning(f"[Anthropic Proxy] Failed to extract user messages: {e}")
+        logger.warning(f"[Anthropic Proxy] Failed to extract user messages from request {messages}: {e}")
         return []
 
 
 def extract_assistant_message(response_data: dict) -> str:
+    content_blocks = []
     try:
         content_blocks = response_data.get("content", [])
         text_parts = []
@@ -57,7 +59,7 @@ def extract_assistant_message(response_data: dict) -> str:
 
         return "\n".join(text_parts)
     except Exception as e:
-        logger.warning(f"[Anthropic Proxy] Failed to extract assistant message: {e}")
+        logger.warning(f"[Anthropic Proxy] Failed to extract assistant message from response {content_blocks}: {e}")
         return ""
 
 
@@ -84,6 +86,7 @@ def prepare_anthropic_headers(request: Request) -> dict | None:
     if "x-api-key" not in anthropic_headers and "anthropic-api-key" not in anthropic_headers:
         anthropic_api_key = model_settings.anthropic_api_key
         if anthropic_api_key:
+            logger.info("[Anthropic Proxy] Falling back to Letta's anthropic api key instead of user's key")
             anthropic_headers["x-api-key"] = anthropic_api_key
 
     if "content-type" not in anthropic_headers:
@@ -296,16 +299,10 @@ async def anthropic_messages_proxy(
     # Claude Code sends full conversation history, but we only want to persist the new message
     user_messages = [all_user_messages[-1]] if all_user_messages else []
 
-    # Check if this is a system/metadata request
-    is_system_request = len(user_messages) == 0 or user_messages[0].startswith("<system-reminder>")
-    if is_system_request:
-        logger.debug("[Anthropic Proxy] Skipping capture/memory for system request")
-
-    if user_messages and not is_system_request:
-        logger.info("=" * 70)
-        logger.info("📨 CAPTURED USER MESSAGE (latest only):")
-        logger.info(f"  {user_messages[0][:200]}{'...' if len(user_messages[0]) > 200 else ''}")
-        logger.info("=" * 70)
+    # Filter out system/metadata requests
+    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>")]
+    if not user_messages:
+        logger.debug("[Anthropic Proxy] Skipping capture/memory for this turn")
 
     anthropic_headers = prepare_anthropic_headers(request)
     if not anthropic_headers:
@@ -338,22 +335,21 @@ async def anthropic_messages_proxy(
     # Note: Agent lookup and memory search are blocking operations before forwarding.
     # Message persistence happens in the background after the response is returned.
     agent = None
-    if not is_system_request:
-        try:
-            agent = await get_or_create_claude_code_agent(
-                server=server,
-                actor=actor,
-                project_id=project_id,
-            )
-            logger.debug(f"[Anthropic Proxy] Using agent ID: {agent.id}")
-        except Exception as e:
-            logger.error(f"[Anthropic Proxy] Failed to get/create agent: {e}")
+    try:
+        agent = await get_or_create_claude_code_agent(
+            server=server,
+            actor=actor,
+            project_id=project_id,
+        )
+        logger.debug(f"[Anthropic Proxy] Using agent ID: {agent.id}")
+    except Exception as e:
+        logger.error(f"[Anthropic Proxy] Failed to get/create agent: {e}")
 
     # Inject memory context into request (skip for system requests)
     # TODO: Optimize - skip memory injection on subsequent messages in same session
     # TODO: Add caching layer to avoid duplicate memory searches
     modified_body = body
-    if agent and request_data and not is_system_request:
+    if agent and request_data:
         modified_request_data = await _inject_memory_context(
             server=server,
             agent=agent,
@@ -386,14 +382,18 @@ async def anthropic_messages_proxy(
 
                 # After streaming is complete, extract and log assistant message
                 assistant_message = _build_response_from_chunks(collected_chunks)
-                if assistant_message:
+                if user_messages and assistant_message:
+                    logger.info("=" * 70)
+                    logger.info("📨 CAPTURED USER MESSAGE:")
+                    for user_message in user_messages:
+                        logger.info(f"  {user_message[:200]}{'...' if len(user_message) > 200 else ''}")
                     logger.info("=" * 70)
                     logger.info("🤖 CAPTURED ASSISTANT RESPONSE (streaming):")
-                    logger.info(f"  {assistant_message[:500]}{'...' if len(assistant_message) > 500 else ''}")
+                    logger.info(f"  {assistant_message[:200]}{'...' if len(assistant_message) > 200 else ''}")
                     logger.info("=" * 70)
 
                     # Persist messages to database (non-blocking, skip for system requests)
-                    if agent and user_messages and not is_system_request:
+                    if agent and user_messages:
                         asyncio.create_task(
                             _persist_messages_background(
                                 server=server,
@@ -439,8 +439,8 @@ async def anthropic_messages_proxy(
                         logger.info(f"  {assistant_message[:500]}{'...' if len(assistant_message) > 500 else ''}")
                         logger.info("=" * 70)
 
-                        # Persist messages to database (non-blocking, skip for system requests)
-                        if agent and user_messages and not is_system_request:
+                        # Persist messages to database (non-blocking)
+                        if agent and user_messages:
                             asyncio.create_task(
                                 _persist_messages_background(
                                     server=server,
