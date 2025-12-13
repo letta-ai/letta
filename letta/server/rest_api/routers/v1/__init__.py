@@ -26,9 +26,11 @@ from letta.server.rest_api.routers.v1.tags import router as tags_router
 from letta.server.rest_api.routers.v1.telemetry import router as telemetry_router
 from letta.server.rest_api.routers.v1.tools import router as tools_router
 from letta.server.rest_api.routers.v1.voice import router as voice_router
+from letta.server.rest_api.routers.v1.zai import router as zai_router
 
 ROUTERS = [
     anthropic_router,
+    zai_router,
     archives_router,
     tools_router,
     sources_router,
