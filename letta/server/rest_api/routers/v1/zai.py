@@ -22,35 +22,35 @@ from letta.server.server import SyncServer
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/anthropic", tags=["anthropic"])
+router = APIRouter(prefix="/zai", tags=["zai"])
 
-ANTHROPIC_API_BASE = "https://api.anthropic.com"
-PROXY_NAME = "Anthropic Proxy"
+ZAI_API_BASE = "https://api.z.ai/api/anthropic"
+PROXY_NAME = "Z.ai Proxy"
 
 
-@router.api_route("/v1/messages", methods=["POST"], operation_id="anthropic_messages_proxy", include_in_schema=False)
-async def anthropic_messages_proxy(
+@router.api_route("/v1/messages", methods=["POST"], operation_id="zai_messages_proxy", include_in_schema=False)
+async def zai_messages_proxy(
     request: Request,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Proxy endpoint for Anthropic Messages API.
+    Proxy endpoint for Z.ai Messages API.
 
-    This endpoint forwards requests to the Anthropic API, allowing Claude Code CLI
+    This endpoint forwards requests to the Z.ai API, allowing Claude Code CLI
     to use Letta as a proxy by configuring anthropic_base_url.
 
     Usage in Claude Code CLI settings.json:
     {
         "env": {
-            "ANTHROPIC_BASE_URL": "http://localhost:3000/v1/anthropic"
+            "ANTHROPIC_BASE_URL": "http://localhost:3000/v1/zai"
         }
     }
     """
     # Get the request body
     body = await request.body()
 
-    logger.info(f"[{PROXY_NAME}] Proxying request to Anthropic Messages API: {ANTHROPIC_API_BASE}/v1/messages")
+    logger.info(f"[{PROXY_NAME}] Proxying request to Z.ai Messages API: {ZAI_API_BASE}/v1/messages")
     logger.debug(f"[{PROXY_NAME}] Request body preview: {body[:200]}...")
 
     actor = await server.user_manager.get_actor_or_default_async(headers.actor_id)
@@ -67,8 +67,8 @@ async def anthropic_messages_proxy(
     if not user_messages:
         logger.debug(f"[{PROXY_NAME}] Skipping capture/memory for this turn")
 
-    anthropic_headers = prepare_headers(request, PROXY_NAME)
-    if not anthropic_headers:
+    zai_headers = prepare_headers(request, PROXY_NAME, use_bearer_auth=True)
+    if not zai_headers:
         logger.error(f"[{PROXY_NAME}] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required. Pass via anthropic-api-key or x-api-key header."}}',
@@ -83,7 +83,7 @@ async def anthropic_messages_proxy(
         request_data = json.loads(body)
         is_streaming = request_data.get("stream", False)
         model_name = request_data.get("model")
-        # Extract and remove project_id (internal use only, not for Anthropic API)
+        # Extract and remove project_id (internal use only, not for Z.ai API)
         project_id = request_data.pop("project_id", None)
         logger.debug(f"[{PROXY_NAME}] Request is streaming: {is_streaming}")
         logger.debug(f"[{PROXY_NAME}] Model: {model_name}")
@@ -125,11 +125,11 @@ async def anthropic_messages_proxy(
 
         modified_body = json.dumps(modified_request_data).encode("utf-8")
 
-    # Forward the request to Anthropic API (preserve query params like ?beta=true)
+    # Forward the request to Z.ai API (preserve query params like ?beta=true)
     # Note: For streaming, we create the client outside the generator to keep it alive
-    anthropic_url = f"{ANTHROPIC_API_BASE}/v1/messages"
+    zai_url = f"{ZAI_API_BASE}/v1/messages"
     if request.url.query:
-        anthropic_url = f"{anthropic_url}?{request.url.query}"
+        zai_url = f"{zai_url}?{request.url.query}"
 
     if is_streaming:
         # Handle streaming response
@@ -140,8 +140,8 @@ async def anthropic_messages_proxy(
             async with httpx.AsyncClient(timeout=300.0) as client:
                 async with client.stream(
                     "POST",
-                    anthropic_url,
-                    headers=anthropic_headers,
+                    zai_url,
+                    headers=zai_headers,
                     content=modified_body,
                 ) as response:
                     async for chunk in response.aiter_bytes():
@@ -195,8 +195,8 @@ async def anthropic_messages_proxy(
         try:
             # Handle non-streaming response
             response = await client.post(
-                anthropic_url,
-                headers=anthropic_headers,
+                zai_url,
+                headers=zai_headers,
                 content=modified_body,
             )
 
@@ -249,9 +249,9 @@ async def anthropic_messages_proxy(
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"[{PROXY_NAME}] Error proxying request to Anthropic API: {e}")
+            logger.error(f"[{PROXY_NAME}] Error proxying request to Z.ai API: {e}")
             return Response(
-                content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Anthropic API: {str(e)}"}}}}',
+                content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Z.ai API: {str(e)}"}}}}',
                 status_code=500,
                 media_type="application/json",
             )
@@ -260,19 +260,19 @@ async def anthropic_messages_proxy(
 @router.api_route(
     "/v1/{endpoint:path}",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
-    operation_id="anthropic_catchall_proxy",
+    operation_id="zai_catchall_proxy",
     include_in_schema=False,
 )
-async def anthropic_catchall_proxy(
+async def zai_catchall_proxy(
     endpoint: str,
     request: Request,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Catch-all proxy for other Anthropic API endpoints.
+    Catch-all proxy for other Z.ai API endpoints.
 
-    This forwards all other requests (like /v1/messages/count_tokens) directly to Anthropic
+    This forwards all other requests (like /v1/messages/count_tokens) directly to Z.ai
     without message capture or memory injection.
     """
     # Skip the /v1/messages endpoint (handled by specific route)
@@ -292,8 +292,8 @@ async def anthropic_catchall_proxy(
 
     logger.info(f"[{PROXY_NAME}] Proxying catch-all request: {request.method} /{path}")
 
-    anthropic_headers = prepare_headers(request, PROXY_NAME)
-    if not anthropic_headers:
+    zai_headers = prepare_headers(request, PROXY_NAME, use_bearer_auth=True)
+    if not zai_headers:
         logger.error(f"[{PROXY_NAME}] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required"}}',
@@ -301,13 +301,13 @@ async def anthropic_catchall_proxy(
             media_type="application/json",
         )
 
-    # Forward the request to Anthropic API
+    # Forward the request to Z.ai API
     async with httpx.AsyncClient(timeout=300.0) as client:
         try:
             response = await client.request(
                 method=request.method,
-                url=f"{ANTHROPIC_API_BASE}/{path}",
-                headers=anthropic_headers,
+                url=f"{ZAI_API_BASE}/{path}",
+                headers=zai_headers,
                 content=body if body else None,
             )
 
@@ -323,9 +323,9 @@ async def anthropic_catchall_proxy(
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"[{PROXY_NAME}] Error proxying catch-all request to Anthropic API: {e}")
+            logger.error(f"[{PROXY_NAME}] Error proxying catch-all request to Z.ai API: {e}")
             return Response(
-                content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Anthropic API: {str(e)}"}}}}',
+                content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Z.ai API: {str(e)}"}}}}',
                 status_code=500,
                 media_type="application/json",
             )
