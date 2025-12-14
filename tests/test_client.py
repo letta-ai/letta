@@ -694,3 +694,64 @@ def test_attach_sleeptime_block(client: Letta):
 
     # cleanup
     client.agents.delete(agent.id)
+
+
+def test_list_agent_blocks_pagination_no_duplicates(client: Letta):
+    """
+    Test that paginating through agent blocks doesn't return duplicates.
+    This reproduces issue #3088 where duplicate blocks were returned across pages.
+    """
+    # Create an agent with 3 memory blocks (as described in the issue)
+    agent = client.agents.create(
+        name="test-agent-pagination",
+        model="letta/letta-free",
+        embedding="letta/letta-free",
+        memory_blocks=[
+            {"label": "persona", "value": "You are a helpful assistant."},
+            {"label": "system", "value": "System instructions here."},
+            {"label": "human", "value": "User context here."},
+        ],
+    )
+
+    try:
+        # Collect all blocks using pagination with limit=1 to force multiple pages
+        all_blocks = []
+        after = None
+        
+        while True:
+            if after:
+                page = client.agents.blocks.list(agent_id=agent.id, limit=1, after=after)
+            else:
+                page = client.agents.blocks.list(agent_id=agent.id, limit=1)
+            
+            blocks = page.items
+            if not blocks:
+                break
+                
+            all_blocks.extend(blocks)
+            
+            # Use the last block's ID as the cursor for the next page
+            after = blocks[-1].id
+            
+            # Safety check to prevent infinite loops
+            if len(all_blocks) > 10:
+                break
+
+        # Verify we got exactly 3 unique blocks (not 6 as in the bug)
+        block_ids = [b.id for b in all_blocks]
+        unique_ids = set(block_ids)
+        
+        assert len(unique_ids) == 3, f"Expected 3 unique blocks, got {len(unique_ids)}. Total blocks returned: {len(all_blocks)}"
+        assert len(all_blocks) == 3, f"Expected 3 total blocks, got {len(all_blocks)}. Duplicates detected!"
+        
+        # Verify no duplicate block IDs
+        from collections import Counter
+        duplicates = {bid: count for bid, count in Counter(block_ids).items() if count > 1}
+        assert not duplicates, f"Found duplicate block IDs: {duplicates}"
+        
+        # Verify we have the expected labels
+        labels = {b.label for b in all_blocks}
+        assert labels == {"persona", "system", "human"}, f"Expected labels ['persona', 'system', 'human'], got {labels}"
+        
+    finally:
+        client.agents.delete(agent.id)
