@@ -745,6 +745,7 @@ class LettaAgentV3(LettaAgentV2):
                 is_approval_response=approval_response is not None,
                 tool_call_denials=tool_call_denials,
                 tool_returns=tool_returns,
+                finish_reason=llm_adapter.finish_reason,
             )
 
             # extend trackers with new messages
@@ -892,6 +893,7 @@ class LettaAgentV3(LettaAgentV2):
         tool_calls: list[ToolCall] = [],
         tool_call_denials: list[ToolCallDenial] = [],
         tool_returns: list[ToolReturn] = [],
+        finish_reason: str | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate tool calls,
@@ -936,6 +938,7 @@ class LettaAgentV3(LettaAgentV2):
                     tool_rule_violated=False,
                     tool_rules_solver=tool_rules_solver,
                     is_final_step=is_final_step,
+                    finish_reason=finish_reason,
                 )
                 assistant_message = create_letta_messages_from_llm_response(
                     agent_id=self.agent_state.id,
@@ -1180,6 +1183,7 @@ class LettaAgentV3(LettaAgentV2):
                     tool_rule_violated=spec["violated"],
                     tool_rules_solver=tool_rules_solver,
                     is_final_step=(is_final_step and idx == len(exec_specs) - 1),
+                    finish_reason=finish_reason,
                 )
             persisted_continue_flags.append(cont)
             persisted_stop_reasons.append(sr)
@@ -1243,6 +1247,7 @@ class LettaAgentV3(LettaAgentV2):
         tool_rule_violated: bool,
         tool_rules_solver: ToolRulesSolver,
         is_final_step: bool | None,
+        finish_reason: str | None = None,
     ) -> tuple[bool, str | None, LettaStopReason | None]:
         """
         In v3 loop, we apply the following rules:
@@ -1267,6 +1272,9 @@ class LettaAgentV3(LettaAgentV2):
                 reason = f"{NON_USER_MSG_PREFIX}ToolRuleViolated: You must call {', '.join(uncalled)} at least once to exit the loop."
                 return True, reason, None
             # No required tools remaining → end turn
+            # Check if the LLM hit max_tokens (finish_reason == "length")
+            if finish_reason == "length":
+                return False, None, LettaStopReason(stop_reason=StopReasonType.max_tokens_exceeded.value)
             return False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
         else:
             if tool_rule_violated:

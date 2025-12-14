@@ -63,6 +63,18 @@ class LettaLLMAdapter(ABC):
         """
         raise NotImplementedError
 
+    @property
+    def finish_reason(self) -> str | None:
+        """
+        Get the finish_reason from the LLM response.
+
+        Returns:
+            str | None: The finish_reason if available, None otherwise
+        """
+        if self.chat_completions_response and self.chat_completions_response.choices:
+            return self.chat_completions_response.choices[0].finish_reason
+        return None
+
     def supports_token_streaming(self) -> bool:
         """
         Check if the adapter supports token-level streaming.

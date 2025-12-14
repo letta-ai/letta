@@ -656,7 +656,15 @@ class OpenAIClient(LLMClientBase):
             reasoning_summary_parts = None
             reasoning_content_signature = None
             tool_calls = None
-            finish_reason = "stop" if (response_data.get("status") == "completed") else None
+
+            # Check for incomplete_details first (e.g., max_output_tokens reached)
+            incomplete_details = response_data.get("incomplete_details")
+            if incomplete_details and incomplete_details.get("reason") == "max_output_tokens":
+                finish_reason = "length"
+            elif response_data.get("status") == "completed":
+                finish_reason = "stop"
+            else:
+                finish_reason = None
 
             # Optionally capture reasoning presence
             found_reasoning = False

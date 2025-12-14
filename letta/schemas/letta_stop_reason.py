@@ -13,6 +13,7 @@ class StopReasonType(str, Enum):
     invalid_llm_response = "invalid_llm_response"
     invalid_tool_call = "invalid_tool_call"
     max_steps = "max_steps"
+    max_tokens_exceeded = "max_tokens_exceeded"
     no_tool_call = "no_tool_call"
     tool_rule = "tool_rule"
     cancelled = "cancelled"
@@ -34,6 +35,8 @@ class StopReasonType(str, Enum):
             StopReasonType.no_tool_call,
             StopReasonType.invalid_llm_response,
             StopReasonType.llm_api_error,
+            # Treat context/token limit exhaustion as an error state (same as llm_api_error)
+            StopReasonType.max_tokens_exceeded,
             StopReasonType.context_window_overflow_in_system_prompt,
         ):
             return RunStatus.failed
