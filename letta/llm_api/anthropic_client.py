@@ -896,7 +896,7 @@ class AnthropicClient(LLMClientBase):
             created=get_utc_time_int(),
             model=response.model,
             usage=UsageStatistics(
-                prompt_tokens=prompt_tokens,
+                prompt_tokens=actual_input_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=actual_input_tokens + completion_tokens,
                 prompt_tokens_details=prompt_tokens_details,

@@ -200,7 +200,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             self.usage = LettaUsageStatistics(
                 step_count=1,
                 completion_tokens=output_tokens or 0,
-                prompt_tokens=input_tokens or 0,
+                prompt_tokens=actual_input_tokens,
                 total_tokens=actual_input_tokens + (output_tokens or 0),
                 cached_input_tokens=cached_input_tokens,
                 cache_write_tokens=cache_write_tokens,
