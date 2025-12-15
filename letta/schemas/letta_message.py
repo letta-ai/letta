@@ -555,6 +555,78 @@ LettaMessageUpdateUnion = Annotated[
 ]
 
 
+# ------------------------------
+# Message Search Result Schemas
+# ------------------------------
+
+
+class SystemMessageListResult(UpdateSystemMessage):
+    """System message list result with agent context.
+
+    Shape is identical to UpdateSystemMessage but includes the owning agent_id.
+    """
+
+    agent_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the agent that owns the message.",
+    )
+
+    created_at: datetime = Field(..., description="The time the message was created in ISO format.")
+
+
+class UserMessageListResult(UpdateUserMessage):
+    """User message list result with agent context.
+
+    Shape is identical to UpdateUserMessage but includes the owning agent_id.
+    """
+
+    agent_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the agent that owns the message.",
+    )
+
+    created_at: datetime = Field(..., description="The time the message was created in ISO format.")
+
+
+class ReasoningMessageListResult(UpdateReasoningMessage):
+    """Reasoning message list result with agent context.
+
+    Shape is identical to UpdateReasoningMessage but includes the owning agent_id.
+    """
+
+    agent_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the agent that owns the message.",
+    )
+
+    created_at: datetime = Field(..., description="The time the message was created in ISO format.")
+
+
+class AssistantMessageListResult(UpdateAssistantMessage):
+    """Assistant message list result with agent context.
+
+    Shape is identical to UpdateAssistantMessage but includes the owning agent_id.
+    """
+
+    agent_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the agent that owns the message.",
+    )
+
+    created_at: datetime = Field(..., description="The time the message was created in ISO format.")
+
+
+LettaMessageSearchResult = Annotated[
+    Union[
+        SystemMessageListResult,
+        UserMessageListResult,
+        ReasoningMessageListResult,
+        AssistantMessageListResult,
+    ],
+    Field(discriminator="message_type"),
+]
+
+
 # --------------------------
 # Deprecated Message Schemas
 # --------------------------

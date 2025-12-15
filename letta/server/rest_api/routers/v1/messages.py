@@ -8,7 +8,7 @@ from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageSearchResult, LettaMessageUnion
 from letta.schemas.letta_request import CreateBatch
 from letta.schemas.letta_response import LettaBatchMessages
 from letta.schemas.message import Message, MessageSearchRequest, MessageSearchResult, SearchAllMessagesRequest
@@ -55,7 +55,7 @@ async def list_all_messages(
     )
 
 
-@router.post("/search", response_model=List[LettaMessageUnion], operation_id="search_all_messages")
+@router.post("/search", response_model=List[LettaMessageSearchResult], operation_id="search_all_messages")
 async def search_all_messages(
     request: SearchAllMessagesRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -77,7 +77,7 @@ async def search_all_messages(
         start_date=request.start_date,
         end_date=request.end_date,
     )
-    return Message.to_letta_messages_from_list(messages=[result.message for result in results], text_is_assistant_message=True)
+    return Message.to_letta_search_results_from_list(search_results=results, text_is_assistant_message=True)
 
 
 @router.post(
