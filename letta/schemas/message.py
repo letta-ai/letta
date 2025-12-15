@@ -29,17 +29,22 @@ from letta.schemas.letta_message import (
     ApprovalResponseMessage,
     ApprovalReturn,
     AssistantMessage,
+    AssistantMessageListResult,
     HiddenReasoningMessage,
     LettaMessage,
     LettaMessageReturnUnion,
+    LettaMessageSearchResult,
     MessageType,
     ReasoningMessage,
+    ReasoningMessageListResult,
     SystemMessage,
+    SystemMessageListResult,
     ToolCall,
     ToolCallMessage,
     ToolReturn as LettaToolReturn,
     ToolReturnMessage,
     UserMessage,
+    UserMessageListResult,
 )
 from letta.schemas.letta_message_content import (
     ImageContent,
@@ -318,6 +323,80 @@ class Message(BaseMessage):
                 text_is_assistant_message=text_is_assistant_message,
             )
         ]
+
+    @staticmethod
+    @trace_method
+    def to_letta_search_results_from_list(
+        search_results: List["MessageSearchResult"],
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+        reverse: bool = True,
+        include_err: Optional[bool] = None,
+        text_is_assistant_message: bool = False,
+    ) -> List[LettaMessageSearchResult]:
+        """Convert MessageSearchResult objects into LettaMessageSearchResult objects.
+
+        This mirrors the behavior of to_letta_messages_from_list, but preserves the
+        originating Message.agent_id on each search result variant.
+        """
+
+        letta_search_results: List[LettaMessageSearchResult] = []
+
+        for result in search_results:
+            message = result.message
+
+            # Convert the underlying Message into LettaMessage variants
+            letta_messages = message.to_letta_messages(
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+                include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
+            )
+
+            for lm in letta_messages:
+                if isinstance(lm, SystemMessage):
+                    letta_search_results.append(
+                        SystemMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, UserMessage):
+                    letta_search_results.append(
+                        UserMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, ReasoningMessage):
+                    letta_search_results.append(
+                        ReasoningMessageListResult(
+                            message_type=lm.message_type,
+                            reasoning=lm.reasoning,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, AssistantMessage):
+                    letta_search_results.append(
+                        AssistantMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                # Other LettaMessage variants (tool, approval, etc.) are not part of
+                # LettaMessageSearchResult and are intentionally skipped here.
+
+        return letta_search_results
 
     def to_letta_messages(
         self,

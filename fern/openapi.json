@@ -15632,53 +15632,25 @@
                   "items": {
                     "oneOf": [
                       {
-                        "$ref": "#/components/schemas/SystemMessage"
+                        "$ref": "#/components/schemas/SystemMessageListResult"
                       },
                       {
-                        "$ref": "#/components/schemas/UserMessage"
+                        "$ref": "#/components/schemas/UserMessageListResult"
                       },
                       {
-                        "$ref": "#/components/schemas/ReasoningMessage"
+                        "$ref": "#/components/schemas/ReasoningMessageListResult"
                       },
                       {
-                        "$ref": "#/components/schemas/HiddenReasoningMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ToolCallMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ToolReturnMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/AssistantMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ApprovalRequestMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ApprovalResponseMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/SummaryMessage"
-                      },
-                      {
-                        "$ref": "#/components/schemas/EventMessage"
+                        "$ref": "#/components/schemas/AssistantMessageListResult"
                       }
                     ],
                     "discriminator": {
                       "propertyName": "message_type",
                       "mapping": {
-                        "system_message": "#/components/schemas/SystemMessage",
-                        "user_message": "#/components/schemas/UserMessage",
-                        "reasoning_message": "#/components/schemas/ReasoningMessage",
-                        "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
-                        "tool_call_message": "#/components/schemas/ToolCallMessage",
-                        "tool_return_message": "#/components/schemas/ToolReturnMessage",
-                        "assistant_message": "#/components/schemas/AssistantMessage",
-                        "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
-                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
-                        "summary": "#/components/schemas/SummaryMessage",
-                        "event": "#/components/schemas/EventMessage"
+                        "system_message": "#/components/schemas/SystemMessageListResult",
+                        "user_message": "#/components/schemas/UserMessageListResult",
+                        "reasoning_message": "#/components/schemas/ReasoningMessageListResult",
+                        "assistant_message": "#/components/schemas/AssistantMessageListResult"
                       }
                     }
                   },
@@ -21956,6 +21928,53 @@
         "required": ["id", "date", "content"],
         "title": "AssistantMessage",
         "description": "A message sent by the LLM in response to user input. Used in the LLM context.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (Union[str, List[LettaAssistantMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)"
+      },
+      "AssistantMessageListResult": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "assistant_message",
+            "title": "Message Type",
+            "default": "assistant_message"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaAssistantMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The message content sent by the assistant (can be a string or an array of content parts)"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent that owns the message."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created in ISO format."
+          }
+        },
+        "type": "object",
+        "required": ["content", "created_at"],
+        "title": "AssistantMessageListResult",
+        "description": "Assistant message list result with agent context.\n\nShape is identical to UpdateAssistantMessage but includes the owning agent_id."
       },
       "Audio": {
         "properties": {
@@ -34195,6 +34214,42 @@
         "title": "ReasoningMessage",
         "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    source (Literal[\"reasoner_model\", \"non_reasoner_model\"]): Whether the reasoning\n        content was generated natively by a reasoner model or derived via prompting\n    reasoning (str): The internal reasoning of the agent\n    signature (Optional[str]): The model-generated signature of the reasoning step"
       },
+      "ReasoningMessageListResult": {
+        "properties": {
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning"
+          },
+          "message_type": {
+            "type": "string",
+            "const": "reasoning_message",
+            "title": "Message Type",
+            "default": "reasoning_message"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent that owns the message."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created in ISO format."
+          }
+        },
+        "type": "object",
+        "required": ["reasoning", "created_at"],
+        "title": "ReasoningMessageListResult",
+        "description": "Reasoning message list result with agent context.\n\nShape is identical to UpdateReasoningMessage but includes the owning agent_id."
+      },
       "RedactedReasoningContent": {
         "properties": {
           "type": {
@@ -36651,6 +36706,43 @@
         "required": ["id", "date", "content"],
         "title": "SystemMessage",
         "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (str): The message content sent by the system"
+      },
+      "SystemMessageListResult": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "system_message",
+            "title": "Message Type",
+            "default": "system_message"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The message content sent by the system (can be a string or an array of multi-modal content parts)"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent that owns the message."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created in ISO format."
+          }
+        },
+        "type": "object",
+        "required": ["content", "created_at"],
+        "title": "SystemMessageListResult",
+        "description": "System message list result with agent context.\n\nShape is identical to UpdateSystemMessage but includes the owning agent_id."
       },
       "TagSchema": {
         "properties": {
@@ -39275,6 +39367,53 @@
         "required": ["id", "date", "content"],
         "title": "UserMessage",
         "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (Union[str, List[LettaUserMessageContentUnion]]): The message content sent by the user (can be a string or an array of multi-modal content parts)"
+      },
+      "UserMessageListResult": {
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "const": "user_message",
+            "title": "Message Type",
+            "default": "user_message"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaUserMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The message content sent by the user (can be a string or an array of multi-modal content parts)"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent that owns the message."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created in ISO format."
+          }
+        },
+        "type": "object",
+        "required": ["content", "created_at"],
+        "title": "UserMessageListResult",
+        "description": "User message list result with agent context.\n\nShape is identical to UpdateUserMessage but includes the owning agent_id."
       },
       "UserUpdate": {
         "properties": {

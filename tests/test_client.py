@@ -58,8 +58,8 @@ def agent(client: Letta):
     agent_state = client.agents.create(
         name="test_client",
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="letta/letta-free",
-        embedding="letta/letta-free",
+        model="anthropic/claude-haiku-4-5-20251001",
+        embedding="openai/text-embedding-3-small",
     )
 
     yield agent_state
@@ -74,8 +74,8 @@ def search_agent_one(client: Letta):
     agent_state = client.agents.create(
         name="Search Agent One",
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="letta/letta-free",
-        embedding="letta/letta-free",
+        model="anthropic/claude-haiku-4-5-20251001",
+        embedding="openai/text-embedding-3-small",
     )
 
     yield agent_state
@@ -459,6 +459,12 @@ def test_messages(client: Letta, agent: AgentState):
 
     messages_response = client.agents.messages.list(agent_id=agent.id, limit=1).items
     assert len(messages_response) > 0, "Retrieving messages failed"
+
+    search_response = list(client.messages.search(query="test"))
+    assert len(search_response) > 0, "Searching messages failed"
+    for result in search_response:
+        assert result.agent_id == agent.id
+        assert result.created_at
 
 
 # TODO: Add back when new agent loop hits
