@@ -323,7 +323,9 @@ class Settings(BaseSettings):
 
     # LLM request timeout settings (model + embedding model)
     llm_request_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM requests in seconds")
-    llm_stream_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds")
+    llm_stream_timeout_seconds: float = Field(
+        default=600.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds"
+    )
 
     # For embeddings
     enable_pinecone: bool = False
