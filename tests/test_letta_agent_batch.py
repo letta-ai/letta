@@ -121,7 +121,7 @@ async def agents(server, weather_tool):
                 include_base_tools=True,
                 model=model_name,
                 tags=["test_agents"],
-                embedding="letta/letta-free",
+                embedding="openai/text-embedding-3-small",
                 tool_ids=[weather_tool.id],
                 agent_type="memgpt_v2_agent",
             ),
@@ -368,7 +368,7 @@ async def test_rethink_tool_modify_agent_state(disable_e2b_api_key, server, defa
             include_base_tools=True,
             model=MODELS["sonnet"],
             tags=["test_agents"],
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
             tool_ids=[rethink_tool.id],
             memory_blocks=[
                 {

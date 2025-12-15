@@ -13,7 +13,6 @@ from letta.server.server import SyncServer
 
 included_files = [
     # "ollama.json",
-    "letta-hosted.json",
     "openai_embed.json",
 ]
 config_dir = "tests/configs/embedding_model_configs"

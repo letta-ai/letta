@@ -1243,14 +1243,12 @@ def test_file_processing_timeout_logic():
     assert not (recent_time < timeout_threshold), "Recent file should not trigger timeout"
 
 
-def test_letta_free_embedding(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
-    """Test creating a source with letta/letta-free embedding and uploading a file"""
-    # create a source with letta-free embedding
-    source = client.folders.create(name="test_letta_free_source", embedding="letta/letta-free")
+def test_openai_embedding(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
+    """Test creating a source with OpenAI embeddings and uploading a file"""
+    source = client.folders.create(name="test_openai_embed_source", embedding="openai/text-embedding-3-small")
 
     # verify source was created with correct embedding
-    assert source.name == "test_letta_free_source"
-    # assert source.embedding_config.embedding_model == "letta-free"
+    assert source.name == "test_openai_embed_source"
 
     # upload test.txt file
     file_path = "tests/data/test.txt"

@@ -73,7 +73,7 @@ def agent_factory(client: Letta):
             name=f"test_agent_{model_name.replace('/', '_').replace('.', '_')}",
             memory_blocks=[{"label": "human", "value": "Test user"}, {"label": "persona", "value": "You are a creative storyteller."}],
             model=model_name,
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         )
         created_agents.append(agent_state)
         return agent_state

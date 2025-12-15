@@ -58,6 +58,44 @@ class OpenAIProvider(Provider):
         data = await self._get_models_async()
         return self._list_llm_models(data)
 
+    async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
+        """Return known OpenAI embedding models.
+
+        Note: we intentionally do not attempt to fetch embedding models from the remote endpoint here.
+        The OpenAI "models" list does not reliably expose embedding metadata needed for filtering,
+        and in tests we frequently point OPENAI_BASE_URL at a local mock server.
+        """
+
+        return [
+            EmbeddingConfig(
+                embedding_model="text-embedding-ada-002",
+                embedding_endpoint_type="openai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1536,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
+                batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1536,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-3-small", is_embedding=True),
+                batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-large",
+                embedding_endpoint_type="openai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=3072,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("text-embedding-3-large", is_embedding=True),
+                batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
+            ),
+        ]
+
     def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:
         """
         This handles filtering out LLM Models by provider that meet Letta's requirements.
@@ -150,82 +188,6 @@ class OpenAIProvider(Provider):
         if "gpt-4o" in model_name or "gpt-4.1-mini" in model_name or model_name == "letta-free":
             llm_config.frequency_penalty = 1.0
         return llm_config
-
-    async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
-        if self.base_url == "https://api.openai.com/v1":
-            # TODO: actually automatically list models for OpenAI
-            return [
-                EmbeddingConfig(
-                    embedding_model="text-embedding-ada-002",
-                    embedding_endpoint_type="openai",
-                    embedding_endpoint=self.base_url,
-                    embedding_dim=1536,
-                    embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                    handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
-                    batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
-                ),
-                EmbeddingConfig(
-                    embedding_model="text-embedding-3-small",
-                    embedding_endpoint_type="openai",
-                    embedding_endpoint=self.base_url,
-                    embedding_dim=2000,
-                    embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                    handle=self.get_handle("text-embedding-3-small", is_embedding=True),
-                    batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
-                ),
-                EmbeddingConfig(
-                    embedding_model="text-embedding-3-large",
-                    embedding_endpoint_type="openai",
-                    embedding_endpoint=self.base_url,
-                    embedding_dim=2000,
-                    embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                    handle=self.get_handle("text-embedding-3-large", is_embedding=True),
-                    batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
-                ),
-            ]
-        else:
-            # TODO: this has filtering that doesn't apply for embedding models, fix this.
-            data = await self._get_models_async()
-            return self._list_embedding_models(data)
-
-    def _list_embedding_models(self, data) -> list[EmbeddingConfig]:
-        configs = []
-        for model in data:
-            check = self._do_model_checks_for_name_and_context_size(model)
-            if check is None:
-                continue
-            model_name, context_window_size = check
-
-            # ===== Provider filtering =====
-            # TogetherAI: includes the type, which we can use to filter for embedding models
-            if "api.together.ai" in self.base_url or "api.together.xyz" in self.base_url:
-                if "type" in model and model["type"] not in ["embedding"]:
-                    continue
-            # Nebius: includes the type, which we can use to filter for text models
-            elif "nebius.com" in self.base_url:
-                model_type = model.get("architecture", {}).get("modality")
-                if model_type not in ["text->embedding"]:
-                    continue
-            else:
-                logger.debug(
-                    "Skipping embedding models for %s by default, as we don't assume embeddings are supported."
-                    "Please open an issue on GitHub if support is required.",
-                    self.base_url,
-                )
-                continue
-
-            configs.append(
-                EmbeddingConfig(
-                    embedding_model=model_name,
-                    embedding_endpoint_type=self.provider_type,
-                    embedding_endpoint=self.base_url,
-                    embedding_dim=context_window_size,
-                    embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                    handle=self.get_handle(model, is_embedding=True),
-                )
-            )
-
-        return configs
 
     def get_model_context_window_size(self, model_name: str) -> int | None:
         if model_name in LLM_MAX_TOKENS:
