@@ -28,7 +28,7 @@ class Tool(SqlalchemyBase, OrganizationMixin, ProjectMixin):
     # Add unique constraint on (name, _organization_id)
     # An organization should not have multiple tools with the same name
     __table_args__ = (
-        UniqueConstraint("organization_id", "project_id", "name", name="uix_organization_project_name", postgresql_nulls_not_distinct=True),
+        UniqueConstraint("name", "organization_id", name="uix_name_organization"),
         Index("ix_tools_created_at_name", "created_at", "name"),
         Index("ix_tools_organization_id", "organization_id"),
         Index("ix_tools_organization_id_name", "organization_id", "name"),
