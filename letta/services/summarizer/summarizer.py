@@ -436,12 +436,14 @@ async def simple_summary(
     summary_transcript = simple_formatter(messages)
 
     if include_ack:
+        logger.info(f"Summarizing with ACK for model {llm_config.model}")
         input_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
             {"role": "user", "content": summary_transcript},
         ]
     else:
+        logger.info(f"Summarizing without ACK for model {llm_config.model}")
         input_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": summary_transcript},
@@ -473,12 +475,14 @@ async def simple_summary(
             logger.info(f"Full summarization payload: {request_data}")
 
             if include_ack:
+                logger.info(f"Fallback summarization with ACK for model {llm_config.model}")
                 input_messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
                     {"role": "user", "content": summary_transcript},
                 ]
             else:
+                logger.info(f"Fallback summarization without ACK for model {llm_config.model}")
                 input_messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": summary_transcript},

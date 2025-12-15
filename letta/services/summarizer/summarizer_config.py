@@ -2,7 +2,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from letta.prompts.summarizer_prompt import ANTHROPIC_SUMMARY_PROMPT, SHORTER_SUMMARY_PROMPT
 from letta.schemas.model import ModelSettingsUnion
+from letta.settings import summarizer_settings
 
 
 class CompactionSettings(BaseModel):
@@ -26,9 +28,9 @@ class CompactionSettings(BaseModel):
         description="Optional model settings used to override defaults for the summarizer model.",
     )
 
-    prompt: str = Field(default=..., description="The prompt to use for summarization.")
-    prompt_acknowledgement: str = Field(
-        default=..., description="Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
+    prompt: str = Field(default=SHORTER_SUMMARY_PROMPT, description="The prompt to use for summarization.")
+    prompt_acknowledgement: bool = Field(
+        default=False, description="Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
     )
     clip_chars: int | None = Field(
         default=2000, description="The maximum length of the summary in characters. If none, no clipping is performed."
@@ -36,31 +38,6 @@ class CompactionSettings(BaseModel):
 
     mode: Literal["all", "sliding_window"] = Field(default="sliding_window", description="The type of summarization technique use.")
     sliding_window_percentage: float = Field(
-        default=0.3, description="The percentage of the context window to keep post-summarization (only used in sliding window mode)."
-    )
-
-
-def get_default_compaction_settings(model_handle: str) -> CompactionSettings:
-    """Build a default :class:`CompactionSettings` from a model handle.
-
-    Args:
-        model_handle: The model handle to use for summarization
-            (format: provider/model-name).
-
-    Returns:
-        A :class:`CompactionSettings` populated with sane defaults.
-    """
-
-    from letta.constants import MESSAGE_SUMMARY_REQUEST_ACK
-    from letta.prompts import gpt_summarize
-    from letta.settings import summarizer_settings
-
-    return CompactionSettings(
-        mode="sliding_window",
-        model=model_handle,
-        model_settings=None,
-        prompt=gpt_summarize.SYSTEM,
-        prompt_acknowledgement=MESSAGE_SUMMARY_REQUEST_ACK,
-        clip_chars=2000,
-        sliding_window_percentage=summarizer_settings.partial_evict_summarizer_percentage,
+        default_factory=lambda: summarizer_settings.partial_evict_summarizer_percentage,
+        description="The percentage of the context window to keep post-summarization (only used in sliding window mode).",
     )

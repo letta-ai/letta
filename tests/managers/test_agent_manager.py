@@ -337,7 +337,6 @@ async def test_compaction_settings_model_uses_separate_llm_config_for_summarizat
         model=summarizer_handle,
         model_settings=summarizer_model_settings,
         prompt="You are a summarizer.",
-        prompt_acknowledgement="ack",
         clip_chars=2000,
         mode="all",
         sliding_window_percentage=0.3,
@@ -713,7 +712,6 @@ async def test_create_agent_with_compaction_settings(server: SyncServer, default
         model="openai/gpt-4o-mini",
         model_settings=model_settings,
         prompt="Custom summarization prompt",
-        prompt_acknowledgement="Acknowledged",
         clip_chars=1500,
         mode="all",
         sliding_window_percentage=0.5,
@@ -742,7 +740,6 @@ async def test_create_agent_with_compaction_settings(server: SyncServer, default
     assert created_agent.compaction_settings.clip_chars == 1500
     assert created_agent.compaction_settings.sliding_window_percentage == 0.5
     assert created_agent.compaction_settings.prompt == "Custom summarization prompt"
-    assert created_agent.compaction_settings.prompt_acknowledgement == "Acknowledged"
 
     # Clean up
     await server.agent_manager.delete_agent_async(agent_id=created_agent.id, actor=default_user)
@@ -764,7 +761,7 @@ async def test_update_agent_compaction_settings(server: SyncServer, comprehensiv
         model="openai/gpt-4o-mini",
         model_settings=model_settings,
         prompt="Updated summarization prompt",
-        prompt_acknowledgement="Updated acknowledgement",
+        prompt_acknowledgement=False,
         clip_chars=3000,
         mode="sliding_window",
         sliding_window_percentage=0.4,
@@ -783,7 +780,7 @@ async def test_update_agent_compaction_settings(server: SyncServer, comprehensiv
     assert updated_agent.compaction_settings.clip_chars == 3000
     assert updated_agent.compaction_settings.sliding_window_percentage == 0.4
     assert updated_agent.compaction_settings.prompt == "Updated summarization prompt"
-    assert updated_agent.compaction_settings.prompt_acknowledgement == "Updated acknowledgement"
+    assert updated_agent.compaction_settings.prompt_acknowledgement == False
 
 
 @pytest.mark.asyncio

@@ -24372,12 +24372,14 @@
           "prompt": {
             "type": "string",
             "title": "Prompt",
-            "description": "The prompt to use for summarization."
+            "description": "The prompt to use for summarization.",
+            "default": "You have been interacting with a human user, and are in the middle of a conversation or a task. Write a summary that will allow you (or another instance of yourself) to resume without distruption, even after the conversation history is replaced with this summary. Your summary should be structured, concise, and actionable (if you are in the middle of a task). Include:\n\n1. Task or conversational overview\nThe user's core request and success criteria you are currently working on.\nAny clarifications or constraints they specified.\nAny details about the topic of messages that originated the current conversation or task.\n\n2. Current State\nWhat has been completed or discussed so far\nFiles created, modified, or analyzed (with paths if relevant)\nResources explored or referenced (with URLs if relevant)\nWhat has been discussed or explored so far with the user\n\n3. Next Steps\nThe next actions or steps you would have taken, if you were to continue the conversation or task.\n\nKeep your summary less than 100 words, do NOT exceed this word limit. Only output the summary, do NOT include anything else in your output."
           },
           "prompt_acknowledgement": {
-            "type": "string",
+            "type": "boolean",
             "title": "Prompt Acknowledgement",
-            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
+            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs).",
+            "default": false
           },
           "clip_chars": {
             "anyOf": [
@@ -24402,12 +24404,11 @@
           "sliding_window_percentage": {
             "type": "number",
             "title": "Sliding Window Percentage",
-            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode).",
-            "default": 0.3
+            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode)."
           }
         },
         "type": "object",
-        "required": ["model", "prompt", "prompt_acknowledgement"],
+        "required": ["model"],
         "title": "CompactionSettings",
         "description": "Configuration for conversation compaction / summarization.\n\n``model`` is the only required user-facing field – it specifies the summarizer\nmodel handle (e.g. ``\"openai/gpt-4o-mini\"``). Per-model settings (temperature,\nmax tokens, etc.) are derived from the default configuration for that handle."
       },
@@ -24479,12 +24480,14 @@
           "prompt": {
             "type": "string",
             "title": "Prompt",
-            "description": "The prompt to use for summarization."
+            "description": "The prompt to use for summarization.",
+            "default": "You have been interacting with a human user, and are in the middle of a conversation or a task. Write a summary that will allow you (or another instance of yourself) to resume without distruption, even after the conversation history is replaced with this summary. Your summary should be structured, concise, and actionable (if you are in the middle of a task). Include:\n\n1. Task or conversational overview\nThe user's core request and success criteria you are currently working on.\nAny clarifications or constraints they specified.\nAny details about the topic of messages that originated the current conversation or task.\n\n2. Current State\nWhat has been completed or discussed so far\nFiles created, modified, or analyzed (with paths if relevant)\nResources explored or referenced (with URLs if relevant)\nWhat has been discussed or explored so far with the user\n\n3. Next Steps\nThe next actions or steps you would have taken, if you were to continue the conversation or task.\n\nKeep your summary less than 100 words, do NOT exceed this word limit. Only output the summary, do NOT include anything else in your output."
           },
           "prompt_acknowledgement": {
-            "type": "string",
+            "type": "boolean",
             "title": "Prompt Acknowledgement",
-            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
+            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs).",
+            "default": false
           },
           "clip_chars": {
             "anyOf": [
@@ -24509,12 +24512,11 @@
           "sliding_window_percentage": {
             "type": "number",
             "title": "Sliding Window Percentage",
-            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode).",
-            "default": 0.3
+            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode)."
           }
         },
         "type": "object",
-        "required": ["model", "prompt", "prompt_acknowledgement"],
+        "required": ["model"],
         "title": "CompactionSettings",
         "description": "Configuration for conversation compaction / summarization.\n\n``model`` is the only required user-facing field – it specifies the summarizer\nmodel handle (e.g. ``\"openai/gpt-4o-mini\"``). Per-model settings (temperature,\nmax tokens, etc.) are derived from the default configuration for that handle."
       },

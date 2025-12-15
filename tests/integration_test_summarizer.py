@@ -618,12 +618,12 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
 #
 
 # ======================================================================================================================
-# CompactionSettings Mode Tests (with pytest.patch) - Using LettaAgentV3
+# CompactionSettings Mode Tests - Using LettaAgentV3
 # ======================================================================================================================
 
 from unittest.mock import patch
 
-from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_compaction_settings
+from letta.services.summarizer.summarizer_config import CompactionSettings
 
 # Test both summarizer modes: "all" summarizes entire history, "sliding_window" keeps recent messages
 SUMMARIZER_CONFIG_MODES: list[Literal["all", "sliding_window"]] = ["all", "sliding_window"]
@@ -674,54 +674,44 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
     # Persist the new messages
     new_letta_messages = await server.message_manager.create_many_messages_async(new_letta_messages, actor=actor)
 
-    # Create a custom CompactionSettings with the desired mode
-    def mock_get_default_compaction_settings(llm_config_inner):
-        config = get_default_compaction_settings(llm_config_inner)
-        # Override the mode
-        return CompactionSettings(
-            model=config.model,
-            prompt=config.prompt,
-            prompt_acknowledgement=config.prompt_acknowledgement,
-            clip_chars=config.clip_chars,
-            mode=mode,
-            sliding_window_percentage=config.sliding_window_percentage,
-        )
+    # Override compaction settings directly on the agent state
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    agent_state.compaction_settings = CompactionSettings(model=handle, mode=mode)
 
-    with patch("letta.agents.letta_agent_v3.get_default_compaction_settings", mock_get_default_compaction_settings):
-        agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
 
-        summary, result = await agent_loop.compact(messages=in_context_messages)
+    summary, result = await agent_loop.compact(messages=in_context_messages)
 
-        assert isinstance(result, list)
+    assert isinstance(result, list)
 
-        # Verify that the result contains valid messages
-        for msg in result:
-            assert hasattr(msg, "role")
-            assert hasattr(msg, "content")
+    # Verify that the result contains valid messages
+    for msg in result:
+        assert hasattr(msg, "role")
+        assert hasattr(msg, "content")
 
-        print()
-        print(f"RESULTS {mode} ======")
-        for msg in result:
-            print(f"MSG: {msg}")
+    print()
+    print(f"RESULTS {mode} ======")
+    for msg in result:
+        print(f"MSG: {msg}")
 
-        print()
+    print()
 
-        if mode == "all":
-            # For "all" mode, V3 keeps:
-            #   1. System prompt
-            #   2. A single user summary message (system_alert JSON)
-            # and no remaining historical messages.
-            assert len(result) == 2, f"Expected 2 messages for 'all' mode (system + summary), got {len(result)}"
-            assert result[0].role == MessageRole.system
-            assert result[1].role == MessageRole.user
-        else:
-            # For "sliding_window" mode, result should include:
-            #   1. System prompt
-            #   2. User summary message
-            #   3+. Recent user/assistant messages inside the window.
-            assert len(result) > 2, f"Expected >2 messages for 'sliding_window' mode, got {len(result)}"
-            assert result[0].role == MessageRole.system
-            assert result[1].role == MessageRole.user
+    if mode == "all":
+        # For "all" mode, V3 keeps:
+        #   1. System prompt
+        #   2. A single user summary message (system_alert JSON)
+        # and no remaining historical messages.
+        assert len(result) == 2, f"Expected 2 messages for 'all' mode (system + summary), got {len(result)}"
+        assert result[0].role == MessageRole.system
+        assert result[1].role == MessageRole.user
+    else:
+        # For "sliding_window" mode, result should include:
+        #   1. System prompt
+        #   2. User summary message
+        #   3+. Recent user/assistant messages inside the window.
+        assert len(result) > 2, f"Expected >2 messages for 'sliding_window' mode, got {len(result)}"
+        assert result[0].role == MessageRole.system
+        assert result[1].role == MessageRole.user
 
 
 @pytest.mark.asyncio
@@ -773,7 +763,7 @@ async def test_v3_compact_uses_compaction_settings_model_and_model_settings(serv
         model=summarizer_handle,
         model_settings=summarizer_model_settings,
         prompt="You are a summarizer.",
-        prompt_acknowledgement="ack",
+        prompt_acknowledgement=True,
         clip_chars=2000,
         mode="all",
         sliding_window_percentage=0.3,
@@ -927,13 +917,13 @@ async def test_sliding_window_cutoff_index_does_not_exceed_message_count(server:
     This test uses the real token counter (via create_token_counter) to verify
     the sliding window logic works with actual token counting.
     """
-    from letta.services.summarizer.summarizer_config import get_default_compaction_settings
+    from letta.services.summarizer.summarizer_config import CompactionSettings
     from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
 
     # Create a real summarizer config using the default factory
     # Override sliding_window_percentage to 0.3 for this test
     handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
-    summarizer_config = get_default_compaction_settings(handle)
+    summarizer_config = CompactionSettings(model=handle)
     summarizer_config.sliding_window_percentage = 0.3
 
     # Create 65 messages (similar to the failing case in the bug report)
@@ -1479,11 +1469,11 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     summarizing the entire conversation into a single summary string.
     """
     from letta.services.summarizer.summarizer_all import summarize_all
-    from letta.services.summarizer.summarizer_config import get_default_compaction_settings
+    from letta.services.summarizer.summarizer_config import CompactionSettings
 
     # Create a summarizer config with "all" mode
     handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
-    summarizer_config = get_default_compaction_settings(handle)
+    summarizer_config = CompactionSettings(model=handle)
     summarizer_config.mode = "all"
 
     # Create test messages - a simple conversation

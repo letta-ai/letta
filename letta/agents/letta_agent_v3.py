@@ -48,7 +48,7 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
-from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_compaction_settings
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.services.summarizer.summarizer_sliding_window import (
     count_tokens,
     summarize_via_sliding_window,
@@ -1351,7 +1351,7 @@ class LettaAgentV3(LettaAgentV2):
                 llm_cfg = self.agent_state.llm_config
                 handle = llm_cfg.handle or f"{llm_cfg.model_endpoint_type}/{llm_cfg.model}"
 
-            summarizer_config = get_default_compaction_settings(handle)
+            summarizer_config = CompactionSettings(model=handle)
 
         # Build the LLMConfig used for summarization
         summarizer_llm_config = self._build_summarizer_llm_config(
