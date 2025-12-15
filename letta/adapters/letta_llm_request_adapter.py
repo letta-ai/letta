@@ -6,6 +6,7 @@ from letta.otel.tracing import log_attributes, log_event, safe_json_dumps, trace
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
 from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.usage import normalize_cache_tokens, normalize_reasoning_tokens
 from letta.schemas.user import User
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -81,6 +82,11 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
         self.usage.completion_tokens = self.chat_completions_response.usage.completion_tokens
         self.usage.prompt_tokens = self.chat_completions_response.usage.prompt_tokens
         self.usage.total_tokens = self.chat_completions_response.usage.total_tokens
+
+        # Extract cache and reasoning token details using normalized helpers
+        usage = self.chat_completions_response.usage
+        self.usage.cached_input_tokens, self.usage.cache_write_tokens = normalize_cache_tokens(usage.prompt_tokens_details)
+        self.usage.reasoning_tokens = normalize_reasoning_tokens(usage.completion_tokens_details)
 
         self.log_provider_trace(step_id=step_id, actor=actor)
 
