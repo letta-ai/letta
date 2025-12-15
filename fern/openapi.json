@@ -20645,7 +20645,7 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CompactionSettings"
+                "$ref": "#/components/schemas/CompactionSettings-Output"
               },
               {
                 "type": "null"
@@ -24304,11 +24304,70 @@
         "required": ["code"],
         "title": "CodeInput"
       },
-      "CompactionSettings": {
+      "CompactionSettings-Input": {
         "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model handle to use for summarization (format: provider/model-name)."
+          },
           "model_settings": {
-            "$ref": "#/components/schemas/ModelSettings",
-            "description": "The model settings to use for summarization."
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "Optional model settings used to override defaults for the summarizer model."
           },
           "prompt": {
             "type": "string",
@@ -24348,8 +24407,116 @@
           }
         },
         "type": "object",
-        "required": ["model_settings", "prompt", "prompt_acknowledgement"],
-        "title": "CompactionSettings"
+        "required": ["model", "prompt", "prompt_acknowledgement"],
+        "title": "CompactionSettings",
+        "description": "Configuration for conversation compaction / summarization.\n\n``model`` is the only required user-facing field – it specifies the summarizer\nmodel handle (e.g. ``\"openai/gpt-4o-mini\"``). Per-model settings (temperature,\nmax tokens, etc.) are derived from the default configuration for that handle."
+      },
+      "CompactionSettings-Output": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model handle to use for summarization (format: provider/model-name)."
+          },
+          "model_settings": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OpenAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AnthropicModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GoogleVertexModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AzureModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/XAIModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GroqModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DeepseekModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TogetherModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BedrockModelSettings"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "provider_type",
+                  "mapping": {
+                    "anthropic": "#/components/schemas/AnthropicModelSettings",
+                    "azure": "#/components/schemas/AzureModelSettings",
+                    "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "deepseek": "#/components/schemas/DeepseekModelSettings",
+                    "google_ai": "#/components/schemas/GoogleAIModelSettings",
+                    "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
+                    "groq": "#/components/schemas/GroqModelSettings",
+                    "openai": "#/components/schemas/OpenAIModelSettings",
+                    "together": "#/components/schemas/TogetherModelSettings",
+                    "xai": "#/components/schemas/XAIModelSettings"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Settings",
+            "description": "Optional model settings used to override defaults for the summarizer model."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The prompt to use for summarization."
+          },
+          "prompt_acknowledgement": {
+            "type": "string",
+            "title": "Prompt Acknowledgement",
+            "description": "Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
+          },
+          "clip_chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clip Chars",
+            "description": "The maximum length of the summary in characters. If none, no clipping is performed.",
+            "default": 2000
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["all", "sliding_window"],
+            "title": "Mode",
+            "description": "The type of summarization technique use.",
+            "default": "sliding_window"
+          },
+          "sliding_window_percentage": {
+            "type": "number",
+            "title": "Sliding Window Percentage",
+            "description": "The percentage of the context window to keep post-summarization (only used in sliding window mode).",
+            "default": 0.3
+          }
+        },
+        "type": "object",
+        "required": ["model", "prompt", "prompt_acknowledgement"],
+        "title": "CompactionSettings",
+        "description": "Configuration for conversation compaction / summarization.\n\n``model`` is the only required user-facing field – it specifies the summarizer\nmodel handle (e.g. ``\"openai/gpt-4o-mini\"``). Per-model settings (temperature,\nmax tokens, etc.) are derived from the default configuration for that handle."
       },
       "ComparisonOperator": {
         "type": "string",
@@ -25153,7 +25320,7 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CompactionSettings"
+                "$ref": "#/components/schemas/CompactionSettings-Input"
               },
               {
                 "type": "null"
@@ -29386,7 +29553,7 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CompactionSettings"
+                "$ref": "#/components/schemas/CompactionSettings-Input"
               },
               {
                 "type": "null"
@@ -32763,25 +32930,6 @@
           "max_context_window"
         ],
         "title": "Model"
-      },
-      "ModelSettings": {
-        "properties": {
-          "max_output_tokens": {
-            "type": "integer",
-            "title": "Max Output Tokens",
-            "description": "The maximum number of tokens the model can generate.",
-            "default": 4096
-          },
-          "parallel_tool_calls": {
-            "type": "boolean",
-            "title": "Parallel Tool Calls",
-            "description": "Whether to enable parallel tool calling.",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "ModelSettings",
-        "description": "Schema for defining settings for a model"
       },
       "ModifyApprovalRequest": {
         "properties": {
@@ -38722,7 +38870,7 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CompactionSettings"
+                "$ref": "#/components/schemas/CompactionSettings-Input"
               },
               {
                 "type": "null"
@@ -39995,7 +40143,7 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CompactionSettings"
+                "$ref": "#/components/schemas/CompactionSettings-Input"
               },
               {
                 "type": "null"

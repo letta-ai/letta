@@ -254,6 +254,177 @@ async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncS
 
 
 @pytest.mark.asyncio
+async def test_create_agent_with_model_handle_uses_correct_llm_config(server: SyncServer, default_user):
+    """When CreateAgent.model is provided, ensure the correct handle is used to resolve llm_config.
+
+    This verifies that the model handle passed by the client is forwarded into
+    SyncServer.get_cached_llm_config_async and that the resulting AgentState
+    carries an llm_config with the same handle.
+    """
+
+    # Track the arguments used to resolve the LLM config
+    captured_kwargs: dict = {}
+
+    async def fake_get_cached_llm_config_async(self, actor, **kwargs):  # type: ignore[override]
+        from letta.schemas.llm_config import LLMConfig as PydanticLLMConfig
+
+        captured_kwargs.update(kwargs)
+        handle = kwargs["handle"]
+
+        # Return a minimal but valid LLMConfig with the requested handle
+        return PydanticLLMConfig(
+            model="test-model-name",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=8192,
+            handle=handle,
+        )
+
+    model_handle = "openai/gpt-4o-mini"
+
+    # Patch SyncServer.get_cached_llm_config_async so we don't depend on provider DB state
+    with patch.object(SyncServer, "get_cached_llm_config_async", new=fake_get_cached_llm_config_async):
+        created_agent = await server.create_agent_async(
+            request=CreateAgent(
+                name="agent_with_model_handle",
+                agent_type="memgpt_v2_agent",
+                # Use new model handle field instead of llm_config
+                model=model_handle,
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                memory_blocks=[],
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+    # Ensure we resolved the config using the provided handle
+    assert captured_kwargs["handle"] == model_handle
+
+    # And that the resulting agent's llm_config reflects the same handle
+    assert created_agent.llm_config is not None
+    assert created_agent.llm_config.handle == model_handle
+
+
+@pytest.mark.asyncio
+async def test_compaction_settings_model_uses_separate_llm_config_for_summarization(default_user):
+    """When compaction_settings.model differs from the agent model, use a separate llm_config.
+
+    This test exercises the summarization helpers directly to avoid external
+    provider dependencies. It verifies that CompactionSettings.model controls
+    the LLMConfig used for the summarizer request.
+    """
+
+    from letta.agents.letta_agent_v3 import LettaAgentV3
+    from letta.schemas.agent import AgentState as PydanticAgentState
+    from letta.schemas.enums import AgentType, MessageRole
+    from letta.schemas.memory import Memory
+    from letta.schemas.message import Message as PydanticMessage
+    from letta.schemas.model import OpenAIModelSettings, OpenAIReasoning
+
+    # Base agent LLM config
+    base_llm_config = LLMConfig.default_config("gpt-4o-mini")
+    assert base_llm_config.model == "gpt-4o-mini"
+
+    # Configure compaction to use a different summarizer model
+    summarizer_handle = "openai/gpt-5-mini"
+    summarizer_model_settings = OpenAIModelSettings(
+        max_output_tokens=1234,
+        temperature=0.1,
+        reasoning=OpenAIReasoning(reasoning_effort="high"),
+        response_format=None,
+    )
+    summarizer_config = CompactionSettings(
+        model=summarizer_handle,
+        model_settings=summarizer_model_settings,
+        prompt="You are a summarizer.",
+        prompt_acknowledgement="ack",
+        clip_chars=2000,
+        mode="all",
+        sliding_window_percentage=0.3,
+    )
+
+    # Minimal message buffer: system + one user + one assistant
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        ),
+        PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(type="text", text="Hello")],
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            content=[TextContent(type="text", text="Hi there")],
+        ),
+    ]
+
+    # Build a minimal AgentState for LettaAgentV3 using the base llm_config
+    agent_state = PydanticAgentState(
+        id="agent-test-compaction-llm-config",
+        name="test-agent",
+        system="You are a helpful assistant.",
+        agent_type=AgentType.letta_v1_agent,
+        llm_config=base_llm_config,
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        model=None,
+        embedding=None,
+        model_settings=None,
+        compaction_settings=summarizer_config,
+        response_format=None,
+        description=None,
+        metadata=None,
+        memory=Memory(blocks=[]),
+        blocks=[],
+        tools=[],
+        sources=[],
+        tags=[],
+        tool_exec_environment_variables=[],
+        secrets=[],
+        project_id=None,
+        template_id=None,
+        base_template_id=None,
+        deployment_id=None,
+        entity_id=None,
+        identity_ids=[],
+        identities=[],
+        message_ids=[],
+        message_buffer_autoclear=False,
+        enable_sleeptime=None,
+        multi_agent_group=None,
+        managed_group=None,
+        last_run_completion=None,
+        last_run_duration_ms=None,
+        last_stop_reason=None,
+        timezone="UTC",
+        max_files_open=None,
+        per_file_view_window_char_limit=None,
+        hidden=None,
+        created_by_id=None,
+        last_updated_by_id=None,
+        created_at=None,
+        updated_at=None,
+        tool_rules=None,
+    )
+
+    # Use the static helper on LettaAgentV3 to derive summarizer llm_config
+    summarizer_llm_config = LettaAgentV3._build_summarizer_llm_config(
+        agent_llm_config=agent_state.llm_config,
+        summarizer_config=agent_state.compaction_settings,
+    )
+
+    # Agent model remains the base model
+    assert agent_state.llm_config.model == "gpt-4o-mini"
+
+    # Summarizer config should use the handle/model from compaction_settings
+    assert summarizer_llm_config.handle == summarizer_handle
+    assert summarizer_llm_config.model == "gpt-5-mini"
+    # And should reflect overrides from model_settings
+    assert summarizer_llm_config.max_tokens == 1234
+    assert summarizer_llm_config.temperature == 0.1
+
+
+@pytest.mark.asyncio
 async def test_calculate_multi_agent_tools(set_letta_environment):
     """Test that calculate_multi_agent_tools excludes local-only tools in production."""
     result = calculate_multi_agent_tools()

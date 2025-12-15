@@ -1331,19 +1331,39 @@ class LettaAgentV3(LettaAgentV2):
 
     @trace_method
     async def compact(self, messages, trigger_threshold: Optional[int] = None) -> Message:
+        """Compact the current in-context messages for this agent.
+
+        Compaction uses a summarizer LLM configuration derived from
+        ``compaction_settings.model`` when provided. This mirrors how agent
+        creation derives defaults from provider-specific ModelSettings, but is
+        localized to summarization.
         """
-        Simplified compaction method. Does NOT do any persistence (handled in the loop)
-        """
-        # compact the current in-context messages (self.in_context_messages)
-        # Use agent's compaction_settings if set, otherwise fall back to defaults
-        summarizer_config = self.agent_state.compaction_settings or get_default_compaction_settings(
-            self.agent_state.llm_config._to_model_settings()
+
+        # Use agent's compaction_settings if set, otherwise fall back to
+        # global defaults based on the agent's model handle.
+        if self.agent_state.compaction_settings is not None:
+            summarizer_config = self.agent_state.compaction_settings
+        else:
+            # Prefer the new handle field if set, otherwise derive from llm_config
+            if self.agent_state.model is not None:
+                handle = self.agent_state.model
+            else:
+                llm_cfg = self.agent_state.llm_config
+                handle = llm_cfg.handle or f"{llm_cfg.model_endpoint_type}/{llm_cfg.model}"
+
+            summarizer_config = get_default_compaction_settings(handle)
+
+        # Build the LLMConfig used for summarization
+        summarizer_llm_config = self._build_summarizer_llm_config(
+            agent_llm_config=self.agent_state.llm_config,
+            summarizer_config=summarizer_config,
         )
+
         summarization_mode_used = summarizer_config.mode
         if summarizer_config.mode == "all":
             summary, compacted_messages = await summarize_all(
                 actor=self.actor,
-                llm_config=self.agent_state.llm_config,
+                llm_config=summarizer_llm_config,
                 summarizer_config=summarizer_config,
                 in_context_messages=messages,
             )
@@ -1351,7 +1371,7 @@ class LettaAgentV3(LettaAgentV2):
             try:
                 summary, compacted_messages = await summarize_via_sliding_window(
                     actor=self.actor,
-                    llm_config=self.agent_state.llm_config,
+                    llm_config=summarizer_llm_config,
                     summarizer_config=summarizer_config,
                     in_context_messages=messages,
                 )
@@ -1359,7 +1379,7 @@ class LettaAgentV3(LettaAgentV2):
                 self.logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
                 summary, compacted_messages = await summarize_all(
                     actor=self.actor,
-                    llm_config=self.agent_state.llm_config,
+                    llm_config=summarizer_llm_config,
                     summarizer_config=summarizer_config,
                     in_context_messages=messages,
                 )
@@ -1445,3 +1465,46 @@ class LettaAgentV3(LettaAgentV2):
             final_messages += compacted_messages[1:]
 
         return summary_message_obj, final_messages
+
+    @staticmethod
+    def _build_summarizer_llm_config(
+        agent_llm_config: LLMConfig,
+        summarizer_config: CompactionSettings,
+    ) -> LLMConfig:
+        """Derive an LLMConfig for summarization from a model handle.
+
+        This mirrors the agent-creation path: start from the agent's LLMConfig,
+        override provider/model/handle from ``compaction_settings.model``, and
+        then apply any explicit ``compaction_settings.model_settings`` via
+        ``_to_legacy_config_params``.
+        """
+
+        # If no summarizer model handle is provided, fall back to the agent's config
+        if not summarizer_config.model:
+            return agent_llm_config
+
+        try:
+            # Parse provider/model from the handle, falling back to the agent's
+            # provider type when only a model name is given.
+            if "/" in summarizer_config.model:
+                provider, model_name = summarizer_config.model.split("/", 1)
+            else:
+                provider = agent_llm_config.model_endpoint_type
+                model_name = summarizer_config.model
+
+            # Start from the agent's config and override model + provider + handle
+            base = agent_llm_config.model_copy()
+            base.model_endpoint_type = provider
+            base.model = model_name
+            base.handle = summarizer_config.model
+
+            # If explicit model_settings are provided for the summarizer, apply
+            # them just like server.create_agent_async does for agents.
+            if summarizer_config.model_settings is not None:
+                update_params = summarizer_config.model_settings._to_legacy_config_params()
+                return base.model_copy(update=update_params)
+
+            return base
+        except Exception:
+            # On any error, do not break the agent – just fall back
+            return agent_llm_config
