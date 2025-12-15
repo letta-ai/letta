@@ -147,12 +147,12 @@ async def create_test_agent(name, actor, test_id: Optional[str] = None, model="a
     )
 
     dummy_embedding_config = EmbeddingConfig(
-        embedding_model="letta-free",
+        embedding_model="text-embedding-3-small",
         embedding_endpoint_type="openai",
-        embedding_endpoint="https://embeddings.letta.com/",
+        embedding_endpoint="https://api.openai.com/v1",
         embedding_dim=1536,
         embedding_chunk_size=300,
-        handle="letta/letta-free",
+        handle="openai/text-embedding-3-small",
     )
 
     agent_manager = AgentManager()

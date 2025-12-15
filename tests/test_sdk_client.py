@@ -1119,8 +1119,8 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
         memory_blocks=[
             CreateBlockParam(label="user", value="Name: Charles"),
         ],
-        model="letta/letta-free",
-        embedding="letta/letta-free",
+        model="anthropic/claude-haiku-4-5-20251001",
+        embedding="openai/text-embedding-3-small",
     )
 
     if message_create == "stream_step":
@@ -2153,13 +2153,13 @@ async def test_create_batch(client: LettaSDKClient, server: SyncServer):
         name="agent1_batch",
         memory_blocks=[{"label": "persona", "value": "you are agent 1"}],
         model="anthropic/claude-3-7-sonnet-20250219",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
     agent2 = client.agents.create(
         name="agent2_batch",
         memory_blocks=[{"label": "persona", "value": "you are agent 2"}],
         model="anthropic/claude-3-7-sonnet-20250219",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
 
     # create a run

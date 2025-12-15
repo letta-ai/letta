@@ -82,7 +82,7 @@ def agent_state(client: Letta) -> AgentState:
         include_base_tools=False,
         tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
         model="openai/gpt-4o",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         tags=["test_builtin_tools_agent"],
     )
     yield agent_state_instance
@@ -370,7 +370,7 @@ def agent_with_custom_tools(client: Letta) -> AgentState:
         include_base_tools=False,
         tool_ids=[send_message_tool.id, run_code_tool.id, add_tool.id, multiply_tool.id],
         model="openai/gpt-4o",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         tags=["test_programmatic_tool_calling"],
     )
     yield agent_state_instance

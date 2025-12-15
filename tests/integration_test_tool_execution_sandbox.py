@@ -228,7 +228,7 @@ def agent_state(server):
             include_base_tools=True,
             model="openai/gpt-4o-mini",
             tags=["test_agents"],
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )

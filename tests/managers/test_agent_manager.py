@@ -710,6 +710,7 @@ async def test_create_agent_with_compaction_settings(server: SyncServer, default
     model_settings = llm_config._to_model_settings()
 
     compaction_settings = CompactionSettings(
+        model="openai/gpt-4o-mini",
         model_settings=model_settings,
         prompt="Custom summarization prompt",
         prompt_acknowledgement="Acknowledged",
@@ -760,6 +761,7 @@ async def test_update_agent_compaction_settings(server: SyncServer, comprehensiv
     model_settings = llm_config._to_model_settings()
 
     new_compaction_settings = CompactionSettings(
+        model="openai/gpt-4o-mini",
         model_settings=model_settings,
         prompt="Updated summarization prompt",
         prompt_acknowledgement="Updated acknowledgement",

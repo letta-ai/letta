@@ -28,9 +28,10 @@ from letta.utils import get_human_text, get_persona_text
 namespace = uuid.NAMESPACE_DNS
 agent_uuid = str(uuid.uuid5(namespace, "test-endpoints-agent"))
 
-# defaults (letta hosted)
-EMBEDDING_CONFIG_PATH = "tests/configs/embedding_model_configs/letta-hosted.json"
-LLM_CONFIG_PATH = "tests/configs/llm_model_configs/letta-hosted.json"
+# defaults
+# NOTE: In tests we avoid using hosted Letta embeddings and instead default to OpenAI.
+EMBEDDING_CONFIG_PATH = "tests/configs/embedding_model_configs/openai_embed.json"
+LLM_CONFIG_PATH = "tests/configs/llm_model_configs/claude-4-5-haiku.json"
 
 
 # ======================================================================================================================

@@ -157,7 +157,7 @@ def test_many_messages_performance(server, default_user, num_messages):
             name="manager",
             include_base_tools=True,
             model="openai/gpt-4o-mini",
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=default_user,
     )

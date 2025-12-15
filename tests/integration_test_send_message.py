@@ -1067,7 +1067,7 @@ def agent_state(client: Letta) -> AgentState:
         include_base_tools=False,
         tool_ids=[send_message_tool.id, dice_tool.id],
         model="openai/gpt-4o",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         tags=["supervisor"],
     )
     yield agent_state_instance
@@ -2174,7 +2174,7 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, model_config: T
         model=model_handle,
         model_settings=model_settings,
         context_window_limit=3000,
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         tags=["supervisor"],
     )
 
