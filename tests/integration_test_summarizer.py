@@ -675,11 +675,11 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
     new_letta_messages = await server.message_manager.create_many_messages_async(new_letta_messages, actor=actor)
 
     # Create a custom CompactionSettings with the desired mode
-    def mock_get_default_compaction_settings(model_settings):
-        config = get_default_compaction_settings(model_settings)
+    def mock_get_default_compaction_settings(llm_config_inner):
+        config = get_default_compaction_settings(llm_config_inner)
         # Override the mode
         return CompactionSettings(
-            model_settings=config.model_settings,
+            model=config.model,
             prompt=config.prompt,
             prompt_acknowledgement=config.prompt_acknowledgement,
             clip_chars=config.clip_chars,
@@ -722,6 +722,86 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
             assert len(result) > 2, f"Expected >2 messages for 'sliding_window' mode, got {len(result)}"
             assert result[0].role == MessageRole.system
             assert result[1].role == MessageRole.user
+
+
+@pytest.mark.asyncio
+async def test_v3_compact_uses_compaction_settings_model_and_model_settings(server: SyncServer, actor):
+    """Integration test: LettaAgentV3.compact uses the LLMConfig implied by CompactionSettings.
+
+    We set a different summarizer model handle + model_settings and verify that
+    the LLMConfig passed into simple_summary reflects both the handle and
+    the model_settings overrides.
+    """
+
+    from letta.agents.letta_agent_v3 import LettaAgentV3
+    from letta.schemas.model import OpenAIModelSettings, OpenAIReasoning
+    from letta.services.summarizer import summarizer_all
+
+    base_llm_config = LLMConfig.default_config("gpt-4o-mini")
+
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        ),
+        PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(type="text", text="Hello")],
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            content=[TextContent(type="text", text="Hi there")],
+        ),
+    ]
+
+    # Create agent + messages via helper to get a real AgentState
+    agent_state, in_context_messages = await create_agent_with_messages(
+        server=server,
+        actor=actor,
+        llm_config=base_llm_config,
+        messages=messages,
+    )
+
+    summarizer_handle = "openai/gpt-5-mini"
+    summarizer_model_settings = OpenAIModelSettings(
+        max_output_tokens=4321,
+        temperature=0.05,
+        reasoning=OpenAIReasoning(reasoning_effort="high"),
+        response_format=None,
+    )
+    agent_state.compaction_settings = CompactionSettings(
+        model=summarizer_handle,
+        model_settings=summarizer_model_settings,
+        prompt="You are a summarizer.",
+        prompt_acknowledgement="ack",
+        clip_chars=2000,
+        mode="all",
+        sliding_window_percentage=0.3,
+    )
+
+    captured_llm_config: dict = {}
+
+    async def fake_simple_summary(messages, llm_config, actor, include_ack=True, prompt=None):  # type: ignore[override]
+        captured_llm_config["value"] = llm_config
+        return "summary text"
+
+    # Patch simple_summary so we don't hit the real LLM and can inspect llm_config
+    with patch.object(summarizer_all, "simple_summary", new=fake_simple_summary):
+        agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+        summary_msg, compacted = await agent_loop.compact(messages=in_context_messages)
+
+    assert summary_msg is not None
+    assert "value" in captured_llm_config
+    summarizer_llm_config = captured_llm_config["value"]
+
+    # Agent's llm_config remains the base config
+    assert agent_state.llm_config.model == "gpt-4o-mini"
+
+    # Summarizer llm_config should reflect compaction_settings.model and model_settings
+    assert summarizer_llm_config.handle == summarizer_handle
+    assert summarizer_llm_config.model == "gpt-5-mini"
+    assert summarizer_llm_config.max_tokens == 4321
+    assert summarizer_llm_config.temperature == 0.05
 
 
 @pytest.mark.asyncio
@@ -847,14 +927,13 @@ async def test_sliding_window_cutoff_index_does_not_exceed_message_count(server:
     This test uses the real token counter (via create_token_counter) to verify
     the sliding window logic works with actual token counting.
     """
-    from letta.schemas.model import ModelSettings
     from letta.services.summarizer.summarizer_config import get_default_compaction_settings
     from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
 
     # Create a real summarizer config using the default factory
     # Override sliding_window_percentage to 0.3 for this test
-    model_settings = ModelSettings()  # Use defaults
-    summarizer_config = get_default_compaction_settings(model_settings)
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    summarizer_config = get_default_compaction_settings(handle)
     summarizer_config.sliding_window_percentage = 0.3
 
     # Create 65 messages (similar to the failing case in the bug report)
@@ -1399,13 +1478,12 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     This test verifies that the 'all' summarization mode works correctly,
     summarizing the entire conversation into a single summary string.
     """
-    from letta.schemas.model import ModelSettings
     from letta.services.summarizer.summarizer_all import summarize_all
     from letta.services.summarizer.summarizer_config import get_default_compaction_settings
 
     # Create a summarizer config with "all" mode
-    model_settings = ModelSettings()
-    summarizer_config = get_default_compaction_settings(model_settings)
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    summarizer_config = get_default_compaction_settings(handle)
     summarizer_config.mode = "all"
 
     # Create test messages - a simple conversation

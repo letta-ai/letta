@@ -2,13 +2,30 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.model import ModelSettings
+from letta.schemas.model import ModelSettingsUnion
 
 
 class CompactionSettings(BaseModel):
-    # summarizer_model: LLMConfig = Field(default=..., description="The model to use for summarization.")
-    model_settings: ModelSettings = Field(default=..., description="The model settings to use for summarization.")
+    """Configuration for conversation compaction / summarization.
+
+    ``model`` is the only required user-facing field – it specifies the summarizer
+    model handle (e.g. ``"openai/gpt-4o-mini"``). Per-model settings (temperature,
+    max tokens, etc.) are derived from the default configuration for that handle.
+    """
+
+    # Summarizer model handle (provider/model-name).
+    # This is required whenever compaction_settings is provided.
+    model: str = Field(
+        ...,
+        description="Model handle to use for summarization (format: provider/model-name).",
+    )
+
+    # Optional provider-specific model settings for the summarizer model
+    model_settings: ModelSettingsUnion | None = Field(
+        default=None,
+        description="Optional model settings used to override defaults for the summarizer model.",
+    )
+
     prompt: str = Field(default=..., description="The prompt to use for summarization.")
     prompt_acknowledgement: str = Field(
         default=..., description="Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
@@ -23,22 +40,25 @@ class CompactionSettings(BaseModel):
     )
 
 
-def get_default_compaction_settings(model_settings: ModelSettings) -> CompactionSettings:
-    """Build a default CompactionSettings from global settings for backward compatibility.
+def get_default_compaction_settings(model_handle: str) -> CompactionSettings:
+    """Build a default :class:`CompactionSettings` from a model handle.
 
     Args:
-        llm_config: The LLMConfig to use for the summarizer model (typically the agent's llm_config).
+        model_handle: The model handle to use for summarization
+            (format: provider/model-name).
 
     Returns:
-        A CompactionSettings with default values from global settings.
+        A :class:`CompactionSettings` populated with sane defaults.
     """
+
     from letta.constants import MESSAGE_SUMMARY_REQUEST_ACK
     from letta.prompts import gpt_summarize
     from letta.settings import summarizer_settings
 
     return CompactionSettings(
         mode="sliding_window",
-        model_settings=model_settings,
+        model=model_handle,
+        model_settings=None,
         prompt=gpt_summarize.SYSTEM,
         prompt_acknowledgement=MESSAGE_SUMMARY_REQUEST_ACK,
         clip_chars=2000,
