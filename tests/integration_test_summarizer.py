@@ -27,6 +27,8 @@ from letta.schemas.message import Message as PydanticMessage, MessageCreate
 from letta.schemas.run import Run as PydanticRun
 from letta.server.server import SyncServer
 from letta.services.run_manager import RunManager
+from letta.services.summarizer.summarizer import simple_summary
+from letta.settings import model_settings
 
 # Constants
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig.default_config(provider="openai")
@@ -238,6 +240,49 @@ async def test_summarize_empty_message_buffer(server: SyncServer, actor, llm_con
     except ValueError as e:
         # It's acceptable for summarization to fail on empty buffer
         assert "No assistant message found" in str(e) or "empty" in str(e).lower()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not model_settings.anthropic_api_key,
+    reason="Missing LETTA_ANTHROPIC_API_KEY (or equivalent settings) for Anthropic integration test",
+)
+async def test_simple_summary_anthropic_uses_streaming_and_returns_summary(actor, monkeypatch):
+    """Regression test: Anthropic summarization must use streaming and return real text."""
+
+    # If the summarizer ever falls back to a non-streaming Anthropic call, make it fail fast.
+    from letta.llm_api.anthropic_client import AnthropicClient
+
+    async def _nope_request_async(self, *args, **kwargs):
+        raise AssertionError("Anthropic summarizer should not call request_async (must use streaming)")
+
+    monkeypatch.setattr(AnthropicClient, "request_async", _nope_request_async)
+
+    # Keep the prompt tiny so this is fast and cheap.
+    messages = [
+        PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(type="text", text="I'm planning a trip to Paris in April.")],
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            content=[
+                TextContent(
+                    type="text",
+                    text="Great—your priorities are museums and cafes, and you want to stay under $200/day.",
+                )
+            ],
+        ),
+    ]
+
+    anthropic_config = get_llm_config("claude-4-5-haiku.json")
+
+    summary = await simple_summary(messages=messages, llm_config=anthropic_config, actor=actor)
+
+    assert isinstance(summary, str)
+    assert len(summary) > 10
+    # Sanity-check that the model is summarizing the right conversation.
+    assert any(token in summary.lower() for token in ["paris", "april", "museum", "cafe", "$200", "200"])
 
 
 @pytest.mark.asyncio
