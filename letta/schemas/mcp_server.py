@@ -319,24 +319,30 @@ def convert_generic_to_union(server) -> MCPServerUnion:
             env=server.stdio_config.env if server.stdio_config else None,
         )
     elif server.server_type == MCPServerType.SSE:
+        # Get decrypted values from encrypted columns
+        token = server.token_enc.get_plaintext() if server.token_enc else None
+        headers = server.get_custom_headers_dict()
         return SSEMCPServer(
             id=server.id,
             server_name=server.server_name,
             mcp_server_type=MCPServerType.SSE,
             server_url=server.server_url,
-            auth_header="Authorization" if server.token else None,
-            auth_token=f"Bearer {server.token}" if server.token else None,
-            custom_headers=server.custom_headers,
+            auth_header="Authorization" if token else None,
+            auth_token=f"Bearer {token}" if token else None,
+            custom_headers=headers,
         )
     elif server.server_type == MCPServerType.STREAMABLE_HTTP:
+        # Get decrypted values from encrypted columns
+        token = server.token_enc.get_plaintext() if server.token_enc else None
+        headers = server.get_custom_headers_dict()
         return StreamableHTTPMCPServer(
             id=server.id,
             server_name=server.server_name,
             mcp_server_type=MCPServerType.STREAMABLE_HTTP,
             server_url=server.server_url,
-            auth_header="Authorization" if server.token else None,
-            auth_token=f"Bearer {server.token}" if server.token else None,
-            custom_headers=server.custom_headers,
+            auth_header="Authorization" if token else None,
+            auth_token=f"Bearer {token}" if token else None,
+            custom_headers=headers,
         )
     else:
         raise ValueError(f"Unknown server type: {server.server_type}")
