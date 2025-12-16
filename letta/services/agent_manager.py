@@ -841,7 +841,7 @@ class AgentManager:
                     existing_value = None
                     if existing_env and existing_env.value_enc:
                         existing_secret = Secret.from_encrypted(existing_env.value_enc)
-                        existing_value = existing_secret.get_plaintext()
+                        existing_value = await existing_secret.get_plaintext_async()
 
                     # Encrypt value (reuse existing encrypted value if unchanged)
                     if existing_value == v and existing_env and existing_env.value_enc:

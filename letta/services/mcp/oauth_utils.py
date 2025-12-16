@@ -38,11 +38,11 @@ class DatabaseTokenStorage(TokenStorage):
             return None
 
         # Read tokens directly from _enc columns
-        access_token = oauth_session.access_token_enc.get_plaintext() if oauth_session.access_token_enc else None
+        access_token = await oauth_session.access_token_enc.get_plaintext_async() if oauth_session.access_token_enc else None
         if not access_token:
             return None
 
-        refresh_token = oauth_session.refresh_token_enc.get_plaintext() if oauth_session.refresh_token_enc else None
+        refresh_token = await oauth_session.refresh_token_enc.get_plaintext_async() if oauth_session.refresh_token_enc else None
 
         return OAuthToken(
             access_token=access_token,
@@ -71,7 +71,7 @@ class DatabaseTokenStorage(TokenStorage):
             return None
 
         # Read client secret directly from _enc column
-        client_secret = oauth_session.client_secret_enc.get_plaintext() if oauth_session.client_secret_enc else None
+        client_secret = await oauth_session.client_secret_enc.get_plaintext_async() if oauth_session.client_secret_enc else None
 
         return OAuthClientInformationFull(
             client_id=oauth_session.client_id,
@@ -229,7 +229,7 @@ async def create_oauth_provider(
             oauth_session = await mcp_manager.get_oauth_session_by_id(session_id, actor)
             if oauth_session and oauth_session.authorization_code_enc:
                 # Read authorization code directly from _enc column
-                auth_code = oauth_session.authorization_code_enc.get_plaintext()
+                auth_code = await oauth_session.authorization_code_enc.get_plaintext_async()
                 return auth_code, oauth_session.state
             elif oauth_session and oauth_session.status == OAuthSessionStatus.ERROR:
                 raise Exception("OAuth authorization failed")

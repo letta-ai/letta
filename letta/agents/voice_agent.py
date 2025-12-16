@@ -438,8 +438,8 @@ class VoiceAgent(BaseAgent):
             )
 
         # Use ToolExecutionManager for modern tool execution
-        # Decrypt environment variable values
-        sandbox_env_vars = {var.key: var.value_enc.get_plaintext() if var.value_enc else None for var in agent_state.secrets}
+        # Use pre-decrypted environment variable values (populated in from_orm_async)
+        sandbox_env_vars = {var.key: var.value or "" for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

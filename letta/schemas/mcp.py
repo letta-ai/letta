@@ -70,6 +70,19 @@ class MCPServer(BaseMCPServer):
                     logger.warning(f"Failed to parse custom_headers_enc for MCP server {self.id}: {e}")
         return None
 
+    async def get_custom_headers_dict_async(self) -> Optional[Dict[str, str]]:
+        """Get custom headers as a plaintext dictionary (async version)."""
+        secret = self.get_custom_headers_secret()
+        if secret is None:
+            return None
+        json_str = await secret.get_plaintext_async()
+        if json_str:
+            try:
+                return json.loads(json_str)
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Failed to parse custom_headers_enc for MCP server {self.id}: {e}")
+        return None
+
     def set_token_secret(self, secret: Secret) -> None:
         """Set token from a Secret object."""
         self.token_enc = secret
@@ -95,6 +108,53 @@ class MCPServer(BaseMCPServer):
                     headers_plaintext = json.loads(json_str)
                 except (json.JSONDecodeError, TypeError) as e:
                     logger.warning(f"Failed to parse custom_headers_enc for MCP server {self.id}: {e}")
+
+        if self.server_type == MCPServerType.SSE:
+            config = SSEServerConfig(
+                server_name=self.server_name,
+                server_url=self.server_url,
+                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if token_plaintext and not headers_plaintext else None,
+                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {token_plaintext}" if token_plaintext and not headers_plaintext else None,
+                custom_headers=headers_plaintext,
+            )
+            if resolve_variables:
+                config.resolve_environment_variables(environment_variables)
+            return config
+        elif self.server_type == MCPServerType.STDIO:
+            if self.stdio_config is None:
+                raise ValueError("stdio_config is required for STDIO server type")
+            if resolve_variables:
+                self.stdio_config.resolve_environment_variables(environment_variables)
+            return self.stdio_config
+        elif self.server_type == MCPServerType.STREAMABLE_HTTP:
+            if self.server_url is None:
+                raise ValueError("server_url is required for STREAMABLE_HTTP server type")
+
+            config = StreamableHTTPServerConfig(
+                server_name=self.server_name,
+                server_url=self.server_url,
+                auth_header=MCP_AUTH_HEADER_AUTHORIZATION if token_plaintext and not headers_plaintext else None,
+                auth_token=f"{MCP_AUTH_TOKEN_BEARER_PREFIX} {token_plaintext}" if token_plaintext and not headers_plaintext else None,
+                custom_headers=headers_plaintext,
+            )
+            if resolve_variables:
+                config.resolve_environment_variables(environment_variables)
+            return config
+        else:
+            raise ValueError(f"Unsupported server type: {self.server_type}")
+
+    async def to_config_async(
+        self,
+        environment_variables: Optional[Dict[str, str]] = None,
+        resolve_variables: bool = True,
+    ) -> Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]:
+        """Async version of to_config() that uses async decryption."""
+        # Get decrypted values for use in config
+        token_secret = self.get_token_secret()
+        token_plaintext = await token_secret.get_plaintext_async() if token_secret else None
+
+        # Get custom headers as dict
+        headers_plaintext = await self.get_custom_headers_dict_async()
 
         if self.server_type == MCPServerType.SSE:
             config = SSEServerConfig(

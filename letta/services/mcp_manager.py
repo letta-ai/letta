@@ -70,7 +70,7 @@ class MCPManager:
         try:
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
             mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-            server_config = mcp_config.to_config()
+            server_config = await mcp_config.to_config_async()
             mcp_client = await self.get_mcp_client(server_config, actor, agent_id=agent_id)
             await mcp_client.connect_to_server()
 
@@ -116,7 +116,7 @@ class MCPManager:
                 # read from DB
                 mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
                 mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-                server_config = mcp_config.to_config(environment_variables)
+                server_config = await mcp_config.to_config_async(environment_variables)
             else:
                 # read from config file
                 mcp_config = await self.read_mcp_config()
@@ -541,7 +541,7 @@ class MCPManager:
                 existing_token = None
                 if mcp_server.token_enc:
                     existing_secret = Secret.from_encrypted(mcp_server.token_enc)
-                    existing_token = existing_secret.get_plaintext()
+                    existing_token = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_token != update_data["token"]:
@@ -561,7 +561,7 @@ class MCPManager:
                     existing_headers_json = None
                     if mcp_server.custom_headers_enc:
                         existing_secret = Secret.from_encrypted(mcp_server.custom_headers_enc)
-                        existing_headers_json = existing_secret.get_plaintext()
+                        existing_headers_json = await existing_secret.get_plaintext_async()
 
                     # Only re-encrypt if different
                     if existing_headers_json != json_str:
@@ -793,8 +793,8 @@ class MCPManager:
         # If no OAuth provider is provided, check if we have stored OAuth credentials
         if oauth_provider is None and hasattr(server_config, "server_url"):
             oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor)
-            # Check if access token exists by reading directly from _enc column
-            if oauth_session and oauth_session.access_token_enc and oauth_session.access_token_enc.get_plaintext():
+            # Check if access token exists by attempting to decrypt it
+            if oauth_session and oauth_session.access_token_enc and await oauth_session.access_token_enc.get_plaintext_async():
                 # Create OAuth provider from stored credentials
                 from letta.services.mcp.oauth_utils import create_oauth_provider
 
@@ -819,7 +819,7 @@ class MCPManager:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 
     # OAuth-related methods
-    def _oauth_orm_to_pydantic(self, oauth_session: MCPOAuth) -> MCPOAuthSession:
+    async def _oauth_orm_to_pydantic_async(self, oauth_session: MCPOAuth) -> MCPOAuthSession:
         """
         Convert OAuth ORM model to Pydantic model, reading directly from encrypted columns.
         """
@@ -832,10 +832,10 @@ class MCPManager:
         client_secret_enc = Secret.from_encrypted(oauth_session.client_secret_enc) if oauth_session.client_secret_enc else None
 
         # Get plaintext values from encrypted columns (primary source of truth)
-        authorization_code = authorization_code_enc.get_plaintext() if authorization_code_enc else None
-        access_token = access_token_enc.get_plaintext() if access_token_enc else None
-        refresh_token = refresh_token_enc.get_plaintext() if refresh_token_enc else None
-        client_secret = client_secret_enc.get_plaintext() if client_secret_enc else None
+        authorization_code = await authorization_code_enc.get_plaintext_async() if authorization_code_enc else None
+        access_token = await access_token_enc.get_plaintext_async() if access_token_enc else None
+        refresh_token = await refresh_token_enc.get_plaintext_async() if refresh_token_enc else None
+        client_secret = await client_secret_enc.get_plaintext_async() if client_secret_enc else None
 
         # Create the Pydantic object with both encrypted and plaintext fields
         pydantic_session = MCPOAuthSession(
@@ -887,7 +887,7 @@ class MCPManager:
             oauth_session = await oauth_session.create_async(session, actor=actor)
 
             # Convert to Pydantic model - note: new sessions won't have tokens yet
-            return self._oauth_orm_to_pydantic(oauth_session)
+            return await self._oauth_orm_to_pydantic_async(oauth_session)
 
     @enforce_types
     async def get_oauth_session_by_id(self, session_id: str, actor: PydanticUser) -> Optional[MCPOAuthSession]:
@@ -895,7 +895,7 @@ class MCPManager:
         async with db_registry.async_session() as session:
             try:
                 oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
-                return self._oauth_orm_to_pydantic(oauth_session)
+                return await self._oauth_orm_to_pydantic_async(oauth_session)
             except NoResultFound:
                 return None
 
@@ -921,7 +921,7 @@ class MCPManager:
             if not oauth_session:
                 return None
 
-            return self._oauth_orm_to_pydantic(oauth_session)
+            return await self._oauth_orm_to_pydantic_async(oauth_session)
 
     @enforce_types
     async def update_oauth_session(self, session_id: str, session_update: MCPOAuthSessionUpdate, actor: PydanticUser) -> MCPOAuthSession:
@@ -939,7 +939,7 @@ class MCPManager:
                 existing_code = None
                 if oauth_session.authorization_code_enc:
                     existing_secret = Secret.from_encrypted(oauth_session.authorization_code_enc)
-                    existing_code = existing_secret.get_plaintext()
+                    existing_code = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_code != session_update.authorization_code:
@@ -951,7 +951,7 @@ class MCPManager:
                 existing_token = None
                 if oauth_session.access_token_enc:
                     existing_secret = Secret.from_encrypted(oauth_session.access_token_enc)
-                    existing_token = existing_secret.get_plaintext()
+                    existing_token = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_token != session_update.access_token:
@@ -963,7 +963,7 @@ class MCPManager:
                 existing_refresh = None
                 if oauth_session.refresh_token_enc:
                     existing_secret = Secret.from_encrypted(oauth_session.refresh_token_enc)
-                    existing_refresh = existing_secret.get_plaintext()
+                    existing_refresh = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_refresh != session_update.refresh_token:
@@ -984,7 +984,7 @@ class MCPManager:
                 existing_secret_val = None
                 if oauth_session.client_secret_enc:
                     existing_secret = Secret.from_encrypted(oauth_session.client_secret_enc)
-                    existing_secret_val = existing_secret.get_plaintext()
+                    existing_secret_val = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_secret_val != session_update.client_secret:
@@ -1000,7 +1000,7 @@ class MCPManager:
 
             oauth_session = await oauth_session.update_async(db_session=session, actor=actor)
 
-            return self._oauth_orm_to_pydantic(oauth_session)
+            return await self._oauth_orm_to_pydantic_async(oauth_session)
 
     @enforce_types
     async def delete_oauth_session(self, session_id: str, actor: PydanticUser) -> None:

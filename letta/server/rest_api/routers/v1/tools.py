@@ -427,7 +427,10 @@ async def list_mcp_servers(
     else:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return {server.server_name: server.to_config(resolve_variables=False) for server in mcp_servers}
+        result = {}
+        for mcp_server in mcp_servers:
+            result[mcp_server.server_name] = await mcp_server.to_config_async(resolve_variables=False)
+        return result
 
 
 # NOTE: async because the MCP client/session calls are async
@@ -556,7 +559,10 @@ async def add_mcp_server_to_config(
 
         # TODO: don't do this in the future (just return MCPServer)
         all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return [server.to_config() for server in all_servers]
+        result = []
+        for mcp_server in all_servers:
+            result.append(await mcp_server.to_config_async())
+        return result
 
 
 @router.patch(
@@ -581,7 +587,7 @@ async def update_mcp_server(
         updated_server = await server.mcp_manager.update_mcp_server_by_name(
             mcp_server_name=mcp_server_name, mcp_server_update=request, actor=actor
         )
-        return updated_server.to_config()
+        return await updated_server.to_config_async()
 
 
 @router.delete(
@@ -608,7 +614,10 @@ async def delete_mcp_server_from_config(
 
         # TODO: don't do this in the future (just return MCPServer)
         all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return [server.to_config() for server in all_servers]
+        result = []
+        for mcp_server in all_servers:
+            result.append(await mcp_server.to_config_async())
+        return result
 
 
 @deprecated("Deprecated in favor of /mcp/servers/connect which handles OAuth flow via SSE stream")
@@ -795,7 +804,7 @@ async def execute_mcp_tool(
             raise NoResultFound(f"MCP server '{mcp_server_name}' not found")
 
         # Create client and connect
-        server_config = mcp_server.to_config()
+        server_config = await mcp_server.to_config_async()
         server_config.resolve_environment_variables()
         client = await server.mcp_manager.get_mcp_client(server_config, actor)
         await client.connect_to_server()
