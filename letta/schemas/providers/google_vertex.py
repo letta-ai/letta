@@ -16,6 +16,12 @@ class GoogleVertexProvider(Provider):
     google_cloud_project: str = Field(..., description="GCP project ID for the Google Vertex API.")
     google_cloud_location: str = Field(..., description="GCP region for the Google Vertex API.")
 
+    def get_default_max_output_tokens(self, model_name: str) -> int:
+        """Get the default max output tokens for Google Vertex models."""
+        if "2.5" in model_name or "2-5" in model_name:  # gemini-2.5-* or gemini-2-5-*
+            return 65536
+        return 8192  # default for google vertex
+
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.google_constants import GOOGLE_MODEL_TO_CONTEXT_LENGTH
 
@@ -28,7 +34,7 @@ class GoogleVertexProvider(Provider):
                     model_endpoint=f"https://{self.google_cloud_location}-aiplatform.googleapis.com/v1/projects/{self.google_cloud_project}/locations/{self.google_cloud_location}",
                     context_window=context_length,
                     handle=self.get_handle(model),
-                    max_tokens=8192,
+                    max_tokens=self.get_default_max_output_tokens(model),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )

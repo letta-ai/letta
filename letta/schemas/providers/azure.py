@@ -5,7 +5,7 @@ import httpx
 from openai import AsyncAzureOpenAI
 from pydantic import Field, field_validator
 
-from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_TOKENS
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
 from letta.errors import ErrorCode, LLMAuthenticationError
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
@@ -127,6 +127,7 @@ class AzureProvider(Provider):
                     model_endpoint=model_endpoint,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    max_tokens=self.get_default_max_output_tokens(model_name),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )
@@ -165,7 +166,7 @@ class AzureProvider(Provider):
 
     def get_model_context_window(self, model_name: str) -> int | None:
         # Hard coded as there are no API endpoints for this
-        llm_default = LLM_MAX_TOKENS.get(model_name, 4096)
+        llm_default = LLM_MAX_CONTEXT_WINDOW.get(model_name, 4096)
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
 
     async def check_api_key(self):

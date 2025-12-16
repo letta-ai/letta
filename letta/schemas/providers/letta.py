@@ -21,6 +21,7 @@ class LettaProvider(Provider):
                 model_endpoint=LETTA_MODEL_ENDPOINT,
                 context_window=30000,
                 handle=self.get_handle("letta-free"),
+                max_tokens=self.get_default_max_output_tokens("letta-free"),
                 provider_name=self.name,
                 provider_category=self.provider_category,
             )

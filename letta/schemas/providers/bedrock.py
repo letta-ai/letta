@@ -70,6 +70,7 @@ class BedrockProvider(Provider):
                     model_endpoint=None,
                     context_window=self.get_model_context_window(model_arn),
                     handle=self.get_handle(model_arn),
+                    max_tokens=self.get_default_max_output_tokens(model_arn),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )

@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 from pydantic import Field
 
-from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_TOKENS
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -25,6 +25,12 @@ class GoogleAIProvider(Provider):
 
         api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         await google_ai_check_valid_api_key_async(api_key)
+
+    def get_default_max_output_tokens(self, model_name: str) -> int:
+        """Get the default max output tokens for Google Gemini models."""
+        if "2.5" in model_name or "2-5" in model_name:  # gemini-2.5-* or gemini-2-5-*
+            return 65536
+        return 8192  # default for google gemini
 
     async def list_llm_models_async(self):
         from letta.llm_api.google_ai_client import google_ai_get_model_list_async
@@ -50,7 +56,7 @@ class GoogleAIProvider(Provider):
                 model_endpoint=self.base_url,
                 context_window=context_window,
                 handle=self.get_handle(model),
-                max_tokens=8192,
+                max_tokens=self.get_default_max_output_tokens(model),
                 provider_name=self.name,
                 provider_category=self.provider_category,
             )
@@ -95,8 +101,8 @@ class GoogleAIProvider(Provider):
         logger.warning("This is deprecated, use get_model_context_window_async when possible.")
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window
 
-        if model_name in LLM_MAX_TOKENS:
-            return LLM_MAX_TOKENS[model_name]
+        if model_name in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[model_name]
         else:
             api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
             return google_ai_get_model_context_window(self.base_url, api_key, model_name)
@@ -104,8 +110,8 @@ class GoogleAIProvider(Provider):
     async def get_model_context_window_async(self, model_name: str) -> int | None:
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window_async
 
-        if model_name in LLM_MAX_TOKENS:
-            return LLM_MAX_TOKENS[model_name]
+        if model_name in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[model_name]
         else:
             api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
             return await google_ai_get_model_context_window_async(self.base_url, api_key, model_name)
