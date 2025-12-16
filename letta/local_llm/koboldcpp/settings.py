@@ -18,6 +18,6 @@ SIMPLE = {
         # '\n#',
         # '\n\n\n',
     ],
-    # "max_context_length": LLM_MAX_TOKENS,
+    # "max_context_length": LLM_MAX_CONTEXT_WINDOW,
     "max_length": 512,
 }

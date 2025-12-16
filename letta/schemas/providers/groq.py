@@ -29,6 +29,7 @@ class GroqProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
                     handle=self.get_handle(model["id"]),
+                    max_tokens=self.get_default_max_output_tokens(model["id"]),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )
