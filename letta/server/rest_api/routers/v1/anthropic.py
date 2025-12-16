@@ -62,8 +62,8 @@ async def anthropic_messages_proxy(
     # Claude Code sends full conversation history, but we only want to persist the new message
     user_messages = [all_user_messages[-1]] if all_user_messages else []
 
-    # Filter out system/metadata requests
-    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>")]
+    # Filter out system/metadata requests and policy specs
+    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>") and not s.startswith("<policy_spec>")]
     if not user_messages:
         logger.debug(f"[{PROXY_NAME}] Skipping capture/memory for this turn")
 
