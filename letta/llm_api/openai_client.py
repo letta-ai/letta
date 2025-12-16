@@ -26,6 +26,7 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
+from letta.llm_api.error_utils import is_context_window_overflow_message
 from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
@@ -978,11 +979,7 @@ class OpenAIClient(LLMClientBase):
                     error_code = error_details.get("code")
 
             # Check both the error code and message content for context length issues
-            if (
-                error_code == "context_length_exceeded"
-                or "This model's maximum context length is" in str(e)
-                or "Input tokens exceed the configured limit" in str(e)
-            ):
+            if error_code == "context_length_exceeded" or is_context_window_overflow_message(str(e)):
                 return ContextWindowExceededError(
                     message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )
@@ -991,6 +988,25 @@ class OpenAIClient(LLMClientBase):
                     message=f"Bad request to OpenAI: {str(e)}",
                     code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
                     details=e.body,
+                )
+
+        # NOTE: The OpenAI Python SDK may raise a generic `openai.APIError` while *iterating*
+        # over a stream (e.g. Responses API streaming). In this case we don't necessarily
+        # get a `BadRequestError` with a structured error body, but we still want to
+        # trigger Letta's context window compaction / retry logic.
+        #
+        # Example message:
+        #   "Your input exceeds the context window of this model. Please adjust your input and try again."
+        if isinstance(e, openai.APIError):
+            msg = str(e)
+            if is_context_window_overflow_message(msg):
+                return ContextWindowExceededError(
+                    message=f"OpenAI request exceeded the context window: {msg}",
+                    details={
+                        "provider_exception_type": type(e).__name__,
+                        # Best-effort extraction (may not exist on APIError)
+                        "body": getattr(e, "body", None),
+                    },
                 )
 
         if isinstance(e, openai.AuthenticationError):
