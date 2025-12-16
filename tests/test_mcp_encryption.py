@@ -84,10 +84,8 @@ class TestMCPServerEncryption:
                 decrypted_token = CryptoUtils.decrypt(db_server.token_enc)
                 assert decrypted_token == token
 
-                # Legacy plaintext column should be None (or empty for dual-write)
-                # During migration phase, might store both
-                if db_server.token:
-                    assert db_server.token == token  # Dual-write phase
+                # Plaintext column should NOT be written to (encrypted-only)
+                assert db_server.token is None
 
             # Clean up
             await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
@@ -176,9 +174,9 @@ class TestMCPServerEncryption:
 
             assert test_server is not None
             assert test_server.server_name == server_name
-            # Token should be decrypted when accessed via the secret method
-            token_secret = test_server.get_token_secret()
-            assert token_secret.get_plaintext() == plaintext_token
+            # Token should be decrypted when accessed via the _enc column
+            assert test_server.token_enc is not None
+            assert test_server.token_enc.get_plaintext() == plaintext_token
 
             # Clean up
             async with db_registry.async_session() as session:
@@ -220,15 +218,15 @@ class TestMCPServerEncryption:
             # Should work without encryption key - stores plaintext in _enc column
             created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
 
-            # Check database - should store plaintext in _enc column
+            # Check database - should store plaintext in _enc column (no encryption key)
             async with db_registry.async_session() as session:
                 result = await session.execute(select(ORMMCPServer).where(ORMMCPServer.id == created_server.id))
                 db_server = result.scalar_one()
 
                 # Token should be stored as plaintext in _enc column (not encrypted)
                 assert db_server.token_enc == token  # Plaintext stored directly
-                # Legacy plaintext column should also be populated (dual-write)
-                assert db_server.token == token
+                # Plaintext column should NOT be written to (encrypted-only)
+                assert db_server.token is None
 
             # Clean up
             await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
@@ -346,10 +344,13 @@ class TestMCPOAuthEncryption:
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
             assert test_session is not None
 
-            # Tokens should be decrypted
-            assert test_session.access_token == access_token
-            assert test_session.refresh_token == refresh_token
-            assert test_session.client_secret == client_secret
+            # Tokens should be decrypted from _enc columns
+            assert test_session.access_token_enc is not None
+            assert test_session.access_token_enc.get_plaintext() == access_token
+            assert test_session.refresh_token_enc is not None
+            assert test_session.refresh_token_enc.get_plaintext() == refresh_token
+            assert test_session.client_secret_enc is not None
+            assert test_session.client_secret_enc.get_plaintext() == client_secret
 
             # Clean up not needed - test database is reset
 
@@ -396,9 +397,11 @@ class TestMCPOAuthEncryption:
 
             updated_session = await server.mcp_manager.update_oauth_session(created_session.id, new_update, actor=default_user)
 
-            # Verify update worked
-            assert updated_session.access_token == new_access_token
-            assert updated_session.refresh_token == new_refresh_token
+            # Verify update worked - read from _enc columns
+            assert updated_session.access_token_enc is not None
+            assert updated_session.access_token_enc.get_plaintext() == new_access_token
+            assert updated_session.refresh_token_enc is not None
+            assert updated_session.refresh_token_enc.get_plaintext() == new_refresh_token
 
             # Check database encryption
             async with db_registry.async_session() as session:
@@ -459,8 +462,9 @@ class TestMCPOAuthEncryption:
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
             assert test_session is not None
 
-            # Should use encrypted value only (plaintext is ignored)
-            assert test_session.access_token == new_encrypted_token
+            # Should read from encrypted column only (plaintext is ignored)
+            assert test_session.access_token_enc is not None
+            assert test_session.access_token_enc.get_plaintext() == new_encrypted_token
 
             # Clean up not needed - test database is reset
 
@@ -469,15 +473,13 @@ class TestMCPOAuthEncryption:
             settings.encryption_key = original_key
 
     @pytest.mark.asyncio
-    async def test_plaintext_only_record_fallback_with_error_logging(self, server, default_user, caplog):
-        """Test that records with only plaintext values fall back to plaintext with error logging.
+    async def test_plaintext_only_record_returns_none(self, server, default_user):
+        """Test that records with only plaintext values return None for encrypted fields.
 
-        Note: In Phase 1 of migration, if a record only has plaintext value
-        (no encrypted value), the system falls back to plaintext but logs an error
-        to help identify unmigrated data.
+        With encrypted-only migration complete, if a record only has plaintext value
+        (no encrypted value), the system returns None for that field since we only
+        read from _enc columns now.
         """
-        import logging
-
         # Set encryption key directly on settings
         original_key = settings.encryption_key
         settings.encryption_key = self.MOCK_ENCRYPTION_KEY
@@ -494,7 +496,7 @@ class TestMCPOAuthEncryption:
                     server_url="https://test.com/mcp",
                     server_name="Plaintext Only Test",
                     # Only plaintext value, no encrypted
-                    access_token=plaintext_token,  # Legacy plaintext - should fallback with error log
+                    access_token=plaintext_token,  # Legacy plaintext - should be ignored
                     access_token_enc=None,  # No encrypted value
                     client_id="test-client",
                     user_id=default_user.id,
@@ -505,17 +507,12 @@ class TestMCPOAuthEncryption:
                 session.add(db_oauth)
                 await session.commit()
 
-            # Retrieve through manager - should log error about plaintext fallback
-            with caplog.at_level(logging.ERROR):
-                test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
-
+            # Retrieve through manager
+            test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
             assert test_session is not None
 
-            # Should fall back to plaintext value
-            assert test_session.access_token == plaintext_token
-
-            # Should have logged an error about reading from plaintext column
-            assert "MIGRATION_NEEDED" in caplog.text
+            # Should return None since we only read from _enc columns now
+            assert test_session.access_token_enc is None
 
             # Clean up not needed - test database is reset
 
