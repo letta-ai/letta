@@ -15,6 +15,7 @@ from letta.errors import (
     LettaMCPTimeoutError,
     LettaToolCreateError,
     LettaToolNameConflictError,
+    LLMError,
 )
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
@@ -924,6 +925,14 @@ async def generate_tool_from_prompt(
     )
     response_data = await llm_client.request_async(request_data, llm_config)
     response = await llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
+
+    # Validate that we got a tool call response
+    if not response.choices or not response.choices[0].message.tool_calls:
+        error_msg = (
+            response.choices[0].message.content if response.choices and response.choices[0].message.content else "No response from LLM"
+        )
+        raise LLMError(f"Failed to generate tool '{request.tool_name}': LLM did not return a tool call. Response: {error_msg}")
+
     output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
     pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
 
