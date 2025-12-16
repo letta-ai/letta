@@ -285,7 +285,10 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 sandbox_config_id=sandbox_config_id,
             )
-            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
+            result = []
+            for env_var in env_vars:
+                result.append(await PydanticEnvVar.from_orm_async(env_var))
+            return result
 
     @enforce_types
     @trace_method
@@ -301,7 +304,10 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 key=key,
             )
-            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
+            result = []
+            for env_var in env_vars:
+                result.append(await PydanticEnvVar.from_orm_async(env_var))
+            return result
 
     @enforce_types
     @trace_method

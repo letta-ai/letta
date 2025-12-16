@@ -434,7 +434,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
         # Convert ORM env vars to Pydantic with async decryption
-        env_vars_pydantic = [await PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables]
+        env_vars_pydantic = []
+        for e in tool_exec_environment_variables:
+            env_vars_pydantic.append(await PydanticAgentEnvVar.from_orm_async(e))
         state["tool_exec_environment_variables"] = env_vars_pydantic
         state["secrets"] = env_vars_pydantic
         state["model"] = self.llm_config.handle if self.llm_config else None

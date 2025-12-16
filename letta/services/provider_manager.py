@@ -115,7 +115,7 @@ class ProviderManager:
                 existing_api_key = None
                 if existing_provider.api_key_enc:
                     existing_secret = Secret.from_encrypted(existing_provider.api_key_enc)
-                    existing_api_key = existing_secret.get_plaintext()
+                    existing_api_key = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_api_key != update_data["api_key"]:
@@ -132,7 +132,7 @@ class ProviderManager:
                 existing_access_key = None
                 if existing_provider.access_key_enc:
                     existing_secret = Secret.from_encrypted(existing_provider.access_key_enc)
-                    existing_access_key = existing_secret.get_plaintext()
+                    existing_access_key = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_access_key != update_data["access_key"]:
@@ -336,7 +336,7 @@ class ProviderManager:
         if providers:
             # Decrypt the API key before returning
             api_key_secret = providers[0].api_key_enc
-            return api_key_secret.get_plaintext() if api_key_secret else None
+            return await api_key_secret.get_plaintext_async() if api_key_secret else None
         return None
 
     @enforce_types
@@ -349,8 +349,8 @@ class ProviderManager:
             # Decrypt the credentials before returning
             access_key_secret = providers[0].access_key_enc
             api_key_secret = providers[0].api_key_enc
-            access_key = access_key_secret.get_plaintext() if access_key_secret else None
-            secret_key = api_key_secret.get_plaintext() if api_key_secret else None
+            access_key = await access_key_secret.get_plaintext_async() if access_key_secret else None
+            secret_key = await api_key_secret.get_plaintext_async() if api_key_secret else None
             region = providers[0].region
             return access_key, secret_key, region
         return None, None, None
@@ -379,7 +379,7 @@ class ProviderManager:
         if providers:
             # Decrypt the API key before returning
             api_key_secret = providers[0].api_key_enc
-            api_key = api_key_secret.get_plaintext() if api_key_secret else None
+            api_key = await api_key_secret.get_plaintext_async() if api_key_secret else None
             base_url = providers[0].base_url
             api_version = providers[0].api_version
             return api_key, base_url, api_version
@@ -400,7 +400,7 @@ class ProviderManager:
         ).cast_to_subtype()
 
         # TODO: add more string sanity checks here before we hit actual endpoints
-        if not provider.api_key_enc or not provider.api_key_enc.get_plaintext():
+        if not provider.api_key_enc or not await provider.api_key_enc.get_plaintext_async():
             raise ValueError("API key is required!")
 
         await provider.check_api_key()
@@ -439,8 +439,8 @@ class ProviderManager:
                 return
 
             # Create provider instance with necessary parameters
-            api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
-            access_key = provider.access_key_enc.get_plaintext() if provider.access_key_enc else None
+            api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
+            access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
             kwargs = {
                 "name": provider.name,
                 "api_key": api_key,
@@ -516,8 +516,8 @@ class ProviderManager:
                         continue
 
                     # Convert Provider to ProviderCreate
-                    api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
-                    access_key = provider.access_key_enc.get_plaintext() if provider.access_key_enc else None
+                    api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
+                    access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
                     provider_create = ProviderCreate(
                         name=provider.name,
                         provider_type=provider.provider_type,

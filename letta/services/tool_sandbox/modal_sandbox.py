@@ -143,9 +143,10 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
                     logger.warning(f"Could not load sandbox env vars for tool {self.tool_name}: {e}")
 
             # Add agent-specific environment variables (these override sandbox-level)
+            # Use the pre-decrypted value field which was populated in from_orm_async()
             if agent_state and agent_state.secrets:
                 for secret in agent_state.secrets:
-                    env_vars[secret.key] = secret.value_enc.get_plaintext() if secret.value_enc else None
+                    env_vars[secret.key] = secret.value or ""
 
             # Add any additional env vars passed at runtime (highest priority)
             if additional_env_vars:
