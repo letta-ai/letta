@@ -109,6 +109,8 @@ def validate_approval_tool_call_ids(approval_request_message: Message, approval_
         )
 
     approval_responses = approval_response_message.approvals
+    if not approval_responses:
+        raise ValueError("Invalid approval response. Approval response message does not contain any approvals.")
     approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
 
     request_response_diff = set(approval_request_tool_call_ids).symmetric_difference(set(approval_response_tool_call_ids))
