@@ -21952,6 +21952,11 @@
             "title": "Content",
             "description": "The message content sent by the assistant (can be a string or an array of content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -21972,9 +21977,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "AssistantMessageListResult",
-        "description": "Assistant message list result with agent context.\n\nShape is identical to UpdateAssistantMessage but includes the owning agent_id."
+        "description": "Assistant message list result with agent context.\n\nShape is identical to UpdateAssistantMessage but includes the owning agent_id and message id."
       },
       "Audio": {
         "properties": {
@@ -34376,6 +34381,11 @@
             "title": "Message Type",
             "default": "reasoning_message"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -34396,9 +34406,9 @@
           }
         },
         "type": "object",
-        "required": ["reasoning", "created_at"],
+        "required": ["reasoning", "message_id", "created_at"],
         "title": "ReasoningMessageListResult",
-        "description": "Reasoning message list result with agent context.\n\nShape is identical to UpdateReasoningMessage but includes the owning agent_id."
+        "description": "Reasoning message list result with agent context.\n\nShape is identical to UpdateReasoningMessage but includes the owning agent_id and message id."
       },
       "RedactedReasoningContent": {
         "properties": {
@@ -36870,6 +36880,11 @@
             "title": "Content",
             "description": "The message content sent by the system (can be a string or an array of multi-modal content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -36890,9 +36905,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "SystemMessageListResult",
-        "description": "System message list result with agent context.\n\nShape is identical to UpdateSystemMessage but includes the owning agent_id."
+        "description": "System message list result with agent context.\n\nShape is identical to UpdateSystemMessage but includes the owning agent_id and message id."
       },
       "TagSchema": {
         "properties": {
@@ -39541,6 +39556,11 @@
             "title": "Content",
             "description": "The message content sent by the user (can be a string or an array of multi-modal content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -39561,9 +39581,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "UserMessageListResult",
-        "description": "User message list result with agent context.\n\nShape is identical to UpdateUserMessage but includes the owning agent_id."
+        "description": "User message list result with agent context.\n\nShape is identical to UpdateUserMessage but includes the owning agent_id and message id."
       },
       "UserUpdate": {
         "properties": {
