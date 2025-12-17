@@ -256,7 +256,7 @@ async def agent_state(server: SyncServer):
             include_base_tools=True,
             model="openai/gpt-4o-mini",
             tags=["test_agents"],
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -485,12 +485,12 @@ async def test_modal_sandbox_default(check_modal_key_is_set, add_integers_tool, 
 
     # Mock and assert correct pathway was invoked
     with patch.object(AsyncToolSandboxModal, "run") as mock_run:
-        sandbox = AsyncToolSandboxModal(add_integers_tool.name, args, user=test_user)
+        sandbox = AsyncToolSandboxModal(add_integers_tool.name, args, user=test_user, tool_id=add_integers_tool.id)
         await sandbox.run()
         mock_run.assert_called_once()
 
     # Run again to get actual response
-    sandbox = AsyncToolSandboxModal(add_integers_tool.name, args, user=test_user)
+    sandbox = AsyncToolSandboxModal(add_integers_tool.name, args, user=test_user, tool_id=add_integers_tool.id)
     result = await sandbox.run()
     assert int(result.func_return) == args["x"] + args["y"]
 
@@ -511,7 +511,7 @@ async def test_modal_sandbox_pip_installs(check_modal_key_is_set, cowsay_tool, t
         actor=test_user,
     )
 
-    sandbox = AsyncToolSandboxModal(cowsay_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(cowsay_tool.name, {}, user=test_user, tool_id=cowsay_tool.id)
     result = await sandbox.run()
     assert long_random_string in result.stdout[0]
 
@@ -519,7 +519,7 @@ async def test_modal_sandbox_pip_installs(check_modal_key_is_set, cowsay_tool, t
 @pytest.mark.asyncio
 @pytest.mark.modal_sandbox
 async def test_modal_sandbox_stateful_tool(check_modal_key_is_set, clear_core_memory_tool, test_user, agent_state):
-    sandbox = AsyncToolSandboxModal(clear_core_memory_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(clear_core_memory_tool.name, {}, user=test_user, tool_id=clear_core_memory_tool.id)
     result = await sandbox.run(agent_state=agent_state)
     assert result.agent_state.memory.get_block("human").value == ""
     assert result.agent_state.memory.get_block("persona").value == ""
@@ -533,7 +533,7 @@ async def test_modal_sandbox_inject_env_var_existing_sandbox(check_modal_key_is_
     config_create = SandboxConfigCreate(config=ModalSandboxConfig().model_dump())
     config = await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
-    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user, tool_id=get_env_tool.id)
     result = await sandbox.run()
     assert result.func_return is None
 
@@ -545,7 +545,7 @@ async def test_modal_sandbox_inject_env_var_existing_sandbox(check_modal_key_is_
         actor=test_user,
     )
 
-    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user, tool_id=get_env_tool.id)
     result = await sandbox.run()
     assert long_random_string in result.func_return
 
@@ -568,7 +568,7 @@ async def test_modal_sandbox_per_agent_env(check_modal_key_is_set, get_env_tool,
 
     agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
-    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(get_env_tool.name, {}, user=test_user, tool_id=get_env_tool.id)
     result = await sandbox.run(agent_state=agent_state)
     assert wrong_val not in result.func_return
     assert correct_val in result.func_return
@@ -577,7 +577,7 @@ async def test_modal_sandbox_per_agent_env(check_modal_key_is_set, get_env_tool,
 @pytest.mark.asyncio
 @pytest.mark.modal_sandbox
 async def test_modal_sandbox_with_list_rv(check_modal_key_is_set, list_tool, test_user):
-    sandbox = AsyncToolSandboxModal(list_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(list_tool.name, {}, user=test_user, tool_id=list_tool.id)
     result = await sandbox.run()
     assert len(result.func_return) == 5
 
@@ -590,7 +590,9 @@ async def test_modal_sandbox_with_tool_pip_requirements(check_modal_key_is_set, 
     config_create = SandboxConfigCreate(config=ModalSandboxConfig().model_dump())
     await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
-    sandbox = AsyncToolSandboxModal(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
+    sandbox = AsyncToolSandboxModal(
+        tool_with_pip_requirements.name, {}, user=test_user, tool_id=tool_with_pip_requirements.id, tool_object=tool_with_pip_requirements
+    )
     result = await sandbox.run()
 
     # Should succeed since tool pip requirements were installed
@@ -611,7 +613,9 @@ async def test_modal_sandbox_with_mixed_pip_requirements(check_modal_key_is_set,
     config_create = SandboxConfigCreate(config=ModalSandboxConfig().model_dump())
     await manager.create_or_update_sandbox_config_async(config_create, test_user)
 
-    sandbox = AsyncToolSandboxModal(tool_with_pip_requirements.name, {}, user=test_user, tool_object=tool_with_pip_requirements)
+    sandbox = AsyncToolSandboxModal(
+        tool_with_pip_requirements.name, {}, user=test_user, tool_id=tool_with_pip_requirements.id, tool_object=tool_with_pip_requirements
+    )
     result = await sandbox.run()
 
     # Should succeed since tool pip requirements were installed
@@ -651,12 +655,14 @@ async def test_modal_sandbox_with_broken_tool_pip_requirements_error_handling(ch
 async def test_async_function_detection(add_integers_tool, async_add_integers_tool, test_user):
     """Test that async function detection works correctly"""
     # Test sync function detection
-    sync_sandbox = AsyncToolSandboxModal(add_integers_tool.name, {}, test_user, tool_object=add_integers_tool)
+    sync_sandbox = AsyncToolSandboxModal(add_integers_tool.name, {}, test_user, tool_id=add_integers_tool.id, tool_object=add_integers_tool)
     await sync_sandbox._init_async()
     assert not sync_sandbox.is_async_function
 
     # Test async function detection
-    async_sandbox = AsyncToolSandboxModal(async_add_integers_tool.name, {}, test_user, tool_object=async_add_integers_tool)
+    async_sandbox = AsyncToolSandboxModal(
+        async_add_integers_tool.name, {}, test_user, tool_id=async_add_integers_tool.id, tool_object=async_add_integers_tool
+    )
     await async_sandbox._init_async()
     assert async_sandbox.is_async_function
 
@@ -667,7 +673,7 @@ async def test_modal_sandbox_async_function_execution(check_modal_key_is_set, as
     """Test that async functions execute correctly in Modal sandbox"""
     args = {"x": 20, "y": 30}
 
-    sandbox = AsyncToolSandboxModal(async_add_integers_tool.name, args, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_add_integers_tool.name, args, user=test_user, tool_id=async_add_integers_tool.id)
     result = await sandbox.run()
     assert int(result.func_return) == args["x"] + args["y"]
 
@@ -678,7 +684,7 @@ async def test_modal_sandbox_async_complex_computation(check_modal_key_is_set, a
     """Test complex async computation with multiple awaits in Modal sandbox"""
     args = {"iterations": 2}
 
-    sandbox = AsyncToolSandboxModal(async_complex_tool.name, args, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_complex_tool.name, args, user=test_user, tool_id=async_complex_tool.id)
     result = await sandbox.run()
 
     func_return = result.func_return
@@ -693,7 +699,7 @@ async def test_modal_sandbox_async_complex_computation(check_modal_key_is_set, a
 @pytest.mark.modal_sandbox
 async def test_modal_sandbox_async_list_return(check_modal_key_is_set, async_list_tool, test_user):
     """Test async function returning list in Modal sandbox"""
-    sandbox = AsyncToolSandboxModal(async_list_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_list_tool.name, {}, user=test_user, tool_id=async_list_tool.id)
     result = await sandbox.run()
     assert result.func_return == [1, 2, 3, 4, 5]
 
@@ -713,7 +719,7 @@ async def test_modal_sandbox_async_with_env_vars(check_modal_key_is_set, async_g
         SandboxEnvironmentVariableCreate(key=key, value=test_value), sandbox_config_id=config.id, actor=test_user
     )
 
-    sandbox = AsyncToolSandboxModal(async_get_env_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_get_env_tool.name, {}, user=test_user, tool_id=async_get_env_tool.id)
     result = await sandbox.run()
 
     assert test_value in result.func_return
@@ -723,7 +729,7 @@ async def test_modal_sandbox_async_with_env_vars(check_modal_key_is_set, async_g
 @pytest.mark.modal_sandbox
 async def test_modal_sandbox_async_with_agent_state(check_modal_key_is_set, async_stateful_tool, test_user, agent_state):
     """Test async function with agent state in Modal sandbox"""
-    sandbox = AsyncToolSandboxModal(async_stateful_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_stateful_tool.name, {}, user=test_user, tool_id=async_stateful_tool.id)
     result = await sandbox.run(agent_state=agent_state)
 
     assert result.agent_state.memory.get_block("human").value == ""
@@ -735,7 +741,7 @@ async def test_modal_sandbox_async_with_agent_state(check_modal_key_is_set, asyn
 @pytest.mark.modal_sandbox
 async def test_modal_sandbox_async_error_handling(check_modal_key_is_set, async_error_tool, test_user):
     """Test async function error handling in Modal sandbox"""
-    sandbox = AsyncToolSandboxModal(async_error_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_error_tool.name, {}, user=test_user, tool_id=async_error_tool.id)
     result = await sandbox.run()
 
     # Check that error was captured
@@ -764,7 +770,7 @@ async def test_modal_sandbox_async_per_agent_env(check_modal_key_is_set, async_g
 
     agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
-    sandbox = AsyncToolSandboxModal(async_get_env_tool.name, {}, user=test_user)
+    sandbox = AsyncToolSandboxModal(async_get_env_tool.name, {}, user=test_user, tool_id=async_get_env_tool.id)
     result = await sandbox.run(agent_state=agent_state)
     assert wrong_val not in result.func_return
     assert correct_val in result.func_return

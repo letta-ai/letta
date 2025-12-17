@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import itertools
+import json
 import re
 import time
 import traceback
@@ -415,6 +416,46 @@ def trace_method(func):
             return result
 
     return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
+
+
+def safe_json_dumps(data) -> str:
+    """
+    Safely serialize data to JSON, handling edge cases like byte arrays.
+
+    Used primarily for OTEL tracing to prevent serialization errors from
+    breaking the streaming flow when logging request/response data.
+
+    Args:
+        data: Data to serialize (dict, bytes, str, etc.)
+
+    Returns:
+        JSON string representation, or error message if serialization fails
+    """
+    try:
+        # Handle byte arrays (e.g., from Gemini)
+        if isinstance(data, bytes):
+            try:
+                # Try to decode as UTF-8 first
+                decoded = data.decode("utf-8")
+                # Try to parse as JSON
+                try:
+                    parsed = json.loads(decoded)
+                    return json.dumps(parsed)
+                except json.JSONDecodeError:
+                    # If not JSON, return the decoded string
+                    return json.dumps({"raw_text": decoded})
+            except UnicodeDecodeError:
+                # If decode fails, return base64 representation
+                import base64
+
+                return json.dumps({"base64": base64.b64encode(data).decode("ascii")})
+
+        # Normal case: try direct serialization
+        return json.dumps(data)
+    except Exception as e:
+        # Last resort: return error message
+        logger.warning(f"Failed to serialize data to JSON: {e}", exc_info=True)
+        return json.dumps({"error": f"Serialization failed: {str(e)}", "type": str(type(data))})
 
 
 def log_attributes(attributes: Dict[str, Any]) -> None:

@@ -38,7 +38,7 @@ class LLMClientBase:
         self.use_tool_naming = use_tool_naming
 
     @trace_method
-    def send_llm_request(
+    async def send_llm_request(
         self,
         agent_type: AgentType,
         messages: List[Message],
@@ -80,7 +80,7 @@ class LLMClientBase:
         except Exception as e:
             raise self.handle_llm_error(e)
 
-        return self.convert_response_to_chat_completion(response_data, messages, llm_config)
+        return await self.convert_response_to_chat_completion(response_data, messages, llm_config)
 
     @trace_method
     async def send_llm_request_async(
@@ -114,7 +114,7 @@ class LLMClientBase:
         except Exception as e:
             raise self.handle_llm_error(e)
 
-        return self.convert_response_to_chat_completion(response_data, messages, llm_config)
+        return await self.convert_response_to_chat_completion(response_data, messages, llm_config)
 
     async def send_llm_batch_request_async(
         self,
@@ -177,7 +177,7 @@ class LLMClientBase:
         raise NotImplementedError
 
     @abstractmethod
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[Message],

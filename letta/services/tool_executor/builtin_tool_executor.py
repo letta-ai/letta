@@ -29,7 +29,12 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage}
+        function_map = {
+            "run_code": self.run_code,
+            "run_code_with_tools": self.run_code_with_tools,
+            "web_search": self.web_search,
+            "fetch_webpage": self.fetch_webpage,
+        }
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -44,17 +49,117 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             agent_state=agent_state,
         )
 
+    async def run_code_with_tools(self, agent_state: "AgentState", code: str) -> ToolExecutionResult:
+        from e2b_code_interpreter import AsyncSandbox
+
+        from letta.utils import get_friendly_error_msg
+
+        if tool_settings.e2b_api_key is None:
+            raise ValueError("E2B_API_KEY is not set")
+
+        env = {"LETTA_AGENT_ID": agent_state.id}
+        env.update(agent_state.get_agent_env_vars_as_dict())
+
+        # Create the sandbox, using template if configured (similar to tool_execution_sandbox.py)
+        if tool_settings.e2b_sandbox_template_id:
+            sbx = await AsyncSandbox.create(tool_settings.e2b_sandbox_template_id, api_key=tool_settings.e2b_api_key, envs=env)
+        else:
+            sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key, envs=env)
+
+        tool_source_code = ""
+        lines = []
+
+        # initialize the letta client
+        lines.extend(
+            [
+                "# Initialize Letta client for tool execution",
+                "import os",
+                "from letta_client import Letta",
+                "client = None",
+                "if os.getenv('LETTA_API_KEY'):",
+                "    # Check letta_client version to use correct parameter name",
+                "    from packaging import version as pkg_version",
+                "    import letta_client as lc_module",
+                "    lc_version = pkg_version.parse(lc_module.__version__)",
+                "    if lc_version < pkg_version.parse('1.0.0'):",
+                "        client = Letta(",
+                "            token=os.getenv('LETTA_API_KEY')",
+                "        )",
+                "    else:",
+                "        client = Letta(",
+                "            api_key=os.getenv('LETTA_API_KEY')",
+                "        )",
+            ]
+        )
+        tool_source_code = "\n".join(lines) + "\n"
+        # Inject source code from agent's tools to enable programmatic tool calling
+        # This allows Claude to compose tools in a single code execution, e.g.:
+        #   run_code("result = add(multiply(4, 5), 6)")
+        from letta.schemas.enums import ToolType
+
+        if agent_state and agent_state.tools:
+            for tool in agent_state.tools:
+                if tool.tool_type == ToolType.CUSTOM and tool.source_code:
+                    # simply append the source code of the tool
+                    # TODO: can get rid of this option
+                    tool_source_code += tool.source_code + "\n\n"
+                else:
+                    # invoke the tool through the client
+                    # raises an error if LETTA_API_KEY or other envs not set
+                    tool_lines = [
+                        f"def {tool.name}(**kwargs):",
+                        "    if not os.getenv('LETTA_API_KEY'):",
+                        "        raise ValueError('LETTA_API_KEY is not set')",
+                        "    if not os.getenv('LETTA_AGENT_ID'):",
+                        "        raise ValueError('LETTA_AGENT_ID is not set')",
+                        f"    result = client.agents.tools.run(agent_id=os.getenv('LETTA_AGENT_ID'), tool_name='{tool.name}', args=kwargs)",
+                        "    if result.status == 'success':",
+                        "        return result.func_return",
+                        "    else:",
+                        "        raise ValueError(result.stderr)",
+                    ]
+                    tool_source_code += "\n".join(tool_lines) + "\n\n"
+
+        params = {"code": tool_source_code + code}
+
+        execution = await sbx.run_code(**params)
+
+        # Parse results similar to e2b_sandbox.py
+        if execution.results:
+            func_return = execution.results[0].text if hasattr(execution.results[0], "text") else str(execution.results[0])
+        elif execution.error:
+            func_return = get_friendly_error_msg(
+                function_name="run_code_with_tools", exception_name=execution.error.name, exception_message=execution.error.value
+            )
+            execution.logs.stderr.append(execution.error.traceback)
+        else:
+            func_return = None
+
+        return json.dumps(
+            {
+                "status": "error" if execution.error else "success",
+                "func_return": func_return,
+                "stdout": execution.logs.stdout,
+                "stderr": execution.logs.stderr,
+            },
+            ensure_ascii=False,
+        )
+
     async def run_code(self, agent_state: "AgentState", code: str, language: Literal["python", "js", "ts", "r", "java"]) -> str:
         from e2b_code_interpreter import AsyncSandbox
 
         if tool_settings.e2b_api_key is None:
             raise ValueError("E2B_API_KEY is not set")
 
-        sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
+        # Create the sandbox, using template if configured (similar to tool_execution_sandbox.py)
+        if tool_settings.e2b_sandbox_template_id:
+            sbx = await AsyncSandbox.create(tool_settings.e2b_sandbox_template_id, api_key=tool_settings.e2b_api_key)
+        else:
+            sbx = await AsyncSandbox.create(api_key=tool_settings.e2b_api_key)
 
         # Inject source code from agent's tools to enable programmatic tool calling
         # This allows Claude to compose tools in a single code execution, e.g.:
-        #   run_code("result = add(multiply(4, 5), 6)")
+        #   run_code_with_tools("result = add(multiply(4, 5), 6)")
         if language == "python" and agent_state and agent_state.tools:
             tool_source_code = ""
             for tool in agent_state.tools:
@@ -206,7 +311,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
 
     async def fetch_webpage(self, agent_state: "AgentState", url: str) -> str:
         """
-        Fetch a webpage and convert it to markdown/text format using trafilatura with readability fallback.
+        Fetch a webpage and convert it to markdown/text format using Exa API (if available) or trafilatura/readability.
 
         Args:
             url: The URL of the webpage to fetch and convert

@@ -192,38 +192,49 @@ class TestMCPServerEncryption:
             settings.encryption_key = original_key
 
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {}, clear=True)  # No encryption key
     @patch("letta.services.mcp_manager.MCPManager.get_mcp_client")
-    async def test_create_mcp_server_without_encryption_key(self, mock_get_client, server, default_user):
-        """Test that MCP servers work without encryption key (backward compatibility)."""
-        # Remove encryption key
-        os.environ.pop("LETTA_ENCRYPTION_KEY", None)
+    async def test_create_mcp_server_without_encryption_key_stores_plaintext(self, mock_get_client, server, default_user):
+        """Test that MCP servers work without encryption key by storing plaintext in _enc column.
 
-        # Mock the MCP client
-        mock_client = AsyncMock()
-        mock_client.list_tools.return_value = []
-        mock_get_client.return_value = mock_client
+        Note: In Phase 1 of migration, if no encryption key is configured, the value
+        is stored as plaintext directly in the _enc column. This allows users without
+        encryption keys to continue working while migrating off the old plaintext columns.
+        """
+        # Save and clear encryption key
+        original_key = settings.encryption_key
+        settings.encryption_key = None
 
-        server_name = f"test_no_encrypt_server_{uuid4().hex[:8]}"
-        token = "plaintext-token-no-encryption"
+        try:
+            # Mock the MCP client
+            mock_client = AsyncMock()
+            mock_client.list_tools.return_value = []
+            mock_get_client.return_value = mock_client
 
-        mcp_server = PydanticMCPServer(
-            server_name=server_name, server_type=MCPServerType.SSE, server_url="https://api.example.com", token=token
-        )
+            server_name = f"test_no_encrypt_server_{uuid4().hex[:8]}"
+            token = "plaintext-token-no-encryption"
 
-        created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
+            mcp_server = PydanticMCPServer(
+                server_name=server_name, server_type=MCPServerType.SSE, server_url="https://api.example.com", token=token
+            )
 
-        # Check database - should store as plaintext
-        async with db_registry.async_session() as session:
-            result = await session.execute(select(ORMMCPServer).where(ORMMCPServer.id == created_server.id))
-            db_server = result.scalar_one()
+            # Should work without encryption key - stores plaintext in _enc column
+            created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_server, actor=default_user)
 
-            # Should store in plaintext column
-            assert db_server.token == token
-            assert db_server.token_enc is None  # No encryption
+            # Check database - should store plaintext in _enc column
+            async with db_registry.async_session() as session:
+                result = await session.execute(select(ORMMCPServer).where(ORMMCPServer.id == created_server.id))
+                db_server = result.scalar_one()
 
-        # Clean up
-        await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+                # Token should be stored as plaintext in _enc column (not encrypted)
+                assert db_server.token_enc == token  # Plaintext stored directly
+                # Legacy plaintext column should also be populated (dual-write)
+                assert db_server.token == token
+
+            # Clean up
+            await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+        finally:
+            # Restore original encryption key
+            settings.encryption_key = original_key
 
 
 class TestMCPOAuthEncryption:
@@ -408,8 +419,13 @@ class TestMCPOAuthEncryption:
             settings.encryption_key = original_key
 
     @pytest.mark.asyncio
-    async def test_dual_read_backward_compatibility(self, server, default_user):
-        """Test that system can read both encrypted and plaintext values (migration support)."""
+    async def test_encrypted_only_reads(self, server, default_user):
+        """Test that system only reads from encrypted columns, ignoring plaintext.
+
+        Note: In Phase 1 of migration, reads are encrypted-only. Plaintext columns
+        are ignored even if they contain values. This test verifies that the
+        encrypted value is used and plaintext is never used as fallback.
+        """
         # Set encryption key directly on settings
         original_key = settings.encryption_key
         settings.encryption_key = self.MOCK_ENCRYPTION_KEY
@@ -426,10 +442,10 @@ class TestMCPOAuthEncryption:
                     id=session_id,
                     state=f"dual-read-state-{uuid4().hex[:8]}",
                     server_url="https://test.com/mcp",
-                    server_name="Dual Read Test",
+                    server_name="Encrypted Only Read Test",
                     # Both encrypted and plaintext values
-                    access_token=plaintext_token,  # Legacy plaintext
-                    access_token_enc=encrypted_new,  # New encrypted
+                    access_token=plaintext_token,  # Legacy plaintext - should be ignored
+                    access_token_enc=encrypted_new,  # Encrypted value - should be used
                     client_id="test-client",
                     user_id=default_user.id,
                     organization_id=default_user.organization_id,
@@ -443,8 +459,63 @@ class TestMCPOAuthEncryption:
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
             assert test_session is not None
 
-            # Should prefer encrypted value over plaintext
+            # Should use encrypted value only (plaintext is ignored)
             assert test_session.access_token == new_encrypted_token
+
+            # Clean up not needed - test database is reset
+
+        finally:
+            # Restore original encryption key
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_plaintext_only_record_fallback_with_error_logging(self, server, default_user, caplog):
+        """Test that records with only plaintext values fall back to plaintext with error logging.
+
+        Note: In Phase 1 of migration, if a record only has plaintext value
+        (no encrypted value), the system falls back to plaintext but logs an error
+        to help identify unmigrated data.
+        """
+        import logging
+
+        # Set encryption key directly on settings
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_ENCRYPTION_KEY
+
+        try:
+            # Insert a record with only plaintext value (no encrypted)
+            session_id = f"mcp-oauth-{str(uuid4())[:8]}"
+            plaintext_token = "legacy-plaintext-token"
+
+            async with db_registry.async_session() as session:
+                db_oauth = MCPOAuth(
+                    id=session_id,
+                    state=f"plaintext-only-state-{uuid4().hex[:8]}",
+                    server_url="https://test.com/mcp",
+                    server_name="Plaintext Only Test",
+                    # Only plaintext value, no encrypted
+                    access_token=plaintext_token,  # Legacy plaintext - should fallback with error log
+                    access_token_enc=None,  # No encrypted value
+                    client_id="test-client",
+                    user_id=default_user.id,
+                    organization_id=default_user.organization_id,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
+                )
+                session.add(db_oauth)
+                await session.commit()
+
+            # Retrieve through manager - should log error about plaintext fallback
+            with caplog.at_level(logging.ERROR):
+                test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
+
+            assert test_session is not None
+
+            # Should fall back to plaintext value
+            assert test_session.access_token == plaintext_token
+
+            # Should have logged an error about reading from plaintext column
+            assert "MIGRATION_NEEDED" in caplog.text
 
             # Clean up not needed - test database is reset
 

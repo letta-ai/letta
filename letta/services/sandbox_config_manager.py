@@ -202,15 +202,16 @@ class SandboxConfigManager:
             return db_env_var
         else:
             async with db_registry.async_session() as session:
-                # Explicitly encrypt the value before storing
+                # Encrypt the value before storing (only to value_enc, not plaintext)
                 from letta.schemas.secret import Secret
 
-                if env_var.value is not None:
+                if env_var.value:
                     env_var.value_enc = Secret.from_plaintext(env_var.value)
+                    env_var.value = ""  # Don't store plaintext, use empty string for NOT NULL constraint
 
-                env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True, exclude_none=True))
+                env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True))
                 await env_var.create_async(session, actor=actor)
-                return env_var.to_pydantic()
+                return await PydanticEnvVar.from_orm_async(env_var)
 
     @enforce_types
     @trace_method
@@ -227,19 +228,16 @@ class SandboxConfigManager:
             if "value" in update_data and update_data["value"] is not None:
                 from letta.schemas.secret import Secret
 
-                # Check if value changed
+                # Check if value changed by comparing with existing encrypted value
                 existing_value = None
                 if env_var.value_enc:
                     existing_secret = Secret.from_encrypted(env_var.value_enc)
-                    existing_value = existing_secret.get_plaintext()
-                elif env_var.value:
-                    existing_value = env_var.value
+                    existing_value = await existing_secret.get_plaintext_async()
 
                 # Only re-encrypt if different
                 if existing_value != update_data["value"]:
                     env_var.value_enc = Secret.from_plaintext(update_data["value"]).get_encrypted()
-                    # Keep plaintext for dual-write during migration
-                    env_var.value = update_data["value"]
+                    # Don't store plaintext anymore
 
                 # Remove from update_data since we set directly on env_var
                 update_data.pop("value", None)
@@ -257,7 +255,7 @@ class SandboxConfigManager:
                     f"`update_sandbox_env_var` called with user_id={actor.id}, organization_id={actor.organization_id}, "
                     f"key={env_var.key}, but nothing to update."
                 )
-            return env_var.to_pydantic()
+            return await PydanticEnvVar.from_orm_async(env_var)
 
     @enforce_types
     @trace_method
@@ -266,7 +264,7 @@ class SandboxConfigManager:
         async with db_registry.async_session() as session:
             env_var = await SandboxEnvVarModel.read_async(db_session=session, identifier=env_var_id, actor=actor)
             await env_var.hard_delete_async(db_session=session, actor=actor)
-            return env_var.to_pydantic()
+            return await PydanticEnvVar.from_orm_async(env_var)
 
     @enforce_types
     @trace_method
@@ -287,7 +285,7 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 sandbox_config_id=sandbox_config_id,
             )
-            return [env_var.to_pydantic() for env_var in env_vars]
+            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
 
     @enforce_types
     @trace_method
@@ -303,7 +301,7 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 key=key,
             )
-            return [env_var.to_pydantic() for env_var in env_vars]
+            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
 
     @enforce_types
     @trace_method
@@ -315,8 +313,7 @@ class SandboxConfigManager:
         result = {}
         for env_var in env_vars:
             # Decrypt the value before returning
-            value_secret = env_var.get_value_secret()
-            result[env_var.key] = value_secret.get_plaintext()
+            result[env_var.key] = env_var.value_enc.get_plaintext() if env_var.value_enc else None
         return result
 
     @enforce_types
@@ -326,8 +323,8 @@ class SandboxConfigManager:
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
         env_vars = await self.list_sandbox_env_vars_async(sandbox_config_id, actor, after, limit)
-        # Decrypt values before returning
-        return {env_var.key: env_var.get_value_secret().get_plaintext() for env_var in env_vars}
+        # Values are already decrypted via from_orm_async
+        return {env_var.key: env_var.value for env_var in env_vars}
 
     @enforce_types
     @trace_method
@@ -346,7 +343,7 @@ class SandboxConfigManager:
                     limit=1,
                 )
                 if env_var:
-                    return env_var[0].to_pydantic()
+                    return await PydanticEnvVar.from_orm_async(env_var[0])
                 return None
             except NoResultFound:
                 return None

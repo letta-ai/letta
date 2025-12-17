@@ -1119,8 +1119,8 @@ def test_include_return_message_types(client: LettaSDKClient, agent: AgentState,
         memory_blocks=[
             CreateBlockParam(label="user", value="Name: Charles"),
         ],
-        model="letta/letta-free",
-        embedding="letta/letta-free",
+        model="anthropic/claude-haiku-4-5-20251001",
+        embedding="openai/text-embedding-3-small",
     )
 
     if message_create == "stream_step":
@@ -2153,13 +2153,13 @@ async def test_create_batch(client: LettaSDKClient, server: SyncServer):
         name="agent1_batch",
         memory_blocks=[{"label": "persona", "value": "you are agent 1"}],
         model="anthropic/claude-3-7-sonnet-20250219",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
     agent2 = client.agents.create(
         name="agent2_batch",
         memory_blocks=[{"label": "persona", "value": "you are agent 2"}],
         model="anthropic/claude-3-7-sonnet-20250219",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
 
     # create a run
@@ -2436,3 +2436,23 @@ def test_create_agent_with_tools(client: LettaSDKClient) -> None:
     # clean up
     client.tools.delete(tool_from_func.id)
     client.tools.delete(tool_from_class.id)
+
+
+def test_calling_tools(client: LettaSDKClient, agent: AgentState) -> None:
+    """Test to make sure calling tools through the SDK works as expected"""
+
+    blocks = list(client.agents.blocks.list(agent_id=agent.id))
+    assert len(blocks) == 1, f"Expected 1 block, got {len(blocks)}"
+
+    # test calling a stateful tool
+    result = client.agents.tools.run(agent_id=agent.id, tool_name="memory_insert", args={"label": "human", "new_str": "test"})
+    assert result.status == "success", f"Expected success, got {result.status}"
+    # get the block
+    block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="human")
+    assert "test" in block.value, f"Test value not found in block value {block.value}"
+
+    # test calling a tool wrong
+    result = client.agents.tools.run(agent_id=agent.id, tool_name="memory_insert", args={"label": "human", "FAKE_ARG": "test"})
+    assert result.status == "error", f"Expected error, got {result.status}"
+    assert result.func_return is None, f"Expected func_return to be None, got {result.func_return}"
+    print(result)

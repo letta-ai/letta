@@ -37,7 +37,13 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    FunctionCall,
+    ToolCall,
+    UsageStatistics,
+    UsageStatisticsCompletionTokenDetails,
+    UsageStatisticsPromptTokenDetails,
+)
 from letta.schemas.step import Step, StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool import Tool
@@ -623,6 +629,7 @@ class LettaAgentV2(BaseAgentV2):
         self.should_continue = True
         self.stop_reason = None
         self.usage = LettaUsageStatistics()
+        self.last_step_usage: LettaUsageStatistics | None = None  # Per-step usage for Step token details
         self.job_update_metadata = None
         self.last_function_response = None
         self.response_messages = []
@@ -685,20 +692,28 @@ class LettaAgentV2(BaseAgentV2):
         curr_system_message = in_context_messages[0]
         curr_system_message_text = curr_system_message.content[0].text
 
-        # extract the dynamic section that includes memory blocks, tool rules, and directories
-        # this avoids timestamp comparison issues
-        def extract_dynamic_section(text):
-            start_marker = "</base_instructions>"
-            end_marker = "<memory_metadata>"
+        # Extract the memory section that includes <memory_blocks>, tool rules, and directories.
+        # This avoids timestamp comparison issues in <memory_metadata>, which is dynamic.
+        def extract_memory_section(text: str) -> str:
+            # Primary pattern: everything from <memory_blocks> up to <memory_metadata>
+            mem_start = text.find("<memory_blocks>")
+            meta_start = text.find("<memory_metadata>")
+            if mem_start != -1:
+                if meta_start != -1 and meta_start > mem_start:
+                    return text[mem_start:meta_start]
+                return text[mem_start:]
 
-            start_idx = text.find(start_marker)
-            end_idx = text.find(end_marker)
+            # Fallback pattern used in some legacy prompts: between </base_instructions> and <memory_metadata>
+            base_end = text.find("</base_instructions>")
+            if base_end != -1:
+                if meta_start != -1 and meta_start > base_end:
+                    return text[base_end + len("</base_instructions>") : meta_start]
+                return text[base_end + len("</base_instructions>") :]
 
-            if start_idx != -1 and end_idx != -1:
-                return text[start_idx:end_idx]
-            return text  # fallback to full text if markers not found
+            # Last resort: return full text
+            return text
 
-        curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
+        curr_memory_section = extract_memory_section(curr_system_message_text)
 
         # refresh files
         agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
@@ -710,10 +725,10 @@ class LettaAgentV2(BaseAgentV2):
             max_files_open=agent_state.max_files_open,
             llm_config=agent_state.llm_config,
         )
-        new_dynamic_section = extract_dynamic_section(curr_memory_str)
+        new_memory_section = extract_memory_section(curr_memory_str)
 
-        # compare just the dynamic sections (memory blocks, tool rules, directories)
-        if curr_dynamic_section == new_dynamic_section:
+        # compare just the memory sections (memory blocks, tool rules, directories)
+        if curr_memory_section.strip() == new_memory_section.strip():
             self.logger.debug(
                 f"Memory and sources haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
             )
@@ -815,6 +830,9 @@ class LettaAgentV2(BaseAgentV2):
             project_id=self.agent_state.project_id,
             status=StepStatus.PENDING,
         )
+
+        # Also create step metrics early and update at the end of the step
+        self._record_step_metrics(step_id=step_id, step_metrics=step_metrics, run_id=run_id)
         return StepProgression.START, logged_step, step_metrics, agent_step_span
 
     @trace_method
@@ -850,23 +868,65 @@ class LettaAgentV2(BaseAgentV2):
 
         # Update step with actual usage now that we have it (if step was created)
         if logged_step:
+            # Use per-step usage for Step token details (not accumulated self.usage)
+            # Each Step should store its own per-step values, not accumulated totals
+            step_usage = self.last_step_usage if self.last_step_usage else self.usage
+
+            # Build detailed token breakdowns from per-step LettaUsageStatistics
+            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached/reasoning tokens")
+            # Only include fields that were actually reported by the provider
+            prompt_details = None
+            if step_usage.cached_input_tokens is not None or step_usage.cache_write_tokens is not None:
+                prompt_details = UsageStatisticsPromptTokenDetails(
+                    cached_tokens=step_usage.cached_input_tokens if step_usage.cached_input_tokens is not None else None,
+                    cache_read_tokens=step_usage.cached_input_tokens if step_usage.cached_input_tokens is not None else None,
+                    cache_creation_tokens=step_usage.cache_write_tokens if step_usage.cache_write_tokens is not None else None,
+                )
+
+            completion_details = None
+            if step_usage.reasoning_tokens is not None:
+                completion_details = UsageStatisticsCompletionTokenDetails(
+                    reasoning_tokens=step_usage.reasoning_tokens,
+                )
+
             await self.step_manager.update_step_success_async(
                 self.actor,
                 step_metrics.id,
                 UsageStatistics(
-                    completion_tokens=self.usage.completion_tokens,
-                    prompt_tokens=self.usage.prompt_tokens,
-                    total_tokens=self.usage.total_tokens,
+                    completion_tokens=step_usage.completion_tokens,
+                    prompt_tokens=step_usage.prompt_tokens,
+                    total_tokens=step_usage.total_tokens,
+                    prompt_tokens_details=prompt_details,
+                    completion_tokens_details=completion_details,
                 ),
                 self.stop_reason,
             )
         return StepProgression.FINISHED, step_metrics
 
     def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
+        # Save per-step usage for Step token details (before accumulating)
+        self.last_step_usage = step_usage_stats
+
+        # For newer agent loops (e.g. V3), we also maintain a running
+        # estimate of the current context size derived from the latest
+        # step's total tokens. This can then be safely adjusted after
+        # summarization without mutating the historical per-step usage
+        # stored in Step metrics.
+        if hasattr(self, "context_token_estimate"):
+            self.context_token_estimate = step_usage_stats.total_tokens
+
+        # Accumulate into global usage
         self.usage.step_count += step_usage_stats.step_count
         self.usage.completion_tokens += step_usage_stats.completion_tokens
         self.usage.prompt_tokens += step_usage_stats.prompt_tokens
         self.usage.total_tokens += step_usage_stats.total_tokens
+        # Aggregate cache and reasoning token fields (handle None values)
+        if step_usage_stats.cached_input_tokens is not None:
+            self.usage.cached_input_tokens = (self.usage.cached_input_tokens or 0) + step_usage_stats.cached_input_tokens
+        if step_usage_stats.cache_write_tokens is not None:
+            self.usage.cache_write_tokens = (self.usage.cache_write_tokens or 0) + step_usage_stats.cache_write_tokens
+        if step_usage_stats.reasoning_tokens is not None:
+            self.usage.reasoning_tokens = (self.usage.reasoning_tokens or 0) + step_usage_stats.reasoning_tokens
 
     @trace_method
     async def _handle_ai_response(
@@ -1125,7 +1185,7 @@ class LettaAgentV2(BaseAgentV2):
             agent_step_span.add_event(name="tool_execution_started")
 
         # Decrypt environment variable values
-        sandbox_env_vars = {var.key: var.get_value_secret().get_plaintext() for var in agent_state.secrets}
+        sandbox_env_vars = {var.key: var.value_enc.get_plaintext() if var.value_enc else None for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,
@@ -1167,6 +1227,7 @@ class LettaAgentV2(BaseAgentV2):
         total_tokens: int | None = None,
         force: bool = False,
     ) -> list[Message]:
+        self.logger.warning("Running deprecated v2 summarizer. This should be removed in the future.")
         # always skip summarization if last message is an approval request message
         skip_summarization = False
         latest_messages = in_context_messages + new_letta_messages

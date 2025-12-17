@@ -31,12 +31,25 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         tool_name: str,
         args: JsonDict,
         user,
+        tool_id: str,
+        agent_id: Optional[str] = None,
+        project_id: Optional[str] = None,
         force_recreate: bool = True,
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
+        super().__init__(
+            tool_name,
+            args,
+            user,
+            tool_id=tool_id,
+            agent_id=agent_id,
+            project_id=project_id,
+            tool_object=tool_object,
+            sandbox_config=sandbox_config,
+            sandbox_env_vars=sandbox_env_vars,
+        )
         self.force_recreate = force_recreate
 
     @trace_method
@@ -101,10 +114,8 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                     },
                 )
             elif execution.error:
-                # Tool errors are expected behavior - tools can raise exceptions as part of their normal operation
-                # Only log at debug level to avoid triggering Sentry alerts for expected errors
-                logger.debug(f"Tool {self.tool_name} raised a {execution.error.name}: {execution.error.value}")
-                logger.debug(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
+                logger.warning(f"Tool {self.tool_name} raised a {execution.error.name}: {execution.error.value}")
+                logger.warning(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
                 func_return = get_friendly_error_msg(
                     function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
                 )

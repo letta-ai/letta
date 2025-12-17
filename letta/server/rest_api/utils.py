@@ -213,6 +213,80 @@ def create_approval_response_message_from_input(
     ]
 
 
+def create_tool_returns_for_denials(
+    tool_calls: List[OpenAIToolCall],
+    denial_reason: str,
+    timezone: str,
+) -> List[ToolReturn]:
+    """
+    Create ToolReturn objects with error status for denied tool calls.
+
+    This is used when tool calls are denied either by:
+    - User explicitly denying approval
+    - Run cancellation (automated denial)
+
+    Args:
+        tool_calls: List of tool calls that were denied
+        denial_reason: Reason for denial (e.g., user reason or cancellation message)
+        timezone: Agent timezone for timestamp formatting
+
+    Returns:
+        List of ToolReturn objects with error status
+    """
+    tool_returns = []
+    for tool_call in tool_calls:
+        tool_call_id = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+        packaged_function_response = package_function_response(
+            was_success=False,
+            response_string=f"Error: request to call tool denied. User reason: {denial_reason}",
+            timezone=timezone,
+        )
+        tool_return = ToolReturn(
+            tool_call_id=tool_call_id,
+            func_response=packaged_function_response,
+            status="error",
+        )
+        tool_returns.append(tool_return)
+    return tool_returns
+
+
+def create_tool_message_from_returns(
+    agent_id: str,
+    model: str,
+    tool_returns: List[ToolReturn],
+    run_id: Optional[str] = None,
+    step_id: Optional[str] = None,
+) -> Message:
+    """
+    Create a tool message with error returns for denied/failed tool calls.
+
+    This creates a properly formatted tool message that can be added to the
+    conversation history to reflect tool call denials or failures.
+
+    Args:
+        agent_id: ID of the agent
+        model: Model identifier
+        tool_returns: List of ToolReturn objects (typically with error status)
+        run_id: Optional run ID
+        step_id: Optional step ID
+
+    Returns:
+        Message with role="tool" containing the tool returns
+    """
+    return Message(
+        role=MessageRole.tool,
+        content=[TextContent(text=tr.func_response) for tr in tool_returns],
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[],
+        tool_call_id=tool_returns[0].tool_call_id if tool_returns else None,
+        tool_returns=tool_returns,
+        run_id=run_id,
+        step_id=step_id,
+        created_at=get_utc_time(),
+    )
+
+
 def create_approval_request_message_from_llm_response(
     agent_id: str,
     model: str,
@@ -784,95 +858,3 @@ async def capture_and_persist_messages(
         "messages_created": len(response_messages),
         "run_ids": run_ids,
     }
-
-
-async def get_or_create_claude_code_agent(
-    server,
-    actor,
-):
-    """
-    Get or create a special agent for Claude Code sessions.
-
-    Args:
-        server: SyncServer instance
-        actor: Actor performing the operation (user ID)
-
-    Returns:
-        Agent ID
-    """
-    from letta.schemas.agent import CreateAgent
-
-    # Create short user identifier from UUID (first 8 chars)
-    if actor:
-        user_short_id = str(actor.id)[:8] if hasattr(actor, "id") else str(actor)[:8]
-    else:
-        user_short_id = "default"
-
-    agent_name = f"claude-code-{user_short_id}"
-
-    try:
-        # Try to find existing agent by name (most reliable)
-        # Note: Search by name only, not tags, since name is unique and more reliable
-        logger.debug(f"Searching for agent with name: {agent_name}")
-        agents = await server.agent_manager.list_agents_async(
-            actor=actor,
-            limit=10,  # Get a few in case of duplicates
-            name=agent_name,
-            include=["agent.blocks", "agent.managed_group", "agent.tags"],
-        )
-
-        # list_agents_async returns a list directly, not an object with .agents
-        logger.debug(f"Agent search returned {len(agents) if agents else 0} results")
-        if agents and len(agents) > 0:
-            # Return the first matching agent
-            logger.info(f"Found existing Claude Code agent: {agents[0].id} (name: {agent_name})")
-            return agents[0]
-        else:
-            logger.debug(f"No existing agent found with name: {agent_name}")
-
-    except Exception as e:
-        logger.warning(f"Could not find existing agent: {e}", exc_info=True)
-
-    # Create new agent
-    try:
-        logger.info(f"Creating new Claude Code agent: {agent_name}")
-
-        # Create minimal agent config
-        agent_config = CreateAgent(
-            name=agent_name,
-            description="Agent for capturing Claude Code conversations",
-            memory_blocks=[
-                {
-                    "label": "human",
-                    "value": "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
-                    "description": "A memory block for keeping track of the human (user) the agent is interacting with.",
-                },
-                {
-                    "label": "persona",
-                    "value": "This is my section of core memory devoted to information myself.\nThere's nothing here yet.\nI should update this memory over time as I develop my personality.",
-                    "description": "A memory block for storing the agent's core personality details and behavior profile.",
-                },
-                {
-                    "label": "project",
-                    "value": "This is my section of core memory devoted to information about what the agent is working on.\nI don't yet know anything about it.\nI should update this memory over time with high level understanding and learnings.",
-                    "description": "A memory block for storing the information about the project the agent is working on.",
-                },
-            ],
-            tags=["claude-code"],
-            enable_sleeptime=True,
-            agent_type="letta_v1_agent",
-            model="anthropic/claude-sonnet-4-5-20250929",
-            embedding="openai/text-embedding-ada-002",
-        )
-
-        new_agent = await server.create_agent_async(
-            request=agent_config,
-            actor=actor,
-        )
-
-        logger.info(f"Created Claude Code agent {new_agent.name}: {new_agent.id}")
-        return new_agent
-
-    except Exception as e:
-        logger.exception(f"Failed to create Claude Code agent: {e}")
-        raise

@@ -36,18 +36,29 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
         tool_name: str,
         args: JsonDict,
         user,
+        tool_id: str,
+        agent_id: Optional[str] = None,
+        project_id: Optional[str] = None,
         force_recreate: bool = True,
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
         organization_id: Optional[str] = None,
-        project_id: str = "default",
     ):
-        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
+        super().__init__(
+            tool_name,
+            args,
+            user,
+            tool_id=tool_id,
+            agent_id=agent_id,
+            project_id=project_id,
+            tool_object=tool_object,
+            sandbox_config=sandbox_config,
+            sandbox_env_vars=sandbox_env_vars,
+        )
         self.force_recreate = force_recreate
         # Get organization_id from user if not explicitly provided
         self.organization_id = organization_id if organization_id is not None else user.organization_id
-        self.project_id = project_id
 
         # TODO: check to make sure modal app `App(tool.id)` exists
 
@@ -86,7 +97,6 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
     @trace_method
     async def run(
         self,
-        agent_id: Optional[str] = None,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
     ) -> ToolExecutionResult:
@@ -135,7 +145,7 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             # Add agent-specific environment variables (these override sandbox-level)
             if agent_state and agent_state.secrets:
                 for secret in agent_state.secrets:
-                    env_vars[secret.key] = secret.value
+                    env_vars[secret.key] = secret.value_enc.get_plaintext() if secret.value_enc else None
 
             # Add any additional env vars passed at runtime (highest priority)
             if additional_env_vars:
@@ -149,7 +159,7 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             result = await func.remote.aio(
                 tool_name=self.tool_name,
                 agent_state=agent_state_dict,
-                agent_id=agent_id,
+                agent_id=self.agent_id,
                 env_vars=env_vars,
                 letta_api_key=letta_api_key,
                 **self.args,

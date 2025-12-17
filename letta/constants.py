@@ -58,8 +58,7 @@ DEFAULT_CONTEXT_WINDOW = 32000
 
 # Summarization trigger threshold (multiplier of context_window limit)
 # Summarization triggers when step usage > context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
-# Set to 0.9 (90%) to provide buffer before hitting hard limit
-SUMMARIZATION_TRIGGER_MULTIPLIER = 0.9
+SUMMARIZATION_TRIGGER_MULTIPLIER = 1.0
 
 # number of concurrent embedding requests to sent
 EMBEDDING_BATCH_SIZE = 200
@@ -94,7 +93,7 @@ SEND_MESSAGE_TOOL_NAME = "send_message"
 BASE_TOOLS = [SEND_MESSAGE_TOOL_NAME, "conversation_search", "archival_memory_insert", "archival_memory_search"]
 DEPRECATED_LETTA_TOOLS = ["archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
-BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace", "memory"]
+BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace", "memory", "memory_apply_patch"]
 # New v2 collection of the base memory tools (effecitvely same as sleeptime set), to pair with memgpt_v2 prompt
 BASE_MEMORY_TOOLS_V2 = [
     "memory_replace",
@@ -143,7 +142,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 )
 
 # Built in tools
-BUILTIN_TOOLS = ["run_code", "web_search", "fetch_webpage"]
+BUILTIN_TOOLS = ["run_code", "run_code_with_tools", "web_search", "fetch_webpage"]
 
 # Built in tools
 FILES_TOOLS = ["open_files", "grep_files", "semantic_search_files"]
@@ -196,6 +195,8 @@ PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
 REQUEST_HEARTBEAT_DESCRIPTION = "Request an immediate heartbeat after function execution. You MUST set this value to `True` if you want to send a follow-up message or run a follow-up tool call (chain multiple tools together). If set to `False` (the default), then the chain of execution will end immediately after this function call."
 
+# Automated tool call denials
+TOOL_CALL_DENIAL_ON_CANCEL = "The user cancelled the request, so the tool call was denied."
 
 # Structured output models
 STRUCTURED_OUTPUT_MODELS = {"gpt-4o", "gpt-4o-mini"}
@@ -244,6 +245,12 @@ LLM_MAX_TOKENS = {
     "gpt-5.1-2025-11-13": 272000,
     "gpt-5.1-codex": 272000,
     "gpt-5.1-codex-mini": 272000,
+    "gpt-5.1-codex-max": 272000,
+    # gpt-5.2
+    "gpt-5.2": 272000,
+    "gpt-5.2-2025-12-11": 272000,
+    "gpt-5.2-pro": 272000,
+    "gpt-5.2-pro-2025-12-11": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
@@ -465,3 +472,7 @@ MODAL_DEFAULT_PYTHON_VERSION = "3.12"
 MODAL_SAFE_IMPORT_MODULES = {"typing", "pydantic", "datetime", "uuid"}  # decimal, enum
 # Default handle for model used to generate tools
 DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"
+
+# Reserved keyword arguments that are injected by the system into tool functions, not provided by the LLM
+# These parameters are excluded from tool schema generation
+TOOL_RESERVED_KWARGS = ["self", "agent_state"]

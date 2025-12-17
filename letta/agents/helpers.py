@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
 from letta.log import get_logger
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
@@ -95,9 +96,17 @@ async def _prepare_in_context_messages_async(
     return current_in_context_messages, new_in_context_messages
 
 
+@trace_method
 def validate_approval_tool_call_ids(approval_request_message: Message, approval_response_message: ApprovalCreate):
     approval_requests = approval_request_message.tool_calls
-    approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests]
+    if approval_requests:
+        approval_request_tool_call_ids = [approval_request.id for approval_request in approval_requests]
+    elif approval_request_message.tool_call_id:
+        approval_request_tool_call_ids = [approval_request_message.tool_call_id]
+    else:
+        raise ValueError(
+            f"Invalid tool call IDs. Approval request message '{approval_request_message.id}' does not contain any tool calls."
+        )
 
     approval_responses = approval_response_message.approvals
     approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
@@ -113,6 +122,7 @@ def validate_approval_tool_call_ids(approval_request_message: Message, approval_
         )
 
 
+@trace_method
 async def _prepare_in_context_messages_no_persist_async(
     input_messages: List[MessageCreateBase],
     agent_state: AgentState,
@@ -147,6 +157,9 @@ async def _prepare_in_context_messages_no_persist_async(
     if input_messages[0].type == "approval":
         # User is trying to send an approval response
         if current_in_context_messages and current_in_context_messages[-1].role != "approval":
+            logger.warn(
+                f"Cannot process approval response: No tool call is currently awaiting approval. Last message: {current_in_context_messages[-1]}"
+            )
             raise ValueError(
                 "Cannot process approval response: No tool call is currently awaiting approval. "
                 "Please send a regular message to interact with the agent."
@@ -162,7 +175,7 @@ async def _prepare_in_context_messages_no_persist_async(
             new_in_context_messages.extend(follow_up_messages)
     else:
         # User is trying to send a regular message
-        if current_in_context_messages and current_in_context_messages[-1].role == "approval":
+        if current_in_context_messages and current_in_context_messages[-1].is_approval_request():
             raise PendingApprovalError(pending_request_id=current_in_context_messages[-1].id)
 
         # Create a new user message from the input but dont store it yet

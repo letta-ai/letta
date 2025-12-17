@@ -3,8 +3,7 @@ import json
 import uuid
 from typing import AsyncIterator, List, Optional
 
-from google import genai
-from google.genai import errors
+from google.genai import Client, errors
 from google.genai.types import (
     FunctionCallingConfig,
     FunctionCallingConfigMode,
@@ -32,13 +31,12 @@ from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
-from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.openai.chat_completion_request import Tool
+from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings, settings
 from letta.utils import get_tool_call_id
@@ -51,7 +49,7 @@ class GoogleVertexClient(LLMClientBase):
 
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
-        return genai.Client(
+        return Client(
             vertexai=True,
             project=model_settings.google_cloud_project,
             location=model_settings.google_cloud_location,
@@ -142,11 +140,20 @@ class GoogleVertexClient(LLMClientBase):
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncIterator[GenerateContentResponse]:
         client = self._get_client()
-        return await client.aio.models.generate_content_stream(
-            model=llm_config.model,
-            contents=request_data["contents"],
-            config=request_data["config"],
-        )
+
+        try:
+            response = await client.aio.models.generate_content_stream(
+                model=llm_config.model,
+                contents=request_data["contents"],
+                config=request_data["config"],
+            )
+        except Exception as e:
+            logger.error(f"Error streaming Google Vertex request: {e} with request data: {json.dumps(request_data)}")
+            raise e
+        # Direct yield - keeps response alive in generator's local scope throughout iteration
+        # This is required because the SDK's connection lifecycle is tied to the response object
+        async for chunk in response:
+            yield chunk
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
@@ -401,7 +408,7 @@ class GoogleVertexClient(LLMClientBase):
         return request_data
 
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
@@ -627,16 +634,44 @@ class GoogleVertexClient(LLMClientBase):
             #     "totalTokenCount": 36
             #   }
             if response.usage_metadata:
+                # Extract cache token data if available (Gemini uses cached_content_token_count)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
+                prompt_tokens_details = None
+                if (
+                    hasattr(response.usage_metadata, "cached_content_token_count")
+                    and response.usage_metadata.cached_content_token_count is not None
+                ):
+                    from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+
+                    prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                        cached_tokens=response.usage_metadata.cached_content_token_count,
+                    )
+
+                # Extract thinking/reasoning token data if available (Gemini uses thoughts_token_count)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
+                completion_tokens_details = None
+                if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count is not None:
+                    from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
+
+                    completion_tokens_details = UsageStatisticsCompletionTokenDetails(
+                        reasoning_tokens=response.usage_metadata.thoughts_token_count,
+                    )
+
                 usage = UsageStatistics(
                     prompt_tokens=response.usage_metadata.prompt_token_count,
                     completion_tokens=response.usage_metadata.candidates_token_count,
                     total_tokens=response.usage_metadata.total_token_count,
+                    prompt_tokens_details=prompt_tokens_details,
+                    completion_tokens_details=completion_tokens_details,
                 )
             else:
-                # Count it ourselves
+                # Count it ourselves using the Gemini token counting API
                 assert input_messages is not None, "Didn't get UsageMetadata from the API response, so input_messages is required"
-                prompt_tokens = count_tokens(json_dumps(input_messages))  # NOTE: this is a very rough approximation
-                completion_tokens = count_tokens(json_dumps(openai_response_message.model_dump()))  # NOTE: this is also approximate
+                google_messages = PydanticMessage.to_google_dicts_from_list(input_messages, current_model=llm_config.model)
+                prompt_tokens = await self.count_tokens(messages=google_messages, model=llm_config.model)
+                # For completion tokens, wrap the response content in Google format
+                completion_content = [{"role": "model", "parts": [{"text": json_dumps(openai_response_message.model_dump())}]}]
+                completion_tokens = await self.count_tokens(messages=completion_content, model=llm_config.model)
                 total_tokens = prompt_tokens + completion_tokens
                 usage = UsageStatistics(
                     prompt_tokens=prompt_tokens,
@@ -829,3 +864,54 @@ class GoogleVertexClient(LLMClientBase):
 
         # Fallback to base implementation for other errors
         return super().handle_llm_error(e)
+
+    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+        """
+        Count tokens for the given messages and tools using the Gemini token counting API.
+
+        Args:
+            messages: List of message dicts in Google AI format (with 'role' and 'parts' keys)
+            model: The model to use for token counting (defaults to gemini-2.0-flash-lite)
+            tools: List of OpenAI-style Tool objects to include in the count
+
+        Returns:
+            The total token count for the input
+        """
+        from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
+
+        client = self._get_client()
+
+        # Default model for token counting if not specified
+        count_model = model or GOOGLE_MODEL_FOR_API_KEY_CHECK
+
+        # Build the contents parameter
+        # If no messages provided, use empty string (like the API key check)
+        if messages is None or len(messages) == 0:
+            contents = ""
+        else:
+            # Messages should already be in Google format (role + parts)
+            contents = messages
+
+        try:
+            # Count message tokens
+            result = await client.aio.models.count_tokens(
+                model=count_model,
+                contents=contents,
+            )
+            total_tokens = result.total_tokens
+
+            # Count tool tokens separately by serializing to text
+            # The Gemini count_tokens API doesn't support a tools parameter directly
+            if tools and len(tools) > 0:
+                # Serialize tools to JSON text and count those tokens
+                tools_text = json.dumps([t.model_dump() for t in tools])
+                tools_result = await client.aio.models.count_tokens(
+                    model=count_model,
+                    contents=tools_text,
+                )
+                total_tokens += tools_result.total_tokens
+
+        except Exception as e:
+            raise self.handle_llm_error(e)
+
+        return total_tokens

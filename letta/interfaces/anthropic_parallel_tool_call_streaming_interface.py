@@ -94,6 +94,13 @@ class SimpleAnthropicStreamingInterface:
         self.output_tokens = 0
         self.model = None
 
+        # cache tracking (Anthropic-specific)
+        self.cache_read_tokens = 0
+        self.cache_creation_tokens = 0
+
+        # Raw usage from provider (for transparent logging in provider trace)
+        self.raw_usage: dict | None = None
+
         # reasoning object trackers
         self.reasoning_messages = []
 
@@ -463,12 +470,34 @@ class SimpleAnthropicStreamingInterface:
             self.output_tokens += event.message.usage.output_tokens
             self.model = event.message.model
 
+            # Capture cache data if available
+            usage = event.message.usage
+            if hasattr(usage, "cache_read_input_tokens") and usage.cache_read_input_tokens:
+                self.cache_read_tokens += usage.cache_read_input_tokens
+            if hasattr(usage, "cache_creation_input_tokens") and usage.cache_creation_input_tokens:
+                self.cache_creation_tokens += usage.cache_creation_input_tokens
+
+            # Store raw usage for transparent provider trace logging
+            try:
+                self.raw_usage = usage.model_dump(exclude_none=True)
+            except Exception as e:
+                logger.error(f"Failed to capture raw_usage from Anthropic: {e}")
+                self.raw_usage = None
+
         elif isinstance(event, BetaRawMessageDeltaEvent):
-            self.output_tokens += event.usage.output_tokens
+            # Per Anthropic docs: "The token counts shown in the usage field of the
+            # message_delta event are *cumulative*." So we assign, not accumulate.
+            self.output_tokens = event.usage.output_tokens
 
         elif isinstance(event, BetaRawMessageStopEvent):
-            # Don't do anything here! We don't want to stop the stream.
-            pass
+            # Update raw_usage with final accumulated values for accurate provider trace logging
+            if self.raw_usage:
+                self.raw_usage["input_tokens"] = self.input_tokens
+                self.raw_usage["output_tokens"] = self.output_tokens
+                if self.cache_read_tokens:
+                    self.raw_usage["cache_read_input_tokens"] = self.cache_read_tokens
+                if self.cache_creation_tokens:
+                    self.raw_usage["cache_creation_input_tokens"] = self.cache_creation_tokens
 
         elif isinstance(event, BetaRawContentBlockStopEvent):
             # Finalize the tool_use block at this index using accumulated deltas

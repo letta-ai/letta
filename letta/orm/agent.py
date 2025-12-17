@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
-from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
+from letta.orm.custom_columns import CompactionSettingsColumn, EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
 from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
@@ -16,6 +16,7 @@ from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType
+from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
     from letta.orm.run import Run
     from letta.orm.source import Source
     from letta.orm.tool import Tool
+    from letta.services.summarizer.summarizer_config import CompactionSettings
 
 
 class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin, AsyncAttrs):
@@ -73,6 +75,9 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     )
     embedding_config: Mapped[Optional[EmbeddingConfig]] = mapped_column(
         EmbeddingConfigColumn, doc="the embedding configuration object for this agent."
+    )
+    compaction_settings: Mapped[Optional[dict]] = mapped_column(
+        CompactionSettingsColumn, nullable=True, doc="the compaction settings configuration object for compaction."
     )
 
     # Tool rules
@@ -222,6 +227,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
             "llm_config": self.llm_config,
             "embedding_config": self.embedding_config,
+            "compaction_settings": self.compaction_settings,
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,
@@ -328,6 +334,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
             "llm_config": self.llm_config,
             "embedding_config": self.embedding_config,
+            "compaction_settings": self.compaction_settings,
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,
@@ -426,8 +433,10 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["identities"] = [i.to_pydantic() for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
-        state["tool_exec_environment_variables"] = tool_exec_environment_variables
-        state["secrets"] = tool_exec_environment_variables
+        # Convert ORM env vars to Pydantic with async decryption
+        env_vars_pydantic = [await PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables]
+        state["tool_exec_environment_variables"] = env_vars_pydantic
+        state["secrets"] = env_vars_pydantic
         state["model"] = self.llm_config.handle if self.llm_config else None
         state["model_settings"] = self.llm_config._to_model_settings() if self.llm_config else None
         state["embedding"] = self.embedding_config.handle if self.embedding_config else None

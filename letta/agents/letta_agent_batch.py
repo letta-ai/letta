@@ -309,7 +309,7 @@ class LettaAgentBatch(BaseAgent):
         agent_state_map = {agent.id: agent for agent in agent_states}
 
         # Process each agent's results
-        tool_call_results = self._process_agent_results(
+        tool_call_results = await self._process_agent_results(
             agent_ids=agent_ids, batch_item_map=batch_item_map, provider_results=provider_results, llm_batch_id=llm_batch_id
         )
 
@@ -324,7 +324,7 @@ class LettaAgentBatch(BaseAgent):
             request_status_updates=tool_call_results.status_updates,
         )
 
-    def _process_agent_results(self, agent_ids, batch_item_map, provider_results, llm_batch_id):
+    async def _process_agent_results(self, agent_ids, batch_item_map, provider_results, llm_batch_id):
         """
         Process the results for each agent, extracting tool calls and determining continuation status.
 
@@ -347,7 +347,7 @@ class LettaAgentBatch(BaseAgent):
             request_status_updates.append(RequestStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, request_status=status))
 
             # Process tool calls
-            name, args, cont = self._extract_tool_call_from_result(item, result)
+            name, args, cont = await self._extract_tool_call_from_result(item, result)
             name_map[aid], args_map[aid], cont_map[aid] = name, args, cont
 
         return ToolCallResults(name_map, args_map, cont_map, request_status_updates)
@@ -363,7 +363,7 @@ class LettaAgentBatch(BaseAgent):
         else:
             return JobStatus.expired
 
-    def _extract_tool_call_from_result(self, item, result):
+    async def _extract_tool_call_from_result(self, item, result):
         """Extract tool call information from a result"""
         llm_client = LLMClient.create(
             provider_type=item.llm_config.model_endpoint_type,
@@ -375,13 +375,10 @@ class LettaAgentBatch(BaseAgent):
         if not isinstance(result, BetaMessageBatchSucceededResult):
             return None, None, False
 
-        tool_call = (
-            llm_client.convert_response_to_chat_completion(
-                response_data=result.message.model_dump(), input_messages=[], llm_config=item.llm_config
-            )
-            .choices[0]
-            .message.tool_calls[0]
+        response = await llm_client.convert_response_to_chat_completion(
+            response_data=result.message.model_dump(), input_messages=[], llm_config=item.llm_config
         )
+        tool_call = response.choices[0].message.tool_calls[0]
 
         return self._extract_tool_call_and_decide_continue(tool_call, item.step_state)
 

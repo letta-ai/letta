@@ -457,6 +457,17 @@ def test_google_style_docstring_validation(fn, regex):
     _check(fn, regex)
 
 
+def test_reserved_params_excluded_from_schema():
+    """Test that reserved params (agent_state) are excluded from generated schema."""
+    from letta.functions.schema_generator import generate_schema
+
+    # Test with agent_state param
+    schema = generate_schema(agent_state_ok)
+    assert "agent_state" not in schema["parameters"]["properties"], "agent_state should be excluded from schema"
+    assert "value" in schema["parameters"]["properties"], "value should be in schema"
+    assert schema["parameters"]["required"] == ["value"], "only value should be required"
+
+
 def test_complex_nested_anyof_schema_to_structured_output():
     """Test that complex nested anyOf schemas with inlined $refs can be converted to structured outputs.
 

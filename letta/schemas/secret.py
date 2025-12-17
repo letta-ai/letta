@@ -17,11 +17,14 @@ class Secret(BaseModel):
     This class ensures that sensitive data remains encrypted as much as possible
     while passing through the codebase, only decrypting when absolutely necessary.
 
-    TODO: Once we deprecate plaintext columns in the database:
-    - Remove the dual-write logic in to_dict()
-    - Remove the from_db() method's plaintext_value parameter
-    - Remove the was_encrypted flag (no longer needed for migration)
-    - Simplify get_plaintext() to only handle encrypted values
+    Migration status (Phase 1 - encrypted-first reads with plaintext fallback):
+    - Reads: Prefer _enc columns, fallback to plaintext columns with ERROR logging
+    - Writes: Still dual-write to both _enc and plaintext columns for backward compatibility
+    - Encryption: Optional - if LETTA_ENCRYPTION_KEY is not set, stores plaintext in _enc column
+
+    TODO (Phase 2): Remove plaintext fallback in from_db() after verifying no error logs
+    TODO (Phase 3): Remove dual-write logic in to_dict() and set_*_secret() methods
+    TODO (Phase 4): Remove from_db() plaintext_value parameter, was_encrypted flag, and plaintext columns
     """
 
     # Store the encrypted value as a regular field
@@ -38,11 +41,14 @@ class Secret(BaseModel):
         """
         Create a Secret from a plaintext value, encrypting it if possible.
 
+        If LETTA_ENCRYPTION_KEY is configured, the value is encrypted.
+        If not, the plaintext value is stored directly in encrypted_value field.
+
         Args:
             value: The plaintext value to encrypt
 
         Returns:
-            A Secret instance with the encrypted value, or plaintext if encryption unavailable
+            A Secret instance with the encrypted (or plaintext) value
         """
         if value is None:
             return cls.model_construct(encrypted_value=None, was_encrypted=False)
@@ -51,19 +57,19 @@ class Secret(BaseModel):
         if CryptoUtils.is_encrypted(value):
             logger.warning("Creating Secret from already-encrypted value. This can be dangerous.")
 
-        # Try to encrypt, but fall back to plaintext if no encryption key
+        # Try to encrypt, but fall back to storing plaintext if no encryption key
         try:
             encrypted = CryptoUtils.encrypt(value)
             return cls.model_construct(encrypted_value=encrypted, was_encrypted=False)
         except ValueError as e:
-            # No encryption key available, store as plaintext
+            # No encryption key available, store as plaintext in the _enc column
             if "No encryption key configured" in str(e):
                 logger.warning(
-                    "No encryption key configured. Storing Secret value as plaintext. "
+                    "No encryption key configured. Storing Secret value as plaintext in _enc column. "
                     "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
                 )
                 instance = cls.model_construct(encrypted_value=value, was_encrypted=False)
-                instance._plaintext_cache = value  # Cache it
+                instance._plaintext_cache = value  # Cache it since we know the plaintext
                 return instance
             raise  # Re-raise if it's a different error
 
@@ -81,25 +87,36 @@ class Secret(BaseModel):
         return cls.model_construct(encrypted_value=encrypted_value, was_encrypted=True)
 
     @classmethod
-    def from_db(cls, encrypted_value: Optional[str], plaintext_value: Optional[str]) -> "Secret":
+    def from_db(cls, encrypted_value: Optional[str], plaintext_value: Optional[str] = None) -> "Secret":
         """
-        Create a Secret from database values during migration phase.
+        Create a Secret from database values. Prefers encrypted column, falls back to plaintext with error logging.
 
-        Prefers encrypted value if available, falls back to plaintext.
+        During Phase 1 of migration, this method:
+        1. Uses encrypted_value if available (preferred)
+        2. Falls back to plaintext_value with ERROR logging if encrypted is unavailable
+        3. Returns empty Secret if neither is available
+
+        The error logging helps identify any records that haven't been migrated to encrypted columns.
 
         Args:
-            encrypted_value: The encrypted value from the database
-            plaintext_value: The plaintext value from the database
+            encrypted_value: The encrypted value from the database (_enc column)
+            plaintext_value: The plaintext value from the database (legacy column, fallback only)
 
         Returns:
-            A Secret instance
+            A Secret instance with the value from encrypted or plaintext column
         """
         if encrypted_value is not None:
             return cls.from_encrypted(encrypted_value)
-        elif plaintext_value is not None:
+        # Fallback to plaintext with error logging - this helps identify unmigrated data
+        if plaintext_value is not None:
+            logger.error(
+                "MIGRATION_NEEDED: Reading from plaintext column instead of encrypted column. "
+                "This indicates data that hasn't been migrated to the _enc column yet. "
+                "Please run migrate data to _enc columns as plaintext columns will be deprecated.",
+                stack_info=True,
+            )
             return cls.from_plaintext(plaintext_value)
-        else:
-            return cls.from_plaintext(None)
+        return cls.from_plaintext(None)
 
     def get_encrypted(self) -> Optional[str]:
         """
@@ -112,13 +129,19 @@ class Secret(BaseModel):
 
     def get_plaintext(self) -> Optional[str]:
         """
-        Get the decrypted plaintext value.
+        Get the decrypted plaintext value (synchronous version).
+
+        WARNING: This performs CPU-intensive PBKDF2 key derivation that can block for 100-500ms.
+        Use get_plaintext_async() in async contexts to avoid blocking the event loop.
 
         This should only be called when the plaintext is actually needed,
         such as when making an external API call.
 
+        If the value is encrypted, it will be decrypted. If the value is stored
+        as plaintext (no encryption key was configured), it will be returned as-is.
+
         Returns:
-            The decrypted plaintext value
+            The decrypted plaintext value, or None if the secret is empty
         """
         if self.encrypted_value is None:
             return None
@@ -126,14 +149,14 @@ class Secret(BaseModel):
         # Use cached value if available, but only if it looks like plaintext
         # or we're confident we can decrypt it
         if self._plaintext_cache is not None:
-            # If we have a cache but the stored value looks encrypted and we have no key,
-            # we should not use the cache
-            if CryptoUtils.is_encrypted(self.encrypted_value) and not CryptoUtils.is_encryption_available():
-                self._plaintext_cache = None  # Clear invalid cache
-            else:
+            # If this was explicitly created as plaintext, trust the cache
+            # This prevents false positives from is_encrypted() heuristic
+            if not self.was_encrypted:
                 return self._plaintext_cache
+            # For encrypted values, trust the cache (already decrypted previously)
+            return self._plaintext_cache
 
-        # Decrypt and cache
+        # Try to decrypt
         try:
             plaintext = CryptoUtils.decrypt(self.encrypted_value)
             # Cache the decrypted value (PrivateAttr fields can be mutated even with frozen=True)
@@ -142,16 +165,14 @@ class Secret(BaseModel):
         except ValueError as e:
             error_msg = str(e)
 
-            # Handle missing encryption key
+            # Handle missing encryption key - check if value is actually plaintext
             if "No encryption key configured" in error_msg:
-                # Check if the value looks encrypted
                 if CryptoUtils.is_encrypted(self.encrypted_value):
-                    # Value was encrypted, but now we have no key - can't decrypt
+                    # Value was encrypted but we have no key - can't decrypt
                     logger.warning(
                         "Cannot decrypt Secret value - no encryption key configured. "
                         "The value was encrypted and requires the original key to decrypt."
                     )
-                    # Return None to indicate we can't get the plaintext
                     return None
                 else:
                     # Value is plaintext (stored when no key was available)
@@ -159,9 +180,8 @@ class Secret(BaseModel):
                     self._plaintext_cache = self.encrypted_value
                     return self.encrypted_value
 
-            # Handle decryption failure (might be plaintext stored as such)
+            # Handle decryption failure - check if value might be plaintext
             elif "Failed to decrypt data" in error_msg:
-                # Check if it might be plaintext
                 if not CryptoUtils.is_encrypted(self.encrypted_value):
                     # It's plaintext that was stored when no key was available
                     logger.debug("Secret value appears to be plaintext (stored without encryption)")
@@ -171,12 +191,62 @@ class Secret(BaseModel):
                 logger.error("Failed to decrypt Secret value - data may be corrupted or wrong key")
                 raise
 
-            # Migration case: handle legacy plaintext
-            elif not self.was_encrypted:
-                if self.encrypted_value and not CryptoUtils.is_encrypted(self.encrypted_value):
+            # Re-raise for other errors
+            raise
+
+    async def get_plaintext_async(self) -> Optional[str]:
+        """
+        Get the decrypted plaintext value (async version).
+
+        Runs the CPU-intensive PBKDF2 key derivation in a thread pool to avoid
+        blocking the event loop. This prevents the event loop freeze that occurs
+        when decrypting secrets synchronously during HTTP request handling.
+
+        This should be used in all async contexts (FastAPI endpoints, async services, etc.)
+        to avoid blocking the event loop for 100-500ms per decryption.
+
+        Returns:
+            The decrypted plaintext value, or None if the secret is empty
+        """
+        if self.encrypted_value is None:
+            return None
+
+        # Use cached value if available
+        if self._plaintext_cache is not None:
+            if not self.was_encrypted:
+                return self._plaintext_cache
+            return self._plaintext_cache
+
+        # Try to decrypt (async)
+        try:
+            plaintext = await CryptoUtils.decrypt_async(self.encrypted_value)
+            # Cache the decrypted value
+            self._plaintext_cache = plaintext
+            return plaintext
+        except ValueError as e:
+            error_msg = str(e)
+
+            # Handle missing encryption key - check if value is actually plaintext
+            if "No encryption key configured" in error_msg:
+                if CryptoUtils.is_encrypted(self.encrypted_value):
+                    logger.warning(
+                        "Cannot decrypt Secret value - no encryption key configured. "
+                        "The value was encrypted and requires the original key to decrypt."
+                    )
+                    return None
+                else:
+                    logger.debug("Secret value is plaintext (stored without encryption)")
                     self._plaintext_cache = self.encrypted_value
                     return self.encrypted_value
-                return None
+
+            # Handle decryption failure - check if value might be plaintext
+            elif "Failed to decrypt data" in error_msg:
+                if not CryptoUtils.is_encrypted(self.encrypted_value):
+                    logger.debug("Secret value appears to be plaintext (stored without encryption)")
+                    self._plaintext_cache = self.encrypted_value
+                    return self.encrypted_value
+                logger.error("Failed to decrypt Secret value - data may be corrupted or wrong key")
+                raise
 
             # Re-raise for other errors
             raise

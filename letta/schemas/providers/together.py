@@ -22,7 +22,7 @@ class TogetherProvider(OpenAIProvider):
     provider_type: Literal[ProviderType.together] = Field(ProviderType.together, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     base_url: str = "https://api.together.xyz/v1"
-    api_key: str = Field(..., description="API key for the Together API.")
+    api_key: str | None = Field(None, description="API key for the Together API.", deprecated=True)
     default_prompt_formatter: Optional[str] = Field(
         None, description="Default prompt formatter (aka model wrapper) to use on vLLM /completions API."
     )
@@ -30,7 +30,7 @@ class TogetherProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         models = await openai_get_model_list_async(self.base_url, api_key=api_key)
         return self._list_llm_models(models)
 
@@ -93,7 +93,7 @@ class TogetherProvider(OpenAIProvider):
         return configs
 
     async def check_api_key(self):
-        api_key = self.get_api_key_secret().get_plaintext()
+        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         if not api_key:
             raise ValueError("No API key provided")
 

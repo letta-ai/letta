@@ -80,7 +80,7 @@ from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager, validate_block_limit_constraint
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
-from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
+from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
@@ -491,6 +491,7 @@ class AgentManager:
                     agent_type=agent_create.agent_type,
                     llm_config=agent_create.llm_config,
                     embedding_config=agent_create.embedding_config,
+                    compaction_settings=agent_create.compaction_settings,
                     organization_id=actor.organization_id,
                     description=agent_create.description,
                     metadata_=agent_create.metadata,
@@ -558,15 +559,15 @@ class AgentManager:
                     # Encrypt environment variable values
                     env_rows = []
                     for key, val in agent_secrets.items():
+                        # Encrypt value (Secret.from_plaintext handles missing encryption key internally)
+                        value_secret = Secret.from_plaintext(val)
                         row = {
                             "agent_id": aid,
                             "key": key,
-                            "value": val,
+                            "value": "",  # Empty string for NOT NULL constraint (deprecated, use value_enc)
+                            "value_enc": value_secret.get_encrypted(),
                             "organization_id": actor.organization_id,
                         }
-                        # Encrypt value (Secret.from_plaintext handles missing encryption key internally)
-                        value_secret = Secret.from_plaintext(val)
-                        row["value_enc"] = value_secret.get_encrypted()
                         env_rows.append(row)
 
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
@@ -750,6 +751,7 @@ class AgentManager:
                 "system": agent_update.system,
                 "llm_config": agent_update.llm_config,
                 "embedding_config": agent_update.embedding_config,
+                "compaction_settings": agent_update.compaction_settings,
                 "message_ids": agent_update.message_ids,
                 "tool_rules": agent_update.tool_rules,
                 "description": agent_update.description,
@@ -834,32 +836,29 @@ class AgentManager:
                 # Only re-encrypt if the value has actually changed
                 env_rows = []
                 for k, v in agent_secrets.items():
-                    row = {
-                        "agent_id": aid,
-                        "key": k,
-                        "value": v,
-                        "organization_id": agent.organization_id,
-                    }
-
                     # Check if value changed to avoid unnecessary re-encryption
                     existing_env = existing_env_vars.get(k)
                     existing_value = None
-                    if existing_env:
-                        if existing_env.value_enc:
-                            existing_secret = Secret.from_encrypted(existing_env.value_enc)
-                            existing_value = existing_secret.get_plaintext()
-                        elif existing_env.value:
-                            existing_value = existing_env.value
+                    if existing_env and existing_env.value_enc:
+                        existing_secret = Secret.from_encrypted(existing_env.value_enc)
+                        existing_value = existing_secret.get_plaintext()
 
                     # Encrypt value (reuse existing encrypted value if unchanged)
                     if existing_value == v and existing_env and existing_env.value_enc:
                         # Value unchanged, reuse existing encrypted value
-                        row["value_enc"] = existing_env.value_enc
+                        value_enc = existing_env.value_enc
                     else:
                         # Value changed or new, encrypt
                         value_secret = Secret.from_plaintext(v)
-                        row["value_enc"] = value_secret.get_encrypted()
+                        value_enc = value_secret.get_encrypted()
 
+                    row = {
+                        "agent_id": aid,
+                        "key": k,
+                        "value": "",  # Empty string for NOT NULL constraint (deprecated, use value_enc)
+                        "value_enc": value_enc,
+                        "organization_id": agent.organization_id,
+                    }
                     env_rows.append(row)
 
                 if env_rows:
@@ -1488,13 +1487,12 @@ class AgentManager:
         self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False, needs_agent_state: bool = True
     ) -> Optional[PydanticAgentState]:
         """
-        Removes all in-context messages for the specified agent except the original system message by:
+        Clears all in-context messages for the specified agent except the original system message by:
           1) Preserving the first message ID (original system message).
-          2) Deleting all other messages for the agent.
-          3) Updating the agent's message_ids to only contain the system message.
-          4) Optionally adding default initial messages after the system message.
+          2) Updating the agent's message_ids to only contain the system message.
+          3) Optionally adding default initial messages after the system message.
 
-        This action is destructive and cannot be undone once committed.
+        Note: This only clears messages from the agent's context, it does not delete them from the database.
 
         Args:
             add_default_initial_messages: If true, adds the default initial messages after resetting.
@@ -1517,11 +1515,6 @@ class AgentManager:
                 raise ValueError(f"Agent {agent_id} has no message_ids - cannot preserve system message")
 
             system_message_id = agent.message_ids[0]
-
-        await self.message_manager.delete_all_messages_for_agent_async(agent_id=agent_id, actor=actor, exclude_ids=[system_message_id])
-
-        async with db_registry.async_session() as session:
-            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
 
@@ -3041,21 +3034,22 @@ class AgentManager:
         visible_content = "\n".join(content_lines)
         visible_content_map = {file_metadata_with_content.file_name: visible_content}
 
-        # Attach file to each agent using bulk method (one file per agent, but atomic per agent)
-        all_closed_files = await asyncio.gather(
-            *(
-                self.file_agent_manager.attach_files_bulk(
-                    agent_id=agent_state.id,
-                    files_metadata=[file_metadata_with_content],
-                    visible_content_map=visible_content_map,
-                    actor=actor,
-                    max_files_open=agent_state.max_files_open,
-                )
-                for agent_state in agent_states
+        all_closed_files: List[str] = []
+
+        for agent_state in agent_states:
+            # To avoid exhausting the db connection pool when many agents are attached,
+            # perform the operations sequentially instead of concurrently.
+            closed_for_agent = await self.file_agent_manager.attach_files_bulk(
+                agent_id=agent_state.id,
+                files_metadata=[file_metadata_with_content],
+                visible_content_map=visible_content_map,
+                actor=actor,
+                max_files_open=agent_state.max_files_open,
             )
-        )
-        # Flatten and log if any files were closed
-        closed_files = [file for closed_list in all_closed_files for file in closed_list]
+            all_closed_files.extend(closed_for_agent)
+
+        # Log if any files were closed
+        closed_files = all_closed_files
         if closed_files:
             logger.info(f"LRU eviction closed {len(closed_files)} files during bulk attach: {closed_files}")
 
@@ -3286,37 +3280,25 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        # Use Anthropic token counter if:
-        # 1. The model endpoint type is anthropic, OR
-        # 2. We're in PRODUCTION and anthropic_api_key is available
-        use_anthropic = agent_state.llm_config.model_endpoint_type == "anthropic" or (
-            settings.environment == "PRODUCTION" and model_settings.anthropic_api_key is not None
-        )
-
-        if use_anthropic:
-            anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
-            model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
-
-            token_counter = AnthropicTokenCounter(anthropic_client, model)  # noqa
-            logger.info(
-                f"Using AnthropicTokenCounter for agent_id={agent_id}, model={model}, "
-                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
-                f"environment={settings.environment}"
-            )
-        else:
-            token_counter = TiktokenCounter(agent_state.llm_config.model)
-            logger.info(
-                f"Using TiktokenCounter for agent_id={agent_id}, model={agent_state.llm_config.model}, "
-                f"model_endpoint_type={agent_state.llm_config.model_endpoint_type}, "
-                f"environment={settings.environment}"
-            )
-
-        return await calculator.calculate_context_window(
-            agent_state=agent_state,
+        # Create the appropriate token counter based on model configuration
+        token_counter = create_token_counter(
+            model_endpoint_type=agent_state.llm_config.model_endpoint_type,
+            model=agent_state.llm_config.model,
             actor=actor,
-            token_counter=token_counter,
-            message_manager=self.message_manager,
-            system_message_compiled=system_message,
-            num_archival_memories=num_archival_memories,
-            num_messages=num_messages,
+            agent_id=agent_id,
         )
+
+        try:
+            result = await calculator.calculate_context_window(
+                agent_state=agent_state,
+                actor=actor,
+                token_counter=token_counter,
+                message_manager=self.message_manager,
+                system_message_compiled=system_message,
+                num_archival_memories=num_archival_memories,
+                num_messages=num_messages,
+            )
+        except Exception as e:
+            raise e
+
+        return result

@@ -812,13 +812,13 @@ class OpenAIBackcompatUnpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 
-def count_tokens(s: str, model: str = "gpt-4") -> int:
-    try:
-        encoding = tiktoken.encoding_for_model(model)
-    except KeyError:
-        print("Falling back to cl100k base for token counting.")
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(s))
+# def count_tokens(s: str, model: str = "gpt-4") -> int:
+#    try:
+#        encoding = tiktoken.encoding_for_model(model)
+#    except KeyError:
+#        print("Falling back to cl100k base for token counting.")
+#        encoding = tiktoken.get_encoding("cl100k_base")
+#    return len(encoding.encode(s))
 
 
 def printd(*args, **kwargs):
@@ -854,7 +854,9 @@ def parse_json(string) -> dict:
         raise e
 
 
-def validate_function_response(function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True) -> Any:
+def validate_function_response(
+    function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True
+) -> str | dict[str, Any]:
     """Check to make sure that a function used by Letta returned a valid response. Truncates to return_char_limit if necessary.
 
     This makes sure that we can coerce the function_response into a string or dict that meets our criteria. We handle some soft coercion.
@@ -1257,77 +1259,6 @@ def safe_create_file_processing_task(coro, file_metadata, server, actor, logger:
     task.add_done_callback(_background_tasks.discard)
 
     return task
-
-
-class CancellationSignal:
-    """
-    A signal that can be checked for cancellation during streaming operations.
-
-    This provides a lightweight way to check if an operation should be cancelled
-    without having to pass job managers and other dependencies through every method.
-    """
-
-    def __init__(self, job_manager=None, job_id=None, actor=None):
-        from letta.log import get_logger
-        from letta.schemas.user import User
-        from letta.services.job_manager import JobManager
-
-        self.job_manager: JobManager | None = job_manager
-        self.job_id: str | None = job_id
-        self.actor: User | None = actor
-        self._is_cancelled = False
-        self.logger = get_logger(__name__)
-
-    async def is_cancelled(self) -> bool:
-        """
-        Check if the operation has been cancelled.
-
-        Returns:
-            True if cancelled, False otherwise
-        """
-        from letta.schemas.enums import JobStatus
-
-        if self._is_cancelled:
-            return True
-
-        if not self.job_manager or not self.job_id or not self.actor:
-            return False
-
-        try:
-            job = await self.job_manager.get_job_by_id_async(job_id=self.job_id, actor=self.actor)
-            self._is_cancelled = job.status == JobStatus.cancelled
-            return self._is_cancelled
-        except Exception as e:
-            self.logger.warning(f"Failed to check cancellation status for job {self.job_id}: {e}")
-            return False
-
-    def cancel(self):
-        """Mark this signal as cancelled locally (for testing or direct cancellation)."""
-        self._is_cancelled = True
-
-    async def check_and_raise_if_cancelled(self):
-        """
-        Check for cancellation and raise CancelledError if cancelled.
-
-        Raises:
-            asyncio.CancelledError: If the operation has been cancelled
-        """
-        if await self.is_cancelled():
-            self.logger.info(f"Operation cancelled for job {self.job_id}")
-            raise asyncio.CancelledError(f"Job {self.job_id} was cancelled")
-
-
-class NullCancellationSignal(CancellationSignal):
-    """A null cancellation signal that is never cancelled."""
-
-    def __init__(self):
-        super().__init__()
-
-    async def is_cancelled(self) -> bool:
-        return False
-
-    async def check_and_raise_if_cancelled(self):
-        pass
 
 
 async def get_latest_alembic_revision() -> str:

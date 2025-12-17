@@ -15,6 +15,18 @@ def run_code(code: str, language: Literal["python", "js", "ts", "r", "java"]) ->
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
 
 
+def run_code_with_tools(code: str) -> str:
+    """
+    Run code with access to the tools of the agent. Only support python. You can directly invoke the tools of the agent in the code.
+    Args:
+        code (str): The python code to run.
+    Returns:
+        str: The output of the code, the stdout, the stderr, and error traces (if any).
+    """
+
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
+
 async def web_search(
     query: str,
     num_results: int = 10,
@@ -55,7 +67,7 @@ async def web_search(
 
 async def fetch_webpage(url: str) -> str:
     """
-    Fetch a webpage and convert it to markdown/text format using Jina AI reader.
+    Fetch a webpage and convert it to markdown/text format using Exa API (if available) or trafilatura/readability.
 
     Args:
         url: The URL of the webpage to fetch and convert

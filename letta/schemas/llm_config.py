@@ -70,7 +70,7 @@ class LLMConfig(BaseModel):
     enable_reasoner: bool = Field(
         True, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
-    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]] = Field(
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]] = Field(
         None,
         description="The reasoning effort to use when generating text reasoning models",
     )
@@ -266,6 +266,17 @@ class LLMConfig(BaseModel):
                 model_wrapper=None,
                 context_window=272000,  # Same as GPT-5
                 reasoning_effort="none",  # Default to "none" for GPT-5.1
+                verbosity="medium",
+                max_tokens=16384,
+            )
+        elif model_name == "gpt-5.2":
+            return cls(
+                model="gpt-5.2",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=272000,
+                reasoning_effort="none",  # Default to "none" for GPT-5.2
                 verbosity="medium",
                 max_tokens=16384,
             )

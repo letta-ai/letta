@@ -1,11 +1,14 @@
 from datetime import datetime
+from multiprocessing import Value
 from pickletools import pyunicode
 from typing import List, Literal, Optional
 
 from httpx import AsyncClient
 
+from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
+from letta.log_context import update_log_context
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
@@ -23,7 +26,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.run_metrics import RunMetrics as PydanticRunMetrics
 from letta.schemas.step import Step as PydanticStep
-from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.usage import LettaUsageStatistics, normalize_cache_tokens, normalize_reasoning_tokens
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.agent_manager import AgentManager
@@ -71,6 +74,8 @@ class RunManager:
 
             run = await run.create_async(session, actor=actor, no_commit=True, no_refresh=True)
 
+            update_log_context(run_id=run.id)
+
             # Create run metrics with start timestamp
             import time
 
@@ -91,6 +96,7 @@ class RunManager:
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     async def get_run_by_id(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Get a run by its ID."""
+        update_log_context(run_id=run_id)
         async with db_registry.async_session() as session:
             run = await RunModel.read_async(db_session=session, identifier=run_id, actor=actor, access_type=AccessType.ORGANIZATION)
             if not run:
@@ -100,6 +106,7 @@ class RunManager:
     @enforce_types
     async def get_run_with_status(self, run_id: str, actor: PydanticUser) -> PydanticRun:
         """Get a run by its ID and update status from Lettuce if applicable."""
+        update_log_context(run_id=run_id)
         run = await self.get_run_by_id(run_id=run_id, actor=actor)
 
         use_lettuce = run.metadata and run.metadata.get("lettuce")
@@ -303,6 +310,7 @@ class RunManager:
 
     @enforce_types
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @trace_method
     async def update_run_by_id_async(
         self, run_id: str, update: RunUpdate, actor: PydanticUser, refresh_result_messages: bool = True
     ) -> PydanticRun:
@@ -314,15 +322,32 @@ class RunManager:
             needs_callback = False
             callback_url = None
             not_completed_before = not bool(run.completed_at)
-            is_terminal_update = update.status in {RunStatus.completed, RunStatus.failed}
+            is_terminal_update = update.status in {RunStatus.completed, RunStatus.failed, RunStatus.cancelled}
             if is_terminal_update and not_completed_before and run.callback_url:
                 needs_callback = True
                 callback_url = run.callback_url
 
+            # validate run lifecycle (only log the errors)
+            if run.status in {RunStatus.completed}:
+                if update.status not in {RunStatus.cancelled}:
+                    # a completed run can only be marked as cancelled
+                    logger.error(
+                        f"Run {run_id} is already completed with stop reason {run.stop_reason}, but is being marked as {update.status} with stop reason {update.stop_reason}"
+                    )
+                if update.stop_reason not in {StopReasonType.requires_approval}:
+                    # a completed run can only be cancelled if the stop reason is requires approval
+                    logger.error(
+                        f"Run {run_id} is already completed with stop reason {run.stop_reason}, but is being marked as {update.status} with stop reason {update.stop_reason}"
+                    )
+            if run.status in {RunStatus.failed, RunStatus.cancelled}:
+                logger.error(
+                    f"Run {run_id} is already in a terminal state {run.status} with stop reason {run.stop_reason}, but is being updated with data {update.model_dump()}"
+                )
+
             # Housekeeping only when the run is actually completing
             if not_completed_before and is_terminal_update:
                 if not update.stop_reason:
-                    logger.warning(f"Run {run_id} completed without a stop reason")
+                    logger.error(f"Run {run_id} completed without a stop reason")
                 if not update.completed_at:
                     logger.warning(f"Run {run_id} completed without a completed_at timestamp")
                     update.completed_at = get_utc_time().replace(tzinfo=None)
@@ -469,6 +494,18 @@ class RunManager:
             total_usage.completion_tokens += step.completion_tokens
             total_usage.total_tokens += step.total_tokens
             total_usage.step_count += 1
+
+            # Aggregate cache and reasoning tokens from detailed breakdowns using normalized helpers
+            # Handle None defaults: only set if we have data, accumulate if already set
+            cached_input, cache_write = normalize_cache_tokens(step.prompt_tokens_details)
+            if cached_input > 0 or total_usage.cached_input_tokens is not None:
+                total_usage.cached_input_tokens = (total_usage.cached_input_tokens or 0) + cached_input
+            if cache_write > 0 or total_usage.cache_write_tokens is not None:
+                total_usage.cache_write_tokens = (total_usage.cache_write_tokens or 0) + cache_write
+            reasoning = normalize_reasoning_tokens(step.completion_tokens_details)
+            if reasoning > 0 or total_usage.reasoning_tokens is not None:
+                total_usage.reasoning_tokens = (total_usage.reasoning_tokens or 0) + reasoning
+
         return total_usage
 
     @enforce_types
@@ -546,3 +583,140 @@ class RunManager:
             actor=actor, run_id=run_id, limit=limit, before=before, after=after, order="asc" if ascending else "desc"
         )
         return steps
+
+    @enforce_types
+    async def cancel_run(self, actor: PydanticUser, agent_id: Optional[str] = None, run_id: Optional[str] = None) -> None:
+        """Cancel a run."""
+
+        # make sure run_id and agent_id are not both None
+        if not run_id:
+            # get the last agent run
+            if not agent_id:
+                raise ValueError("Agent ID is required to cancel a run by ID")
+            logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
+            run_ids = await self.list_runs(
+                actor=actor,
+                ascending=False,
+                agent_id=agent_id,
+            )
+            run_ids = [run.id for run in run_ids]
+        else:
+            # get the agent
+            run = await self.get_run_by_id(run_id=run_id, actor=actor)
+            if not run:
+                raise NoResultFound(f"Run with id {run_id} not found")
+            agent_id = run.agent_id
+
+        logger.debug(f"Cancelling run {run_id} for agent {agent_id}")
+
+        # check if run can be cancelled (cannot cancel a completed, failed, or cancelled run)
+        if run.stop_reason and run.stop_reason not in [StopReasonType.requires_approval]:
+            logger.error(f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}")
+            raise LettaInvalidArgumentError(
+                f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}"
+            )
+
+        # Check if agent is waiting for approval by examining the last message
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        current_in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
+        was_pending_approval = current_in_context_messages and current_in_context_messages[-1].is_approval_request()
+
+        # cancel the run
+        # NOTE: this should update the agent's last stop reason to cancelled
+        run = await self.update_run_by_id_async(
+            run_id=run_id, update=RunUpdate(status=RunStatus.cancelled, stop_reason=StopReasonType.cancelled), actor=actor
+        )
+
+        # cleanup the agent's state
+        # if was pending approval, we need to cleanup the approval state
+        if was_pending_approval:
+            logger.debug(f"Agent was waiting for approval, adding denial messages for run {run_id}")
+            approval_request_message = current_in_context_messages[-1]
+
+            # Ensure the approval request has tool calls to deny
+            if approval_request_message.tool_calls:
+                from letta.constants import TOOL_CALL_DENIAL_ON_CANCEL
+                from letta.schemas.letta_message import ApprovalReturn
+                from letta.schemas.message import ApprovalCreate
+                from letta.server.rest_api.utils import (
+                    create_approval_response_message_from_input,
+                    create_tool_message_from_returns,
+                    create_tool_returns_for_denials,
+                )
+
+                # Create denials for ALL pending tool calls
+                denials = [
+                    ApprovalReturn(
+                        tool_call_id=tool_call.id,
+                        approve=False,
+                        reason=TOOL_CALL_DENIAL_ON_CANCEL,
+                    )
+                    for tool_call in approval_request_message.tool_calls
+                ]
+
+                # Create an ApprovalCreate input with the denials
+                approval_input = ApprovalCreate(
+                    approvals=denials,
+                    approval_request_id=approval_request_message.id,
+                )
+
+                # Use the standard function to create properly formatted approval response messages
+                approval_response_messages = create_approval_response_message_from_input(
+                    agent_state=agent_state,
+                    input_message=approval_input,
+                    run_id=run_id,
+                )
+
+                # Create tool returns for ALL denied tool calls using shared helper
+                # This handles all pending tool calls at once since they all have the same denial reason
+                tool_returns = create_tool_returns_for_denials(
+                    tool_calls=approval_request_message.tool_calls,  # ALL pending tool calls
+                    denial_reason=TOOL_CALL_DENIAL_ON_CANCEL,
+                    timezone=agent_state.timezone,
+                )
+
+                # Create tool message with all denial returns using shared helper
+                tool_message = create_tool_message_from_returns(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    tool_returns=tool_returns,
+                    run_id=run_id,
+                )
+
+                # Combine approval response and tool messages
+                new_messages = approval_response_messages + [tool_message]
+
+                # Checkpoint the new messages
+                from letta.agents.agent_loop import AgentLoop
+
+                agent_loop = AgentLoop.load(agent_state=agent_state, actor=actor)
+                new_in_context_messages = current_in_context_messages + new_messages
+                await agent_loop._checkpoint_messages(
+                    run_id=run_id,
+                    step_id=approval_request_message.step_id,
+                    new_messages=new_messages,
+                    in_context_messages=new_in_context_messages,
+                )
+
+                # persisted_messages = await self.message_manager.create_many_messages_async(
+                #    pydantic_msgs=new_messages,
+                #    actor=actor,
+                #    run_id=run_id,
+                # )
+                # logger.debug(f"Persisted {len(persisted_messages)} messages (approval + tool returns)")
+
+                ## Update the agent's message_ids to include the new messages (approval + tool message)
+                # agent_state.message_ids = agent_state.message_ids + [m.id for m in persisted_messages]
+                # await self.agent_manager.update_message_ids_async(agent_id=agent_state.id, message_ids=agent_state.message_ids, actor=actor)
+
+                logger.debug(
+                    f"Inserted approval response with {len(denials)} denials and tool return message for cancelled run {run_id}. "
+                    f"Approval request message ID: {approval_request_message.id}"
+                )
+            else:
+                logger.warning(
+                    f"Last message is an approval request but has no tool_calls. "
+                    f"Message ID: {approval_request_message.id}, Run ID: {run_id}"
+                )
+
+        return run

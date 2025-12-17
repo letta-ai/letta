@@ -646,7 +646,7 @@ class LettaCoreToolExecutor(ToolExecutor):
     async def memory_delete(self, agent_state: AgentState, actor: User, path: str) -> str:
         """Delete a memory block by detaching it from the agent."""
         # Extract memory block label from path
-        label = path.removeprefix("/memories/").replace("/", "_")
+        label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         try:
             # Check if memory block exists
@@ -669,7 +669,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
     async def memory_update_description(self, agent_state: AgentState, actor: User, path: str, description: str) -> str:
         """Update the description of a memory block."""
-        label = path.removeprefix("/memories/").replace("/", "_")
+        label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         try:
             # Check if old memory block exists
@@ -690,8 +690,8 @@ class LettaCoreToolExecutor(ToolExecutor):
     async def memory_rename(self, agent_state: AgentState, actor: User, old_path: str, new_path: str) -> str:
         """Rename a memory block by copying content to new label and detaching old one."""
         # Extract memory block labels from paths
-        old_label = old_path.removeprefix("/memories/").replace("/", "_")
-        new_label = new_path.removeprefix("/memories/").replace("/", "_")
+        old_label = old_path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
+        new_label = new_path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         try:
             # Check if old memory block exists
@@ -713,7 +713,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         """Create a memory block by setting its value to an empty string."""
         from letta.schemas.block import Block
 
-        label = path.removeprefix("/memories/").replace("/", "_")
+        label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         # Create a new block and persist it to the database
         new_block = Block(label=label, value=file_text if file_text else "", description=description)
@@ -730,7 +730,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
     async def memory_str_replace(self, agent_state: AgentState, actor: User, path: str, old_str: str, new_str: str) -> str:
         """Replace text in a memory block."""
-        label = path.removeprefix("/memories/").replace("/", "_")
+        label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         memory_block = agent_state.memory.get_block(label)
         if memory_block is None:
@@ -793,7 +793,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
     async def memory_str_insert(self, agent_state: AgentState, actor: User, path: str, insert_text: str, insert_line: int = -1) -> str:
         """Insert text into a memory block at a specific line."""
-        label = path.removeprefix("/memories/").replace("/", "_")
+        label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
         memory_block = agent_state.memory.get_block(label)
         if memory_block is None:

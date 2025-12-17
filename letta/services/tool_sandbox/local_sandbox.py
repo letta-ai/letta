@@ -37,12 +37,25 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         tool_name: str,
         args: JsonDict,
         user,
+        tool_id: str,
+        agent_id: Optional[str] = None,
+        project_id: Optional[str] = None,
         force_recreate_venv=False,
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
+        super().__init__(
+            tool_name,
+            args,
+            user,
+            tool_id=tool_id,
+            agent_id=agent_id,
+            project_id=project_id,
+            tool_object=tool_object,
+            sandbox_config=sandbox_config,
+            sandbox_env_vars=sandbox_env_vars,
+        )
         self.force_recreate_venv = force_recreate_venv
 
     @trace_method

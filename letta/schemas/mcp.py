@@ -49,20 +49,20 @@ class MCPServer(BaseMCPServer):
     metadata_: Optional[Dict[str, Any]] = Field(default_factory=dict, description="A dictionary of additional metadata for the tool.")
 
     def get_token_secret(self) -> Secret:
-        """Get the token as a Secret object, preferring encrypted over plaintext."""
+        """Get the token as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         if self.token_enc is not None:
             return self.token_enc
-        return Secret.from_db(None, self.token)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.token)
 
     def get_custom_headers_secret(self) -> Secret:
-        """Get custom headers as a Secret object (stores JSON string), preferring encrypted over plaintext."""
+        """Get custom headers as a Secret object (stores JSON string). Prefers encrypted, falls back to plaintext with error logging."""
         if self.custom_headers_enc is not None:
             return self.custom_headers_enc
-        # Fallback: convert plaintext dict to JSON string and wrap in Secret
-        if self.custom_headers is not None:
-            json_str = json.dumps(self.custom_headers)
-            return Secret.from_plaintext(json_str)
-        return Secret.from_plaintext(None)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        # Convert dict to JSON string for Secret storage
+        plaintext_json = json.dumps(self.custom_headers) if self.custom_headers else None
+        return Secret.from_db(encrypted_value=None, plaintext_value=plaintext_json)
 
     def get_custom_headers_dict(self) -> Optional[Dict[str, str]]:
         """Get custom headers as a plaintext dictionary."""

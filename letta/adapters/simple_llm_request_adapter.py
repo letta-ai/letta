@@ -4,6 +4,7 @@ from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
+from letta.schemas.usage import normalize_cache_tokens, normalize_reasoning_tokens
 
 
 class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
@@ -46,7 +47,9 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
         # Convert response to chat completion format
-        self.chat_completions_response = self.llm_client.convert_response_to_chat_completion(self.response_data, messages, self.llm_config)
+        self.chat_completions_response = await self.llm_client.convert_response_to_chat_completion(
+            self.response_data, messages, self.llm_config
+        )
 
         # Extract reasoning content from the response
         if self.chat_completions_response.choices[0].message.reasoning_content:
@@ -84,6 +87,11 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         self.usage.completion_tokens = self.chat_completions_response.usage.completion_tokens
         self.usage.prompt_tokens = self.chat_completions_response.usage.prompt_tokens
         self.usage.total_tokens = self.chat_completions_response.usage.total_tokens
+
+        # Extract cache and reasoning token details using normalized helpers
+        usage = self.chat_completions_response.usage
+        self.usage.cached_input_tokens, self.usage.cache_write_tokens = normalize_cache_tokens(usage.prompt_tokens_details)
+        self.usage.reasoning_tokens = normalize_reasoning_tokens(usage.completion_tokens_details)
 
         self.log_provider_trace(step_id=step_id, actor=actor)
 

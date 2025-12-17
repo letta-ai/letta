@@ -71,6 +71,7 @@ from letta.schemas.providers import (
     XAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
+from letta.schemas.secret import Secret
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -212,7 +213,7 @@ class SyncServer(object):
             self._enabled_providers.append(
                 OpenAIProvider(
                     name="openai",
-                    api_key=model_settings.openai_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
                     base_url=model_settings.openai_api_base,
                 )
             )
@@ -220,7 +221,7 @@ class SyncServer(object):
             self._enabled_providers.append(
                 AnthropicProvider(
                     name="anthropic",
-                    api_key=model_settings.anthropic_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.anthropic_api_key),
                 )
             )
         if model_settings.ollama_base_url:
@@ -228,7 +229,6 @@ class SyncServer(object):
                 OllamaProvider(
                     name="ollama",
                     base_url=model_settings.ollama_base_url,
-                    api_key=None,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
             )
@@ -236,7 +236,7 @@ class SyncServer(object):
             self._enabled_providers.append(
                 GoogleAIProvider(
                     name="google_ai",
-                    api_key=model_settings.gemini_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.gemini_api_key),
                 )
             )
         if model_settings.google_cloud_location and model_settings.google_cloud_project:
@@ -252,7 +252,7 @@ class SyncServer(object):
             self._enabled_providers.append(
                 AzureProvider(
                     name="azure",
-                    api_key=model_settings.azure_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.azure_api_key),
                     base_url=model_settings.azure_base_url,
                     api_version=model_settings.azure_api_version,
                 )
@@ -261,14 +261,14 @@ class SyncServer(object):
             self._enabled_providers.append(
                 GroqProvider(
                     name="groq",
-                    api_key=model_settings.groq_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.groq_api_key),
                 )
             )
         if model_settings.together_api_key:
             self._enabled_providers.append(
                 TogetherProvider(
                     name="together",
-                    api_key=model_settings.together_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.together_api_key),
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
             )
@@ -303,14 +303,24 @@ class SyncServer(object):
             )
             self._enabled_providers.append(LMStudioOpenAIProvider(name="lmstudio_openai", base_url=lmstudio_url))
         if model_settings.deepseek_api_key:
-            self._enabled_providers.append(DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key))
+            self._enabled_providers.append(
+                DeepSeekProvider(
+                    name="deepseek",
+                    api_key_enc=Secret.from_plaintext(model_settings.deepseek_api_key),
+                )
+            )
         if model_settings.xai_api_key:
-            self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
+            self._enabled_providers.append(
+                XAIProvider(
+                    name="xai",
+                    api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
+                )
+            )
         if model_settings.openrouter_api_key:
             self._enabled_providers.append(
                 OpenRouterProvider(
                     name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
-                    api_key=model_settings.openrouter_api_key,
+                    api_key_enc=Secret.from_plaintext(model_settings.openrouter_api_key),
                 )
             )
 
@@ -670,19 +680,25 @@ class SyncServer(object):
     async def insert_archival_memory_async(
         self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]
     ) -> List[Passage]:
+        from letta.services.context_window_calculator.token_counter import create_token_counter
         from letta.settings import settings
-        from letta.utils import count_tokens
+
+        # Get the agent object (loaded in memory)
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Check token count against limit
-        token_count = count_tokens(memory_contents)
+        token_counter = create_token_counter(
+            model_endpoint_type=agent_state.llm_config.model_endpoint_type,
+            model=agent_state.llm_config.model,
+            actor=actor,
+            agent_id=agent_id,
+        )
+        token_count = await token_counter.count_text_tokens(memory_contents)
         if token_count > settings.archival_memory_token_limit:
             raise LettaInvalidArgumentError(
                 message=f"Archival memory content exceeds token limit of {settings.archival_memory_token_limit} tokens (found {token_count} tokens)",
                 argument_name="memory_contents",
             )
-
-        # Get the agent object (loaded in memory)
-        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Use passage manager which handles dual-write to Turbopuffer if enabled
         passages = await self.passage_manager.insert_passage(
@@ -1123,7 +1139,7 @@ class SyncServer(object):
                 provider_type=provider_type,
                 actor=actor,
             )
-            providers_from_db = [p.cast_to_subtype() for p in providers_from_db]
+            providers_from_db = [p.cast_to_subtype() for p in providers_from_db if p.provider_category == ProviderCategory.byok]
             providers.extend(providers_from_db)
 
         if provider_name is not None:
@@ -1240,7 +1256,8 @@ class SyncServer(object):
                 argument_name="provider_name",
             )
         elif len(providers) > 1:
-            raise LettaInvalidArgumentError(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            logger.warning(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            provider = providers[0]
         else:
             provider = providers[0]
 

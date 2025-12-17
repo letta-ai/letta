@@ -56,7 +56,7 @@ class SandboxToolExecutor(ToolExecutor):
 
         # inject some extra env such as PROJECT_ID from agent_state
         if agent_state and agent_state.project_id:
-          fetched_credentials["PROJECT_ID"] = agent_state.project_id
+            fetched_credentials["PROJECT_ID"] = agent_state.project_id
 
         sandbox_env_vars = {**fetched_credentials, **sandbox_env_vars}
 
@@ -83,15 +83,16 @@ class SandboxToolExecutor(ToolExecutor):
                         function_name,
                         function_args,
                         actor,
+                        tool_id=tool.id,
+                        agent_id=agent_state.id if agent_state else None,
+                        project_id=agent_state.project_id if agent_state else None,
                         tool_object=tool,
                         sandbox_config=sandbox_config,
                         sandbox_env_vars=sandbox_env_vars,
                         organization_id=actor.organization_id,
                     )
                     # TODO: pass through letta api key
-                    tool_execution_result = await sandbox.run(
-                        agent_id=agent_state.id, agent_state=agent_state_copy, additional_env_vars=sandbox_env_vars
-                    )
+                    tool_execution_result = await sandbox.run(agent_state=agent_state_copy, additional_env_vars=sandbox_env_vars)
                 except Exception as e:
                     # Modal execution failed, log and fall back to E2B/LOCAL
                     logger.warning(f"Modal execution failed for tool {tool.name}: {e}. Falling back to {tool_settings.sandbox_type.value}")
@@ -106,6 +107,9 @@ class SandboxToolExecutor(ToolExecutor):
                         function_name,
                         function_args,
                         actor,
+                        tool_id=tool.id,
+                        agent_id=agent_state.id if agent_state else None,
+                        project_id=agent_state.project_id if agent_state else None,
                         tool_object=tool,
                         sandbox_config=sandbox_config,
                         sandbox_env_vars=sandbox_env_vars,
@@ -115,6 +119,9 @@ class SandboxToolExecutor(ToolExecutor):
                         function_name,
                         function_args,
                         actor,
+                        tool_id=tool.id,
+                        agent_id=agent_state.id if agent_state else None,
+                        project_id=agent_state.project_id if agent_state else None,
                         tool_object=tool,
                         sandbox_config=sandbox_config,
                         sandbox_env_vars=sandbox_env_vars,

@@ -165,28 +165,32 @@ class MCPOAuthSession(BaseMCPOAuth):
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
 
     def get_access_token_secret(self) -> Secret:
-        """Get the access token as a Secret object, preferring encrypted over plaintext."""
+        """Get the access token as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         if self.access_token_enc is not None:
             return self.access_token_enc
-        return Secret.from_db(None, self.access_token)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.access_token)
 
     def get_refresh_token_secret(self) -> Secret:
-        """Get the refresh token as a Secret object, preferring encrypted over plaintext."""
+        """Get the refresh token as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         if self.refresh_token_enc is not None:
             return self.refresh_token_enc
-        return Secret.from_db(None, self.refresh_token)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.refresh_token)
 
     def get_client_secret_secret(self) -> Secret:
-        """Get the client secret as a Secret object, preferring encrypted over plaintext."""
+        """Get the client secret as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         if self.client_secret_enc is not None:
             return self.client_secret_enc
-        return Secret.from_db(None, self.client_secret)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.client_secret)
 
     def get_authorization_code_secret(self) -> Secret:
-        """Get the authorization code as a Secret object, preferring encrypted over plaintext."""
+        """Get the authorization code as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
         if self.authorization_code_enc is not None:
             return self.authorization_code_enc
-        return Secret.from_db(None, self.authorization_code)
+        # Fallback to plaintext with error logging via Secret.from_db()
+        return Secret.from_db(encrypted_value=None, plaintext_value=self.authorization_code)
 
     def set_access_token_secret(self, secret: Secret) -> None:
         """Set access token from a Secret object."""

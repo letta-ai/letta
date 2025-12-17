@@ -29,20 +29,26 @@ from letta.schemas.letta_message import (
     ApprovalResponseMessage,
     ApprovalReturn,
     AssistantMessage,
+    AssistantMessageListResult,
     HiddenReasoningMessage,
     LettaMessage,
     LettaMessageReturnUnion,
+    LettaMessageSearchResult,
     MessageType,
     ReasoningMessage,
+    ReasoningMessageListResult,
     SystemMessage,
+    SystemMessageListResult,
     ToolCall,
     ToolCallMessage,
     ToolReturn as LettaToolReturn,
     ToolReturnMessage,
     UserMessage,
+    UserMessageListResult,
 )
 from letta.schemas.letta_message_content import (
     ImageContent,
+    ImageSourceType,
     LettaMessageContentUnion,
     OmittedReasoningContent,
     ReasoningContent,
@@ -317,6 +323,80 @@ class Message(BaseMessage):
                 text_is_assistant_message=text_is_assistant_message,
             )
         ]
+
+    @staticmethod
+    @trace_method
+    def to_letta_search_results_from_list(
+        search_results: List["MessageSearchResult"],
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+        reverse: bool = True,
+        include_err: Optional[bool] = None,
+        text_is_assistant_message: bool = False,
+    ) -> List[LettaMessageSearchResult]:
+        """Convert MessageSearchResult objects into LettaMessageSearchResult objects.
+
+        This mirrors the behavior of to_letta_messages_from_list, but preserves the
+        originating Message.agent_id on each search result variant.
+        """
+
+        letta_search_results: List[LettaMessageSearchResult] = []
+
+        for result in search_results:
+            message = result.message
+
+            # Convert the underlying Message into LettaMessage variants
+            letta_messages = message.to_letta_messages(
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
+                include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
+            )
+
+            for lm in letta_messages:
+                if isinstance(lm, SystemMessage):
+                    letta_search_results.append(
+                        SystemMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, UserMessage):
+                    letta_search_results.append(
+                        UserMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, ReasoningMessage):
+                    letta_search_results.append(
+                        ReasoningMessageListResult(
+                            message_type=lm.message_type,
+                            reasoning=lm.reasoning,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                elif isinstance(lm, AssistantMessage):
+                    letta_search_results.append(
+                        AssistantMessageListResult(
+                            message_type=lm.message_type,
+                            content=lm.content,
+                            agent_id=message.agent_id,
+                            created_at=message.created_at,
+                        )
+                    )
+                # Other LettaMessage variants (tool, approval, etc.) are not part of
+                # LettaMessageSearchResult and are intentionally skipped here.
+
+        return letta_search_results
 
     def to_letta_messages(
         self,
@@ -616,6 +696,11 @@ class Message(BaseMessage):
                     message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
                 except KeyError:
                     raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
+
+                # Ensure content is a string (validate_function_response can return dict)
+                if isinstance(message_string, dict):
+                    message_string = json_dumps(message_string)
+
                 messages.append(
                     AssistantMessage(
                         id=self.id,
@@ -1309,13 +1394,12 @@ class Message(BaseMessage):
             )
 
         elif self.role == "user":
-            # TODO do we need to do a swap to placeholder text here for images?
+            assert self.content, vars(self)
             assert all([isinstance(c, TextContent) or isinstance(c, ImageContent) for c in self.content]), vars(self)
 
             user_dict = {
                 "role": self.role.value if hasattr(self.role, "value") else self.role,
-                # TODO support multi-modal
-                "content": self.content[0].text,
+                "content": self._build_responses_user_content(),
             }
 
             # Optional field, do not include if null or invalid
@@ -1396,6 +1480,53 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return message_dicts
+
+    def _build_responses_user_content(self) -> List[dict]:
+        content_parts: List[dict] = []
+        for content in self.content or []:
+            if isinstance(content, TextContent):
+                content_parts.append({"type": "input_text", "text": content.text})
+            elif isinstance(content, ImageContent):
+                image_part = self._image_content_to_responses_part(content)
+                if image_part:
+                    content_parts.append(image_part)
+
+        if not content_parts:
+            content_parts.append({"type": "input_text", "text": ""})
+
+        return content_parts
+
+    @staticmethod
+    def _image_content_to_responses_part(image_content: ImageContent) -> Optional[dict]:
+        image_url = Message._image_source_to_data_url(image_content)
+        if not image_url:
+            return None
+
+        detail = getattr(image_content.source, "detail", None) or "auto"
+        return {"type": "input_image", "image_url": image_url, "detail": detail}
+
+    @staticmethod
+    def _image_source_to_data_url(image_content: ImageContent) -> Optional[str]:
+        source = image_content.source
+
+        if source.type == ImageSourceType.base64:
+            data = getattr(source, "data", None)
+            if not data:
+                return None
+            media_type = getattr(source, "media_type", None) or "image/png"
+            return f"data:{media_type};base64,{data}"
+
+        if source.type == ImageSourceType.url:
+            return getattr(source, "url", None)
+
+        if source.type == ImageSourceType.letta:
+            data = getattr(source, "data", None)
+            if not data:
+                return None
+            media_type = getattr(source, "media_type", None) or "image/png"
+            return f"data:{media_type};base64,{data}"
+
+        return None
 
     @staticmethod
     def to_openai_responses_dicts_from_list(
@@ -1795,7 +1926,9 @@ class Message(BaseMessage):
 
                     parts.append(function_call_part)
             else:
-                if not native_content:
+                # Only add single text_content if we don't have multiple content items
+                # (multi-content case is handled below at the len(self.content) > 1 block)
+                if not native_content and not (self.content and len(self.content) > 1):
                     assert text_content is not None
                     parts.append({"text": text_content})
 

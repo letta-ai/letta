@@ -30,6 +30,7 @@ from letta.utils import safe_create_task
 logger = get_logger(__name__)
 
 
+# NOTE: legacy, new version is functional
 class Summarizer:
     """
     Handles summarization or trimming of conversation messages based on
@@ -407,7 +408,14 @@ def simple_message_wrapper(openai_msg: dict) -> Message:
         raise ValueError(f"Unknown role: {openai_msg['role']}")
 
 
-async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: User, include_ack: bool = True) -> str:
+@trace_method
+async def simple_summary(
+    messages: List[Message],
+    llm_config: LLMConfig,
+    actor: User,
+    include_ack: bool = True,
+    prompt: str | None = None,
+) -> str:
     """Generate a simple summary from a list of messages.
 
     Intentionally kept functional due to the simplicity of the prompt.
@@ -422,27 +430,32 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
     assert llm_client is not None
 
     # Prepare the messages payload to send to the LLM
-    system_prompt = gpt_summarize.SYSTEM
+    system_prompt = prompt or gpt_summarize.SYSTEM
     # Build the initial transcript without clamping to preserve fidelity
     # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
 
     if include_ack:
+        logger.info(f"Summarizing with ACK for model {llm_config.model}")
         input_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
             {"role": "user", "content": summary_transcript},
         ]
     else:
+        logger.info(f"Summarizing without ACK for model {llm_config.model}")
         input_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": summary_transcript},
         ]
     input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
     # Build a local LLMConfig for v1-style summarization which uses native content and must not
-    # include inner thoughts in kwargs to avoid conflicts in Anthropic formatting
+    # include inner thoughts in kwargs to avoid conflicts in Anthropic formatting.
+    # We also disable enable_reasoner to avoid extended thinking requirements (Anthropic requires
+    # assistant messages to start with thinking blocks when extended thinking is enabled).
     summarizer_llm_config = LLMConfig(**llm_config.model_dump())
     summarizer_llm_config.put_inner_thoughts_in_kwargs = False
+    summarizer_llm_config.enable_reasoner = False
 
     request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, summarizer_llm_config, tools=[])
     try:
@@ -462,12 +475,14 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             logger.info(f"Full summarization payload: {request_data}")
 
             if include_ack:
+                logger.info(f"Fallback summarization with ACK for model {llm_config.model}")
                 input_messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "assistant", "content": MESSAGE_SUMMARY_REQUEST_ACK},
                     {"role": "user", "content": summary_transcript},
                 ]
             else:
+                logger.info(f"Fallback summarization without ACK for model {llm_config.model}")
                 input_messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": summary_transcript},
@@ -525,7 +540,7 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
                     logger.info(f"Full fallback summarization payload: {request_data}")
                     raise llm_client.handle_llm_error(fallback_error_b)
 
-    response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
+    response = await llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, summarizer_llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")
         # TODO raise an error error instead?

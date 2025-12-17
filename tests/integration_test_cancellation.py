@@ -173,7 +173,7 @@ async def test_background_streaming_cancellation(
 ) -> None:
     agent_state = await client.agents.update(agent_id=agent_state.id, llm_config=llm_config)
 
-    delay = 5 if llm_config.model == "gpt-5" else 1.5
+    delay = 1.5
     _cancellation_task = asyncio.create_task(cancel_run_after_delay(client, agent_state.id, delay=delay))
 
     response = await client.agents.messages.stream(

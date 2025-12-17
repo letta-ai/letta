@@ -93,7 +93,7 @@ def agent_obj(client: Letta) -> AgentState:
         include_base_tools=True,
         tool_ids=[send_message_to_agent_tool.id],
         model="openai/gpt-4o",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         context_window_limit=32000,
     )
     yield agent_state_instance
@@ -107,7 +107,7 @@ def other_agent_obj(client: Letta) -> AgentState:
         include_base_tools=True,
         include_multi_agent_tools=False,
         model="openai/gpt-4o",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
         context_window_limit=32000,
     )
 
@@ -233,7 +233,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
         name="manager_agent",
         tool_ids=[send_message_to_agents_matching_tags_tool_id],
         model="openai/gpt-4o-mini",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
 
     # Create 2 non-matching worker agents (These should NOT get the message)
@@ -245,7 +245,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
             include_multi_agent_tools=False,
             tags=worker_tags_123,
             model="openai/gpt-4o-mini",
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         )
         worker_agents_123.append(worker_agent_state)
 
@@ -258,7 +258,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
             include_multi_agent_tools=False,
             tags=worker_tags_456,
             model="openai/gpt-4o-mini",
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         )
         worker_agents_456.append(worker_agent_state)
 
@@ -343,7 +343,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
         agent_type="letta_v1_agent",
         tool_ids=[send_message_to_agents_matching_tags_tool_id],
         model="openai/gpt-4o-mini",
-        embedding="letta/letta-free",
+        embedding="openai/text-embedding-3-small",
     )
 
     # Create 2 worker agents
@@ -356,7 +356,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
             tags=worker_tags,
             tool_ids=[roll_dice_tool.id],
             model="openai/gpt-4o-mini",
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         )
         worker_agents.append(worker_agent_state)
 

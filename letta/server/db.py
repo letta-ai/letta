@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -63,11 +64,22 @@ class DatabaseRegistry:
 
     @asynccontextmanager
     async def async_session(self) -> AsyncGenerator[AsyncSession, None]:
-        """Get an async database session."""
+        """Get an async database session.
+
+        Note: We explicitly handle asyncio.CancelledError separately because it's
+        a BaseException (not Exception) in Python 3.8+. Without this, cancelled
+        tasks would skip rollback() and return connections to the pool with
+        uncommitted transactions, causing "idle in transaction" connection leaks.
+        """
         async with async_session_factory() as session:
             try:
                 yield session
                 await session.commit()
+            except asyncio.CancelledError:
+                # Task was cancelled (client disconnect, timeout, explicit cancellation)
+                # Must rollback to avoid returning connection with open transaction
+                await session.rollback()
+                raise
             except Exception:
                 await session.rollback()
                 raise

@@ -42,7 +42,13 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreateBase
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    FunctionCall,
+    ToolCall,
+    UsageStatistics,
+    UsageStatisticsCompletionTokenDetails,
+    UsageStatisticsPromptTokenDetails,
+)
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
@@ -331,7 +337,7 @@ class LettaAgent(BaseAgent):
                     log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
                     try:
-                        response = llm_client.convert_response_to_chat_completion(
+                        response = await llm_client.convert_response_to_chat_completion(
                             response_data, in_context_messages, agent_state.llm_config
                         )
                     except ValueError as e:
@@ -675,7 +681,7 @@ class LettaAgent(BaseAgent):
                     log_event("agent.step.llm_response.received")  # [3^]
 
                     try:
-                        response = llm_client.convert_response_to_chat_completion(
+                        response = await llm_client.convert_response_to_chat_completion(
                             response_data, in_context_messages, agent_state.llm_config
                         )
                     except ValueError as e:
@@ -1077,6 +1083,15 @@ class LettaAgent(BaseAgent):
                     usage.completion_tokens += interface.output_tokens
                     usage.prompt_tokens += interface.input_tokens
                     usage.total_tokens += interface.input_tokens + interface.output_tokens
+                    # Aggregate cache and reasoning tokens if available from streaming interface (handle None defaults)
+                    if hasattr(interface, "cached_tokens") and interface.cached_tokens is not None:
+                        usage.cached_input_tokens = (usage.cached_input_tokens or 0) + interface.cached_tokens
+                    if hasattr(interface, "cache_read_tokens") and interface.cache_read_tokens is not None:
+                        usage.cached_input_tokens = (usage.cached_input_tokens or 0) + interface.cache_read_tokens
+                    if hasattr(interface, "cache_creation_tokens") and interface.cache_creation_tokens is not None:
+                        usage.cache_write_tokens = (usage.cache_write_tokens or 0) + interface.cache_creation_tokens
+                    if hasattr(interface, "reasoning_tokens") and interface.reasoning_tokens is not None:
+                        usage.reasoning_tokens = (usage.reasoning_tokens or 0) + interface.reasoning_tokens
                     MetricRegistry().message_output_tokens.record(
                         usage.completion_tokens, dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model})
                     )
@@ -1124,6 +1139,23 @@ class LettaAgent(BaseAgent):
 
                     # Update step with actual usage now that we have it (if step was created)
                     if logged_step:
+                        # Build detailed token breakdowns from LettaUsageStatistics
+                        # Use `is not None` to capture 0 values (meaning "provider reported 0 cached/reasoning tokens")
+                        # Only include fields that were actually reported by the provider
+                        prompt_details = None
+                        if usage.cached_input_tokens is not None or usage.cache_write_tokens is not None:
+                            prompt_details = UsageStatisticsPromptTokenDetails(
+                                cached_tokens=usage.cached_input_tokens if usage.cached_input_tokens is not None else None,
+                                cache_read_tokens=usage.cached_input_tokens if usage.cached_input_tokens is not None else None,
+                                cache_creation_tokens=usage.cache_write_tokens if usage.cache_write_tokens is not None else None,
+                            )
+
+                        completion_details = None
+                        if usage.reasoning_tokens is not None:
+                            completion_details = UsageStatisticsCompletionTokenDetails(
+                                reasoning_tokens=usage.reasoning_tokens,
+                            )
+
                         await self.step_manager.update_step_success_async(
                             self.actor,
                             step_id,
@@ -1131,6 +1163,8 @@ class LettaAgent(BaseAgent):
                                 completion_tokens=usage.completion_tokens,
                                 prompt_tokens=usage.prompt_tokens,
                                 total_tokens=usage.total_tokens,
+                                prompt_tokens_details=prompt_details,
+                                completion_tokens_details=completion_details,
                             ),
                             stop_reason,
                         )
@@ -1869,7 +1903,7 @@ class LettaAgent(BaseAgent):
             agent_step_span.add_event(name="tool_execution_started")
 
         # Decrypt environment variable values
-        sandbox_env_vars = {var.key: var.get_value_secret().get_plaintext() for var in agent_state.secrets}
+        sandbox_env_vars = {var.key: var.value_enc.get_plaintext() if var.value_enc else None for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

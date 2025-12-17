@@ -241,6 +241,19 @@ def create_application() -> "FastAPI":
             os.environ.setdefault("DD_PROFILING_MEMORY_ENABLED", str(telemetry_settings.datadog_profiling_memory_enabled).lower())
             os.environ.setdefault("DD_PROFILING_HEAP_ENABLED", str(telemetry_settings.datadog_profiling_heap_enabled).lower())
 
+            # Note: DD_LOGS_INJECTION, DD_APPSEC_ENABLED, DD_IAST_ENABLED, DD_APPSEC_SCA_ENABLED
+            # are set via deployment configs and automatically picked up by ddtrace
+
+            # Initialize Datadog tracer for APM (distributed tracing)
+            import ddtrace
+
+            ddtrace.patch_all()  # Auto-instrument FastAPI, HTTP, DB, etc.
+            logger.info(
+                f"Datadog tracer initialized: env={dd_env}, "
+                f"service={telemetry_settings.datadog_service_name}, "
+                f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}"
+            )
+
             if telemetry_settings.datadog_profiling_enabled:
                 from ddtrace.profiling import Profiler
 
@@ -265,7 +278,7 @@ def create_application() -> "FastAPI":
                     f"agent={telemetry_settings.datadog_agent_host}:{telemetry_settings.datadog_agent_port}{git_info}"
                 )
         except Exception as e:
-            logger.error(f"Failed to initialize Datadog profiling: {e}", exc_info=True)
+            logger.error(f"Failed to initialize Datadog tracing/profiling: {e}", exc_info=True)
             if SENTRY_ENABLED:
                 sentry_sdk.capture_exception(e)
             # Don't fail application startup if Datadog initialization fails
@@ -708,6 +721,7 @@ def start_server(
                 timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
                 ssl_keyfile="certs/localhost-key.pem",
                 ssl_certfile="certs/localhost.pem",
+                access_log=False,
             )
 
     else:
@@ -746,4 +760,5 @@ def start_server(
                 workers=settings.uvicorn_workers,
                 reload=reload or settings.uvicorn_reload,
                 timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
+                access_log=False,
             )

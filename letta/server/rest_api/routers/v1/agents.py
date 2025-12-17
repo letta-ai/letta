@@ -16,6 +16,7 @@ from letta.agents.agent_loop import AgentLoop
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.letta_agent import LettaAgent
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.errors import (
@@ -24,6 +25,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     PendingApprovalError,
+    RunCancelError,
 )
 from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -616,11 +618,9 @@ async def run_tool_for_agent(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # Get agent with tools and environment variables
+    # Get agent with all relationships
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id=agent_id,
-        actor=actor,
-        include_relationships=["tools", "tool_exec_environment_variables"],
+        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
     )
 
     # Find the tool by name among attached tools
@@ -641,7 +641,7 @@ async def run_tool_for_agent(
     sandbox_env_vars = {}
     if agent.tool_exec_environment_variables:
         for env_var in agent.tool_exec_environment_variables:
-            sandbox_env_vars[env_var.key] = env_var.value
+            sandbox_env_vars[env_var.key] = env_var.value_enc.get_plaintext() if env_var.value_enc else None
 
     # Create tool execution manager and execute the tool
     from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
@@ -663,6 +663,11 @@ async def run_tool_for_agent(
         tool=tool,
     )
 
+    # don't return a result if the tool execution failed
+    if tool_execution_result.status == "error":
+        tool_execution_result.func_return = None
+    # remove deprecated agent_state field
+    tool_execution_result.agent_state = None
     return tool_execution_result
 
 
@@ -1656,6 +1661,7 @@ async def cancel_message(
 
     Note to cancel active runs associated with an agent, redis is required.
     """
+    # TODO: WHY DOES THIS CANCEL A LIST OF RUNS?
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
@@ -1677,17 +1683,24 @@ async def cancel_message(
             run_ids = [run_id]
 
     results = {}
+    failed_to_cancel = []
     for run_id in run_ids:
         run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
         if run.metadata.get("lettuce"):
             lettuce_client = await LettuceClient.create()
             await lettuce_client.cancel(run_id)
-        success = await server.run_manager.update_run_by_id_async(
-            run_id=run_id,
-            update=RunUpdate(status=RunStatus.cancelled),
-            actor=actor,
-        )
-        results[run_id] = "cancelled" if success else "failed"
+        try:
+            run = await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
+        except Exception as e:
+            results[run_id] = "failed"
+            logger.error(f"Failed to cancel run {run_id}: {str(e)}")
+            failed_to_cancel.append(run_id)
+            continue
+        results[run_id] = "cancelled"
+        logger.info(f"Cancelled run {run_id}")
+
+    if failed_to_cancel:
+        raise RunCancelError(f"Failed to cancel runs: {failed_to_cancel}")
     return results
 
 
@@ -1806,7 +1819,7 @@ async def _process_message_background(
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed),
+            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
             actor=actor,
         )
     except Exception as e:
@@ -1816,7 +1829,7 @@ async def _process_message_background(
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed),
+            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
             actor=actor,
         )
     finally:
@@ -1948,13 +1961,15 @@ async def send_message_async(
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
             from letta.services.run_manager import RunManager
 
+            error_str = str(e)
+
             async def update_failed_run():
                 runs_manager = RunManager()
                 from letta.schemas.enums import RunStatus
 
                 await runs_manager.update_run_by_id_async(
                     run_id=run.id,
-                    update=RunUpdate(status=RunStatus.failed),
+                    update=RunUpdate(status=RunStatus.failed, metadata={"error": error_str}),
                     actor=actor,
                 )
 
@@ -2103,15 +2118,14 @@ async def summarize_messages(
     ]
 
     if agent_eligible and model_compatible:
-        agent_loop = LettaAgentV2(agent_state=agent, actor=actor)
+        agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-        await agent_loop.summarize_conversation_history(
-            in_context_messages=in_context_messages,
-            new_letta_messages=[],
-            total_tokens=None,
-            force=True,
+        summary_message, messages = await agent_loop.compact(
+            messages=in_context_messages,
         )
-        # Summarization completed, return 204 No Content
+
+        # update the agent state
+        await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

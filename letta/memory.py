@@ -50,59 +50,60 @@ def _format_summary_history(message_history: List[Message]):
     return "\n".join([f"{m.role}: {get_message_text(m.content)}" for m in message_history])
 
 
-@trace_method
-def summarize_messages(
-    agent_state: AgentState,
-    message_sequence_to_summarize: List[Message],
-    actor: "User",
-):
-    """Summarize a message sequence using GPT"""
-    # we need the context_window
-    context_window = agent_state.llm_config.context_window
-
-    summary_prompt = SUMMARY_PROMPT_SYSTEM
-    summary_input = _format_summary_history(message_sequence_to_summarize)
-    summary_input_tkns = count_tokens(summary_input)
-    if summary_input_tkns > summarizer_settings.memory_warning_threshold * context_window:
-        trunc_ratio = (summarizer_settings.memory_warning_threshold * context_window / summary_input_tkns) * 0.8  # For good measure...
-        cutoff = int(len(message_sequence_to_summarize) * trunc_ratio)
-        summary_input = str(
-            [summarize_messages(agent_state, message_sequence_to_summarize=message_sequence_to_summarize[:cutoff], actor=actor)]
-            + message_sequence_to_summarize[cutoff:]
-        )
-
-    dummy_agent_id = agent_state.id
-    message_sequence = [
-        Message(agent_id=dummy_agent_id, role=MessageRole.system, content=[TextContent(text=summary_prompt)]),
-        Message(agent_id=dummy_agent_id, role=MessageRole.assistant, content=[TextContent(text=MESSAGE_SUMMARY_REQUEST_ACK)]),
-        Message(agent_id=dummy_agent_id, role=MessageRole.user, content=[TextContent(text=summary_input)]),
-    ]
-
-    # TODO: We need to eventually have a separate LLM config for the summarizer LLM
-    llm_config_no_inner_thoughts = agent_state.llm_config.model_copy(deep=True)
-    llm_config_no_inner_thoughts.put_inner_thoughts_in_kwargs = False
-
-    llm_client = LLMClient.create(
-        provider_type=agent_state.llm_config.model_endpoint_type,
-        put_inner_thoughts_first=False,
-        actor=actor,
-    )
-    # try to use new client, otherwise fallback to old flow
-    # TODO: we can just directly call the LLM here?
-    if llm_client:
-        response = llm_client.send_llm_request(
-            agent_type=agent_state.agent_type,
-            messages=message_sequence,
-            llm_config=llm_config_no_inner_thoughts,
-        )
-    else:
-        response = create(
-            llm_config=llm_config_no_inner_thoughts,
-            user_id=agent_state.created_by_id,
-            messages=message_sequence,
-            stream=False,
-        )
-
-    printd(f"summarize_messages gpt reply: {response.choices[0]}")
-    reply = response.choices[0].message.content
-    return reply
+# @trace_method
+# def summarize_messages(
+#    agent_state: AgentState,
+#    message_sequence_to_summarize: List[Message],
+#    actor: "User",
+# ):
+#    """Summarize a message sequence using GPT"""
+#    # we need the context_window
+#    context_window = agent_state.llm_config.context_window
+#
+#    summary_prompt = SUMMARY_PROMPT_SYSTEM
+#    summary_input = _format_summary_history(message_sequence_to_summarize)
+#    summary_input_tkns = count_tokens(summary_input)
+#    if summary_input_tkns > summarizer_settings.memory_warning_threshold * context_window:
+#        trunc_ratio = (summarizer_settings.memory_warning_threshold * context_window / summary_input_tkns) * 0.8  # For good measure...
+#        cutoff = int(len(message_sequence_to_summarize) * trunc_ratio)
+#        summary_input = str(
+#            [summarize_messages(agent_state, message_sequence_to_summarize=message_sequence_to_summarize[:cutoff], actor=actor)]
+#            + message_sequence_to_summarize[cutoff:]
+#        )
+#
+#    dummy_agent_id = agent_state.id
+#    message_sequence = [
+#        Message(agent_id=dummy_agent_id, role=MessageRole.system, content=[TextContent(text=summary_prompt)]),
+#        Message(agent_id=dummy_agent_id, role=MessageRole.assistant, content=[TextContent(text=MESSAGE_SUMMARY_REQUEST_ACK)]),
+#        Message(agent_id=dummy_agent_id, role=MessageRole.user, content=[TextContent(text=summary_input)]),
+#    ]
+#
+#    # TODO: We need to eventually have a separate LLM config for the summarizer LLM
+#    llm_config_no_inner_thoughts = agent_state.llm_config.model_copy(deep=True)
+#    llm_config_no_inner_thoughts.put_inner_thoughts_in_kwargs = False
+#
+#    llm_client = LLMClient.create(
+#        provider_type=agent_state.llm_config.model_endpoint_type,
+#        put_inner_thoughts_first=False,
+#        actor=actor,
+#    )
+#    # try to use new client, otherwise fallback to old flow
+#    # TODO: we can just directly call the LLM here?
+#    if llm_client:
+#        response = llm_client.send_llm_request(
+#            agent_type=agent_state.agent_type,
+#            messages=message_sequence,
+#            llm_config=llm_config_no_inner_thoughts,
+#        )
+#    else:
+#        response = create(
+#            llm_config=llm_config_no_inner_thoughts,
+#            user_id=agent_state.created_by_id,
+#            messages=message_sequence,
+#            stream=False,
+#        )
+#
+#    printd(f"summarize_messages gpt reply: {response.choices[0]}")
+#    reply = response.choices[0].message.content
+#    return reply
+#

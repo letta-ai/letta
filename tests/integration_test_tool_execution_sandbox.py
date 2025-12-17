@@ -228,7 +228,7 @@ def agent_state(server):
             include_base_tools=True,
             model="openai/gpt-4o-mini",
             tags=["test_agents"],
-            embedding="letta/letta-free",
+            embedding="openai/text-embedding-3-small",
         ),
         actor=actor,
     )
@@ -406,22 +406,22 @@ async def test_tool_with_client_injection(disable_e2b_api_key, server: SyncServe
     """Test that tools can access injected letta_client and agent_id to modify agent blocks."""
 
     # Create a tool that uses the injected client and agent_id to actually clear a memory block
+    # Note: `client` is always available as a variable in the sandbox scope
     memory_clear_source = '''
-def memory_clear(label: str, agent_id: str, client: "Letta"):
+def memory_clear(label: str, agent_id: str):
     """Test tool that clears a memory block using the injected client.
 
     Args:
         label: The label of the memory block to clear
         agent_id: The agent's ID (injected by Letta system)
-        client: The Letta client instance (injected by Letta system)
     """
     # Verify that agent_id was injected
     if not agent_id or not isinstance(agent_id, str):
         return f"ERROR: agent_id not properly injected: {agent_id}"
 
-    # Verify that client was injected
+    # Verify that client is available in scope (always injected)
     if not client or not hasattr(client, 'agents'):
-        return f"ERROR: client not properly injected: {client}"
+        return f"ERROR: client not available in scope: {client}"
 
     # Use the injected client to actually clear the memory block
     try:
@@ -497,13 +497,15 @@ def memory_clear(label: str, agent_id: str, client: "Letta"):
     # Simulate tool execution with the reserved keywords
     # This would normally happen during agent execution, but we'll test the tool directly
     # Create the sandbox for the tool
-    sandbox = AsyncToolSandboxLocal(tool_name="memory_clear", args={"label": "test_block"}, user=test_user, tool_object=created_tool)
+    sandbox = AsyncToolSandboxLocal(
+        tool_name="memory_clear", args={"label": "test_block"}, user=test_user, tool_id=created_tool.id, tool_object=created_tool
+    )
 
     # Initialize the sandbox to detect reserved keywords
     await sandbox._init_async()
 
-    # Verify that the tool correctly detects the need for injection
-    assert sandbox.inject_letta_client == True  # Should detect 'client' parameter
+    # Verify that injection is configured correctly
+    assert sandbox.inject_letta_client == True  # Client is always injected
     assert sandbox.inject_agent_id == True  # Should detect 'agent_id' parameter
 
     # Generate the execution script to verify injection code is present

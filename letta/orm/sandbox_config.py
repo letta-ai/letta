@@ -46,7 +46,7 @@ class SandboxEnvironmentVariable(SqlalchemyBase, OrganizationMixin, SandboxConfi
 
     id: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
     key: Mapped[str] = mapped_column(String, nullable=False, doc="The name of the environment variable.")
-    value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable.")
+    value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable (deprecated, use value_enc).")
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="An optional description of the environment variable.")
 
     # encrypted columns
@@ -71,7 +71,7 @@ class AgentEnvironmentVariable(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"agent-env-{uuid.uuid4()}")
     key: Mapped[str] = mapped_column(String, nullable=False, doc="The name of the environment variable.")
-    value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable.")
+    value: Mapped[str] = mapped_column(String, nullable=False, doc="The value of the environment variable (deprecated, use value_enc).")
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="An optional description of the environment variable.")
 
     # encrypted columns

@@ -31,6 +31,10 @@ class AssistantMessage(BaseModel):
     role: str = "assistant"
     name: Optional[str] = None
     tool_calls: Optional[List[ToolCall]] = None
+    reasoning_content: Optional[str] = None
+    reasoning_content_signature: Optional[str] = None
+    redacted_reasoning_content: Optional[str] = None
+    omitted_reasoning_content: Optional[bool] = None
 
 
 class ToolMessage(BaseModel):
@@ -142,7 +146,7 @@ class ChatCompletionRequest(BaseModel):
     parallel_tool_calls: Optional[bool] = None
     instructions: Optional[str] = None
     verbosity: Optional[Literal["low", "medium", "high"]] = None  # For verbosity control in GPT-5 models
-    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]] = (
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]] = (
         None  # For reasoning effort control in reasoning models
     )
 

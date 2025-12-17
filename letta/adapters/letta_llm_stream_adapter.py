@@ -5,6 +5,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
@@ -116,11 +117,47 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             if not output_tokens and hasattr(self.interface, "fallback_output_tokens"):
                 output_tokens = self.interface.fallback_output_tokens
 
+            # Extract cache token data (OpenAI/Gemini use cached_tokens, Anthropic uses cache_read_tokens)
+            # None means provider didn't report, 0 means provider reported 0
+            cached_input_tokens = None
+            if hasattr(self.interface, "cached_tokens") and self.interface.cached_tokens is not None:
+                cached_input_tokens = self.interface.cached_tokens
+            elif hasattr(self.interface, "cache_read_tokens") and self.interface.cache_read_tokens is not None:
+                cached_input_tokens = self.interface.cache_read_tokens
+
+            # Extract cache write tokens (Anthropic only)
+            cache_write_tokens = None
+            if hasattr(self.interface, "cache_creation_tokens") and self.interface.cache_creation_tokens is not None:
+                cache_write_tokens = self.interface.cache_creation_tokens
+
+            # Extract reasoning tokens (OpenAI o1/o3 models use reasoning_tokens, Gemini uses thinking_tokens)
+            reasoning_tokens = None
+            if hasattr(self.interface, "reasoning_tokens") and self.interface.reasoning_tokens is not None:
+                reasoning_tokens = self.interface.reasoning_tokens
+            elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens is not None:
+                reasoning_tokens = self.interface.thinking_tokens
+
+            # Calculate actual total input tokens
+            #
+            # ANTHROPIC: input_tokens is NON-cached only, must add cache tokens
+            #   Total = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
+            #
+            # OPENAI/GEMINI: input_tokens is already TOTAL
+            #   cached_tokens is a subset, NOT additive
+            is_anthropic = hasattr(self.interface, "cache_read_tokens") or hasattr(self.interface, "cache_creation_tokens")
+            if is_anthropic:
+                actual_input_tokens = (input_tokens or 0) + (cached_input_tokens or 0) + (cache_write_tokens or 0)
+            else:
+                actual_input_tokens = input_tokens or 0
+
             self.usage = LettaUsageStatistics(
                 step_count=1,
                 completion_tokens=output_tokens or 0,
-                prompt_tokens=input_tokens or 0,
-                total_tokens=(input_tokens or 0) + (output_tokens or 0),
+                prompt_tokens=actual_input_tokens,
+                total_tokens=actual_input_tokens + (output_tokens or 0),
+                cached_input_tokens=cached_input_tokens,
+                cache_write_tokens=cache_write_tokens,
+                reasoning_tokens=reasoning_tokens,
             )
         else:
             # Default usage statistics if not available
@@ -135,6 +172,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     def supports_token_streaming(self) -> bool:
         return True
 
+    @trace_method
     def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
         """
         Log provider trace data for telemetry purposes in a fire-and-forget manner.
@@ -147,32 +185,45 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             step_id: The step ID associated with this request for logging purposes
             actor: The user associated with this request for logging purposes
         """
-        if step_id is None or actor is None or not settings.track_provider_trace:
+        if step_id is None or actor is None:
             return
 
-        safe_create_task(
-            self.telemetry_manager.create_provider_trace_async(
-                actor=actor,
-                provider_trace_create=ProviderTraceCreate(
-                    request_json=self.request_data,
-                    response_json={
-                        "content": {
-                            "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
-                            "reasoning": [content.model_dump_json() for content in self.reasoning_content],
-                        },
-                        "id": self.interface.message_id,
-                        "model": self.interface.model,
-                        "role": "assistant",
-                        # "stop_reason": "",
-                        # "stop_sequence": None,
-                        "type": "message",
-                        "usage": {
-                            "input_tokens": self.usage.prompt_tokens,
-                            "output_tokens": self.usage.completion_tokens,
-                        },
-                    },
-                    step_id=step_id,  # Use original step_id for telemetry
-                ),
-            ),
-            label="create_provider_trace",
+        response_json = {
+            "content": {
+                "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
+                "reasoning": [content.model_dump_json() for content in self.reasoning_content],
+            },
+            "id": self.interface.message_id,
+            "model": self.interface.model,
+            "role": "assistant",
+            # "stop_reason": "",
+            # "stop_sequence": None,
+            "type": "message",
+            "usage": {
+                "input_tokens": self.usage.prompt_tokens,
+                "output_tokens": self.usage.completion_tokens,
+            },
+        }
+
+        # Store response data for future reference
+        self.response_data = response_json
+
+        log_attributes(
+            {
+                "request_data": safe_json_dumps(self.request_data),
+                "response_data": safe_json_dumps(response_json),
+            }
         )
+
+        if settings.track_provider_trace:
+            safe_create_task(
+                self.telemetry_manager.create_provider_trace_async(
+                    actor=actor,
+                    provider_trace_create=ProviderTraceCreate(
+                        request_json=self.request_data,
+                        response_json=response_json,
+                        step_id=step_id,  # Use original step_id for telemetry
+                    ),
+                ),
+                label="create_provider_trace",
+            )

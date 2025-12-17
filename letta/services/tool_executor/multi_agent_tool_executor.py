@@ -80,10 +80,13 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             f"{message}"
         )
 
-        # Run concurrent requests and collect their return values.
-        # Note: Do not wrap with safe_create_task here — it swallows return values (returns None).
-        coros = [self._process_agent(agent_state=a_state, message=augmented_message, actor=actor) for a_state in matching_agents]
-        results = await asyncio.gather(*coros)
+        # Process agents sequentially to avoid exhausting the database connection pool.
+        # When many agents match the tags, concurrent execution can create too many simultaneous
+        # database connections, causing pool exhaustion errors.
+        results = []
+        for agent_state in matching_agents:
+            result = await self._process_agent(agent_state=agent_state, message=augmented_message, actor=actor)
+            results.append(result)
         return str(results)
 
     async def _process_agent(self, agent_state: AgentState, message: str, actor: User) -> Dict[str, Any]:
@@ -127,7 +130,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             }
 
     async def send_message_to_agent_async(self, agent_state: AgentState, actor: User, message: str, other_agent_id: str) -> str:
-        if settings.environment == "PRODUCTION":
+        if settings.environment == "prod":
             raise RuntimeError("This tool is not allowed to be run on Letta Cloud.")
 
         # 1) Build the prefixed system‐message

@@ -56,7 +56,8 @@ class EmbeddingConfig(BaseModel):
                 embedding_model="text-embedding-3-small",
                 embedding_endpoint_type="openai",
                 embedding_endpoint="https://api.openai.com/v1",
-                embedding_dim=2000,
+                # OpenAI default dimension for text-embedding-3-small.
+                embedding_dim=1536,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
         elif model_name == "letta":

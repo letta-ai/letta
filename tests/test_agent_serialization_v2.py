@@ -227,9 +227,11 @@ async def test_agent(server: SyncServer, default_user, default_organization, tes
 
 @pytest.fixture(scope="function")
 def embedding_handle_override():
-    current_handle = EmbeddingConfig.default_config(provider="openai").handle
-    assert current_handle != "letta/letta-free"  # make sure its different
-    return "letta/letta-free"
+    # Use a non-default OpenAI embedding handle for override tests.
+    # NOTE: We avoid using hosted Letta embeddings in tests.
+    current_handle = EmbeddingConfig.default_config(provider="openai").handle or "openai/text-embedding-3-small"
+    assert current_handle != "openai/text-embedding-ada-002"  # make sure it's different
+    return "openai/text-embedding-ada-002"
 
 
 @pytest.fixture(scope="function")

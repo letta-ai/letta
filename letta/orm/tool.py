@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.mixins import OrganizationMixin
+from letta.orm.mixins import OrganizationMixin, ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 
 # TODO everything in functions should live in this model
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from letta.orm.organization import Organization
 
 
-class Tool(SqlalchemyBase, OrganizationMixin):
+class Tool(SqlalchemyBase, OrganizationMixin, ProjectMixin):
     """Represents an available tool that the LLM can invoke.
 
     NOTE: polymorphic inheritance makes more sense here as a TODO. We want a superset of tools
@@ -30,6 +30,8 @@ class Tool(SqlalchemyBase, OrganizationMixin):
     __table_args__ = (
         UniqueConstraint("name", "organization_id", name="uix_name_organization"),
         Index("ix_tools_created_at_name", "created_at", "name"),
+        Index("ix_tools_organization_id", "organization_id"),
+        Index("ix_tools_organization_id_name", "organization_id", "name"),
     )
 
     name: Mapped[str] = mapped_column(doc="The display name of the tool.")

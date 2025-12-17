@@ -24,6 +24,7 @@ from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.utils import calculate_file_defaults_based_on_context_window, create_random_username
 
 
@@ -86,6 +87,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings used by the agent.")
+    compaction_settings: Optional[CompactionSettings] = Field(
+        None, description="The compaction settings configuration used for compaction."
+    )
 
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
@@ -161,10 +165,11 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     )
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
-        # Get environment variables for this agent specifically
+        # Get environment variables for this agent (value is already decrypted via from_orm_async)
         per_agent_env_vars = {}
         for agent_env_var_obj in self.secrets:
-            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
+            # Use the pre-decrypted value field (populated by from_orm_async)
+            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value or ""
         return per_agent_env_vars
 
     @model_validator(mode="after")
@@ -241,6 +246,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
+    compaction_settings: Optional[CompactionSettings] = Field(
+        None, description="The compaction settings configuration used for compaction."
+    )
 
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(
@@ -434,6 +442,10 @@ class UpdateAgent(BaseModel):
     )
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
     model_settings: Optional[ModelSettingsUnion] = Field(None, description="The model settings for the agent.")
+    compaction_settings: Optional[CompactionSettings] = Field(
+        None, description="The compaction settings configuration used for compaction."
+    )
+
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     reasoning: Optional[bool] = Field(
         None,

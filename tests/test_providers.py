@@ -16,13 +16,14 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMProvider,
 )
+from letta.schemas.secret import Secret
 from letta.settings import model_settings
 
 
 def test_openai():
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
     models = provider.list_llm_models()
@@ -38,7 +39,7 @@ def test_openai():
 async def test_openai_async():
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
     models = await provider.list_llm_models_async()
@@ -54,7 +55,7 @@ async def test_openai_async():
 async def test_anthropic():
     provider = AnthropicProvider(
         name="anthropic",
-        api_key=model_settings.anthropic_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.anthropic_api_key),
     )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
@@ -67,7 +68,7 @@ async def test_googleai():
     assert api_key is not None
     provider = GoogleAIProvider(
         name="google_ai",
-        api_key=api_key,
+        api_key_enc=Secret.from_plaintext(api_key),
     )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
@@ -97,7 +98,7 @@ async def test_google_vertex():
 @pytest.mark.skipif(model_settings.deepseek_api_key is None, reason="Only run if DEEPSEEK_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_deepseek():
-    provider = DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key)
+    provider = DeepSeekProvider(name="deepseek", api_key_enc=Secret.from_plaintext(model_settings.deepseek_api_key))
     models = await provider.list_llm_models_async()
     assert len(models) > 0
     assert models[0].handle == f"{provider.name}/{models[0].model}"
@@ -108,7 +109,7 @@ async def test_deepseek():
 async def test_groq():
     provider = GroqProvider(
         name="groq",
-        api_key=model_settings.groq_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.groq_api_key),
     )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
@@ -120,7 +121,7 @@ async def test_groq():
 async def test_azure():
     provider = AzureProvider(
         name="azure",
-        api_key=model_settings.azure_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.azure_api_key),
         base_url=model_settings.azure_base_url,
         api_version=model_settings.azure_api_version,
     )
@@ -138,7 +139,7 @@ async def test_azure():
 async def test_together():
     provider = TogetherProvider(
         name="together",
-        api_key=model_settings.together_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.together_api_key),
         default_prompt_formatter=model_settings.default_prompt_formatter,
     )
     models = await provider.list_llm_models_async()
@@ -161,7 +162,6 @@ async def test_ollama():
     provider = OllamaProvider(
         name="ollama",
         base_url=model_settings.ollama_base_url,
-        api_key=None,
         default_prompt_formatter=model_settings.default_prompt_formatter,
     )
     models = await provider.list_llm_models_async()
@@ -203,7 +203,7 @@ async def test_vllm():
 async def test_custom_anthropic():
     provider = AnthropicProvider(
         name="custom_anthropic",
-        api_key=model_settings.anthropic_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.anthropic_api_key),
     )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
@@ -214,7 +214,7 @@ def test_provider_context_window():
     """Test that providers implement context window methods correctly."""
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
 
@@ -230,7 +230,7 @@ async def test_provider_context_window_async():
     """Test that providers implement async context window methods correctly."""
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
 
@@ -244,7 +244,7 @@ def test_provider_handle_generation():
     """Test that providers generate handles correctly."""
     provider = OpenAIProvider(
         name="test_openai",
-        api_key="test_key",
+        api_key_enc=Secret.from_plaintext("test_key"),
         base_url="https://api.openai.com/v1",
     )
 
@@ -266,14 +266,14 @@ def test_provider_casting():
         name="test_provider",
         provider_type=ProviderType.openai,
         provider_category=ProviderCategory.base,
-        api_key="test_key",
+        api_key_enc=Secret.from_plaintext("test_key"),
         base_url="https://api.openai.com/v1",
     )
 
     cast_provider = base_provider.cast_to_subtype()
     assert isinstance(cast_provider, OpenAIProvider)
     assert cast_provider.name == "test_provider"
-    assert cast_provider.api_key == "test_key"
+    assert cast_provider.api_key_enc.get_plaintext() == "test_key"
 
 
 @pytest.mark.asyncio
@@ -281,7 +281,7 @@ async def test_provider_embedding_models_consistency():
     """Test that providers return consistent embedding model formats."""
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
 
@@ -301,7 +301,7 @@ async def test_provider_llm_models_consistency():
     """Test that providers return consistent LLM model formats."""
     provider = OpenAIProvider(
         name="openai",
-        api_key=model_settings.openai_api_key,
+        api_key_enc=Secret.from_plaintext(model_settings.openai_api_key),
         base_url=model_settings.openai_api_base,
     )
 
@@ -367,7 +367,7 @@ def test_reasoning_toggle_by_provider(
     expected_enable_reasoner: bool,
     expected_put_inner_thoughts_in_kwargs: bool,
     expected_max_reasoning_tokens: int,
-    expected_reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high"]],
+    expected_reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]],
 ):
     model_endpoint_type, model = handle.split("/")
     config = LLMConfig(

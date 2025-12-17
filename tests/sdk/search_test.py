@@ -15,7 +15,6 @@ from letta_client import Letta
 from letta_client.types import CreateBlockParam, MessageCreateParam
 
 from letta.config import LettaConfig
-from letta.schemas.message import MessageSearchResult
 from letta.schemas.tool import ToolSearchResult
 from letta.server.rest_api.routers.v1.passages import PassageSearchResult
 from letta.server.server import SyncServer
@@ -387,10 +386,12 @@ def test_message_search_basic(client: Letta, enable_message_embedding):
         time.sleep(10)
 
         # Test FTS search for messages
-        # Note: The endpoint returns LettaMessageUnion, not MessageSearchResult
+        # Note: The endpoint returns LettaMessageSearchResult (API schema)
+        # and we treat the response as generic dicts here to avoid tight
+        # coupling to internal server-side models.
         results = client.post(
             "/v1/messages/search",
-            cast_to=list[MessageSearchResult],
+            cast_to=list[dict[str, Any]],
             body={
                 "query": "capital Saudi Arabia",
                 "search_mode": "fts",
@@ -402,6 +403,17 @@ def test_message_search_basic(client: Letta, enable_message_embedding):
         if len(results) > 0:
             print(f"First result type: {type(results[0])}")
             print(f"First result keys: {results[0].keys() if isinstance(results[0], dict) else 'N/A'}")
+
+        for result in results:
+            assert "agent_id" in result, "Result should have agent_id field"
+
+            # created_at should always be present and parseable
+            assert "created_at" in result, "Result should have created_at field"
+            assert result["created_at"], "created_at should be set"
+            created_at = result["created_at"]
+            if isinstance(created_at, str):
+                # Handle both "+00:00" and "Z" suffixes
+                datetime.fromisoformat(created_at.replace("Z", "+00:00"))
 
         assert len(results) > 0, f"Should find at least one message. Got {len(results)} results."
 

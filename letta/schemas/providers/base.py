@@ -4,7 +4,7 @@ from letta.log import get_logger
 
 logger = get_logger(__name__)
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.embedding_config_overrides import EMBEDDING_HANDLE_OVERRIDES
@@ -25,9 +25,9 @@ class Provider(ProviderBase):
     name: str = Field(..., description="The name of the provider")
     provider_type: ProviderType = Field(..., description="The type of the provider")
     provider_category: ProviderCategory = Field(..., description="The category of the provider (base or byok)")
-    api_key: str | None = Field(None, description="API key or secret key used for requests to the provider.")
+    api_key: str | None = Field(None, description="API key or secret key used for requests to the provider.", deprecated=True)
     base_url: str | None = Field(None, description="Base URL for the provider.")
-    access_key: str | None = Field(None, description="Access key used for requests to the provider.")
+    access_key: str | None = Field(None, description="Access key used for requests to the provider.", deprecated=True)
     region: str | None = Field(None, description="Region used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
     organization_id: str | None = Field(None, description="The organization id of the user")
@@ -38,52 +38,49 @@ class Provider(ProviderBase):
     api_key_enc: Secret | None = Field(None, description="Encrypted API key as Secret object")
     access_key_enc: Secret | None = Field(None, description="Encrypted access key as Secret object")
 
+    # TODO: remove these checks once fully migrated to encrypted fields
+    def __setattr__(self, name: str, value) -> None:
+        if name in ("api_key", "access_key"):
+            logger.warning(
+                f"DEPRECATION: Setting '{name}' directly is deprecated. Use the encrypted fields (`api_key_enc`/`access_key_enc`) instead."
+            )
+        return super().__setattr__(name, value)
+
+    def __getattribute__(self, name: str):
+        if name in ("api_key", "access_key"):
+            logger.warning(
+                f"DEPRECATION: Accessing '{name}' directly is deprecated. "
+                "Use the encrypted fields (`api_key_enc`/`access_key_enc`) instead."
+            )
+        return super().__getattribute__(name)
+
+    @field_validator("api_key")
+    def deprecate_api_key(cls, v: str):
+        if v:
+            logger.warning(
+                "DEPRECATION: Creating provider with 'api_key' directly is deprecated. Use the encrypted fields (`api_key_enc`) instead."
+            )
+        return v
+
+    @field_validator("access_key")
+    def deprecate_access_key(cls, v: str):
+        if v:
+            logger.warning(
+                "DEPRECATION: Creating provider with 'access_key' directly is deprecated. Use the encrypted fields (`access_key_enc`) instead."
+            )
+        return v
+
     @model_validator(mode="after")
     def default_base_url(self):
         # Set default base URL
         if self.provider_type == ProviderType.openai and self.base_url is None:
             self.base_url = model_settings.openai_api_base
+
         return self
 
     def resolve_identifier(self):
         if not self.id:
             self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
-
-    def get_api_key_secret(self) -> Secret:
-        """Get the API key as a Secret object, preferring encrypted over plaintext."""
-        # If api_key_enc is already a Secret, return it
-        if self.api_key_enc is not None:
-            return self.api_key_enc
-        # Otherwise, create from plaintext api_key
-        return Secret.from_db(None, self.api_key)
-
-    def get_access_key_secret(self) -> Secret:
-        """Get the access key as a Secret object, preferring encrypted over plaintext."""
-        # If access_key_enc is already a Secret, return it
-        if self.access_key_enc is not None:
-            return self.access_key_enc
-        # Otherwise, create from plaintext access_key
-        return Secret.from_db(None, self.access_key)
-
-    def set_api_key_secret(self, secret: Secret) -> None:
-        """Set API key from a Secret object, directly storing the Secret."""
-        self.api_key_enc = secret
-        # Also update plaintext field for dual-write during migration
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.api_key = secret_dict["plaintext"]
-        else:
-            self.api_key = None
-
-    def set_access_key_secret(self, secret: Secret) -> None:
-        """Set access key from a Secret object, directly storing the Secret."""
-        self.access_key_enc = secret
-        # Also update plaintext field for dual-write during migration
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.access_key = secret_dict["plaintext"]
-        else:
-            self.access_key = None
 
     async def check_api_key(self):
         """Check if the API key is valid for the provider"""

@@ -148,6 +148,7 @@ async def count_tools(
         search=search,
         return_only_letta_tools=return_only_letta_tools,
         exclude_letta_tools=exclude_letta_tools,
+        project_id=headers.project_id,
     )
 
 
@@ -268,6 +269,7 @@ async def list_tools(
         tool_ids=final_tool_ids,
         search=search,
         return_only_letta_tools=return_only_letta_tools,
+        project_id=headers.project_id,
     )
 
 
@@ -322,6 +324,9 @@ async def create_tool(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     tool = Tool(**request.model_dump(exclude_unset=True))
+    # Set project_id from header if provided
+    if headers.project_id:
+        tool.project_id = headers.project_id
     modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
     return await server.tool_manager.create_or_update_tool_async(
         pydantic_tool=tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
@@ -339,8 +344,12 @@ async def upsert_tool(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     modal_sandbox_enabled = bool(headers.experimental_params.modal_sandbox) if headers.experimental_params else False
+    tool = Tool(**request.model_dump(exclude_unset=True))
+    # Set project_id from header if provided
+    if headers.project_id:
+        tool.project_id = headers.project_id
     tool = await server.tool_manager.create_or_update_tool_async(
-        pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
+        pydantic_tool=tool, actor=actor, modal_sandbox_enabled=modal_sandbox_enabled
     )
     return tool
 
@@ -914,7 +923,7 @@ async def generate_tool_from_prompt(
         tools=[tool],
     )
     response_data = await llm_client.request_async(request_data, llm_config)
-    response = llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
+    response = await llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
     output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
     pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
 

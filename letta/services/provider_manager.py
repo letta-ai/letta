@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple, Union
 
+from letta.log import get_logger
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -13,6 +14,8 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
+
+logger = get_logger(__name__)
 
 
 class ProviderManager:
@@ -56,6 +59,11 @@ class ProviderManager:
 
             # Create provider with the appropriate category
             provider_data = request.model_dump()
+
+            # Unset deprecated api_key and access_key as to not write plaintext values, api_key_enc and access_key_enc will be set below
+            provider_data.pop("api_key", None)
+            provider_data.pop("access_key", None)
+
             provider_data["provider_category"] = ProviderCategory.byok if is_byok else ProviderCategory.base
             provider = PydanticProvider(**provider_data)
 
@@ -71,10 +79,10 @@ class ProviderManager:
             provider.resolve_identifier()
 
             # Explicitly populate encrypted fields from plaintext
-            if provider.api_key is not None:
-                provider.api_key_enc = Secret.from_plaintext(provider.api_key)
-            if provider.access_key is not None:
-                provider.access_key_enc = Secret.from_plaintext(provider.access_key)
+            if request.api_key is not None:
+                provider.api_key_enc = Secret.from_plaintext(request.api_key)
+            if request.access_key is not None:
+                provider.access_key_enc = Secret.from_plaintext(request.access_key)
 
             new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
             await new_provider.create_async(session, actor=actor)
@@ -108,14 +116,10 @@ class ProviderManager:
                 if existing_provider.api_key_enc:
                     existing_secret = Secret.from_encrypted(existing_provider.api_key_enc)
                     existing_api_key = existing_secret.get_plaintext()
-                elif existing_provider.api_key:
-                    existing_api_key = existing_provider.api_key
 
                 # Only re-encrypt if different
                 if existing_api_key != update_data["api_key"]:
                     existing_provider.api_key_enc = Secret.from_plaintext(update_data["api_key"]).get_encrypted()
-                    # Keep plaintext for dual-write during migration
-                    existing_provider.api_key = update_data["api_key"]
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("api_key", None)
@@ -129,14 +133,10 @@ class ProviderManager:
                 if existing_provider.access_key_enc:
                     existing_secret = Secret.from_encrypted(existing_provider.access_key_enc)
                     existing_access_key = existing_secret.get_plaintext()
-                elif existing_provider.access_key:
-                    existing_access_key = existing_provider.access_key
 
                 # Only re-encrypt if different
                 if existing_access_key != update_data["access_key"]:
                     existing_provider.access_key_enc = Secret.from_plaintext(update_data["access_key"]).get_encrypted()
-                    # Keep plaintext for dual-write during migration
-                    existing_provider.access_key = update_data["access_key"]
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("access_key", None)
@@ -160,7 +160,15 @@ class ProviderManager:
             existing_provider = await ProviderModel.read_async(
                 db_session=session, identifier=provider_id, actor=actor, check_is_deleted=True
             )
+            existing_provider.api_key_enc = None
+            existing_provider.access_key_enc = None
+
+            # Only accessing these deprecated fields to clear, which may trigger a warning
             existing_provider.api_key = None
+            existing_provider.access_key = None
+
+            logger.info("Soft deleting provider with id: %s", provider_id)
+
             await existing_provider.update_async(session, actor=actor)
 
             # Soft delete in provider table
@@ -216,6 +224,11 @@ class ProviderManager:
 
             # Combine both lists
             all_providers = org_providers + global_providers
+
+            # Remove deprecated api_key and access_key fields from the response
+            for provider in all_providers:
+                provider.api_key = None
+                provider.access_key = None
 
             return [provider.to_pydantic() for provider in all_providers]
 
@@ -291,6 +304,9 @@ class ProviderManager:
                 result = await session.execute(stmt)
                 provider_model = result.scalar_one_or_none()
                 if provider_model:
+                    # Remove deprecated api_key and access_key fields from the response
+                    provider_model.api_key = None
+                    provider_model.access_key = None
                     return provider_model.to_pydantic()
                 else:
                     from letta.orm.errors import NoResultFound
@@ -309,8 +325,8 @@ class ProviderManager:
         providers = self.list_providers(name=provider_name, actor=actor)
         if providers:
             # Decrypt the API key before returning
-            api_key_secret = providers[0].get_api_key_secret()
-            return api_key_secret.get_plaintext()
+            api_key_secret = providers[0].api_key_enc
+            return api_key_secret.get_plaintext() if api_key_secret else None
         return None
 
     @enforce_types
@@ -319,8 +335,8 @@ class ProviderManager:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
         if providers:
             # Decrypt the API key before returning
-            api_key_secret = providers[0].get_api_key_secret()
-            return api_key_secret.get_plaintext()
+            api_key_secret = providers[0].api_key_enc
+            return api_key_secret.get_plaintext() if api_key_secret else None
         return None
 
     @enforce_types
@@ -331,10 +347,10 @@ class ProviderManager:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
         if providers:
             # Decrypt the credentials before returning
-            access_key_secret = providers[0].get_access_key_secret()
-            api_key_secret = providers[0].get_api_key_secret()
-            access_key = access_key_secret.get_plaintext()
-            secret_key = api_key_secret.get_plaintext()
+            access_key_secret = providers[0].access_key_enc
+            api_key_secret = providers[0].api_key_enc
+            access_key = access_key_secret.get_plaintext() if access_key_secret else None
+            secret_key = api_key_secret.get_plaintext() if api_key_secret else None
             region = providers[0].region
             return access_key, secret_key, region
         return None, None, None
@@ -347,8 +363,8 @@ class ProviderManager:
         providers = self.list_providers(name=provider_name, actor=actor)
         if providers:
             # Decrypt the API key before returning
-            api_key_secret = providers[0].get_api_key_secret()
-            api_key = api_key_secret.get_plaintext()
+            api_key_secret = providers[0].api_key_enc
+            api_key = api_key_secret.get_plaintext() if api_key_secret else None
             base_url = providers[0].base_url
             api_version = providers[0].api_version
             return api_key, base_url, api_version
@@ -362,8 +378,8 @@ class ProviderManager:
         providers = await self.list_providers_async(name=provider_name, actor=actor)
         if providers:
             # Decrypt the API key before returning
-            api_key_secret = providers[0].get_api_key_secret()
-            api_key = api_key_secret.get_plaintext()
+            api_key_secret = providers[0].api_key_enc
+            api_key = api_key_secret.get_plaintext() if api_key_secret else None
             base_url = providers[0].base_url
             api_version = providers[0].api_version
             return api_key, base_url, api_version
@@ -375,16 +391,16 @@ class ProviderManager:
         provider = PydanticProvider(
             name=provider_check.provider_type.value,
             provider_type=provider_check.provider_type,
-            api_key=provider_check.api_key,
+            api_key_enc=Secret.from_plaintext(provider_check.api_key),
             provider_category=ProviderCategory.byok,
-            access_key=provider_check.access_key,  # This contains the access key ID for Bedrock
+            access_key_enc=Secret.from_plaintext(provider_check.access_key) if provider_check.access_key else None,
             region=provider_check.region,
             base_url=provider_check.base_url,
             api_version=provider_check.api_version,
         ).cast_to_subtype()
 
         # TODO: add more string sanity checks here before we hit actual endpoints
-        if not provider.api_key:
+        if not provider.api_key_enc or not provider.api_key_enc.get_plaintext():
             raise ValueError("API key is required!")
 
         await provider.check_api_key()
@@ -423,15 +439,17 @@ class ProviderManager:
                 return
 
             # Create provider instance with necessary parameters
+            api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
+            access_key = provider.access_key_enc.get_plaintext() if provider.access_key_enc else None
             kwargs = {
                 "name": provider.name,
-                "api_key": provider.api_key,
+                "api_key": api_key,
                 "provider_category": provider.provider_category,
             }
             if provider.base_url:
                 kwargs["base_url"] = provider.base_url
-            if provider.access_key:
-                kwargs["access_key"] = provider.access_key
+            if access_key:
+                kwargs["access_key"] = access_key
             if provider.region:
                 kwargs["region"] = provider.region
             if provider.api_version:
@@ -498,11 +516,13 @@ class ProviderManager:
                         continue
 
                     # Convert Provider to ProviderCreate
+                    api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
+                    access_key = provider.access_key_enc.get_plaintext() if provider.access_key_enc else None
                     provider_create = ProviderCreate(
                         name=provider.name,
                         provider_type=provider.provider_type,
-                        api_key=provider.api_key or "",  # ProviderCreate requires api_key, use empty string if None
-                        access_key=provider.access_key,
+                        api_key=api_key or "",  # ProviderCreate requires api_key, use empty string if None
+                        access_key=access_key,
                         region=provider.region,
                         base_url=provider.base_url,
                         api_version=provider.api_version,

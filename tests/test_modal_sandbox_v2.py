@@ -377,6 +377,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="test_function",
             args={"x": 1, "y": 2},
             user=mock_user,
+            tool_id=mock_tool.id,
             tool_object=mock_tool,
             sandbox_config=mock_sandbox_config,
         )
@@ -396,6 +397,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="test_function",
             args={"x": 1, "y": 2},
             user=mock_user,
+            tool_id=mock_tool.id,
             tool_object=mock_tool,
             sandbox_config=mock_sandbox_config,
         )
@@ -409,6 +411,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="test_function",
             args={"x": 1, "y": 2},
             user=mock_user,
+            tool_id=mock_tool.id,
             tool_object=mock_tool,
             sandbox_config=mock_sandbox_config,
         )
@@ -434,6 +437,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="test_function",
             args={"x": 1, "y": 2},
             user=mock_user,
+            tool_id=mock_tool.id,
             tool_object=mock_tool,
         )
 
@@ -510,6 +514,7 @@ def test_function(x: int, y: int) -> int:
                     tool_name="test_function",
                     args={"x": 1, "y": 2},
                     user=mock_user,
+                    tool_id=mock_tool.id,
                     tool_object=mock_tool,
                     sandbox_config=mock_sandbox_config,
                 )
@@ -543,6 +548,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="sync_func",
             args={},
             user=mock_user,
+            tool_id=sync_tool.id,
             tool_object=sync_tool,
         )
 
@@ -560,6 +566,7 @@ def test_function(x: int, y: int) -> int:
             tool_name="async_func",
             args={},
             user=mock_user,
+            tool_id=async_tool.id,
             tool_object=async_tool,
         )
 

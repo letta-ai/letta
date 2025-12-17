@@ -37,6 +37,9 @@ class AsyncToolSandboxModalV2(AsyncToolSandboxBase):
         tool_name: str,
         args: JsonDict,
         user,
+        tool_id: str,
+        agent_id: str | None = None,
+        project_id: str | None = None,
         tool_object: Tool | None = None,
         sandbox_config: SandboxConfig | None = None,
         sandbox_env_vars: dict[str, Any] | None = None,
@@ -51,6 +54,9 @@ class AsyncToolSandboxModalV2(AsyncToolSandboxBase):
             tool_name: Name of the tool to execute
             args: Arguments to pass to the tool
             user: User/actor for permissions
+            tool_id: Tool ID for the tool being executed
+            agent_id: Agent ID (optional)
+            project_id: Project ID for the tool execution (optional)
             tool_object: Tool object (optional)
             sandbox_config: Sandbox configuration (optional)
             sandbox_env_vars: Environment variables (optional)
@@ -58,7 +64,17 @@ class AsyncToolSandboxModalV2(AsyncToolSandboxBase):
             use_locking: Whether to use locking for deployment coordination (default: True)
             use_version_tracking: Whether to track and reuse deployments (default: True)
         """
-        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
+        super().__init__(
+            tool_name,
+            args,
+            user,
+            tool_id=tool_id,
+            agent_id=agent_id,
+            project_id=project_id,
+            tool_object=tool_object,
+            sandbox_config=sandbox_config,
+            sandbox_env_vars=sandbox_env_vars,
+        )
 
         if not tool_settings.modal_token_id or not tool_settings.modal_token_secret:
             raise ValueError("MODAL_TOKEN_ID and MODAL_TOKEN_SECRET must be set.")

@@ -1,7 +1,8 @@
 import asyncio
+import json
 import os
 import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
@@ -82,9 +83,9 @@ def does_not_support_minimal_reasoning(model: str) -> bool:
 def supports_none_reasoning_effort(model: str) -> bool:
     """Check if the model supports 'none' reasoning effort.
 
-    Currently, only GPT-5.1 models support the 'none' reasoning effort level.
+    Currently, GPT-5.1 and GPT-5.2 models support the 'none' reasoning effort level.
     """
-    return model.startswith("gpt-5.1")
+    return model.startswith("gpt-5.1") or model.startswith("gpt-5.2")
 
 
 def is_openai_5_model(model: str) -> bool:
@@ -609,7 +610,7 @@ class OpenAIClient(LLMClientBase):
         return is_openai_reasoning_model(llm_config.model)
 
     @trace_method
-    def convert_response_to_chat_completion(
+    async def convert_response_to_chat_completion(
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],  # Included for consistency, maybe used later
@@ -630,13 +631,40 @@ class OpenAIClient(LLMClientBase):
             completion_tokens = usage.get("output_tokens") or 0
             total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
 
+            # Extract detailed token breakdowns (Responses API uses input_tokens_details/output_tokens_details)
+            prompt_tokens_details = None
+            input_details = usage.get("input_tokens_details", {}) or {}
+            if input_details.get("cached_tokens"):
+                from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+
+                prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                    cached_tokens=input_details.get("cached_tokens") or 0,
+                )
+
+            completion_tokens_details = None
+            output_details = usage.get("output_tokens_details", {}) or {}
+            if output_details.get("reasoning_tokens"):
+                from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
+
+                completion_tokens_details = UsageStatisticsCompletionTokenDetails(
+                    reasoning_tokens=output_details.get("reasoning_tokens") or 0,
+                )
+
             # Extract assistant message text from the outputs list
             outputs = response_data.get("output") or []
             assistant_text_parts = []
             reasoning_summary_parts = None
             reasoning_content_signature = None
             tool_calls = None
-            finish_reason = "stop" if (response_data.get("status") == "completed") else None
+
+            # Check for incomplete_details first (e.g., max_output_tokens reached)
+            incomplete_details = response_data.get("incomplete_details")
+            if incomplete_details and incomplete_details.get("reason") == "max_output_tokens":
+                finish_reason = "length"
+            elif response_data.get("status") == "completed":
+                finish_reason = "stop"
+            else:
+                finish_reason = None
 
             # Optionally capture reasoning presence
             found_reasoning = False
@@ -692,6 +720,8 @@ class OpenAIClient(LLMClientBase):
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
+                    prompt_tokens_details=prompt_tokens_details,
+                    completion_tokens_details=completion_tokens_details,
                 ),
             )
 
@@ -741,17 +771,25 @@ class OpenAIClient(LLMClientBase):
 
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
         if "input" in request_data and "messages" not in request_data:
-            response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
-                **request_data,
-                stream=True,
-                # stream_options={"include_usage": True},
-            )
+            try:
+                response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
+                    **request_data,
+                    stream=True,
+                    # stream_options={"include_usage": True},
+                )
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Responses request: {e} with request data: {json.dumps(request_data)}")
+                raise e
         else:
-            response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
-                **request_data,
-                stream=True,
-                stream_options={"include_usage": True},
-            )
+            try:
+                response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+                    **request_data,
+                    stream=True,
+                    stream_options={"include_usage": True},
+                )
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Chat Completions request: {e} with request data: {json.dumps(request_data)}")
+                raise e
         return response_stream
 
     @trace_method
@@ -1080,6 +1118,11 @@ def fill_image_content_in_responses_input(openai_message_list: List[dict], pydan
             pm = user_msgs[user_idx]
             user_idx += 1
 
+            existing_content = item.get("content")
+            if _is_responses_style_content(existing_content):
+                rewritten.append(item)
+                continue
+
             # Only rewrite if the pydantic message actually contains multiple parts or images
             if not isinstance(pm.content, list) or (len(pm.content) == 1 and pm.content[0].type == MessageContentType.text):
                 rewritten.append(item)
@@ -1107,3 +1150,17 @@ def fill_image_content_in_responses_input(openai_message_list: List[dict], pydan
             rewritten.append(item)
 
     return rewritten
+
+
+def _is_responses_style_content(content: Optional[Any]) -> bool:
+    if not isinstance(content, list):
+        return False
+
+    allowed_types = {"input_text", "input_image"}
+    for part in content:
+        if not isinstance(part, dict):
+            return False
+        part_type = part.get("type")
+        if part_type not in allowed_types:
+            return False
+    return True

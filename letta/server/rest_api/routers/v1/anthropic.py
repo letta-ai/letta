@@ -1,12 +1,5 @@
-"""
-Anthropic API proxy router.
-
-This router proxies requests to the Anthropic API, allowing Claude Code CLI
-to use Letta as an intermediary by setting anthropic_base_url in settings.json.
-"""
-
 import asyncio
-import os
+import json
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -14,218 +7,25 @@ from fastapi.responses import Response, StreamingResponse
 
 from letta.log import get_logger
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
-from letta.server.rest_api.utils import (
-    capture_and_persist_messages,
+from letta.server.rest_api.proxy_helpers import (
+    build_response_from_chunks,
+    check_for_duplicate_message,
+    extract_assistant_message,
+    extract_user_messages,
     get_or_create_claude_code_agent,
+    inject_memory_context,
+    is_topic_detection_response,
+    persist_messages_background,
+    prepare_headers,
 )
 from letta.server.server import SyncServer
-from letta.settings import model_settings
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/anthropic", tags=["anthropic"])
 
-# Anthropic API base URL
 ANTHROPIC_API_BASE = "https://api.anthropic.com"
-
-
-def extract_user_messages(body: bytes) -> list[str]:
-    """
-    Extract user messages from the request body.
-
-    Returns a list of user message content strings.
-    """
-    try:
-        import json
-
-        request_data = json.loads(body)
-        messages = request_data.get("messages", [])
-
-        user_messages = []
-        for msg in messages:
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                # Content can be a string or a list of content blocks
-                if isinstance(content, str):
-                    user_messages.append(content)
-                elif isinstance(content, list):
-                    # Extract text from content blocks
-                    for block in content:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            user_messages.append(block.get("text", ""))
-
-        return user_messages
-    except Exception as e:
-        logger.warning(f"Failed to extract user messages: {e}")
-        return []
-
-
-def extract_assistant_message(response_data: dict) -> str:
-    """
-    Extract assistant message text from Anthropic API response.
-
-    Returns the concatenated text content from the assistant's response.
-    """
-    try:
-        content_blocks = response_data.get("content", [])
-        text_parts = []
-
-        for block in content_blocks:
-            if isinstance(block, dict) and block.get("type") == "text":
-                text_parts.append(block.get("text", ""))
-
-        return "\n".join(text_parts)
-    except Exception as e:
-        logger.warning(f"Failed to extract assistant message: {e}")
-        return ""
-
-
-def _build_response_from_chunks(chunks: list[bytes]) -> str:
-    """
-    Build assistant message from streaming response chunks.
-
-    Parses SSE (Server-Sent Events) format and extracts text deltas.
-    """
-    try:
-        import json
-
-        text_parts = []
-        full_data = b"".join(chunks).decode("utf-8")
-
-        # Parse SSE format: "data: {json}\n\n"
-        for line in full_data.split("\n"):
-            if line.startswith("data: "):
-                data_str = line[6:]  # Remove "data: " prefix
-
-                # Skip special messages
-                if data_str.strip() in ["[DONE]", ""]:
-                    continue
-
-                try:
-                    event_data = json.loads(data_str)
-                    event_type = event_data.get("type")
-
-                    # Extract text from content_block_delta events
-                    if event_type == "content_block_delta":
-                        delta = event_data.get("delta", {})
-                        if delta.get("type") == "text_delta":
-                            text_parts.append(delta.get("text", ""))
-                except json.JSONDecodeError:
-                    continue
-
-        return "".join(text_parts)
-    except Exception as e:
-        logger.warning(f"Failed to build response from chunks: {e}")
-        return ""
-
-
-async def _inject_memory_context(
-    server,
-    agent,
-    actor,
-    request_data: dict,
-) -> dict:
-    """
-    Inject relevant memory context into the request.
-
-    Searches agent's memory and prepends relevant context to the system prompt.
-
-    Args:
-        server: SyncServer instance
-        agent_id: Agent ID to search memory
-        actor: Actor performing the operation
-        request_data: Original request data dict
-
-    Returns:
-        Modified request data with memory context injected
-    """
-    try:
-        # Extract user messages to use as search query
-        messages = request_data.get("messages", [])
-        if not messages:
-            return request_data
-
-        memory_context = "Memory context from prior conversation:\n\n"
-        found = False
-        block_count = 0
-        for block in agent.blocks:
-            if block.value:
-                memory_context += f"{block.label.upper()}: {block.value}\n\n"
-                found = True
-                block_count += 1
-
-        if not found:
-            logger.debug("No memory blocks found, skipping memory injection")
-            return request_data
-
-        memory_context = memory_context.rstrip()
-
-        logger.info(f"💭 Injecting {block_count} memory block(s) into request")
-
-        # Inject into system prompt
-        modified_data = request_data.copy()
-
-        # Check if there's already a system prompt
-        # Anthropic API accepts system as either a string or list of content blocks
-        existing_system = modified_data.get("system", "")
-
-        # Handle both string and list system prompts
-        if isinstance(existing_system, list):
-            # If it's a list, prepend our context as a text block
-            modified_data["system"] = [{"type": "text", "text": memory_context.rstrip()}] + existing_system
-        elif existing_system:
-            # If it's a non-empty string, prepend our context
-            modified_data["system"] = memory_context + existing_system
-        else:
-            # No existing system prompt
-            modified_data["system"] = memory_context.rstrip()
-
-        # Fix max_tokens if using extended thinking
-        # Anthropic requires max_tokens > thinking.budget_tokens
-        if "thinking" in modified_data and isinstance(modified_data["thinking"], dict):
-            budget_tokens = modified_data["thinking"].get("budget_tokens", 0)
-            current_max_tokens = modified_data.get("max_tokens", 0)
-
-            if budget_tokens > 0 and current_max_tokens <= budget_tokens:
-                # Set max_tokens to budget_tokens + reasonable buffer for response
-                # Claude Code typically uses budget_tokens around 10000-20000
-                modified_data["max_tokens"] = budget_tokens + 4096
-                logger.info(
-                    f"⚠️ Adjusted max_tokens from {current_max_tokens} to {modified_data['max_tokens']} (thinking.budget_tokens={budget_tokens})"
-                )
-
-        return modified_data
-
-    except Exception as e:
-        logger.exception(f"Failed to inject memory context: {e}")
-        return request_data
-
-
-async def _persist_messages_background(
-    server,
-    agent,
-    actor,
-    user_messages: list[str],
-    assistant_message: str,
-    model_name: str,
-):
-    """
-    Background task to persist messages without blocking the response.
-
-    This runs asynchronously after the response is returned to minimize latency.
-    """
-    try:
-        result = await capture_and_persist_messages(
-            server=server,
-            agent=agent,
-            actor=actor,
-            user_messages=user_messages,
-            assistant_message=assistant_message,
-            model=model_name,
-        )
-        logger.info(f"✅ Persisted messages: {result['messages_created']} messages saved")
-    except Exception as e:
-        logger.error(f"Failed to persist messages in background: {e}")
+PROXY_NAME = "Anthropic Proxy"
 
 
 @router.api_route("/v1/messages", methods=["POST"], operation_id="anthropic_messages_proxy", include_in_schema=False)
@@ -243,59 +43,38 @@ async def anthropic_messages_proxy(
     Usage in Claude Code CLI settings.json:
     {
         "env": {
-            "ANTHROPIC_BASE_URL": "http://localhost:8283/v1/anthropic"
+            "ANTHROPIC_BASE_URL": "http://localhost:3000/v1/anthropic"
         }
     }
     """
     # Get the request body
     body = await request.body()
 
-    logger.info(f"Proxying request to Anthropic Messages API: {ANTHROPIC_API_BASE}/v1/messages")
-    logger.debug(f"Request body preview: {body[:200]}...")
+    logger.info(f"[{PROXY_NAME}] Proxying request to Anthropic Messages API: {ANTHROPIC_API_BASE}/v1/messages")
+    logger.debug(f"[{PROXY_NAME}] Request body preview: {body[:200]}...")
 
     actor = await server.user_manager.get_actor_or_default_async(headers.actor_id)
 
-    # Extract and log user messages
-    user_messages = extract_user_messages(body)
+    # Extract all user messages from request
+    all_user_messages = extract_user_messages(body)
 
-    # Check if this is a system/metadata request (Claude Code internal)
-    # These start with <system-reminder> and shouldn't be captured
-    is_system_request = False
-    if user_messages:
-        first_message = user_messages[0] if len(user_messages) > 0 else ""
-        if first_message.startswith("<system-reminder>"):
-            is_system_request = True
-            logger.debug("Skipping capture/memory for system request")
+    # Only capture the LAST user message (the new one the user just sent)
+    # Claude Code sends full conversation history, but we only want to persist the new message
+    user_messages = [all_user_messages[-1]] if all_user_messages else []
 
-    if user_messages and not is_system_request:
-        logger.info("=" * 70)
-        logger.info("📨 CAPTURED USER MESSAGE(S):")
-        for i, msg in enumerate(user_messages, 1):
-            logger.info(f"  [{i}] {msg[:200]}{'...' if len(msg) > 200 else ''}")
-        logger.info("=" * 70)
+    # Filter out system/metadata requests
+    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>")]
+    if not user_messages:
+        logger.debug(f"[{PROXY_NAME}] Skipping capture/memory for this turn")
 
-    # Get Anthropic API key from headers or fall back to settings
-    # Claude Code sends X-Api-Key header (normalized to x-api-key by FastAPI)
-    # Priority: x-api-key header (from Claude Code) > server settings (fallback)
-    # anthropic_api_key = request.headers.get("x-api-key") or model_settings.anthropic_api_key
-    anthropic_api_key = model_settings.anthropic_api_key
-
-    if not anthropic_api_key:
-        logger.error("No Anthropic API key found in headers or settings")
+    anthropic_headers = prepare_headers(request, PROXY_NAME)
+    if not anthropic_headers:
+        logger.error(f"[{PROXY_NAME}] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required. Pass via anthropic-api-key or x-api-key header."}}',
             status_code=401,
             media_type="application/json",
         )
-
-    logger.debug(f"Using Anthropic API key: {anthropic_api_key[:10]}...")
-
-    # Prepare headers for Anthropic API
-    anthropic_headers = {
-        "x-api-key": anthropic_api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
 
     # Check if this is a streaming request
     try:
@@ -304,45 +83,54 @@ async def anthropic_messages_proxy(
         request_data = json.loads(body)
         is_streaming = request_data.get("stream", False)
         model_name = request_data.get("model")
-        logger.debug(f"Request is streaming: {is_streaming}")
-        logger.debug(f"Model: {model_name}")
+        # Extract and remove project_id (internal use only, not for Anthropic API)
+        project_id = request_data.pop("project_id", None)
+        logger.debug(f"[{PROXY_NAME}] Request is streaming: {is_streaming}")
+        logger.debug(f"[{PROXY_NAME}] Model: {model_name}")
+        logger.debug(f"[{PROXY_NAME}] Project ID: {project_id}")
     except Exception as e:
-        logger.warning(f"Failed to parse request body: {e}")
+        logger.warning(f"[{PROXY_NAME}] Failed to parse request body: {e}")
         is_streaming = False
         model_name = None
+        project_id = None
 
     # Get or create agent for Claude Code session (skip for system requests)
     # Note: Agent lookup and memory search are blocking operations before forwarding.
     # Message persistence happens in the background after the response is returned.
     agent = None
-    if not is_system_request:
-        try:
-            agent = await get_or_create_claude_code_agent(
-                server=server,
-                actor=actor,
-            )
-            logger.debug(f"Using agent ID: {agent.id}")
-        except Exception as e:
-            logger.error(f"Failed to get/create agent: {e}")
+    try:
+        agent = await get_or_create_claude_code_agent(
+            server=server,
+            actor=actor,
+            project_id=project_id,
+        )
+        logger.debug(f"[{PROXY_NAME}] Using agent ID: {agent.id}")
+    except Exception as e:
+        logger.error(f"[{PROXY_NAME}] Failed to get/create agent: {e}")
 
     # Inject memory context into request (skip for system requests)
     # TODO: Optimize - skip memory injection on subsequent messages in same session
     # TODO: Add caching layer to avoid duplicate memory searches
     modified_body = body
-    if agent and request_data and not is_system_request:
-        modified_request_data = await _inject_memory_context(
+    if agent and request_data:
+        modified_request_data = await inject_memory_context(
             server=server,
             agent=agent,
             actor=actor,
             request_data=request_data,
+            proxy_name=PROXY_NAME,
         )
         # Re-encode the modified request
         import json
 
         modified_body = json.dumps(modified_request_data).encode("utf-8")
 
-    # Forward the request to Anthropic API
+    # Forward the request to Anthropic API (preserve query params like ?beta=true)
     # Note: For streaming, we create the client outside the generator to keep it alive
+    anthropic_url = f"{ANTHROPIC_API_BASE}/v1/messages"
+    if request.url.query:
+        anthropic_url = f"{anthropic_url}?{request.url.query}"
+
     if is_streaming:
         # Handle streaming response
         collected_chunks = []
@@ -352,7 +140,7 @@ async def anthropic_messages_proxy(
             async with httpx.AsyncClient(timeout=300.0) as client:
                 async with client.stream(
                     "POST",
-                    f"{ANTHROPIC_API_BASE}/v1/messages",
+                    anthropic_url,
                     headers=anthropic_headers,
                     content=modified_body,
                 ) as response:
@@ -361,23 +149,35 @@ async def anthropic_messages_proxy(
                         yield chunk
 
                 # After streaming is complete, extract and log assistant message
-                assistant_message = _build_response_from_chunks(collected_chunks)
-                if assistant_message:
+                assistant_message = build_response_from_chunks(collected_chunks)
+                if user_messages and assistant_message:
+                    logger.info("=" * 70)
+                    logger.info("📨 CAPTURED USER MESSAGE:")
+                    for i, user_message in enumerate(user_messages):
+                        logger.info(f"  {i}: {user_message[:200]}{'...' if len(user_message) > 200 else ''}")
                     logger.info("=" * 70)
                     logger.info("🤖 CAPTURED ASSISTANT RESPONSE (streaming):")
-                    logger.info(f"  {assistant_message[:500]}{'...' if len(assistant_message) > 500 else ''}")
+                    logger.info(f"  {assistant_message[:200]}{'...' if len(assistant_message) > 200 else ''}")
                     logger.info("=" * 70)
 
+                    # Skip persisting topic detection responses (metadata, not conversation)
+                    if is_topic_detection_response(assistant_message):
+                        logger.debug(f"[{PROXY_NAME}] Skipping persistence - topic detection response")
                     # Persist messages to database (non-blocking, skip for system requests)
-                    if agent and user_messages and not is_system_request:
+                    elif agent:
+                        # Check for duplicate user messages before creating background task
+                        # This prevents race conditions where multiple requests persist the same message
+                        user_messages_to_persist = await check_for_duplicate_message(server, agent, actor, user_messages, PROXY_NAME)
+
                         asyncio.create_task(
-                            _persist_messages_background(
+                            persist_messages_background(
                                 server=server,
                                 agent=agent,
                                 actor=actor,
-                                user_messages=user_messages,
+                                user_messages=user_messages_to_persist,
                                 assistant_message=assistant_message,
                                 model_name=model_name,
+                                proxy_name=PROXY_NAME,
                             )
                         )
 
@@ -395,7 +195,7 @@ async def anthropic_messages_proxy(
         try:
             # Handle non-streaming response
             response = await client.post(
-                f"{ANTHROPIC_API_BASE}/v1/messages",
+                anthropic_url,
                 headers=anthropic_headers,
                 content=modified_body,
             )
@@ -415,20 +215,27 @@ async def anthropic_messages_proxy(
                         logger.info(f"  {assistant_message[:500]}{'...' if len(assistant_message) > 500 else ''}")
                         logger.info("=" * 70)
 
-                        # Persist messages to database (non-blocking, skip for system requests)
-                        if agent and user_messages and not is_system_request:
+                        # Skip persisting topic detection responses (metadata, not conversation)
+                        if is_topic_detection_response(assistant_message):
+                            logger.debug(f"[{PROXY_NAME}] Skipping persistence - topic detection response")
+                        # Persist messages to database (non-blocking)
+                        elif agent:
+                            # Check for duplicate user messages before creating background task
+                            user_messages_to_persist = await check_for_duplicate_message(server, agent, actor, user_messages, PROXY_NAME)
+
                             asyncio.create_task(
-                                _persist_messages_background(
+                                persist_messages_background(
                                     server=server,
                                     agent=agent,
                                     actor=actor,
-                                    user_messages=user_messages,
+                                    user_messages=user_messages_to_persist,
                                     assistant_message=assistant_message,
                                     model_name=model_name,
+                                    proxy_name=PROXY_NAME,
                                 )
                             )
                 except Exception as e:
-                    logger.warning(f"Failed to extract assistant response for logging: {e}")
+                    logger.warning(f"[{PROXY_NAME}] Failed to extract assistant response for logging: {e}")
 
             return Response(
                 content=response.content,
@@ -442,7 +249,7 @@ async def anthropic_messages_proxy(
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"Error proxying request to Anthropic API: {e}")
+            logger.error(f"[{PROXY_NAME}] Error proxying request to Anthropic API: {e}")
             return Response(
                 content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Anthropic API: {str(e)}"}}}}',
                 status_code=500,
@@ -483,27 +290,16 @@ async def anthropic_catchall_proxy(
     # Reconstruct the full path
     path = f"v1/{endpoint}"
 
-    logger.info(f"Proxying catch-all request: {request.method} /{path}")
+    logger.info(f"[{PROXY_NAME}] Proxying catch-all request: {request.method} /{path}")
 
-    # Get Anthropic API key from headers or fall back to settings
-    # Claude Code sends X-Api-Key header (normalized to x-api-key by FastAPI)
-    # Priority: x-api-key header (from Claude Code) > server settings (fallback)
-    # anthropic_api_key = request.headers.get("x-api-key") or model_settings.anthropic_api_key
-    anthropic_api_key = model_settings.anthropic_api_key
-    if not anthropic_api_key:
-        logger.error("No Anthropic API key found in headers or settings")
+    anthropic_headers = prepare_headers(request, PROXY_NAME)
+    if not anthropic_headers:
+        logger.error(f"[{PROXY_NAME}] No Anthropic API key found in headers or settings")
         return Response(
             content='{"error": {"type": "authentication_error", "message": "Anthropic API key required"}}',
             status_code=401,
             media_type="application/json",
         )
-
-    # Prepare headers for Anthropic API
-    anthropic_headers = {
-        "x-api-key": anthropic_api_key,
-        "anthropic-version": request.headers.get("anthropic-version", "2023-06-01"),
-        "content-type": request.headers.get("content-type", "application/json"),
-    }
 
     # Forward the request to Anthropic API
     async with httpx.AsyncClient(timeout=300.0) as client:
@@ -527,7 +323,7 @@ async def anthropic_catchall_proxy(
             )
 
         except httpx.HTTPError as e:
-            logger.error(f"Error proxying catch-all request to Anthropic API: {e}")
+            logger.error(f"[{PROXY_NAME}] Error proxying catch-all request to Anthropic API: {e}")
             return Response(
                 content=f'{{"error": {{"type": "api_error", "message": "Failed to proxy request to Anthropic API: {str(e)}"}}}}',
                 status_code=500,

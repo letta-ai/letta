@@ -58,11 +58,11 @@ def load_grammar_file(grammar):
     return grammar_str
 
 
-# TODO: support tokenizers/tokenizer apis available in local models
-def count_tokens(s: str, model: str = "gpt-4") -> int:
-    from letta.utils import count_tokens
-
-    return count_tokens(s, model)
+## TODO: support tokenizers/tokenizer apis available in local models
+# def count_tokens(s: str, model: str = "gpt-4") -> int:
+#    from letta.utils import count_tokens
+#
+#    return count_tokens(s, model)
 
 
 def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):

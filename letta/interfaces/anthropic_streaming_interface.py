@@ -546,7 +546,9 @@ class AnthropicStreamingInterface:
             self.output_tokens += event.message.usage.output_tokens
             self.model = event.message.model
         elif isinstance(event, BetaRawMessageDeltaEvent):
-            self.output_tokens += event.usage.output_tokens
+            # Per Anthropic docs: "The token counts shown in the usage field of the
+            # message_delta event are *cumulative*." So we assign, not accumulate.
+            self.output_tokens = event.usage.output_tokens
         elif isinstance(event, BetaRawMessageStopEvent):
             # Don't do anything here! We don't want to stop the stream.
             pass
@@ -941,7 +943,9 @@ class SimpleAnthropicStreamingInterface:
             self.model = event.message.model
 
         elif isinstance(event, BetaRawMessageDeltaEvent):
-            self.output_tokens += event.usage.output_tokens
+            # Per Anthropic docs: "The token counts shown in the usage field of the
+            # message_delta event are *cumulative*." So we assign, not accumulate.
+            self.output_tokens = event.usage.output_tokens
 
         elif isinstance(event, BetaRawMessageStopEvent):
             # Don't do anything here! We don't want to stop the stream.
