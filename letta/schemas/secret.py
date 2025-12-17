@@ -169,8 +169,6 @@ class Secret(BaseModel):
 
         # Use cached value if available
         if self._plaintext_cache is not None:
-            if not self.was_encrypted:
-                return self._plaintext_cache
             return self._plaintext_cache
 
         # Try to decrypt (async)

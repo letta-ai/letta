@@ -18,7 +18,7 @@ class MistralProvider(Provider):
 
         # Some hardcoded support for OpenRouter (so that we only get models with tool calling support)...
         # See: https://openrouter.ai/docs/requests
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         response = await mistral_get_model_list_async(self.base_url, api_key=api_key)
 
         assert "data" in response, f"Mistral model query response missing 'data' field: {response}"

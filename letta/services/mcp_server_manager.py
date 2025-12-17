@@ -990,25 +990,20 @@ class MCPServerManager:
         """
         Convert OAuth ORM model to Pydantic model, handling decryption of sensitive fields.
 
-        Note: Prefers encrypted columns (_enc fields), falls back to plaintext with error logging.
-        This helps identify unmigrated data during the migration period.
+        Note: Prefers encrypted columns (_enc fields), falls back to legacy plaintext columns.
         """
-        # Get decrypted values - prefer encrypted, fallback to plaintext with error logging
-        access_token = await Secret.from_db(
-            encrypted_value=oauth_session.access_token_enc, plaintext_value=oauth_session.access_token
-        ).get_plaintext_async()
+        # Get decrypted values - prefer encrypted, fallback to legacy plaintext
+        access_token_secret = Secret.from_encrypted(oauth_session.access_token_enc)
+        access_token = await access_token_secret.get_plaintext_async()
 
-        refresh_token = await Secret.from_db(
-            encrypted_value=oauth_session.refresh_token_enc, plaintext_value=oauth_session.refresh_token
-        ).get_plaintext_async()
+        refresh_token_secret = Secret.from_encrypted(oauth_session.refresh_token_enc)
+        refresh_token = await refresh_token_secret.get_plaintext_async()
 
-        client_secret = await Secret.from_db(
-            encrypted_value=oauth_session.client_secret_enc, plaintext_value=oauth_session.client_secret
-        ).get_plaintext_async()
+        client_secret_secret = Secret.from_encrypted(oauth_session.client_secret_enc)
+        client_secret = await client_secret_secret.get_plaintext_async()
 
-        authorization_code = await Secret.from_db(
-            encrypted_value=oauth_session.authorization_code_enc, plaintext_value=oauth_session.authorization_code
-        ).get_plaintext_async()
+        authorization_code_secret = Secret.from_encrypted(oauth_session.authorization_code_enc)
+        authorization_code = await authorization_code_secret.get_plaintext_async()
 
         # Create the Pydantic object with encrypted fields as Secret objects
         pydantic_session = MCPOAuthSession(
