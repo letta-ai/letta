@@ -360,6 +360,7 @@ class Message(BaseMessage):
                 if isinstance(lm, SystemMessage):
                     letta_search_results.append(
                         SystemMessageListResult(
+                            message_id=message.id,
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
@@ -369,6 +370,7 @@ class Message(BaseMessage):
                 elif isinstance(lm, UserMessage):
                     letta_search_results.append(
                         UserMessageListResult(
+                            message_id=message.id,
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
@@ -378,6 +380,7 @@ class Message(BaseMessage):
                 elif isinstance(lm, ReasoningMessage):
                     letta_search_results.append(
                         ReasoningMessageListResult(
+                            message_id=message.id,
                             message_type=lm.message_type,
                             reasoning=lm.reasoning,
                             agent_id=message.agent_id,
@@ -387,6 +390,7 @@ class Message(BaseMessage):
                 elif isinstance(lm, AssistantMessage):
                     letta_search_results.append(
                         AssistantMessageListResult(
+                            message_id=message.id,
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
