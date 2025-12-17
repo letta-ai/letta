@@ -241,6 +241,10 @@ def create_application() -> "FastAPI":
             os.environ.setdefault("DD_PROFILING_MEMORY_ENABLED", str(telemetry_settings.datadog_profiling_memory_enabled).lower())
             os.environ.setdefault("DD_PROFILING_HEAP_ENABLED", str(telemetry_settings.datadog_profiling_heap_enabled).lower())
 
+            # Enable LLM Observability for tracking LLM calls, prompts, and completions
+            os.environ.setdefault("DD_LLMOBS_ENABLED", "1")
+            os.environ.setdefault("DD_LLMOBS_ML_APP", "memgpt-server")
+
             # Note: DD_LOGS_INJECTION, DD_APPSEC_ENABLED, DD_IAST_ENABLED, DD_APPSEC_SCA_ENABLED
             # are set via deployment configs and automatically picked up by ddtrace
 
