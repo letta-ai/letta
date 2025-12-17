@@ -14,6 +14,8 @@ logger = get_logger(__name__)
 
 
 class GoogleAIClient(GoogleVertexClient):
+    provider_label = "Google AI"
+
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
         return genai.Client(
