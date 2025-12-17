@@ -1488,6 +1488,9 @@ class LettaAgentV3(LettaAgentV2):
             # provider type when only a model name is given.
             if "/" in summarizer_config.model:
                 provider, model_name = summarizer_config.model.split("/", 1)
+                if provider == "openai-proxy":
+                    # fix for pydantic LLMConfig validation
+                    provider = "openai"
             else:
                 provider = agent_llm_config.model_endpoint_type
                 model_name = summarizer_config.model
