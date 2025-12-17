@@ -19638,13 +19638,13 @@
         }
       }
     },
-    "/v1/usage/balances": {
+    "/v1/metadata/balance": {
       "get": {
         "description": "Retrieve the current usage balances for the organization.",
-        "summary": "Retrieve Current Balances",
-        "tags": ["usage"],
+        "summary": "Retrieve current organization balance",
+        "tags": ["metadata"],
         "parameters": [],
-        "operationId": "usage.retrieveCurrentBalances",
+        "operationId": "metadata.retrieveCurrentBalances",
         "responses": {
           "200": {
             "description": "200",
@@ -19672,6 +19672,56 @@
                     "purchased_credit_balance",
                     "billing_tier"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metadata/feedback": {
+      "post": {
+        "description": "Send feedback from users to improve our services.",
+        "summary": "Send user feedback",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.sendFeedback",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "feature": {
+                    "default": "letta-code",
+                    "type": "string",
+                    "enum": ["letta-code", "sdk"]
+                  }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
                 }
               }
             }
