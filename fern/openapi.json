@@ -19638,6 +19638,47 @@
         }
       }
     },
+    "/v1/usage/balances": {
+      "get": {
+        "description": "Retrieve the current usage balances for the organization.",
+        "summary": "Retrieve Current Balances",
+        "tags": ["usage"],
+        "parameters": [],
+        "operationId": "usage.retrieveCurrentBalances",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_balance": {
+                      "type": "number"
+                    },
+                    "monthly_credit_balance": {
+                      "type": "number"
+                    },
+                    "purchased_credit_balance": {
+                      "type": "number"
+                    },
+                    "billing_tier": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "total_balance",
+                    "monthly_credit_balance",
+                    "purchased_credit_balance",
+                    "billing_tier"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scheduled-messages/{scheduled_message_id}": {
       "delete": {
         "description": "Delete a scheduled message by its ID for a specific agent.",
