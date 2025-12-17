@@ -321,7 +321,7 @@ class SourceManager:
                 result = await session.execute(query)
                 agents_orm = result.scalars().all()
 
-                return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
+                return await asyncio.gather(*[agent.to_pydantic_async(include=[]) for agent in agents_orm])
 
     @enforce_types
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
