@@ -26,7 +26,7 @@ class OpenAIProvider(Provider):
         from letta.llm_api.openai import openai_check_valid_api_key  # TODO: DO NOT USE THIS - old code path
 
         # Decrypt API key before using
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         openai_check_valid_api_key(self.base_url, api_key)
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
@@ -48,7 +48,7 @@ class OpenAIProvider(Provider):
         extra_params = {"verbose": True} if "nebius.com" in self.base_url else None
 
         # Decrypt API key before using
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
 
         response = await openai_get_model_list_async(
             self.base_url,

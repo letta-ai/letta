@@ -108,7 +108,7 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if api_key:
             anthropic_client = anthropic.Anthropic(api_key=api_key)
             try:
@@ -137,7 +137,7 @@ class AnthropicProvider(Provider):
 
         NOTE: currently there is no GET /models, so we need to hardcode
         """
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if api_key:
             anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
         elif model_settings.anthropic_api_key:

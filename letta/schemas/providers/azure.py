@@ -60,7 +60,7 @@ class AzureProvider(Provider):
     async def azure_openai_get_deployed_model_list(self) -> list:
         """https://learn.microsoft.com/en-us/rest/api/azureopenai/models/list?view=rest-azureopenai-2023-05-15&tabs=HTTP"""
 
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         client = AsyncAzureOpenAI(api_key=api_key, api_version=self.api_version, azure_endpoint=self.base_url)
 
         try:
@@ -170,7 +170,7 @@ class AzureProvider(Provider):
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if not api_key:
             raise ValueError("No API key provided")
 
