@@ -18,7 +18,7 @@ class GoogleVertexProvider(Provider):
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
         """Get the default max output tokens for Google Vertex models."""
-        if "2.5" in model_name or "2-5" in model_name:  # gemini-2.5-* or gemini-2-5-*
+        if "2.5" in model_name or "2-5" in model_name or model_name.startswith("gemini-3"):
             return 65536
         return 8192  # default for google vertex
 
