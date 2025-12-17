@@ -368,7 +368,9 @@ class LettaAgentV3(LettaAgentV2):
         # Cleanup and finalize (only runs if no exception occurred)
         try:
             if run_id:
-                result = LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+                # Filter out LettaStopReason from messages (only valid in LettaStreamingResponse, not LettaResponse)
+                filtered_messages = [m for m in response_letta_messages if not isinstance(m, LettaStopReason)]
+                result = LettaResponse(messages=filtered_messages, stop_reason=self.stop_reason, usage=self.usage)
                 if self.job_update_metadata is None:
                     self.job_update_metadata = {}
                 self.job_update_metadata["result"] = result.model_dump(mode="json")
