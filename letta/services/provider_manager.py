@@ -95,8 +95,8 @@ class ProviderManager:
             return provider_pydantic
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    @trace_method
     async def update_provider_async(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         async with db_registry.async_session() as session:
@@ -151,8 +151,8 @@ class ProviderManager:
             return existing_provider.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    @trace_method
     async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
         """Delete a provider."""
         async with db_registry.async_session() as session:
@@ -284,8 +284,8 @@ class ProviderManager:
             return [provider.to_pydantic() for provider in all_providers]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    @trace_method
     async def get_provider_async(self, provider_id: str, actor: PydanticUser) -> PydanticProvider:
         async with db_registry.async_session() as session:
             # First try to get as organization-specific provider

@@ -201,8 +201,8 @@ class SourceManager:
         return sources
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def update_source(self, source_id: str, source_update: SourceUpdate, actor: PydanticUser) -> PydanticSource:
         """Update a source by its ID with the given SourceUpdate object."""
         async with db_registry.async_session() as session:
@@ -225,8 +225,8 @@ class SourceManager:
             return source.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def delete_source(self, source_id: str, actor: PydanticUser) -> PydanticSource:
         """Delete a source by its ID."""
         async with db_registry.async_session() as session:
@@ -270,8 +270,8 @@ class SourceManager:
             return await SourceModel.size_async(db_session=session, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def list_attached_agents(
         self, source_id: str, actor: PydanticUser, ids_only: bool = False
     ) -> Union[List[PydanticAgentState], List[str]]:
@@ -324,8 +324,8 @@ class SourceManager:
                 return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents_orm])
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def get_agents_for_source_id(
         self,
         source_id: str,
@@ -439,8 +439,8 @@ class SourceManager:
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
         async with db_registry.async_session() as session:

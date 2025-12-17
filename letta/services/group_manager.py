@@ -65,8 +65,8 @@ class GroupManager:
             return [group.to_pydantic() for group in groups]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def retrieve_group_async(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -123,8 +123,8 @@ class GroupManager:
             return new_group.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def modify_group_async(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
@@ -187,16 +187,16 @@ class GroupManager:
             return group.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def delete_group_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
             await group.hard_delete_async(session)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def list_group_messages_async(
         self,
         actor: PydanticUser,
@@ -233,8 +233,8 @@ class GroupManager:
             return messages
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def reset_messages_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -249,8 +249,8 @@ class GroupManager:
             await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
+    @trace_method
     async def bump_turns_counter_async(self, group_id: str, actor: PydanticUser) -> int:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
@@ -262,9 +262,9 @@ class GroupManager:
             return group.turns_counter
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     @raise_on_invalid_id(param_name="last_processed_message_id", expected_prefix=PrimitiveType.MESSAGE)
+    @trace_method
     async def get_last_processed_message_id_and_update_async(
         self, group_id: str, last_processed_message_id: str, actor: PydanticUser
     ) -> str:
@@ -413,9 +413,9 @@ class GroupManager:
                     session.add(BlocksAgents(agent_id=manager_agent.id, block_id=block.id, block_label=block.label))
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def attach_block_async(self, group_id: str, block_id: str, actor: PydanticUser) -> None:
         """Attach a block to a group."""
         async with db_registry.async_session() as session:
@@ -437,9 +437,9 @@ class GroupManager:
             await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def detach_block_async(self, group_id: str, block_id: str, actor: PydanticUser) -> None:
         """Detach a block from a group."""
         async with db_registry.async_session() as session:
