@@ -145,6 +145,10 @@ class ModelSettings(BaseSettings):
 
     # anthropic
     anthropic_api_key: Optional[str] = None
+    anthropic_api_base: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("ANTHROPIC_API_BASE"),
+    )
     anthropic_max_retries: int = 3
     anthropic_sonnet_1m: bool = Field(
         default=False,

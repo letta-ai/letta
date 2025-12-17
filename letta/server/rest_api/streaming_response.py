@@ -215,7 +215,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
         more_body = True
         try:
             first_chunk = await self.body_iterator.__anext__()
-            logger.debug("stream_response first chunk:", first_chunk)
+            logger.debug(f"stream_response first chunk: {first_chunk}")
             if isinstance(first_chunk, tuple):
                 first_chunk_content, self.status_code = first_chunk
             else:

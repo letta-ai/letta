@@ -11,6 +11,12 @@ from anthropic.types.beta.message_create_params import MessageCreateParamsNonStr
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
 
+try:
+    from anthropic import AnthropicFoundry, AsyncAnthropicFoundry
+except ImportError:
+    AnthropicFoundry = None
+    AsyncAnthropicFoundry = None
+
 from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE, REQUEST_HEARTBEAT_PARAM
 from letta.errors import (
     ContextWindowExceededError,
@@ -86,10 +92,19 @@ class AnthropicClient(LLMClientBase):
             betas.append("structured-outputs-2025-11-13")
 
         if betas:
-            response = client.beta.messages.create(**request_data, betas=betas)
-        else:
-            response = client.beta.messages.create(**request_data)
-        return response.model_dump()
+            logger.info(f"Anthropic sync request betas: {betas}")
+        
+        try:
+            if betas:
+                response = client.beta.messages.create(**request_data, betas=betas)
+            else:
+                response = client.beta.messages.create(**request_data)
+            return response.model_dump()
+        except Exception as e:
+            logger.error(f"Anthropic sync request failed. Base URL: {client.base_url}")
+            logger.error(f"Request data: {json.dumps(request_data, default=str)}")
+            logger.error(f"Error: {e}", exc_info=True)
+            raise e
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -124,11 +139,20 @@ class AnthropicClient(LLMClientBase):
             betas.append("structured-outputs-2025-11-13")
 
         if betas:
-            response = await client.beta.messages.create(**request_data, betas=betas)
-        else:
-            response = await client.beta.messages.create(**request_data)
+            logger.info(f"Anthropic async request betas: {betas}")
 
-        return response.model_dump()
+        try:
+            if betas:
+                response = await client.beta.messages.create(**request_data, betas=betas)
+            else:
+                response = await client.beta.messages.create(**request_data)
+
+            return response.model_dump()
+        except Exception as e:
+            logger.error(f"Anthropic async request failed. Base URL: {client.base_url}")
+            logger.error(f"Request data: {json.dumps(request_data, default=str)}")
+            logger.error(f"Error: {e}", exc_info=True)
+            raise e
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
@@ -234,16 +258,31 @@ class AnthropicClient(LLMClientBase):
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
         api_key, _, _ = self.get_byok_overrides(llm_config)
 
+        base_url = model_settings.anthropic_api_base
+        if base_url:
+            if AnthropicFoundry is None:
+                raise ImportError("AnthropicFoundry not available in installed anthropic version. Please upgrade anthropic package.")
+                
+            base_url = base_url.strip()
+            # Azure might expect the full URL including /anthropic/
+            # We pass the configured base_url directly to AnthropicFoundry
+            
+            logger.debug(f"Using AnthropicFoundry with base_url={base_url}")
+            # AnthropicFoundry requires explicit API key if not in ANTHROPIC_FOUNDRY_API_KEY env
+            return AnthropicFoundry(
+                api_key=api_key or model_settings.anthropic_api_key,
+                base_url=base_url, 
+                max_retries=model_settings.anthropic_max_retries
+            )
+        
+        # If no custom base_url, use the standard Anthropic client with default base_url (None)
+        logger.info(f"Initialized Anthropic client with base_url: {base_url}, api_key_present: {bool(api_key)}")
+
         if async_client:
             return (
-                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-                if api_key
-                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
-            )
-        return (
-            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+            anthropic.Anthropic(api_key=api_key, base_url=base_url, max_retries=model_settings.anthropic_max_retries)
             if api_key
-            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+            else anthropic.Anthropic(base_url=base_url, max_retries=model_settings.anthropic_max_retries)
         )
 
     @trace_method
@@ -252,16 +291,32 @@ class AnthropicClient(LLMClientBase):
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
         api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
+        base_url = model_settings.anthropic_api_base
+        if base_url:
+            if AsyncAnthropicFoundry is None:
+                raise ImportError("AsyncAnthropicFoundry not available in installed anthropic version. Please upgrade anthropic package.")
+
+            base_url = base_url.strip()
+            
+            logger.debug(f"Using AsyncAnthropicFoundry with base_url={base_url}")
+            return AsyncAnthropicFoundry(
+                api_key=api_key or model_settings.anthropic_api_key, 
+                base_url=base_url, 
+                max_retries=model_settings.anthropic_max_retries
+            )
+
+        logger.info(f"Initialized Async Anthropic client with base_url: {base_url}, api_key_present: {bool(api_key)}")
+
         if async_client:
             return (
-                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+                anthropic.AsyncAnthropic(api_key=api_key, base_url=base_url, max_retries=model_settings.anthropic_max_retries)
                 if api_key
-                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+                else anthropic.AsyncAnthropic(base_url=base_url, max_retries=model_settings.anthropic_max_retries)
             )
         return (
-            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+            anthropic.Anthropic(api_key=api_key, base_url=base_url, max_retries=model_settings.anthropic_max_retries)
             if api_key
-            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
+            else anthropic.Anthropic(base_url=base_url, max_retries=model_settings.anthropic_max_retries)
         )
 
     @trace_method
@@ -524,7 +579,17 @@ class AnthropicClient(LLMClientBase):
         logging.getLogger("httpx").setLevel(logging.WARNING)
 
         # Use the default client; token counting is lightweight and does not require BYOK overrides
-        client = anthropic.AsyncAnthropic()
+        # However, if we are using Azure/Foundry, we must use the compatible client
+        if model_settings.anthropic_api_base:
+            if AsyncAnthropicFoundry is None:
+                 raise ImportError("AsyncAnthropicFoundry not available")
+            client = AsyncAnthropicFoundry(
+                 base_url=model_settings.anthropic_api_base.strip(),
+                 api_key=model_settings.anthropic_api_key or "scan-dummy-key"
+            )
+        else:
+            client = anthropic.AsyncAnthropic()
+
         if messages and len(messages) == 0:
             messages = None
         if tools and len(tools) > 0:
