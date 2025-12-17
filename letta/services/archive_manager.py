@@ -55,8 +55,8 @@ class ArchiveManager:
             raise
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_archive_by_id_async(
         self,
         archive_id: str,
@@ -72,8 +72,8 @@ class ArchiveManager:
             return archive.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def update_archive_async(
         self,
         archive_id: str,
@@ -99,8 +99,8 @@ class ArchiveManager:
             return archive.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def list_archives_async(
         self,
         *,
@@ -150,9 +150,9 @@ class ArchiveManager:
             return [a.to_pydantic() for a in archives]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def attach_agent_to_archive_async(
         self,
         agent_id: str,
@@ -194,9 +194,9 @@ class ArchiveManager:
             await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def detach_agent_from_archive_async(
         self,
         agent_id: str,
@@ -227,8 +227,8 @@ class ArchiveManager:
             await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -260,8 +260,8 @@ class ArchiveManager:
         return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def delete_archive_async(
         self,
         archive_id: str,
@@ -278,8 +278,8 @@ class ArchiveManager:
             logger.info(f"Deleted archive {archive_id}")
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def create_passage_in_archive_async(
         self,
         archive_id: str,
@@ -360,9 +360,9 @@ class ArchiveManager:
         return created_passage
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     @raise_on_invalid_id(param_name="passage_id", expected_prefix=PrimitiveType.PASSAGE)
+    @trace_method
     async def delete_passage_from_archive_async(
         self,
         archive_id: str,
@@ -470,8 +470,8 @@ class ArchiveManager:
                 raise
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_agents_for_archive_async(
         self,
         archive_id: str,
@@ -583,8 +583,8 @@ class ArchiveManager:
             return agent_ids[0]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_or_set_vector_db_namespace_async(
         self,
         archive_id: str,

@@ -93,8 +93,8 @@ class FileManager:
 
     # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
+    @trace_method
     # @async_redis_cache(
     #     key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
     #     prefix="file_content",
@@ -136,8 +136,8 @@ class FileManager:
             return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
+    @trace_method
     async def update_file_status(
         self,
         *,
@@ -354,8 +354,8 @@ class FileManager:
         return file_metadata
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
+    @trace_method
     async def upsert_file_content(
         self,
         *,
@@ -400,8 +400,8 @@ class FileManager:
             return await result.scalar_one().to_pydantic_async(include_content=True)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def list_files(
         self,
         source_id: str,
@@ -462,8 +462,8 @@ class FileManager:
             return file_metadatas
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
+    @trace_method
     async def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
         async with db_registry.async_session() as session:
@@ -517,8 +517,8 @@ class FileManager:
                 return f"{source.name}/{base}_({count}){ext}"
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     # @async_redis_cache(
     #     key_func=lambda self, original_filename, source_id, actor: f"{original_filename}:{source_id}:{actor.organization_id}",
     #     prefix="file_by_name",

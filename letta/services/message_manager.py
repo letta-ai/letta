@@ -345,8 +345,8 @@ class MessageManager:
         return combined_messages
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
+    @trace_method
     async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
@@ -754,8 +754,8 @@ class MessageManager:
         return message
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
+    @trace_method
     async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
         """Delete a message (async version with turbopuffer support)."""
         # capture agent_id before deletion
