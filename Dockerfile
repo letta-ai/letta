@@ -44,20 +44,9 @@ FROM ankane/pgvector:v0.5.1 AS runtime
 # Overridable Node.js version with --build-arg NODE_VERSION
 ARG NODE_VERSION=22
 
-# Allow overriding the OpenTelemetry Collector version and let Docker inject TARGETARCH during build
-ARG OTEL_VERSION=0.96.0
-ARG TARGETARCH
-
-RUN set -eux; \
-    # Map TARGETARCH to the naming used by otel release assets
-    case "${TARGETARCH:-amd64}" in \
-      arm64|aarch64) OTEL_ARCH=arm64 ;; \
-      amd64|x86_64|x64) OTEL_ARCH=amd64 ;; \
-      *) OTEL_ARCH=amd64 ;; \
-    esac; \
-    apt-get update && \
-    # Install curl, Python, and PostgreSQL client libraries
-    apt-get install -y curl python3 python3-venv libpq-dev && \
+RUN apt-get update && \
+    # Install curl, Python, PostgreSQL client libraries, and Redis
+    apt-get install -y curl python3 python3-venv libpq-dev redis-server && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
@@ -95,7 +84,7 @@ COPY --from=builder /app .
 # Copy initialization SQL if it exists
 COPY init.sql /docker-entrypoint-initdb.d/
 
-EXPOSE 8283 5432 4317 4318
+EXPOSE 8283 5432 6379 4317 4318
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["./letta/server/startup.sh"]
