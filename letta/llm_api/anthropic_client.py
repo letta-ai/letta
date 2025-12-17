@@ -28,6 +28,7 @@ from letta.errors import (
 )
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.decorators import deprecated
+from letta.schemas.enums import ProviderCategory
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
@@ -252,17 +253,35 @@ class AnthropicClient(LLMClientBase):
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
         api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
-        if async_client:
-            return (
-                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-                if api_key
-                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+        # Check if this is an OAuth provider to add the OAuth beta header
+        is_oauth = False
+        default_headers = {}
+        if llm_config.provider_category == ProviderCategory.byok:
+            from letta.services.provider_manager import ProviderManager
+
+            _, _, is_oauth = await ProviderManager().get_oauth_credentials_async(
+                llm_config.provider_name, actor=self.actor
             )
-        return (
-            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-            if api_key
-            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
-        )
+
+        if is_oauth:
+            # Add OAuth beta header for OAuth-authenticated requests
+            default_headers["anthropic-beta"] = "oauth-2025-04-20"
+
+        if async_client:
+            if api_key:
+                return anthropic.AsyncAnthropic(
+                    api_key=api_key,
+                    max_retries=model_settings.anthropic_max_retries,
+                    default_headers=default_headers if default_headers else None,
+                )
+            return anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+        if api_key:
+            return anthropic.Anthropic(
+                api_key=api_key,
+                max_retries=model_settings.anthropic_max_retries,
+                default_headers=default_headers if default_headers else None,
+            )
+        return anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
 
     @trace_method
     def build_request_data(

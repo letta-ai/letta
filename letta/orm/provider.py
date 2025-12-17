@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -40,6 +41,32 @@ class Provider(SqlalchemyBase, OrganizationMixin):
     # encrypted columns
     api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted API key or secret key for the provider.")
     access_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted access key for the provider.")
+
+    # OAuth authentication fields
+    auth_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="api_key", doc="Authentication type: 'api_key' or 'oauth'"
+    )
+    oauth_access_token_enc: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="Encrypted OAuth access token"
+    )
+    oauth_refresh_token_enc: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="Encrypted OAuth refresh token"
+    )
+    oauth_token_type: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True, doc="OAuth token type (e.g., 'Bearer')"
+    )
+    oauth_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, doc="OAuth token expiry timestamp"
+    )
+    oauth_scope: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="OAuth scopes granted"
+    )
+    oauth_client_id: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="OAuth client ID"
+    )
+    oauth_client_secret_enc: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="Encrypted OAuth client secret"
+    )
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="providers")

@@ -1,0 +1,6 @@
+# Gitleaks ignore file
+# https://github.com/gitleaks/gitleaks#gitleaksignore
+
+# Anthropic OAuth public client ID (intentionally public, same as Claude Code)
+# This is NOT a secret - it's a public OAuth client identifier
+letta/settings.py:generic-api-key:19

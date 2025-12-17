@@ -332,12 +332,175 @@ class ProviderManager:
     @enforce_types
     @trace_method
     async def get_override_key_async(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+        """
+        Get authentication credential for a provider.
+
+        For OAuth providers, returns the access token (refreshed if expired).
+        For API key providers, returns the decrypted API key.
+        """
         providers = await self.list_providers_async(name=provider_name, actor=actor)
-        if providers:
-            # Decrypt the API key before returning
-            api_key_secret = providers[0].api_key_enc
-            return api_key_secret.get_plaintext() if api_key_secret else None
-        return None
+        if not providers:
+            return None
+
+        provider = providers[0]
+
+        # Handle OAuth providers
+        if provider.is_oauth_provider():
+            # Refresh token if expired
+            if provider.is_oauth_token_expired():
+                provider = await self._refresh_oauth_token_async(provider, actor)
+
+            # Return OAuth access token
+            if provider.oauth_access_token_enc:
+                return Secret.from_encrypted(provider.oauth_access_token_enc).get_plaintext()
+            return None
+
+        # Handle static API key providers (existing behavior)
+        api_key_secret = provider.api_key_enc
+        return api_key_secret.get_plaintext() if api_key_secret else None
+
+    @enforce_types
+    @trace_method
+    async def get_oauth_credentials_async(
+        self, provider_name: Union[str, None], actor: PydanticUser
+    ) -> Tuple[Optional[str], Optional[str], bool]:
+        """
+        Get OAuth credentials for a provider.
+
+        Returns:
+            Tuple of (access_token, token_type, is_oauth)
+            - is_oauth is True if this is an OAuth provider
+            - access_token and token_type are None if not an OAuth provider or credentials unavailable
+        """
+        providers = await self.list_providers_async(name=provider_name, actor=actor)
+        if not providers:
+            return None, None, False
+
+        provider = providers[0]
+
+        if not provider.is_oauth_provider():
+            return None, None, False
+
+        # Refresh token if expired
+        if provider.is_oauth_token_expired():
+            provider = await self._refresh_oauth_token_async(provider, actor)
+
+        # Return OAuth credentials
+        access_token = None
+        if provider.oauth_access_token_enc:
+            access_token = Secret.from_encrypted(provider.oauth_access_token_enc).get_plaintext()
+
+        token_type = provider.oauth_token_type or "Bearer"
+        return access_token, token_type, True
+
+    @enforce_types
+    @trace_method
+    async def _refresh_oauth_token_async(self, provider: PydanticProvider, actor: PydanticUser) -> PydanticProvider:
+        """
+        Refresh an OAuth token for a provider.
+
+        Args:
+            provider: Provider with expired OAuth token
+            actor: User performing the operation
+
+        Returns:
+            Updated provider with refreshed token
+        """
+        import aiohttp
+        from datetime import timedelta, timezone
+
+        logger.info(f"Refreshing OAuth token for provider {provider.name}")
+
+        # Get refresh token
+        if not provider.oauth_refresh_token_enc:
+            raise ValueError(f"No refresh token available for OAuth provider {provider.name}")
+
+        refresh_token = Secret.from_encrypted(provider.oauth_refresh_token_enc).get_plaintext()
+        if not refresh_token:
+            raise ValueError(f"Failed to decrypt refresh token for provider {provider.name}")
+
+        # Get client credentials if available
+        client_secret = None
+        if provider.oauth_client_secret_enc:
+            client_secret = Secret.from_encrypted(provider.oauth_client_secret_enc).get_plaintext()
+
+        # Refresh token based on provider type
+        if provider.provider_type == ProviderType.anthropic:
+            token_data = await self._refresh_anthropic_token_async(
+                refresh_token=refresh_token,
+                client_id=provider.oauth_client_id,
+                client_secret=client_secret,
+            )
+        else:
+            raise ValueError(f"OAuth token refresh not supported for provider type: {provider.provider_type}")
+
+        # Update provider with new tokens
+        from datetime import datetime
+
+        update_data = {
+            "oauth_access_token_enc": Secret.from_plaintext(token_data["access_token"]).get_encrypted(),
+            "oauth_token_type": token_data.get("token_type", "Bearer"),
+            "oauth_expires_at": datetime.now(timezone.utc) + timedelta(seconds=token_data.get("expires_in", 3600)),
+        }
+
+        # Update refresh token if provided
+        if "refresh_token" in token_data and token_data["refresh_token"]:
+            update_data["oauth_refresh_token_enc"] = Secret.from_plaintext(token_data["refresh_token"]).get_encrypted()
+
+        # Persist updated tokens
+        async with db_registry.async_session() as session:
+            provider_model = await ProviderModel.read_async(
+                db_session=session,
+                identifier=provider.id,
+                actor=actor,
+            )
+
+            for key, value in update_data.items():
+                setattr(provider_model, key, value)
+
+            await provider_model.update_async(session, actor=actor)
+            return provider_model.to_pydantic()
+
+    async def _refresh_anthropic_token_async(
+        self,
+        refresh_token: str,
+        client_id: Optional[str],
+        client_secret: Optional[str],
+    ) -> dict:
+        """
+        Refresh an Anthropic OAuth token.
+
+        Uses Anthropic's OAuth token endpoint with the refresh_token grant type.
+        """
+        import aiohttp
+
+        # Anthropic OAuth token endpoint
+        token_url = "https://console.anthropic.com/v1/oauth/token"
+
+        request_data = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        }
+
+        if client_id:
+            request_data["client_id"] = client_id
+        if client_secret:
+            request_data["client_secret"] = client_secret
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                token_url,
+                json=request_data,
+                headers={
+                    "Content-Type": "application/json",
+                    "anthropic-beta": "oauth-2025-04-20",
+                },
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise ValueError(f"Failed to refresh Anthropic OAuth token: {error_text}")
+
+                return await response.json()
 
     @enforce_types
     @trace_method

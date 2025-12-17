@@ -34,6 +34,16 @@ class Provider(ProviderBase):
     organization_id: Optional[str] = Field(None, description="The organization id of the user")
     updated_at: Optional[datetime] = Field(None, description="The last update timestamp of the provider.")
 
+    # OAuth authentication fields
+    auth_type: str = Field("api_key", description="Authentication type: 'api_key' or 'oauth'")
+    oauth_access_token_enc: Optional[str] = Field(None, description="Encrypted OAuth access token")
+    oauth_refresh_token_enc: Optional[str] = Field(None, description="Encrypted OAuth refresh token")
+    oauth_token_type: Optional[str] = Field(None, description="OAuth token type (e.g., 'Bearer')")
+    oauth_expires_at: Optional[datetime] = Field(None, description="OAuth token expiry timestamp")
+    oauth_scope: Optional[str] = Field(None, description="OAuth scopes granted")
+    oauth_client_id: Optional[str] = Field(None, description="OAuth client ID")
+    oauth_client_secret_enc: Optional[str] = Field(None, description="Encrypted OAuth client secret")
+
     @model_validator(mode="after")
     def default_base_url(self):
         if self.provider_type == ProviderType.openai and self.base_url is None:
@@ -120,6 +130,28 @@ class Provider(ProviderBase):
             case _:
                 raise ValueError(f"Unknown provider type: {self.provider_type}")
 
+    def is_oauth_provider(self) -> bool:
+        """Check if this provider uses OAuth authentication."""
+        return self.auth_type == "oauth"
+
+    def is_oauth_token_expired(self, buffer_minutes: int = 5) -> bool:
+        """
+        Check if the OAuth token is expired or about to expire.
+
+        Args:
+            buffer_minutes: Consider token expired if it expires within this many minutes
+
+        Returns:
+            True if token is expired or will expire within buffer period
+        """
+        if not self.is_oauth_provider():
+            return False
+        if self.oauth_expires_at is None:
+            return True
+        from datetime import timezone, timedelta
+        buffer = timedelta(minutes=buffer_minutes)
+        return datetime.now(timezone.utc) > (self.oauth_expires_at - buffer)
+
 
 class ProviderCreate(ProviderBase):
     name: str = Field(..., description="The name of the provider.")
@@ -133,6 +165,34 @@ class ProviderUpdate(ProviderBase):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
     access_key: Optional[str] = Field(None, description="Access key used for requests to the provider.")
     region: Optional[str] = Field(None, description="Region used for requests to the provider.")
+
+
+class ProviderOAuthInitiate(ProviderBase):
+    """Schema for initiating OAuth flow for a provider."""
+
+    name: str = Field(..., description="The name for the provider (e.g., 'my-anthropic-oauth').")
+    provider_type: ProviderType = Field(..., description="The type of the provider (e.g., 'anthropic').")
+    oauth_client_id: str = Field(..., description="OAuth client ID from the provider.")
+    oauth_client_secret: str = Field(..., description="OAuth client secret from the provider.")
+    oauth_redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI (optional, uses default if not provided).")
+    oauth_scope: Optional[str] = Field(None, description="OAuth scopes to request (optional, uses defaults for provider type).")
+
+
+class ProviderOAuthCallback(BaseModel):
+    """Schema for completing OAuth flow after user authorization."""
+
+    code: str = Field(..., description="Authorization code from OAuth callback.")
+    state: str = Field(..., description="State parameter for CSRF protection.")
+
+
+class ProviderOAuthTokens(BaseModel):
+    """Schema for OAuth token data (internal use)."""
+
+    access_token: str = Field(..., description="OAuth access token.")
+    refresh_token: Optional[str] = Field(None, description="OAuth refresh token.")
+    token_type: str = Field("Bearer", description="OAuth token type.")
+    expires_in: int = Field(..., description="Token expiry in seconds.")
+    scope: Optional[str] = Field(None, description="OAuth scopes granted.")
 
 
 class ProviderCheck(BaseModel):

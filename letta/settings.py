@@ -13,6 +13,11 @@ from letta.services.summarizer.enums import SummarizationMode
 DEFAULT_WRAPPER_NAME = "chatml"
 INNER_THOUGHTS_KWARG = "thinking"
 
+# OAuth client IDs for provider authentication
+# NOTE: These are PUBLIC client IDs intended to be shared - NOT secrets
+# They are the same client IDs used by Claude Code and OpenCode
+ANTHROPIC_OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"  # Public client ID for Anthropic OAuth
+
 
 class ToolSettings(BaseSettings):
     # Sandbox Configurations
