@@ -13,6 +13,12 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers.base import Provider
 from letta.settings import model_settings
 
+try:
+    from anthropic import AnthropicFoundry, AsyncAnthropicFoundry
+except ImportError:
+    AnthropicFoundry = None
+    AsyncAnthropicFoundry = None
+
 # https://docs.anthropic.com/claude/docs/models-overview
 # Sadly hardcoded
 MODEL_LIST = [
@@ -93,9 +99,13 @@ MODEL_LIST = [
         "name": "claude-3-5-haiku-latest",
         "context_window": 200000,
     },
-    ## Opus 4.5
     {
         "name": "claude-opus-4-5-20251101",
+        "context_window": 200000,
+    },
+    # Azure deployment name alias
+    {
+        "name": "claude-opus-4-5",
         "context_window": 200000,
     },
 ]
@@ -108,9 +118,17 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
         if api_key:
-            anthropic_client = anthropic.Anthropic(api_key=api_key)
+            base_url = model_settings.anthropic_api_base
+            if base_url:
+                if AnthropicFoundry is None:
+                     raise ImportError("AnthropicFoundry not available. Please upgrade anthropic package.")
+                base_url = base_url.strip()
+                # Use AnthropicFoundry for custom/Azure endpoints
+                logger.debug(f"Using AnthropicFoundry for check_api_key with base_url={base_url}")
+                anthropic_client = AnthropicFoundry(api_key=api_key, base_url=base_url)
+            else:
+                anthropic_client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
             try:
                 # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
                 anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
@@ -128,18 +146,46 @@ class AnthropicProvider(Provider):
         NOTE: currently there is no GET /models, so we need to hardcode
         """
         api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
-        if api_key:
-            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+        
+        base_url = model_settings.anthropic_api_base
+        if base_url:
+            if AsyncAnthropicFoundry is None:
+                 raise ImportError("AsyncAnthropicFoundry not available. Please upgrade anthropic package.")
+            
+            base_url = base_url.strip()
+            # Use AsyncAnthropicFoundry for custom/Azure endpoints
+            
+            if api_key:
+                 anthropic_client = AsyncAnthropicFoundry(api_key=api_key, base_url=base_url)
+            elif model_settings.anthropic_api_key:
+                 # Foundry likely requires api_key
+                 anthropic_client = AsyncAnthropicFoundry(api_key=model_settings.anthropic_api_key, base_url=base_url)
+            else:
+                 # Fallback but likely fail
+                 anthropic_client = AsyncAnthropicFoundry(base_url=base_url)
+
+        elif api_key:
+            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key, base_url=base_url)
         elif model_settings.anthropic_api_key:
-            anthropic_client = anthropic.AsyncAnthropic()
+            anthropic_client = anthropic.AsyncAnthropic(base_url=base_url)
         else:
             raise ValueError("No API key provided")
 
-        models = await anthropic_client.models.list()
-        models_json = models.model_dump()
-        assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
-        models_data = models_json["data"]
+        try:
+            models = await anthropic_client.models.list()
+            models_json = models.model_dump()
+            assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
+            models_data = models_json["data"]
+        except Exception as e:
+            # Fallback for providers that don't support model listing (e.g. Azure)
+            if model_settings.anthropic_api_base:
+                logger.warning(f"Failed to list models from Anthropic API (likely due to custom endpoint): {e}. Falling back to hardcoded list.")
+                # Construct data matching the API response format from our hardcoded list
+                models_data = [{"id": m["name"], "type": "model"} for m in MODEL_LIST]
+            else:
+                raise e
 
+        # Filter and augment the list
         return self._list_llm_models(models_data)
 
     def _list_llm_models(self, models) -> list[LLMConfig]:
