@@ -2,7 +2,16 @@
 # Provider implementations
 from .anthropic import AnthropicProvider
 from .azure import AzureProvider
-from .base import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
+from .base import (
+    Provider,
+    ProviderBase,
+    ProviderCheck,
+    ProviderCreate,
+    ProviderOAuthCallback,
+    ProviderOAuthInitiate,
+    ProviderOAuthTokens,
+    ProviderUpdate,
+)
 from .bedrock import BedrockProvider
 from .cerebras import CerebrasProvider
 from .deepseek import DeepSeekProvider
@@ -26,6 +35,10 @@ __all__ = [
     "ProviderCreate",
     "ProviderUpdate",
     "ProviderCheck",
+    # OAuth schemas
+    "ProviderOAuthInitiate",
+    "ProviderOAuthCallback",
+    "ProviderOAuthTokens",
     # Provider implementations
     "AnthropicProvider",
     "AzureProvider",

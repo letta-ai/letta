@@ -38,6 +38,28 @@ class Provider(ProviderBase):
     api_key_enc: Secret | None = Field(None, description="Encrypted API key as Secret object")
     access_key_enc: Secret | None = Field(None, description="Encrypted access key as Secret object")
 
+    # OAuth authentication fields
+    auth_type: str = Field("api_key", description="Authentication type: 'api_key' or 'oauth'")
+    oauth_access_token_enc: str | None = Field(None, description="Encrypted OAuth access token")
+    oauth_refresh_token_enc: str | None = Field(None, description="Encrypted OAuth refresh token")
+    oauth_token_type: str | None = Field(None, description="OAuth token type (e.g., 'Bearer')")
+    oauth_expires_at: datetime | None = Field(None, description="OAuth token expiry timestamp")
+    oauth_scope: str | None = Field(None, description="OAuth scopes granted")
+    oauth_client_id: str | None = Field(None, description="OAuth client ID")
+    oauth_client_secret_enc: str | None = Field(None, description="Encrypted OAuth client secret")
+
+    def is_oauth_provider(self) -> bool:
+        """Check if this provider uses OAuth authentication."""
+        return self.auth_type == "oauth"
+
+    def is_oauth_token_expired(self, buffer_minutes: int = 5) -> bool:
+        """Check if OAuth token is expired or will expire soon."""
+        if not self.oauth_expires_at:
+            return True
+        from datetime import timezone, timedelta
+        buffer = timedelta(minutes=buffer_minutes)
+        return datetime.now(timezone.utc) >= (self.oauth_expires_at - buffer)
+
     # TODO: remove these checks once fully migrated to encrypted fields
     def __setattr__(self, name: str, value) -> None:
         if name in ("api_key", "access_key"):
@@ -250,3 +272,29 @@ class ProviderCheck(BaseModel):
     region: str | None = Field(None, description="Region used for requests to the provider.")
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
+
+
+class ProviderOAuthInitiate(ProviderBase):
+    """Request to initiate OAuth flow for a provider."""
+
+    provider_type: ProviderType = Field(..., description="The type of the provider")
+    oauth_redirect_uri: str | None = Field(None, description="OAuth redirect URI (optional, uses default)")
+    oauth_scope: str | None = Field(None, description="OAuth scopes to request")
+    oauth_client_id: str | None = Field(None, description="OAuth client ID (optional, uses default for known providers)")
+
+
+class ProviderOAuthCallback(BaseModel):
+    """Response from OAuth callback with authorization code."""
+
+    code: str = Field(..., description="Authorization code from OAuth callback")
+    state: str = Field(..., description="State parameter for CSRF protection")
+
+
+class ProviderOAuthTokens(BaseModel):
+    """OAuth token response."""
+
+    access_token: str = Field(..., description="OAuth access token")
+    refresh_token: str | None = Field(None, description="OAuth refresh token")
+    token_type: str = Field("Bearer", description="Token type")
+    expires_in: int | None = Field(None, description="Token expiration in seconds")
+    scope: str | None = Field(None, description="Granted scopes")

@@ -15,7 +15,7 @@ from letta.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "oauth_providers_001"
-down_revision: Union[str, None] = "ffb17eb241fc"
+down_revision: Union[str, None] = "d0880aae6cee"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
