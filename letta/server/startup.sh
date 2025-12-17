@@ -12,6 +12,29 @@ wait_for_postgres() {
     done
 }
 
+# Function to wait for Redis to be ready
+wait_for_redis() {
+    until redis-cli ping 2>/dev/null | grep -q PONG; do
+        echo "Waiting for Redis to be ready..."
+        sleep 1
+    done
+}
+
+# Check if we're configured for external Redis
+if [ -n "$LETTA_REDIS_HOST" ]; then
+    echo "External Redis configuration detected, using env var LETTA_REDIS_HOST=$LETTA_REDIS_HOST"
+else
+    echo "No external Redis configuration detected, starting internal Redis..."
+    redis-server --daemonize yes --bind 0.0.0.0
+
+    # Wait for Redis to be ready
+    wait_for_redis
+
+    # Set default Redis host for internal redis
+    export LETTA_REDIS_HOST="localhost"
+    echo "Using internal Redis at: $LETTA_REDIS_HOST"
+fi
+
 # Check if we're configured for external Postgres
 if [ -n "$LETTA_PG_URI" ]; then
     echo "External Postgres configuration detected, using env var LETTA_PG_URI"

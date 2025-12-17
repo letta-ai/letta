@@ -45,8 +45,8 @@ FROM ankane/pgvector:v0.5.1 AS runtime
 ARG NODE_VERSION=22
 
 RUN apt-get update && \
-    # Install curl, Python, and PostgreSQL client libraries
-    apt-get install -y curl python3 python3-venv libpq-dev && \
+    # Install curl, Python, PostgreSQL client libraries, and Redis
+    apt-get install -y curl python3 python3-venv libpq-dev redis-server && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \
@@ -82,7 +82,7 @@ COPY --from=builder /app .
 # Copy initialization SQL if it exists
 COPY init.sql /docker-entrypoint-initdb.d/
 
-EXPOSE 8283 5432 4317 4318
+EXPOSE 8283 5432 6379 4317 4318
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["./letta/server/startup.sh"]
