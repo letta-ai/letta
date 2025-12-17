@@ -198,3 +198,39 @@ async def test_count_tokens_with_empty_messages(anthropic_client, llm_config):
         call_args = mock_count_tokens.call_args[1]
         assert call_args["messages"][0]["content"] == "."
         assert call_args["messages"][1]["content"] == "response"
+
+@pytest.mark.asyncio
+async def test_anthropic_foundry_client_initialization(anthropic_client):
+    """
+    Test that the AnthropicClient correctly initializes AnthropicFoundry
+    when anthropic_api_base is set in model_settings.
+    """
+    from letta.settings import model_settings
+    
+    # Needs to be imported inside test if not available globally/mocked
+    try:
+        from anthropic import AnthropicFoundry
+    except ImportError:
+        pytest.skip("AnthropicFoundry not available in installed anthropic version")
+
+    with patch.object(model_settings, "anthropic_api_base", "https://custom-endpoint.azure.com"), \
+         patch.object(model_settings, "anthropic_api_key", "test-key"), \
+         patch("letta.llm_api.anthropic_client.AnthropicFoundry") as MockFoundry:
+        
+        # Test sync client retrieval
+        llm_config = LLMConfig(
+            model="anthropic/claude-opus-4-5",
+            model_endpoint_type="anthropic",
+            model_endpoint="https://custom-endpoint.azure.com",
+            context_window=200000
+        )
+        
+        # Call the private method directly specifically for testing
+        client = anthropic_client._get_anthropic_client(llm_config, async_client=False)
+        
+        # Verify AnthropicFoundry was initialized
+        MockFoundry.assert_called_once()
+        call_kwargs = MockFoundry.call_args[1]
+        assert call_kwargs["base_url"] == "https://custom-endpoint.azure.com"
+        assert call_kwargs["api_key"] == "test-key"
+
