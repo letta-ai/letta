@@ -99,10 +99,14 @@ async def anthropic_messages_proxy(
     # Message persistence happens in the background after the response is returned.
     agent = None
     try:
+        # Check if X-LETTA-AGENT-ID header is provided
+        custom_agent_id = request.headers.get("x-letta-agent-id")
+
         agent = await get_or_create_claude_code_agent(
             server=server,
             actor=actor,
             project_id=project_id,
+            agent_id=custom_agent_id,
         )
         logger.debug(f"[{PROXY_NAME}] Using agent ID: {agent.id}")
     except Exception as e:
