@@ -36560,6 +36560,18 @@
             "title": "Trace Id",
             "description": "The trace id of the agent step."
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "The API request log ID from cloud-api for correlating steps with API requests."
+          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/Message"

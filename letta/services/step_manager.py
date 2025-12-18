@@ -21,6 +21,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.server.rest_api.middleware.request_id import get_request_id
 from letta.services.webhook_service import WebhookService
 from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
@@ -123,6 +124,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "request_id": get_request_id(),  # Get the API request log ID from cloud-api
             "project_id": project_id,
             "status": status if status else StepStatus.PENDING,
             "error_type": error_type,
@@ -182,6 +184,7 @@ class StepManager:
             "tags": [],
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
+            "request_id": get_request_id(),  # Get the API request log ID from cloud-api
             "project_id": project_id,
             "status": status if status else StepStatus.PENDING,
             "error_type": error_type,

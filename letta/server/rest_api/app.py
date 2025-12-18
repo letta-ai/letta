@@ -69,7 +69,7 @@ from letta.server.global_exception_handler import setup_global_exception_handler
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, RequestIdMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -590,6 +590,10 @@ def create_application() -> "FastAPI":
 
     # Add unified logging middleware - enriches log context and logs exceptions
     app.add_middleware(LoggingMiddleware)
+
+    # Add request ID middleware - extracts x-api-request-log-id header and sets it in contextvar
+    # This is a pure ASGI middleware to properly propagate contextvars to streaming responses
+    app.add_middleware(RequestIdMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

@@ -60,6 +60,9 @@ class Step(SqlalchemyBase, ProjectMixin):
     tags: Mapped[Optional[List]] = mapped_column(JSON, doc="Metadata tags.")
     tid: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="Transaction ID that processed the step.")
     trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
+    request_id: Mapped[Optional[str]] = mapped_column(
+        None, nullable=True, doc="The API request log ID from cloud-api for correlating steps with API requests."
+    )
     feedback: Mapped[Optional[str]] = mapped_column(
         None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
     )
