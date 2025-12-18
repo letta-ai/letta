@@ -8174,6 +8174,23 @@
             "description": "The ID of the agent in the format 'agent-<uuid4>'"
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CompactionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -24625,6 +24642,23 @@
         "type": "object",
         "required": ["code"],
         "title": "CodeInput"
+      },
+      "CompactionRequest": {
+        "properties": {
+          "compaction_settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionSettings-Input"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional compaction settings to use for this summarization request. If not provided, the agent's default settings will be used."
+          }
+        },
+        "type": "object",
+        "title": "CompactionRequest"
       },
       "CompactionSettings-Input": {
         "properties": {

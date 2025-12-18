@@ -66,6 +66,7 @@ from letta.server.server import SyncServer
 from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.services.streaming_service import StreamingService
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.settings import settings
 from letta.utils import is_1_0_sdk_version, safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, ToolId
@@ -2091,9 +2092,23 @@ async def preview_model_request(
         )
 
 
+class CompactionRequest(BaseModel):
+    compaction_settings: Optional[CompactionSettings] = Field(
+        default=None,
+        description="Optional compaction settings to use for this summarization request. If not provided, the agent's default settings will be used.",
+    )
+
+
+class CompactionResult(BaseModel):
+    summary_message: str
+    num_messages_before: int
+    num_messages_after: int
+
+
 @router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_messages")
 async def summarize_messages(
     agent_id: AgentId,
+    request: Optional[CompactionRequest] = Body(default=None),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -2121,12 +2136,21 @@ async def summarize_messages(
     if agent_eligible and model_compatible:
         agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
+        compaction_settings = request.compaction_settings if request else None
+        num_messages_before = len(in_context_messages)
         summary_message, messages = await agent_loop.compact(
             messages=in_context_messages,
+            compaction_settings=compaction_settings,
         )
+        num_messages_after = len(messages)
 
         # update the agent state
         await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
+        return CompactionResult(
+            summary_message=summary_message,
+            num_messages_before=num_messages_before,
+            num_messages_after=num_messages_after,
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

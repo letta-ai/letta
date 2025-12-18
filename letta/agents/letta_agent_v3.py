@@ -1332,7 +1332,9 @@ class LettaAgentV3(LettaAgentV2):
         return allowed_tools
 
     @trace_method
-    async def compact(self, messages, trigger_threshold: Optional[int] = None) -> Message:
+    async def compact(
+        self, messages, trigger_threshold: Optional[int] = None, compaction_settings: Optional["CompactionSettings"] = None
+    ) -> Message:
         """Compact the current in-context messages for this agent.
 
         Compaction uses a summarizer LLM configuration derived from
@@ -1341,9 +1343,11 @@ class LettaAgentV3(LettaAgentV2):
         localized to summarization.
         """
 
-        # Use agent's compaction_settings if set, otherwise fall back to
-        # global defaults based on the agent's model handle.
-        if self.agent_state.compaction_settings is not None:
+        # Use the passed-in compaction_settings first, then agent's compaction_settings if set,
+        # otherwise fall back to global defaults based on the agent's model handle.
+        if compaction_settings is not None:
+            summarizer_config = compaction_settings
+        elif self.agent_state.compaction_settings is not None:
             summarizer_config = self.agent_state.compaction_settings
         else:
             # Prefer the new handle field if set, otherwise derive from llm_config
