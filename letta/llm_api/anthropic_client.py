@@ -265,8 +265,9 @@ class AnthropicClient(LLMClientBase):
             )
 
         if is_oauth:
-            # Add OAuth beta header for OAuth-authenticated requests
-            default_headers["anthropic-beta"] = "oauth-2025-04-20"
+            # Add OAuth beta headers for OAuth-authenticated requests
+            # Must include claude-code beta flag for OAuth tokens to work
+            default_headers["anthropic-beta"] = "oauth-2025-04-20,claude-code-20250219"
 
         if async_client:
             if api_key:
