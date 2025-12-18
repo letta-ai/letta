@@ -226,11 +226,14 @@ CORE_MEMORY_LINE_NUMBER_WARNING = "# NOTE: Line numbers shown below (with arrows
 
 # Constants to do with summarization / conversation length window
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
-LLM_MAX_TOKENS = {
+LLM_MAX_CONTEXT_WINDOW = {
     "DEFAULT": 30000,
     # deepseek
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
+    # glm (Z.AI)
+    "glm-4.6": 200000,
+    "glm-4.5": 128000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
     "gpt-5": 272000,
@@ -357,6 +360,9 @@ LLM_MAX_TOKENS = {
     "gemini-2.5-flash-preview-09-2025": 1048576,
     "gemini-2.5-flash-lite-preview-09-2025": 1048576,
     "gemini-2.5-computer-use-preview-10-2025": 1048576,
+    # gemini 3
+    "gemini-3-pro-preview": 1048576,
+    "gemini-3-flash-preview": 1048576,
     # gemini latest aliases
     "gemini-flash-latest": 1048576,
     "gemini-flash-lite-latest": 1048576,

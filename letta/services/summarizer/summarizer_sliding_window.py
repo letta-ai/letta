@@ -101,7 +101,12 @@ async def summarize_via_sliding_window(
 
         # get index of first assistant message after the cutoff point ()
         assistant_message_index = next(
-            (i for i in reversed(range(1, message_cutoff_index + 1)) if in_context_messages[i].role in valid_cutoff_roles), None
+            (
+                i
+                for i in reversed(range(1, message_cutoff_index + 1))
+                if i < len(in_context_messages) and in_context_messages[i].role in valid_cutoff_roles
+            ),
+            None,
         )
         if assistant_message_index is None:
             logger.warning(f"No assistant message found for evicting up to index {message_cutoff_index}, incrementing eviction percentage")

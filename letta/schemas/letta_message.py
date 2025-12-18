@@ -563,9 +563,13 @@ LettaMessageUpdateUnion = Annotated[
 class SystemMessageListResult(UpdateSystemMessage):
     """System message list result with agent context.
 
-    Shape is identical to UpdateSystemMessage but includes the owning agent_id.
+    Shape is identical to UpdateSystemMessage but includes the owning agent_id and message id.
     """
 
+    message_id: str = Field(
+        ...,
+        description="The unique identifier of the message.",
+    )
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
@@ -577,9 +581,13 @@ class SystemMessageListResult(UpdateSystemMessage):
 class UserMessageListResult(UpdateUserMessage):
     """User message list result with agent context.
 
-    Shape is identical to UpdateUserMessage but includes the owning agent_id.
+    Shape is identical to UpdateUserMessage but includes the owning agent_id and message id.
     """
 
+    message_id: str = Field(
+        ...,
+        description="The unique identifier of the message.",
+    )
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
@@ -591,9 +599,13 @@ class UserMessageListResult(UpdateUserMessage):
 class ReasoningMessageListResult(UpdateReasoningMessage):
     """Reasoning message list result with agent context.
 
-    Shape is identical to UpdateReasoningMessage but includes the owning agent_id.
+    Shape is identical to UpdateReasoningMessage but includes the owning agent_id and message id.
     """
 
+    message_id: str = Field(
+        ...,
+        description="The unique identifier of the message.",
+    )
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
@@ -605,9 +617,13 @@ class ReasoningMessageListResult(UpdateReasoningMessage):
 class AssistantMessageListResult(UpdateAssistantMessage):
     """Assistant message list result with agent context.
 
-    Shape is identical to UpdateAssistantMessage but includes the owning agent_id.
+    Shape is identical to UpdateAssistantMessage but includes the owning agent_id and message id.
     """
 
+    message_id: str = Field(
+        ...,
+        description="The unique identifier of the message.",
+    )
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",

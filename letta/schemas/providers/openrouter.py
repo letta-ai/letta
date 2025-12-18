@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_TOKENS
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
@@ -41,6 +41,7 @@ class OpenRouterProvider(OpenAIProvider):
                 model_endpoint=self.base_url,
                 context_window=context_window_size,
                 handle=handle,
+                max_tokens=self.get_default_max_output_tokens(model_name),
                 provider_name=self.name,
                 provider_category=self.provider_category,
             )

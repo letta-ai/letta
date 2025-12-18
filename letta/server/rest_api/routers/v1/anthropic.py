@@ -62,8 +62,8 @@ async def anthropic_messages_proxy(
     # Claude Code sends full conversation history, but we only want to persist the new message
     user_messages = [all_user_messages[-1]] if all_user_messages else []
 
-    # Filter out system/metadata requests
-    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>")]
+    # Filter out system/metadata requests and policy specs
+    user_messages = [s for s in user_messages if not s.startswith("<system-reminder>") and not s.startswith("<policy_spec>")]
     if not user_messages:
         logger.debug(f"[{PROXY_NAME}] Skipping capture/memory for this turn")
 
@@ -99,10 +99,14 @@ async def anthropic_messages_proxy(
     # Message persistence happens in the background after the response is returned.
     agent = None
     try:
+        # Check if X-LETTA-AGENT-ID header is provided
+        custom_agent_id = request.headers.get("x-letta-agent-id")
+
         agent = await get_or_create_claude_code_agent(
             server=server,
             actor=actor,
             project_id=project_id,
+            agent_id=custom_agent_id,
         )
         logger.debug(f"[{PROXY_NAME}] Using agent ID: {agent.id}")
     except Exception as e:

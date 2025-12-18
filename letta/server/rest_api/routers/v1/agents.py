@@ -638,10 +638,11 @@ async def run_tool_for_agent(
         )
 
     # Build environment variables dict from agent secrets
+    # Use pre-decrypted value field (populated in from_orm_async)
     sandbox_env_vars = {}
     if agent.tool_exec_environment_variables:
         for env_var in agent.tool_exec_environment_variables:
-            sandbox_env_vars[env_var.key] = env_var.value_enc.get_plaintext() if env_var.value_enc else None
+            sandbox_env_vars[env_var.key] = env_var.value or ""
 
     # Create tool execution manager and execute the tool
     from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager

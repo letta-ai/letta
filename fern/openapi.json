@@ -19638,6 +19638,97 @@
         }
       }
     },
+    "/v1/metadata/balance": {
+      "get": {
+        "description": "Retrieve the current usage balances for the organization.",
+        "summary": "Retrieve current organization balance",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.retrieveCurrentBalances",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_balance": {
+                      "type": "number"
+                    },
+                    "monthly_credit_balance": {
+                      "type": "number"
+                    },
+                    "purchased_credit_balance": {
+                      "type": "number"
+                    },
+                    "billing_tier": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "total_balance",
+                    "monthly_credit_balance",
+                    "purchased_credit_balance",
+                    "billing_tier"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metadata/feedback": {
+      "post": {
+        "description": "Send feedback from users to improve our services.",
+        "summary": "Send user feedback",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.sendFeedback",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "feature": {
+                    "default": "letta-code",
+                    "type": "string",
+                    "enum": ["letta-code", "sdk"]
+                  }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scheduled-messages/{scheduled_message_id}": {
       "delete": {
         "description": "Delete a scheduled message by its ID for a specific agent.",
@@ -21952,6 +22043,11 @@
             "title": "Content",
             "description": "The message content sent by the assistant (can be a string or an array of content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -21972,9 +22068,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "AssistantMessageListResult",
-        "description": "Assistant message list result with agent context.\n\nShape is identical to UpdateAssistantMessage but includes the owning agent_id."
+        "description": "Assistant message list result with agent context.\n\nShape is identical to UpdateAssistantMessage but includes the owning agent_id and message id."
       },
       "Audio": {
         "properties": {
@@ -34376,6 +34472,11 @@
             "title": "Message Type",
             "default": "reasoning_message"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -34396,9 +34497,9 @@
           }
         },
         "type": "object",
-        "required": ["reasoning", "created_at"],
+        "required": ["reasoning", "message_id", "created_at"],
         "title": "ReasoningMessageListResult",
-        "description": "Reasoning message list result with agent context.\n\nShape is identical to UpdateReasoningMessage but includes the owning agent_id."
+        "description": "Reasoning message list result with agent context.\n\nShape is identical to UpdateReasoningMessage but includes the owning agent_id and message id."
       },
       "RedactedReasoningContent": {
         "properties": {
@@ -36870,6 +36971,11 @@
             "title": "Content",
             "description": "The message content sent by the system (can be a string or an array of multi-modal content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -36890,9 +36996,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "SystemMessageListResult",
-        "description": "System message list result with agent context.\n\nShape is identical to UpdateSystemMessage but includes the owning agent_id."
+        "description": "System message list result with agent context.\n\nShape is identical to UpdateSystemMessage but includes the owning agent_id and message id."
       },
       "TagSchema": {
         "properties": {
@@ -39541,6 +39647,11 @@
             "title": "Content",
             "description": "The message content sent by the user (can be a string or an array of multi-modal content parts)"
           },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -39561,9 +39672,9 @@
           }
         },
         "type": "object",
-        "required": ["content", "created_at"],
+        "required": ["content", "message_id", "created_at"],
         "title": "UserMessageListResult",
-        "description": "User message list result with agent context.\n\nShape is identical to UpdateUserMessage but includes the owning agent_id."
+        "description": "User message list result with agent context.\n\nShape is identical to UpdateUserMessage but includes the owning agent_id and message id."
       },
       "UserUpdate": {
         "properties": {

@@ -108,7 +108,7 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if api_key:
             anthropic_client = anthropic.Anthropic(api_key=api_key)
             try:
@@ -121,13 +121,23 @@ class AnthropicProvider(Provider):
         else:
             raise ValueError("No API key provided")
 
+    def get_default_max_output_tokens(self, model_name: str) -> int:
+        """Get the default max output tokens for Anthropic models."""
+        if "opus" in model_name:
+            return 16384
+        elif "sonnet" in model_name:
+            return 16384
+        elif "haiku" in model_name:
+            return 8192
+        return 8192  # default for anthropic
+
     async def list_llm_models_async(self) -> list[LLMConfig]:
         """
         https://docs.anthropic.com/claude/docs/models-overview
 
         NOTE: currently there is no GET /models, so we need to hardcode
         """
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if api_key:
             anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
         elif model_settings.anthropic_api_key:
@@ -171,11 +181,7 @@ class AnthropicProvider(Provider):
             except Exception:
                 pass
 
-            max_tokens = 8192
-            if "claude-3-opus" in model["id"]:
-                max_tokens = 4096
-            if "claude-3-haiku" in model["id"]:
-                max_tokens = 4096
+            max_tokens = self.get_default_max_output_tokens(model["id"])
             # TODO: set for 3-7 extended thinking mode
 
             # NOTE: from 2025-02

@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from letta.agents.base_agent import BaseAgent
+from letta.agents.letta_agent import LettaAgent
 from letta.interface import AgentInterface
 from letta.orm import User
 from letta.schemas.agent import AgentState
@@ -204,14 +205,14 @@ class DynamicMultiAgent(BaseAgent):
             "holds info about them, and you should use this context to inform your decision."
         )
         self.agent_state.memory.update_block_value(label="persona", value=persona_block.value + group_chat_manager_persona)
-        return Agent(
+        return LettaAgent(
             agent_state=self.agent_state,
             interface=self.interface,
             user=self.user,
             save_last_response=True,
         )
 
-    def load_participant_agent(self, agent_id: str) -> Agent:
+    def load_participant_agent(self, agent_id: str) -> LettaAgent:
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user)
         persona_block = agent_state.memory.get_block(label="persona")
         group_chat_participant_persona = (
@@ -220,7 +221,7 @@ class DynamicMultiAgent(BaseAgent):
             f"Description of the group: {self.description}. About you: "
         )
         agent_state.memory.update_block_value(label="persona", value=group_chat_participant_persona + persona_block.value)
-        return Agent(
+        return LettaAgent(
             agent_state=agent_state,
             interface=self.interface,
             user=self.user,

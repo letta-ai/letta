@@ -101,8 +101,8 @@ class SandboxConfigManager:
                 return db_sandbox.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def update_sandbox_config_async(
         self, sandbox_config_id: str, sandbox_update: SandboxConfigUpdate, actor: PydanticUser
     ) -> PydanticSandboxConfig:
@@ -130,8 +130,8 @@ class SandboxConfigManager:
             return sandbox.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def delete_sandbox_config_async(self, sandbox_config_id: str, actor: PydanticUser) -> PydanticSandboxConfig:
         """Delete a sandbox configuration by its ID."""
         async with db_registry.async_session() as session:
@@ -178,8 +178,8 @@ class SandboxConfigManager:
                 return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def create_sandbox_env_var_async(
         self, env_var_create: SandboxEnvironmentVariableCreate, sandbox_config_id: str, actor: PydanticUser
     ) -> PydanticEnvVar:
@@ -267,8 +267,8 @@ class SandboxConfigManager:
             return await PydanticEnvVar.from_orm_async(env_var)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def list_sandbox_env_vars_async(
         self,
         sandbox_config_id: str,
@@ -285,7 +285,10 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 sandbox_config_id=sandbox_config_id,
             )
-            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
+            result = []
+            for env_var in env_vars:
+                result.append(await PydanticEnvVar.from_orm_async(env_var))
+            return result
 
     @enforce_types
     @trace_method
@@ -301,11 +304,14 @@ class SandboxConfigManager:
                 organization_id=actor.organization_id,
                 key=key,
             )
-            return [await PydanticEnvVar.from_orm_async(env_var) for env_var in env_vars]
+            result = []
+            for env_var in env_vars:
+                result.append(await PydanticEnvVar.from_orm_async(env_var))
+            return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     def get_sandbox_env_vars_as_dict(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -317,8 +323,8 @@ class SandboxConfigManager:
         return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def get_sandbox_env_vars_as_dict_async(
         self, sandbox_config_id: str, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50
     ) -> Dict[str, str]:
@@ -327,8 +333,8 @@ class SandboxConfigManager:
         return {env_var.key: env_var.value for env_var in env_vars}
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
+    @trace_method
     async def get_sandbox_env_var_by_key_and_sandbox_config_id_async(
         self, key: str, sandbox_config_id: str, actor: Optional[PydanticUser] = None
     ) -> Optional[PydanticEnvVar]:

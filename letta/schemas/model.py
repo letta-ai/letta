@@ -285,7 +285,7 @@ class AnthropicModelSettings(ModelSettings):
             "temperature": self.temperature,
             "max_tokens": self.max_output_tokens,
             "extended_thinking": self.thinking.type == "enabled",
-            "thinking_budget_tokens": self.thinking.budget_tokens,
+            "max_reasoning_tokens": self.thinking.budget_tokens,
             "verbosity": self.verbosity,
             "parallel_tool_calls": self.parallel_tool_calls,
             "effort": self.effort,

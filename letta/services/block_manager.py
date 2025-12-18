@@ -134,8 +134,8 @@ class BlockManager:
             return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         async with db_registry.async_session() as session:
@@ -154,8 +154,8 @@ class BlockManager:
             return pydantic_block
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def delete_block_async(self, block_id: str, actor: PydanticUser) -> None:
         """Delete a block by its ID."""
         async with db_registry.async_session() as session:
@@ -353,8 +353,8 @@ class BlockManager:
             return [block.to_pydantic() for block in blocks]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
         async with db_registry.async_session() as session:
@@ -413,8 +413,8 @@ class BlockManager:
             return pydantic_blocks
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def get_agents_for_block_async(
         self,
         block_id: str,
@@ -600,9 +600,9 @@ class BlockManager:
             return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def checkpoint_block_async(
         self,
         block_id: str,
@@ -710,8 +710,8 @@ class BlockManager:
         return updated_block
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def undo_checkpoint_block(
         self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
     ) -> PydanticBlock:
@@ -761,8 +761,8 @@ class BlockManager:
             return block.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def redo_checkpoint_block(
         self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
     ) -> PydanticBlock:

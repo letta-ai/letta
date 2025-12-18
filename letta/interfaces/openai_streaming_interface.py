@@ -30,6 +30,7 @@ from openai.types.responses import (
 from openai.types.responses.response_stream_event import ResponseStreamEvent
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.llm_api.error_utils import is_context_window_overflow_message
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
@@ -745,6 +746,14 @@ class SimpleOpenAIStreamingInterface:
 
         except Exception as e:
             import traceback
+
+            # IMPORTANT: If this is a context window overflow, we should propagate the
+            # exception upward so the agent loop can compact/summarize + retry.
+            # Yielding an error stop reason here would prematurely terminate the user's
+            # stream even though a retry path exists.
+            msg = str(e)
+            if is_context_window_overflow_message(msg):
+                raise
 
             logger.exception("Error processing stream: %s", e)
             if ttft_span:

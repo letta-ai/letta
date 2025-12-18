@@ -8,7 +8,7 @@ AGENTS_CREATE_PARAMS = [
             # Verify model_settings is populated with config values
             # Note: The 'model' field itself is separate from model_settings
             "model_settings": {
-                "max_output_tokens": 4096,
+                "max_output_tokens": 16384,
                 "parallel_tool_calls": False,
                 "provider_type": "openai",
                 "temperature": 0.7,
@@ -27,7 +27,7 @@ AGENTS_UPDATE_PARAMS = [
         {
             # After updating just the name, model_settings should still be present
             "model_settings": {
-                "max_output_tokens": 4096,
+                "max_output_tokens": 16384,
                 "parallel_tool_calls": False,
                 "provider_type": "openai",
                 "temperature": 0.7,

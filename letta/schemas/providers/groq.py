@@ -16,7 +16,7 @@ class GroqProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         response = await openai_get_model_list_async(self.base_url, api_key=api_key)
         configs = []
         for model in response["data"]:
@@ -29,6 +29,7 @@ class GroqProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
                     handle=self.get_handle(model["id"]),
+                    max_tokens=self.get_default_max_output_tokens(model["id"]),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )

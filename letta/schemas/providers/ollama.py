@@ -125,6 +125,7 @@ class OllamaProvider(OpenAIProvider):
                     # model_wrapper=self.default_prompt_formatter,
                     context_window=context_window,
                     handle=self.get_handle(model_name),
+                    max_tokens=self.get_default_max_output_tokens(model_name),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                     # put_inner_thoughts_in_kwargs=True,
