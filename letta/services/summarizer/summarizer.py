@@ -434,6 +434,7 @@ async def simple_summary(
     # Build the initial transcript without clamping to preserve fidelity
     # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
+    logger.info(f"Summarizing {len(messages)} messages with prompt: {system_prompt}")
 
     if include_ack:
         logger.info(f"Summarizing with ACK for model {llm_config.model}")
@@ -594,6 +595,7 @@ async def simple_summary(
                     logger.info(f"Full fallback summarization payload: {request_data}")
                     raise llm_client.handle_llm_error(fallback_error_b)
 
+    logger.info(f"Summarized {len(messages)}: {summary}")
     return summary
 
 

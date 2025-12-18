@@ -2145,13 +2145,13 @@ async def summarize_messages(
         num_messages_after = len(messages)
 
         # update the agent state
-        await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
         logger.info(f"Summarized {num_messages_before} messages to {num_messages_after}")
         if num_messages_before <= num_messages_after:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Summarization failed to reduce the number of messages. You may need to use a different CompactionSettings (e.g. using `all` mode).",
             )
+        await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
         return CompactionResponse(
             summary=summary,
             num_messages_before=num_messages_before,
