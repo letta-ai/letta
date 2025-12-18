@@ -216,10 +216,15 @@ async def initiate_oauth(
     # Generate state for CSRF protection
     state = secrets.token_urlsafe(32)
 
+    # Use default Anthropic OAuth client ID if not provided
+    from letta.settings import ANTHROPIC_OAUTH_CLIENT_ID
+
+    client_id = request.oauth_client_id or ANTHROPIC_OAUTH_CLIENT_ID
+
     # Build authorization URL for Anthropic
     auth_params = {
         "code": "true",
-        "client_id": request.oauth_client_id,
+        "client_id": client_id,
         "response_type": "code",
         "redirect_uri": request.oauth_redirect_uri or "https://console.anthropic.com/oauth/code/callback",
         "scope": request.oauth_scope or "org:create_api_key user:profile user:inference",
