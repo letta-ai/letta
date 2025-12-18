@@ -208,10 +208,11 @@ async def initiate_oauth(
             content={"error": f"OAuth not supported for provider type: {request.provider_type}"},
         )
 
-    # Generate PKCE code verifier and challenge
+    # Generate PKCE code verifier and challenge (base64url encoded per RFC 7636)
+    import base64
     code_verifier = secrets.token_urlsafe(32)
     code_challenge = hashlib.sha256(code_verifier.encode()).digest()
-    code_challenge_b64 = code_challenge.hex()  # Use hex for simplicity in demo
+    code_challenge_b64 = base64.urlsafe_b64encode(code_challenge).rstrip(b'=').decode('ascii')
 
     # Generate state for CSRF protection
     state = secrets.token_urlsafe(32)
