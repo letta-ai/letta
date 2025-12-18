@@ -234,7 +234,9 @@ class LLMClientBase:
         Returns the override key for the given llm config.
         """
         api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
+        # Check for BYOK credentials if provider_category is byok OR if provider_name is set
+        # (provider_name indicates a custom provider that should have credentials)
+        if llm_config.provider_category == ProviderCategory.byok or llm_config.provider_name:
             from letta.services.provider_manager import ProviderManager
 
             api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
