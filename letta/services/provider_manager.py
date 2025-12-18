@@ -352,7 +352,7 @@ class ProviderManager:
 
             # Return OAuth access token
             if provider.oauth_access_token_enc:
-                return Secret.from_encrypted(provider.oauth_access_token_enc).get_plaintext()
+                return provider.oauth_access_token_enc.get_plaintext()
             return None
 
         # Handle static API key providers (existing behavior)
@@ -388,7 +388,7 @@ class ProviderManager:
         # Return OAuth credentials
         access_token = None
         if provider.oauth_access_token_enc:
-            access_token = Secret.from_encrypted(provider.oauth_access_token_enc).get_plaintext()
+            access_token = provider.oauth_access_token_enc.get_plaintext()
 
         token_type = provider.oauth_token_type or "Bearer"
         return access_token, token_type, True
@@ -415,14 +415,14 @@ class ProviderManager:
         if not provider.oauth_refresh_token_enc:
             raise ValueError(f"No refresh token available for OAuth provider {provider.name}")
 
-        refresh_token = Secret.from_encrypted(provider.oauth_refresh_token_enc).get_plaintext()
+        refresh_token = provider.oauth_refresh_token_enc.get_plaintext()
         if not refresh_token:
             raise ValueError(f"Failed to decrypt refresh token for provider {provider.name}")
 
         # Get client credentials if available
         client_secret = None
         if provider.oauth_client_secret_enc:
-            client_secret = Secret.from_encrypted(provider.oauth_client_secret_enc).get_plaintext()
+            client_secret = provider.oauth_client_secret_enc.get_plaintext()
 
         # Refresh token based on provider type
         if provider.provider_type == ProviderType.anthropic:

@@ -40,13 +40,13 @@ class Provider(ProviderBase):
 
     # OAuth authentication fields
     auth_type: str = Field("api_key", description="Authentication type: 'api_key' or 'oauth'")
-    oauth_access_token_enc: str | None = Field(None, description="Encrypted OAuth access token")
-    oauth_refresh_token_enc: str | None = Field(None, description="Encrypted OAuth refresh token")
+    oauth_access_token_enc: Secret | None = Field(None, description="Encrypted OAuth access token")
+    oauth_refresh_token_enc: Secret | None = Field(None, description="Encrypted OAuth refresh token")
     oauth_token_type: str | None = Field(None, description="OAuth token type (e.g., 'Bearer')")
     oauth_expires_at: datetime | None = Field(None, description="OAuth token expiry timestamp")
     oauth_scope: str | None = Field(None, description="OAuth scopes granted")
     oauth_client_id: str | None = Field(None, description="OAuth client ID")
-    oauth_client_secret_enc: str | None = Field(None, description="Encrypted OAuth client secret")
+    oauth_client_secret_enc: Secret | None = Field(None, description="Encrypted OAuth client secret")
 
     def is_oauth_provider(self) -> bool:
         """Check if this provider uses OAuth authentication."""

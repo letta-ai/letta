@@ -256,7 +256,8 @@ class AnthropicClient(LLMClientBase):
         # Check if this is an OAuth provider to add the OAuth beta header
         is_oauth = False
         default_headers = {}
-        if llm_config.provider_category == ProviderCategory.byok:
+        # Check for OAuth if provider_category is byok OR if provider_name is set
+        if llm_config.provider_category == ProviderCategory.byok or llm_config.provider_name:
             from letta.services.provider_manager import ProviderManager
 
             _, _, is_oauth = await ProviderManager().get_oauth_credentials_async(
@@ -269,6 +270,13 @@ class AnthropicClient(LLMClientBase):
 
         if async_client:
             if api_key:
+                if is_oauth:
+                    # For OAuth, use auth_token parameter instead of api_key
+                    return anthropic.AsyncAnthropic(
+                        auth_token=api_key,
+                        max_retries=model_settings.anthropic_max_retries,
+                        default_headers=default_headers if default_headers else None,
+                    )
                 return anthropic.AsyncAnthropic(
                     api_key=api_key,
                     max_retries=model_settings.anthropic_max_retries,
@@ -276,6 +284,13 @@ class AnthropicClient(LLMClientBase):
                 )
             return anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
         if api_key:
+            if is_oauth:
+                # For OAuth, use auth_token parameter instead of api_key
+                return anthropic.Anthropic(
+                    auth_token=api_key,
+                    max_retries=model_settings.anthropic_max_retries,
+                    default_headers=default_headers if default_headers else None,
+                )
             return anthropic.Anthropic(
                 api_key=api_key,
                 max_retries=model_settings.anthropic_max_retries,

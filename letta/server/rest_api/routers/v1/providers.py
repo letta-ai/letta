@@ -328,8 +328,8 @@ async def complete_oauth(
         provider_category=ProviderCategory.byok,
         organization_id=actor.organization_id,
         auth_type="oauth",
-        oauth_access_token_enc=Secret.from_plaintext(token_data["access_token"]).get_encrypted(),
-        oauth_refresh_token_enc=Secret.from_plaintext(token_data.get("refresh_token")).get_encrypted()
+        oauth_access_token_enc=Secret.from_plaintext(token_data["access_token"]),
+        oauth_refresh_token_enc=Secret.from_plaintext(token_data.get("refresh_token"))
         if token_data.get("refresh_token")
         else None,
         oauth_token_type=token_data.get("token_type", "Bearer"),
