@@ -2099,13 +2099,13 @@ class CompactionRequest(BaseModel):
     )
 
 
-class CompactionResult(BaseModel):
+class CompactionResponse(BaseModel):
     summary_message: str
     num_messages_before: int
     num_messages_after: int
 
 
-@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_messages")
+@router.post("/{agent_id}/summarize", response_model=CompactionResponse, operation_id="summarize_messages")
 async def summarize_messages(
     agent_id: AgentId,
     request: Optional[CompactionRequest] = Body(default=None),
@@ -2146,7 +2146,7 @@ async def summarize_messages(
 
         # update the agent state
         await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
-        return CompactionResult(
+        return CompactionResponse(
             summary_message=summary_message,
             num_messages_before=num_messages_before,
             num_messages_after=num_messages_after,

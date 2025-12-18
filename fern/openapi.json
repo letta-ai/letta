@@ -8192,8 +8192,15 @@
           }
         },
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompactionResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -24659,6 +24666,29 @@
         },
         "type": "object",
         "title": "CompactionRequest"
+      },
+      "CompactionResponse": {
+        "properties": {
+          "summary_message": {
+            "type": "string",
+            "title": "Summary Message"
+          },
+          "num_messages_before": {
+            "type": "integer",
+            "title": "Num Messages Before"
+          },
+          "num_messages_after": {
+            "type": "integer",
+            "title": "Num Messages After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary_message",
+          "num_messages_before",
+          "num_messages_after"
+        ],
+        "title": "CompactionResponse"
       },
       "CompactionSettings-Input": {
         "properties": {
