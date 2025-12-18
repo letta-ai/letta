@@ -15,33 +15,10 @@ Letta is the platform for building stateful agents: open AI with advanced memory
 * [**Examples and tutorials**](https://docs.letta.com/guides/ade/overview): Working code examples for common use cases and agent patterns
 * [**API reference**](https://app.letta.com/): Complete REST API and SDK documentation for Python and TypeScript
 
-## Get started with Letta Code
-
-**Letta Code** is a memory-first coding harness, built on top of the Letta API.
-Instead of working in independent sessions, you work with a persisted agent that learns over time and is portable across models.
-
-**Read more about how to use Letta Code on the [official docs page](https://docs.letta.com/letta-code), or on the [GitHub repo](https://github.com/letta-ai/letta-code).**
-
-Install Letta Code with `npm`:
-```bash
-npm install -g @letta-ai/letta-code
-```
-
-Once installed, run with `letta` (see the [quickstart guide](https://docs.letta.com/letta-code/quickstart) to setup instructions):
-```
-$ letta
-
-   ██████    Letta Code v0.7.0
- ██      ██  claude-opus-4-5-20251101 · API key auth
- ██  ▇▇  ██  ~/dev/letta-code
- ██      ██
-   ██████
-
-─────────────────────────────────────────────────────────────────────────────────────────────────────────────
->  
-─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Press / for commands or @ for files                              Letta Code v0.7.0 [claude-opus-4-5-20251101]
-```
+> [!NOTE]
+> **Letta Code** is a memory-first coding harness, built on top of the Letta API. Instead of working in independent sessions, you work with a persisted agent that learns over time and is portable across models. You can use Letta Code to interact with any Letta agent via the CLI.
+> 
+> Read more about how to use Letta Code on the [official docs page](https://docs.letta.com/letta-code), or on the [Letta Code GitHub repo](https://github.com/letta-ai/letta-code).
 
 ## Get started with the Letta API
 
