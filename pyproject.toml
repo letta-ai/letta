@@ -69,6 +69,7 @@ dependencies = [
     "ruff[dev]>=0.12.10",
     "trafilatura",
     "readability-lxml",
+    "voyageai>=0.3.7",
     "google-genai>=1.52.0",
     "datadog>=0.49.1",
     "psutil>=5.9.0",
