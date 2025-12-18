@@ -10,12 +10,12 @@
 
 Letta is the platform for building stateful agents: open AI with advanced memory that can learn and self-improve over time.
 
-* [**Quickstart**](https://docs.letta.com): Build your first stateful agent in 5 minutes using Python or TypeScript
-* [**Understanding agent memory**](): Learn about memory blocks, tools, and how Letta agents maintain state
-* [**Examples and tutorials**](https://docs.letta.com/guides/ade/overview): Working code examples for common use cases and agent patterns
-* [**API reference**](https://app.letta.com/): Complete REST API and SDK documentation for Python and TypeScript
+* [**Quickstart**](https://docs.letta.com/quickstart): Build your first stateful agent in 5 minutes using Python or TypeScript
+* [**Understanding agent memory**](https://docs.letta.com/core-concepts): Learn about memory blocks, tools, and how Letta agents maintain state
+* [**Examples and tutorials**](https://docs.letta.com/tutorials/): Working code examples for common use cases and agent patterns
+* [**API reference**](https://docs.letta.com/api): Complete REST API and SDK documentation for Python and TypeScript
 
-> [!NOTE]
+> [!TIP]
 > **Letta Code** is a memory-first coding harness, built on top of the Letta API. Instead of working in independent sessions, you work with a persisted agent that learns over time and is portable across models. You can use Letta Code to interact with any Letta agent via the CLI.
 > 
 > Read more about how to use Letta Code on the [official docs page](https://docs.letta.com/letta-code), or on the [Letta Code GitHub repo](https://github.com/letta-ai/letta-code).
