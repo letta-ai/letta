@@ -684,7 +684,7 @@ class LettaAgentV3(LettaAgentV2):
                             # checkpoint summarized messages
                             # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
-                                summary_message, messages = await self.compact(
+                                summary_message, messages, _ = await self.compact(
                                     messages, trigger_threshold=self.agent_state.llm_config.context_window
                                 )
                                 self.logger.info("Summarization succeeded, continuing to retry LLM request")
@@ -795,7 +795,7 @@ class LettaAgentV3(LettaAgentV2):
                 self.logger.info(
                     f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
-                summary_message, messages = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
+                summary_message, messages, _ = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
                 # TODO: persist + return the summary message
                 # TODO: convert this to a SummaryMessage
                 self.response_messages.append(summary_message)
@@ -1334,7 +1334,7 @@ class LettaAgentV3(LettaAgentV2):
     @trace_method
     async def compact(
         self, messages, trigger_threshold: Optional[int] = None, compaction_settings: Optional["CompactionSettings"] = None
-    ) -> Message:
+    ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
         Compaction uses a summarizer LLM configuration derived from
@@ -1470,7 +1470,7 @@ class LettaAgentV3(LettaAgentV2):
         if len(compacted_messages) > 1:
             final_messages += compacted_messages[1:]
 
-        return summary_message_obj, final_messages
+        return summary_message_obj, final_messages, summary
 
     @staticmethod
     def _build_summarizer_llm_config(

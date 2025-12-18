@@ -2100,7 +2100,7 @@ class CompactionRequest(BaseModel):
 
 
 class CompactionResponse(BaseModel):
-    summary_message: str
+    summary: str
     num_messages_before: int
     num_messages_after: int
 
@@ -2138,7 +2138,7 @@ async def summarize_messages(
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
         compaction_settings = request.compaction_settings if request else None
         num_messages_before = len(in_context_messages)
-        summary_message, messages = await agent_loop.compact(
+        summary_message, messages, summary = await agent_loop.compact(
             messages=in_context_messages,
             compaction_settings=compaction_settings,
         )
@@ -2146,8 +2146,14 @@ async def summarize_messages(
 
         # update the agent state
         await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
+        logger.info(f"Summarized {num_messages_before} messages to {num_messages_after}")
+        if num_messages_before <= num_messages_after:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Summarization failed to reduce the number of messages. You may need to use a different CompactionSettings (e.g. using `all` mode).",
+            )
         return CompactionResponse(
-            summary_message=summary_message,
+            summary=summary,
             num_messages_before=num_messages_before,
             num_messages_after=num_messages_after,
         )

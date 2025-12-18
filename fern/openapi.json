@@ -24669,9 +24669,9 @@
       },
       "CompactionResponse": {
         "properties": {
-          "summary_message": {
+          "summary": {
             "type": "string",
-            "title": "Summary Message"
+            "title": "Summary"
           },
           "num_messages_before": {
             "type": "integer",
@@ -24683,11 +24683,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "summary_message",
-          "num_messages_before",
-          "num_messages_after"
-        ],
+        "required": ["summary", "num_messages_before", "num_messages_after"],
         "title": "CompactionResponse"
       },
       "CompactionSettings-Input": {
