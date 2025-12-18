@@ -19791,7 +19791,7 @@
                             "data": {
                               "type": "object",
                               "properties": {
-                                "sessionId": {
+                                "session_id": {
                                   "type": "string"
                                 },
                                 "version": {
@@ -19800,11 +19800,11 @@
                                 "platform": {
                                   "type": "string"
                                 },
-                                "nodeVersion": {
+                                "node_version": {
                                   "type": "string"
                                 }
                               },
-                              "required": ["sessionId"]
+                              "required": ["session_id"]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19822,20 +19822,20 @@
                             "data": {
                               "type": "object",
                               "properties": {
-                                "sessionId": {
+                                "session_id": {
                                   "type": "string"
                                 },
                                 "duration": {
                                   "type": "number"
                                 },
-                                "messageCount": {
+                                "message_count": {
                                   "type": "number"
                                 },
-                                "toolCallCount": {
+                                "tool_call_count": {
                                   "type": "number"
                                 }
                               },
-                              "required": ["sessionId"]
+                              "required": ["session_id"]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19853,10 +19853,10 @@
                             "data": {
                               "type": "object",
                               "properties": {
-                                "sessionId": {
+                                "session_id": {
                                   "type": "string"
                                 },
-                                "toolName": {
+                                "tool_name": {
                                   "type": "string"
                                 },
                                 "success": {
@@ -19865,11 +19865,11 @@
                                 "duration": {
                                   "type": "number"
                                 },
-                                "errorType": {
+                                "error_type": {
                                   "type": "string"
                                 }
                               },
-                              "required": ["sessionId", "toolName", "success"]
+                              "required": ["session_id", "tool_name", "success"]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19887,13 +19887,13 @@
                             "data": {
                               "type": "object",
                               "properties": {
-                                "sessionId": {
+                                "session_id": {
                                   "type": "string"
                                 },
-                                "errorType": {
+                                "error_type": {
                                   "type": "string"
                                 },
-                                "errorMessage": {
+                                "error_message": {
                                   "type": "string"
                                 },
                                 "context": {
@@ -19904,9 +19904,9 @@
                                 }
                               },
                               "required": [
-                                "sessionId",
-                                "errorType",
-                                "errorMessage",
+                                "session_id",
+                                "error_type",
+                                "error_message",
                                 "context"
                               ]
                             }
@@ -19926,24 +19926,24 @@
                             "data": {
                               "type": "object",
                               "properties": {
-                                "sessionId": {
+                                "session_id": {
                                   "type": "string"
                                 },
                                 "action": {
                                   "type": "string"
                                 },
-                                "agentId": {
+                                "agent_id": {
                                   "type": "string"
                                 },
-                                "messageType": {
+                                "message_type": {
                                   "type": "string"
                                 }
                               },
                               "required": [
-                                "sessionId",
+                                "session_id",
                                 "action",
-                                "agentId",
-                                "messageType"
+                                "agent_id",
+                                "message_type"
                               ]
                             }
                           },
