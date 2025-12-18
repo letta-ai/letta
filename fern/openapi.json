@@ -19729,6 +19729,232 @@
         }
       }
     },
+    "/v1/metadata/telemetry": {
+      "post": {
+        "description": "Send telemetry events for usage tracking and analysis.",
+        "summary": "Send telemetry event",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.sendTelemetry",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "service": {
+                    "type": "string",
+                    "enum": ["letta-code"]
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "discriminator": {
+                        "propertyName": "type"
+                      },
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["session_start"]
+                            },
+                            "timestamp": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "sessionId": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "platform": {
+                                  "type": "string"
+                                },
+                                "nodeVersion": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["sessionId"]
+                            }
+                          },
+                          "required": ["type", "timestamp", "data"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["session_end"]
+                            },
+                            "timestamp": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "sessionId": {
+                                  "type": "string"
+                                },
+                                "duration": {
+                                  "type": "number"
+                                },
+                                "messageCount": {
+                                  "type": "number"
+                                },
+                                "toolCallCount": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["sessionId"]
+                            }
+                          },
+                          "required": ["type", "timestamp", "data"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["tool_usage"]
+                            },
+                            "timestamp": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "sessionId": {
+                                  "type": "string"
+                                },
+                                "toolName": {
+                                  "type": "string"
+                                },
+                                "success": {
+                                  "type": "boolean"
+                                },
+                                "duration": {
+                                  "type": "number"
+                                },
+                                "errorType": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["sessionId", "toolName", "success"]
+                            }
+                          },
+                          "required": ["type", "timestamp", "data"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["error"]
+                            },
+                            "timestamp": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "sessionId": {
+                                  "type": "string"
+                                },
+                                "errorType": {
+                                  "type": "string"
+                                },
+                                "errorMessage": {
+                                  "type": "string"
+                                },
+                                "context": {
+                                  "type": "string"
+                                },
+                                "stack": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "sessionId",
+                                "errorType",
+                                "errorMessage",
+                                "context"
+                              ]
+                            }
+                          },
+                          "required": ["type", "timestamp", "data"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["agent_interaction"]
+                            },
+                            "timestamp": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "sessionId": {
+                                  "type": "string"
+                                },
+                                "action": {
+                                  "type": "string"
+                                },
+                                "agentId": {
+                                  "type": "string"
+                                },
+                                "messageType": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "sessionId",
+                                "action",
+                                "agentId",
+                                "messageType"
+                              ]
+                            }
+                          },
+                          "required": ["type", "timestamp", "data"]
+                        }
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["service", "events"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scheduled-messages/{scheduled_message_id}": {
       "delete": {
         "description": "Delete a scheduled message by its ID for a specific agent.",
