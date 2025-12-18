@@ -224,40 +224,32 @@ class SimpleGeminiStreamingInterface:
                 # NOTE: the thought_signature comes on the Part with the function_call
                 thought_signature = part.thought_signature
                 self.thinking_signature = base64.b64encode(thought_signature).decode("utf-8")
-                if prev_message_type and prev_message_type != "reasoning_message":
-                    message_index += 1
-                yield ReasoningMessage(
-                    id=self.letta_message_id,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    source="reasoner_model",
-                    reasoning="",
-                    signature=self.thinking_signature,
-                )
-                prev_message_type = "reasoning_message"
+                # Don't emit empty reasoning message - signature will be attached to actual reasoning content
 
             # Thinking summary content part (bool means text is thought part)
             if part.thought:
                 reasoning_summary = part.text
-                if prev_message_type and prev_message_type != "reasoning_message":
-                    message_index += 1
-                yield ReasoningMessage(
-                    id=self.letta_message_id,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    source="reasoner_model",
-                    reasoning=reasoning_summary,
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                prev_message_type = "reasoning_message"
-                self.content_parts.append(
-                    ReasoningContent(
-                        is_native=True,
+                # Only emit reasoning message if we have actual content
+                if reasoning_summary and reasoning_summary.strip():
+                    if prev_message_type and prev_message_type != "reasoning_message":
+                        message_index += 1
+                    yield ReasoningMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        source="reasoner_model",
                         reasoning=reasoning_summary,
-                        signature=self.thinking_signature,
+                        run_id=self.run_id,
+                        step_id=self.step_id,
                     )
-                )
+                    prev_message_type = "reasoning_message"
+                    self.content_parts.append(
+                        ReasoningContent(
+                            is_native=True,
+                            reasoning=reasoning_summary,
+                            signature=self.thinking_signature,
+                        )
+                    )
 
             # Plain text content part
             elif part.text:

@@ -1639,13 +1639,13 @@ class Message(BaseMessage):
                         # TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
                         if isinstance(content_part, ReasoningContent):
                             if current_model == self.model:
-                                content.append(
-                                    {
-                                        "type": "thinking",
-                                        "thinking": content_part.reasoning,
-                                        "signature": content_part.signature,
-                                    }
-                                )
+                                block = {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                }
+                                if content_part.signature:
+                                    block["signature"] = content_part.signature
+                                content.append(block)
                         elif isinstance(content_part, RedactedReasoningContent):
                             if current_model == self.model:
                                 content.append(
@@ -1671,13 +1671,13 @@ class Message(BaseMessage):
                     for content_part in self.content:
                         if isinstance(content_part, ReasoningContent):
                             if current_model == self.model:
-                                content.append(
-                                    {
-                                        "type": "thinking",
-                                        "thinking": content_part.reasoning,
-                                        "signature": content_part.signature,
-                                    }
-                                )
+                                block = {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                }
+                                if content_part.signature:
+                                    block["signature"] = content_part.signature
+                                content.append(block)
                         if isinstance(content_part, RedactedReasoningContent):
                             if current_model == self.model:
                                 content.append(
