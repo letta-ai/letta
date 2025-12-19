@@ -470,6 +470,30 @@ async def list_files_for_folder(
     )
 
 
+@router.get("/{folder_id}/files/{file_id}", response_model=FileMetadata, operation_id="retrieve_file")
+async def retrieve_file(
+    folder_id: FolderId,
+    file_id: FileId,
+    include_content: bool = Query(False, description="Whether to include full file content"),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Retrieve a file from a folder by ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # NoResultFound will propagate and be handled as 404 by the global exception handler
+    file_metadata = await server.file_manager.get_file_by_id(
+        file_id=file_id, actor=actor, include_content=include_content, strip_directory_prefix=True
+    )
+
+    if file_metadata.source_id != folder_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File with id={file_id} not found in folder {folder_id}")
+
+    return file_metadata
+
+
 # @router.get("/{folder_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata")
 # async def get_file_metadata(
 #    folder_id: str,
