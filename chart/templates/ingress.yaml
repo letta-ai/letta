@@ -1,0 +1,50 @@
+{{- if .Values.ingress.enabled }}
+{{- $serviceName := .Values.ingress.serviceName }}
+{{- $servicePort := .Values.ingress.servicePort }}
+{{- $fullServiceName := "" }}
+{{- if eq $serviceName "nginx" }}
+{{- $fullServiceName = printf "%s-nginx" (include "letta.fullname" .) }}
+{{- else if eq $serviceName "server" }}
+{{- $fullServiceName = printf "%s-server" (include "letta.fullname" .) }}
+{{- if eq $servicePort 80 }}
+{{- $servicePort = .Values.server.service.ports.api.port }}
+{{- end }}
+{{- else }}
+{{- fail (printf "Invalid ingress.serviceName: %s. Must be 'nginx' or 'server'" $serviceName) }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "letta.fullname" . }}-ingress
+  labels:
+    {{- include "letta.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ingress
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullServiceName }}
+                port:
+                  number: {{ $servicePort }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+

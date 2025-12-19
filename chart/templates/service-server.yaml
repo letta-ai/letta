@@ -1,0 +1,22 @@
+{{- if .Values.server.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "letta.fullname" . }}-server
+  labels:
+    {{- include "letta.server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.server.service.type }}
+  ports:
+    - port: {{ .Values.server.service.ports.http.port }}
+      targetPort: {{ .Values.server.service.ports.http.targetPort }}
+      protocol: TCP
+      name: http
+    - port: {{ .Values.server.service.ports.api.port }}
+      targetPort: {{ .Values.server.service.ports.api.targetPort }}
+      protocol: TCP
+      name: api
+  selector:
+    {{- include "letta.server.selectorLabels" . | nindent 4 }}
+{{- end }}
+
