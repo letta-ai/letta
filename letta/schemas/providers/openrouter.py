@@ -7,13 +7,9 @@ from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.providers.openai import OpenAIProvider
+from letta.schemas.providers.openai import DEFAULT_EMBEDDING_BATCH_SIZE, OpenAIProvider
 
 logger = get_logger(__name__)
-
-# ALLOWED_PREFIXES = {"gpt-4", "gpt-5", "o1", "o3", "o4"}
-# DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro", "chat"}
-# DEFAULT_EMBEDDING_BATCH_SIZE = 1024
 
 
 class OpenRouterProvider(OpenAIProvider):
@@ -50,3 +46,31 @@ class OpenRouterProvider(OpenAIProvider):
             configs.append(config)
 
         return configs
+
+    async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
+        """
+        Return hardcoded OpenRouter embedding models.
+
+        OpenRouter's /models endpoint doesn't list embedding models,
+        but they support OpenAI's embedding models via the /embeddings endpoint.
+        """
+        return [
+            EmbeddingConfig(
+                embedding_model="openai/text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=1536,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("openai/text-embedding-3-small", is_embedding=True),
+                batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
+            ),
+            EmbeddingConfig(
+                embedding_model="openai/text-embedding-3-large",
+                embedding_endpoint_type="openai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=3072,
+                embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=self.get_handle("openai/text-embedding-3-large", is_embedding=True),
+                batch_size=DEFAULT_EMBEDDING_BATCH_SIZE,
+            ),
+        ]
