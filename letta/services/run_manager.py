@@ -88,7 +88,8 @@ class RunManager:
                 num_steps=0,  # Initialize to 0
             )
             await metrics.create_async(session)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         return run.to_pydantic()
 
@@ -366,7 +367,8 @@ class RunManager:
             final_metadata = run.metadata_
             pydantic_run = run.to_pydantic()
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # Update agent's last_stop_reason when run completes
         # Do this after run update is committed to database
@@ -417,7 +419,8 @@ class RunManager:
             metrics.num_steps = num_steps
             metrics.tools_used = list(tools_used) if tools_used else None
             await metrics.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # Dispatch callback outside of database session if needed
         if needs_callback:
@@ -445,7 +448,8 @@ class RunManager:
                 run.callback_error = callback_result.get("callback_error")
                 pydantic_run = run.to_pydantic()
                 await run.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
         return pydantic_run
 

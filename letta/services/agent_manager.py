@@ -899,7 +899,8 @@ class AgentManager:
             agent.message_ids = message_ids
 
             await agent.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @trace_method
     async def list_agents_async(
@@ -1216,7 +1217,8 @@ class AgentManager:
                     await session.commit()
                 for agent in agents_to_delete:
                     await session.delete(agent)
-                    await session.commit()
+                    # context manager now handles commits
+                    # await session.commit()
             except Exception as e:
                 await session.rollback()
                 logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
@@ -2570,7 +2572,8 @@ class AgentManager:
                     agent.tool_rules = tool_rules
                     session.add(agent)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -2643,7 +2646,8 @@ class AgentManager:
                 else:
                     logger.info(f"All {len(tool_ids)} tools already attached to agent {agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -2767,7 +2771,8 @@ class AgentManager:
             else:
                 logger.debug(f"Detached tool id={tool_id} from agent id={agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -2804,7 +2809,8 @@ class AgentManager:
             else:
                 logger.info(f"Detached all {detached_count} tools from agent {agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -2832,7 +2838,8 @@ class AgentManager:
 
             agent.tool_rules = tool_rules
             session.add(agent)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method

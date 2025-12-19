@@ -85,7 +85,8 @@ async def clear_tables():
     async with db_registry.async_session() as session:
         await session.execute(delete(SandboxEnvironmentVariable))
         await session.execute(delete(SandboxConfig))
-        await session.commit()  # Commit the deletion
+        # context manager now handles commits
+        # await session.commit()
 
 
 @pytest.fixture

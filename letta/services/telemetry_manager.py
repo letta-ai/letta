@@ -36,7 +36,8 @@ class TelemetryManager:
                 provider_trace.response_json = json_loads(response_json_str)
             await provider_trace.create_async(session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_provider_trace = provider_trace.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_provider_trace
 
 

@@ -174,7 +174,8 @@ class ProviderManager:
             # Soft delete in provider table
             await existing_provider.delete_async(session, actor=actor)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method

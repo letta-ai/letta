@@ -257,7 +257,8 @@ class IdentityManager:
             if identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
             await session.delete(identity)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method

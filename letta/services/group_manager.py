@@ -246,7 +246,8 @@ class GroupManager:
             )
             await session.execute(delete_stmt)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
@@ -434,7 +435,8 @@ class GroupManager:
 
             # Add block to group
             session.add(GroupsBlocks(group_id=group_id, block_id=block_id))
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="group_id", expected_prefix=PrimitiveType.GROUP)
@@ -452,7 +454,8 @@ class GroupManager:
             # Remove block from group
             delete_group_block = delete(GroupsBlocks).where(and_(GroupsBlocks.group_id == group_id, GroupsBlocks.block_id == block_id))
             await session.execute(delete_group_block)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @staticmethod
     def ensure_buffer_length_range_valid(

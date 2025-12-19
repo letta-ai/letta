@@ -170,7 +170,8 @@ class SourceManager:
 
         upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
         await session.execute(upsert_stmt)
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
 
         # fetch results
         source_names = [source.name for source in source_data_list]

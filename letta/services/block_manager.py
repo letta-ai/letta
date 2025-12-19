@@ -100,7 +100,8 @@ class BlockManager:
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
                 pydantic_block = block.to_pydantic()
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
                 return pydantic_block
 
     @enforce_types
@@ -130,7 +131,8 @@ class BlockManager:
                 items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
             )
             result = [m.to_pydantic() for m in created_models]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return result
 
     @enforce_types
@@ -150,7 +152,8 @@ class BlockManager:
 
             await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_block = block.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_block
 
     @enforce_types
@@ -591,7 +594,8 @@ class BlockManager:
                     new_val = new_val[: block.limit]
                 block.value = new_val
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             if return_hydrated:
                 # TODO: implement for async
@@ -669,7 +673,8 @@ class BlockManager:
 
             # 7) Flush changes, then commit once
             block = await block.update_async(db_session=session, actor=actor, no_commit=True)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return block.to_pydantic()
 
@@ -757,7 +762,8 @@ class BlockManager:
             block = await self._move_block_to_sequence(session, block, previous_entry.sequence_number, actor)
 
             # 4) Commit
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return block.to_pydantic()
 
     @enforce_types
@@ -805,5 +811,6 @@ class BlockManager:
 
             block = await self._move_block_to_sequence(session, block, next_entry.sequence_number, actor)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return block.to_pydantic()

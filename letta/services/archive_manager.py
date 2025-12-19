@@ -191,7 +191,8 @@ class ArchiveManager:
                 is_owner=is_owner,
             )
             session.add(archives_agents)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -224,7 +225,8 @@ class ArchiveManager:
             else:
                 logger.info(f"Detached agent {agent_id} from archive {archive_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -609,6 +611,7 @@ class ArchiveManager:
 
             # update the archive with the namespace
             await session.execute(update(ArchiveModel).where(ArchiveModel.id == archive_id).values(_vector_db_namespace=namespace_name))
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return namespace_name

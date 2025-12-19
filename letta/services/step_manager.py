@@ -206,7 +206,8 @@ class StepManager:
             new_step = StepModel(**step_data)
             await new_step.create_async(session, no_commit=True, no_refresh=True)
             pydantic_step = new_step.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_step
 
     @enforce_types
@@ -266,7 +267,8 @@ class StepManager:
                 raise Exception("Unauthorized")
 
             step.tid = transaction_id
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return step.to_pydantic()
 
     @enforce_types
@@ -318,7 +320,8 @@ class StepManager:
                 raise Exception("Unauthorized")
 
             step.stop_reason = stop_reason
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return step
 
     @enforce_types
@@ -364,7 +367,8 @@ class StepManager:
             if stop_reason:
                 step.stop_reason = stop_reason.stop_reason
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             pydantic_step = step.to_pydantic()
         # Send webhook notification for step completion outside the DB session
         webhook_service = WebhookService()
@@ -415,7 +419,8 @@ class StepManager:
             if usage.completion_tokens_details:
                 step.completion_tokens_details = usage.completion_tokens_details.model_dump()
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             pydantic_step = step.to_pydantic()
         # Send webhook notification for step completion outside the DB session
         webhook_service = WebhookService()
@@ -455,7 +460,8 @@ class StepManager:
             if stop_reason:
                 step.stop_reason = stop_reason.stop_reason
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             pydantic_step = step.to_pydantic()
         # Send webhook notification for step completion outside the DB session
         webhook_service = WebhookService()

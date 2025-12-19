@@ -82,7 +82,8 @@ class MCPServerManager:
                     MCPToolsModel.organization_id == actor.organization_id,
                 )
             )
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     async def get_tool_ids_by_mcp_server(self, mcp_server_id: str, actor: PydanticUser) -> List[str]:
@@ -348,7 +349,8 @@ class MCPServerManager:
                     logger.info(f"Deleted MCP tool {tool_name} as it no longer exists on server {mcp_server_name}")
 
             # Commit deletions
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # 2. Update existing tools and add new tools
         for tool_name, current_tool in current_tool_map.items():
@@ -489,7 +491,8 @@ class MCPServerManager:
                             f"Linked {len(oauth_sessions)} OAuth sessions to MCP server {mcp_server.id} (URL: {server_url}) for user {actor.id}"
                         )
 
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
                 return mcp_server.to_pydantic()
             except Exception as e:
                 await session.rollback()
@@ -871,7 +874,8 @@ class MCPServerManager:
                     )
                 )
 
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
             except NoResultFound:
                 await session.rollback()
                 raise ValueError(f"MCP server with id {mcp_server_id} not found.")

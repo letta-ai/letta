@@ -1226,7 +1226,8 @@ class ToolManager:
             upsert_stmt = stmt.on_conflict_do_nothing(index_elements=["name", "organization_id"])
 
         await session.execute(upsert_stmt)
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
 
         # fetch results (includes both inserted and skipped tools)
         tool_names = [tool.name for tool in tool_data_list]

@@ -200,7 +200,8 @@ class FileAgentManager:
             stmt = delete(FileAgentModel).where(and_(or_(*conditions), FileAgentModel.organization_id == actor.organization_id))
 
             result = await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return result.rowcount
 
@@ -405,7 +406,8 @@ class FileAgentManager:
                 .values(last_accessed_at=func.now())
             )
             await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -425,7 +427,8 @@ class FileAgentManager:
                 .values(last_accessed_at=func.now())
             )
             await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -458,7 +461,8 @@ class FileAgentManager:
             )
 
             closed_file_names = [row.file_name for row in (await session.execute(stmt))]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return closed_file_names
 
     @enforce_types
@@ -702,7 +706,8 @@ class FileAgentManager:
                     .values(is_open=False, visible_content=None)
                 )
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return closed_file_names
 
     async def _get_association_by_file_id(self, session, agent_id: str, file_id: str, actor: PydanticUser) -> FileAgentModel:

@@ -515,7 +515,8 @@ class MessageManager:
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
@@ -673,7 +674,8 @@ class MessageManager:
             message = self._update_message_by_id_impl(message_id, message_update, actor, message)
             await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_message = message.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
@@ -979,7 +981,8 @@ class MessageManager:
             rowcount = result.rowcount
 
             # 4) commit once
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # 5) delete from turbopuffer if enabled (outside of DB session)
         from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
@@ -1031,7 +1034,8 @@ class MessageManager:
             rowcount = result.rowcount
 
             # commit once
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         if should_use_tpuf_for_messages() and agent_ids:
             try:
