@@ -48,6 +48,7 @@ class LLMConfig(BaseModel):
         "bedrock",
         "deepseek",
         "xai",
+        "venice",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
     provider_name: Optional[str] = Field(None, description="The provider name for the model.")

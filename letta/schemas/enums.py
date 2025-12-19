@@ -65,6 +65,7 @@ class ProviderType(str, Enum):
     ollama = "ollama"
     openai = "openai"
     together = "together"
+    venice = "venice"
     vllm = "vllm"
     xai = "xai"
 
