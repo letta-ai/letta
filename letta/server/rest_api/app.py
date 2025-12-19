@@ -252,6 +252,40 @@ def create_application() -> "FastAPI":
             llmobs_flag = os.getenv("DD_LLMOBS_ENABLED", "")
             from ddtrace.llmobs import LLMObs
 
+            try:
+                from ddtrace.llmobs._constants import MODEL_PROVIDER
+                from ddtrace.llmobs._integrations.openai import OpenAIIntegration
+
+                if not getattr(OpenAIIntegration, "_letta_provider_patch_done", False):
+                    original_set_tags = OpenAIIntegration._llmobs_set_tags
+
+                    def _letta_set_tags(self, span, args, kwargs, response=None, operation=""):
+                        original_set_tags(self, span, args, kwargs, response=response, operation=operation)
+
+                        base_url = span.get_tag("openai.api_base")
+                        if not base_url:
+                            try:
+                                client = getattr(self, "_client", None)
+                                base_url = str(getattr(client, "_base_url", "") or "")
+                            except Exception:
+                                base_url = ""
+
+                        u = (base_url or "").lower()
+                        provider = None
+                        if "openrouter" in u:
+                            provider = "openrouter"
+                        elif "groq" in u:
+                            provider = "groq"
+
+                        if provider:
+                            span._set_ctx_item(MODEL_PROVIDER, provider)
+                            span._set_tag_str("openai.request.provider", provider)
+
+                    OpenAIIntegration._llmobs_set_tags = _letta_set_tags
+                    OpenAIIntegration._letta_provider_patch_done = True
+            except Exception:
+                logger.exception("Failed to patch ddtrace OpenAI LLMObs provider detection")
+
             if llmobs_flag:
                 LLMObs.enable(
                     ml_app=os.getenv("DD_LLMOBS_ML_APP") or telemetry_settings.datadog_service_name,
