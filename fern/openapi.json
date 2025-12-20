@@ -19868,6 +19868,12 @@
                                 "session_id": {
                                   "type": "string"
                                 },
+                                "agent_id": {
+                                  "type": "string"
+                                },
+                                "startup_command": {
+                                  "type": "string"
+                                },
                                 "version": {
                                   "type": "string"
                                 },
@@ -19878,7 +19884,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": ["session_id"]
+                              "required": ["session_id", "startup_command"]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19899,6 +19905,9 @@
                                 "session_id": {
                                   "type": "string"
                                 },
+                                "agent_id": {
+                                  "type": "string"
+                                },
                                 "duration": {
                                   "type": "number"
                                 },
@@ -19907,9 +19916,41 @@
                                 },
                                 "tool_call_count": {
                                   "type": "number"
+                                },
+                                "exit_reason": {
+                                  "type": "string"
+                                },
+                                "total_api_ms": {
+                                  "type": "number"
+                                },
+                                "total_wall_ms": {
+                                  "type": "number"
+                                },
+                                "prompt_tokens": {
+                                  "type": "number"
+                                },
+                                "completion_tokens": {
+                                  "type": "number"
+                                },
+                                "total_tokens": {
+                                  "type": "number"
+                                },
+                                "cached_tokens": {
+                                  "type": "number"
+                                },
+                                "reasoning_tokens": {
+                                  "type": "number"
+                                },
+                                "step_count": {
+                                  "type": "number"
                                 }
                               },
-                              "required": ["session_id"]
+                              "required": [
+                                "session_id",
+                                "duration",
+                                "message_count",
+                                "tool_call_count"
+                              ]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19930,6 +19971,9 @@
                                 "session_id": {
                                   "type": "string"
                                 },
+                                "agent_id": {
+                                  "type": "string"
+                                },
                                 "tool_name": {
                                   "type": "string"
                                 },
@@ -19939,11 +19983,22 @@
                                 "duration": {
                                   "type": "number"
                                 },
+                                "response_length": {
+                                  "type": "number"
+                                },
                                 "error_type": {
+                                  "type": "string"
+                                },
+                                "stderr": {
                                   "type": "string"
                                 }
                               },
-                              "required": ["session_id", "tool_name", "success"]
+                              "required": [
+                                "session_id",
+                                "tool_name",
+                                "success",
+                                "duration"
+                              ]
                             }
                           },
                           "required": ["type", "timestamp", "data"]
@@ -19964,6 +20019,9 @@
                                 "session_id": {
                                   "type": "string"
                                 },
+                                "agent_id": {
+                                  "type": "string"
+                                },
                                 "error_type": {
                                   "type": "string"
                                 },
@@ -19973,15 +20031,17 @@
                                 "context": {
                                   "type": "string"
                                 },
-                                "stack": {
+                                "http_status": {
+                                  "type": "number"
+                                },
+                                "model_id": {
                                   "type": "string"
                                 }
                               },
                               "required": [
                                 "session_id",
                                 "error_type",
-                                "error_message",
-                                "context"
+                                "error_message"
                               ]
                             }
                           },
@@ -19992,7 +20052,7 @@
                           "properties": {
                             "type": {
                               "type": "string",
-                              "enum": ["agent_interaction"]
+                              "enum": ["user_input"]
                             },
                             "timestamp": {
                               "type": "string"
@@ -20003,10 +20063,16 @@
                                 "session_id": {
                                   "type": "string"
                                 },
-                                "action": {
+                                "agent_id": {
                                   "type": "string"
                                 },
-                                "agent_id": {
+                                "input_length": {
+                                  "type": "number"
+                                },
+                                "is_command": {
+                                  "type": "boolean"
+                                },
+                                "command_name": {
                                   "type": "string"
                                 },
                                 "message_type": {
@@ -20015,8 +20081,8 @@
                               },
                               "required": [
                                 "session_id",
-                                "action",
-                                "agent_id",
+                                "input_length",
+                                "is_command",
                                 "message_type"
                               ]
                             }
