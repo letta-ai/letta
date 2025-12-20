@@ -13,13 +13,8 @@ from letta.schemas.providers.openai import OpenAIProvider
 # Z.ai model context windows
 # Reference: https://docs.z.ai/
 MODEL_CONTEXT_WINDOWS = {
-    "glm-4": 128_000,
-    "glm-4.5": 128_000,
-    "glm-4.5-air": 128_000,
-    "glm-4.6": 128_000,
-    "glm-4.6v": 128_000,
-    "glm-4-assistant": 128_000,
-    "charglm-3": 8_000,
+    "glm-4.5": 128000,
+    "glm-4.6": 200000,
 }
 
 
