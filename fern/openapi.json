@@ -21022,6 +21022,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -21046,7 +21049,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -24790,6 +24794,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -24814,7 +24821,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -24898,6 +24906,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -24922,7 +24933,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -25740,6 +25752,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -25764,7 +25779,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -29973,6 +29989,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -29997,7 +30016,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -30893,7 +30913,8 @@
               "together",
               "bedrock",
               "deepseek",
-              "xai"
+              "xai",
+              "zai"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
@@ -33149,7 +33170,8 @@
               "together",
               "bedrock",
               "deepseek",
-              "xai"
+              "xai",
+              "zai"
             ],
             "title": "Model Endpoint Type",
             "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the model.",
@@ -34596,7 +34618,8 @@
           "openai",
           "together",
           "vllm",
-          "xai"
+          "xai",
+          "zai"
         ],
         "title": "ProviderType"
       },
@@ -39312,6 +39335,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -39336,7 +39362,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },
@@ -40262,6 +40289,68 @@
         "title": "XAIModelSettings",
         "description": "xAI model configuration (OpenAI-compatible)."
       },
+      "ZAIModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "zai",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "zai"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          }
+        },
+        "type": "object",
+        "title": "ZAIModelSettings",
+        "description": "Z.ai (ZhipuAI) model configuration (OpenAI-compatible)."
+      },
       "letta__schemas__agent_file__AgentSchema": {
         "properties": {
           "name": {
@@ -40590,6 +40679,9 @@
                     "$ref": "#/components/schemas/XAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/ZAIModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/GroqModelSettings"
                   },
                   {
@@ -40614,7 +40706,8 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
-                    "xai": "#/components/schemas/XAIModelSettings"
+                    "xai": "#/components/schemas/XAIModelSettings",
+                    "zai": "#/components/schemas/ZAIModelSettings"
                   }
                 }
               },

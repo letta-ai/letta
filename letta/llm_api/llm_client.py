@@ -79,6 +79,13 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.zai:
+                from letta.llm_api.zai_client import ZAIClient
+
+                return ZAIClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case ProviderType.groq:
                 from letta.llm_api.groq_client import GroqClient
 

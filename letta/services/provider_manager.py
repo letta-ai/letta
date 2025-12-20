@@ -421,6 +421,7 @@ class ProviderManager:
             from letta.schemas.providers.groq import GroqProvider
             from letta.schemas.providers.ollama import OllamaProvider
             from letta.schemas.providers.openai import OpenAIProvider
+            from letta.schemas.providers.zai import ZAIProvider
 
             provider_type_to_class = {
                 "openai": OpenAIProvider,
@@ -430,6 +431,7 @@ class ProviderManager:
                 "ollama": OllamaProvider,
                 "bedrock": BedrockProvider,
                 "azure": AzureProvider,
+                "zai": ZAIProvider,
             }
 
             provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)

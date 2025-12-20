@@ -67,6 +67,7 @@ class ProviderType(str, Enum):
     together = "together"
     vllm = "vllm"
     xai = "xai"
+    zai = "zai"
 
 
 class AgentType(str, Enum):

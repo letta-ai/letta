@@ -196,6 +196,7 @@ class Provider(ProviderBase):
             TogetherProvider,
             VLLMProvider,
             XAIProvider,
+            ZAIProvider,
         )
 
         if self.base_url == "":
@@ -230,6 +231,8 @@ class Provider(ProviderBase):
                 return CerebrasProvider(**self.model_dump(exclude_none=True))
             case ProviderType.xai:
                 return XAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.zai:
+                return ZAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.lmstudio_openai:
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:

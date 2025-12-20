@@ -1522,6 +1522,7 @@ async def send_message(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]
@@ -1772,6 +1773,7 @@ async def _process_message_background(
             "ollama",
             "azure",
             "xai",
+            "zai",
             "groq",
             "deepseek",
         ]
@@ -2076,6 +2078,7 @@ async def preview_model_request(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]
@@ -2129,6 +2132,7 @@ async def summarize_messages(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]

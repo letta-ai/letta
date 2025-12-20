@@ -69,6 +69,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMProvider,
     XAIProvider,
+    ZAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.secret import Secret
@@ -314,6 +315,14 @@ class SyncServer(object):
                 XAIProvider(
                     name="xai",
                     api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
+                )
+            )
+        if model_settings.zai_api_key:
+            self._enabled_providers.append(
+                ZAIProvider(
+                    name="zai",
+                    api_key_enc=Secret.from_plaintext(model_settings.zai_api_key),
+                    base_url=model_settings.zai_base_url,
                 )
             )
         if model_settings.openrouter_api_key:

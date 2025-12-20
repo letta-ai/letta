@@ -460,6 +460,7 @@ class StreamingService:
             "ollama",
             "azure",
             "xai",
+            "zai",
             "groq",
             "deepseek",
         ]
