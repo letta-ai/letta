@@ -1890,25 +1890,25 @@ class AgentManager:
     ) -> PydanticBlock:
         """Gets a block attached to an agent by its label."""
         async with db_registry.async_session() as session:
-            block = None
+            matched_block = None
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             for block in agent.core_memory:
                 if block.label == block_label:
-                    block = block
+                    matched_block = block
                     break
-            if not block:
+            if not matched_block:
                 raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, block)
+            validate_block_limit_constraint(update_data, matched_block)
 
             for key, value in update_data.items():
-                setattr(block, key, value)
+                setattr(matched_block, key, value)
 
-            await block.update_async(session, actor=actor)
-            return block.to_pydantic()
+            await matched_block.update_async(session, actor=actor)
+            return matched_block.to_pydantic()
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
