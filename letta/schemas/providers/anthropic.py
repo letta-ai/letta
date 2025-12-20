@@ -138,8 +138,21 @@ class AnthropicProvider(Provider):
         NOTE: currently there is no GET /models, so we need to hardcode
         """
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
+
+        # For claude-pro-max provider, use OAuth Bearer token instead of api_key
+        is_oauth_provider = self.name == "claude-pro-max"
+
         if api_key:
-            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+            if is_oauth_provider:
+                anthropic_client = anthropic.AsyncAnthropic(
+                    default_headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "anthropic-version": "2023-06-01",
+                        "anthropic-beta": "oauth-2025-04-20",
+                    },
+                )
+            else:
+                anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
         elif model_settings.anthropic_api_key:
             anthropic_client = anthropic.AsyncAnthropic()
         else:

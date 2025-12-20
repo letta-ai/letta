@@ -1,6 +1,9 @@
 from typing import List, Optional, Tuple, Union
 
+from sqlalchemy import and_, select
+
 from letta.log import get_logger
+from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -30,8 +33,6 @@ class ProviderManager:
             is_byok: If True, creates a BYOK provider (default). If False, creates a base provider.
         """
         async with db_registry.async_session() as session:
-            from letta.schemas.enums import ProviderCategory
-
             # Check for name conflicts
             if is_byok:
                 # BYOK providers cannot use the same name as base providers
@@ -56,6 +57,52 @@ class ProviderManager:
                 )
                 if existing_base_providers:
                     raise ValueError(f"Base provider name '{request.name}' already exists. Please choose a different name.")
+
+            # Check if there's a soft-deleted provider with the same name that we can restore
+            org_id = actor.organization_id if is_byok else None
+            if org_id is not None:
+                stmt = select(ProviderModel).where(
+                    and_(
+                        ProviderModel.name == request.name,
+                        ProviderModel.organization_id == org_id,
+                        ProviderModel.is_deleted == True,
+                    )
+                )
+            else:
+                stmt = select(ProviderModel).where(
+                    and_(
+                        ProviderModel.name == request.name,
+                        ProviderModel.organization_id.is_(None),
+                        ProviderModel.is_deleted == True,
+                    )
+                )
+            result = await session.execute(stmt)
+            deleted_provider = result.scalar_one_or_none()
+
+            if deleted_provider:
+                # Restore the soft-deleted provider and update its fields
+                logger.info(f"Restoring soft-deleted provider '{request.name}' with id: {deleted_provider.id}")
+                deleted_provider.is_deleted = False
+                deleted_provider.provider_type = request.provider_type
+                deleted_provider.provider_category = ProviderCategory.byok if is_byok else ProviderCategory.base
+                deleted_provider.base_url = request.base_url
+                deleted_provider.region = request.region
+                deleted_provider.api_version = request.api_version
+
+                # Update encrypted fields
+                if request.api_key is not None:
+                    deleted_provider.api_key_enc = Secret.from_plaintext(request.api_key).get_encrypted()
+                if request.access_key is not None:
+                    deleted_provider.access_key_enc = Secret.from_plaintext(request.access_key).get_encrypted()
+
+                await deleted_provider.update_async(session, actor=actor)
+                provider_pydantic = deleted_provider.to_pydantic()
+
+                # For BYOK providers, automatically sync available models
+                if is_byok:
+                    await self._sync_default_models_for_provider(provider_pydantic, actor)
+
+                return provider_pydantic
 
             # Create provider with the appropriate category
             provider_data = request.model_dump()
