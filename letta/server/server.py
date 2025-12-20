@@ -18,7 +18,13 @@ import letta.system as system
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
-from letta.errors import HandleNotFoundError, LettaInvalidArgumentError, LettaMCPConnectionError, LettaMCPTimeoutError
+from letta.errors import (
+    EmbeddingConfigRequiredError,
+    HandleNotFoundError,
+    LettaInvalidArgumentError,
+    LettaMCPConnectionError,
+    LettaMCPTimeoutError,
+)
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, MCPToolHealth, SSEServerConfig, StdioServerConfig
 from letta.functions.schema_validator import validate_complete_json_schema
 from letta.groups.helpers import load_multi_agent
@@ -493,19 +499,17 @@ class SyncServer(object):
 
         if request.embedding_config is None:
             if request.embedding is None:
-                if settings.default_embedding_handle is None:
-                    raise LettaInvalidArgumentError(
-                        "Must specify either embedding or embedding_config in request", argument_name="embedding"
-                    )
-                else:
+                if settings.default_embedding_handle is not None:
                     request.embedding = settings.default_embedding_handle
-            embedding_config_params = {
-                "handle": request.embedding,
-                "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
-            }
-            log_event(name="start get_cached_embedding_config", attributes=embedding_config_params)
-            request.embedding_config = await self.get_cached_embedding_config_async(actor=actor, **embedding_config_params)
-            log_event(name="end get_cached_embedding_config", attributes=embedding_config_params)
+            # Only resolve embedding config if we have an embedding handle
+            if request.embedding is not None:
+                embedding_config_params = {
+                    "handle": request.embedding,
+                    "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+                }
+                log_event(name="start get_cached_embedding_config", attributes=embedding_config_params)
+                request.embedding_config = await self.get_cached_embedding_config_async(actor=actor, **embedding_config_params)
+                log_event(name="end get_cached_embedding_config", attributes=embedding_config_params)
 
         log_event(name="start create_agent db")
         main_agent = await self.agent_manager.create_agent_async(
@@ -593,6 +597,8 @@ class SyncServer(object):
         )
 
     async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_sleeptime_agent")
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
             agent_type=AgentType.sleeptime_agent,
@@ -625,6 +631,8 @@ class SyncServer(object):
         return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
 
     async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_voice_sleeptime_agent")
         # TODO: Inject system
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
@@ -998,6 +1006,8 @@ class SyncServer(object):
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_document_sleeptime_agent")
         try:
             block = await self.agent_manager.get_block_with_label_async(agent_id=main_agent.id, block_label=source.name, actor=actor)
         except:

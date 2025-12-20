@@ -74,7 +74,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         LLMConfigColumn, nullable=True, doc="the LLM backend configuration object for this agent."
     )
     embedding_config: Mapped[Optional[EmbeddingConfig]] = mapped_column(
-        EmbeddingConfigColumn, doc="the embedding configuration object for this agent."
+        EmbeddingConfigColumn, nullable=True, doc="the embedding configuration object for this agent."
     )
     compaction_settings: Mapped[Optional[dict]] = mapped_column(
         CompactionSettingsColumn, nullable=True, doc="the compaction settings configuration object for compaction."

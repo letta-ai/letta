@@ -21037,7 +21037,14 @@
             "deprecated": true
           },
           "embedding_config": {
-            "$ref": "#/components/schemas/EmbeddingConfig",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.",
             "deprecated": true
           },
@@ -21461,7 +21468,6 @@
           "system",
           "agent_type",
           "llm_config",
-          "embedding_config",
           "memory",
           "blocks",
           "tools",

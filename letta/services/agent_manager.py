@@ -336,8 +336,8 @@ class AgentManager:
         ignore_invalid_tools: bool = False,
     ) -> PydanticAgentState:
         # validate required configs
-        if not agent_create.llm_config or not agent_create.embedding_config:
-            raise ValueError("llm_config and embedding_config are required")
+        if not agent_create.llm_config:
+            raise ValueError("llm_config is required")
 
         # For v1 agents, enforce sane defaults even when reasoning is omitted
         if agent_create.agent_type == AgentType.letta_v1_agent:

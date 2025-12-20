@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from letta.constants import MAX_EMBEDDING_DIM
+from letta.errors import EmbeddingConfigRequiredError
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -471,6 +472,8 @@ class PassageManager:
         Returns:
             List of created passage objects
         """
+        if agent_state.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=agent_state.id, operation="insert_passage")
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
         embedding_client = LLMClient.create(

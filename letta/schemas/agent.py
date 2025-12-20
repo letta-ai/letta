@@ -81,8 +81,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     llm_config: LLMConfig = Field(
         ..., description="Deprecated: Use `model` field instead. The LLM configuration used by the agent.", deprecated=True
     )
-    embedding_config: EmbeddingConfig = Field(
-        ..., description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
+    embedding_config: Optional[EmbeddingConfig] = Field(
+        None, description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
     )
     model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")

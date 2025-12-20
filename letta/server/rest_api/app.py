@@ -32,6 +32,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     BedrockPermissionError,
+    EmbeddingConfigRequiredError,
     HandleNotFoundError,
     LettaAgentNotFoundError,
     LettaExpiredError,
@@ -470,6 +471,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaToolCreateError, _error_handler_400)
     app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
     app.add_exception_handler(AgentFileImportError, _error_handler_400)
+    app.add_exception_handler(EmbeddingConfigRequiredError, _error_handler_400)
     app.add_exception_handler(ValueError, _error_handler_400)
 
     # 404 Not Found errors

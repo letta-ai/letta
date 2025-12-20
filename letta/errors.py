@@ -90,6 +90,19 @@ class LettaConfigurationError(LettaError):
         super().__init__(message=message, details={"missing_fields": self.missing_fields})
 
 
+class EmbeddingConfigRequiredError(LettaError):
+    """Error raised when an operation requires embedding_config but the agent doesn't have one configured."""
+
+    def __init__(self, agent_id: Optional[str] = None, operation: Optional[str] = None):
+        self.agent_id = agent_id
+        self.operation = operation
+        message = "This operation requires an embedding configuration, but the agent does not have one configured."
+        if operation:
+            message = f"Operation '{operation}' requires an embedding configuration, but the agent does not have one configured."
+        details = {"agent_id": agent_id, "operation": operation}
+        super().__init__(message=message, code=ErrorCode.INVALID_ARGUMENT, details=details)
+
+
 class LettaAgentNotFoundError(LettaError):
     """Error raised when an agent is not found."""
 
