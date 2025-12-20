@@ -20077,13 +20077,17 @@
                                 },
                                 "message_type": {
                                   "type": "string"
+                                },
+                                "model_id": {
+                                  "type": "string"
                                 }
                               },
                               "required": [
                                 "session_id",
                                 "input_length",
                                 "is_command",
-                                "message_type"
+                                "message_type",
+                                "model_id"
                               ]
                             }
                           },
