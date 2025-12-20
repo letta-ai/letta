@@ -28,6 +28,7 @@ from letta.errors import (
 )
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.decorators import deprecated
+from letta.llm_api.anthropic_constants import ANTHROPIC_MAX_STRICT_TOOLS, ANTHROPIC_STRICT_MODE_ALLOWLIST
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
@@ -81,8 +82,14 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta
-        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+        # Structured outputs beta - only for supported models
+        # Supported: Claude Sonnet 4.5, Opus 4.1, Opus 4.5, Haiku 4.5
+        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+
+        if supports_structured_outputs:
+            # Always enable structured outputs beta on supported models.
+            # NOTE: We do NOT send `strict` on tool schemas because the current Anthropic SDK
+            # typed tool params reject unknown fields (e.g., `tools.0.custom.strict`).
             betas.append("structured-outputs-2025-11-13")
 
         if betas:
@@ -118,8 +125,10 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta
-        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+        # Structured outputs beta - only for supported models
+        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+
+        if supports_structured_outputs:
             betas.append("structured-outputs-2025-11-13")
 
         if betas:
@@ -163,8 +172,10 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta
-        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+        # Structured outputs beta - only for supported models
+        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+
+        if supports_structured_outputs:
             betas.append("structured-outputs-2025-11-13")
 
         # log failed requests
@@ -420,7 +431,10 @@ class AnthropicClient(LLMClientBase):
 
         if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
-            data["tools"] = convert_tools_to_anthropic_format(tools_for_request)
+            data["tools"] = convert_tools_to_anthropic_format(
+                tools_for_request,
+                use_strict=_supports_structured_outputs(llm_config.model),
+            )
             # Add cache control to the last tool for caching tool definitions
             if len(data["tools"]) > 0:
                 data["tools"][-1]["cache_control"] = {"type": "ephemeral"}
@@ -562,7 +576,10 @@ class AnthropicClient(LLMClientBase):
         if messages and len(messages) == 0:
             messages = None
         if tools and len(tools) > 0:
-            anthropic_tools = convert_tools_to_anthropic_format(tools)
+            anthropic_tools = convert_tools_to_anthropic_format(
+                tools,
+                use_strict=_supports_structured_outputs(model) if model else False,
+            )
         else:
             anthropic_tools = None
 
@@ -998,7 +1015,30 @@ class AnthropicClient(LLMClientBase):
         return messages
 
 
-def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
+def _supports_structured_outputs(model: str) -> bool:
+    """Check if the model supports structured outputs (strict mode).
+
+    Only these 4 models are supported:
+    - Claude Sonnet 4.5
+    - Claude Opus 4.1
+    - Claude Opus 4.5
+    - Claude Haiku 4.5
+    """
+    model_lower = model.lower()
+
+    if "sonnet-4-5" in model_lower:
+        return True
+    elif "opus-4-1" in model_lower:
+        return True
+    elif "opus-4-5" in model_lower:
+        return True
+    elif "haiku-4-5" in model_lower:
+        return True
+
+    return False
+
+
+def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool = False) -> List[dict]:
     """See: https://docs.anthropic.com/claude/docs/tool-use
 
     OpenAI style:
@@ -1009,18 +1049,11 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
             "description": "find ....",
             "parameters": {
               "type": "object",
-              "properties": {
-                 PARAM: {
-                   "type": PARAM_TYPE,  # eg "string"
-                   "description": PARAM_DESCRIPTION,
-                 },
-                 ...
-              },
+              "properties": {...},
               "required": List[str],
             }
         }
-      }
-      ]
+      }]
 
     Anthropic style:
       "tools": [{
@@ -1028,89 +1061,87 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
         "description": "find ....",
         "input_schema": {
           "type": "object",
-          "properties": {
-             PARAM: {
-               "type": PARAM_TYPE,  # eg "string"
-               "description": PARAM_DESCRIPTION,
-             },
-             ...
-          },
+          "properties": {...},
           "required": List[str],
-        }
-      }
-      ]
-
-      Two small differences:
-        - 1 level less of nesting
-        - "parameters" -> "input_schema"
+        },
+      }]
     """
     formatted_tools = []
+    strict_count = 0
+
     for tool in tools:
         # Get the input schema
         input_schema = tool.function.parameters or {"type": "object", "properties": {}, "required": []}
 
-        # Clean up the properties in the schema
-        # The presence of union types / default fields seems Anthropic to produce invalid JSON for tool calls
-        if isinstance(input_schema, dict) and "properties" in input_schema:
-            cleaned_properties = {}
-            for prop_name, prop_schema in input_schema.get("properties", {}).items():
-                if isinstance(prop_schema, dict):
-                    cleaned_properties[prop_name] = _clean_property_schema(prop_schema)
-                else:
-                    cleaned_properties[prop_name] = prop_schema
-
-            # Create cleaned input schema
-            cleaned_input_schema = {
-                "type": input_schema.get("type", "object"),
-                "properties": cleaned_properties,
-            }
-
-            # Only add required field if it exists and is non-empty
-            if "required" in input_schema and input_schema["required"]:
-                cleaned_input_schema["required"] = input_schema["required"]
-        else:
-            cleaned_input_schema = input_schema
-
-        formatted_tool = {
+        # Use the older lightweight cleanup: remove defaults and simplify union-with-null.
+        cleaned_schema = _clean_property_schema(input_schema) if isinstance(input_schema, dict) else input_schema
+        # Normalize to a safe "object" schema shape to avoid downstream assumptions failing.
+        if isinstance(cleaned_schema, dict):
+            if cleaned_schema.get("type") != "object":
+                cleaned_schema["type"] = "object"
+            if not isinstance(cleaned_schema.get("properties"), dict):
+                cleaned_schema["properties"] = {}
+        formatted_tool: dict = {
             "name": tool.function.name,
             "description": tool.function.description if tool.function.description else "",
-            "input_schema": cleaned_input_schema,
+            "input_schema": cleaned_schema,
         }
+
+        # Structured outputs "strict" mode: always attach `strict` for allowlisted tools
+        # when we are using structured outputs models. Limit the number of strict tools
+        # to avoid exceeding Anthropic constraints.
+        if use_strict and tool.function.name in ANTHROPIC_STRICT_MODE_ALLOWLIST and strict_count < ANTHROPIC_MAX_STRICT_TOOLS:
+            formatted_tool["strict"] = True
+            strict_count += 1
+
         formatted_tools.append(formatted_tool)
 
     return formatted_tools
 
 
-def _clean_property_schema(prop_schema: dict) -> dict:
-    """Clean up a property schema by removing defaults and simplifying union types."""
-    cleaned = {}
+def _clean_property_schema(schema: dict) -> dict:
+    """Older schema cleanup used for Anthropic tools.
 
-    # Handle type field - simplify union types like ["null", "string"] to just "string"
-    if "type" in prop_schema:
-        prop_type = prop_schema["type"]
-        if isinstance(prop_type, list):
-            # Remove "null" from union types to simplify
-            # e.g., ["null", "string"] becomes "string"
-            non_null_types = [t for t in prop_type if t != "null"]
-            if len(non_null_types) == 1:
-                cleaned["type"] = non_null_types[0]
-            elif len(non_null_types) > 1:
-                # Keep as array if multiple non-null types
-                cleaned["type"] = non_null_types
+    Removes / simplifies fields that commonly cause Anthropic tool schema issues:
+    - Remove `default` values
+    - Simplify nullable unions like {"type": ["null", "string"]} -> {"type": "string"}
+    - Recurse through nested schemas (properties/items/anyOf/oneOf/allOf/etc.)
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    cleaned: dict = {}
+
+    # Simplify union types like ["null", "string"] to "string"
+    if "type" in schema:
+        t = schema.get("type")
+        if isinstance(t, list):
+            non_null = [x for x in t if x != "null"]
+            if len(non_null) == 1:
+                cleaned["type"] = non_null[0]
+            elif len(non_null) > 1:
+                cleaned["type"] = non_null
             else:
-                # If only "null" was in the list, default to string
                 cleaned["type"] = "string"
         else:
-            cleaned["type"] = prop_type
+            cleaned["type"] = t
 
-    # Copy over other fields except 'default'
-    for key, value in prop_schema.items():
-        if key not in ["type", "default"]:  # Skip 'default' field
-            if key == "properties" and isinstance(value, dict):
-                # Recursively clean nested properties
-                cleaned["properties"] = {k: _clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
-            else:
-                cleaned[key] = value
+    for key, value in schema.items():
+        if key == "type":
+            continue
+        if key == "default":
+            continue
+
+        if key == "properties" and isinstance(value, dict):
+            cleaned["properties"] = {k: _clean_property_schema(v) for k, v in value.items()}
+        elif key == "items" and isinstance(value, dict):
+            cleaned["items"] = _clean_property_schema(value)
+        elif key in ("anyOf", "oneOf", "allOf") and isinstance(value, list):
+            cleaned[key] = [_clean_property_schema(v) if isinstance(v, dict) else v for v in value]
+        elif key in ("additionalProperties",) and isinstance(value, dict):
+            cleaned[key] = _clean_property_schema(value)
+        else:
+            cleaned[key] = value
 
     return cleaned
 
