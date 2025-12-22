@@ -2212,9 +2212,9 @@ async def test_system_messages_not_embedded_during_agent_creation(server, defaul
 
         # Verify that NO system messages were passed to the embedding pipeline
         system_messages_in_embed = [msg for msg in messages_passed_to_embed if msg.role == MessageRole.system]
-        assert (
-            len(system_messages_in_embed) == 0
-        ), f"System messages should not be embedded, but {len(system_messages_in_embed)} were passed to embedding pipeline"
+        assert len(system_messages_in_embed) == 0, (
+            f"System messages should not be embedded, but {len(system_messages_in_embed)} were passed to embedding pipeline"
+        )
 
         # Clean up
         try:

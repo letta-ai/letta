@@ -10416,9 +10416,9 @@ async def test_list_batch_items_pagination(
         llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit
     )
     # If more than 'limit' items remain, we should only get exactly 'limit' items.
-    assert len(limited_page) == min(
-        limit, expected_remaining
-    ), f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    assert len(limited_page) == min(limit, expected_remaining), (
+        f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    )
 
     # Optional: Test with a cursor beyond the last item returns an empty list.
     last_cursor = sorted_ids[-1]
@@ -11891,9 +11891,9 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
 
     # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
     expected_closed_count = len(files) - max_files_open
-    assert (
-        len(all_closed_files) == expected_closed_count
-    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    assert len(all_closed_files) == expected_closed_count, (
+        f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    )
 
     # Check that the oldest files were closed (first N files attached)
     expected_closed = [files[i].file_name for i in range(expected_closed_count)]

@@ -154,9 +154,9 @@ def test_run_code(
     assert tool_returns, f"No ToolReturnMessage found for language: {language}"
 
     returns = [m.tool_return for m in tool_returns]
-    assert any(
-        expected in ret for ret in returns
-    ), f"For language={language!r}, expected to find '{expected}' in tool_return, but got {returns!r}"
+    assert any(expected in ret for ret in returns), (
+        f"For language={language!r}, expected to find '{expected}' in tool_return, but got {returns!r}"
+    )
 
 
 @pytest.mark.asyncio(scope="function")
@@ -423,12 +423,12 @@ def test_programmatic_tool_calling_compose_tools(
 
     # The key assertion: tools should be composed via run_code, not called directly
     assert len(run_code_calls) >= 1, f"Expected at least one run_code call, but got tool calls: {tool_names}"
-    assert (
-        len(direct_add_calls) == 0
-    ), f"Expected no direct 'add' tool calls (should be called via run_code), but found {len(direct_add_calls)}"
-    assert (
-        len(direct_multiply_calls) == 0
-    ), f"Expected no direct 'multiply' tool calls (should be called via run_code), but found {len(direct_multiply_calls)}"
+    assert len(direct_add_calls) == 0, (
+        f"Expected no direct 'add' tool calls (should be called via run_code), but found {len(direct_add_calls)}"
+    )
+    assert len(direct_multiply_calls) == 0, (
+        f"Expected no direct 'multiply' tool calls (should be called via run_code), but found {len(direct_multiply_calls)}"
+    )
 
     # Verify the result is correct
     tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
@@ -485,6 +485,6 @@ async def test_run_code_injects_tool_source_code() -> None:
 
     # Verify execution succeeded and returned correct result
     assert "error" not in response_json or response_json.get("error") is None, f"Code execution failed: {response_json}"
-    assert "26" in str(response_json["results"]) or "26" in str(
-        response_json["logs"]["stdout"]
-    ), f"Expected '26' in results, got: {response_json}"
+    assert "26" in str(response_json["results"]) or "26" in str(response_json["logs"]["stdout"]), (
+        f"Expected '26' in results, got: {response_json}"
+    )

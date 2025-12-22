@@ -1321,9 +1321,9 @@ async def test_local_sandbox_with_client_injection(disable_e2b_api_key, list_too
     assert "Found" in str(result.func_return), f"Tool should list tools when client is available: {result.func_return}"
 
     # Verify client was available in scope (connection may fail if no server is running)
-    assert "ERROR: client not available in scope" not in str(
-        result.func_return
-    ), "Client should be available in scope when LETTA_API_KEY is set"
+    assert "ERROR: client not available in scope" not in str(result.func_return), (
+        "Client should be available in scope when LETTA_API_KEY is set"
+    )
 
 
 @pytest.mark.asyncio

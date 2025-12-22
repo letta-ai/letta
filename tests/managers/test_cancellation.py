@@ -114,9 +114,9 @@ class TestMessageStateDesyncIssues:
         )
 
         # Verify response_messages count matches result messages
-        assert len(agent_loop.response_messages) == len(
-            result.messages
-        ), f"response_messages ({len(agent_loop.response_messages)}) should match result.messages ({len(result.messages)})"
+        assert len(agent_loop.response_messages) == len(result.messages), (
+            f"response_messages ({len(agent_loop.response_messages)}) should match result.messages ({len(result.messages)})"
+        )
 
         # Verify persisted message count is reasonable
         assert len(db_messages) > 0, "Should have persisted messages from completed step"
@@ -128,9 +128,9 @@ class TestMessageStateDesyncIssues:
         )
 
         # Verify last_stop_reason is set to cancelled
-        assert (
-            agent_after_cancel.last_stop_reason == "cancelled"
-        ), f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        assert agent_after_cancel.last_stop_reason == "cancelled", (
+            f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        )
 
         agent_message_ids = set(agent_after_cancel.message_ids or [])
         db_message_ids = {m.id for m in db_messages}
@@ -187,9 +187,9 @@ class TestMessageStateDesyncIssues:
         )
 
         # Verify last_stop_reason is set to cancelled
-        assert (
-            agent_after_cancel.last_stop_reason == "cancelled"
-        ), f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        assert agent_after_cancel.last_stop_reason == "cancelled", (
+            f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        )
 
         message_ids_after_cancel = len(agent_after_cancel.message_ids or [])
 
@@ -374,9 +374,9 @@ class TestMessageStateDesyncIssues:
 
         # Verify last_stop_reason is set to cancelled
         print(f"\n🔍 Agent last_stop_reason: {agent_after_cancel.last_stop_reason}")
-        assert (
-            agent_after_cancel.last_stop_reason == "cancelled"
-        ), f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        assert agent_after_cancel.last_stop_reason == "cancelled", (
+            f"Agent's last_stop_reason should be 'cancelled', got '{agent_after_cancel.last_stop_reason}'"
+        )
 
         agent_message_ids = set(agent_after_cancel.message_ids or [])
         new_message_ids = agent_message_ids - initial_message_ids
@@ -1274,9 +1274,9 @@ class TestApprovalFlowCancellation:
         print(f"Found {len(tool_return_messages)} tool return messages after cancellation")
 
         # Verify we got denial messages for all tool calls
-        assert (
-            len(tool_return_messages) == num_tool_calls
-        ), f"Should have {num_tool_calls} tool return messages (one per tool call), got {len(tool_return_messages)}"
+        assert len(tool_return_messages) == num_tool_calls, (
+            f"Should have {num_tool_calls} tool return messages (one per tool call), got {len(tool_return_messages)}"
+        )
 
         # Verify each tool return message contains the denial reason
         for tool_return_msg in tool_return_messages:
@@ -1285,14 +1285,14 @@ class TestApprovalFlowCancellation:
             if hasattr(tool_return_msg, "tool_returns") and tool_return_msg.tool_returns:
                 # New format: list of tool returns
                 for tool_return in tool_return_msg.tool_returns:
-                    assert (
-                        TOOL_CALL_DENIAL_ON_CANCEL in tool_return.func_response
-                    ), f"Tool return should contain denial message, got: {tool_return.tool_return}"
+                    assert TOOL_CALL_DENIAL_ON_CANCEL in tool_return.func_response, (
+                        f"Tool return should contain denial message, got: {tool_return.tool_return}"
+                    )
             elif hasattr(tool_return_msg, "tool_return"):
                 # Old format: single tool_return field
-                assert (
-                    TOOL_CALL_DENIAL_ON_CANCEL in tool_return_msg.content
-                ), f"Tool return should contain denial message, got: {tool_return_msg.tool_return}"
+                assert TOOL_CALL_DENIAL_ON_CANCEL in tool_return_msg.content, (
+                    f"Tool return should contain denial message, got: {tool_return_msg.tool_return}"
+                )
             elif hasattr(tool_return_msg, "content"):
                 # Check content field
                 content_str = str(tool_return_msg.content)
@@ -1331,12 +1331,12 @@ class TestApprovalFlowCancellation:
         )
 
         # Verify second run completed successfully (not cancelled, not stuck in approval)
-        assert (
-            result_2.stop_reason.stop_reason != "cancelled"
-        ), f"Second run should not be cancelled, got {result_2.stop_reason.stop_reason}"
-        assert (
-            result_2.stop_reason.stop_reason != "requires_approval"
-        ), f"Second run should not require approval for simple message, got {result_2.stop_reason.stop_reason}"
+        assert result_2.stop_reason.stop_reason != "cancelled", (
+            f"Second run should not be cancelled, got {result_2.stop_reason.stop_reason}"
+        )
+        assert result_2.stop_reason.stop_reason != "requires_approval", (
+            f"Second run should not require approval for simple message, got {result_2.stop_reason.stop_reason}"
+        )
 
         # Verify the second run has messages
         db_messages_run2 = await server.message_manager.list_messages(
@@ -1396,10 +1396,9 @@ class TestEdgeCases:
 
         # Stop reason could be either cancelled or max_steps depending on timing
         # Both are acceptable in this edge case
-        assert result.stop_reason.stop_reason in [
-            "cancelled",
-            "max_steps",
-        ], f"Stop reason should be cancelled or max_steps, got {result.stop_reason.stop_reason}"
+        assert result.stop_reason.stop_reason in ["cancelled", "max_steps"], (
+            f"Stop reason should be cancelled or max_steps, got {result.stop_reason.stop_reason}"
+        )
 
     @pytest.mark.asyncio
     async def test_double_cancellation(

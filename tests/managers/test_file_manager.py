@@ -760,9 +760,9 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
 
     # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
     expected_closed_count = len(files) - max_files_open
-    assert (
-        len(all_closed_files) == expected_closed_count
-    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    assert len(all_closed_files) == expected_closed_count, (
+        f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    )
 
     # Check that the oldest files were closed (first N files attached)
     expected_closed = [files[i].file_name for i in range(expected_closed_count)]

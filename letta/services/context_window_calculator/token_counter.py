@@ -59,7 +59,8 @@ class AnthropicTokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, messages: f"anthropic_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        messages: f"anthropic_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )
@@ -70,7 +71,8 @@ class AnthropicTokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, tools: f"anthropic_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        tools: f"anthropic_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )
@@ -147,7 +149,8 @@ class GeminiTokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, messages: f"gemini_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        messages: f"gemini_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )
@@ -158,7 +161,8 @@ class GeminiTokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, tools: f"gemini_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        tools: f"gemini_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )
@@ -213,7 +217,8 @@ class TiktokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, messages: f"tiktoken_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        messages: f"tiktoken_message_tokens:{self.model}:{hashlib.sha256(json.dumps(messages, sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )
@@ -243,7 +248,8 @@ class TiktokenCounter(TokenCounter):
 
     @trace_method
     @async_redis_cache(
-        key_func=lambda self, tools: f"tiktoken_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
+        key_func=lambda self,
+        tools: f"tiktoken_tool_tokens:{self.model}:{hashlib.sha256(json.dumps([t.model_dump() for t in tools], sort_keys=True).encode()).hexdigest()[:16]}",
         prefix="token_counter",
         ttl_s=3600,  # cache for 1 hour
     )

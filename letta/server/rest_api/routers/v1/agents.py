@@ -2161,7 +2161,7 @@ async def capture_messages(
             messages_to_persist.append(
                 Message(
                     role=MessageRole.user,
-                    content=[TextContent(text=message["content"])],
+                    content=[(TextContent(text=message["content"]))],
                     agent_id=agent_id,
                     tool_calls=None,
                     tool_call_id=None,
@@ -2173,7 +2173,7 @@ async def capture_messages(
     messages_to_persist.append(
         Message(
             role=MessageRole.assistant,
-            content=[TextContent(text=request.response_dict["content"])],
+            content=[(TextContent(text=request.response_dict["content"]))],
             agent_id=agent_id,
             model=request.model,
             tool_calls=None,

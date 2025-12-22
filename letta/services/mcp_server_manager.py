@@ -1033,9 +1033,9 @@ class MCPServerManager:
             created_at=oauth_session.created_at,
             updated_at=oauth_session.updated_at,
             # Encrypted fields as Secret objects (converted from encrypted strings in DB)
-            authorization_code_enc=(
-                Secret.from_encrypted(oauth_session.authorization_code_enc) if oauth_session.authorization_code_enc else None
-            ),
+            authorization_code_enc=Secret.from_encrypted(oauth_session.authorization_code_enc)
+            if oauth_session.authorization_code_enc
+            else None,
             access_token_enc=Secret.from_encrypted(oauth_session.access_token_enc) if oauth_session.access_token_enc else None,
             refresh_token_enc=Secret.from_encrypted(oauth_session.refresh_token_enc) if oauth_session.refresh_token_enc else None,
             client_secret_enc=Secret.from_encrypted(oauth_session.client_secret_enc) if oauth_session.client_secret_enc else None,
