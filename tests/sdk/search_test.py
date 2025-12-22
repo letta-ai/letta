@@ -212,9 +212,9 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
             )
 
             assert len(archive_results) > 0, "Should find passages in archive"
-            assert any("Turbopuffer" in result["passage"]["text"] or "vector" in result["passage"]["text"] for result in archive_results), (
-                "Should find vector-related passage"
-            )
+            assert any(
+                "Turbopuffer" in result["passage"]["text"] or "vector" in result["passage"]["text"] for result in archive_results
+            ), "Should find vector-related passage"
 
         finally:
             # Clean up archive

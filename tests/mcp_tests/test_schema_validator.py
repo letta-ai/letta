@@ -229,7 +229,6 @@ class TestSchemaValidator:
         assert status == SchemaHealth.STRICT_COMPLIANT
         assert reasons == []
 
-
     def test_root_level_without_required_non_strict(self):
         """Test that root-level objects without 'required' field are STRICT_COMPLIANT (validator is relaxed)."""
         schema = {

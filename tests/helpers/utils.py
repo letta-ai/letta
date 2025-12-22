@@ -127,32 +127,32 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     assert agent.llm_config == request.llm_config, f"LLM config mismatch: {agent.llm_config} != {request.llm_config}"
 
     # Assert embedding configuration
-    assert agent.embedding_config == request.embedding_config, (
-        f"Embedding config mismatch: {agent.embedding_config} != {request.embedding_config}"
-    )
+    assert (
+        agent.embedding_config == request.embedding_config
+    ), f"Embedding config mismatch: {agent.embedding_config} != {request.embedding_config}"
 
     # Assert memory blocks
     if hasattr(request, "memory_blocks"):
-        assert len(agent.memory.blocks) == len(request.memory_blocks) + len(request.block_ids), (
-            f"Memory blocks count mismatch: {len(agent.memory.blocks)} != {len(request.memory_blocks) + len(request.block_ids)}"
-        )
+        assert len(agent.memory.blocks) == len(request.memory_blocks) + len(
+            request.block_ids
+        ), f"Memory blocks count mismatch: {len(agent.memory.blocks)} != {len(request.memory_blocks) + len(request.block_ids)}"
         memory_block_values = {block.value for block in agent.memory.blocks}
         expected_block_values = {block.value for block in request.memory_blocks}
-        assert expected_block_values.issubset(memory_block_values), (
-            f"Memory blocks mismatch: {expected_block_values} not in {memory_block_values}"
-        )
+        assert expected_block_values.issubset(
+            memory_block_values
+        ), f"Memory blocks mismatch: {expected_block_values} not in {memory_block_values}"
 
     # Assert tools
     assert len(agent.tools) == len(request.tool_ids), f"Tools count mismatch: {len(agent.tools)} != {len(request.tool_ids)}"
-    assert {tool.id for tool in agent.tools} == set(request.tool_ids), (
-        f"Tools mismatch: {set(tool.id for tool in agent.tools)} != {set(request.tool_ids)}"
-    )
+    assert {tool.id for tool in agent.tools} == set(
+        request.tool_ids
+    ), f"Tools mismatch: {set(tool.id for tool in agent.tools)} != {set(request.tool_ids)}"
 
     # Assert sources
     assert len(agent.sources) == len(request.source_ids), f"Sources count mismatch: {len(agent.sources)} != {len(request.source_ids)}"
-    assert {source.id for source in agent.sources} == set(request.source_ids), (
-        f"Sources mismatch: {set(source.id for source in agent.sources)} != {set(request.source_ids)}"
-    )
+    assert {source.id for source in agent.sources} == set(
+        request.source_ids
+    ), f"Sources mismatch: {set(source.id for source in agent.sources)} != {set(request.source_ids)}"
 
     # Assert tags
     assert set(agent.tags) == set(request.tags), f"Tags mismatch: {set(agent.tags)} != {set(request.tags)}"
@@ -161,12 +161,12 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     print("TOOLRULES", request.tool_rules)
     print("AGENTTOOLRULES", agent.tool_rules)
     if request.tool_rules:
-        assert len(agent.tool_rules) == len(request.tool_rules), (
-            f"Tool rules count mismatch: {len(agent.tool_rules)} != {len(request.tool_rules)}"
-        )
-        assert all(any(rule.tool_name == req_rule.tool_name for rule in agent.tool_rules) for req_rule in request.tool_rules), (
-            f"Tool rules mismatch: {agent.tool_rules} != {request.tool_rules}"
-        )
+        assert len(agent.tool_rules) == len(
+            request.tool_rules
+        ), f"Tool rules count mismatch: {len(agent.tool_rules)} != {len(request.tool_rules)}"
+        assert all(
+            any(rule.tool_name == req_rule.tool_name for rule in agent.tool_rules) for req_rule in request.tool_rules
+        ), f"Tool rules mismatch: {agent.tool_rules} != {request.tool_rules}"
 
     # Assert message_buffer_autoclear
     if request.message_buffer_autoclear is not None:
@@ -179,9 +179,9 @@ def validate_context_window_overview(
     """Validate common sense assertions for ContextWindowOverview"""
 
     # 1. Current context size should not exceed maximum
-    assert overview.context_window_size_current <= overview.context_window_size_max, (
-        f"Current context size ({overview.context_window_size_current}) exceeds maximum ({overview.context_window_size_max})"
-    )
+    assert (
+        overview.context_window_size_current <= overview.context_window_size_max
+    ), f"Current context size ({overview.context_window_size_current}) exceeds maximum ({overview.context_window_size_max})"
 
     # 2. All token counts should be non-negative
     assert overview.num_tokens_system >= 0, "System token count cannot be negative"
@@ -200,14 +200,14 @@ def validate_context_window_overview(
         + overview.num_tokens_messages
         + overview.num_tokens_functions_definitions
     )
-    assert overview.context_window_size_current == expected_total, (
-        f"Token sum ({expected_total}) doesn't match current size ({overview.context_window_size_current})"
-    )
+    assert (
+        overview.context_window_size_current == expected_total
+    ), f"Token sum ({expected_total}) doesn't match current size ({overview.context_window_size_current})"
 
     # 4. Message count should match messages list length
-    assert len(overview.messages) == overview.num_messages, (
-        f"Messages list length ({len(overview.messages)}) doesn't match num_messages ({overview.num_messages})"
-    )
+    assert (
+        len(overview.messages) == overview.num_messages
+    ), f"Messages list length ({len(overview.messages)}) doesn't match num_messages ({overview.num_messages})"
 
     # 5. If summary_memory is None, its token count should be 0
     if overview.summary_memory is None:

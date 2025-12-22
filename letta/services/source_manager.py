@@ -406,9 +406,11 @@ class SourceManager:
                     if before_obj:
                         conditions.append(
                             or_(
-                                AgentModel.created_at < before_obj.created_at
-                                if ascending
-                                else AgentModel.created_at > before_obj.created_at,
+                                (
+                                    AgentModel.created_at < before_obj.created_at
+                                    if ascending
+                                    else AgentModel.created_at > before_obj.created_at
+                                ),
                                 and_(AgentModel.created_at == before_obj.created_at, AgentModel.id < before_obj.id),
                             )
                         )

@@ -82,6 +82,7 @@ from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.agent_serialization_manager import AgentSerializationManager
 from letta.services.archive_manager import ArchiveManager
+from letta.services.block_edit_proposal_manager import BlockEditProposalManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
 from letta.services.files_agents_manager import FileAgentManager
@@ -157,6 +158,7 @@ class SyncServer(object):
         self.mcp_manager = MCPManager()
         self.mcp_server_manager = MCPServerManager()
         self.block_manager = BlockManager()
+        self.block_edit_proposal_manager = BlockEditProposalManager()
         self.source_manager = SourceManager()
         self.sandbox_config_manager = SandboxConfigManager()
         self.message_manager = MessageManager()
@@ -466,9 +468,9 @@ class SyncServer(object):
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
             if request.model and isinstance(request.model, str):
-                assert request.llm_config.handle == request.model, (
-                    f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
-                )
+                assert (
+                    request.llm_config.handle == request.model
+                ), f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
 
         # update with model_settings
         if request.model_settings is not None:

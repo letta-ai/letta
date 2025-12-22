@@ -192,9 +192,7 @@ def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent
                 str(
                     m.content[0].text
                     if hasattr(m, "content") and isinstance(m.content, list) and len(m.content) > 0 and hasattr(m.content[0], "text")
-                    else m.content
-                    if hasattr(m, "content")
-                    else f"<{type(m).__name__}>"
+                    else m.content if hasattr(m, "content") else f"<{type(m).__name__}>"
                 )
                 for m in in_context_messages[1:]
             ]

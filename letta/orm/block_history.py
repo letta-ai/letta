@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.block_history import BlockHistoryEntry as PydanticBlockHistoryEntry
 from letta.schemas.enums import ActorType
 
 
@@ -13,6 +14,7 @@ class BlockHistory(OrganizationMixin, SqlalchemyBase):
     """Stores a single historical state of a Block for undo/redo functionality."""
 
     __tablename__ = "block_history"
+    __pydantic_model__ = PydanticBlockHistoryEntry
 
     __table_args__ = (
         # PRIMARY lookup index for finding specific history entries & ordering

@@ -262,9 +262,9 @@ def generate_grammar_and_documentation(
 ):
     from letta.utils import printd
 
-    assert not (add_inner_thoughts_top_level and add_inner_thoughts_param_level), (
-        "Can only place inner thoughts in one location in the grammar generator"
-    )
+    assert not (
+        add_inner_thoughts_top_level and add_inner_thoughts_param_level
+    ), "Can only place inner thoughts in one location in the grammar generator"
 
     grammar_function_models = []
     # create_dynamic_model_from_function will add inner thoughts to the function parameters if add_inner_thoughts is True.

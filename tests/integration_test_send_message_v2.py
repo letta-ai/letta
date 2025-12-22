@@ -806,9 +806,9 @@ async def test_parallel_tool_calls(
         # Verify the dice roll result is within the valid range
         dice_result = int(tr.tool_return)
         expected_max = num_sides_by_id[tr.tool_call_id]
-        assert 1 <= dice_result <= expected_max, (
-            f"Dice roll result {dice_result} is not within valid range 1-{expected_max} for tool call {tr.tool_call_id}"
-        )
+        assert (
+            1 <= dice_result <= expected_max
+        ), f"Dice roll result {dice_result} is not within valid range 1-{expected_max} for tool call {tr.tool_call_id}"
 
 
 @pytest.mark.parametrize(

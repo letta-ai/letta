@@ -399,9 +399,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     ):
         """Add an item to the deque"""
         assert self._active, "Generator is inactive"
-        assert isinstance(item, LettaMessage) or isinstance(item, LegacyLettaMessage) or isinstance(item, MessageStreamStatus), (
-            f"Wrong type: {type(item)}"
-        )
+        assert (
+            isinstance(item, LettaMessage) or isinstance(item, LegacyLettaMessage) or isinstance(item, MessageStreamStatus)
+        ), f"Wrong type: {type(item)}"
 
         self._chunks.append(item)
         if len(self._chunks) > 100:

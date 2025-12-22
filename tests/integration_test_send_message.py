@@ -341,9 +341,9 @@ def assert_greeting_with_assistant_message_response(
     expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
         model_handle, model_settings, streaming=streaming, from_db=from_db
     )
-    assert expected_message_count_min <= len(messages) <= expected_message_count_max, (
-        f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
-    )
+    assert (
+        expected_message_count_min <= len(messages) <= expected_message_count_max
+    ), f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
 
     # User message if loaded from db
     index = 0
@@ -483,9 +483,9 @@ def assert_greeting_without_assistant_message_response(
     expected_message_count_min, expected_message_count_max = get_expected_message_count_range(
         model_handle, model_settings, tool_call=True, streaming=streaming, from_db=from_db, use_assistant_message=False
     )
-    assert expected_message_count_min <= len(messages) <= expected_message_count_max, (
-        f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
-    )
+    assert (
+        expected_message_count_min <= len(messages) <= expected_message_count_max
+    ), f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
 
     # User message if loaded from db
     index = 0
@@ -639,9 +639,9 @@ def assert_tool_call_response(
     )
     # Allow for edge cases where count might be slightly off
     if not (expected_message_count_min - 2 <= len(messages) <= expected_message_count_max + 2):
-        assert expected_message_count_min <= len(messages) <= expected_message_count_max, (
-            f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
-        )
+        assert (
+            expected_message_count_min <= len(messages) <= expected_message_count_max
+        ), f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
 
     # User message if loaded from db
     index = 0
@@ -800,9 +800,9 @@ def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
         args = function_call.get("args", {})
 
         # Assert that there is no 'thinking' field in the function call arguments
-        assert "thinking" not in args, (
-            f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
-        )
+        assert (
+            "thinking" not in args
+        ), f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
 
 
 def assert_image_input_response(
@@ -831,9 +831,9 @@ def assert_image_input_response(
     # Allow for extra system messages (like memory alerts) when from_db=True
     if from_db:
         expected_message_count_max += 2  # Allow up to 2 extra system messages
-    assert expected_message_count_min <= len(messages) <= expected_message_count_max, (
-        f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
-    )
+    assert (
+        expected_message_count_min <= len(messages) <= expected_message_count_max
+    ), f"Expected {expected_message_count_min}-{expected_message_count_max} messages, got {len(messages)}"
 
     # User message if loaded from db
     index = 0
