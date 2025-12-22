@@ -688,6 +688,10 @@ class AnthropicClient(LLMClientBase):
                 if thinking_enabled:
                     betas.append("context-management-2025-06-27")
 
+            # Structured outputs beta - only for supported models
+            if model and _supports_structured_outputs(model):
+                betas.append("structured-outputs-2025-11-13")
+
             if betas:
                 result = await client.beta.messages.count_tokens(**count_params, betas=betas)
             else:
@@ -1074,13 +1078,21 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool 
         input_schema = tool.function.parameters or {"type": "object", "properties": {}, "required": []}
 
         # Use the older lightweight cleanup: remove defaults and simplify union-with-null.
-        cleaned_schema = _clean_property_schema(input_schema) if isinstance(input_schema, dict) else input_schema
+        # When using structured outputs (use_strict=True), also add additionalProperties: false to all object types.
+        cleaned_schema = (
+            _clean_property_schema(input_schema, add_additional_properties_false=use_strict)
+            if isinstance(input_schema, dict)
+            else input_schema
+        )
         # Normalize to a safe "object" schema shape to avoid downstream assumptions failing.
         if isinstance(cleaned_schema, dict):
             if cleaned_schema.get("type") != "object":
                 cleaned_schema["type"] = "object"
             if not isinstance(cleaned_schema.get("properties"), dict):
                 cleaned_schema["properties"] = {}
+            # Ensure additionalProperties: false for structured outputs on the top-level schema
+            if use_strict and "additionalProperties" not in cleaned_schema:
+                cleaned_schema["additionalProperties"] = False
         formatted_tool: dict = {
             "name": tool.function.name,
             "description": tool.function.description if tool.function.description else "",
@@ -1099,13 +1111,14 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool 
     return formatted_tools
 
 
-def _clean_property_schema(schema: dict) -> dict:
+def _clean_property_schema(schema: dict, add_additional_properties_false: bool = False) -> dict:
     """Older schema cleanup used for Anthropic tools.
 
     Removes / simplifies fields that commonly cause Anthropic tool schema issues:
     - Remove `default` values
     - Simplify nullable unions like {"type": ["null", "string"]} -> {"type": "string"}
     - Recurse through nested schemas (properties/items/anyOf/oneOf/allOf/etc.)
+    - Optionally add additionalProperties: false to object types (required for structured outputs)
     """
     if not isinstance(schema, dict):
         return schema
@@ -1133,15 +1146,19 @@ def _clean_property_schema(schema: dict) -> dict:
             continue
 
         if key == "properties" and isinstance(value, dict):
-            cleaned["properties"] = {k: _clean_property_schema(v) for k, v in value.items()}
+            cleaned["properties"] = {k: _clean_property_schema(v, add_additional_properties_false) for k, v in value.items()}
         elif key == "items" and isinstance(value, dict):
-            cleaned["items"] = _clean_property_schema(value)
+            cleaned["items"] = _clean_property_schema(value, add_additional_properties_false)
         elif key in ("anyOf", "oneOf", "allOf") and isinstance(value, list):
-            cleaned[key] = [_clean_property_schema(v) if isinstance(v, dict) else v for v in value]
+            cleaned[key] = [_clean_property_schema(v, add_additional_properties_false) if isinstance(v, dict) else v for v in value]
         elif key in ("additionalProperties",) and isinstance(value, dict):
-            cleaned[key] = _clean_property_schema(value)
+            cleaned[key] = _clean_property_schema(value, add_additional_properties_false)
         else:
             cleaned[key] = value
+
+    # For structured outputs, Anthropic requires additionalProperties: false on all object types
+    if add_additional_properties_false and cleaned.get("type") == "object" and "additionalProperties" not in cleaned:
+        cleaned["additionalProperties"] = False
 
     return cleaned
 
