@@ -576,9 +576,12 @@ class AnthropicClient(LLMClientBase):
         if messages and len(messages) == 0:
             messages = None
         if tools and len(tools) > 0:
+            # Token counting endpoint requires additionalProperties: false (use_strict=True)
+            # but does NOT support the `strict` field on tools (add_strict_field=False)
             anthropic_tools = convert_tools_to_anthropic_format(
                 tools,
-                use_strict=_supports_structured_outputs(model) if model else False,
+                use_strict=True,
+                add_strict_field=False,
             )
         else:
             anthropic_tools = None
@@ -1042,7 +1045,11 @@ def _supports_structured_outputs(model: str) -> bool:
     return False
 
 
-def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool = False) -> List[dict]:
+def convert_tools_to_anthropic_format(
+    tools: List[OpenAITool],
+    use_strict: bool = False,
+    add_strict_field: bool = True,
+) -> List[dict]:
     """See: https://docs.anthropic.com/claude/docs/tool-use
 
     OpenAI style:
@@ -1069,6 +1076,12 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool 
           "required": List[str],
         },
       }]
+
+    Args:
+        tools: List of OpenAI-style tools to convert
+        use_strict: If True, add additionalProperties: false to all object schemas
+        add_strict_field: If True (and use_strict=True), add strict: true to allowlisted tools.
+                         Set to False for token counting endpoint which doesn't support this field.
     """
     formatted_tools = []
     strict_count = 0
@@ -1091,7 +1104,8 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool 
             if not isinstance(cleaned_schema.get("properties"), dict):
                 cleaned_schema["properties"] = {}
             # Ensure additionalProperties: false for structured outputs on the top-level schema
-            if use_strict and "additionalProperties" not in cleaned_schema:
+            # Must override any existing additionalProperties: true as well
+            if use_strict:
                 cleaned_schema["additionalProperties"] = False
         formatted_tool: dict = {
             "name": tool.function.name,
@@ -1102,7 +1116,13 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool], use_strict: bool 
         # Structured outputs "strict" mode: always attach `strict` for allowlisted tools
         # when we are using structured outputs models. Limit the number of strict tools
         # to avoid exceeding Anthropic constraints.
-        if use_strict and tool.function.name in ANTHROPIC_STRICT_MODE_ALLOWLIST and strict_count < ANTHROPIC_MAX_STRICT_TOOLS:
+        # NOTE: The token counting endpoint does NOT support `strict` - only the messages endpoint does.
+        if (
+            use_strict
+            and add_strict_field
+            and tool.function.name in ANTHROPIC_STRICT_MODE_ALLOWLIST
+            and strict_count < ANTHROPIC_MAX_STRICT_TOOLS
+        ):
             formatted_tool["strict"] = True
             strict_count += 1
 
@@ -1157,7 +1177,8 @@ def _clean_property_schema(schema: dict, add_additional_properties_false: bool =
             cleaned[key] = value
 
     # For structured outputs, Anthropic requires additionalProperties: false on all object types
-    if add_additional_properties_false and cleaned.get("type") == "object" and "additionalProperties" not in cleaned:
+    # We must override any existing additionalProperties: true as well
+    if add_additional_properties_false and cleaned.get("type") == "object":
         cleaned["additionalProperties"] = False
 
     return cleaned
