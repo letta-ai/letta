@@ -109,17 +109,18 @@ class AnthropicProvider(Provider):
 
     async def check_api_key(self):
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
-        if api_key:
-            anthropic_client = anthropic.Anthropic(api_key=api_key)
-            try:
-                # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
-                anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
-            except anthropic.AuthenticationError as e:
-                raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
-            except Exception as e:
-                raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
-        else:
+        if not api_key:
             raise ValueError("No API key provided")
+
+        try:
+            # Use async Anthropic client
+            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+            # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
+            await anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
+        except anthropic.AuthenticationError as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
         """Get the default max output tokens for Anthropic models."""

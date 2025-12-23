@@ -1,8 +1,10 @@
 from typing import Literal
 
+from openai import AsyncOpenAI, AuthenticationError
 from pydantic import Field
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
@@ -23,11 +25,21 @@ class OpenAIProvider(Provider):
     base_url: str = Field("https://api.openai.com/v1", description="Base URL for the OpenAI API.")
 
     async def check_api_key(self):
-        from letta.llm_api.openai import openai_check_valid_api_key  # TODO: DO NOT USE THIS - old code path
-
         # Decrypt API key before using
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
-        openai_check_valid_api_key(self.base_url, api_key)
+
+        if not api_key:
+            raise ValueError("No API key provided")
+
+        try:
+            # Use async OpenAI client to check API key validity
+            client = AsyncOpenAI(api_key=api_key, base_url=self.base_url)
+            # Just list models to verify API key works
+            await client.models.list()
+        except AuthenticationError as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with OpenAI: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
         """Get the default max output tokens for OpenAI models."""
