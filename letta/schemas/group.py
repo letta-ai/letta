@@ -40,6 +40,10 @@ class Group(GroupBase):
     termination_token: Optional[str] = Field(None, description="")
     max_turns: Optional[int] = Field(None, description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+    sleeptime_propose_only: Optional[bool] = Field(
+        None,
+        description="If set to True, sleeptime agents will propose memory edits instead of applying them.",
+    )
     turns_counter: Optional[int] = Field(None, description="")
     last_processed_message_id: Optional[str] = Field(None, description="")
     max_message_buffer_length: Optional[int] = Field(
@@ -72,12 +76,14 @@ class Group(GroupBase):
                 return SleeptimeManager(
                     manager_agent_id=self.manager_agent_id,
                     sleeptime_agent_frequency=self.sleeptime_agent_frequency,
+                    sleeptime_propose_only=self.sleeptime_propose_only,
                 )
             case ManagerType.voice_sleeptime:
                 return VoiceSleeptimeManager(
                     manager_agent_id=self.manager_agent_id,
                     max_message_buffer_length=self.max_message_buffer_length,
                     min_message_buffer_length=self.min_message_buffer_length,
+                    sleeptime_propose_only=self.sleeptime_propose_only,
                 )
 
 
@@ -119,12 +125,20 @@ class SleeptimeManager(ManagerConfig):
     manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
     manager_agent_id: str = Field(..., description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+    sleeptime_propose_only: Optional[bool] = Field(
+        None,
+        description="If set to True, sleeptime agents will propose memory edits instead of applying them.",
+    )
 
 
 class SleeptimeManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
     manager_agent_id: Optional[str] = Field(None, description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+    sleeptime_propose_only: Optional[bool] = Field(
+        None,
+        description="If set to True, sleeptime agents will propose memory edits instead of applying them.",
+    )
 
 
 class VoiceSleeptimeManager(ManagerConfig):
@@ -138,6 +152,10 @@ class VoiceSleeptimeManager(ManagerConfig):
         None,
         description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
     )
+    sleeptime_propose_only: Optional[bool] = Field(
+        None,
+        description="If set to True, sleeptime agents will propose memory edits instead of applying them.",
+    )
 
 
 class VoiceSleeptimeManagerUpdate(ManagerConfig):
@@ -150,6 +168,10 @@ class VoiceSleeptimeManagerUpdate(ManagerConfig):
     min_message_buffer_length: Optional[int] = Field(
         None,
         description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
+    )
+    sleeptime_propose_only: Optional[bool] = Field(
+        None,
+        description="If set to True, sleeptime agents will propose memory edits instead of applying them.",
     )
 
 

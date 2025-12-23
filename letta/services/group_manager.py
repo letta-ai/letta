@@ -95,6 +95,7 @@ class GroupManager:
                     new_group.manager_type = ManagerType.sleeptime
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
                     new_group.sleeptime_agent_frequency = group.manager_config.sleeptime_agent_frequency
+                    new_group.sleeptime_propose_only = group.manager_config.sleeptime_propose_only
                     if new_group.sleeptime_agent_frequency:
                         new_group.turns_counter = -1
                 case ManagerType.voice_sleeptime:
@@ -102,6 +103,7 @@ class GroupManager:
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
                     max_message_buffer_length = group.manager_config.max_message_buffer_length
                     min_message_buffer_length = group.manager_config.min_message_buffer_length
+                    new_group.sleeptime_propose_only = group.manager_config.sleeptime_propose_only
                     # Safety check for buffer length range
                     self.ensure_buffer_length_range_valid(max_value=max_message_buffer_length, min_value=min_message_buffer_length)
                     new_group.max_message_buffer_length = max_message_buffer_length
@@ -130,6 +132,7 @@ class GroupManager:
             group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
 
             sleeptime_agent_frequency = None
+            sleeptime_propose_only = None
             max_message_buffer_length = None
             min_message_buffer_length = None
             max_turns = None
@@ -150,12 +153,14 @@ class GroupManager:
                     case ManagerType.sleeptime:
                         manager_agent_id = group_update.manager_config.manager_agent_id
                         sleeptime_agent_frequency = group_update.manager_config.sleeptime_agent_frequency
+                        sleeptime_propose_only = group_update.manager_config.sleeptime_propose_only
                         if sleeptime_agent_frequency and group.turns_counter is None:
                             group.turns_counter = -1
                     case ManagerType.voice_sleeptime:
                         manager_agent_id = group_update.manager_config.manager_agent_id
                         max_message_buffer_length = group_update.manager_config.max_message_buffer_length or group.max_message_buffer_length
                         min_message_buffer_length = group_update.manager_config.min_message_buffer_length or group.min_message_buffer_length
+                        sleeptime_propose_only = group_update.manager_config.sleeptime_propose_only
                         if sleeptime_agent_frequency and group.turns_counter is None:
                             group.turns_counter = -1
                     case _:
@@ -166,6 +171,8 @@ class GroupManager:
 
             if sleeptime_agent_frequency:
                 group.sleeptime_agent_frequency = sleeptime_agent_frequency
+            if sleeptime_propose_only is not None:
+                group.sleeptime_propose_only = sleeptime_propose_only
             if max_message_buffer_length:
                 group.max_message_buffer_length = max_message_buffer_length
             if min_message_buffer_length:
