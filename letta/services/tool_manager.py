@@ -1295,9 +1295,11 @@ class ToolManager:
 
         # After deployment, look up the function to configure autoscaler
         try:
+            import asyncio
+
             func = modal.Function.from_name(modal_app.name, MODAL_DEFAULT_TOOL_NAME)
             func.update_autoscaler(scaledown_window=2)  # drain inactive old containers
-            time.sleep(5)
+            await asyncio.sleep(5)
             func.update_autoscaler(scaledown_window=60)
         except Exception as e:
             logger.warning(f"Failed to configure autoscaler for Modal function {modal_app.name}: {e}")
