@@ -15,6 +15,7 @@ from letta.schemas.providers.openai import OpenAIProvider
 MODEL_CONTEXT_WINDOWS = {
     "glm-4.5": 128000,
     "glm-4.6": 200000,
+    "glm-4.7": 200000,
 }
 
 
