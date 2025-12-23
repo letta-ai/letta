@@ -1275,7 +1275,7 @@ class SyncServer(object):
                 argument_name="provider_name",
             )
         elif len(providers) > 1:
-            logger.warning(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            logger.warning(f"Multiple providers with name {provider_name} supported")
             provider = providers[0]
         else:
             provider = providers[0]
