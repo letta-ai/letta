@@ -19800,6 +19800,21 @@
                     "default": "letta-code",
                     "type": "string",
                     "enum": ["letta-code", "sdk"]
+                  },
+                  "agent_id": {
+                    "type": "string"
+                  },
+                  "session_id": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "platform": {
+                    "type": "string"
+                  },
+                  "settings": {
+                    "type": "string"
                   }
                 },
                 "required": ["message"]
