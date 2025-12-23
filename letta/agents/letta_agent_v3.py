@@ -1493,14 +1493,16 @@ class LettaAgentV3(LettaAgentV2):
             # Parse provider/model from the handle, falling back to the agent's
             # provider type when only a model name is given.
             if "/" in summarizer_config.model:
-                provider, model_name = summarizer_config.model.split("/", 1)
+                provider_name, model_name = summarizer_config.model.split("/", 1)
             else:
-                provider = agent_llm_config.model_endpoint_type
+                provider_name = agent_llm_config.provider_name
                 model_name = summarizer_config.model
 
-            # Start from the agent's config and override model + provider + handle
+            # Start from the agent's config and override model + provider_name + handle
+            # Note: model_endpoint_type is NOT overridden - the parsed provider_name
+            # is a custom label (e.g. "claude-pro-max"), not the endpoint type (e.g. "anthropic")
             base = agent_llm_config.model_copy()
-            base.model_endpoint_type = provider
+            base.provider_name = provider_name
             base.model = model_name
             base.handle = summarizer_config.model
 
