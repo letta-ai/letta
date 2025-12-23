@@ -24,8 +24,8 @@ from letta.errors import (
     AgentExportProcessingError,
     AgentFileImportError,
     AgentNotFoundForExportError,
+    NoActiveRunsToCancelError,
     PendingApprovalError,
-    RunCancelError,
 )
 from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -1670,40 +1670,50 @@ async def cancel_message(
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
     run_ids = request.run_ids if request else None
     if not run_ids:
-        redis_client = await get_redis_client()
-        run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
+        run_id = None
+        try:
+            redis_client = await get_redis_client()
+            run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
+        except Exception as e:
+            # Redis is optional; fall back to DB to avoid surfacing 5XXs for cancellation.
+            logger.warning(f"Failed to look up run to cancel in redis for agent {agent_id}, falling back to DB: {e}")
+
         if run_id is None:
             logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
-            run_ids = await server.run_manager.list_runs(
+            runs = await server.run_manager.list_runs(
                 actor=actor,
                 statuses=[RunStatus.created, RunStatus.running],
                 ascending=False,
                 agent_id=agent_id,  # NOTE: this will override agent_ids if provided
-                limit=100,  # Limit to 10 most recent active runs for cancellation
+                limit=100,  # Limit to 100 most recent active runs for cancellation
             )
-            run_ids = [run.id for run in run_ids]
+            run_ids = [run.id for run in runs]
         else:
             run_ids = [run_id]
 
+    if not run_ids:
+        raise NoActiveRunsToCancelError(agent_id=agent_id)
+
     results = {}
-    failed_to_cancel = []
     for run_id in run_ids:
-        run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
-        if run.metadata.get("lettuce"):
-            lettuce_client = await LettuceClient.create()
-            await lettuce_client.cancel(run_id)
         try:
-            run = await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
+            run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
+            if run.metadata and run.metadata.get("lettuce"):
+                try:
+                    lettuce_client = await LettuceClient.create()
+                    await lettuce_client.cancel(run_id)
+                except Exception as e:
+                    # Do not surface cancellation failures as 5XXs.
+                    logger.error(f"Failed to cancel Lettuce run {run_id}: {e}")
+
+            await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
         except Exception as e:
             results[run_id] = "failed"
+            # Cancellation failures should not raise errors back to the client.
             logger.error(f"Failed to cancel run {run_id}: {str(e)}")
-            failed_to_cancel.append(run_id)
             continue
         results[run_id] = "cancelled"
         logger.info(f"Cancelled run {run_id}")
-
-    if failed_to_cancel:
-        raise RunCancelError(f"Failed to cancel runs: {failed_to_cancel}")
     return results
 
 

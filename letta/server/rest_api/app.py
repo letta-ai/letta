@@ -50,6 +50,7 @@ from letta.errors import (
     LLMProviderOverloaded,
     LLMRateLimitError,
     LLMTimeoutError,
+    NoActiveRunsToCancelError,
     PendingApprovalError,
 )
 from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
@@ -493,6 +494,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
+    app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
 
     # 415 Unsupported Media Type errors
     app.add_exception_handler(LettaUnsupportedFileUploadError, _error_handler_415)

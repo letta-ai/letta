@@ -53,6 +53,17 @@ class PendingApprovalError(LettaError):
         super().__init__(message=message, code=code, details=details)
 
 
+class NoActiveRunsToCancelError(LettaError):
+    """Error raised when attempting to cancel but there are no active runs to cancel."""
+
+    def __init__(self, agent_id: Optional[str] = None):
+        message = "No active runs to cancel"
+        if agent_id:
+            message = f"No active runs to cancel for agent {agent_id}"
+        details = {"error_code": "NO_ACTIVE_RUNS_TO_CANCEL", "agent_id": agent_id}
+        super().__init__(message=message, code=ErrorCode.CONFLICT, details=details)
+
+
 class LettaToolCreateError(LettaError):
     """Error raised when a tool cannot be created."""
 

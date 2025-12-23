@@ -613,12 +613,13 @@ class RunManager:
 
         logger.debug(f"Cancelling run {run_id} for agent {agent_id}")
 
-        # check if run can be cancelled (cannot cancel a completed, failed, or cancelled run)
+        # Cancellation should be idempotent: if a run is already terminated, treat this as a no-op.
+        # This commonly happens when a run finishes between client request and server handling.
         if run.stop_reason and run.stop_reason not in [StopReasonType.requires_approval]:
-            logger.error(f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}")
-            raise LettaInvalidArgumentError(
+            logger.debug(
                 f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}"
             )
+            return
 
         # Check if agent is waiting for approval by examining the last message
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
