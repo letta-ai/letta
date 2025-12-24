@@ -20037,6 +20037,9 @@
                                 "agent_id": {
                                   "type": "string"
                                 },
+                                "run_id": {
+                                  "type": "string"
+                                },
                                 "error_type": {
                                   "type": "string"
                                 },
