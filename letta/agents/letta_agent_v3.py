@@ -726,6 +726,15 @@ class LettaAgentV3(LettaAgentV2):
                 else:
                     tool_calls = []
 
+                # Enforce parallel_tool_calls=false by truncating to first tool call
+                # Some providers (e.g. Gemini) don't respect this setting via API, so we enforce it client-side
+                if len(tool_calls) > 1 and not self.agent_state.llm_config.parallel_tool_calls:
+                    self.logger.warning(
+                        f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
+                        f"Truncating to first tool call: {tool_calls[0].function.name}"
+                    )
+                    tool_calls = [tool_calls[0]]
+
             # get the new generated `Message` objects from handling the LLM response
             new_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
                 tool_calls=tool_calls,
@@ -1037,15 +1046,11 @@ class LettaAgentV3(LettaAgentV2):
 
         # 5. Unified tool execution path (works for both single and multiple tools)
 
-        # 5a. Validate parallel tool calling constraints
-        if len(tool_calls) > 1:
-            # No parallel tool calls with tool rules
-            if self.agent_state.tool_rules and len([r for r in self.agent_state.tool_rules if r.type != "requires_approval"]) > 0:
-                raise ValueError(
-                    "Parallel tool calling is not allowed when tool rules are present. Disable tool rules to use parallel tool calls."
-                )
+        # 5. Unified tool execution path (works for both single and multiple tools)
+        # Note: Parallel tool calling with tool rules is validated at agent create/update time.
+        # At runtime, we trust that if tool_rules exist, parallel_tool_calls=false is enforced earlier.
 
-        # 5b. Prepare execution specs for all tools
+        # 5a. Prepare execution specs for all tools
         exec_specs = []
         for tc in tool_calls:
             call_id = tc.id or f"call_{uuid.uuid4().hex[:8]}"
