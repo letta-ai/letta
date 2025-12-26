@@ -353,8 +353,15 @@ class RunManager:
                     logger.warning(f"Run {run_id} completed without a completed_at timestamp")
                     update.completed_at = get_utc_time().replace(tzinfo=None)
 
-            # Update job attributes with only the fields that were explicitly set
+            # Update run attributes with only the fields that were explicitly set
             update_data = update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Merge metadata updates instead of overwriting.
+            # This is important for streaming/background flows where different components update
+            # different parts of metadata (e.g., run_type set at creation, error payload set at terminal).
+            if "metadata_" in update_data and isinstance(update_data["metadata_"], dict):
+                existing_metadata = run.metadata_ if isinstance(run.metadata_, dict) else {}
+                update_data["metadata_"] = {**existing_metadata, **update_data["metadata_"]}
 
             # Automatically update the completion timestamp if status is set to 'completed'
             for key, value in update_data.items():
@@ -616,9 +623,7 @@ class RunManager:
         # Cancellation should be idempotent: if a run is already terminated, treat this as a no-op.
         # This commonly happens when a run finishes between client request and server handling.
         if run.stop_reason and run.stop_reason not in [StopReasonType.requires_approval]:
-            logger.debug(
-                f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}"
-            )
+            logger.debug(f"Run {run_id} cannot be cancelled because it is already terminated with stop reason: {run.stop_reason.value}")
             return
 
         # Check if agent is waiting for approval by examining the last message

@@ -218,16 +218,18 @@ async def test_update_run_metadata_persistence(server: SyncServer, sarah_agent, 
         actor=default_user,
     )
 
-    # Verify metadata was properly updated
+    # Verify metadata was properly updated (metadata should merge, not overwrite)
     assert updated_run.status == RunStatus.failed
     assert updated_run.stop_reason == StopReasonType.llm_api_error
-    assert updated_run.metadata == error_data
+    assert updated_run.metadata["type"] == "test"
+    assert updated_run.metadata["initial"] == "value"
     assert "error" in updated_run.metadata
     assert updated_run.metadata["error"]["type"] == "llm_timeout"
 
     # Fetch the run again to ensure it's persisted in DB
     fetched_run = await server.run_manager.get_run_by_id(created_run.id, actor=default_user)
-    assert fetched_run.metadata == error_data
+    assert fetched_run.metadata["type"] == "test"
+    assert fetched_run.metadata["initial"] == "value"
     assert "error" in fetched_run.metadata
     assert fetched_run.metadata["error"]["type"] == "llm_timeout"
 
