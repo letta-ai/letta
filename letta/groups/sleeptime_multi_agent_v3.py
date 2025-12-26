@@ -13,6 +13,7 @@ from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.run import Run, RunUpdate
 from letta.schemas.user import User
@@ -214,6 +215,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             run_update = RunUpdate(
                 status=RunStatus.completed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                stop_reason=result.stop_reason.stop_reason if result.stop_reason else StopReasonType.end_turn,
                 metadata={
                     "result": result.model_dump(mode="json"),
                     "agent_id": sleeptime_agent_state.id,
@@ -225,6 +227,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             run_update = RunUpdate(
                 status=RunStatus.failed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                stop_reason=StopReasonType.error,
                 metadata={"error": str(e)},
             )
             await self.run_manager.update_run_by_id_async(run_id=run_id, update=run_update, actor=self.actor)
