@@ -55,13 +55,6 @@ Setup the environment variable to tell letta code to contact PostgreSQL database
 export LETTA_PG_URI="postgresql://${POSTGRES_USER:-letta}:${POSTGRES_PASSWORD:-letta}@localhost:5432/${POSTGRES_DB:-letta}"
 ```
 
-``` 
-After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
-contents from template test data.
-```shell
-uv run alembic upgrade head
-```
-
 #### Install uv and dependencies
 
 First, install uv using [the official instructions here](https://docs.astral.sh/uv/getting-started/installation/).
@@ -72,7 +65,12 @@ cd letta
 eval $(uv env activate)
 uv sync --all-extras
 ```
-
+``` 
+After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
+contents from template test data.
+```shell
+uv run alembic upgrade head
+```
 
 #### Running letta with uv
 
