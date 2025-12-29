@@ -1,8 +1,9 @@
 import json
 from datetime import datetime
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from letta.functions.mcp_client.types import (
     MCP_AUTH_HEADER_AUTHORIZATION,
@@ -41,6 +42,19 @@ class CreateSSEMCPServer(LettaBase):
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: str) -> str:
+        """Validate that server_url is a valid HTTP(S) URL."""
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
+
 
 class CreateStreamableHTTPMCPServer(LettaBase):
     """Create a new Streamable HTTP MCP server"""
@@ -50,6 +64,19 @@ class CreateStreamableHTTPMCPServer(LettaBase):
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: str) -> str:
+        """Validate that server_url is a valid HTTP(S) URL."""
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
 
 CreateMCPServerUnion = Union[CreateStdioMCPServer, CreateSSEMCPServer, CreateStreamableHTTPMCPServer]
@@ -99,6 +126,21 @@ class UpdateSSEMCPServer(LettaBase):
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
+
 
 class UpdateStreamableHTTPMCPServer(LettaBase):
     """Update schema for Streamable HTTP MCP server - all fields optional"""
@@ -108,6 +150,21 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
 
 UpdateMCPServerUnion = Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer]

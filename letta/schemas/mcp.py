@@ -3,7 +3,9 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Field
+from urllib.parse import urlparse
+
+from pydantic import Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,21 @@ class MCPServer(BaseMCPServer):
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     metadata_: Optional[Dict[str, Any]] = Field(default_factory=dict, description="A dictionary of additional metadata for the tool.")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
     def get_token_secret(self) -> Optional[Secret]:
         """Get the token as a Secret object."""
@@ -199,6 +216,21 @@ class UpdateSSEMCPServer(LettaBase):
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for SSE authentication)")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
+
 
 class UpdateStdioMCPServer(LettaBase):
     """Update a Stdio MCP server"""
@@ -217,6 +249,21 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
 
 UpdateMCPServer = Union[UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer]
