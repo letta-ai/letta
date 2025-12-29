@@ -82,8 +82,8 @@ class StepMetrics(SqlalchemyBase, ProjectMixin, AgentMixin):
 
     # Relationships (foreign keys)
     step: Mapped["Step"] = relationship("Step", back_populates="metrics", uselist=False)
-    run: Mapped[Optional["Run"]] = relationship("Run")
-    agent: Mapped[Optional["Agent"]] = relationship("Agent")
+    run: Mapped[Optional["Run"]] = relationship("Run", lazy="raise")
+    agent: Mapped[Optional["Agent"]] = relationship("Agent", lazy="raise")
 
     def create(
         self,

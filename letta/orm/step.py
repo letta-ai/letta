@@ -75,9 +75,9 @@ class Step(SqlalchemyBase, ProjectMixin):
     status: Mapped[Optional[StepStatus]] = mapped_column(None, nullable=True, doc="Step status: pending, success, or failed")
 
     # Relationships (foreign keys)
-    organization: Mapped[Optional["Organization"]] = relationship("Organization")
-    provider: Mapped[Optional["Provider"]] = relationship("Provider")
-    run: Mapped[Optional["Run"]] = relationship("Run", back_populates="steps")
+    organization: Mapped[Optional["Organization"]] = relationship("Organization", lazy="raise")
+    provider: Mapped[Optional["Provider"]] = relationship("Provider", lazy="raise")
+    run: Mapped[Optional["Run"]] = relationship("Run", back_populates="steps", lazy="raise")
 
     # Relationships (backrefs)
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="step", cascade="save-update", lazy="noload")
