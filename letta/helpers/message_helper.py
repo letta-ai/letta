@@ -12,23 +12,52 @@ from letta.schemas.letta_message_content import Base64Image, ImageContent, Image
 from letta.schemas.message import Message, MessageCreate
 
 
-async def _fetch_image_from_url(url: str) -> tuple[bytes, str | None]:
+async def _fetch_image_from_url(url: str, max_retries: int = 1, timeout_seconds: float = 5.0) -> tuple[bytes, str | None]:
     """
     Async helper to fetch image from URL without blocking the event loop.
+    Retries once on timeout to handle transient network issues.
+
+    Args:
+        url: URL of the image to fetch
+        max_retries: Number of retry attempts (default: 1)
+        timeout_seconds: Total timeout in seconds (default: 5.0)
+
+    Returns:
+        Tuple of (image_bytes, media_type)
+
+    Raises:
+        LettaImageFetchError: If image fetch fails after all retries
     """
-    timeout = httpx.Timeout(15.0, connect=5.0)
+    # Connect timeout is half of total timeout, capped at 3 seconds
+    connect_timeout = min(timeout_seconds / 2, 3.0)
+    timeout = httpx.Timeout(timeout_seconds, connect=connect_timeout)
     headers = {"User-Agent": f"Letta/{__version__}"}
-    try:
-        async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
-            image_response = await client.get(url, follow_redirects=True)
-            image_response.raise_for_status()
-            image_bytes = image_response.content
-            image_media_type = image_response.headers.get("content-type")
-            return image_bytes, image_media_type
-    except (httpx.RemoteProtocolError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-        raise LettaImageFetchError(url=url, reason=str(e))
-    except Exception as e:
-        raise LettaImageFetchError(url=url, reason=f"Unexpected error: {e}")
+
+    last_exception = None
+    for attempt in range(max_retries + 1):
+        try:
+            async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
+                image_response = await client.get(url, follow_redirects=True)
+                image_response.raise_for_status()
+                image_bytes = image_response.content
+                image_media_type = image_response.headers.get("content-type")
+                return image_bytes, image_media_type
+        except httpx.TimeoutException as e:
+            last_exception = e
+            if attempt < max_retries:
+                # Brief delay before retry
+                await asyncio.sleep(0.5)
+                continue
+            # Final attempt failed
+            raise LettaImageFetchError(url=url, reason=f"Timeout after {max_retries + 1} attempts: {e}")
+        except (httpx.RemoteProtocolError, httpx.HTTPStatusError) as e:
+            # Don't retry on protocol errors or HTTP errors (4xx, 5xx)
+            raise LettaImageFetchError(url=url, reason=str(e))
+        except Exception as e:
+            raise LettaImageFetchError(url=url, reason=f"Unexpected error: {e}")
+
+    # Should never reach here, but just in case
+    raise LettaImageFetchError(url=url, reason=f"Failed after {max_retries + 1} attempts: {last_exception}")
 
 
 async def convert_message_creates_to_messages(
