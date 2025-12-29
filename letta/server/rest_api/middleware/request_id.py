@@ -18,6 +18,8 @@ from typing import Optional
 from starlette.requests import Request
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from letta.otel.tracing import tracer
+
 # Contextvar for storing the request ID across async boundaries
 request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 
@@ -47,17 +49,18 @@ class RequestIdMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Create a Request object for easier header access
-        request = Request(scope)
+        with tracer.start_as_current_span("middleware.request_id"):
+            # Create a Request object for easier header access
+            request = Request(scope)
 
-        # Extract request_id from header
-        request_id = request.headers.get("x-api-request-log-id")
+            # Extract request_id from header
+            request_id = request.headers.get("x-api-request-log-id")
 
-        # Set in contextvar (for non-streaming code paths)
-        request_id_var.set(request_id)
+            # Set in contextvar (for non-streaming code paths)
+            request_id_var.set(request_id)
 
-        # Also store in request.state for streaming responses where contextvars don't propagate
-        # This is accessible via request.state.request_id throughout the request lifecycle
-        request.state.request_id = request_id
+            # Also store in request.state for streaming responses where contextvars don't propagate
+            # This is accessible via request.state.request_id throughout the request lifecycle
+            request.state.request_id = request_id
 
-        await self.app(scope, receive, send)
+            await self.app(scope, receive, send)

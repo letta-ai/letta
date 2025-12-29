@@ -37,6 +37,9 @@ _excluded_v1_endpoints_regex: List[str] = [
 
 
 async def _trace_request_middleware(request: Request, call_next):
+    # Capture earliest possible timestamp when request enters application
+    entry_time = time.time()
+
     if not _is_tracing_initialized:
         return await call_next(request)
     initial_span_name = f"{request.method} {request.url.path}"
@@ -47,8 +50,13 @@ async def _trace_request_middleware(request: Request, call_next):
         initial_span_name,
         kind=trace.SpanKind.SERVER,
     ) as span:
+        # Record when we entered the application (useful for detecting worker queuing)
+        span.set_attribute("entry.timestamp_ms", int(entry_time * 1000))
+
         try:
-            response = await call_next(request)
+            # This span captures all downstream middleware (CORS, RequestId, Logging) + handler
+            with tracer.start_as_current_span("middleware.chain"):
+                response = await call_next(request)
             span.set_attribute("http.status_code", response.status_code)
             span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
             return response
@@ -100,9 +108,10 @@ async def _update_trace_attributes(request: Request):
 
     # Add request body if available
     try:
-        body = await request.json()
-        for key, value in body.items():
-            span.set_attribute(f"http.request.body.{key}", str(value))
+        with tracer.start_as_current_span("trace.request_body"):
+            body = await request.json()
+            for key, value in body.items():
+                span.set_attribute(f"http.request.body.{key}", str(value))
     except Exception:
         pass
 

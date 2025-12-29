@@ -4,17 +4,16 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Callable
 
-from opentelemetry import trace
 from pydantic import BaseModel
 
 from letta.constants import REDIS_DEFAULT_CACHE_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.log import get_logger
+from letta.otel.tracing import tracer
 from letta.plugins.plugins import get_experimental_checker
 from letta.settings import settings
 
 logger = get_logger(__name__)
-tracer = trace.get_tracer(__name__)
 
 
 def experimental(feature_name: str, fallback_function: Callable, **kwargs):
