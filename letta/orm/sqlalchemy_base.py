@@ -260,28 +260,40 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if before_obj and after_obj:
                 # Window-based query - get records between before and after
-                conditions.append(
-                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
-                )
-                conditions.append(
-                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
-                )
+                # Skip pagination if either object has null created_at
+                if before_obj.created_at is not None and after_obj.created_at is not None:
+                    conditions.append(
+                        or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
+                    )
+                    conditions.append(
+                        or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
+                    )
+                else:
+                    logger.warning(
+                        f"Skipping pagination: before_obj.created_at={before_obj.created_at}, after_obj.created_at={after_obj.created_at}"
+                    )
             else:
                 # Pure pagination query
                 if before_obj:
-                    conditions.append(
-                        or_(
-                            cls.created_at < before_obj.created_at if ascending else cls.created_at > before_obj.created_at,
-                            and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                    if before_obj.created_at is not None:
+                        conditions.append(
+                            or_(
+                                cls.created_at < before_obj.created_at if ascending else cls.created_at > before_obj.created_at,
+                                and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                            )
                         )
-                    )
+                    else:
+                        logger.warning(f"Skipping 'before' pagination: before_obj.created_at is None (id={before_obj.id})")
                 if after_obj:
-                    conditions.append(
-                        or_(
-                            cls.created_at > after_obj.created_at if ascending else cls.created_at < after_obj.created_at,
-                            and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                    if after_obj.created_at is not None:
+                        conditions.append(
+                            or_(
+                                cls.created_at > after_obj.created_at if ascending else cls.created_at < after_obj.created_at,
+                                and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                            )
                         )
-                    )
+                    else:
+                        logger.warning(f"Skipping 'after' pagination: after_obj.created_at is None (id={after_obj.id})")
 
             if conditions:
                 query = query.where(and_(*conditions))

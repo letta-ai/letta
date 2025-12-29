@@ -151,6 +151,10 @@ class SourceManager:
                 source_dict["_last_updated_by_id"] = actor.id
                 source_dict["organization_id"] = actor.organization_id
 
+            # Remove created_at if it's None to let database default handle it
+            if source_dict.get("created_at") is None:
+                source_dict.pop("created_at", None)
+
             # filter to only include columns that exist in the table
             filtered_dict = {k: v for k, v in source_dict.items() if k in valid_columns}
             insert_data.append(filtered_dict)
