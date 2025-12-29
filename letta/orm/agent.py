@@ -147,7 +147,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         "Run",
         back_populates="agent",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="raise",
         doc="Runs associated with the agent.",
     )
     identities: Mapped[List["Identity"]] = relationship(
