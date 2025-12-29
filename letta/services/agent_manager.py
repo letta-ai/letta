@@ -481,15 +481,6 @@ class AgentManager:
                 if tool_rules:
                     check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
 
-                # Validate parallel tool calling with tool rules
-                # Tool rules (excluding requires_approval) require sequential execution
-                non_approval_rules = [r for r in tool_rules if r.type != "requires_approval"]
-                if non_approval_rules and agent_create.llm_config.parallel_tool_calls:
-                    raise LettaInvalidArgumentError(
-                        "Parallel tool calling is not allowed when tool rules are present. "
-                        "Set `parallel_tool_calls=False` in llm_config or remove tool rules."
-                    )
-
                 new_agent = AgentModel(
                     name=agent_create.name,
                     system=derive_system_message(
@@ -780,16 +771,6 @@ class AgentManager:
             for col, val in scalar_updates.items():
                 if val is not None:
                     setattr(agent, col, val)
-
-            # Validate parallel tool calling with tool rules after updates
-            # Tool rules (excluding requires_approval) require sequential execution
-            if agent.tool_rules and agent.llm_config.parallel_tool_calls:
-                non_approval_rules = [r for r in agent.tool_rules if r.type != "requires_approval"]
-                if non_approval_rules:
-                    raise LettaInvalidArgumentError(
-                        "Parallel tool calling is not allowed when tool rules are present. "
-                        "Set `parallel_tool_calls=False` in llm_config or remove tool rules."
-                    )
 
             if agent_update.metadata is not None:
                 agent.metadata_ = agent_update.metadata
