@@ -26,8 +26,8 @@ def sanitize_null_bytes(value: Any) -> Any:
         # Remove null bytes from strings
         return value.replace("\x00", "")
     elif isinstance(value, dict):
-        # Recursively sanitize dictionary values
-        return {k: sanitize_null_bytes(v) for k, v in value.items()}
+        # Recursively sanitize dictionary keys and values
+        return {sanitize_null_bytes(k): sanitize_null_bytes(v) for k, v in value.items()}
     elif isinstance(value, list):
         # Recursively sanitize list elements
         return [sanitize_null_bytes(item) for item in value]
