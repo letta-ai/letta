@@ -64,6 +64,15 @@ class NoActiveRunsToCancelError(LettaError):
         super().__init__(message=message, code=ErrorCode.CONFLICT, details=details)
 
 
+class ConcurrentUpdateError(LettaError):
+    """Error raised when a resource was updated by another transaction (optimistic locking conflict)."""
+
+    def __init__(self, resource_type: str, resource_id: str):
+        message = f"{resource_type} with id '{resource_id}' was updated by another transaction. Please retry your request."
+        details = {"error_code": "CONCURRENT_UPDATE", "resource_type": resource_type, "resource_id": resource_id}
+        super().__init__(message=message, code=ErrorCode.CONFLICT, details=details)
+
+
 class LettaToolCreateError(LettaError):
     """Error raised when a tool cannot be created."""
 

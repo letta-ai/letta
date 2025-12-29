@@ -32,6 +32,7 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     BedrockPermissionError,
+    ConcurrentUpdateError,
     EmbeddingConfigRequiredError,
     HandleNotFoundError,
     LettaAgentNotFoundError,
@@ -493,6 +494,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
+    app.add_exception_handler(ConcurrentUpdateError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
     app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
 

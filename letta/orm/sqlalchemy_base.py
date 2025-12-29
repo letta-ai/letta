@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.orm.interfaces import ORMOption
 
+from letta.errors import ConcurrentUpdateError
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
@@ -619,6 +620,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
         self.set_updated_at()
+
+        # Capture id before try block to avoid accessing expired attributes after rollback
+        object_id = self.id
+        class_name = self.__class__.__name__
+
         try:
             db_session.add(self)
             if no_commit:
@@ -631,10 +637,17 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             return self
         except StaleDataError as e:
             # This can occur when using optimistic locking (version_id_col) and:
-            # 1. The row doesn't exist (0 rows matched)
-            # 2. The version has changed (concurrent update)
-            # We convert this to NoResultFound to return a proper 404 error
-            raise NoResultFound(f"{self.__class__.__name__} with id '{self.id}' not found or was updated by another transaction") from e
+            # 1. The row doesn't exist (0 rows matched) - return 404
+            # 2. The version has changed (concurrent update) - return 409
+
+            # Check if the row still exists to distinguish between the two cases
+            result = await db_session.execute(select(self.__class__).where(self.__class__.id == object_id))
+            if result.scalar_one_or_none() is None:
+                # Row was deleted - return 404
+                raise NoResultFound(f"{class_name} with id '{object_id}' not found") from e
+
+            # Row exists but version changed (concurrent update) - return 409
+            raise ConcurrentUpdateError(resource_type=class_name, resource_id=object_id) from e
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 
