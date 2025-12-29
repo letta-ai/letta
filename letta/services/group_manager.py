@@ -259,7 +259,7 @@ class GroupManager:
 
             # Update turns counter
             group.turns_counter = (group.turns_counter + 1) % group.sleeptime_agent_frequency
-            await group.update_async(session, actor=actor)
+            await group.update_async(session, actor=actor, no_refresh=True)
             return group.turns_counter
 
     @enforce_types
@@ -276,7 +276,7 @@ class GroupManager:
             # Update last processed message id
             prev_last_processed_message_id = group.last_processed_message_id
             group.last_processed_message_id = last_processed_message_id
-            await group.update_async(session, actor=actor)
+            await group.update_async(session, actor=actor, no_refresh=True)
 
             return prev_last_processed_message_id
 
