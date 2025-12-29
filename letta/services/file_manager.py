@@ -124,14 +124,20 @@ class FileManager:
                     )
 
                 result = await session.execute(query)
-                file_orm = result.scalar_one()
+                file_orm = result.scalar_one_or_none()
             else:
                 # fast path (metadata only)
-                file_orm = await FileMetadataModel.read_async(
-                    db_session=session,
-                    identifier=file_id,
-                    actor=actor,
-                )
+                try:
+                    file_orm = await FileMetadataModel.read_async(
+                        db_session=session,
+                        identifier=file_id,
+                        actor=actor,
+                    )
+                except NoResultFound:
+                    return None
+
+            if file_orm is None:
+                return None
 
             return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
 
