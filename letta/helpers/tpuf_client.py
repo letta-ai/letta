@@ -561,67 +561,80 @@ class TurbopufferClient:
         if search_mode not in ["vector", "fts", "hybrid", "timestamp"]:
             raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', 'hybrid', or 'timestamp'")
 
-        async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
-            namespace = client.namespace(namespace_name)
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
 
-            if search_mode == "timestamp":
-                # retrieve most recent items by timestamp
-                query_params = {
-                    "rank_by": ("created_at", "desc"),
-                    "top_k": top_k,
-                    "include_attributes": include_attributes,
-                }
-                if filters:
-                    query_params["filters"] = filters
-                return await namespace.query(**query_params)
+                if search_mode == "timestamp":
+                    # retrieve most recent items by timestamp
+                    query_params = {
+                        "rank_by": ("created_at", "desc"),
+                        "top_k": top_k,
+                        "include_attributes": include_attributes,
+                    }
+                    if filters:
+                        query_params["filters"] = filters
+                    return await namespace.query(**query_params)
 
-            elif search_mode == "vector":
-                # vector search query
-                query_params = {
-                    "rank_by": ("vector", "ANN", query_embedding),
-                    "top_k": top_k,
-                    "include_attributes": include_attributes,
-                }
-                if filters:
-                    query_params["filters"] = filters
-                return await namespace.query(**query_params)
+                elif search_mode == "vector":
+                    # vector search query
+                    query_params = {
+                        "rank_by": ("vector", "ANN", query_embedding),
+                        "top_k": top_k,
+                        "include_attributes": include_attributes,
+                    }
+                    if filters:
+                        query_params["filters"] = filters
+                    return await namespace.query(**query_params)
 
-            elif search_mode == "fts":
-                # full-text search query
-                query_params = {
-                    "rank_by": ("text", "BM25", query_text),
-                    "top_k": top_k,
-                    "include_attributes": include_attributes,
-                }
-                if filters:
-                    query_params["filters"] = filters
-                return await namespace.query(**query_params)
+                elif search_mode == "fts":
+                    # full-text search query
+                    query_params = {
+                        "rank_by": ("text", "BM25", query_text),
+                        "top_k": top_k,
+                        "include_attributes": include_attributes,
+                    }
+                    if filters:
+                        query_params["filters"] = filters
+                    return await namespace.query(**query_params)
 
-            else:  # hybrid mode
-                queries = []
+                else:  # hybrid mode
+                    queries = []
 
-                # vector search query
-                vector_query = {
-                    "rank_by": ("vector", "ANN", query_embedding),
-                    "top_k": top_k,
-                    "include_attributes": include_attributes,
-                }
-                if filters:
-                    vector_query["filters"] = filters
-                queries.append(vector_query)
+                    # vector search query
+                    vector_query = {
+                        "rank_by": ("vector", "ANN", query_embedding),
+                        "top_k": top_k,
+                        "include_attributes": include_attributes,
+                    }
+                    if filters:
+                        vector_query["filters"] = filters
+                    queries.append(vector_query)
 
-                # full-text search query
-                fts_query = {
-                    "rank_by": ("text", "BM25", query_text),
-                    "top_k": top_k,
-                    "include_attributes": include_attributes,
-                }
-                if filters:
-                    fts_query["filters"] = filters
-                queries.append(fts_query)
+                    # full-text search query
+                    fts_query = {
+                        "rank_by": ("text", "BM25", query_text),
+                        "top_k": top_k,
+                        "include_attributes": include_attributes,
+                    }
+                    if filters:
+                        fts_query["filters"] = filters
+                    queries.append(fts_query)
 
-                # execute multi-query
-                return await namespace.multi_query(queries=[QueryParam(**q) for q in queries])
+                    # execute multi-query
+                    return await namespace.multi_query(queries=[QueryParam(**q) for q in queries])
+        except Exception as e:
+            # Wrap turbopuffer errors with user-friendly messages
+            from turbopuffer import NotFoundError
+
+            if isinstance(e, NotFoundError):
+                # Extract just the error message without implementation details
+                error_msg = str(e)
+                if "namespace" in error_msg.lower() and "not found" in error_msg.lower():
+                    raise ValueError("No conversation history found. Please send a message first to enable search.") from e
+                raise ValueError(f"Search data not found: {error_msg}") from e
+            # Re-raise other errors as-is
+            raise
 
     @trace_method
     async def query_passages(
