@@ -20141,6 +20141,33 @@
         }
       }
     },
+    "/v1/metadata/status": {
+      "get": {
+        "summary": "Gets your Letta Cloud status",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.getStatus",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_project_id": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["current_project_id"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scheduled-messages/{scheduled_message_id}": {
       "delete": {
         "description": "Delete a scheduled message by its ID for a specific agent.",
@@ -20606,6 +20633,922 @@
                     }
                   },
                   "required": ["scheduled_messages", "has_next_page"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds": {
+      "post": {
+        "description": "Create a new feed in a project",
+        "summary": "Create Feed",
+        "tags": ["feeds"],
+        "parameters": [],
+        "operationId": "feeds.createFeed",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": ["project_id", "name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "organization_id": {
+                      "type": "string"
+                    },
+                    "created_by_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "project_id",
+                    "organization_id",
+                    "created_by_id",
+                    "created_at",
+                    "updated_at"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "List all feeds with optional filters and pagination",
+        "summary": "List Feeds",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        ],
+        "operationId": "feeds.listFeeds",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "feeds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "project_id": {
+                            "type": "string"
+                          },
+                          "organization_id": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          },
+                          "subscriptions_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "project_id",
+                          "organization_id",
+                          "created_at",
+                          "updated_at",
+                          "subscriptions_count"
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["feeds", "has_next_page"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}": {
+      "get": {
+        "description": "Retrieve feed details by ID",
+        "summary": "Get Feed",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.getFeed",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "organization_id": {
+                      "type": "string"
+                    },
+                    "created_by_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "subscriptions_count": {
+                      "type": "number"
+                    },
+                    "messages_count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "project_id",
+                    "organization_id",
+                    "created_by_id",
+                    "created_at",
+                    "updated_at",
+                    "subscriptions_count"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Soft delete a feed and clean up its sequence",
+        "summary": "Delete Feed",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.deleteFeed",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/messages": {
+      "post": {
+        "description": "Batch insert messages into a feed (up to 10,000 per request)",
+        "summary": "Publish Messages",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.publishMessages",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "content": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["content"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 10000
+                  }
+                },
+                "required": ["messages"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inserted_count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["inserted_count"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "List messages from a feed (for debugging/inspection)",
+        "summary": "List Feed Messages",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after_sequence",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.listMessages",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "feed_id": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "number"
+                          },
+                          "content": {
+                            "type": "string"
+                          },
+                          "content_size_bytes": {
+                            "type": "number"
+                          },
+                          "expires_at": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "feed_id",
+                          "sequence",
+                          "content",
+                          "content_size_bytes",
+                          "expires_at",
+                          "created_at"
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["messages", "has_next_page", "next_cursor"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/subscribe": {
+      "post": {
+        "description": "Subscribe an agent to a feed with polling configuration",
+        "summary": "Subscribe Agent to Feed",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.subscribeAgent",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agent_id": {
+                    "type": "string"
+                  },
+                  "cron_schedule": {
+                    "type": "string"
+                  },
+                  "prompt_template": {
+                    "type": "string"
+                  }
+                },
+                "required": ["agent_id", "cron_schedule"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "feed_id": {
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "type": "string"
+                    },
+                    "cron_schedule": {
+                      "type": "string"
+                    },
+                    "merge_strategy": {
+                      "type": "string",
+                      "enum": ["unique-messages", "combine-into-single-message"]
+                    },
+                    "prompt_template": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "next_scheduled_at": {
+                      "type": "string"
+                    },
+                    "last_consumed_sequence": {
+                      "type": "number"
+                    },
+                    "last_consumed_at": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabled_at": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "feed_id",
+                    "agent_id",
+                    "cron_schedule",
+                    "merge_strategy",
+                    "prompt_template",
+                    "next_scheduled_at",
+                    "last_consumed_sequence",
+                    "last_consumed_at",
+                    "disabled_at",
+                    "created_at"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/subscriptions/{subscription_id}": {
+      "patch": {
+        "description": "Update subscription configuration (cron schedule, enable/disable)",
+        "summary": "Update Subscription",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.updateSubscription",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cron_schedule": {
+                    "type": "string"
+                  },
+                  "prompt_template": {
+                    "type": "string"
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "feed_id": {
+                      "type": "string"
+                    },
+                    "agent_id": {
+                      "type": "string"
+                    },
+                    "cron_schedule": {
+                      "type": "string"
+                    },
+                    "merge_strategy": {
+                      "type": "string",
+                      "enum": ["unique-messages", "combine-into-single-message"]
+                    },
+                    "prompt_template": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "next_scheduled_at": {
+                      "type": "string"
+                    },
+                    "last_consumed_sequence": {
+                      "type": "number"
+                    },
+                    "last_consumed_at": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabled_at": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "feed_id",
+                    "agent_id",
+                    "cron_schedule",
+                    "merge_strategy",
+                    "prompt_template",
+                    "next_scheduled_at",
+                    "last_consumed_sequence",
+                    "last_consumed_at",
+                    "disabled_at",
+                    "created_at",
+                    "updated_at"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Remove agent subscription from a feed (by subscription_id)",
+        "summary": "Delete Subscription",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.deleteSubscription",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/unsubscribe": {
+      "post": {
+        "description": "Remove agent subscription from a feed (by agent_id)",
+        "summary": "Unsubscribe Agent from Feed",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.unsubscribeAgent",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agent_id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["agent_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/subscriptions": {
+      "get": {
+        "description": "List all agent subscriptions for a feed",
+        "summary": "List Feed Subscriptions",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.listSubscriptions",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subscriptions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "feed_id": {
+                            "type": "string"
+                          },
+                          "agent_id": {
+                            "type": "string"
+                          },
+                          "cron_schedule": {
+                            "type": "string"
+                          },
+                          "merge_strategy": {
+                            "type": "string",
+                            "enum": [
+                              "unique-messages",
+                              "combine-into-single-message"
+                            ]
+                          },
+                          "prompt_template": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "next_scheduled_at": {
+                            "type": "string"
+                          },
+                          "last_consumed_sequence": {
+                            "type": "number"
+                          },
+                          "last_consumed_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "disabled_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "feed_id",
+                          "agent_id",
+                          "cron_schedule",
+                          "merge_strategy",
+                          "prompt_template",
+                          "next_scheduled_at",
+                          "last_consumed_sequence",
+                          "last_consumed_at",
+                          "disabled_at",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["subscriptions", "has_next_page"]
                 }
               }
             }
