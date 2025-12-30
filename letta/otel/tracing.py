@@ -54,9 +54,7 @@ async def _trace_request_middleware(request: Request, call_next):
         span.set_attribute("entry.timestamp_ms", int(entry_time * 1000))
 
         try:
-            # This span captures all downstream middleware (CORS, RequestId, Logging) + handler
-            with tracer.start_as_current_span("middleware.chain"):
-                response = await call_next(request)
+            response = await call_next(request)
 
             # Update span name with route pattern after FastAPI has matched the route
             route = request.scope.get("route")
@@ -81,36 +79,38 @@ async def _update_trace_attributes(request: Request):
     if not span:
         return
 
-    # Update span name with route pattern
-    route = request.scope.get("route")
-    if route and hasattr(route, "path"):
-        span.update_name(f"{request.method} {route.path}")
+    # Wrap attribute-setting work in a span to measure time before body parsing
+    with tracer.start_as_current_span("trace.set_attributes"):
+        # Update span name with route pattern
+        route = request.scope.get("route")
+        if route and hasattr(route, "path"):
+            span.update_name(f"{request.method} {route.path}")
 
-    # Add request info
-    span.set_attribute("http.method", request.method)
-    span.set_attribute("http.url", str(request.url))
+        # Add request info
+        span.set_attribute("http.method", request.method)
+        span.set_attribute("http.url", str(request.url))
 
-    # Add path params
-    for key, value in request.path_params.items():
-        span.set_attribute(f"http.{key}", value)
+        # Add path params
+        for key, value in request.path_params.items():
+            span.set_attribute(f"http.{key}", value)
 
-    # Add the following headers to span if available
-    header_attributes = {
-        "user_id": "user.id",
-        "x-organization-id": "organization.id",
-        "x-project-id": "project.id",
-        "x-agent-id": "agent.id",
-        "x-template-id": "template.id",
-        "x-base-template-id": "base_template.id",
-        "user-agent": "client",
-        "x-stainless-package-version": "sdk.version",
-        "x-stainless-lang": "sdk.language",
-        "x-letta-source": "source",
-    }
-    for header_key, span_key in header_attributes.items():
-        header_value = request.headers.get(header_key)
-        if header_value:
-            span.set_attribute(span_key, header_value)
+        # Add the following headers to span if available
+        header_attributes = {
+            "user_id": "user.id",
+            "x-organization-id": "organization.id",
+            "x-project-id": "project.id",
+            "x-agent-id": "agent.id",
+            "x-template-id": "template.id",
+            "x-base-template-id": "base_template.id",
+            "user-agent": "client",
+            "x-stainless-package-version": "sdk.version",
+            "x-stainless-lang": "sdk.language",
+            "x-letta-source": "source",
+        }
+        for header_key, span_key in header_attributes.items():
+            header_value = request.headers.get(header_key)
+            if header_value:
+                span.set_attribute(span_key, header_value)
 
     # Add request body if available
     try:

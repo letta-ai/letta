@@ -63,4 +63,4 @@ class RequestIdMiddleware:
             # This is accessible via request.state.request_id throughout the request lifecycle
             request.state.request_id = request_id
 
-            await self.app(scope, receive, send)
+        await self.app(scope, receive, send)

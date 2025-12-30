@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Optional
 from fastapi import Header
 from pydantic import BaseModel
 
+from letta.otel.tracing import tracer
+
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
 
@@ -39,25 +41,27 @@ def get_headers(
     modal_sandbox: Optional[str] = Header(None, alias="X-Experimental-Modal-Sandbox"),
 ) -> HeaderParams:
     """Dependency injection function to extract common headers from requests."""
-    return HeaderParams(
-        actor_id=actor_id,
-        user_agent=user_agent,
-        project_id=project_id,
-        letta_source=letta_source,
-        sdk_version=sdk_version,
-        experimental_params=ExperimentalParams(
-            message_async=(message_async == "true") if message_async else None,
-            letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,
-            letta_v1_agent_message_async=(letta_v1_agent_message_async == "true") if letta_v1_agent_message_async else None,
-            modal_sandbox=(modal_sandbox == "true") if modal_sandbox else None,
-        ),
-    )
+    with tracer.start_as_current_span("dependency.get_headers"):
+        return HeaderParams(
+            actor_id=actor_id,
+            user_agent=user_agent,
+            project_id=project_id,
+            letta_source=letta_source,
+            sdk_version=sdk_version,
+            experimental_params=ExperimentalParams(
+                message_async=(message_async == "true") if message_async else None,
+                letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,
+                letta_v1_agent_message_async=(letta_v1_agent_message_async == "true") if letta_v1_agent_message_async else None,
+                modal_sandbox=(modal_sandbox == "true") if modal_sandbox else None,
+            ),
+        )
 
 
 # TODO: why does this double up the interface?
 async def get_letta_server() -> "SyncServer":
-    # Check if a global server is already instantiated
-    from letta.server.rest_api.app import server
+    with tracer.start_as_current_span("dependency.get_letta_server"):
+        # Check if a global server is already instantiated
+        from letta.server.rest_api.app import server
 
-    # assert isinstance(server, SyncServer)
-    return server
+        # assert isinstance(server, SyncServer)
+        return server
