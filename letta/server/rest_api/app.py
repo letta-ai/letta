@@ -683,9 +683,6 @@ def create_application() -> "FastAPI":
         # app.include_router(route, prefix="", include_in_schema=False)
         app.include_router(route, prefix="/latest", include_in_schema=False)
 
-    # NOTE: ethan these are the extra routes
-    # TODO(ethan) remove
-
     # admin/users
     app.include_router(users_router, prefix=ADMIN_PREFIX)
     app.include_router(organizations_router, prefix=ADMIN_PREFIX)
