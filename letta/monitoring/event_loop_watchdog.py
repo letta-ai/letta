@@ -31,6 +31,7 @@ class EventLoopWatchdog:
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._last_heartbeat = time.time()
+        self._heartbeat_scheduled_at = time.time()
         self._heartbeat_lock = threading.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._monitoring = False
@@ -43,7 +44,9 @@ class EventLoopWatchdog:
         self._loop = loop
         self._monitoring = True
         self._stop_event.clear()
-        self._last_heartbeat = time.time()
+        now = time.time()
+        self._last_heartbeat = now
+        self._heartbeat_scheduled_at = now
 
         self._thread = threading.Thread(target=self._watch_loop, daemon=True, name="EventLoopWatchdog")
         self._thread.start()
@@ -51,7 +54,10 @@ class EventLoopWatchdog:
         # Schedule periodic heartbeats on the event loop
         loop.call_soon(self._schedule_heartbeats)
 
-        logger.info(f"Watchdog started (timeout: {self.timeout_threshold}s)")
+        logger.info(
+            f"Event loop watchdog started - monitoring thread running, heartbeat every 1s, "
+            f"checks every {self.check_interval}s, hang threshold: {self.timeout_threshold}s"
+        )
 
     def stop(self):
         """Stop the watchdog thread."""
@@ -66,8 +72,16 @@ class EventLoopWatchdog:
         if not self._monitoring:
             return
 
+        now = time.time()
         with self._heartbeat_lock:
-            self._last_heartbeat = time.time()
+            # Calculate event loop lag: time between when we scheduled this callback and when it ran
+            lag = now - self._heartbeat_scheduled_at
+            self._last_heartbeat = now
+            self._heartbeat_scheduled_at = now + 1.0
+
+            # Log if lag is significant (> 2 seconds means event loop is saturated)
+            if lag > 2.0:
+                logger.warning(f"Event loop lag in heartbeat: {lag:.2f}s (expected ~1.0s)")
 
         if self._loop and self._monitoring:
             self._loop.call_later(1.0, self._schedule_heartbeats)
@@ -75,6 +89,7 @@ class EventLoopWatchdog:
     def _watch_loop(self):
         """Main watchdog loop running in separate thread."""
         consecutive_hangs = 0
+        max_lag_seen = 0.0
 
         while not self._stop_event.is_set():
             try:
@@ -82,8 +97,13 @@ class EventLoopWatchdog:
 
                 with self._heartbeat_lock:
                     last_beat = self._last_heartbeat
+                    scheduled_at = self._heartbeat_scheduled_at
 
-                time_since_heartbeat = time.time() - last_beat
+                now = time.time()
+                time_since_heartbeat = now - last_beat
+                # Calculate current lag: how far behind schedule is the heartbeat?
+                current_lag = now - scheduled_at
+                max_lag_seen = max(max_lag_seen, current_lag)
 
                 # Try to estimate event loop load (safe from separate thread)
                 task_count = -1
@@ -98,8 +118,15 @@ class EventLoopWatchdog:
 
                 # ALWAYS log every check to prove watchdog is alive
                 logger.debug(
-                    f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
+                    f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, current_lag={current_lag:.2f}s, "
+                    f"max_lag={max_lag_seen:.2f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
                 )
+
+                # Log at INFO if we see significant lag (> 2 seconds indicates saturation)
+                if current_lag > 2.0:
+                    logger.info(
+                        f"Event loop saturation detected: lag={current_lag:.2f}s, tasks={task_count}, max_lag_seen={max_lag_seen:.2f}s"
+                    )
 
                 if time_since_heartbeat > self.timeout_threshold:
                     consecutive_hangs += 1
