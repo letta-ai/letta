@@ -649,16 +649,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             return self
         except StaleDataError as e:
             # This can occur when using optimistic locking (version_id_col) and:
-            # 1. The row doesn't exist (0 rows matched) - return 404
-            # 2. The version has changed (concurrent update) - return 409
-
-            # Check if the row still exists to distinguish between the two cases
-            result = await db_session.execute(select(self.__class__).where(self.__class__.id == object_id))
-            if result.scalar_one_or_none() is None:
-                # Row was deleted - return 404
-                raise NoResultFound(f"{class_name} with id '{object_id}' not found") from e
-
-            # Row exists but version changed (concurrent update) - return 409
+            # 1. The row doesn't exist (0 rows matched)
+            # 2. The version has changed (concurrent update)
+            # In practice, case 1 is rare (blocks aren't frequently deleted), so we always
+            # return 409 ConcurrentUpdateError. If it was actually deleted, the retry will get 404.
+            # Not worth performing another db query to check if the row exists.
             raise ConcurrentUpdateError(resource_type=class_name, resource_id=object_id) from e
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
