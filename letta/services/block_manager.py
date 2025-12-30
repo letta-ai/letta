@@ -120,13 +120,13 @@ class BlockManager:
 
         async with db_registry.async_session() as session:
             # Validate all blocks before creating any
+            validated_data = []
             for block in blocks:
                 block_data = block.model_dump(to_orm=True, exclude_none=True)
                 validate_block_creation(block_data)
+                validated_data.append(block_data)
 
-            block_models = [
-                BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
-            ]
+            block_models = [BlockModel(**data, organization_id=actor.organization_id) for data in validated_data]
             created_models = await BlockModel.batch_create_async(
                 items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
             )
