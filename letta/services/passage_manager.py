@@ -167,9 +167,15 @@ class PassageManager:
                 if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
                     embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
 
+        # Sanitize text to remove null bytes which PostgreSQL rejects
+        text = data["text"]
+        if text and "\x00" in text:
+            text = text.replace("\x00", "")
+            logger.warning(f"Removed null bytes from passage text (length: {len(data['text'])} -> {len(text)})")
+
         common_fields = {
             "id": data.get("id"),
-            "text": data["text"],
+            "text": text,
             "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
@@ -228,9 +234,15 @@ class PassageManager:
                 if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
                     embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
 
+        # Sanitize text to remove null bytes which PostgreSQL rejects
+        text = data["text"]
+        if text and "\x00" in text:
+            text = text.replace("\x00", "")
+            logger.warning(f"Removed null bytes from passage text (length: {len(data['text'])} -> {len(text)})")
+
         common_fields = {
             "id": data.get("id"),
-            "text": data["text"],
+            "text": text,
             "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
