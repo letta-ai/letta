@@ -10263,17 +10263,22 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "pattern": "^[a-zA-Z0-9_/-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Label to include (alphanumeric, hyphens, underscores only)",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)",
+              "examples": [
+                "human",
+                "persona",
+                "the_label_of-a-block",
+                "the_label_of-a-block/with-forward-slash"
+              ],
               "title": "Label"
             },
-            "description": "Label to include (alphanumeric, hyphens, underscores only)"
+            "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)"
           },
           {
             "name": "templates_only",
@@ -10461,14 +10466,19 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "pattern": "^[a-zA-Z0-9_/-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "examples": [
+                "human",
+                "persona",
+                "the_label_of-a-block",
+                "the_label_of-a-block/with-forward-slash"
+              ],
               "title": "Label Search"
             },
             "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."
@@ -12177,17 +12187,22 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "pattern": "^[a-zA-Z0-9_/-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Label to include (alphanumeric, hyphens, underscores only)",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)",
+              "examples": [
+                "human",
+                "persona",
+                "the_label_of-a-block",
+                "the_label_of-a-block/with-forward-slash"
+              ],
               "title": "Label"
             },
-            "description": "Label to include (alphanumeric, hyphens, underscores only)"
+            "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)"
           },
           {
             "name": "templates_only",
@@ -12375,14 +12390,19 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 50,
-                  "pattern": "^[a-zA-Z0-9_-]+$"
+                  "pattern": "^[a-zA-Z0-9_/-]+$"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
-              "examples": ["human", "persona", "the_label_of-a-block"],
+              "examples": [
+                "human",
+                "persona",
+                "the_label_of-a-block",
+                "the_label_of-a-block/with-forward-slash"
+              ],
               "title": "Label Search"
             },
             "description": "Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels."

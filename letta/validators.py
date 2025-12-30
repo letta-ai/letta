@@ -172,11 +172,11 @@ IdentityIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveT
 BlockLabelQuery = Annotated[
     Optional[str],
     Query(
-        description="Label to include (alphanumeric, hyphens, underscores only)",
-        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Label to include (alphanumeric, hyphens, underscores, forward slashes)",
+        pattern=r"^[a-zA-Z0-9_/-]+$",
         min_length=1,
         max_length=50,
-        examples=["human", "persona", "the_label_of-a-block"],
+        examples=["human", "persona", "the_label_of-a-block", "the_label_of-a-block/with-forward-slash"],
     ),
 ]
 
@@ -198,10 +198,10 @@ BlockLabelSearchQuery = Annotated[
     Optional[str],
     Query(
         description="Search blocks by label. If provided, returns blocks whose label matches the search query. This is a full-text search on block labels.",
-        pattern=r"^[a-zA-Z0-9_-]+$",
+        pattern=r"^[a-zA-Z0-9_/-]+$",
         min_length=1,
         max_length=50,
-        examples=["human", "persona", "the_label_of-a-block"],
+        examples=["human", "persona", "the_label_of-a-block", "the_label_of-a-block/with-forward-slash"],
     ),
 ]
 
