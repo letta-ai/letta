@@ -57,6 +57,12 @@ async def _trace_request_middleware(request: Request, call_next):
             # This span captures all downstream middleware (CORS, RequestId, Logging) + handler
             with tracer.start_as_current_span("middleware.chain"):
                 response = await call_next(request)
+
+            # Update span name with route pattern after FastAPI has matched the route
+            route = request.scope.get("route")
+            if route and hasattr(route, "path"):
+                span.update_name(f"{request.method} {route.path}")
+
             span.set_attribute("http.status_code", response.status_code)
             span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
             return response
