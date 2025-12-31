@@ -24,7 +24,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       # Additional API keys that dev-compose.yaml expects (optional)
       GROQ_API_KEY: ""
-      ANTHROPIC_API_KEY: ""
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OLLAMA_BASE_URL: ""
       AZURE_API_KEY: ""
       AZURE_BASE_URL: ""
