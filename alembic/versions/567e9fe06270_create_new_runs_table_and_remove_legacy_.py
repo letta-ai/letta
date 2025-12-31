@@ -11,7 +11,13 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from alembic import op
+from alembic import context, op
+
+
+def is_sqlite() -> bool:
+    """Check if we're running on SQLite."""
+    return context.get_context().dialect.name == "sqlite"
+
 
 # revision identifiers, used by Alembic.
 revision: str = "567e9fe06270"
@@ -73,14 +79,18 @@ def upgrade() -> None:
 
     with op.batch_alter_table("step_metrics", schema=None) as batch_op:
         batch_op.add_column(sa.Column("run_id", sa.String(), nullable=True))
-        batch_op.drop_constraint("step_metrics_job_id_fkey", type_="foreignkey")
+        # SQLite doesn't support named constraint drops; batch mode handles this when dropping the column
+        if not is_sqlite():
+            batch_op.drop_constraint("step_metrics_job_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key("fk_step_metrics_run_id", "runs", ["run_id"], ["id"], ondelete="SET NULL")
         batch_op.drop_column("job_id")
 
     op.drop_index(op.f("ix_steps_job_id"), table_name="steps")
     with op.batch_alter_table("steps", schema=None) as batch_op:
         batch_op.add_column(sa.Column("run_id", sa.String(), nullable=True))
-        batch_op.drop_constraint("fk_steps_job_id", type_="foreignkey")
+        # SQLite doesn't support named constraint drops; batch mode handles this when dropping the column
+        if not is_sqlite():
+            batch_op.drop_constraint("fk_steps_job_id", type_="foreignkey")
         batch_op.create_foreign_key("fk_steps_run_id", "runs", ["run_id"], ["id"], ondelete="SET NULL")
         batch_op.drop_column("job_id")
     op.create_index("ix_steps_run_id", "steps", ["run_id"], unique=False)
@@ -93,19 +103,25 @@ def downgrade() -> None:
     op.drop_index("ix_steps_run_id", table_name="steps")
     with op.batch_alter_table("steps", schema=None) as batch_op:
         batch_op.add_column(sa.Column("job_id", sa.VARCHAR(), autoincrement=False, nullable=True))
-        batch_op.drop_constraint("fk_steps_run_id", type_="foreignkey")
+        # SQLite doesn't support named constraint drops; batch mode handles this when dropping the column
+        if not is_sqlite():
+            batch_op.drop_constraint("fk_steps_run_id", type_="foreignkey")
         batch_op.create_foreign_key("fk_steps_job_id", "jobs", ["job_id"], ["id"], ondelete="SET NULL")
         batch_op.drop_column("run_id")
     op.create_index(op.f("ix_steps_job_id"), "steps", ["job_id"], unique=False)
 
     with op.batch_alter_table("step_metrics", schema=None) as batch_op:
         batch_op.add_column(sa.Column("job_id", sa.VARCHAR(), autoincrement=False, nullable=True))
-        batch_op.drop_constraint("fk_step_metrics_run_id", type_="foreignkey")
+        # SQLite doesn't support named constraint drops; batch mode handles this when dropping the column
+        if not is_sqlite():
+            batch_op.drop_constraint("fk_step_metrics_run_id", type_="foreignkey")
         batch_op.create_foreign_key("step_metrics_job_id_fkey", "jobs", ["job_id"], ["id"], ondelete="SET NULL")
         batch_op.drop_column("run_id")
 
     with op.batch_alter_table("messages", schema=None) as batch_op:
-        batch_op.drop_constraint("fk_messages_run_id", type_="foreignkey")
+        # SQLite doesn't support named constraint drops; batch mode handles this when dropping the column
+        if not is_sqlite():
+            batch_op.drop_constraint("fk_messages_run_id", type_="foreignkey")
         batch_op.drop_column("run_id")
     op.create_table(
         "job_messages",
