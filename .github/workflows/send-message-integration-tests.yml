@@ -20,7 +20,6 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: 'send-message'
-      skip-fern-generation: true
       is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
         **
@@ -29,7 +28,6 @@ jobs:
       install-args: '--extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra redis'
       timeout-minutes: 15
       runner: '["self-hosted", "medium"]'
-      ref: ${{ github.event.pull_request.head.sha || github.sha }}
       use-redis: true
       # TODO: "azure-gpt-4o-mini.json" add back later, getting content violation
       matrix-strategy: |

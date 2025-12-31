@@ -21,7 +21,6 @@ jobs:
     with:
       test-type: 'unit'
       use-redis: true
-      skip-fern-generation: true
       is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
         **
@@ -29,7 +28,6 @@ jobs:
         .github/workflows/core-unit-test.yml
       install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox'
       timeout-minutes: 15
-      ref: ${{ github.event.pull_request.head.sha || github.sha }}
       matrix-strategy: |
         {
           "fail-fast": false,
