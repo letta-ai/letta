@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.schemas.enums import SandboxType
@@ -364,6 +364,40 @@ class Settings(BaseSettings):
         description="When true, prevents fallback to default actor in get_actor_or_default_async. Raises NoResultFound if actor_id is None.",
     )
 
+    @model_validator(mode="after")
+    def validate_database_config(self):
+        """Validate database configuration and provide helpful warnings/errors."""
+        import warnings
+
+        pg_fields = [self.pg_db, self.pg_user, self.pg_password, self.pg_host, self.pg_port]
+        pg_fields_set = [f for f in pg_fields if f is not None]
+
+        # If some but not all PG fields are set, that's likely a configuration error
+        if 0 < len(pg_fields_set) < 5:
+            warnings.warn(
+                f"Partial PostgreSQL configuration detected ({len(pg_fields_set)}/5 fields set). "
+                "Either set all of (LETTA_PG_DB, LETTA_PG_USER, LETTA_PG_PASSWORD, LETTA_PG_HOST, LETTA_PG_PORT) "
+                "or set LETTA_PG_URI, or leave all unset to use SQLite. "
+                "Currently using SQLite as fallback.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        # Inform user about database choice
+        if self.database_engine == DatabaseChoice.SQLITE:
+            if not self.pg_uri and len(pg_fields_set) == 0:
+                # This is expected - using SQLite by default
+                pass
+            else:
+                # This shouldn't happen but log it if it does
+                warnings.warn(
+                    "Database engine detected as SQLite despite some PostgreSQL configuration present. Please verify your configuration.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        return self
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
@@ -387,6 +421,28 @@ class Settings(BaseSettings):
     @property
     def database_engine(self) -> DatabaseChoice:
         return DatabaseChoice.POSTGRES if self.letta_pg_uri_no_default else DatabaseChoice.SQLITE
+
+    @property
+    def letta_db_uri(self) -> str:
+        """Returns the appropriate database URI based on configuration.
+
+        Returns:
+            Database connection URI for either PostgreSQL or SQLite based on configuration.
+
+        Raises:
+            ValueError: If PostgreSQL is selected but configuration is incomplete.
+        """
+        if self.database_engine == DatabaseChoice.POSTGRES:
+            if not self.letta_pg_uri_no_default:
+                raise ValueError(
+                    "PostgreSQL configuration incomplete. "
+                    "Either set LETTA_PG_URI or all of the following environment variables: "
+                    "LETTA_PG_DB, LETTA_PG_USER, LETTA_PG_PASSWORD, LETTA_PG_HOST, LETTA_PG_PORT"
+                )
+            return self.letta_pg_uri_no_default
+        else:  # SQLite
+            sqlite_path = self.letta_dir / "letta.db"
+            return f"sqlite+aiosqlite:///{sqlite_path}"
 
     @property
     def plugin_register_dict(self) -> dict:

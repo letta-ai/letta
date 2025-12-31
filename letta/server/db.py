@@ -12,42 +12,52 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from letta.database_utils import get_database_uri_for_context
-from letta.settings import settings
+from letta.settings import DatabaseChoice, settings
 
-# Convert PostgreSQL URI to async format using common utility
-async_pg_uri = get_database_uri_for_context(settings.letta_pg_uri, "async")
+# Get the appropriate database URI based on configuration (PostgreSQL or SQLite)
+base_db_uri = settings.letta_db_uri
+
+# Convert to async format if needed (only applies to PostgreSQL)
+if settings.database_engine == DatabaseChoice.POSTGRES:
+    async_db_uri = get_database_uri_for_context(base_db_uri, "async")
+else:
+    # SQLite URI is already in the correct format
+    async_db_uri = base_db_uri
 
 # Build engine configuration based on settings
 engine_args = {
     "echo": settings.pg_echo,
-    "pool_pre_ping": settings.pool_pre_ping,
 }
 
-# Configure pooling
-if settings.disable_sqlalchemy_pooling:
-    engine_args["poolclass"] = NullPool
-else:
-    # Use default AsyncAdaptedQueuePool with configured settings
-    engine_args.update(
-        {
-            "pool_size": settings.pg_pool_size,
-            "max_overflow": settings.pg_max_overflow,
-            "pool_timeout": settings.pg_pool_timeout,
-            "pool_recycle": settings.pg_pool_recycle,
-        }
-    )
+# PostgreSQL-specific configuration
+if settings.database_engine == DatabaseChoice.POSTGRES:
+    engine_args["pool_pre_ping"] = settings.pool_pre_ping
 
-# Add asyncpg-specific settings for connection
-if not settings.disable_sqlalchemy_pooling:
-    engine_args["connect_args"] = {
-        "timeout": settings.pg_pool_timeout,
-        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
-    }
+    # Configure pooling
+    if settings.disable_sqlalchemy_pooling:
+        engine_args["poolclass"] = NullPool
+    else:
+        # Use default AsyncAdaptedQueuePool with configured settings
+        engine_args.update(
+            {
+                "pool_size": settings.pg_pool_size,
+                "max_overflow": settings.pg_max_overflow,
+                "pool_timeout": settings.pg_pool_timeout,
+                "pool_recycle": settings.pg_pool_recycle,
+            }
+        )
+
+    # Add asyncpg-specific settings for connection
+    if not settings.disable_sqlalchemy_pooling:
+        engine_args["connect_args"] = {
+            "timeout": settings.pg_pool_timeout,
+            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+        }
 
 # Create the engine once at module level
-engine: AsyncEngine = create_async_engine(async_pg_uri, **engine_args)
+engine: AsyncEngine = create_async_engine(async_db_uri, **engine_args)
 
 # Create session factory once at module level
 async_session_factory = async_sessionmaker(
