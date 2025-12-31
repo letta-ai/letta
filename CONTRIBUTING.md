@@ -65,7 +65,7 @@ cd letta
 eval $(uv env activate)
 uv sync --all-extras
 ```
-``` 
+```
 After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
 contents from template test data.
 ```shell
@@ -85,7 +85,7 @@ We recommend installing pre-commit to ensure proper formatting during developmen
 uv run pre-commit install
 uv run pre-commit run --all-files
 ```
-If you don't install pre-commit, you will need to run `uv run black .` before submitting a PR.
+If you don't install pre-commit, you will need to run `uv run ruff check --fix . && uv run ruff format .` before submitting a PR.
 
 ## 2. 🛠️ Making Changes
 
@@ -141,9 +141,10 @@ If you need to add a new dependency to Letta, please add the package via `uv add
 ## 5. 🚀 Submitting Changes
 
 ### Check Formatting
-Please ensure your code is formatted correctly by running:
+Please ensure your code is formatted and linted correctly by running:
 ```
-uv run black . -l 140
+uv run ruff check --fix .
+uv run ruff format .
 ```
 
 ### 🚀 Create a Pull Request

@@ -13,8 +13,14 @@ import sqlalchemy as sa
 from sqlalchemy import text
 
 import letta.orm
-from alembic import op
+from alembic import context, op
 from letta.schemas.embedding_config import EmbeddingConfig
+
+
+def is_sqlite() -> bool:
+    """Check if we're running on SQLite."""
+    return context.get_context().dialect.name == "sqlite"
+
 
 # revision identifiers, used by Alembic.
 revision: str = "f6cd5a1e519d"
@@ -76,7 +82,12 @@ def upgrade() -> None:
     print(f"Backfill complete. Total archives processed: {processed}")
 
     # step 3: make column non-nullable
-    op.alter_column("archives", "embedding_config", nullable=False)
+    if is_sqlite():
+        # SQLite doesn't support ALTER COLUMN, use batch mode
+        with op.batch_alter_table("archives", schema=None) as batch_op:
+            batch_op.alter_column("embedding_config", nullable=False)
+    else:
+        op.alter_column("archives", "embedding_config", nullable=False)
 
 
 def downgrade() -> None:

@@ -28,7 +28,6 @@ jobs:
       install-args: '--extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra redis'
       timeout-minutes: 15
       runner: '["self-hosted", "medium"]'
-      ref: ${{ github.event.pull_request.head.sha || github.sha }}
       use-redis: true
       # TODO: "azure-gpt-4o-mini.json" add back later, getting content violation
       matrix-strategy: |

@@ -21,6 +21,9 @@ from conftest import (
     DEFAULT_EMBEDDING_CONFIG,
     USING_SQLITE,
 )
+
+# Skip this entire test module when using SQLite (passage/vector operations require PostgreSQL with pgvector)
+pytestmark = pytest.mark.skipif(USING_SQLITE, reason="Passage tests require PostgreSQL with pgvector")
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError

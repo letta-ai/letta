@@ -27,7 +27,6 @@ jobs:
         .github/workflows/core-unit-sqlite-test.yml
       install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra sqlite'
       timeout-minutes: 15
-      ref: ${{ github.event.pull_request.head.sha || github.sha }}
       matrix-strategy: |
         {
           "fail-fast": false,
