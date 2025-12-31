@@ -15,6 +15,8 @@ class PrimitiveType(str, Enum):
     JOB = "job"
     GROUP = "group"
     BLOCK = "block"
+    BLOCK_HISTORY = "block_hist"
+    BLOCK_PROPOSAL = "block_proposal"
     FILE = "file"
     FOLDER = "source"  # Note: folder IDs use "source" prefix for historical reasons
     SOURCE = "source"

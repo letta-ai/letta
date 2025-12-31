@@ -11,13 +11,15 @@ from letta.constants import (
 from letta.helpers.json_helpers import json_dumps
 from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 from letta.log import get_logger
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.block import BlockUpdate
 from letta.schemas.enums import MessageRole, TagMatchMode
+from letta.schemas.group import ManagerType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
+from letta.services.block_edit_proposal_manager import BlockEditProposalManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.utils import get_friendly_error_msg
 
@@ -26,6 +28,25 @@ logger = get_logger(__name__)
 
 class LettaCoreToolExecutor(ToolExecutor):
     """Executor for LETTA core tools with direct implementation of functions."""
+
+    def __init__(
+        self,
+        message_manager,
+        agent_manager,
+        block_manager,
+        run_manager,
+        passage_manager,
+        actor,
+    ):
+        super().__init__(
+            message_manager=message_manager,
+            agent_manager=agent_manager,
+            block_manager=block_manager,
+            run_manager=run_manager,
+            passage_manager=passage_manager,
+            actor=actor,
+        )
+        self.block_edit_proposal_manager = BlockEditProposalManager()
 
     async def execute(
         self,
@@ -75,6 +96,39 @@ class LettaCoreToolExecutor(ToolExecutor):
                 agent_state=agent_state,
                 stderr=[get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))],
             )
+
+    async def _get_sleeptime_propose_only_group(self, agent_state: AgentState, actor: User):
+        if agent_state.agent_type not in {AgentType.sleeptime_agent, AgentType.voice_sleeptime_agent}:
+            return None
+
+        groups = await self.agent_manager.list_groups_async(agent_id=agent_state.id, actor=actor)
+        for group in groups:
+            if group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and group.sleeptime_propose_only:
+                return group
+        return None
+
+    async def _maybe_propose_block_update(
+        self,
+        agent_state: AgentState,
+        actor: User,
+        block_id: str,
+        label: str,
+        block_update: BlockUpdate,
+    ) -> Optional[str]:
+        propose_group = await self._get_sleeptime_propose_only_group(agent_state, actor)
+        if not propose_group:
+            return None
+
+        proposal = await self.block_edit_proposal_manager.create_proposal_async(
+            block_id=block_id,
+            proposed_update=block_update,
+            actor=actor,
+            agent_id=agent_state.id,
+        )
+        return (
+            f"Proposed update for core memory block `{label}` (proposal_id={proposal.id}). "
+            "Review and approve this change before it is applied."
+        )
 
     async def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
         return "Sent message successfully."
@@ -318,10 +372,21 @@ class LettaCoreToolExecutor(ToolExecutor):
         return None
 
     async def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = agent_state.memory.get_block(label)
+        if memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
-        current_value = str(agent_state.memory.get_block(label).value)
+        current_value = str(memory_block.value)
         new_value = current_value + "\n" + str(content)
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
+
         agent_state.memory.update_block_value(label=label, value=new_value)
         await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
@@ -334,18 +399,30 @@ class LettaCoreToolExecutor(ToolExecutor):
         old_content: str,
         new_content: str,
     ) -> Optional[str]:
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = agent_state.memory.get_block(label)
+        if memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
-        current_value = str(agent_state.memory.get_block(label).value)
+        current_value = str(memory_block.value)
         if old_content not in current_value:
             raise ValueError(f"Old content '{old_content}' not found in memory block '{label}'")
         new_value = current_value.replace(str(old_content), str(new_content))
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
+
         agent_state.memory.update_block_value(label=label, value=new_value)
         await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
     async def memory_replace(self, agent_state: AgentState, actor: User, label: str, old_str: str, new_str: str) -> str:
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = agent_state.memory.get_block(label)
+        if memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
         if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(old_str)):
@@ -369,7 +446,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         old_str = str(old_str).expandtabs()
         new_str = str(new_str).expandtabs()
-        current_value = str(agent_state.memory.get_block(label).value).expandtabs()
+        current_value = str(memory_block.value).expandtabs()
 
         # Check if old_str is unique in the block
         occurences = current_value.count(old_str)
@@ -386,6 +463,16 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         # Replace old_str with new_str
         new_value = current_value.replace(str(old_str), str(new_str))
+
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
 
         # Write the new content to the block
         agent_state.memory.update_block_value(label=label, value=new_value)
@@ -423,7 +510,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Success message on clean application; raises ValueError on mismatch/ambiguity.
         """
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = agent_state.memory.get_block(label)
+        if memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
         # Guardrails: forbid visual line numbers and warning banners
@@ -514,6 +602,16 @@ class LettaCoreToolExecutor(ToolExecutor):
             current_lines = current_lines[:idx] + replacement + current_lines[end:]
 
         new_value = "\n".join(current_lines)
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
+
         agent_state.memory.update_block_value(label=label, value=new_value)
         await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
@@ -531,7 +629,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         new_str: str,
         insert_line: int = -1,
     ) -> str:
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = agent_state.memory.get_block(label)
+        if memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
         if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_str)):
@@ -547,7 +646,7 @@ class LettaCoreToolExecutor(ToolExecutor):
                 "are for display purposes only)."
             )
 
-        current_value = str(agent_state.memory.get_block(label).value).expandtabs()
+        current_value = str(memory_block.value).expandtabs()
         new_str = str(new_str).expandtabs()
         current_value_lines = current_value.split("\n")
         n_lines = len(current_value_lines)
@@ -576,6 +675,16 @@ class LettaCoreToolExecutor(ToolExecutor):
         new_value = "\n".join(new_value_lines)
         snippet = "\n".join(snippet_lines)
 
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
+
         # Write into the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
@@ -597,7 +706,13 @@ class LettaCoreToolExecutor(ToolExecutor):
         return success_msg
 
     async def memory_rethink(self, agent_state: AgentState, actor: User, label: str, new_memory: str) -> str:
-        if agent_state.memory.get_block(label).read_only:
+        memory_block = None
+        try:
+            memory_block = agent_state.memory.get_block(label)
+        except KeyError:
+            memory_block = None
+
+        if memory_block and memory_block.read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
         if bool(MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX.search(new_memory)):
@@ -613,9 +728,21 @@ class LettaCoreToolExecutor(ToolExecutor):
                 "are for display purposes only)."
             )
 
-        try:
-            agent_state.memory.get_block(label)
-        except KeyError:
+        if memory_block:
+            proposal_msg = await self._maybe_propose_block_update(
+                agent_state=agent_state,
+                actor=actor,
+                block_id=memory_block.id,
+                label=label,
+                block_update=BlockUpdate(value=new_memory),
+            )
+            if proposal_msg:
+                return proposal_msg
+        else:
+            propose_group = await self._get_sleeptime_propose_only_group(agent_state, actor)
+            if propose_group:
+                raise ValueError(f"Memory block '{label}' does not exist; propose-only mode cannot create new blocks.")
+
             # Block doesn't exist, create it
             from letta.schemas.block import Block
 
@@ -645,6 +772,10 @@ class LettaCoreToolExecutor(ToolExecutor):
 
     async def memory_delete(self, agent_state: AgentState, actor: User, path: str) -> str:
         """Delete a memory block by detaching it from the agent."""
+        propose_group = await self._get_sleeptime_propose_only_group(agent_state, actor)
+        if propose_group:
+            raise ValueError("Propose-only mode cannot delete memory blocks.")
+
         # Extract memory block label from path
         label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
@@ -677,6 +808,16 @@ class LettaCoreToolExecutor(ToolExecutor):
             if memory_block is None:
                 raise ValueError(f"Error: Memory block '{label}' does not exist")
 
+            proposal_msg = await self._maybe_propose_block_update(
+                agent_state=agent_state,
+                actor=actor,
+                block_id=memory_block.id,
+                label=label,
+                block_update=BlockUpdate(description=description),
+            )
+            if proposal_msg:
+                return proposal_msg
+
             await self.block_manager.update_block_async(
                 block_id=memory_block.id, block_update=BlockUpdate(description=description), actor=actor
             )
@@ -699,6 +840,16 @@ class LettaCoreToolExecutor(ToolExecutor):
             if memory_block is None:
                 raise ValueError(f"Error: Memory block '{old_label}' does not exist")
 
+            proposal_msg = await self._maybe_propose_block_update(
+                agent_state=agent_state,
+                actor=actor,
+                block_id=memory_block.id,
+                label=old_label,
+                block_update=BlockUpdate(label=new_label),
+            )
+            if proposal_msg:
+                return proposal_msg
+
             await self.block_manager.update_block_async(block_id=memory_block.id, block_update=BlockUpdate(label=new_label), actor=actor)
             await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
 
@@ -712,6 +863,10 @@ class LettaCoreToolExecutor(ToolExecutor):
     ) -> str:
         """Create a memory block by setting its value to an empty string."""
         from letta.schemas.block import Block
+
+        propose_group = await self._get_sleeptime_propose_only_group(agent_state, actor)
+        if propose_group:
+            raise ValueError("Propose-only mode cannot create new memory blocks.")
 
         label = path.removeprefix("/memories/").removeprefix("/").replace("/", "_")
 
@@ -777,6 +932,16 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         # Replace old_str with new_str
         new_value = current_value.replace(str(old_str), str(new_str))
+
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
 
         # Write the new content to the block
         await self.block_manager.update_block_async(block_id=memory_block.id, block_update=BlockUpdate(value=new_value), actor=actor)
@@ -845,6 +1010,16 @@ class LettaCoreToolExecutor(ToolExecutor):
         snippet = "\n".join(snippet_lines)
 
         # Write into the block
+        proposal_msg = await self._maybe_propose_block_update(
+            agent_state=agent_state,
+            actor=actor,
+            block_id=memory_block.id,
+            label=label,
+            block_update=BlockUpdate(value=new_value),
+        )
+        if proposal_msg:
+            return proposal_msg
+
         await self.block_manager.update_block_async(block_id=memory_block.id, block_update=BlockUpdate(value=new_value), actor=actor)
         await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
 

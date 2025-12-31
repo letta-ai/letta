@@ -4,6 +4,7 @@ from letta.orm.archive import Archive
 from letta.orm.archives_agents import ArchivesAgents
 from letta.orm.base import Base
 from letta.orm.block import Block
+from letta.orm.block_edit_proposal import BlockEditProposal
 from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.file import FileMetadata
