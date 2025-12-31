@@ -112,14 +112,17 @@ async def _update_trace_attributes(request: Request):
             if header_value:
                 span.set_attribute(span_key, header_value)
 
-    # Add request body if available
-    try:
-        with tracer.start_as_current_span("trace.request_body"):
-            body = await request.json()
-            for key, value in body.items():
-                span.set_attribute(f"http.request.body.{key}", str(value))
-    except Exception:
-        pass
+    # Add request body if available (only for JSON requests)
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type and request.method in ("POST", "PUT", "PATCH"):
+        try:
+            with tracer.start_as_current_span("trace.request_body"):
+                body = await request.json()
+                for key, value in body.items():
+                    span.set_attribute(f"http.request.body.{key}", str(value))
+        except Exception:
+            # Ignore JSON parsing errors (empty body, invalid JSON, etc.)
+            pass
 
 
 async def _trace_error_handler(_request: Request, exc: Exception) -> JSONResponse:
