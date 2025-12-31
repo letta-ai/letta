@@ -23,7 +23,10 @@ if settings.database_engine is DatabaseChoice.POSTGRES:
     config.set_main_option("sqlalchemy.url", sync_pg_uri)
     print("Using database: ", sync_pg_uri)
 else:
-    config.set_main_option("sqlalchemy.url", "sqlite:///" + os.path.join(letta_config.recall_storage_path, "sqlite.db"))
+    # Use the same SQLite path as the server (settings.letta_db_uri)
+    # but convert from aiosqlite to sync sqlite for alembic
+    sqlite_path = settings.letta_dir / "letta.db"
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{sqlite_path}")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
