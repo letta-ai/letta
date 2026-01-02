@@ -2,11 +2,12 @@ import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
+import httpx
 from anthropic.types.beta.messages import BetaMessageBatch
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta.errors import LLMError
+from letta.errors import ErrorCode, LLMConnectionError, LLMError
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, ProviderCategory
@@ -215,6 +216,20 @@ class LLMClientBase:
         Returns:
             An LLMError subclass that represents the error in a provider-agnostic way
         """
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            from letta.log import get_logger
+
+            logger = get_logger(__name__)
+            logger.warning(f"[LLM] Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
         return LLMError(f"Unhandled LLM error: {str(e)}")
 
     def get_byok_overrides(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:

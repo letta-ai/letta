@@ -5,6 +5,7 @@ import re
 from typing import Dict, List, Optional, Union
 
 import anthropic
+import httpx
 from anthropic import AsyncStream
 from anthropic.types.beta import BetaMessage as AnthropicMessage, BetaRawMessageStreamEvent
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
@@ -745,6 +746,17 @@ class AnthropicClient(LLMClientBase):
             logger.warning(f"[Anthropic] API connection error: {e.__cause__}")
             return LLMConnectionError(
                 message=f"Failed to connect to Anthropic: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            logger.warning(f"[Anthropic] Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during Anthropic streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
                 details={"cause": str(e.__cause__) if e.__cause__ else None},
             )

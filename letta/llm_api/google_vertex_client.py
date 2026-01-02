@@ -3,6 +3,7 @@ import json
 import uuid
 from typing import AsyncIterator, List, Optional
 
+import httpx
 from google.genai import Client, errors
 from google.genai.types import (
     FunctionCallingConfig,
@@ -858,6 +859,17 @@ class GoogleVertexClient(LLMClientBase):
                     "status_code": e.code,
                     "response_json": getattr(e, "response_json", None),
                 },
+            )
+
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            logger.warning(f"{self._provider_prefix()} Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during {self._provider_name()} streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
             )
 
         # Handle connection-related errors

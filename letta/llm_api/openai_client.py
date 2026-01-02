@@ -4,6 +4,7 @@ import os
 import time
 from typing import Any, List, Optional
 
+import httpx
 import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types import Reasoning
@@ -956,6 +957,17 @@ class OpenAIClient(LLMClientBase):
             logger.warning(f"[OpenAI] API connection error: {e}")
             return LLMConnectionError(
                 message=f"Failed to connect to OpenAI: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            logger.warning(f"[OpenAI] Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during OpenAI streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
                 details={"cause": str(e.__cause__) if e.__cause__ else None},
             )
