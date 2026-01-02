@@ -31,6 +31,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
@@ -79,6 +80,8 @@ class LettaAgentV3(LettaAgentV2):
         # affecting step-level telemetry.
         self.context_token_estimate: int | None = None
         self.in_context_messages: list[Message] = []  # in-memory tracker
+        # Client-side tools passed in the request (executed by client, not server)
+        self.client_tools: list[ClientToolSchema] = []
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -101,6 +104,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -112,11 +116,14 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
         """
         self._initialize_state()
+        self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
@@ -234,6 +241,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -251,11 +259,14 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
         """
         self._initialize_state()
+        self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
@@ -973,10 +984,22 @@ class LettaAgentV3(LettaAgentV2):
                 messages_to_persist = (initial_messages or []) + assistant_message
             return messages_to_persist, continue_stepping, stop_reason
 
-        # 2. Check whether tool call requires approval
+        # 2. Check whether tool call requires approval (includes client-side tools)
         if not is_approval_response:
-            requested_tool_calls = [t for t in tool_calls if tool_rules_solver.is_requires_approval_tool(t.function.name)]
-            allowed_tool_calls = [t for t in tool_calls if not tool_rules_solver.is_requires_approval_tool(t.function.name)]
+            # Get names of client-side tools (these are executed by client, not server)
+            client_tool_names = {ct.name for ct in self.client_tools} if self.client_tools else set()
+
+            # Tools requiring approval: requires_approval tools OR client-side tools
+            requested_tool_calls = [
+                t
+                for t in tool_calls
+                if tool_rules_solver.is_requires_approval_tool(t.function.name) or t.function.name in client_tool_names
+            ]
+            allowed_tool_calls = [
+                t
+                for t in tool_calls
+                if not tool_rules_solver.is_requires_approval_tool(t.function.name) and t.function.name not in client_tool_names
+            ]
             if requested_tool_calls:
                 approval_messages = create_approval_request_message_from_llm_response(
                     agent_id=self.agent_state.id,
@@ -1327,6 +1350,17 @@ class LettaAgentV3(LettaAgentV2):
             error_on_empty=False,  # Return empty list instead of raising error
         ) or list(set(t.name for t in tools))
         allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+
+        # Merge client-side tools (use flat format matching enable_strict_mode output)
+        if self.client_tools:
+            for ct in self.client_tools:
+                client_tool_schema = {
+                    "name": ct.name,
+                    "description": ct.description,
+                    "parameters": ct.parameters or {"type": "object", "properties": {}},
+                }
+                allowed_tools.append(client_tool_schema)
+
         terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
             tool_list=allowed_tools,

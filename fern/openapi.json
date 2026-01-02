@@ -25760,6 +25760,44 @@
         "title": "ChoiceLogprobs",
         "description": "Log probability information for the choice."
       },
+      "ClientToolSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the tool function"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of what the tool does"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "JSON Schema for the function parameters"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "ClientToolSchema",
+        "description": "Schema for a client-side tool passed in the request.\n\nClient-side tools are executed by the client, not the server. When the agent\ncalls a client-side tool, execution pauses and returns control to the client\nto execute the tool and provide the result."
+      },
       "CodeInput": {
         "properties": {
           "code": {
@@ -32338,6 +32376,21 @@
             "default": true,
             "deprecated": true
           },
+          "client_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientToolSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Tools",
+            "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
           "callback_url": {
             "anyOf": [
               {
@@ -32496,6 +32549,21 @@
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
             "default": true,
             "deprecated": true
+          },
+          "client_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientToolSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Tools",
+            "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
           "agent_id": {
             "type": "string",
@@ -32740,6 +32808,21 @@
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
             "default": true,
             "deprecated": true
+          },
+          "client_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientToolSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Tools",
+            "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           }
         },
         "type": "object",
@@ -32954,6 +33037,21 @@
             "description": "If set to True, enables reasoning before responses or tool calls from the agent.",
             "default": true,
             "deprecated": true
+          },
+          "client_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientToolSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Tools",
+            "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
           "streaming": {
             "type": "boolean",

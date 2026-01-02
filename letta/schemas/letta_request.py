@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
@@ -7,6 +7,19 @@ from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MES
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import LettaMessageContentUnion
 from letta.schemas.message import MessageCreate, MessageCreateUnion, MessageRole
+
+
+class ClientToolSchema(BaseModel):
+    """Schema for a client-side tool passed in the request.
+
+    Client-side tools are executed by the client, not the server. When the agent
+    calls a client-side tool, execution pauses and returns control to the client
+    to execute the tool and provide the result.
+    """
+
+    name: str = Field(..., description="The name of the tool function")
+    description: Optional[str] = Field(None, description="Description of what the tool does")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="JSON Schema for the function parameters")
 
 
 class LettaRequest(BaseModel):
@@ -43,6 +56,13 @@ class LettaRequest(BaseModel):
         default=True,
         description="If set to True, enables reasoning before responses or tool calls from the agent.",
         deprecated=True,
+    )
+
+    # Client-side tools
+    client_tools: Optional[List[ClientToolSchema]] = Field(
+        None,
+        description="Client-side tools that the agent can call. When the agent calls a client-side tool, "
+        "execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn.",
     )
 
     @field_validator("messages", mode="before")

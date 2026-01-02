@@ -12,6 +12,7 @@ from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
@@ -45,6 +46,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         self.run_ids = []
 
@@ -58,6 +60,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             use_assistant_message=use_assistant_message,
             include_return_message_types=include_return_message_types,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            client_tools=client_tools,
         )
 
         run_ids = await self.run_sleeptime_agents()
@@ -74,6 +77,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
 
@@ -90,6 +94,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                client_tools=client_tools,
             ):
                 yield chunk
         finally:

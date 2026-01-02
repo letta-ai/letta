@@ -34,6 +34,7 @@ from letta.schemas.agent import AgentState, UpdateAgent
 from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
@@ -173,6 +174,7 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -184,6 +186,7 @@ class LettaAgentV2(BaseAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
@@ -251,6 +254,7 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -268,6 +272,7 @@ class LettaAgentV2(BaseAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
