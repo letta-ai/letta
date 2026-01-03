@@ -228,41 +228,100 @@ class AnthropicClient(LLMClientBase):
             logger.error("Error during send_llm_batch_request_async.", exc_info=True)
             raise self.handle_llm_error(e)
 
+    def get_byok_overrides(self, llm_config: LLMConfig):
+        """Get API key and base URL for Anthropic provider"""
+        from typing import Tuple, Optional
+        from letta.schemas.enums import ProviderCategory
+
+        logger.debug(
+            f"get_byok_overrides called with provider_category={llm_config.provider_category}, provider_name={llm_config.provider_name}"
+        )
+
+        if llm_config.provider_category == ProviderCategory.byok:
+            from letta.services.provider_manager import ProviderManager
+
+            providers = ProviderManager().list_providers(name=llm_config.provider_name, actor=self.actor)
+            if providers:
+                provider = providers[0]
+                api_key = provider.api_key_enc.get_plaintext() if provider.api_key_enc else None
+                base_url = provider.base_url
+                logger.info(f"Using custom Anthropic endpoint: {base_url} for provider: {llm_config.provider_name}")
+                return api_key, base_url, None
+
+        logger.debug("No BYOK override found, using default")
+        return None, None, None
+
+    async def get_byok_overrides_async(self, llm_config: LLMConfig):
+        """Get API key and base URL for Anthropic provider (async)"""
+        from typing import Tuple, Optional
+        from letta.schemas.enums import ProviderCategory
+
+        logger.debug(
+            f"get_byok_overrides_async called with provider_category={llm_config.provider_category}, provider_name={llm_config.provider_name}"
+        )
+
+        if llm_config.provider_category == ProviderCategory.byok:
+            from letta.services.provider_manager import ProviderManager
+
+            try:
+                providers = await ProviderManager().list_providers_async(name=llm_config.provider_name, actor=self.actor)
+
+                if providers:
+                    provider = providers[0]
+                    api_key_secret = provider.api_key_enc
+                    api_key = await api_key_secret.get_plaintext_async() if api_key_secret else None
+                    base_url = provider.base_url
+
+                    logger.info(f"Using custom Anthropic endpoint: {base_url} for provider: {llm_config.provider_name}")
+                    return api_key, base_url, None
+
+            except Exception as e:
+                logger.error(f"Error fetching provider: {e}")
+
+        logger.debug("No BYOK override found (async), using default")
+        return None, None, None
+
     @trace_method
     def _get_anthropic_client(
         self, llm_config: LLMConfig, async_client: bool = False
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        api_key, _, _ = self.get_byok_overrides(llm_config)
+        api_key, base_url, _ = self.get_byok_overrides(llm_config)
 
         if async_client:
-            return (
-                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-                if api_key
-                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            if api_key:
+                return anthropic.AsyncAnthropic(
+                    api_key=api_key, base_url=base_url if base_url else None, max_retries=model_settings.anthropic_max_retries
+                )
+            else:
+                return anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+
+        if api_key:
+            return anthropic.Anthropic(
+                api_key=api_key, base_url=base_url if base_url else None, max_retries=model_settings.anthropic_max_retries
             )
-        return (
-            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-            if api_key
-            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
-        )
+        else:
+            return anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
 
     @trace_method
     async def _get_anthropic_client_async(
         self, llm_config: LLMConfig, async_client: bool = False
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+        api_key, base_url, _ = await self.get_byok_overrides_async(llm_config)
 
         if async_client:
-            return (
-                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-                if api_key
-                else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+            if api_key:
+                return anthropic.AsyncAnthropic(
+                    api_key=api_key, base_url=base_url if base_url else None, max_retries=model_settings.anthropic_max_retries
+                )
+            else:
+                return anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
+
+        if api_key:
+            return anthropic.Anthropic(
+                api_key=api_key, base_url=base_url if base_url else None, max_retries=model_settings.anthropic_max_retries
             )
-        return (
-            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
-            if api_key
-            else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
-        )
+        else:
+            return anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
 
     @trace_method
     def build_request_data(
