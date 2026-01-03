@@ -669,7 +669,8 @@ class LettaAgentV3(LettaAgentV2):
                             use_assistant_message=False,  # NOTE: set to false
                             requires_approval_tools=self.tool_rules_solver.get_requires_approval_tools(
                                 set([t["name"] for t in valid_tools])
-                            ),
+                            )
+                            + [ct.name for ct in self.client_tools],
                             step_id=step_id,
                             actor=self.actor,
                         )
