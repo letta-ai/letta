@@ -1350,7 +1350,14 @@ class LettaAgentV3(LettaAgentV2):
             last_function_response=self.last_function_response,
             error_on_empty=False,  # Return empty list instead of raising error
         ) or list(set(t.name for t in tools))
-        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+
+        # Get client tool names to filter out server tools with same name (client tools override)
+        client_tool_names = {ct.name for ct in self.client_tools} if self.client_tools else set()
+
+        # Build allowed tools from server tools, excluding those overridden by client tools
+        allowed_tools = [
+            enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names) and t.name not in client_tool_names
+        ]
 
         # Merge client-side tools (use flat format matching enable_strict_mode output)
         if self.client_tools:

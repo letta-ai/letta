@@ -190,6 +190,147 @@ class TestClientSideTools:
             client.agents.delete(agent_id=agent.id)
 
     @pytest.mark.parametrize("model", TEST_MODELS)
+    def test_client_tool_overrides_server_tool(self, client: Letta, model: str) -> None:
+        """
+        Test that a client-side tool with the same name as a server-side tool
+        overrides the server-side tool.
+
+        Flow:
+        1. Create a server-side tool named 'get_secret_code' that returns a DIFFERENT value
+        2. Create agent with that server-side tool attached
+        3. Send request with client-side tool with same name 'get_secret_code'
+        4. Verify execution pauses (requires_approval) instead of server-side execution
+        5. Provide client-side tool return and verify it's used
+        """
+        SERVER_TOOL_RETURN = "SERVER_SIDE_VALUE_999"
+
+        # Define server-side tool source code that returns a different value
+        server_tool_source = f'''
+def get_secret_code(input_text: str) -> str:
+    """
+    Returns a secret code for the given input text.
+
+    Args:
+        input_text: The input text to process
+
+    Returns:
+        str: The secret code
+    """
+    return "{SERVER_TOOL_RETURN}"
+'''
+
+        # Create the server-side tool
+        server_tool = client.tools.create(source_code=server_tool_source)
+        assert server_tool.name == "get_secret_code"
+
+        # Create agent with the server-side tool attached
+        agent = client.agents.create(
+            name=f"client_override_test_{uuid.uuid4().hex[:8]}",
+            model=model,
+            embedding="openai/text-embedding-3-small",
+            include_base_tools=False,
+            tool_ids=[server_tool.id],
+            include_base_tool_rules=False,
+            tool_rules=[],
+        )
+
+        try:
+            # Define client-side tool schema with same name but different behavior
+            client_tool_schema = get_client_tool_schema()  # name='get_secret_code'
+            print(f"\n=== Testing client tool override with model: {model} ===")
+
+            # Step 1: Call the tool WITH client_tools specified - should pause for approval
+            print("\nStep 1: Calling tool with client_tools specified (should override server tool)...")
+            response1 = client.agents.messages.create(
+                agent_id=agent.id,
+                messages=[{"role": "user", "content": "Please call the get_secret_code tool with input 'test'."}],
+                client_tools=[client_tool_schema],
+            )
+
+            # Should pause with requires_approval because client tool overrides server tool
+            assert response1.stop_reason.stop_reason == "requires_approval", (
+                f"Expected requires_approval (client tool override), got {response1.stop_reason}. "
+                f"Server tool may have executed instead of client tool."
+            )
+            print("  ✓ Execution paused with requires_approval (client tool took precedence)")
+
+            tool_call_id = response1.messages[-1].tool_call.tool_call_id
+            assert response1.messages[-1].tool_call.name == "get_secret_code"
+            print(f"  ✓ Tool call is for 'get_secret_code' (call_id: {tool_call_id})")
+
+            # Step 2: Provide client-side tool return
+            print(f"\nStep 2: Providing client-side tool return with: {SECRET_CODE}")
+            response2 = client.agents.messages.create(
+                agent_id=agent.id,
+                messages=[
+                    {
+                        "type": "approval",
+                        "approvals": [
+                            {
+                                "type": "tool",
+                                "tool_call_id": tool_call_id,
+                                "tool_return": SECRET_CODE,
+                                "status": "success",
+                            }
+                        ],
+                    }
+                ],
+                client_tools=[client_tool_schema],
+            )
+
+            # Agent should continue with the client-provided value
+            assert response2.messages[0].message_type == "tool_return_message"
+            assert response2.messages[0].tool_return == SECRET_CODE
+            print(f"  ✓ Tool return contains client-provided value: {SECRET_CODE}")
+
+            # Step 3: Verify the client value was used, not the server value
+            print("\nStep 3: Asking agent what the secret code was...")
+            response3 = client.agents.messages.create(
+                agent_id=agent.id,
+                messages=[{"role": "user", "content": "What was the exact secret code returned by the tool?"}],
+                client_tools=[client_tool_schema],
+            )
+
+            assistant_messages = [msg for msg in response3.messages if msg.message_type == "assistant_message"]
+            assistant_content = " ".join([msg.content for msg in assistant_messages if msg.content])
+
+            # Should contain the CLIENT value, not the SERVER value
+            assert SECRET_CODE in assistant_content, (
+                f"Agent should have used client-side value '{SECRET_CODE}', not server value. Got: {assistant_content}"
+            )
+            assert SERVER_TOOL_RETURN not in assistant_content, (
+                f"Agent should NOT have used server-side value '{SERVER_TOOL_RETURN}'. Got: {assistant_content}"
+            )
+            print(f"  ✓ Agent used client-side value '{SECRET_CODE}' (not server value '{SERVER_TOOL_RETURN}')")
+
+            # Step 4: Test that WITHOUT client_tools, server tool executes directly
+            print("\nStep 4: Calling tool WITHOUT client_tools (server tool should execute)...")
+            response4 = client.agents.messages.create(
+                agent_id=agent.id,
+                messages=[{"role": "user", "content": "Please call get_secret_code again with input 'verify'."}],
+                # No client_tools - server tool should execute
+            )
+
+            # Should NOT pause for approval - server tool executes directly
+            assert response4.stop_reason.stop_reason != "requires_approval", (
+                f"Without client_tools, server tool should execute directly. Got: {response4.stop_reason}"
+            )
+            print("  ✓ Without client_tools, server tool executed directly (no approval required)")
+
+            # The response should eventually contain the server value
+            all_content = " ".join([msg.content for msg in response4.messages if hasattr(msg, "content") and msg.content])
+            tool_returns = [msg for msg in response4.messages if msg.message_type == "tool_return_message"]
+            if tool_returns:
+                server_return_value = tool_returns[0].tool_return
+                print(f"  ✓ Server tool returned: {server_return_value}")
+
+            print(f"\n✓ Client tool override test passed for {model}!")
+
+        finally:
+            client.agents.delete(agent_id=agent.id)
+            client.tools.delete(tool_id=server_tool.id)
+
+    @pytest.mark.parametrize("model", TEST_MODELS)
     def test_client_side_tool_error_return(self, client: Letta, model: str) -> None:
         """
         Test providing an error status for a client-side tool return.
