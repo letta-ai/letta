@@ -131,7 +131,6 @@ def approval_tool_fixture(client: Letta):
     """
     Creates and returns a tool that requires approval for testing.
     """
-    client.tools.upsert_base_tools()
     approval_tool = client.tools.upsert_from_function(
         func=get_secret_code_tool,
         default_requires_approval=True,
@@ -143,7 +142,6 @@ def approval_tool_fixture(client: Letta):
 
 @pytest.fixture(scope="function")
 def dice_tool_fixture(client: Letta):
-    client.tools.upsert_base_tools()
     dice_tool = client.tools.upsert_from_function(
         func=roll_dice_tool,
     )

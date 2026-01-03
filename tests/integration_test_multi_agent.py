@@ -57,7 +57,6 @@ def client(server_url: str) -> Letta:
     Creates and returns a synchronous Letta REST client for testing.
     """
     client_instance = Letta(base_url=server_url)
-    client_instance.tools.upsert_base_tools()
     yield client_instance
 
 

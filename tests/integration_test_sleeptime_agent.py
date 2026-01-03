@@ -61,9 +61,6 @@ def client(server_url: str) -> Letta:
 @pytest.mark.flaky(max_runs=3)
 @pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_group_chat(client):
-    # 0. Refresh base tools
-    client.tools.upsert_base_tools()
-
     # 1. Create sleeptime agent
     main_agent = client.agents.create(
         name="main_agent",
@@ -184,7 +181,6 @@ async def test_sleeptime_group_chat(client):
 @pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_removes_redundant_information(client):
     # 1. set up sleep-time agent as in test_sleeptime_group_chat
-    client.tools.upsert_base_tools()
     main_agent = client.agents.create(
         name="main_agent",
         memory_blocks=[
@@ -291,9 +287,6 @@ async def test_sleeptime_edit(client):
 @pytest.mark.asyncio(loop_scope="module")
 async def test_sleeptime_agent_new_block_attachment(client):
     """Test that a new block created after agent creation is properly attached to both main and sleeptime agents."""
-    # 0. Refresh base tools
-    client.tools.upsert_base_tools()
-
     # 1. Create sleeptime agent
     main_agent = client.agents.create(
         name="main_agent",

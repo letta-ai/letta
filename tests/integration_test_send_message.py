@@ -1057,7 +1057,6 @@ def agent_state(client: Letta) -> AgentState:
     Creates and returns an agent state for testing with a pre-configured agent.
     The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
     """
-    client.tools.upsert_base_tools()
     dice_tool = client.tools.upsert_from_function(func=roll_dice)
 
     send_message_tool = client.tools.list(name="send_message").items[0]
