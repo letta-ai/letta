@@ -198,3 +198,158 @@ async def test_count_tokens_with_empty_messages(anthropic_client, llm_config):
         call_args = mock_count_tokens.call_args[1]
         assert call_args["messages"][0]["content"] == "."
         assert call_args["messages"][1]["content"] == "response"
+
+
+@pytest.mark.asyncio
+async def test_anthropic_byok_custom_base_url(anthropic_client):
+    """
+    Test that AnthropicClient correctly uses custom base_url from BYOK providers.
+
+    This test verifies the fix for issue where AnthropicClient ignored custom
+    base_url from providers, always defaulting to official Anthropic API.
+    """
+    from letta.schemas.enums import ProviderCategory
+    from letta.schemas.secret import Secret
+
+    # Create a BYOK LLM config with custom endpoint
+    byok_llm_config = LLMConfig(
+        model="claude-sonnet-4-5-20250929",
+        model_endpoint_type="anthropic",
+        model_endpoint="https://custom-proxy.example.com",
+        provider_name="anthropic-custom",
+        provider_category=ProviderCategory.byok,
+        context_window=200000,
+    )
+
+    # Mock provider with custom base_url
+    mock_provider = AsyncMock()
+    mock_provider.base_url = "https://custom-proxy.example.com"
+    mock_provider.api_key_enc = Secret.from_plaintext("sk-test-custom-key-123")
+
+    # Mock ProviderManager to return our custom provider
+    with patch("letta.llm_api.anthropic_client.ProviderManager") as mock_provider_manager_class:
+        mock_manager = AsyncMock()
+        mock_manager.list_providers_async.return_value = [mock_provider]
+        mock_provider_manager_class.return_value = mock_manager
+
+        # Mock anthropic.AsyncAnthropic to verify it receives correct parameters
+        with patch("anthropic.AsyncAnthropic") as mock_anthropic_class:
+            mock_anthropic_instance = AsyncMock()
+            mock_anthropic_class.return_value = mock_anthropic_instance
+
+            # Call _get_anthropic_client_async
+            client = await anthropic_client._get_anthropic_client_async(byok_llm_config, async_client=True)
+
+            # Verify ProviderManager was called with correct provider name
+            mock_manager.list_providers_async.assert_called_once()
+            call_kwargs = mock_manager.list_providers_async.call_args[1]
+            assert call_kwargs["name"] == "anthropic-custom"
+
+            # Verify AsyncAnthropic was instantiated with custom base_url
+            mock_anthropic_class.assert_called_once()
+            init_kwargs = mock_anthropic_class.call_args[1]
+            assert init_kwargs["api_key"] == "sk-test-custom-key-123"
+            assert init_kwargs["base_url"] == "https://custom-proxy.example.com"
+
+            # Verify the returned client is our mock
+            assert client == mock_anthropic_instance
+
+
+@pytest.mark.asyncio
+async def test_anthropic_byok_override_not_triggered_for_base_provider(anthropic_client):
+    """
+    Test that BYOK override logic is NOT triggered for base category providers.
+
+    When provider_category is 'base' (not 'byok'), the client should use
+    default Anthropic API without fetching from ProviderManager.
+    """
+    from letta.schemas.enums import ProviderCategory
+
+    # Create a base (non-BYOK) LLM config
+    base_llm_config = LLMConfig(
+        model="claude-3-7-sonnet-20250219",
+        model_endpoint_type="anthropic",
+        model_endpoint="https://api.anthropic.com/v1",
+        provider_name="anthropic",
+        provider_category=ProviderCategory.base,
+        context_window=32000,
+    )
+
+    # Mock ProviderManager - it should NOT be called
+    with patch("letta.llm_api.anthropic_client.ProviderManager") as mock_provider_manager_class:
+        mock_manager = AsyncMock()
+        mock_provider_manager_class.return_value = mock_manager
+
+        # Mock anthropic.AsyncAnthropic
+        with patch("anthropic.AsyncAnthropic") as mock_anthropic_class:
+            mock_anthropic_instance = AsyncMock()
+            mock_anthropic_class.return_value = mock_anthropic_instance
+
+            # Call _get_anthropic_client_async
+            client = await anthropic_client._get_anthropic_client_async(base_llm_config, async_client=True)
+
+            # Verify ProviderManager was NOT called (because provider_category is 'base')
+            mock_manager.list_providers_async.assert_not_called()
+
+            # Verify AsyncAnthropic was instantiated WITHOUT custom base_url
+            mock_anthropic_class.assert_called_once()
+            init_kwargs = mock_anthropic_class.call_args[1]
+            # Should NOT have base_url in kwargs (defaults to official API)
+            assert init_kwargs.get("base_url") is None
+
+            # Verify the returned client is our mock
+            assert client == mock_anthropic_instance
+
+
+@pytest.mark.asyncio
+async def test_anthropic_sync_client_uses_custom_base_url(anthropic_client):
+    """
+    Test that synchronous Anthropic client also uses custom base_url for BYOK providers.
+
+    Verifies the fix works for both sync and async client instantiation.
+    """
+    from letta.schemas.enums import ProviderCategory
+    from letta.schemas.secret import Secret
+
+    # Create a BYOK LLM config
+    byok_llm_config = LLMConfig(
+        model="claude-sonnet-4-5-20250929",
+        model_endpoint_type="anthropic",
+        model_endpoint="https://proxy.example.org",
+        provider_name="anthropic-proxy",
+        provider_category=ProviderCategory.byok,
+        context_window=200000,
+    )
+
+    # Mock provider with custom base_url
+    mock_provider = AsyncMock()
+    mock_provider.base_url = "https://proxy.example.org"
+    mock_provider.api_key_enc = Secret.from_plaintext("sk-proxy-key-456")
+
+    # Mock ProviderManager (sync version)
+    with patch("letta.llm_api.anthropic_client.ProviderManager") as mock_provider_manager_class:
+        mock_manager = AsyncMock()
+        mock_manager.list_providers.return_value = [mock_provider]
+        mock_provider_manager_class.return_value = mock_manager
+
+        # Mock anthropic.Anthropic (sync client)
+        with patch("anthropic.Anthropic") as mock_anthropic_class:
+            mock_anthropic_instance = AsyncMock()
+            mock_anthropic_class.return_value = mock_anthropic_instance
+
+            # Call _get_anthropic_client (sync version)
+            client = anthropic_client._get_anthropic_client(byok_llm_config, async_client=False)
+
+            # Verify ProviderManager was called
+            mock_manager.list_providers.assert_called_once()
+            call_kwargs = mock_manager.list_providers.call_args[1]
+            assert call_kwargs["name"] == "anthropic-proxy"
+
+            # Verify Anthropic was instantiated with custom base_url
+            mock_anthropic_class.assert_called_once()
+            init_kwargs = mock_anthropic_class.call_args[1]
+            assert init_kwargs["api_key"] == "sk-proxy-key-456"
+            assert init_kwargs["base_url"] == "https://proxy.example.org"
+
+            # Verify the returned client is our mock
+            assert client == mock_anthropic_instance
