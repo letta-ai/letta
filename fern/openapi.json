@@ -36982,6 +36982,18 @@
             "description": "Search mode to use",
             "default": "hybrid"
           },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Filter messages by agent ID"
+          },
           "limit": {
             "type": "integer",
             "maximum": 100,

@@ -73,6 +73,7 @@ async def search_all_messages(
         actor=actor,
         query_text=request.query,
         search_mode=request.search_mode,
+        agent_id=request.agent_id,
         limit=request.limit,
         start_date=request.start_date,
         end_date=request.end_date,
