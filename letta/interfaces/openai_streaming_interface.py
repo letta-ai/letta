@@ -294,8 +294,10 @@ class OpenAIStreamingInterface:
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            if chunk.usage.prompt_tokens is not None:
+                self.input_tokens += chunk.usage.prompt_tokens
+            if chunk.usage.completion_tokens is not None:
+                self.output_tokens += chunk.usage.completion_tokens
 
         if chunk.choices:
             choice = chunk.choices[0]
@@ -784,8 +786,10 @@ class SimpleOpenAIStreamingInterface:
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            if chunk.usage.prompt_tokens is not None:
+                self.input_tokens += chunk.usage.prompt_tokens
+            if chunk.usage.completion_tokens is not None:
+                self.output_tokens += chunk.usage.completion_tokens
             # Store raw usage for transparent provider trace logging
             try:
                 self.raw_usage = chunk.usage.model_dump(exclude_none=True)
