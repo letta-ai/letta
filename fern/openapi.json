@@ -21575,6 +21575,807 @@
           }
         }
       }
+    },
+    "/v1/pipelines": {
+      "post": {
+        "description": "Create a new pipeline (producer + feed + optionally subscribers)",
+        "summary": "Create Pipeline",
+        "tags": ["pipelines"],
+        "parameters": [],
+        "operationId": "pipelines.createPipeline",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "project_id": {
+                    "type": "string"
+                  },
+                  "integration_type": {
+                    "type": "string",
+                    "enum": ["slack"]
+                  },
+                  "producer_config": {
+                    "discriminator": {
+                      "propertyName": "type"
+                    },
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["slack_channel_reader"]
+                          },
+                          "data": {
+                            "type": "object",
+                            "properties": {
+                              "channel_id": {
+                                "type": "string"
+                              },
+                              "channel_name": {
+                                "type": "string"
+                              },
+                              "last_message_ts": {
+                                "type": "string"
+                              },
+                              "max_messages_per_poll": {
+                                "default": 100,
+                                "type": "number"
+                              }
+                            },
+                            "required": ["channel_id"]
+                          }
+                        },
+                        "required": ["type", "data"]
+                      }
+                    ]
+                  },
+                  "subscriber_agent_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "project_id",
+                  "integration_type",
+                  "producer_config"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pipeline": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "organization_id": {
+                          "type": "string"
+                        },
+                        "project_id": {
+                          "type": "string"
+                        },
+                        "integration_id": {
+                          "type": "string"
+                        },
+                        "feed_id": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "discriminator": {
+                            "propertyName": "type"
+                          },
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["slack_channel_reader"]
+                                },
+                                "data": {
+                                  "type": "object",
+                                  "properties": {
+                                    "channel_id": {
+                                      "type": "string"
+                                    },
+                                    "channel_name": {
+                                      "type": "string"
+                                    },
+                                    "last_message_ts": {
+                                      "type": "string"
+                                    },
+                                    "max_messages_per_poll": {
+                                      "default": 100,
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["channel_id"]
+                                }
+                              },
+                              "required": ["type", "data"]
+                            }
+                          ]
+                        },
+                        "next_scheduled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "last_run_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "disabled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "integration_display_name": {
+                          "type": "string"
+                        },
+                        "feed_name": {
+                          "type": "string"
+                        },
+                        "subscriber_count": {
+                          "type": "number"
+                        },
+                        "error_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "organization_id",
+                        "project_id",
+                        "integration_id",
+                        "feed_id",
+                        "config",
+                        "next_scheduled_at",
+                        "last_run_at",
+                        "disabled_at",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "required": ["pipeline"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "integrationNotFound",
+                        "invalidProducerConfig",
+                        "agentNotFound"
+                      ]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "List all pipelines for the organization with optional filtering",
+        "summary": "List Pipelines",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "integration_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.listPipelines",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pipelines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "organization_id": {
+                            "type": "string"
+                          },
+                          "project_id": {
+                            "type": "string"
+                          },
+                          "integration_id": {
+                            "type": "string"
+                          },
+                          "feed_id": {
+                            "type": "string"
+                          },
+                          "config": {
+                            "discriminator": {
+                              "propertyName": "type"
+                            },
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["slack_channel_reader"]
+                                  },
+                                  "data": {
+                                    "type": "object",
+                                    "properties": {
+                                      "channel_id": {
+                                        "type": "string"
+                                      },
+                                      "channel_name": {
+                                        "type": "string"
+                                      },
+                                      "last_message_ts": {
+                                        "type": "string"
+                                      },
+                                      "max_messages_per_poll": {
+                                        "default": 100,
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": ["channel_id"]
+                                  }
+                                },
+                                "required": ["type", "data"]
+                              }
+                            ]
+                          },
+                          "next_scheduled_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "last_run_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "disabled_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "integration_display_name": {
+                            "type": "string"
+                          },
+                          "feed_name": {
+                            "type": "string"
+                          },
+                          "subscriber_count": {
+                            "type": "number"
+                          },
+                          "error_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "organization_id",
+                          "project_id",
+                          "integration_id",
+                          "feed_id",
+                          "config",
+                          "next_scheduled_at",
+                          "last_run_at",
+                          "disabled_at",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
+                    },
+                    "hasNextPage": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["pipelines", "hasNextPage"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pipelines/{pipeline_id}": {
+      "get": {
+        "description": "Get a single pipeline with details",
+        "summary": "Get Pipeline",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "pipeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.getPipeline",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pipeline": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "organization_id": {
+                          "type": "string"
+                        },
+                        "project_id": {
+                          "type": "string"
+                        },
+                        "integration_id": {
+                          "type": "string"
+                        },
+                        "feed_id": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "discriminator": {
+                            "propertyName": "type"
+                          },
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["slack_channel_reader"]
+                                },
+                                "data": {
+                                  "type": "object",
+                                  "properties": {
+                                    "channel_id": {
+                                      "type": "string"
+                                    },
+                                    "channel_name": {
+                                      "type": "string"
+                                    },
+                                    "last_message_ts": {
+                                      "type": "string"
+                                    },
+                                    "max_messages_per_poll": {
+                                      "default": 100,
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["channel_id"]
+                                }
+                              },
+                              "required": ["type", "data"]
+                            }
+                          ]
+                        },
+                        "next_scheduled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "last_run_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "disabled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "integration_display_name": {
+                          "type": "string"
+                        },
+                        "feed_name": {
+                          "type": "string"
+                        },
+                        "subscriber_count": {
+                          "type": "number"
+                        },
+                        "error_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "organization_id",
+                        "project_id",
+                        "integration_id",
+                        "feed_id",
+                        "config",
+                        "next_scheduled_at",
+                        "last_run_at",
+                        "disabled_at",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "required": ["pipeline"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineNotFound"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "description": "Update pipeline name or disable/enable it",
+        "summary": "Update Pipeline",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "pipeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.updatePipeline",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pipeline": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "organization_id": {
+                          "type": "string"
+                        },
+                        "project_id": {
+                          "type": "string"
+                        },
+                        "integration_id": {
+                          "type": "string"
+                        },
+                        "feed_id": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "discriminator": {
+                            "propertyName": "type"
+                          },
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": ["slack_channel_reader"]
+                                },
+                                "data": {
+                                  "type": "object",
+                                  "properties": {
+                                    "channel_id": {
+                                      "type": "string"
+                                    },
+                                    "channel_name": {
+                                      "type": "string"
+                                    },
+                                    "last_message_ts": {
+                                      "type": "string"
+                                    },
+                                    "max_messages_per_poll": {
+                                      "default": 100,
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["channel_id"]
+                                }
+                              },
+                              "required": ["type", "data"]
+                            }
+                          ]
+                        },
+                        "next_scheduled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "last_run_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "disabled_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "integration_display_name": {
+                          "type": "string"
+                        },
+                        "feed_name": {
+                          "type": "string"
+                        },
+                        "subscriber_count": {
+                          "type": "number"
+                        },
+                        "error_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "organization_id",
+                        "project_id",
+                        "integration_id",
+                        "feed_id",
+                        "config",
+                        "next_scheduled_at",
+                        "last_run_at",
+                        "disabled_at",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "required": ["pipeline"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineNotFound"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Soft delete a pipeline and cascade to feed + subscriptions",
+        "summary": "Delete Pipeline",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "pipeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.deletePipeline",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineNotFound"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
