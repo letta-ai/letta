@@ -1740,3 +1740,352 @@ async def test_handle_uniqueness_per_org(default_user, provider_manager):
     assert model is not None
     assert model.provider_id == provider_1.id  # Still original provider
     assert model.max_context_window == 8192  # Still original
+
+
+@pytest.mark.asyncio
+async def test_delete_provider_cascades_to_models(default_user, provider_manager, monkeypatch):
+    """Test that deleting a provider also soft-deletes its associated models."""
+    test_id = generate_test_id()
+
+    # Mock _sync_default_models_for_provider to avoid external API calls
+    async def mock_sync(provider, actor):
+        pass  # Don't actually sync - we'll manually create models below
+
+    monkeypatch.setattr(provider_manager, "_sync_default_models_for_provider", mock_sync)
+
+    # 1. Create a BYOK provider (org-scoped, so the actor can delete it)
+    provider_create = ProviderCreate(
+        name=f"test-cascade-{test_id}",
+        provider_type=ProviderType.openai,
+        api_key="sk-test-key",
+    )
+    provider = await provider_manager.create_provider_async(provider_create, actor=default_user, is_byok=True)
+
+    # 2. Manually sync models to the provider
+    llm_models = [
+        LLMConfig(
+            model=f"gpt-4o-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=128000,
+            handle=f"test-{test_id}/gpt-4o",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.byok,
+        ),
+        LLMConfig(
+            model=f"gpt-4o-mini-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=16384,
+            handle=f"test-{test_id}/gpt-4o-mini",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.byok,
+        ),
+    ]
+
+    embedding_models = [
+        EmbeddingConfig(
+            embedding_model=f"text-embedding-3-small-{test_id}",
+            embedding_endpoint_type="openai",
+            embedding_endpoint="https://api.openai.com/v1",
+            embedding_dim=1536,
+            embedding_chunk_size=300,
+            handle=f"test-{test_id}/text-embedding-3-small",
+        ),
+    ]
+
+    await provider_manager.sync_provider_models_async(
+        provider=provider,
+        llm_models=llm_models,
+        embedding_models=embedding_models,
+        organization_id=default_user.organization_id,  # Org-scoped for BYOK provider
+    )
+
+    # 3. Verify models exist before deletion
+    llm_models_before = await provider_manager.list_models_async(
+        actor=default_user,
+        model_type="llm",
+        provider_id=provider.id,
+    )
+    embedding_models_before = await provider_manager.list_models_async(
+        actor=default_user,
+        model_type="embedding",
+        provider_id=provider.id,
+    )
+
+    llm_handles_before = {m.handle for m in llm_models_before}
+    embedding_handles_before = {m.handle for m in embedding_models_before}
+
+    assert f"test-{test_id}/gpt-4o" in llm_handles_before
+    assert f"test-{test_id}/gpt-4o-mini" in llm_handles_before
+    assert f"test-{test_id}/text-embedding-3-small" in embedding_handles_before
+
+    # 4. Delete the provider
+    await provider_manager.delete_provider_by_id_async(provider.id, actor=default_user)
+
+    # 5. Verify models are soft-deleted (no longer returned in list)
+    all_llm_models_after = await provider_manager.list_models_async(
+        actor=default_user,
+        model_type="llm",
+    )
+    all_embedding_models_after = await provider_manager.list_models_async(
+        actor=default_user,
+        model_type="embedding",
+    )
+
+    all_llm_handles_after = {m.handle for m in all_llm_models_after}
+    all_embedding_handles_after = {m.handle for m in all_embedding_models_after}
+
+    # All models from the deleted provider should be gone
+    assert f"test-{test_id}/gpt-4o" not in all_llm_handles_after
+    assert f"test-{test_id}/gpt-4o-mini" not in all_llm_handles_after
+    assert f"test-{test_id}/text-embedding-3-small" not in all_embedding_handles_after
+
+    # 6. Verify provider is also deleted
+    providers_after = await provider_manager.list_providers_async(
+        actor=default_user,
+        name=f"test-cascade-{test_id}",
+    )
+    assert len(providers_after) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_llm_config_from_handle_includes_max_tokens(default_user, provider_manager):
+    """Test that get_llm_config_from_handle includes max_tokens from provider's get_default_max_output_tokens.
+
+    This test verifies that:
+    1. The max_tokens field is populated when retrieving LLMConfig from a handle
+    2. The max_tokens value comes from the provider's get_default_max_output_tokens method
+    3. Different providers return different default max_tokens values (e.g., OpenAI returns 16384)
+    """
+    test_id = generate_test_id()
+
+    # Create an OpenAI provider
+    provider_create = ProviderCreate(
+        name=f"test-openai-{test_id}",
+        provider_type=ProviderType.openai,
+        api_key="sk-test-key",
+        base_url="https://api.openai.com/v1",
+    )
+    provider = await provider_manager.create_provider_async(provider_create, actor=default_user, is_byok=False)
+
+    # Sync a model with the provider
+    llm_models = [
+        LLMConfig(
+            model=f"gpt-4o-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=128000,
+            handle=f"test-{test_id}/gpt-4o",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.base,
+        ),
+    ]
+
+    await provider_manager.sync_provider_models_async(
+        provider=provider,
+        llm_models=llm_models,
+        embedding_models=[],
+        organization_id=None,  # Global model
+    )
+
+    # Get LLMConfig from handle
+    llm_config = await provider_manager.get_llm_config_from_handle(
+        handle=f"test-{test_id}/gpt-4o",
+        actor=default_user,
+    )
+
+    # Verify max_tokens is set and comes from OpenAI provider's default (16384 for non-o1/o3 models)
+    assert llm_config.max_tokens is not None, "max_tokens should be set"
+    assert llm_config.max_tokens == 16384, f"Expected max_tokens=16384 for OpenAI gpt-4o, got {llm_config.max_tokens}"
+
+    # Test with a gpt-5 model (should have 16384)
+    llm_models_gpt5 = [
+        LLMConfig(
+            model=f"gpt-5-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=200000,
+            handle=f"test-{test_id}/gpt-5",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.base,
+        ),
+    ]
+
+    await provider_manager.sync_provider_models_async(
+        provider=provider,
+        llm_models=llm_models_gpt5,
+        embedding_models=[],
+        organization_id=None,
+    )
+
+    llm_config_gpt5 = await provider_manager.get_llm_config_from_handle(
+        handle=f"test-{test_id}/gpt-5",
+        actor=default_user,
+    )
+
+    # gpt-5 models also have 16384 max_tokens
+    assert llm_config_gpt5.max_tokens == 16384, f"Expected max_tokens=16384 for gpt-5, got {llm_config_gpt5.max_tokens}"
+
+
+@pytest.mark.asyncio
+async def test_server_list_llm_models_async_reads_from_database(default_user, provider_manager):
+    """Test that the server's list_llm_models_async reads models from database, not in-memory.
+
+    This test verifies that:
+    1. Models synced to the database are returned by list_llm_models_async
+    2. The LLMConfig objects are correctly constructed from database-cached models
+    3. Provider filtering works correctly when reading from database
+    """
+    from letta.server.server import SyncServer
+
+    test_id = generate_test_id()
+
+    # Create a provider in the database
+    provider_create = ProviderCreate(
+        name=f"test-db-provider-{test_id}",
+        provider_type=ProviderType.openai,
+        api_key="sk-test-key",
+        base_url="https://custom.openai.com/v1",
+    )
+    provider = await provider_manager.create_provider_async(provider_create, actor=default_user, is_byok=False)
+
+    # Sync models to database
+    llm_models = [
+        LLMConfig(
+            model=f"custom-model-1-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://custom.openai.com/v1",
+            context_window=32000,
+            handle=f"test-{test_id}/custom-model-1",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.base,
+        ),
+        LLMConfig(
+            model=f"custom-model-2-{test_id}",
+            model_endpoint_type="openai",
+            model_endpoint="https://custom.openai.com/v1",
+            context_window=64000,
+            handle=f"test-{test_id}/custom-model-2",
+            provider_name=provider.name,
+            provider_category=ProviderCategory.base,
+        ),
+    ]
+
+    await provider_manager.sync_provider_models_async(
+        provider=provider,
+        llm_models=llm_models,
+        embedding_models=[],
+        organization_id=None,
+    )
+
+    # Create server instance
+    server = SyncServer(init_with_default_org_and_user=False)
+    server.default_user = default_user
+    server.provider_manager = provider_manager
+
+    # List LLM models via server
+    models = await server.list_llm_models_async(
+        actor=default_user,
+        provider_name=f"test-db-provider-{test_id}",
+    )
+
+    # Verify models were read from database
+    handles = {m.handle for m in models}
+    assert f"test-{test_id}/custom-model-1" in handles, "custom-model-1 should be in database"
+    assert f"test-{test_id}/custom-model-2" in handles, "custom-model-2 should be in database"
+
+    # Verify LLMConfig properties are correctly populated from database
+    model_1 = next(m for m in models if m.handle == f"test-{test_id}/custom-model-1")
+    assert model_1.model == f"custom-model-1-{test_id}"
+    assert model_1.context_window == 32000
+    assert model_1.model_endpoint == "https://custom.openai.com/v1"
+    assert model_1.provider_name == f"test-db-provider-{test_id}"
+
+    model_2 = next(m for m in models if m.handle == f"test-{test_id}/custom-model-2")
+    assert model_2.model == f"custom-model-2-{test_id}"
+    assert model_2.context_window == 64000
+
+
+@pytest.mark.asyncio
+async def test_get_enabled_providers_async_queries_database(default_user, provider_manager):
+    """Test that get_enabled_providers_async queries providers from database, not in-memory list.
+
+    This test verifies that:
+    1. Providers created in the database are returned by get_enabled_providers_async
+    2. The method queries the database, not an in-memory _enabled_providers list
+    3. Provider filtering by category works correctly from database
+    """
+    from letta.server.server import SyncServer
+
+    test_id = generate_test_id()
+
+    # Create providers in the database
+    base_provider_create = ProviderCreate(
+        name=f"test-base-provider-{test_id}",
+        provider_type=ProviderType.openai,
+        api_key="sk-test-key",
+        base_url="https://api.openai.com/v1",
+    )
+    base_provider = await provider_manager.create_provider_async(base_provider_create, actor=default_user, is_byok=False)
+
+    byok_provider_create = ProviderCreate(
+        name=f"test-byok-provider-{test_id}",
+        provider_type=ProviderType.anthropic,
+        api_key="sk-test-byok-key",
+    )
+    byok_provider = await provider_manager.create_provider_async(byok_provider_create, actor=default_user, is_byok=True)
+
+    # Create server instance - importantly, don't set _enabled_providers
+    # This ensures we're testing database queries, not in-memory list
+    server = SyncServer(init_with_default_org_and_user=False)
+    server.default_user = default_user
+    server.provider_manager = provider_manager
+    # Clear in-memory providers to prove we're querying database
+    server._enabled_providers = []
+
+    # Get all providers - should query database
+    all_providers = await server.get_enabled_providers_async(actor=default_user)
+    provider_names = [p.name for p in all_providers]
+
+    assert f"test-base-provider-{test_id}" in provider_names, "Base provider should be in database"
+    assert f"test-byok-provider-{test_id}" in provider_names, "BYOK provider should be in database"
+
+    # Filter by provider category
+    base_only = await server.get_enabled_providers_async(
+        actor=default_user,
+        provider_category=[ProviderCategory.base],
+    )
+    base_only_names = [p.name for p in base_only]
+
+    assert f"test-base-provider-{test_id}" in base_only_names, "Base provider should be in base-only list"
+    assert f"test-byok-provider-{test_id}" not in base_only_names, "BYOK provider should NOT be in base-only list"
+
+    byok_only = await server.get_enabled_providers_async(
+        actor=default_user,
+        provider_category=[ProviderCategory.byok],
+    )
+    byok_only_names = [p.name for p in byok_only]
+
+    assert f"test-byok-provider-{test_id}" in byok_only_names, "BYOK provider should be in byok-only list"
+    assert f"test-base-provider-{test_id}" not in byok_only_names, "Base provider should NOT be in byok-only list"
+
+    # Filter by provider name
+    specific_provider = await server.get_enabled_providers_async(
+        actor=default_user,
+        provider_name=f"test-base-provider-{test_id}",
+    )
+
+    assert len(specific_provider) == 1
+    assert specific_provider[0].name == f"test-base-provider-{test_id}"
+    assert specific_provider[0].provider_type == ProviderType.openai
+
+    # Filter by provider type
+    openai_providers = await server.get_enabled_providers_async(
+        actor=default_user,
+        provider_type=ProviderType.openai,
+    )
+    openai_names = [p.name for p in openai_providers]
+
+    assert f"test-base-provider-{test_id}" in openai_names
+    assert f"test-byok-provider-{test_id}" not in openai_names  # This is anthropic type

@@ -258,14 +258,14 @@ async def test_create_agent_with_model_handle_uses_correct_llm_config(server: Sy
     """When CreateAgent.model is provided, ensure the correct handle is used to resolve llm_config.
 
     This verifies that the model handle passed by the client is forwarded into
-    SyncServer.get_cached_llm_config_async and that the resulting AgentState
+    SyncServer.get_llm_config_from_handle_async and that the resulting AgentState
     carries an llm_config with the same handle.
     """
 
     # Track the arguments used to resolve the LLM config
     captured_kwargs: dict = {}
 
-    async def fake_get_cached_llm_config_async(self, actor, **kwargs):  # type: ignore[override]
+    async def fake_get_llm_config_from_handle_async(self, actor, **kwargs):  # type: ignore[override]
         from letta.schemas.llm_config import LLMConfig as PydanticLLMConfig
 
         captured_kwargs.update(kwargs)
@@ -282,8 +282,8 @@ async def test_create_agent_with_model_handle_uses_correct_llm_config(server: Sy
 
     model_handle = "openai/gpt-4o-mini"
 
-    # Patch SyncServer.get_cached_llm_config_async so we don't depend on provider DB state
-    with patch.object(SyncServer, "get_cached_llm_config_async", new=fake_get_cached_llm_config_async):
+    # Patch SyncServer.get_llm_config_from_handle_async so we don't depend on provider DB state
+    with patch.object(SyncServer, "get_llm_config_from_handle_async", new=fake_get_llm_config_from_handle_async):
         created_agent = await server.create_agent_async(
             request=CreateAgent(
                 name="agent_with_model_handle",

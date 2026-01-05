@@ -201,7 +201,7 @@ class ProviderManager:
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     @trace_method
     async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
-        """Delete a provider."""
+        """Delete a provider and its associated models."""
         async with db_registry.async_session() as session:
             # Clear api key field
             existing_provider = await ProviderModel.read_async(
@@ -217,6 +217,15 @@ class ProviderManager:
             logger.info("Soft deleting provider with id: %s", provider_id)
 
             await existing_provider.update_async(session, actor=actor)
+
+            # Soft delete all models associated with this provider
+            provider_models = await ProviderModelORM.list_async(
+                db_session=session,
+                provider_id=provider_id,
+                check_is_deleted=True,
+            )
+            for model in provider_models:
+                await model.delete_async(session, actor=actor)
 
             # Soft delete in provider table
             await existing_provider.delete_async(session, actor=actor)
@@ -701,11 +710,11 @@ class ProviderManager:
                         await model.create_async(session)
                         logger.info(f"    ✓ Successfully created LLM model {llm_config.handle} with ID {model.id}")
                     except Exception as e:
-                        logger.error(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
+                        logger.info(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
                         # Log the full error details
                         import traceback
 
-                        logger.error(f"    Full traceback: {traceback.format_exc()}")
+                        logger.info(f"    Full traceback: {traceback.format_exc()}")
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
@@ -899,8 +908,12 @@ class ProviderManager:
         if not model:
             raise NoResultFound(f"LLM model not found with handle='{handle}'")
 
-        # Get the provider for this model
+        # Get the provider for this model and cast to subtype to access provider-specific methods
         provider = await self.get_provider_async(provider_id=model.provider_id, actor=actor)
+        typed_provider = provider.cast_to_subtype()
+
+        # Get the default max_output_tokens from the provider (provider-specific logic)
+        max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
         # Construct the LLMConfig from the model and provider data
         llm_config = LLMConfig(
@@ -911,6 +924,7 @@ class ProviderManager:
             handle=model.handle,
             provider_name=provider.name,
             provider_category=provider.provider_category,
+            max_tokens=max_tokens,
         )
 
         return llm_config
