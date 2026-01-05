@@ -3074,9 +3074,13 @@ class AgentManager:
         # Generate visible content for each file
         line_chunker = LineChunker()
         visible_content_map = {}
-        for file_metadata in file_metadata_with_content:
+        for i, file_metadata in enumerate(file_metadata_with_content):
             content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
             visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+            # Yield to event loop every 100 files to prevent saturation
+            if i > 0 and i % 100 == 0:
+                await asyncio.sleep(0)
 
         # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
         closed_files = await self.file_agent_manager.attach_files_bulk(
