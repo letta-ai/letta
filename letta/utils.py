@@ -1418,3 +1418,41 @@ def is_1_0_sdk_version(headers: HeaderParams):
 
     major_version = version_base.split(".")[0]
     return major_version == "1"
+
+
+async def bounded_gather(coros: list[Coroutine], max_concurrency: int = 10) -> list:
+    """
+    Execute coroutines with bounded concurrency to prevent event loop saturation.
+
+    Unlike asyncio.gather() which runs all coroutines concurrently, this limits
+    the number of concurrent tasks to prevent overwhelming the event loop.
+
+    Note: This is a stopgap measure. Prefer fixing the root cause by:
+    - Limiting items fetched from DB (e.g., pagination)
+    - Using explicit relationship loading instead of eager-loading all
+    - Adding concurrency limits at the API/business logic layer
+
+    Args:
+        coros: List of coroutines to execute
+        max_concurrency: Maximum number of concurrent tasks (default: 10)
+
+    Returns:
+        List of results in the same order as input coroutines
+    """
+    if not coros:
+        return []
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def bounded_coro(index: int, coro: Coroutine):
+        async with semaphore:
+            result = await coro
+            return (index, result)
+
+    # Wrap all coroutines with semaphore control
+    tasks = [bounded_coro(i, coro) for i, coro in enumerate(coros)]
+    indexed_results = await asyncio.gather(*tasks)
+
+    # Sort by original index to preserve order
+    indexed_results.sort(key=lambda x: x[0])
+    return [result for _, result in indexed_results]
