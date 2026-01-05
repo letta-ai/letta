@@ -414,7 +414,7 @@ class FileManager:
         actor: PydanticUser,
         before: Optional[str] = None,
         after: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit: Optional[int] = 1000,
         ascending: Optional[bool] = True,
         include_content: bool = False,
         strip_directory_prefix: bool = False,

@@ -745,9 +745,10 @@ async def detach_source(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.file_manager.list_files(source_id, actor)
-    file_ids = [f.id for f in files]
-    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+    # Query files_agents directly to get exactly what was attached, regardless of source changes
+    file_ids = await server.file_agent_manager.get_file_ids_for_agent_by_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if file_ids:
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         try:
@@ -776,9 +777,10 @@ async def detach_folder_from_agent(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.file_manager.list_files(folder_id, actor)
-    file_ids = [f.id for f in files]
-    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+    # Query files_agents directly to get exactly what was attached, regardless of source changes
+    file_ids = await server.file_agent_manager.get_file_ids_for_agent_by_source(agent_id=agent_id, source_id=folder_id, actor=actor)
+    if file_ids:
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         try:

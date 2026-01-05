@@ -294,6 +294,32 @@ class FileAgentManager:
 
     @enforce_types
     @trace_method
+    async def get_file_ids_for_agent_by_source(
+        self,
+        agent_id: str,
+        source_id: str,
+        actor: PydanticUser,
+    ) -> List[str]:
+        """
+        Get all file IDs attached to an agent from a specific source.
+
+        This queries the files_agents junction table directly, ensuring we get
+        exactly the files that were attached, regardless of any changes to the
+        source's file list.
+        """
+        async with db_registry.async_session() as session:
+            stmt = select(FileAgentModel.file_id).where(
+                and_(
+                    FileAgentModel.agent_id == agent_id,
+                    FileAgentModel.source_id == source_id,
+                    FileAgentModel.organization_id == actor.organization_id,
+                )
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    @enforce_types
+    @trace_method
     async def list_files_for_agent_paginated(
         self,
         agent_id: str,
