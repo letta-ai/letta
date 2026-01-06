@@ -1097,6 +1097,18 @@ class SyncServer(object):
         passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
         return passage_count, document_count
 
+    def _get_provider_sort_key(self, model: LLMConfig) -> Tuple[int, str, str]:
+        """Get sort key for a model: (provider_priority, provider_name, model_name)"""
+        provider_priority = constants.PROVIDER_ORDER.get(model.provider_name, 999)
+        return (provider_priority, model.provider_name or "", model.model or "")
+
+    def _get_embedding_provider_sort_key(self, model: EmbeddingConfig) -> Tuple[int, str, str]:
+        """Get sort key for an embedding model: (provider_priority, provider_name, model_name)"""
+        # Extract provider name from handle (format: "provider_name/model_name")
+        provider_name = model.handle.split("/")[0] if model.handle and "/" in model.handle else ""
+        provider_priority = constants.PROVIDER_ORDER.get(provider_name, 999)
+        return (provider_priority, provider_name, model.embedding_model or "")
+
     @trace_method
     async def list_llm_models_async(
         self,
@@ -1105,85 +1117,121 @@ class SyncServer(object):
         provider_name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
     ) -> List[LLMConfig]:
-        """List available LLM models from database cache"""
-        # Get provider IDs if filtering by provider
-        provider_ids = None
-        if provider_name or provider_type:
-            providers = await self.get_enabled_providers_async(
-                provider_category=provider_category,
-                provider_name=provider_name,
-                provider_type=provider_type,
-                actor=actor,
-            )
-            provider_ids = [p.id for p in providers]
-
-            # If filtering was requested but no providers matched, return empty list
-            if not provider_ids:
-                return []
-
-        # Get models from database
-        provider_models = await self.provider_manager.list_models_async(
-            actor=actor,
-            model_type="llm",
-            provider_id=provider_ids[0] if provider_ids and len(provider_ids) == 1 else None,
-            enabled=True,
-        )
-
-        # Build LLMConfig objects from cached data
-        # Cache providers to avoid N+1 queries
-        provider_cache: Dict[str, Provider] = {}
+        """List available LLM models - base from DB, BYOK from provider endpoints"""
         llm_models = []
-        for model in provider_models:
-            # Skip if filtering by provider and model doesn't match
-            if provider_ids and model.provider_id not in provider_ids:
-                continue
 
-            # Get provider details (with caching to avoid N+1 queries)
-            if model.provider_id not in provider_cache:
-                provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
-            provider = provider_cache[model.provider_id]
+        # Determine which categories to include
+        include_base = not provider_category or ProviderCategory.base in provider_category
+        include_byok = not provider_category or ProviderCategory.byok in provider_category
 
-            llm_config = LLMConfig(
-                model=model.name,
-                model_endpoint_type=model.model_endpoint_type,
-                model_endpoint=provider.base_url or model.model_endpoint_type,
-                context_window=model.max_context_window or 16384,
-                handle=model.handle,
-                provider_name=provider.name,
-                provider_category=provider.provider_category,
+        # Get base provider models from database
+        if include_base:
+            provider_models = await self.provider_manager.list_models_async(
+                actor=actor,
+                model_type="llm",
+                enabled=True,
             )
-            llm_models.append(llm_config)
+
+            # Build LLMConfig objects from database
+            provider_cache: Dict[str, Provider] = {}
+            for model in provider_models:
+                # Get provider details (with caching to avoid N+1 queries)
+                if model.provider_id not in provider_cache:
+                    provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
+                provider = provider_cache[model.provider_id]
+
+                # Skip non-base providers (they're handled separately)
+                if provider.provider_category != ProviderCategory.base:
+                    continue
+
+                # Apply provider_name/provider_type filters if specified
+                if provider_name and provider.name != provider_name:
+                    continue
+                if provider_type and provider.provider_type != provider_type:
+                    continue
+
+                llm_config = LLMConfig(
+                    model=model.name,
+                    model_endpoint_type=model.model_endpoint_type,
+                    model_endpoint=provider.base_url or model.model_endpoint_type,
+                    context_window=model.max_context_window or 16384,
+                    handle=model.handle,
+                    provider_name=provider.name,
+                    provider_category=provider.provider_category,
+                )
+                llm_models.append(llm_config)
+
+        # Get BYOK provider models by hitting provider endpoints directly
+        if include_byok:
+            byok_providers = await self.provider_manager.list_providers_async(
+                actor=actor,
+                name=provider_name,
+                provider_type=provider_type,
+                provider_category=[ProviderCategory.byok],
+            )
+
+            for provider in byok_providers:
+                try:
+                    typed_provider = provider.cast_to_subtype()
+                    models = await typed_provider.list_llm_models_async()
+                    llm_models.extend(models)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch models from BYOK provider {provider.name}: {e}")
+
+        # Sort by provider order (matching old _enabled_providers order), then by model name
+        llm_models.sort(key=self._get_provider_sort_key)
 
         return llm_models
 
     async def list_embedding_models_async(self, actor: User) -> List[EmbeddingConfig]:
-        """List available embedding models from database cache"""
-        # Get models from database
+        """List available embedding models - base from DB, BYOK from provider endpoints"""
+        embedding_models = []
+
+        # Get base provider models from database
         provider_models = await self.provider_manager.list_models_async(
             actor=actor,
             model_type="embedding",
             enabled=True,
         )
 
-        # Build EmbeddingConfig objects from cached data
-        # Cache providers to avoid N+1 queries
+        # Build EmbeddingConfig objects from database (base providers only)
         provider_cache: Dict[str, Provider] = {}
-        embedding_models = []
         for model in provider_models:
             # Get provider details (with caching to avoid N+1 queries)
             if model.provider_id not in provider_cache:
                 provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
             provider = provider_cache[model.provider_id]
 
+            # Skip non-base providers (they're handled separately)
+            if provider.provider_category != ProviderCategory.base:
+                continue
+
             embedding_config = EmbeddingConfig(
                 embedding_model=model.name,
                 embedding_endpoint_type=model.model_endpoint_type,
                 embedding_endpoint=provider.base_url or model.model_endpoint_type,
-                embedding_dim=model.embedding_dim or 1536,  # Use model's dimension or default
+                embedding_dim=model.embedding_dim or 1536,
                 embedding_chunk_size=constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
                 handle=model.handle,
             )
             embedding_models.append(embedding_config)
+
+        # Get BYOK provider models by hitting provider endpoints directly
+        byok_providers = await self.provider_manager.list_providers_async(
+            actor=actor,
+            provider_category=[ProviderCategory.byok],
+        )
+
+        for provider in byok_providers:
+            try:
+                typed_provider = provider.cast_to_subtype()
+                models = await typed_provider.list_embedding_models_async()
+                embedding_models.extend(models)
+            except Exception as e:
+                logger.warning(f"Failed to fetch embedding models from BYOK provider {provider.name}: {e}")
+
+        # Sort by provider order (matching old _enabled_providers order), then by model name
+        embedding_models.sort(key=self._get_embedding_provider_sort_key)
 
         return embedding_models
 

@@ -240,6 +240,7 @@ class ProviderManager:
         actor: PydanticUser,
         name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
+        provider_category: Optional[List[ProviderCategory]] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -280,7 +281,14 @@ class ProviderManager:
             )
 
             # Combine both lists
-            all_providers = org_providers + global_providers
+            all_providers = []
+            if not provider_category:
+                all_providers = org_providers + global_providers
+            else:
+                if ProviderCategory.byok in provider_category:
+                    all_providers += org_providers
+                if ProviderCategory.base in provider_category:
+                    all_providers += global_providers
 
             # Remove deprecated api_key and access_key fields from the response
             for provider in all_providers:
@@ -575,13 +583,14 @@ class ProviderManager:
                         continue
 
                     # Convert Provider to ProviderCreate
-                    api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
-                    access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
+                    # NOTE: Do NOT store API keys for base providers in the database.
+                    # Base providers should always use environment variables for API keys.
+                    # This ensures keys stay in sync with env vars and aren't duplicated in DB.
                     provider_create = ProviderCreate(
                         name=provider.name,
                         provider_type=provider.provider_type,
-                        api_key=api_key or "",  # ProviderCreate requires api_key, use empty string if None
-                        access_key=access_key,
+                        api_key="",  # Base providers use env vars, not DB-stored keys
+                        access_key=None,
                         region=provider.region,
                         base_url=provider.base_url,
                         api_version=provider.api_version,

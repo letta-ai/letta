@@ -8,6 +8,26 @@ LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 LETTA_MODEL_ENDPOINT = "https://inference.letta.com/v1/"
 DEFAULT_TIMEZONE = "UTC"
 
+# Provider ordering for model listing (matches original _enabled_providers list order)
+PROVIDER_ORDER = {
+    "letta": 0,
+    "openai": 1,
+    "anthropic": 2,
+    "ollama": 3,
+    "google_ai": 4,
+    "google_vertex": 5,
+    "azure": 6,
+    "groq": 7,
+    "together": 8,
+    "vllm": 9,
+    "bedrock": 10,
+    "deepseek": 11,
+    "xai": 12,
+    "lmstudio": 13,
+    "zai": 14,
+    "openrouter": 15,  # Note: OpenRouter uses OpenRouterProvider, not a ProviderType enum
+}
+
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
 OLLAMA_API_PREFIX = "/v1"
