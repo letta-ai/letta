@@ -902,6 +902,34 @@ class AgentManager:
             # context manager now handles commits
             # await session.commit()
 
+    async def _decrypt_agent_secrets(self, agents: List[PydanticAgentState]) -> List[PydanticAgentState]:
+        """
+        Decrypt secrets for all agents outside DB session.
+
+        This allows DB connections to be released before expensive PBKDF2 operations,
+        preventing connection pool exhaustion during high load.
+
+        Uses bounded concurrency to limit thread pool pressure while allowing some
+        parallelism in the dedicated crypto executor.
+        """
+
+        async def decrypt_env_var(env_var):
+            if env_var.value_enc and (env_var.value is None or env_var.value == ""):
+                env_var.value = await env_var.value_enc.get_plaintext_async()
+
+        # Collect all env vars that need decryption
+        decrypt_tasks = []
+        for agent in agents:
+            if agent.tool_exec_environment_variables:
+                for env_var in agent.tool_exec_environment_variables:
+                    decrypt_tasks.append(decrypt_env_var(env_var))
+
+        # Decrypt with bounded concurrency (matches crypto executor size)
+        if decrypt_tasks:
+            await bounded_gather(decrypt_tasks, max_concurrency=8)
+
+        return agents
+
     @trace_method
     async def list_agents_async(
         self,
@@ -970,9 +998,15 @@ class AgentManager:
                 query = query.limit(limit)
             result = await session.execute(query)
             agents = result.scalars().all()
-            return await bounded_gather(
-                [agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
+
+            # Convert to pydantic without decrypting (keeps encrypted values)
+            # This allows us to release the DB connection before expensive PBKDF2 operations
+            agents_encrypted = await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=include_relationships, include=include, decrypt=False) for agent in agents]
             )
+
+        # DB session released - now decrypt secrets outside session to prevent connection holding
+        return await self._decrypt_agent_secrets(agents_encrypted)
 
     @trace_method
     async def count_agents_async(

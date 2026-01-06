@@ -310,6 +310,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         self,
         include_relationships: Optional[Set[str]] = None,
         include: Optional[List[str]] = None,
+        decrypt: bool = True,
     ) -> PydanticAgentState:
         """
         Converts the SQLAlchemy Agent model into its Pydantic counterpart.
@@ -441,8 +442,26 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["identities"] = [i.to_pydantic() for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
-        # Convert ORM env vars to Pydantic with async decryption
-        env_vars_pydantic = await bounded_gather([PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables])
+        # Convert ORM env vars to Pydantic, optionally skipping decryption
+        if decrypt:
+            env_vars_pydantic = await bounded_gather([PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables])
+        else:
+            # Skip decryption - return with encrypted values (faster, no PBKDF2)
+            from letta.schemas.environment_variables import AgentEnvironmentVariable
+            from letta.schemas.secret import Secret
+
+            env_vars_pydantic = []
+            for e in tool_exec_environment_variables:
+                data = {
+                    "id": e.id,
+                    "key": e.key,
+                    "description": e.description,
+                    "organization_id": e.organization_id,
+                    "agent_id": e.agent_id,
+                    "value": "",  # Empty string, will be decrypted later
+                    "value_enc": Secret.from_encrypted(e.value_enc) if e.value_enc else None,
+                }
+                env_vars_pydantic.append(AgentEnvironmentVariable.model_validate(data))
         state["tool_exec_environment_variables"] = env_vars_pydantic
         state["secrets"] = env_vars_pydantic
         state["model"] = self.llm_config.handle if self.llm_config else None

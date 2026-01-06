@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import os
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional
 
@@ -10,6 +11,10 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from letta.settings import settings
+
+# Dedicated thread pool for CPU-intensive crypto operations
+# Prevents crypto from blocking health checks and other operations
+_crypto_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="CryptoWorker")
 
 # Common API key prefixes that should not be considered encrypted
 # These are plaintext credentials that happen to be long strings
@@ -69,13 +74,16 @@ class CryptoUtils:
     @classmethod
     async def _derive_key_async(cls, master_key: str, salt: bytes) -> bytes:
         """
-        Async version of _derive_key that runs PBKDF2 in a thread pool.
+        Async version of _derive_key that runs PBKDF2 in a dedicated thread pool.
 
-        This prevents PBKDF2 (a CPU-intensive operation) from blocking the event loop.
-        PBKDF2 with 100k iterations typically takes 100-500ms, which would freeze
-        the event loop and prevent all other requests from being processed.
+        Uses a dedicated crypto thread pool (8 workers) to prevent PBKDF2 operations
+        from exhausting the default ThreadPoolExecutor (16 threads) and blocking
+        health checks and other operations during high load.
+
+        PBKDF2 with 100k iterations typically takes 100-500ms per operation.
         """
-        return await asyncio.to_thread(cls._derive_key, master_key, salt)
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(_crypto_executor, cls._derive_key, master_key, salt)
 
     @classmethod
     def encrypt(cls, plaintext: str, master_key: Optional[str] = None) -> str:
