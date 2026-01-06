@@ -210,11 +210,11 @@ class SandboxConfigManager:
             return db_env_var
         else:
             async with db_registry.async_session() as session:
-                # Encrypt the value before storing (only to value_enc, not plaintext)
+                # Encrypt the value before storing (async to avoid blocking event loop)
                 from letta.schemas.secret import Secret
 
                 if env_var.value:
-                    env_var.value_enc = Secret.from_plaintext(env_var.value)
+                    env_var.value_enc = await Secret.from_plaintext_async(env_var.value)
                     env_var.value = ""  # Don't store plaintext, use empty string for NOT NULL constraint
 
                 env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True))
@@ -242,9 +242,10 @@ class SandboxConfigManager:
                     existing_secret = Secret.from_encrypted(env_var.value_enc)
                     existing_value = await existing_secret.get_plaintext_async()
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_value != update_data["value"]:
-                    env_var.value_enc = Secret.from_plaintext(update_data["value"]).get_encrypted()
+                    value_secret = await Secret.from_plaintext_async(update_data["value"])
+                    env_var.value_enc = value_secret.get_encrypted()
                     # Don't store plaintext anymore
 
                 # Remove from update_data since we set directly on env_var

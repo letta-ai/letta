@@ -216,3 +216,95 @@ class TestSecret:
                 assert mock_decrypt.call_count == 1
         finally:
             settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_with_key(self):
+        """Test creating a Secret from plaintext value asynchronously with encryption key."""
+        from letta.settings import settings
+
+        # Set encryption key
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext = "my-async-secret-value"
+
+            secret = await Secret.from_plaintext_async(plaintext)
+
+            # Should store encrypted value
+            assert secret.encrypted_value is not None
+            assert secret.encrypted_value != plaintext
+
+            # Should decrypt to original value
+            result = await secret.get_plaintext_async()
+            assert result == plaintext
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_without_key_stores_plaintext(self):
+        """Test creating a Secret asynchronously without encryption key stores as plaintext."""
+        from letta.settings import settings
+
+        # Clear encryption key
+        original_key = settings.encryption_key
+        settings.encryption_key = None
+
+        try:
+            plaintext = "my-async-plaintext-value"
+
+            # Should store as plaintext in _enc column when no encryption key
+            secret = await Secret.from_plaintext_async(plaintext)
+
+            # Should store the plaintext value directly in encrypted_value
+            assert secret.encrypted_value == plaintext
+            result = await secret.get_plaintext_async()
+            assert result == plaintext
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_with_none(self):
+        """Test creating a Secret asynchronously from None value."""
+        secret = await Secret.from_plaintext_async(None)
+
+        assert secret.encrypted_value is None
+        result = await secret.get_plaintext_async()
+        assert result is None
+        assert secret.is_empty() is True
+
+    @pytest.mark.asyncio
+    async def test_from_plaintexts_async(self):
+        """Test batch encrypting multiple secrets concurrently."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            values = {
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3",
+            }
+
+            secrets = await Secret.from_plaintexts_async(values)
+
+            # Should return dict with same keys
+            assert set(secrets.keys()) == {"key1", "key2", "key3"}
+
+            # Each secret should decrypt to original value
+            for key, secret in secrets.items():
+                assert isinstance(secret, Secret)
+                assert secret.encrypted_value is not None
+                assert secret.encrypted_value != values[key]
+                result = await secret.get_plaintext_async()
+                assert result == values[key]
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintexts_async_empty_dict(self):
+        """Test batch encrypting with empty dict."""
+        secrets = await Secret.from_plaintexts_async({})
+        assert secrets == {}

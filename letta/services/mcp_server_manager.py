@@ -448,15 +448,15 @@ class MCPServerManager:
                 # Set the organization id at the ORM layer
                 pydantic_mcp_server.organization_id = actor.organization_id
 
-                # Explicitly populate encrypted fields
+                # Explicitly populate encrypted fields (async to avoid blocking event loop)
                 if pydantic_mcp_server.token is not None:
-                    pydantic_mcp_server.token_enc = Secret.from_plaintext(pydantic_mcp_server.token)
+                    pydantic_mcp_server.token_enc = await Secret.from_plaintext_async(pydantic_mcp_server.token)
                 if pydantic_mcp_server.custom_headers is not None:
                     # custom_headers is a Dict[str, str], serialize to JSON then encrypt
                     import json
 
                     json_str = json.dumps(pydantic_mcp_server.custom_headers)
-                    pydantic_mcp_server.custom_headers_enc = Secret.from_plaintext(json_str)
+                    pydantic_mcp_server.custom_headers_enc = await Secret.from_plaintext_async(json_str)
 
                 mcp_server_data = pydantic_mcp_server.model_dump(to_orm=True)
 
@@ -517,15 +517,15 @@ class MCPServerManager:
                 server_type=server_config.type,
                 server_url=server_config.server_url,
             )
-            # Encrypt sensitive fields
+            # Encrypt sensitive fields (async to avoid blocking event loop)
             token = server_config.resolve_token()
             if token:
-                token_secret = Secret.from_plaintext(token)
+                token_secret = await Secret.from_plaintext_async(token)
                 mcp_server.set_token_secret(token_secret)
             if server_config.custom_headers:
                 # Convert dict to JSON string, then encrypt as Secret
                 headers_json = json.dumps(server_config.custom_headers)
-                headers_secret = Secret.from_plaintext(headers_json)
+                headers_secret = await Secret.from_plaintext_async(headers_json)
                 mcp_server.set_custom_headers_secret(headers_secret)
 
         elif isinstance(server_config, StreamableHTTPServerConfig):
@@ -534,15 +534,15 @@ class MCPServerManager:
                 server_type=server_config.type,
                 server_url=server_config.server_url,
             )
-            # Encrypt sensitive fields
+            # Encrypt sensitive fields (async to avoid blocking event loop)
             token = server_config.resolve_token()
             if token:
-                token_secret = Secret.from_plaintext(token)
+                token_secret = await Secret.from_plaintext_async(token)
                 mcp_server.set_token_secret(token_secret)
             if server_config.custom_headers:
                 # Convert dict to JSON string, then encrypt as Secret
                 headers_json = json.dumps(server_config.custom_headers)
-                headers_secret = Secret.from_plaintext(headers_json)
+                headers_secret = await Secret.from_plaintext_async(headers_json)
                 mcp_server.set_custom_headers_secret(headers_secret)
         else:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
@@ -698,9 +698,10 @@ class MCPServerManager:
                 elif mcp_server.token:
                     existing_token = mcp_server.token
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_token != update_data["token"]:
-                    mcp_server.token_enc = Secret.from_plaintext(update_data["token"]).get_encrypted()
+                    token_secret = await Secret.from_plaintext_async(update_data["token"])
+                    mcp_server.token_enc = token_secret.get_encrypted()
                     # Keep plaintext for dual-write during migration
                     mcp_server.token = update_data["token"]
 
@@ -725,9 +726,10 @@ class MCPServerManager:
                     elif mcp_server.custom_headers:
                         existing_headers_json = json.dumps(mcp_server.custom_headers)
 
-                    # Only re-encrypt if different
+                    # Only re-encrypt if different (async to avoid blocking event loop)
                     if existing_headers_json != json_str:
-                        mcp_server.custom_headers_enc = Secret.from_plaintext(json_str).get_encrypted()
+                        headers_secret = await Secret.from_plaintext_async(json_str)
+                        mcp_server.custom_headers_enc = headers_secret.get_encrypted()
                         # Keep plaintext for dual-write during migration
                         mcp_server.custom_headers = update_data["custom_headers"]
 
@@ -1117,9 +1119,10 @@ class MCPServerManager:
                 elif oauth_session.authorization_code:
                     existing_code = oauth_session.authorization_code
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_code != session_update.authorization_code:
-                    oauth_session.authorization_code_enc = Secret.from_plaintext(session_update.authorization_code).get_encrypted()
+                    code_secret = await Secret.from_plaintext_async(session_update.authorization_code)
+                    oauth_session.authorization_code_enc = code_secret.get_encrypted()
                     # Keep plaintext for dual-write during migration
                     oauth_session.authorization_code = session_update.authorization_code
 
@@ -1134,9 +1137,10 @@ class MCPServerManager:
                 elif oauth_session.access_token:
                     existing_token = oauth_session.access_token
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_token != session_update.access_token:
-                    oauth_session.access_token_enc = Secret.from_plaintext(session_update.access_token).get_encrypted()
+                    token_secret = await Secret.from_plaintext_async(session_update.access_token)
+                    oauth_session.access_token_enc = token_secret.get_encrypted()
                     # Keep plaintext for dual-write during migration
                     oauth_session.access_token = session_update.access_token
 
@@ -1151,9 +1155,10 @@ class MCPServerManager:
                 elif oauth_session.refresh_token:
                     existing_refresh = oauth_session.refresh_token
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_refresh != session_update.refresh_token:
-                    oauth_session.refresh_token_enc = Secret.from_plaintext(session_update.refresh_token).get_encrypted()
+                    refresh_secret = await Secret.from_plaintext_async(session_update.refresh_token)
+                    oauth_session.refresh_token_enc = refresh_secret.get_encrypted()
                     # Keep plaintext for dual-write during migration
                     oauth_session.refresh_token = session_update.refresh_token
 
@@ -1177,9 +1182,10 @@ class MCPServerManager:
                 elif oauth_session.client_secret:
                     existing_secret_val = oauth_session.client_secret
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_secret_val != session_update.client_secret:
-                    oauth_session.client_secret_enc = Secret.from_plaintext(session_update.client_secret).get_encrypted()
+                    client_secret_encrypted = await Secret.from_plaintext_async(session_update.client_secret)
+                    oauth_session.client_secret_enc = client_secret_encrypted.get_encrypted()
                     # Keep plaintext for dual-write during migration
                     oauth_session.client_secret = session_update.client_secret
 

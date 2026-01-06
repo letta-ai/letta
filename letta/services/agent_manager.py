@@ -556,19 +556,18 @@ class AgentManager:
                 agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
 
                 if agent_secrets:
-                    # Encrypt environment variable values
-                    env_rows = []
-                    for key, val in agent_secrets.items():
-                        # Encrypt value (Secret.from_plaintext handles missing encryption key internally)
-                        value_secret = Secret.from_plaintext(val)
-                        row = {
+                    # Encrypt environment variable values concurrently (async to avoid blocking event loop)
+                    secrets_dict = await Secret.from_plaintexts_async(agent_secrets)
+                    env_rows = [
+                        {
                             "agent_id": aid,
                             "key": key,
                             "value": "",  # Empty string for NOT NULL constraint (deprecated, use value_enc)
-                            "value_enc": value_secret.get_encrypted(),
+                            "value_enc": secret.get_encrypted(),
                             "organization_id": actor.organization_id,
                         }
-                        env_rows.append(row)
+                        for key, secret in secrets_dict.items()
+                    ]
 
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
                     env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
@@ -832,25 +831,35 @@ class AgentManager:
 
                 # TODO: do we need to delete each time or can we just upsert?
                 await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
-                # Encrypt environment variable values
-                # Only re-encrypt if the value has actually changed
+
+                # Decrypt existing values to check for changes (async to avoid blocking)
+                existing_values: dict[str, str | None] = {}
+                for k, existing_env in existing_env_vars.items():
+                    if existing_env.value_enc:
+                        existing_secret = Secret.from_encrypted(existing_env.value_enc)
+                        existing_values[k] = await existing_secret.get_plaintext_async()
+                    else:
+                        existing_values[k] = None
+
+                # Identify values that need encryption (new or changed)
+                to_encrypt = {
+                    k: v
+                    for k, v in agent_secrets.items()
+                    if k not in existing_env_vars or existing_values.get(k) != v or not existing_env_vars[k].value_enc
+                }
+
+                # Batch encrypt new/changed values concurrently (async to avoid blocking event loop)
+                new_secrets = await Secret.from_plaintexts_async(to_encrypt) if to_encrypt else {}
+
+                # Build rows, reusing existing encrypted values where unchanged
                 env_rows = []
                 for k, v in agent_secrets.items():
-                    # Check if value changed to avoid unnecessary re-encryption
-                    existing_env = existing_env_vars.get(k)
-                    existing_value = None
-                    if existing_env and existing_env.value_enc:
-                        existing_secret = Secret.from_encrypted(existing_env.value_enc)
-                        existing_value = await existing_secret.get_plaintext_async()
-
-                    # Encrypt value (reuse existing encrypted value if unchanged)
-                    if existing_value == v and existing_env and existing_env.value_enc:
-                        # Value unchanged, reuse existing encrypted value
-                        value_enc = existing_env.value_enc
+                    if k in new_secrets:
+                        # New or changed value - use newly encrypted value
+                        value_enc = new_secrets[k].get_encrypted()
                     else:
-                        # Value changed or new, encrypt
-                        value_secret = Secret.from_plaintext(v)
-                        value_enc = value_secret.get_encrypted()
+                        # Value unchanged - reuse existing encrypted value
+                        value_enc = existing_env_vars[k].value_enc
 
                     row = {
                         "agent_id": aid,

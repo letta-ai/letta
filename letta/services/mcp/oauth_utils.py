@@ -150,9 +150,10 @@ class MCPOAuthSession:
             try:
                 oauth_record = await MCPOAuth.read_async(db_session=session, identifier=self.session_id, actor=None)
 
-                # Encrypt the authorization_code and store only in _enc column
+                # Encrypt the authorization_code and store only in _enc column (async to avoid blocking event loop)
                 if code is not None:
-                    oauth_record.authorization_code_enc = Secret.from_plaintext(code).get_encrypted()
+                    code_secret = await Secret.from_plaintext_async(code)
+                    oauth_record.authorization_code_enc = code_secret.get_encrypted()
 
                 oauth_record.status = OAuthSessionStatus.AUTHORIZED
                 oauth_record.state = state

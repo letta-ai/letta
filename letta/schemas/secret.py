@@ -5,6 +5,7 @@ from pydantic_core import core_schema
 
 from letta.helpers.crypto_utils import CryptoUtils
 from letta.log import get_logger
+from letta.utils import bounded_gather
 
 logger = get_logger(__name__)
 
@@ -66,6 +67,72 @@ class Secret(BaseModel):
                 instance._plaintext_cache = value  # Cache it since we know the plaintext
                 return instance
             raise  # Re-raise if it's a different error
+
+    @classmethod
+    async def from_plaintext_async(cls, value: Optional[str]) -> "Secret":
+        """
+        Create a Secret from a plaintext value, encrypting it asynchronously.
+
+        This async version runs encryption in a thread pool to avoid blocking
+        the event loop during the CPU-intensive PBKDF2 key derivation (100-500ms).
+
+        Use this method in all async contexts (FastAPI endpoints, async services, etc.)
+        to avoid blocking the event loop.
+
+        Args:
+            value: The plaintext value to encrypt
+
+        Returns:
+            A Secret instance with the encrypted (or plaintext) value
+        """
+        if value is None:
+            return cls.model_construct(encrypted_value=None)
+
+        # Guard against double encryption - check if value is already encrypted
+        if CryptoUtils.is_encrypted(value):
+            logger.warning("Creating Secret from already-encrypted value. This can be dangerous.")
+
+        # Try to encrypt asynchronously, but fall back to storing plaintext if no encryption key
+        try:
+            encrypted = await CryptoUtils.encrypt_async(value)
+            return cls.model_construct(encrypted_value=encrypted)
+        except ValueError as e:
+            # No encryption key available, store as plaintext in the _enc column
+            if "No encryption key configured" in str(e):
+                logger.warning(
+                    "No encryption key configured. Storing Secret value as plaintext in _enc column. "
+                    "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+                )
+                instance = cls.model_construct(encrypted_value=value)
+                instance._plaintext_cache = value  # Cache it since we know the plaintext
+                return instance
+            raise  # Re-raise if it's a different error
+
+    @classmethod
+    async def from_plaintexts_async(cls, values: dict[str, str], max_concurrency: int = 10) -> dict[str, "Secret"]:
+        """
+        Create multiple Secrets from plaintexts concurrently with bounded concurrency.
+
+        Uses bounded_gather() to encrypt values in parallel while limiting
+        concurrent operations to prevent overwhelming the event loop.
+
+        Args:
+            values: Dict of key -> plaintext value
+            max_concurrency: Maximum number of concurrent encryption operations (default: 10)
+
+        Returns:
+            Dict of key -> Secret
+        """
+        if not values:
+            return {}
+
+        keys = list(values.keys())
+
+        async def encrypt_one(key: str) -> "Secret":
+            return await cls.from_plaintext_async(values[key])
+
+        secrets = await bounded_gather([encrypt_one(k) for k in keys], max_concurrency=max_concurrency)
+        return dict(zip(keys, secrets))
 
     @classmethod
     def from_encrypted(cls, encrypted_value: Optional[str]) -> "Secret":

@@ -89,11 +89,13 @@ class ProviderManager:
                 deleted_provider.region = request.region
                 deleted_provider.api_version = request.api_version
 
-                # Update encrypted fields
+                # Update encrypted fields (async to avoid blocking event loop)
                 if request.api_key is not None:
-                    deleted_provider.api_key_enc = Secret.from_plaintext(request.api_key).get_encrypted()
+                    api_key_secret = await Secret.from_plaintext_async(request.api_key)
+                    deleted_provider.api_key_enc = api_key_secret.get_encrypted()
                 if request.access_key is not None:
-                    deleted_provider.access_key_enc = Secret.from_plaintext(request.access_key).get_encrypted()
+                    access_key_secret = await Secret.from_plaintext_async(request.access_key)
+                    deleted_provider.access_key_enc = access_key_secret.get_encrypted()
 
                 await deleted_provider.update_async(session, actor=actor)
                 provider_pydantic = deleted_provider.to_pydantic()
@@ -125,11 +127,11 @@ class ProviderManager:
             # Lazily create the provider id prior to persistence
             provider.resolve_identifier()
 
-            # Explicitly populate encrypted fields from plaintext
+            # Explicitly populate encrypted fields from plaintext (async to avoid blocking event loop)
             if request.api_key is not None:
-                provider.api_key_enc = Secret.from_plaintext(request.api_key)
+                provider.api_key_enc = await Secret.from_plaintext_async(request.api_key)
             if request.access_key is not None:
-                provider.access_key_enc = Secret.from_plaintext(request.access_key)
+                provider.access_key_enc = await Secret.from_plaintext_async(request.access_key)
 
             new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
             await new_provider.create_async(session, actor=actor)
@@ -164,9 +166,10 @@ class ProviderManager:
                     existing_secret = Secret.from_encrypted(existing_provider.api_key_enc)
                     existing_api_key = await existing_secret.get_plaintext_async()
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_api_key != update_data["api_key"]:
-                    existing_provider.api_key_enc = Secret.from_plaintext(update_data["api_key"]).get_encrypted()
+                    api_key_secret = await Secret.from_plaintext_async(update_data["api_key"])
+                    existing_provider.api_key_enc = api_key_secret.get_encrypted()
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("api_key", None)
@@ -181,9 +184,10 @@ class ProviderManager:
                     existing_secret = Secret.from_encrypted(existing_provider.access_key_enc)
                     existing_access_key = await existing_secret.get_plaintext_async()
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_access_key != update_data["access_key"]:
-                    existing_provider.access_key_enc = Secret.from_plaintext(update_data["access_key"]).get_encrypted()
+                    access_key_secret = await Secret.from_plaintext_async(update_data["access_key"])
+                    existing_provider.access_key_enc = access_key_secret.get_encrypted()
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("access_key", None)
