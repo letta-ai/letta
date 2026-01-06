@@ -2236,6 +2236,7 @@ async def capture_messages(
 
     response_messages = await server.message_manager.create_many_messages_async(messages_to_persist, actor=actor)
 
+    run_ids = []
     sleeptime_group = agent.multi_agent_group if agent.multi_agent_group and agent.multi_agent_group.manager_type == "sleeptime" else None
     if sleeptime_group:
         sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
