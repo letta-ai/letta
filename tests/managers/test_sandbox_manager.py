@@ -299,3 +299,92 @@ async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fi
 
     # Assertions to verify correct retrieval
     assert retrieved_env_var.id == sandbox_env_var_fixture.id
+
+
+@pytest.mark.asyncio
+async def test_gather_env_vars_layering(server: SyncServer, sandbox_config_fixture, default_user):
+    """Test that _gather_env_vars properly layers env vars with correct priority.
+
+    Priority order (later overrides earlier):
+    1. Global sandbox env vars from DB (always included)
+    2. Provided sandbox env vars (agent-scoped, override global on key collision)
+    3. Agent state env vars
+    4. Additional runtime env vars (highest priority)
+    """
+    from unittest.mock import MagicMock
+
+    from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
+
+    # Create global sandbox env vars in the database
+    global_var1 = SandboxEnvironmentVariableCreate(key="GLOBAL_ONLY", value="global_value")
+    global_var2 = SandboxEnvironmentVariableCreate(key="OVERRIDE_BY_PROVIDED", value="global_will_be_overridden")
+    global_var3 = SandboxEnvironmentVariableCreate(key="OVERRIDE_BY_AGENT", value="global_will_be_overridden_by_agent")
+    global_var4 = SandboxEnvironmentVariableCreate(key="OVERRIDE_BY_ADDITIONAL", value="global_will_be_overridden_by_additional")
+
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        global_var1, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        global_var2, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        global_var3, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
+    await server.sandbox_config_manager.create_sandbox_env_var_async(
+        global_var4, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
+    )
+
+    # Define provided sandbox env vars (agent-scoped)
+    provided_env_vars = {
+        "OVERRIDE_BY_PROVIDED": "provided_value",
+        "PROVIDED_ONLY": "provided_only_value",
+    }
+
+    # Create a mock agent state with secrets
+    mock_agent_state = MagicMock()
+    mock_agent_state.get_agent_env_vars_as_dict.return_value = {
+        "OVERRIDE_BY_AGENT": "agent_value",
+        "AGENT_ONLY": "agent_only_value",
+    }
+
+    # Define additional runtime env vars
+    additional_env_vars = {
+        "OVERRIDE_BY_ADDITIONAL": "additional_value",
+        "ADDITIONAL_ONLY": "additional_only_value",
+    }
+
+    # Create a minimal sandbox instance to test _gather_env_vars
+    sandbox = AsyncToolSandboxLocal(
+        tool_name="test_tool",
+        args={},
+        user=default_user,
+        tool_id="test-tool-id",
+        sandbox_env_vars=provided_env_vars,
+    )
+
+    # Call _gather_env_vars
+    result = await sandbox._gather_env_vars(
+        agent_state=mock_agent_state,
+        additional_env_vars=additional_env_vars,
+        sbx_id=sandbox_config_fixture.id,
+        is_local=False,  # Use False to avoid copying os.environ
+    )
+
+    # Verify layering:
+    # 1. Global vars included
+    assert result["GLOBAL_ONLY"] == "global_value"
+
+    # 2. Provided vars override global
+    assert result["OVERRIDE_BY_PROVIDED"] == "provided_value"
+    assert result["PROVIDED_ONLY"] == "provided_only_value"
+
+    # 3. Agent vars override provided/global
+    assert result["OVERRIDE_BY_AGENT"] == "agent_value"
+    assert result["AGENT_ONLY"] == "agent_only_value"
+
+    # 4. Additional vars have highest priority
+    assert result["OVERRIDE_BY_ADDITIONAL"] == "additional_value"
+    assert result["ADDITIONAL_ONLY"] == "additional_only_value"
+
+    # Verify LETTA IDs are injected
+    assert result["LETTA_TOOL_ID"] == "test-tool-id"

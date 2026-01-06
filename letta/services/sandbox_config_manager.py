@@ -12,7 +12,9 @@ from letta.schemas.environment_variables import (
     SandboxEnvironmentVariableUpdate,
 )
 from letta.schemas.sandbox_config import (
+    E2BSandboxConfig,
     LocalSandboxConfig,
+    ModalSandboxConfig,
     SandboxConfig as PydanticSandboxConfig,
     SandboxConfigCreate,
     SandboxConfigUpdate,
@@ -35,13 +37,16 @@ class SandboxConfigManager:
         if not sandbox_config:
             logger.debug(f"Creating new sandbox config of type {sandbox_type}, none found for organization {actor.organization_id}.")
 
-            # TODO: Add more sandbox types later
+            # Create the appropriate config type based on sandbox_type
+            # Using the actual model classes ensures Pydantic's Union type resolution works correctly
             if sandbox_type == SandboxType.E2B:
-                default_config = {}  # Empty
+                default_config = E2BSandboxConfig()
+            elif sandbox_type == SandboxType.MODAL:
+                default_config = ModalSandboxConfig()
             else:
-                # TODO: May want to move this to environment variables v.s. persisting in database
+                # LOCAL sandbox type
                 default_local_sandbox_path = LETTA_TOOL_EXECUTION_DIR
-                default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path).model_dump(exclude_none=True)
+                default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path)
 
             sandbox_config = self.create_or_update_sandbox_config(SandboxConfigCreate(config=default_config), actor=actor)
         return sandbox_config
@@ -53,13 +58,16 @@ class SandboxConfigManager:
         if not sandbox_config:
             logger.debug(f"Creating new sandbox config of type {sandbox_type}, none found for organization {actor.organization_id}.")
 
-            # TODO: Add more sandbox types later
+            # Create the appropriate config type based on sandbox_type
+            # Using the actual model classes ensures Pydantic's Union type resolution works correctly
             if sandbox_type == SandboxType.E2B:
-                default_config = {}  # Empty
+                default_config = E2BSandboxConfig()
+            elif sandbox_type == SandboxType.MODAL:
+                default_config = ModalSandboxConfig()
             else:
-                # TODO: May want to move this to environment variables v.s. persisting in database
+                # LOCAL sandbox type
                 default_local_sandbox_path = LETTA_TOOL_EXECUTION_DIR
-                default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path).model_dump(exclude_none=True)
+                default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path)
 
             sandbox_config = await self.create_or_update_sandbox_config_async(SandboxConfigCreate(config=default_config), actor=actor)
         return sandbox_config

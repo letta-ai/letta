@@ -388,19 +388,35 @@ class AsyncToolSandboxBase(ABC):
         """
         return False  # Default to False for local execution
 
-    async def _gather_env_vars(self, agent_state: AgentState | None, additional_env_vars: dict[str, str], sbx_id: str, is_local: bool):
+    async def _gather_env_vars(
+        self, agent_state: AgentState | None, additional_env_vars: dict[str, str] | None, sbx_id: str, is_local: bool
+    ):
+        """
+        Gather environment variables with proper layering:
+        1. OS environment (for local sandboxes only)
+        2. Global sandbox env vars from DB (always included)
+        3. Provided sandbox env vars (agent-scoped, override global on key collision)
+        4. Agent state env vars
+        5. Additional runtime env vars (highest priority)
+        """
         env = os.environ.copy() if is_local else {}
+
+        # Always fetch and include global sandbox env vars from DB
+        global_env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
+            sandbox_config_id=sbx_id, actor=self.user, limit=None
+        )
+        env.update(global_env_vars)
+
+        # Override with provided sandbox env vars
         if self.provided_sandbox_env_vars:
             env.update(self.provided_sandbox_env_vars)
-        else:
-            env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
-                sandbox_config_id=sbx_id, actor=self.user, limit=None
-            )
-            env.update(env_vars)
 
+        # TOOD: may be duplicative with provided sandbox env vars above
+        # Override with agent state env vars
         if agent_state:
             env.update(agent_state.get_agent_env_vars_as_dict())
 
+        # Override with additional runtime env vars (highest priority)
         if additional_env_vars:
             env.update(additional_env_vars)
 
