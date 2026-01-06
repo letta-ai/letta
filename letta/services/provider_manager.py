@@ -907,14 +907,39 @@ class ProviderManager:
             LLMConfig constructed from the provider and model data
 
         Raises:
-            NoResultFound: If the handle doesn't exist in the database
+            NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
 
-        # Look up the model by handle
+        # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
 
         if not model:
+            # Model not in DB - check if it's from a BYOK provider
+            # Handle format is "provider_name/model_name"
+            if "/" in handle:
+                provider_name, model_name = handle.split("/", 1)
+                byok_providers = await self.list_providers_async(
+                    actor=actor,
+                    name=provider_name,
+                    provider_category=[ProviderCategory.byok],
+                )
+                if byok_providers:
+                    # Fetch models dynamically from BYOK provider
+                    provider = byok_providers[0]
+                    typed_provider = provider.cast_to_subtype()
+                    try:
+                        all_llm_configs = await typed_provider.list_llm_models_async()
+                        # Match by handle first (original logic)
+                        llm_configs = [config for config in all_llm_configs if config.handle == handle]
+                        # Fallback to match by model name (original logic)
+                        if not llm_configs:
+                            llm_configs = [config for config in all_llm_configs if config.model == model_name]
+                        if llm_configs:
+                            return llm_configs[0]
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch models from BYOK provider {provider_name}: {e}")
+
             raise NoResultFound(f"LLM model not found with handle='{handle}'")
 
         # Get the provider for this model and cast to subtype to access provider-specific methods
@@ -955,14 +980,36 @@ class ProviderManager:
             EmbeddingConfig constructed from the provider and model data
 
         Raises:
-            NoResultFound: If the handle doesn't exist in the database
+            NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
 
-        # Look up the model by handle
+        # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="embedding")
 
         if not model:
+            # Model not in DB - check if it's from a BYOK provider
+            # Handle format is "provider_name/model_name"
+            if "/" in handle:
+                provider_name, model_name = handle.split("/", 1)
+                byok_providers = await self.list_providers_async(
+                    actor=actor,
+                    name=provider_name,
+                    provider_category=[ProviderCategory.byok],
+                )
+                if byok_providers:
+                    # Fetch models dynamically from BYOK provider
+                    provider = byok_providers[0]
+                    typed_provider = provider.cast_to_subtype()
+                    try:
+                        all_embedding_configs = await typed_provider.list_embedding_models_async()
+                        # Match by handle (original logic - no model_name fallback for embeddings)
+                        embedding_configs = [config for config in all_embedding_configs if config.handle == handle]
+                        if embedding_configs:
+                            return embedding_configs[0]
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch embedding models from BYOK provider {provider_name}: {e}")
+
             raise NoResultFound(f"Embedding model not found with handle='{handle}'")
 
         # Get the provider for this model
