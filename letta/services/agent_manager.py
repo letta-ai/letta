@@ -824,7 +824,7 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            agent_secrets = agent_update.secrets if agent_update.secrets is not None else agent_update.tool_exec_environment_variables
             if agent_secrets is not None:
                 # Fetch existing environment variables to check if values changed
                 result = await session.execute(select(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))

@@ -1520,6 +1520,46 @@ async def test_agent_environment_variables_update_encryption(server: SyncServer,
 
 
 @pytest.mark.asyncio
+async def test_agent_secrets_clear_with_empty_dict(server: SyncServer, default_user, encryption_key):
+    """Test that updating agent secrets with empty dict clears all secrets."""
+    from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+
+    # Create agent with initial secrets
+    agent_create = CreateAgent(
+        name="test-agent-clear-secrets",
+        agent_type="memgpt_v2_agent",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        include_base_tools=False,
+        secrets={
+            "SECRET_KEY_1": "secret-value-1",
+            "SECRET_KEY_2": "secret-value-2",
+        },
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+    agent_id = created_agent.id
+
+    # Verify secrets were created
+    assert created_agent.secrets is not None
+    assert len(created_agent.secrets) == 2
+
+    # Update with empty dict to clear all secrets
+    agent_update = UpdateAgent(secrets={})
+    updated_agent = await server.agent_manager.update_agent_async(agent_id=agent_id, agent_update=agent_update, actor=default_user)
+
+    # Verify secrets are cleared
+    assert updated_agent.secrets is not None
+    assert len(updated_agent.secrets) == 0
+
+    # Verify in database
+    async with db_registry.async_session() as session:
+        env_vars = await session.execute(select(AgentEnvironmentVariableModel).where(AgentEnvironmentVariableModel.agent_id == agent_id))
+        env_var_list = list(env_vars.scalars().all())
+        assert len(env_var_list) == 0
+
+
+@pytest.mark.asyncio
 async def test_agent_state_schema_unchanged(server: SyncServer):
     """
     Test that the AgentState pydantic schema structure has not changed.
