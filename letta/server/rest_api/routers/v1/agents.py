@@ -1625,6 +1625,7 @@ async def send_message(
             },
         }
     },
+    deprecated=True,
 )
 async def send_message_streaming(
     request_obj: Request,  # FastAPI Request
@@ -1635,6 +1636,9 @@ async def send_message_streaming(
 ) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
+
+    Deprecated: Use the `POST /{agent_id}/messages` endpoint with `streaming=true` in the request body instead.
+
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
