@@ -15,7 +15,7 @@ from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.source import Source as PydanticSource, SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.utils import bounded_gather, enforce_types, printd
+from letta.utils import bounded_gather, decrypt_agent_secrets, enforce_types, printd
 from letta.validators import raise_on_invalid_id
 
 
@@ -326,7 +326,13 @@ class SourceManager:
                 result = await session.execute(query)
                 agents_orm = result.scalars().all()
 
-                return await bounded_gather([agent.to_pydantic_async(include_relationships=[], include=[]) for agent in agents_orm])
+                # Convert without decrypting to release DB connection before PBKDF2
+                agents_encrypted = await bounded_gather(
+                    [agent.to_pydantic_async(include_relationships=[], include=[], decrypt=False) for agent in agents_orm]
+                )
+
+            # Decrypt secrets outside session
+            return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)

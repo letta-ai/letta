@@ -1471,3 +1471,38 @@ async def bounded_gather(coros: list[Coroutine], max_concurrency: int = 10) -> l
     # Sort by original index to preserve order
     indexed_results.sort(key=lambda x: x[0])
     return [result for _, result in indexed_results]
+
+
+async def decrypt_agent_secrets(agents: list) -> list:
+    """
+    Decrypt secrets for all agents outside DB session.
+
+    This allows DB connections to be released before expensive PBKDF2 operations,
+    preventing connection pool exhaustion during high load.
+
+    Uses bounded concurrency to limit thread pool pressure while allowing some
+    parallelism in the dedicated crypto executor.
+
+    Args:
+        agents: List of PydanticAgentState objects with encrypted secrets
+
+    Returns:
+        Same list with secrets decrypted
+    """
+
+    async def decrypt_env_var(env_var):
+        if env_var.value_enc and (env_var.value is None or env_var.value == ""):
+            env_var.value = await env_var.value_enc.get_plaintext_async()
+
+    # Collect all env vars that need decryption
+    decrypt_tasks = []
+    for agent in agents:
+        if agent.tool_exec_environment_variables:
+            for env_var in agent.tool_exec_environment_variables:
+                decrypt_tasks.append(decrypt_env_var(env_var))
+
+    # Decrypt with bounded concurrency (matches crypto executor size)
+    if decrypt_tasks:
+        await bounded_gather(decrypt_tasks, max_concurrency=8)
+
+    return agents
