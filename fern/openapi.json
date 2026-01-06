@@ -7498,27 +7498,6 @@
               "title": "Include Err"
             },
             "description": "Whether to include error messages and error statuses. For debugging purposes only."
-          },
-          {
-            "name": "message_types",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MessageType"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter to only return specified message types. If None (default), returns all message types.",
-              "title": "Message Types"
-            },
-            "description": "Filter to only return specified message types. If None (default), returns all message types."
           }
         ],
         "responses": {

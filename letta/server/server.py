@@ -817,7 +817,6 @@ class SyncServer(object):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
-        message_types: Optional[List[MessageType]] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=agent_id,
@@ -844,11 +843,6 @@ class SyncServer(object):
                 include_err=include_err,
                 text_is_assistant_message=text_is_assistant_message,
             )
-
-            # Filter by message_types if specified
-            if message_types:
-                message_types_set = set(message_types)
-                records = [msg for msg in records if msg.message_type in message_types_set]
 
         if reverse:
             records = records[::-1]
