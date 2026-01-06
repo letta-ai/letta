@@ -918,6 +918,92 @@ async def test_tool_call(
 
 
 @pytest.mark.parametrize(
+    "model_config",
+    TESTED_MODEL_CONFIGS,
+    ids=[handle for handle, _ in TESTED_MODEL_CONFIGS],
+)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_conversation_streaming_raw_http(
+    disable_e2b_api_key: Any,
+    client: AsyncLetta,
+    server_url: str,
+    agent_state: AgentState,
+    model_config: Tuple[str, dict],
+) -> None:
+    """
+    Test conversation-based streaming functionality using raw HTTP requests.
+
+    This test verifies that:
+    1. A conversation can be created for an agent
+    2. Messages can be sent to the conversation via streaming
+    3. The streaming response contains the expected message types
+    4. Messages are properly persisted in the conversation
+
+    Uses raw HTTP requests instead of SDK until SDK is regenerated with conversations support.
+    """
+    import httpx
+
+    model_handle, model_settings = model_config
+    agent_state = await client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
+
+    async with httpx.AsyncClient(base_url=server_url, timeout=60.0) as http_client:
+        # Create a conversation for the agent
+        create_response = await http_client.post(
+            "/v1/conversations/",
+            params={"agent_id": agent_state.id},
+            json={},
+        )
+        assert create_response.status_code == 200, f"Failed to create conversation: {create_response.text}"
+        conversation = create_response.json()
+        assert conversation["id"] is not None
+        assert conversation["agent_id"] == agent_state.id
+
+        # Send a message to the conversation using streaming
+        stream_response = await http_client.post(
+            f"/v1/conversations/{conversation['id']}/messages",
+            json={
+                "messages": [{"role": "user", "content": f"Reply with the message '{USER_MESSAGE_RESPONSE}'."}],
+                "stream_tokens": True,
+            },
+        )
+        assert stream_response.status_code == 200, f"Failed to send message: {stream_response.text}"
+
+        # Parse SSE response and accumulate messages
+        messages = await accumulate_chunks(stream_response.text)
+        print("MESSAGES:", messages)
+
+        # Verify the response contains expected message types
+        assert_greeting_response(messages, model_handle, model_settings, streaming=True, token_streaming=True)
+
+        # Verify the conversation can be retrieved
+        retrieve_response = await http_client.get(f"/v1/conversations/{conversation['id']}")
+        assert retrieve_response.status_code == 200, f"Failed to retrieve conversation: {retrieve_response.text}"
+        retrieved_conversation = retrieve_response.json()
+        assert retrieved_conversation["id"] == conversation["id"]
+        print("RETRIEVED CONVERSATION:", retrieved_conversation)
+
+        # Verify conversations can be listed for the agent
+        list_response = await http_client.get("/v1/conversations/", params={"agent_id": agent_state.id})
+        assert list_response.status_code == 200, f"Failed to list conversations: {list_response.text}"
+        conversations_list = list_response.json()
+        assert any(c["id"] == conversation["id"] for c in conversations_list)
+
+        # Verify messages can be listed from the conversation
+        messages_response = await http_client.get(f"/v1/conversations/{conversation['id']}/messages")
+        assert messages_response.status_code == 200, f"Failed to list conversation messages: {messages_response.text}"
+        conversation_messages = messages_response.json()
+        print("CONVERSATION MESSAGES:", conversation_messages)
+
+        # Verify we have at least the user message and assistant message
+        assert len(conversation_messages) >= 2, f"Expected at least 2 messages, got {len(conversation_messages)}"
+
+        # Check message types are present
+        message_types = [msg.get("message_type") for msg in conversation_messages]
+        assert "user_message" in message_types, f"Expected user_message in {message_types}"
+        assert "assistant_message" in message_types, f"Expected assistant_message in {message_types}"
+
+
+@pytest.mark.parametrize(
     "model_handle,provider_type",
     [
         ("openai/gpt-4o", "openai"),

@@ -8289,6 +8289,444 @@
         }
       }
     },
+    "/v1/conversations/": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Create Conversation",
+        "description": "Create a new conversation for an agent.",
+        "operationId": "create_conversation",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The agent ID to create a conversation for",
+              "title": "Agent Id"
+            },
+            "description": "The agent ID to create a conversation for"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["conversations"],
+        "summary": "List Conversations",
+        "description": "List all conversations for an agent.",
+        "operationId": "list_conversations",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The agent ID to list conversations for",
+              "title": "Agent Id"
+            },
+            "description": "The agent ID to list conversations for"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of conversations to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of conversations to return"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination (conversation ID)",
+              "title": "After"
+            },
+            "description": "Cursor for pagination (conversation ID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Conversation"
+                  },
+                  "title": "Response List Conversations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}": {
+      "get": {
+        "tags": ["conversations"],
+        "summary": "Retrieve Conversation",
+        "description": "Retrieve a specific conversation.",
+        "operationId": "retrieve_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/messages": {
+      "get": {
+        "tags": ["conversations"],
+        "summary": "List Conversation Messages",
+        "description": "List all messages in a conversation.\n\nReturns LettaMessage objects (UserMessage, AssistantMessage, etc.) for all\nmessages in the conversation, ordered by position (oldest first),\nwith support for cursor-based pagination.",
+        "operationId": "list_conversation_messages",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the conversation",
+              "title": "Before"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the conversation"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the conversation",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the conversation"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LettaMessageUnion"
+                  },
+                  "title": "Response List Conversation Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Send Conversation Message",
+        "description": "Send a message to a conversation and get a streaming response.\n\nThis endpoint sends a message to an existing conversation and streams\nthe agent's response back.",
+        "operationId": "send_conversation_message",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LettaStreamingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LettaStreamingResponse"
+                }
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/stream": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Retrieve Conversation Stream",
+        "description": "Resume the stream for the most recent active run in a conversation.\n\nThis endpoint allows you to reconnect to an active background stream\nfor a conversation, enabling recovery from network interruptions.",
+        "operationId": "retrieve_conversation_stream",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrieveStreamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream",
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SystemMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HiddenReasoningMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssistantMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalRequestMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalResponseMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LettaPing"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LettaErrorMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LettaStopReason"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LettaUsageStatistics"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/chat/completions": {
       "post": {
         "tags": ["chat"],
@@ -27246,6 +27684,95 @@
         "title": "ContinueToolRule",
         "description": "Represents a tool rule configuration where if this tool gets called, it must continue the agent loop."
       },
+      "Conversation": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the conversation."
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "The ID of the agent this conversation belongs to."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "A summary of the conversation."
+          },
+          "in_context_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "In Context Message Ids",
+            "description": "The IDs of in-context messages for the conversation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "agent_id"],
+        "title": "Conversation",
+        "description": "Represents a conversation on an agent for concurrent messaging."
+      },
       "CoreMemoryBlockSchema": {
         "properties": {
           "created_at": {
@@ -28254,6 +28781,25 @@
         "required": ["value", "label"],
         "title": "CreateBlock",
         "description": "Create a block"
+      },
+      "CreateConversation": {
+        "properties": {
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "A summary of the conversation."
+          }
+        },
+        "type": "object",
+        "title": "CreateConversation",
+        "description": "Request model for creating a new conversation."
       },
       "CreateMCPServerRequest": {
         "properties": {
@@ -37075,6 +37621,18 @@
             "type": "string",
             "title": "Agent Id",
             "description": "The unique identifier of the agent associated with the run."
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "The unique identifier of the conversation associated with the run."
           },
           "base_template_id": {
             "anyOf": [

@@ -66,6 +66,7 @@ class BaseAgentV2(ABC):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+ conversation_id: str | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """

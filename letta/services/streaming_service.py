@@ -72,6 +72,7 @@ class StreamingService:
         actor: User,
         request: LettaStreamingRequest,
         run_type: str = "streaming",
+        conversation_id: Optional[str] = None,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
         Create a streaming response for an agent.
@@ -81,6 +82,7 @@ class StreamingService:
             actor: The user making the request
             request: The LettaStreamingRequest containing all request parameters
             run_type: Type of run for tracking
+            conversation_id: Optional conversation ID for conversation-scoped messaging
 
         Returns:
             Tuple of (run object or None, streaming response)
@@ -104,7 +106,7 @@ class StreamingService:
         run = None
         run_update_metadata = None
         if settings.track_agent_run:
-            run = await self._create_run(agent_id, request, run_type, actor)
+            run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
             await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
         try:
@@ -123,6 +125,7 @@ class StreamingService:
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
                     actor=actor,
+                    conversation_id=conversation_id,
                     client_tools=request.client_tools,
                 )
 
@@ -288,6 +291,7 @@ class StreamingService:
         request_start_timestamp_ns: int,
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
+        conversation_id: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
     ) -> AsyncIterator:
         """
@@ -315,6 +319,7 @@ class StreamingService:
                     use_assistant_message=use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=include_return_message_types,
+                    conversation_id=conversation_id,
                     client_tools=client_tools,
                 )
 
@@ -477,11 +482,14 @@ class StreamingService:
         ]
         return base_compatible or google_letta_v1
 
-    async def _create_run(self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User) -> PydanticRun:
+    async def _create_run(
+        self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User, conversation_id: Optional[str] = None
+    ) -> PydanticRun:
         """Create a run for tracking execution."""
         run = await self.runs_manager.create_run(
             pydantic_run=PydanticRun(
                 agent_id=agent_id,
+                conversation_id=conversation_id,
                 background=request.background or False,
                 metadata={
                     "run_type": run_type,

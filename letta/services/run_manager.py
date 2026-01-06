@@ -151,6 +151,7 @@ class RunManager:
         step_count_operator: ComparisonOperator = ComparisonOperator.EQ,
         tools_used: Optional[List[str]] = None,
         project_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         order_by: Literal["created_at", "duration"] = "created_at",
         duration_percentile: Optional[int] = None,
         duration_filter: Optional[dict] = None,
@@ -189,6 +190,10 @@ class RunManager:
             # Filter by background
             if background is not None:
                 query = query.filter(RunModel.background == background)
+
+            # Filter by conversation_id
+            if conversation_id is not None:
+                query = query.filter(RunModel.conversation_id == conversation_id)
 
             # Filter by template_family (base_template_id)
             if template_family:

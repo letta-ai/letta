@@ -47,6 +47,7 @@ from letta.server.rest_api.utils import (
     create_parallel_tool_messages_from_llm_response,
     create_tool_returns_for_denials,
 )
+from letta.services.conversation_manager import ConversationManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
 from letta.services.summarizer.summarizer_config import CompactionSettings
@@ -80,6 +81,8 @@ class LettaAgentV3(LettaAgentV2):
         # affecting step-level telemetry.
         self.context_token_estimate: int | None = None
         self.in_context_messages: list[Message] = []  # in-memory tracker
+        # Conversation mode: when set, messages are tracked per-conversation
+        self.conversation_id: str | None = None
         # Client-side tools passed in the request (executed by client, not server)
         self.client_tools: list[ClientToolSchema] = []
 
@@ -104,6 +107,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         """
@@ -116,6 +120,7 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            conversation_id: Optional conversation ID for conversation-scoped messaging
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
 
@@ -123,12 +128,19 @@ class LettaAgentV3(LettaAgentV2):
             LettaResponse: Complete response with all messages and metadata
         """
         self._initialize_state()
+        self.conversation_id = conversation_id
         self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
+        # Prepare in-context messages (conversation mode if conversation_id provided)
         curr_in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-            input_messages, self.agent_state, self.message_manager, self.actor, run_id
+            input_messages,
+            self.agent_state,
+            self.message_manager,
+            self.actor,
+            run_id,
+            conversation_id=conversation_id,
         )
         follow_up_messages = []
         if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
@@ -241,6 +253,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
@@ -259,6 +272,7 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            conversation_id: Optional conversation ID for conversation-scoped messaging
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
 
@@ -266,6 +280,7 @@ class LettaAgentV3(LettaAgentV2):
             str: JSON-formatted SSE data chunks for each completed step
         """
         self._initialize_state()
+        self.conversation_id = conversation_id
         self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
@@ -284,8 +299,14 @@ class LettaAgentV3(LettaAgentV2):
             )
 
         try:
+            # Prepare in-context messages (conversation mode if conversation_id provided)
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-                input_messages, self.agent_state, self.message_manager, self.actor, run_id
+                input_messages,
+                self.agent_state,
+                self.message_manager,
+                self.actor,
+                run_id,
+                conversation_id=conversation_id,
             )
             follow_up_messages = []
             if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
@@ -435,7 +456,7 @@ class LettaAgentV3(LettaAgentV2):
         This handles:
         - Persisting the new messages into the `messages` table
         - Updating the in-memory trackers for in-context messages (`self.in_context_messages`) and agent state (`self.agent_state.message_ids`)
-        - Updating the DB with the current in-context messages (`self.agent_state.message_ids`)
+        - Updating the DB with the current in-context messages (`self.agent_state.message_ids`) OR conversation_messages table
 
         Args:
             run_id: The run ID to associate with the messages
@@ -457,14 +478,33 @@ class LettaAgentV3(LettaAgentV2):
             template_id=self.agent_state.template_id,
         )
 
-        # persist the in-context messages
-        # TODO: somehow make sure all the message ids are already persisted
-        await self.agent_manager.update_message_ids_async(
-            agent_id=self.agent_state.id,
-            message_ids=[m.id for m in in_context_messages],
-            actor=self.actor,
-        )
-        self.agent_state.message_ids = [m.id for m in in_context_messages]  # update in-memory state
+        if self.conversation_id:
+            # Conversation mode: update conversation_messages table
+            # Add new messages to conversation tracking
+            new_message_ids = [m.id for m in new_messages]
+            if new_message_ids:
+                await ConversationManager().add_messages_to_conversation(
+                    conversation_id=self.conversation_id,
+                    agent_id=self.agent_state.id,
+                    message_ids=new_message_ids,
+                    actor=self.actor,
+                )
+
+            # Update which messages are in context
+            await ConversationManager().update_in_context_messages(
+                conversation_id=self.conversation_id,
+                in_context_message_ids=[m.id for m in in_context_messages],
+                actor=self.actor,
+            )
+        else:
+            # Default mode: update agent.message_ids
+            await self.agent_manager.update_message_ids_async(
+                agent_id=self.agent_state.id,
+                message_ids=[m.id for m in in_context_messages],
+                actor=self.actor,
+            )
+            self.agent_state.message_ids = [m.id for m in in_context_messages]  # update in-memory state
+
         self.in_context_messages = in_context_messages  # update in-memory state
 
     @trace_method

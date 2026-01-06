@@ -27,6 +27,7 @@ from letta.utils import bounded_gather, calculate_file_defaults_based_on_context
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
     from letta.orm.archives_agents import ArchivesAgents
+    from letta.orm.conversation import Conversation
     from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
@@ -185,6 +186,13 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         cascade="all, delete-orphan",
         lazy="noload",
         doc="Archives accessible by this agent.",
+    )
+    conversations: Mapped[List["Conversation"]] = relationship(
+        "Conversation",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="raise",
+        doc="Conversations for concurrent messaging on this agent.",
     )
 
     def _get_per_file_view_window_char_limit(self) -> int:
