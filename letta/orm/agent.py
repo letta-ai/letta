@@ -22,7 +22,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.tool_rule import ToolRule
-from letta.utils import calculate_file_defaults_based_on_context_window
+from letta.utils import bounded_gather, calculate_file_defaults_based_on_context_window
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
@@ -434,9 +434,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["multi_agent_group"] = multi_agent_group
         state["managed_group"] = multi_agent_group
         # Convert ORM env vars to Pydantic with async decryption
-        env_vars_pydantic = []
-        for e in tool_exec_environment_variables:
-            env_vars_pydantic.append(await PydanticAgentEnvVar.from_orm_async(e))
+        env_vars_pydantic = await bounded_gather([PydanticAgentEnvVar.from_orm_async(e) for e in tool_exec_environment_variables])
         state["tool_exec_environment_variables"] = env_vars_pydantic
         state["secrets"] = env_vars_pydantic
         state["model"] = self.llm_config.handle if self.llm_config else None
