@@ -230,6 +230,13 @@ class EventLoopWatchdog:
                             idx = frame.f_code.co_filename.find("letta/")
                             path = frame.f_code.co_filename[idx + 6 :] if idx != -1 else frame.f_code.co_filename
                             location = f"{path}:{frame.f_lineno}:{frame.f_code.co_name}"
+
+                            # For bounded tasks, use wrapped coroutine location instead
+                            if frame.f_code.co_name == "bounded_coro":
+                                task_name = task.get_name()
+                                if task_name and task_name.startswith("bounded["):
+                                    location = task_name[8:-1]  # Extract "file:line:func" from "bounded[...]"
+
                             tasks_by_location[location].append((task, stack))
                             break
                 except Exception:
