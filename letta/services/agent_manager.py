@@ -1399,7 +1399,7 @@ class AgentManager:
 
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
-        if agent_state.message_ids == []:
+        if not agent_state.message_ids:  # Handles both None and empty list
             curr_system_message = None
         else:
             curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
