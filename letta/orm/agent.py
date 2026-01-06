@@ -1,15 +1,16 @@
 import asyncio
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Any, List, Optional, Set
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
 from letta.orm.custom_columns import CompactionSettingsColumn, EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
 from letta.orm.identity import Identity
+from letta.orm.message import Message as MessageModel
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
@@ -308,6 +309,25 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
 
         return self.__pydantic_model__(**state)
 
+    async def _get_pending_approval_async(self) -> Optional[Any]:
+        if self.message_ids and len(self.message_ids) > 0:
+            from letta.server.db import db_registry
+
+            async with db_registry.async_session() as session:
+                latest_message_id = self.message_ids[-1]
+                result = await session.execute(select(MessageModel).where(MessageModel.id == latest_message_id))
+                latest_message = result.scalar_one_or_none()
+
+                if (
+                    latest_message
+                    and latest_message.role == "approval"
+                    and latest_message.tool_calls is not None
+                    and len(latest_message.tool_calls) > 0
+                ):
+                    pydantic_message = latest_message.to_pydantic()
+                    return pydantic_message._convert_approval_request_message()
+        return None
+
     async def to_pydantic_async(
         self,
         include_relationships: Optional[Set[str]] = None,
@@ -379,6 +399,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "managed_group": None,
             "tool_exec_environment_variables": [],
             "secrets": [],
+            "pending_approval": None,
         }
 
         # Initialize include_relationships to an empty set if it's None
@@ -422,9 +443,20 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         file_agents = (
             self.awaitable_attrs.file_agents if "memory" in include_relationships or "agent.blocks" in include_set else empty_list_async()
         )
+        pending_approval = self._get_pending_approval_async() if "agent.pending_approval" in include_set else none_async()
 
-        (tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents) = await asyncio.gather(
-            tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents
+        (
+            tags,
+            tools,
+            sources,
+            memory,
+            identities,
+            multi_agent_group,
+            tool_exec_environment_variables,
+            file_agents,
+            pending_approval,
+        ) = await asyncio.gather(
+            tags, tools, sources, memory, identities, multi_agent_group, tool_exec_environment_variables, file_agents, pending_approval
         )
 
         state["tags"] = [t.tag for t in tags]
@@ -466,6 +498,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                 env_vars_pydantic.append(AgentEnvironmentVariable.model_validate(data))
         state["tool_exec_environment_variables"] = env_vars_pydantic
         state["secrets"] = env_vars_pydantic
+        state["pending_approval"] = pending_approval
         state["model"] = self.llm_config.handle if self.llm_config else None
         state["model_settings"] = self.llm_config._to_model_settings() if self.llm_config else None
         state["embedding"] = self.embedding_config.handle if self.embedding_config else None

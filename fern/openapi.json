@@ -453,6 +453,7 @@
                   "agent.blocks",
                   "agent.identities",
                   "agent.managed_group",
+                  "agent.pending_approval",
                   "agent.secrets",
                   "agent.sources",
                   "agent.tags",
@@ -4189,6 +4190,7 @@
                   "agent.blocks",
                   "agent.identities",
                   "agent.managed_group",
+                  "agent.pending_approval",
                   "agent.secrets",
                   "agent.sources",
                   "agent.tags",
@@ -4874,6 +4876,7 @@
                   "agent.blocks",
                   "agent.identities",
                   "agent.managed_group",
+                  "agent.pending_approval",
                   "agent.secrets",
                   "agent.sources",
                   "agent.tags",
@@ -10401,6 +10404,7 @@
                   "agent.blocks",
                   "agent.identities",
                   "agent.managed_group",
+                  "agent.pending_approval",
                   "agent.secrets",
                   "agent.sources",
                   "agent.tags",
@@ -13321,6 +13325,7 @@
                   "agent.blocks",
                   "agent.identities",
                   "agent.managed_group",
+                  "agent.pending_approval",
                   "agent.secrets",
                   "agent.sources",
                   "agent.tags",
@@ -23763,6 +23768,17 @@
             "title": "Identities",
             "description": "The identities associated with this agent.",
             "default": []
+          },
+          "pending_approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalRequestMessage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The latest approval request message pending for this agent, if any."
           },
           "message_buffer_autoclear": {
             "type": "boolean",

@@ -1571,6 +1571,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.embedding_config import EmbeddingConfig
     from letta.schemas.environment_variables import AgentEnvironmentVariable
     from letta.schemas.group import Group
+    from letta.schemas.letta_message import ApprovalRequestMessage
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.memory import Memory
     from letta.schemas.model import ModelSettingsUnion
@@ -1620,6 +1621,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "entity_id": (str, type(None)),
         "identity_ids": list,
         "identities": list,
+        "pending_approval": (ApprovalRequestMessage, type(None)),
         # Advanced configuration
         "message_buffer_autoclear": bool,
         "enable_sleeptime": (bool, type(None)),
