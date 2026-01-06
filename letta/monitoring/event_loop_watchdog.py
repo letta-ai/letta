@@ -36,6 +36,8 @@ class EventLoopWatchdog:
         self._heartbeat_lock = threading.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._monitoring = False
+        self._last_dump_time = 0.0  # Cooldown between task dumps
+        self._saturation_start: Optional[float] = None  # Track when saturation began
 
     def start(self, loop: asyncio.AbstractEventLoop):
         """Start the watchdog thread."""
@@ -125,13 +127,26 @@ class EventLoopWatchdog:
 
                 # Log at INFO if we see significant lag (> 2 seconds indicates saturation)
                 if current_lag > 2.0:
+                    # Track saturation duration
+                    if self._saturation_start is None:
+                        self._saturation_start = now
+                    saturation_duration = now - self._saturation_start
+
                     logger.info(
-                        f"Event loop saturation detected: lag={current_lag:.2f}s, tasks={task_count}, max_lag_seen={max_lag_seen:.2f}s"
+                        f"Event loop saturation detected: lag={current_lag:.2f}s, duration={saturation_duration:.1f}s, "
+                        f"tasks={task_count}, max_lag_seen={max_lag_seen:.2f}s"
                     )
 
-                    # Only dump stack traces for severe lag (> 3s) to avoid noise
-                    if current_lag > 3.0:
+                    # Only dump stack traces with 60s cooldown to avoid spam
+                    if (now - self._last_dump_time) > 60.0:
                         self._dump_asyncio_tasks()
+                        self._last_dump_time = now
+                else:
+                    # Reset saturation tracking when recovered
+                    if self._saturation_start is not None:
+                        duration = now - self._saturation_start
+                        logger.info(f"Event loop saturation ended after {duration:.1f}s")
+                        self._saturation_start = None
 
                 if time_since_heartbeat > self.timeout_threshold:
                     consecutive_hangs += 1
@@ -226,31 +241,42 @@ class EventLoopWatchdog:
             total_tasks = sum(len(tasks) for tasks in tasks_by_location.values())
             logger.warning(f"  Letta tasks: {total_tasks} total")
 
-            # Show all patterns, but only examples for top 5
+            # Sort by task count (most blocked first) and show detailed stacks for top 3
             sorted_patterns = sorted(tasks_by_location.items(), key=lambda x: len(x[1]), reverse=True)
             num_patterns = len(sorted_patterns)
 
             logger.warning(f"  Task patterns ({num_patterns} unique locations):")
-            for i, (location, tasks) in enumerate(sorted_patterns, 1):
-                logger.warning(f"    [{i}] {len(tasks)} tasks at: {location}")
 
-                # Only show example stack for top 5 patterns
-                if i <= 5:
+            # Show detailed stacks for top 3, summary for rest
+            for i, (location, tasks) in enumerate(sorted_patterns, 1):
+                count = len(tasks)
+                pct = (count / total_tasks) * 100 if total_tasks > 0 else 0
+
+                if i <= 3:
+                    # Top 3: show detailed vertical stack trace
+                    logger.warning(f"    [{i}] {count} tasks ({pct:.0f}%) at: {location}")
                     _, sample_stack = tasks[0]
-                    stack_summary = []
-                    for frame in sample_stack[-5:]:
+                    # Show up to 8 frames vertically for better context
+                    for frame in sample_stack[-8:]:
                         filename = frame.f_code.co_filename
                         letta_idx = filename.find("letta/")
                         if letta_idx != -1:
-                            stack_summary.append(f"{filename[letta_idx + 6 :]}:{frame.f_lineno}:{frame.f_code.co_name}")
+                            short_path = filename[letta_idx + 6 :]
+                            logger.warning(f"          {short_path}:{frame.f_lineno} in {frame.f_code.co_name}")
                         else:
                             pkg_idx = filename.find("site-packages/")
                             if pkg_idx != -1:
-                                lib_end = filename.find("/", pkg_idx + 14)
-                                lib = filename[pkg_idx + 14 : lib_end] if lib_end != -1 else "lib"
-                                stack_summary.append(f"[{lib}].{frame.f_code.co_name}")
-                    if stack_summary:
-                        logger.warning(f"        Example: {' → '.join(stack_summary)}")
+                                lib_path = filename[pkg_idx + 14 :]
+                                logger.warning(f"          [{lib_path}:{frame.f_lineno}] {frame.f_code.co_name}")
+                elif i <= 10:
+                    # Positions 4-10: show location only
+                    logger.warning(f"    [{i}] {count} tasks ({pct:.0f}%) at: {location}")
+                else:
+                    # Beyond 10: just show count in summary
+                    if i == 11:
+                        remaining = sum(len(t) for _, t in sorted_patterns[10:])
+                        remaining_patterns = num_patterns - 10
+                        logger.warning(f"    ... and {remaining} more tasks across {remaining_patterns} other locations")
 
         except Exception as e:
             logger.error(f"Failed to dump asyncio tasks: {e}")
