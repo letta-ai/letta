@@ -1445,11 +1445,12 @@ async def bounded_gather(coros: list[Coroutine], max_concurrency: int = 10) -> l
     semaphore = asyncio.Semaphore(max_concurrency)
 
     async def bounded_coro(index: int, coro: Coroutine, coro_name: str):
+        # Set task name for diagnostics before acquiring semaphore
+        task = asyncio.current_task()
+        if task:
+            task.set_name(f"bounded[{coro_name}]")
+
         async with semaphore:
-            # Set task name for diagnostics
-            task = asyncio.current_task()
-            if task:
-                task.set_name(f"bounded[{coro_name}]")
             result = await coro
             return (index, result)
 
