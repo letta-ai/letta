@@ -20710,6 +20710,73 @@
         }
       }
     },
+    "/v1/metadata/user": {
+      "get": {
+        "description": "Retrieve information about the current authenticated user including email, name, organization, and current project.",
+        "summary": "Get current user information",
+        "tags": ["metadata"],
+        "parameters": [],
+        "operationId": "metadata.getUser",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "organization_name": {
+                      "type": "string"
+                    },
+                    "organization_id": {
+                      "type": "string"
+                    },
+                    "current_project_name": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "current_project_id": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "name",
+                    "organization_name",
+                    "organization_id",
+                    "current_project_name",
+                    "current_project_id"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scheduled-messages/{scheduled_message_id}": {
       "delete": {
         "description": "Delete a scheduled message by its ID for a specific agent.",
@@ -22137,21 +22204,32 @@
                           "data": {
                             "type": "object",
                             "properties": {
-                              "channel_id": {
-                                "type": "string"
-                              },
-                              "channel_name": {
-                                "type": "string"
-                              },
-                              "last_message_ts": {
-                                "type": "string"
+                              "channels": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "channel_id": {
+                                      "type": "string"
+                                    },
+                                    "channel_name": {
+                                      "type": "string"
+                                    },
+                                    "last_message_ts": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["channel_id"]
+                                },
+                                "minItems": 1,
+                                "maxItems": 100
                               },
                               "max_messages_per_poll": {
                                 "default": 100,
                                 "type": "number"
                               }
                             },
-                            "required": ["channel_id"]
+                            "required": ["channels"]
                           }
                         },
                         "required": ["type", "data"]
@@ -22219,21 +22297,32 @@
                                 "data": {
                                   "type": "object",
                                   "properties": {
-                                    "channel_id": {
-                                      "type": "string"
-                                    },
-                                    "channel_name": {
-                                      "type": "string"
-                                    },
-                                    "last_message_ts": {
-                                      "type": "string"
+                                    "channels": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "channel_id": {
+                                            "type": "string"
+                                          },
+                                          "channel_name": {
+                                            "type": "string"
+                                          },
+                                          "last_message_ts": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["channel_id"]
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 100
                                     },
                                     "max_messages_per_poll": {
                                       "default": 100,
                                       "type": "number"
                                     }
                                   },
-                                  "required": ["channel_id"]
+                                  "required": ["channels"]
                                 }
                               },
                               "required": ["type", "data"]
@@ -22411,21 +22500,32 @@
                                   "data": {
                                     "type": "object",
                                     "properties": {
-                                      "channel_id": {
-                                        "type": "string"
-                                      },
-                                      "channel_name": {
-                                        "type": "string"
-                                      },
-                                      "last_message_ts": {
-                                        "type": "string"
+                                      "channels": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "channel_id": {
+                                              "type": "string"
+                                            },
+                                            "channel_name": {
+                                              "type": "string"
+                                            },
+                                            "last_message_ts": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["channel_id"]
+                                        },
+                                        "minItems": 1,
+                                        "maxItems": 100
                                       },
                                       "max_messages_per_poll": {
                                         "default": 100,
                                         "type": "number"
                                       }
                                     },
-                                    "required": ["channel_id"]
+                                    "required": ["channels"]
                                   }
                                 },
                                 "required": ["type", "data"]
@@ -22556,21 +22656,32 @@
                                 "data": {
                                   "type": "object",
                                   "properties": {
-                                    "channel_id": {
-                                      "type": "string"
-                                    },
-                                    "channel_name": {
-                                      "type": "string"
-                                    },
-                                    "last_message_ts": {
-                                      "type": "string"
+                                    "channels": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "channel_id": {
+                                            "type": "string"
+                                          },
+                                          "channel_name": {
+                                            "type": "string"
+                                          },
+                                          "last_message_ts": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["channel_id"]
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 100
                                     },
                                     "max_messages_per_poll": {
                                       "default": 100,
                                       "type": "number"
                                     }
                                   },
-                                  "required": ["channel_id"]
+                                  "required": ["channels"]
                                 }
                               },
                               "required": ["type", "data"]
@@ -22733,21 +22844,32 @@
                                 "data": {
                                   "type": "object",
                                   "properties": {
-                                    "channel_id": {
-                                      "type": "string"
-                                    },
-                                    "channel_name": {
-                                      "type": "string"
-                                    },
-                                    "last_message_ts": {
-                                      "type": "string"
+                                    "channels": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "channel_id": {
+                                            "type": "string"
+                                          },
+                                          "channel_name": {
+                                            "type": "string"
+                                          },
+                                          "last_message_ts": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["channel_id"]
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 100
                                     },
                                     "max_messages_per_poll": {
                                       "default": 100,
                                       "type": "number"
                                     }
                                   },
-                                  "required": ["channel_id"]
+                                  "required": ["channels"]
                                 }
                               },
                               "required": ["type", "data"]
