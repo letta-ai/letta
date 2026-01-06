@@ -46,6 +46,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         self.run_ids = []
@@ -60,6 +61,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             use_assistant_message=use_assistant_message,
             include_return_message_types=include_return_message_types,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            conversation_id=conversation_id,
             client_tools=client_tools,
         )
 
@@ -77,6 +79,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
@@ -94,6 +97,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                conversation_id=conversation_id,
                 client_tools=client_tools,
             ):
                 yield chunk
