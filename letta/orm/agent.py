@@ -14,6 +14,8 @@ from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixi
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
+
+ENCRYPTED_PLACEHOLDER = "<encrypted>"
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType
 from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
@@ -458,7 +460,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                     "description": e.description,
                     "organization_id": e.organization_id,
                     "agent_id": e.agent_id,
-                    "value": "",  # Empty string, will be decrypted later
+                    "value": ENCRYPTED_PLACEHOLDER,
                     "value_enc": Secret.from_encrypted(e.value_enc) if e.value_enc else None,
                 }
                 env_vars_pydantic.append(AgentEnvironmentVariable.model_validate(data))

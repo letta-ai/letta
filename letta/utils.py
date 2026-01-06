@@ -1491,7 +1491,9 @@ async def decrypt_agent_secrets(agents: list) -> list:
     """
 
     async def decrypt_env_var(env_var):
-        if env_var.value_enc and (env_var.value is None or env_var.value == ""):
+        from letta.orm.agent import ENCRYPTED_PLACEHOLDER
+
+        if env_var.value_enc and (env_var.value is None or env_var.value == "" or env_var.value == ENCRYPTED_PLACEHOLDER):
             env_var.value = await env_var.value_enc.get_plaintext_async()
 
     # Collect all env vars that need decryption
