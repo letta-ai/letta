@@ -456,6 +456,7 @@ class CreateArchivalMemory(BaseModel):
 
 
 class ArchivalMemorySearchResult(BaseModel):
+    id: str = Field(..., description="Unique identifier of the archival memory passage")
     timestamp: str = Field(..., description="Timestamp of when the memory was created, formatted in agent's timezone")
     content: str = Field(..., description="Text content of the archival memory passage")
     tags: List[str] = Field(default_factory=list, description="List of tags associated with this memory")

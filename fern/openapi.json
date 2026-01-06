@@ -24532,6 +24532,11 @@
       },
       "ArchivalMemorySearchResult": {
         "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier of the archival memory passage"
+          },
           "timestamp": {
             "type": "string",
             "title": "Timestamp",
@@ -24552,7 +24557,7 @@
           }
         },
         "type": "object",
-        "required": ["timestamp", "content"],
+        "required": ["id", "timestamp", "content"],
         "title": "ArchivalMemorySearchResult"
       },
       "Archive": {

@@ -2461,7 +2461,7 @@ class AgentManager:
                 # Use ISO format if no timezone is set
                 formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-            result_dict = {"timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
+            result_dict = {"id": passage.id, "timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
 
             # Add relevance metadata if available
             if metadata:
