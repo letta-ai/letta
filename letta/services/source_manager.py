@@ -15,7 +15,7 @@ from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.source import Source as PydanticSource, SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.utils import enforce_types, printd
+from letta.utils import bounded_gather, enforce_types, printd
 from letta.validators import raise_on_invalid_id
 
 
@@ -326,7 +326,7 @@ class SourceManager:
                 result = await session.execute(query)
                 agents_orm = result.scalars().all()
 
-                return await asyncio.gather(*[agent.to_pydantic_async(include=[]) for agent in agents_orm])
+                return await bounded_gather([agent.to_pydantic_async(include_relationships=[], include=[]) for agent in agents_orm])
 
     @enforce_types
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)

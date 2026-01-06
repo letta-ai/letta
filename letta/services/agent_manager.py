@@ -111,7 +111,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, model_settings, settings
-from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
+from letta.utils import bounded_gather, calculate_file_defaults_based_on_context_window, enforce_types, united_diff
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -970,8 +970,8 @@ class AgentManager:
                 query = query.limit(limit)
             result = await session.execute(query)
             agents = result.scalars().all()
-            return await asyncio.gather(
-                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
+            return await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
             )
 
     @trace_method
@@ -1068,7 +1068,7 @@ class AgentManager:
 
             query = query.distinct(AgentModel.id).order_by(AgentModel.id).limit(limit)
             result = await session.execute(query)
-            return await asyncio.gather(*[agent.to_pydantic_async() for agent in result.scalars()])
+            return await bounded_gather([agent.to_pydantic_async() for agent in result.scalars()])
 
     @trace_method
     async def size_async(
@@ -1137,7 +1137,7 @@ class AgentManager:
                     logger.warning(f"No agents found with IDs: {agent_ids}")
                     return []
 
-                return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
+                return await bounded_gather([agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
             except Exception as e:
                 logger.error(f"Error fetching agents with IDs {agent_ids}: {str(e)}")
                 raise

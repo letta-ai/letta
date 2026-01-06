@@ -24,7 +24,7 @@ from letta.schemas.identity import (
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, enforce_types
 from letta.validators import raise_on_invalid_id
 
 
@@ -336,7 +336,7 @@ class IdentityManager:
                 ascending=ascending,
                 identity_id=identity.id,
             )
-            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents])
+            return await bounded_gather([agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents])
 
     @enforce_types
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)

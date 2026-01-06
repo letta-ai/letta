@@ -19,7 +19,7 @@ from letta.schemas.enums import ActorType, PrimitiveType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -505,9 +505,7 @@ class BlockManager:
             result = await session.execute(query)
             agents_orm = result.scalars().all()
 
-            agents = await asyncio.gather(
-                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents_orm]
-            )
+            agents = await bounded_gather([agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents_orm])
             return agents
 
     @enforce_types
