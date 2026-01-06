@@ -6,10 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from letta.orm.errors import UniqueConstraintViolationError
+from letta.schemas.agent import CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import LettaProvider, OpenAIProvider, ProviderCreate
+from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.user_manager import UserManager
@@ -2427,3 +2429,99 @@ async def test_provider_ordering_matches_constants(default_user, provider_manage
 
         # Verify the list is sorted by provider order
         assert indices == sorted(indices), f"Models should be sorted by PROVIDER_ORDER, got: {provider_names_in_order}"
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_byok_handle_dynamic_fetch(default_user, provider_manager):
+    """Test that creating an agent with a BYOK model handle works via dynamic fetch.
+
+    This tests the case where BYOK models are NOT synced to the database, but are
+    instead fetched dynamically from the provider when resolving the handle.
+    This is the expected behavior after the provider models persistence refactor.
+    """
+    test_id = generate_test_id()
+    byok_provider_name = f"my-openai-byok-{test_id}"
+    model_name = "gpt-4o"
+    byok_handle = f"{byok_provider_name}/{model_name}"
+
+    # Create a BYOK OpenAI provider (do NOT sync models to DB)
+    provider_create = ProviderCreate(
+        name=byok_provider_name,
+        provider_type=ProviderType.openai,
+        api_key="sk-test-byok-key",
+    )
+    byok_provider = await provider_manager.create_provider_async(provider_create, actor=default_user, is_byok=True)
+
+    assert byok_provider.provider_category == ProviderCategory.byok
+    assert byok_provider.name == byok_provider_name
+
+    # Verify the model is NOT in the database (dynamic fetch scenario)
+    model_in_db = await provider_manager.get_model_by_handle_async(
+        handle=byok_handle,
+        actor=default_user,
+        model_type="llm",
+    )
+    assert model_in_db is None, "Model should NOT be in DB for this test (testing dynamic fetch)"
+
+    # Mock the provider's list_llm_models_async to return our test model
+    mock_llm_config = LLMConfig(
+        model=model_name,
+        model_endpoint_type="openai",
+        model_endpoint="https://api.openai.com/v1",
+        context_window=128000,
+        handle=byok_handle,
+        max_tokens=16384,
+        provider_name=byok_provider_name,
+        provider_category=ProviderCategory.byok,
+    )
+
+    # Create embedding config for the agent
+    mock_embedding_config = EmbeddingConfig(
+        embedding_model="text-embedding-3-small",
+        embedding_endpoint_type="openai",
+        embedding_endpoint="https://api.openai.com/v1",
+        embedding_dim=1536,
+        embedding_chunk_size=300,
+        handle=f"{byok_provider_name}/text-embedding-3-small",
+    )
+
+    # Initialize server
+    server = SyncServer(init_with_default_org_and_user=False)
+    await server.init_async(init_with_default_org_and_user=False)
+    server.provider_manager = provider_manager
+
+    # Mock the BYOK provider's list_llm_models_async method
+    with patch.object(
+        OpenAIProvider,
+        "list_llm_models_async",
+        new_callable=AsyncMock,
+        return_value=[mock_llm_config],
+    ):
+        with patch.object(
+            OpenAIProvider,
+            "list_embedding_models_async",
+            new_callable=AsyncMock,
+            return_value=[mock_embedding_config],
+        ):
+            # Create agent using BYOK handle - this should dynamically fetch from provider
+            agent = await server.create_agent_async(
+                request=CreateAgent(
+                    name=f"test-agent-byok-{test_id}",
+                    model=byok_handle,  # BYOK handle format: "{provider_name}/{model_name}"
+                    embedding=f"{byok_provider_name}/text-embedding-3-small",
+                ),
+                actor=default_user,
+            )
+
+            # Verify agent was created with the correct LLM config
+            assert agent is not None
+            assert agent.llm_config is not None
+            assert agent.llm_config.model == model_name
+            assert agent.llm_config.handle == byok_handle
+            assert agent.llm_config.provider_name == byok_provider_name
+            assert agent.llm_config.provider_category == ProviderCategory.byok
+            # Note: context_window comes from the actual provider's list_llm_models_async
+            # which may differ from mock if mocking doesn't take effect on instance method
+
+            # Cleanup
+            await server.agent_manager.delete_agent_async(agent_id=agent.id, actor=default_user)
