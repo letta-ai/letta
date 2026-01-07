@@ -139,7 +139,8 @@ class EventLoopWatchdog:
 
                     # Only dump stack traces with 60s cooldown to avoid spam
                     if (now - self._last_dump_time) > 60.0:
-                        self._dump_asyncio_tasks()
+                        self._dump_asyncio_tasks()  # Dump async tasks
+                        self._dump_state()  # Dump thread stacks
                         self._last_dump_time = now
                 else:
                     # Reset saturation tracking when recovered
@@ -156,8 +157,8 @@ class EventLoopWatchdog:
                     )
 
                     # Dump both thread state and asyncio tasks
-                    self._dump_state()
                     self._dump_asyncio_tasks()
+                    self._dump_state()
 
                     if consecutive_hangs >= 2:
                         logger.critical(f"Event loop appears frozen ({consecutive_hangs} consecutive hangs), tasks={task_count}")
