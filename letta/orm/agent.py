@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, Set
 
 from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, select
-from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_object_session
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -311,21 +311,24 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
 
     async def _get_pending_approval_async(self) -> Optional[Any]:
         if self.message_ids and len(self.message_ids) > 0:
-            from letta.server.db import db_registry
+            # Try to get the async session this object is attached to
+            session = async_object_session(self)
+            if not session:
+                # Object is detached, can't safely query
+                return None
 
-            async with db_registry.async_session() as session:
-                latest_message_id = self.message_ids[-1]
-                result = await session.execute(select(MessageModel).where(MessageModel.id == latest_message_id))
-                latest_message = result.scalar_one_or_none()
+            latest_message_id = self.message_ids[-1]
+            result = await session.execute(select(MessageModel).where(MessageModel.id == latest_message_id))
+            latest_message = result.scalar_one_or_none()
 
-                if (
-                    latest_message
-                    and latest_message.role == "approval"
-                    and latest_message.tool_calls is not None
-                    and len(latest_message.tool_calls) > 0
-                ):
-                    pydantic_message = latest_message.to_pydantic()
-                    return pydantic_message._convert_approval_request_message()
+            if (
+                latest_message
+                and latest_message.role == "approval"
+                and latest_message.tool_calls is not None
+                and len(latest_message.tool_calls) > 0
+            ):
+                pydantic_message = latest_message.to_pydantic()
+                return pydantic_message._convert_approval_request_message()
         return None
 
     async def to_pydantic_async(
