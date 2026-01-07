@@ -1491,7 +1491,9 @@ class LettaAgentV3(LettaAgentV2):
             if "/" in summarizer_config.model:
                 provider, model_name = summarizer_config.model.split("/", 1)
                 if provider == "openai-proxy":
-                    # fix for pydantic LLMConfig validation
+                    # Backwards compatibility: legacy handles used "openai-proxy/" prefix
+                    # for custom OpenAI-compatible endpoints. Map to "openai" for Pydantic
+                    # LLMConfig validation which only accepts standard provider names.
                     provider = "openai"
             else:
                 provider = agent_llm_config.model_endpoint_type
