@@ -400,6 +400,7 @@ class TurbopufferClient:
         created_ats: List[datetime],
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        conversation_ids: Optional[List[Optional[str]]] = None,
     ) -> bool:
         """Insert messages into Turbopuffer.
 
@@ -413,6 +414,7 @@ class TurbopufferClient:
             created_ats: List of creation timestamps for each message
             project_id: Optional project ID for all messages
             template_id: Optional template ID for all messages
+            conversation_ids: Optional list of conversation IDs (one per message, must match 1:1 with message_texts)
 
         Returns:
             True if successful
@@ -441,22 +443,26 @@ class TurbopufferClient:
             raise ValueError(f"message_ids length ({len(message_ids)}) must match roles length ({len(roles)})")
         if len(message_ids) != len(created_ats):
             raise ValueError(f"message_ids length ({len(message_ids)}) must match created_ats length ({len(created_ats)})")
+        if conversation_ids is not None and len(conversation_ids) != len(message_ids):
+            raise ValueError(f"conversation_ids length ({len(conversation_ids)}) must match message_ids length ({len(message_ids)})")
 
         # prepare column-based data for turbopuffer - optimized for batch insert
         ids = []
         vectors = []
         texts = []
-        organization_ids = []
-        agent_ids = []
+        organization_ids_list = []
+        agent_ids_list = []
         message_roles = []
         created_at_timestamps = []
-        project_ids = []
-        template_ids = []
+        project_ids_list = []
+        template_ids_list = []
+        conversation_ids_list = []
 
         for (original_idx, text), embedding in zip(filtered_messages, embeddings):
             message_id = message_ids[original_idx]
             role = roles[original_idx]
             created_at = created_ats[original_idx]
+            conversation_id = conversation_ids[original_idx] if conversation_ids else None
 
             # ensure the provided timestamp is timezone-aware and in UTC
             if created_at.tzinfo is None:
@@ -470,31 +476,36 @@ class TurbopufferClient:
             ids.append(message_id)
             vectors.append(embedding)
             texts.append(text)
-            organization_ids.append(organization_id)
-            agent_ids.append(agent_id)
+            organization_ids_list.append(organization_id)
+            agent_ids_list.append(agent_id)
             message_roles.append(role.value)
             created_at_timestamps.append(timestamp)
-            project_ids.append(project_id)
-            template_ids.append(template_id)
+            project_ids_list.append(project_id)
+            template_ids_list.append(template_id)
+            conversation_ids_list.append(conversation_id)
 
         # build column-based upsert data
         upsert_columns = {
             "id": ids,
             "vector": vectors,
             "text": texts,
-            "organization_id": organization_ids,
-            "agent_id": agent_ids,
+            "organization_id": organization_ids_list,
+            "agent_id": agent_ids_list,
             "role": message_roles,
             "created_at": created_at_timestamps,
         }
 
+        # only include conversation_id if it's provided
+        if conversation_ids is not None:
+            upsert_columns["conversation_id"] = conversation_ids_list
+
         # only include project_id if it's provided
         if project_id is not None:
-            upsert_columns["project_id"] = project_ids
+            upsert_columns["project_id"] = project_ids_list
 
         # only include template_id if it's provided
         if template_id is not None:
-            upsert_columns["template_id"] = template_ids
+            upsert_columns["template_id"] = template_ids_list
 
         try:
             # use global semaphore to limit concurrent Turbopuffer writes
@@ -506,7 +517,10 @@ class TurbopufferClient:
                     await namespace.write(
                         upsert_columns=upsert_columns,
                         distance_metric="cosine_distance",
-                        schema={"text": {"type": "string", "full_text_search": True}},
+                        schema={
+                            "text": {"type": "string", "full_text_search": True},
+                            "conversation_id": {"type": "string"},
+                        },
                     )
                     logger.info(f"Successfully inserted {len(ids)} messages to Turbopuffer for agent {agent_id}")
                     return True
@@ -792,6 +806,7 @@ class TurbopufferClient:
         roles: Optional[List[MessageRole]] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
@@ -809,6 +824,7 @@ class TurbopufferClient:
             roles: Optional list of message roles to filter by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
+            conversation_id: Optional conversation ID to filter messages by (use "default" for NULL)
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
@@ -875,6 +891,19 @@ class TurbopufferClient:
         if template_id:
             template_filter = ("template_id", "Eq", template_id)
 
+        # build conversation_id filter if provided
+        # three cases:
+        # 1. conversation_id=None (omitted) -> return all messages (no filter)
+        # 2. conversation_id="default" -> return only default messages (conversation_id is none), for backward compatibility
+        # 3. conversation_id="xyz" -> return only messages in that conversation
+        conversation_filter = None
+        if conversation_id == "default":
+            # "default" is reserved for default messages only (conversation_id is none)
+            conversation_filter = ("conversation_id", "Eq", None)
+        elif conversation_id is not None:
+            # Specific conversation
+            conversation_filter = ("conversation_id", "Eq", conversation_id)
+
         # combine all filters
         all_filters = [agent_filter]  # always include agent_id filter
         if role_filter:
@@ -883,6 +912,8 @@ class TurbopufferClient:
             all_filters.append(project_filter)
         if template_filter:
             all_filters.append(template_filter)
+        if conversation_filter:
+            all_filters.append(conversation_filter)
         if date_filters:
             all_filters.extend(date_filters)
 
@@ -901,7 +932,7 @@ class TurbopufferClient:
                 query_embedding=query_embedding,
                 query_text=query_text,
                 top_k=top_k,
-                include_attributes=["text", "organization_id", "agent_id", "role", "created_at"],
+                include_attributes=["text", "organization_id", "agent_id", "role", "created_at", "conversation_id"],
                 filters=final_filter,
                 vector_weight=vector_weight,
                 fts_weight=fts_weight,
@@ -952,6 +983,7 @@ class TurbopufferClient:
         agent_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
@@ -969,6 +1001,10 @@ class TurbopufferClient:
             agent_id: Optional agent ID to filter messages by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
+            conversation_id: Optional conversation ID to filter messages by. Special values:
+                - None (omitted): Return all messages
+                - "default": Return only default messages (conversation_id IS NULL)
+                - Any other value: Return messages in that specific conversation
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
@@ -1017,6 +1053,18 @@ class TurbopufferClient:
         if template_id:
             all_filters.append(("template_id", "Eq", template_id))
 
+        # conversation filter
+        # three cases:
+        # 1. conversation_id=None (omitted) -> return all messages (no filter)
+        # 2. conversation_id="default" -> return only default messages (conversation_id is none), for backward compatibility
+        # 3. conversation_id="xyz" -> return only messages in that conversation
+        if conversation_id == "default":
+            # "default" is reserved for default messages only (conversation_id is none)
+            all_filters.append(("conversation_id", "Eq", None))
+        elif conversation_id is not None:
+            # Specific conversation
+            all_filters.append(("conversation_id", "Eq", conversation_id))
+
         # date filters
         if start_date:
             # Convert to UTC to match stored timestamps
@@ -1049,7 +1097,7 @@ class TurbopufferClient:
                 query_embedding=query_embedding,
                 query_text=query_text,
                 top_k=top_k,
-                include_attributes=["text", "organization_id", "agent_id", "role", "created_at"],
+                include_attributes=["text", "organization_id", "agent_id", "role", "created_at", "conversation_id"],
                 filters=final_filter,
                 vector_weight=vector_weight,
                 fts_weight=fts_weight,
@@ -1134,6 +1182,7 @@ class TurbopufferClient:
                 "agent_id": getattr(row, "agent_id", None),
                 "role": getattr(row, "role", None),
                 "created_at": getattr(row, "created_at", None),
+                "conversation_id": getattr(row, "conversation_id", None),
             }
             messages.append(message_dict)
 

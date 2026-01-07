@@ -7443,6 +7443,24 @@
             "description": "Group ID to filter messages by."
           },
           {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Conversation ID to filter messages by.",
+              "title": "Conversation Id"
+            },
+            "description": "Conversation ID to filter messages by."
+          },
+          {
             "name": "use_assistant_message",
             "in": "query",
             "required": false,
@@ -16137,6 +16155,24 @@
               "title": "Order"
             },
             "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Conversation ID to filter messages by",
+              "title": "Conversation Id"
+            },
+            "description": "Conversation ID to filter messages by"
           }
         ],
         "responses": {
@@ -35419,6 +35455,18 @@
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
           },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "The conversation this message belongs to"
+          },
           "is_err": {
             "anyOf": [
               {
@@ -35494,7 +35542,7 @@
         "type": "object",
         "required": ["role"],
         "title": "Message",
-        "description": "    Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\n    Attributes:\n        id (str): The unique identifier of the message.\n        role (MessageRole): The role of the participant.\n        text (str): The text of the message.\n        user_id (str): The unique identifier of the user.\n        agent_id (str): The unique identifier of the agent.\n        model (str): The model used to make the function call.\n        name (str): The name of the participant.\n        created_at (datetime): The time the message was created.\n        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n        tool_call_id (str): The id of the tool call.\n        step_id (str): The id of the step that this message was created in.\n        otid (str): The offline threading id associated with this message.\n        tool_returns (List[ToolReturn]): The list of tool returns requested.\n        group_id (str): The multi-agent group that the message was sent in.\n        sender_id (str): The id of the sender of the message, can be an identity id or agent id.\nt"
+        "description": "    Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\n    Attributes:\n        id (str): The unique identifier of the message.\n        role (MessageRole): The role of the participant.\n        text (str): The text of the message.\n        user_id (str): The unique identifier of the user.\n        agent_id (str): The unique identifier of the agent.\n        model (str): The model used to make the function call.\n        name (str): The name of the participant.\n        created_at (datetime): The time the message was created.\n        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n        tool_call_id (str): The id of the tool call.\n        step_id (str): The id of the step that this message was created in.\n        otid (str): The offline threading id associated with this message.\n        tool_returns (List[ToolReturn]): The list of tool returns requested.\n        group_id (str): The multi-agent group that the message was sent in.\n        sender_id (str): The id of the sender of the message, can be an identity id or agent id.\n        conversation_id (str): The conversation this message belongs to.\nt"
       },
       "MessageCreate": {
         "properties": {
@@ -35675,6 +35723,18 @@
             ],
             "title": "Template Id",
             "description": "Filter messages by template ID"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "Filter messages by conversation ID"
           },
           "limit": {
             "type": "integer",
@@ -38587,6 +38647,18 @@
             ],
             "title": "Agent Id",
             "description": "Filter messages by agent ID"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "Filter messages by conversation ID"
           },
           "limit": {
             "type": "integer",

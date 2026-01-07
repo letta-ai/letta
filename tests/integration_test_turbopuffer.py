@@ -2168,6 +2168,122 @@ async def test_message_template_id_filtering(server, sarah_agent, default_user, 
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+async def test_message_conversation_id_filtering(server, sarah_agent, default_user, enable_turbopuffer, enable_message_embedding):
+    """Test that conversation_id filtering works correctly in message queries, including 'default' sentinel"""
+    from letta.schemas.conversation import CreateConversation
+    from letta.schemas.letta_message_content import TextContent
+    from letta.services.conversation_manager import ConversationManager
+
+    conversation_manager = ConversationManager()
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test conversation"),
+        actor=default_user,
+    )
+
+    # Create messages with different conversation_ids
+    message_with_conv = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Message in specific conversation about Python")],
+    )
+
+    message_default_conv = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Message in default conversation about JavaScript")],
+    )
+
+    # Insert messages with their respective conversation IDs
+    tpuf_client = TurbopufferClient()
+
+    # Message with specific conversation_id
+    await tpuf_client.insert_messages(
+        agent_id=sarah_agent.id,
+        message_texts=[message_with_conv.content[0].text],
+        message_ids=[message_with_conv.id],
+        organization_id=default_user.organization_id,
+        actor=default_user,
+        roles=[message_with_conv.role],
+        created_ats=[message_with_conv.created_at],
+        conversation_ids=[conversation.id],  # Specific conversation
+    )
+
+    # Message with no conversation_id (default)
+    await tpuf_client.insert_messages(
+        agent_id=sarah_agent.id,
+        message_texts=[message_default_conv.content[0].text],
+        message_ids=[message_default_conv.id],
+        organization_id=default_user.organization_id,
+        actor=default_user,
+        roles=[message_default_conv.role],
+        created_ats=[message_default_conv.created_at],
+        conversation_ids=[None],  # Default conversation (NULL)
+    )
+
+    # Wait for indexing
+    await asyncio.sleep(1)
+
+    # Test 1: Query for specific conversation - should find only message with that conversation_id
+    results_conv = await tpuf_client.query_messages_by_agent_id(
+        agent_id=sarah_agent.id,
+        organization_id=default_user.organization_id,
+        search_mode="timestamp",
+        top_k=10,
+        conversation_id=conversation.id,
+        actor=default_user,
+    )
+
+    assert len(results_conv) == 1
+    assert results_conv[0][0]["id"] == message_with_conv.id
+    assert "Python" in results_conv[0][0]["text"]
+
+    # Test 2: Query for "default" conversation - should find only messages with NULL conversation_id
+    results_default = await tpuf_client.query_messages_by_agent_id(
+        agent_id=sarah_agent.id,
+        organization_id=default_user.organization_id,
+        search_mode="timestamp",
+        top_k=10,
+        conversation_id="default",  # Sentinel for NULL
+        actor=default_user,
+    )
+
+    assert len(results_default) >= 1  # May have other default messages from setup
+    # Check our message is in there
+    default_ids = [r[0]["id"] for r in results_default]
+    assert message_default_conv.id in default_ids
+
+    # Verify the message content
+    for msg_dict, _, _ in results_default:
+        if msg_dict["id"] == message_default_conv.id:
+            assert "JavaScript" in msg_dict["text"]
+            break
+
+    # Test 3: Query without conversation filter - should find both
+    results_all = await tpuf_client.query_messages_by_agent_id(
+        agent_id=sarah_agent.id,
+        organization_id=default_user.organization_id,
+        search_mode="timestamp",
+        top_k=10,
+        conversation_id=None,  # No filter
+        actor=default_user,
+    )
+
+    assert len(results_all) >= 2  # May have other messages from setup
+    message_ids = [r[0]["id"] for r in results_all]
+    assert message_with_conv.id in message_ids
+    assert message_default_conv.id in message_ids
+
+    # Clean up
+    await tpuf_client.delete_messages(
+        agent_id=sarah_agent.id, organization_id=default_user.organization_id, message_ids=[message_with_conv.id, message_default_conv.id]
+    )
+
+
+@pytest.mark.asyncio
 async def test_system_messages_not_embedded_during_agent_creation(server, default_user, enable_message_embedding):
     """Test that system messages are filtered out before being passed to the embedding pipeline during agent creation"""
     from unittest.mock import AsyncMock, patch

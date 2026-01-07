@@ -817,6 +817,7 @@ class SyncServer(object):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
+        conversation_id: Optional[str] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=agent_id,
@@ -827,6 +828,7 @@ class SyncServer(object):
             ascending=not reverse,
             group_id=group_id,
             include_err=include_err,
+            conversation_id=conversation_id,
         )
 
         if not return_message_object:
@@ -862,6 +864,7 @@ class SyncServer(object):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
+        conversation_id: Optional[str] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=None,
@@ -872,6 +875,7 @@ class SyncServer(object):
             ascending=not reverse,
             group_id=group_id,
             include_err=include_err,
+            conversation_id=conversation_id,
         )
 
         if not return_message_object:

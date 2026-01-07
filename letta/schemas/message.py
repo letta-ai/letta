@@ -211,6 +211,7 @@ class Message(BaseMessage):
             tool_returns (List[ToolReturn]): The list of tool returns requested.
             group_id (str): The multi-agent group that the message was sent in.
             sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+            conversation_id (str): The conversation this message belongs to.
     t
     """
 
@@ -237,6 +238,7 @@ class Message(BaseMessage):
     group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
     batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
+    conversation_id: Optional[str] = Field(default=None, description="The conversation this message belongs to")
     is_err: Optional[bool] = Field(
         default=None, description="Whether this message is part of an error step. Used only for debugging purposes."
     )
@@ -2302,6 +2304,7 @@ class MessageSearchRequest(BaseModel):
     agent_id: Optional[str] = Field(None, description="Filter messages by agent ID")
     project_id: Optional[str] = Field(None, description="Filter messages by project ID")
     template_id: Optional[str] = Field(None, description="Filter messages by template ID")
+    conversation_id: Optional[str] = Field(None, description="Filter messages by conversation ID")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
@@ -2311,6 +2314,7 @@ class SearchAllMessagesRequest(BaseModel):
     query: str = Field(..., description="Text query for full-text search")
     search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
     agent_id: Optional[str] = Field(None, description="Filter messages by agent ID")
+    conversation_id: Optional[str] = Field(None, description="Filter messages by conversation ID")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")

@@ -412,10 +412,7 @@ class MessageManager:
         from letta.orm.run import Run as RunModel
 
         async with db_registry.async_session() as session:
-            query = select(RunModel.id).where(
-                RunModel.id == run_id,
-                RunModel.organization_id == actor.organization_id
-            )
+            query = select(RunModel.id).where(RunModel.id == run_id, RunModel.organization_id == actor.organization_id)
             result = await session.execute(query)
             return result.scalar_one_or_none() is not None
 
@@ -545,10 +542,7 @@ class MessageManager:
 
             async with db_registry.async_session() as session:
                 # Check which run_ids actually exist
-                query = select(RunModel.id).where(
-                    RunModel.id.in_(unique_run_ids),
-                    RunModel.organization_id == actor.organization_id
-                )
+                query = select(RunModel.id).where(RunModel.id.in_(unique_run_ids), RunModel.organization_id == actor.organization_id)
                 result = await session.execute(query)
                 existing_run_ids = set(result.scalars().all())
 
@@ -622,6 +616,7 @@ class MessageManager:
             message_ids = []
             roles = []
             created_ats = []
+            conversation_ids = []
 
             # combine assistant+tool messages before embedding
             combined_messages = self._combine_assistant_tool_messages(messages)
@@ -633,6 +628,7 @@ class MessageManager:
                     message_ids.append(msg.id)
                     roles.append(msg.role)
                     created_ats.append(msg.created_at)
+                    conversation_ids.append(msg.conversation_id)
 
             if message_texts:
                 # insert to turbopuffer - TurbopufferClient will generate embeddings internally
@@ -647,6 +643,7 @@ class MessageManager:
                     created_ats=created_ats,
                     project_id=project_id,
                     template_id=template_id,
+                    conversation_ids=conversation_ids,
                 )
                 logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
         except Exception as e:
@@ -776,6 +773,7 @@ class MessageManager:
                 created_ats=[message.created_at],
                 project_id=project_id,
                 template_id=template_id,
+                conversation_ids=[message.conversation_id],
             )
             logger.info(f"Successfully updated message {message.id} in Turbopuffer")
         except Exception as e:
@@ -896,6 +894,7 @@ class MessageManager:
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
         run_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Most performant query to list messages by directly querying the Message table.
@@ -917,6 +916,7 @@ class MessageManager:
             group_id: Optional group ID to filter messages by group_id.
             include_err: Optional boolean to include errors and error statuses. Used for debugging only.
             run_id: Optional run ID to filter messages by run_id.
+            conversation_id: Optional conversation ID to filter messages by conversation_id.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -941,6 +941,9 @@ class MessageManager:
 
             if run_id:
                 query = query.where(MessageModel.run_id == run_id)
+
+            if conversation_id:
+                query = query.where(MessageModel.conversation_id == conversation_id)
 
             # if not include_err:
             #    query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
@@ -1233,6 +1236,7 @@ class MessageManager:
         agent_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -1248,6 +1252,7 @@ class MessageManager:
             agent_id: Optional agent ID to filter messages by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
+            conversation_id: Optional conversation ID to filter messages by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
             end_date: Optional filter for messages created on or before this date (inclusive)
@@ -1277,6 +1282,7 @@ class MessageManager:
             agent_id=agent_id,
             project_id=project_id,
             template_id=template_id,
+            conversation_id=conversation_id,
             start_date=start_date,
             end_date=end_date,
         )
