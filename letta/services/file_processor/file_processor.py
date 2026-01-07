@@ -50,8 +50,10 @@ class FileProcessor:
         """Chunk text and generate embeddings with fallback to default chunker if needed"""
         filename = file_metadata.file_name
 
-        # Create file-type-specific chunker
-        text_chunker = LlamaIndexChunker(file_type=file_metadata.file_type, chunk_size=self.embedder.embedding_config.embedding_chunk_size)
+        # Create file-type-specific chunker in thread pool to avoid blocking event loop
+        text_chunker = await asyncio.to_thread(
+            LlamaIndexChunker, file_type=file_metadata.file_type, chunk_size=self.embedder.embedding_config.embedding_chunk_size
+        )
 
         # First attempt with file-specific chunker
         try:
