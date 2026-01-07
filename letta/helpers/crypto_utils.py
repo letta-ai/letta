@@ -50,7 +50,9 @@ class CryptoUtils:
     # Salt size for key derivation
     SALT_SIZE = 16
 
-    # Number of PBKDF2 iterations - matches previous cryptography library setting
+    # WARNING: DO NOT CHANGE THIS VALUE UNLESS YOU ARE SURE WHAT YOU ARE DOING
+    # EXISTING ENCRYPTED SECRETS MUST BE DECRYPTED WITH THE SAME ITERATIONS
+    # Number of PBKDF2 iterations
     PBKDF2_ITERATIONS = 100000
 
     @classmethod

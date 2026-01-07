@@ -353,6 +353,25 @@ class TestBackwardsCompatibility:
     # Test key and known encrypted values generated with the cryptography library
     MOCK_KEY = "test-master-key-1234567890abcdef"
 
+    def test_pbkdf2_iterations_not_changed(self):
+        """
+        CRITICAL: Verify that PBKDF2_ITERATIONS has not been changed from 100000.
+
+        WARNING: DO NOT CHANGE THIS VALUE!
+        Changing the iteration count will break decryption of ALL existing
+        encrypted secrets in the database. If you need to change this value,
+        you MUST first migrate all existing encrypted values.
+
+        This test exists to prevent accidental changes that would cause
+        production outages due to inability to decrypt existing secrets.
+        """
+        assert CryptoUtils.PBKDF2_ITERATIONS == 100000, (
+            "CRITICAL: PBKDF2_ITERATIONS has been changed from 100000! "
+            "This will BREAK DECRYPTION of all existing encrypted secrets in the database. "
+            "If you intentionally need to change this, you must first migrate all existing "
+            "encrypted values. Revert this change immediately if unintentional."
+        )
+
     def test_hashlib_pbkdf2_matches_cryptography_pbkdf2(self):
         """
         Verify that hashlib.pbkdf2_hmac produces identical output to
