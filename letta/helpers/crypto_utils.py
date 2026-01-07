@@ -1,14 +1,13 @@
 import asyncio
 import base64
+import hashlib
 import os
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from letta.settings import settings
 
@@ -51,6 +50,9 @@ class CryptoUtils:
     # Salt size for key derivation
     SALT_SIZE = 16
 
+    # Number of PBKDF2 iterations - matches previous cryptography library setting
+    PBKDF2_ITERATIONS = 100000
+
     @classmethod
     @lru_cache(maxsize=256)
     def _derive_key_cached(cls, master_key: str, salt: bytes) -> bytes:
@@ -60,11 +62,19 @@ class CryptoUtils:
         This is a CPU-intensive operation (100k iterations of PBKDF2-HMAC-SHA256)
         that can take 100-500ms. Results are cached since key derivation is deterministic.
 
+        Uses Python's standard hashlib.pbkdf2_hmac which produces identical output
+        to the cryptography library's PBKDF2HMAC for the same parameters.
+
         WARNING: This is a synchronous blocking operation. Use _derive_key_async()
         in async contexts to avoid blocking the event loop.
         """
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=cls.KEY_SIZE, salt=salt, iterations=100000, backend=default_backend())
-        return kdf.derive(master_key.encode())
+        return hashlib.pbkdf2_hmac(
+            hash_name="sha256",
+            password=master_key.encode(),
+            salt=salt,
+            iterations=cls.PBKDF2_ITERATIONS,
+            dklen=cls.KEY_SIZE,
+        )
 
     @classmethod
     def _derive_key(cls, master_key: str, salt: bytes) -> bytes:
