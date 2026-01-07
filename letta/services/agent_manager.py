@@ -593,8 +593,10 @@ class AgentManager:
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
                 if agent_secrets and env_rows:
-                    result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
-                    result.secrets = [AgentEnvironmentVariable(**row) for row in env_rows]
+                    # Populate value from original plaintext (agent_secrets) to avoid sync decryption in model validator
+                    env_vars = [AgentEnvironmentVariable(**{**row, "value": agent_secrets[row["key"]]}) for row in env_rows]
+                    result.tool_exec_environment_variables = env_vars
+                    result.secrets = env_vars
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
