@@ -94,7 +94,7 @@ class CryptoUtils:
 
         PBKDF2 with 100k iterations typically takes 100-500ms per operation.
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(_crypto_executor, cls._derive_key, master_key, salt)
 
     @classmethod
