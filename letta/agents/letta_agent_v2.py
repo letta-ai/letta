@@ -254,7 +254,7 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
- conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
+        conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
         client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
@@ -1174,15 +1174,14 @@ class LettaAgentV2(BaseAgentV2):
         """
         from letta.schemas.tool_execution_result import ToolExecutionResult
 
-        tool_name = target_tool.name
-
-        # Special memory case
+        # Check for None before accessing attributes
         if not target_tool:
-            # TODO: fix this error message
             return ToolExecutionResult(
-                func_return=f"Tool {tool_name} not found",
+                func_return="Tool not found",
                 status="error",
             )
+
+        tool_name = target_tool.name
 
         # TODO: This temp. Move this logic and code to executors
 
