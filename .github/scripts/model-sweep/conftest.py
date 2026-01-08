@@ -184,7 +184,7 @@ def _start_server_once() -> str:
         thread.start()
 
         # Poll until up
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
