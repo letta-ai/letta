@@ -915,7 +915,13 @@ class AnthropicClient(LLMClientBase):
                 if content_part.type == "tool_use":
                     # hack for incorrect tool format
                     tool_input = json.loads(json.dumps(content_part.input))
-                    if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
+                    # Check if id is a string before calling startswith (sometimes it's an int)
+                    if (
+                        "id" in tool_input
+                        and isinstance(tool_input["id"], str)
+                        and tool_input["id"].startswith("toolu_")
+                        and "function" in tool_input
+                    ):
                         if isinstance(tool_input["function"], str):
                             tool_input["function"] = json.loads(tool_input["function"])
                         arguments = json.dumps(tool_input["function"]["arguments"], indent=2)
