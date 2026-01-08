@@ -60,6 +60,7 @@ from letta.schemas.agent import (
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.letta_stop_reason import StopReasonType
@@ -593,8 +594,8 @@ class AgentManager:
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
                 if agent_secrets and env_rows:
-                    # Populate value from original plaintext (agent_secrets) to avoid sync decryption in model validator
-                    env_vars = [AgentEnvironmentVariable(**{**row, "value": agent_secrets[row["key"]]}) for row in env_rows]
+                    # Use Pydantic schema (not ORM model) with plaintext to avoid sync decryption in model validator
+                    env_vars = [PydanticAgentEnvVar(**{**row, "value": agent_secrets[row["key"]]}) for row in env_rows]
                     result.tool_exec_environment_variables = env_vars
                     result.secrets = env_vars
 
