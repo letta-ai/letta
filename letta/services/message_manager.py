@@ -7,6 +7,7 @@ from sqlalchemy import delete, exists, func, select, text
 
 from letta.constants import CONVERSATION_SEARCH_TOOL_NAME, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
+from letta.orm.conversation_messages import ConversationMessage
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
@@ -942,7 +943,21 @@ class MessageManager:
             if run_id:
                 query = query.where(MessageModel.run_id == run_id)
 
-            if conversation_id:
+            # Handle conversation_id filter
+            # Three cases:
+            # 1. conversation_id=None (omitted) -> return all messages (no filter)
+            # 2. conversation_id="default" -> return only default messages (not in any conversation)
+            # 3. conversation_id="xyz" -> return only messages in that conversation
+            if conversation_id == "default":
+                query = query.where(MessageModel.conversation_id.is_(None))
+
+                # Exclude messages that are in conversation_messages table
+                conversation_messages_subquery = select(ConversationMessage.message_id)
+                if agent_id:
+                    conversation_messages_subquery = conversation_messages_subquery.where(ConversationMessage.agent_id == agent_id)
+                query = query.where(~MessageModel.id.in_(conversation_messages_subquery))
+            elif conversation_id is not None:
+                # Specific conversation
                 query = query.where(MessageModel.conversation_id == conversation_id)
 
             # if not include_err:
