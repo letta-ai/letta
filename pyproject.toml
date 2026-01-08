@@ -72,7 +72,9 @@ dependencies = [
     "google-genai>=1.52.0",
     "datadog>=0.49.1",
     "psutil>=5.9.0",
-    "ddtrace>=4.0.1",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.12'",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.12'",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl ; sys_platform == 'darwin' and python_version == '3.12'",
 ]
 
 [project.scripts]
@@ -151,12 +153,17 @@ desktop = [
     #"pgserver>=0.1.4",
 ]
 profiling = [
-    "ddtrace>=2.18.2",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.12'",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.12'",
+    "ddtrace @ https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl ; sys_platform == 'darwin' and python_version == '3.12'",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["letta"]

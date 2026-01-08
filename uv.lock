@@ -1,9 +1,13 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
+    "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform != 'darwin' and sys_platform != 'linux'",
     "python_full_version < '3.12'",
 ]
 
@@ -912,44 +916,99 @@ wheels = [
 
 [[package]]
 name = "ddtrace"
-version = "4.0.1"
-source = { registry = "https://pypi.org/simple" }
+version = "4.1.0.dev0"
+source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl" }
+resolution-markers = [
+    "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+]
 dependencies = [
-    { name = "bytecode" },
-    { name = "envier" },
-    { name = "opentelemetry-api" },
-    { name = "wrapt" },
+    { name = "bytecode", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "envier", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "opentelemetry-api", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "wrapt", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/54/e9f58f6e631f3c14b9300b7742bb76bcf3e8d73097ae70ddedfee81bf8f6/ddtrace-4.0.1.tar.gz", hash = "sha256:821d811de1d530ab61cdfb2d7f986d25a79c4e67d22a91190bf95a6c7abacdad", size = 7543615, upload-time = "2025-12-16T20:11:10.173Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/22/de77c4fbbbb0f6ae6b6957ea5ccf7662566cac87c4191b12e3ced0bf5bd5/ddtrace-4.0.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:fb4ae8e3656433dff51defd973dba10096689648849c7198225b4ba3ebb51980", size = 6494051, upload-time = "2025-12-16T20:09:13.979Z" },
-    { url = "https://files.pythonhosted.org/packages/e8/10/ef09907e0579efd2da60bc9f7155927b5ea9ed4dd582437489c975f88ee5/ddtrace-4.0.1-cp311-cp311-macosx_12_0_x86_64.whl", hash = "sha256:5febca426fb6192dfbdf89fcccca07a37cc826ee3ed56d5056559e838209f37a", size = 6897193, upload-time = "2025-12-16T20:09:15.929Z" },
-    { url = "https://files.pythonhosted.org/packages/21/e0/fd04c0c0db3ec14c491505e0147aef5bdaaf1715d7a8ebe9e1bebfe7ee78/ddtrace-4.0.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:57fe91e21889b67c920c17e02fd7ede9452a34295a17bae2e20a839adb557ca3", size = 7591528, upload-time = "2025-12-16T20:09:17.752Z" },
-    { url = "https://files.pythonhosted.org/packages/5c/2a/60c78706838ebc1db85c8775c667b2155a9c56b3c18cb65450bf20c64e6b/ddtrace-4.0.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:93db5c87981af73ef5753ce47eb248e379bb7cfc230eb45ddd1b085e45708904", size = 7878277, upload-time = "2025-12-16T20:09:19.627Z" },
-    { url = "https://files.pythonhosted.org/packages/98/95/31b65e51af746d8ba0e7173075c2c0c862065f076208b517a95879575ecc/ddtrace-4.0.1-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:8546e1bf69b663cb008556ed6ed78d379ee652732e95e5f6a274c586d9f7536a", size = 8545841, upload-time = "2025-12-16T20:09:21.555Z" },
-    { url = "https://files.pythonhosted.org/packages/d8/f3/72445c91ade150be37475d9e097629576992594a81d6d7e1aef49c07d59a/ddtrace-4.0.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:f626f21a2e46d3356b0c8bce9cc755617251ea768ebd7a4071496f968a99f4f5", size = 8940918, upload-time = "2025-12-16T20:09:25.01Z" },
-    { url = "https://files.pythonhosted.org/packages/24/6f/8427c4cb312983b7a9f60685abd1f2ff6f57ba75ce0c418e1f23264a972c/ddtrace-4.0.1-cp311-cp311-win32.whl", hash = "sha256:a67e3a37add54f833995aae193014f7dcbae7a88ba8cfdfa4f936cf7e5c1c146", size = 5119431, upload-time = "2025-12-16T20:09:27.096Z" },
-    { url = "https://files.pythonhosted.org/packages/0e/86/5d02d7fb1129f435bba84882e7d01d3ee366ac06e2248bb8cc99c1d67995/ddtrace-4.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:67526ba098a4ee6706ddeaef60634994d7a9341e1a4199378678c23c0ac881b1", size = 5614752, upload-time = "2025-12-16T20:09:29.174Z" },
-    { url = "https://files.pythonhosted.org/packages/f0/a5/8cf03d88ceeee017257a584c764725ce89b451c6c6be8d6cfce3efc7a629/ddtrace-4.0.1-cp311-cp311-win_arm64.whl", hash = "sha256:ccf8e42746c7991f7364b0d8ea4990b0a2747f7b9d307b918f72b92fae94e023", size = 5325937, upload-time = "2025-12-16T20:09:31.352Z" },
-    { url = "https://files.pythonhosted.org/packages/a2/c1/e738c16be9532988896fab2088f0242280c2e5a11650c64b5255b9f9cc3d/ddtrace-4.0.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:a3c0d61fcab9f4d40f70744233fad3e07410789f35dfa95a16e3cdcaaa3cf229", size = 6496084, upload-time = "2025-12-16T20:09:33.513Z" },
-    { url = "https://files.pythonhosted.org/packages/8f/30/67ee93be4a108f23bdd7d9e24690b8dac18a34bbbee72bdb22b995baf6be/ddtrace-4.0.1-cp312-cp312-macosx_12_0_x86_64.whl", hash = "sha256:7acaf4ab1a43fa38232d478a51e3c74056eebe4f12d8380d65819e508ef3338b", size = 6901643, upload-time = "2025-12-16T20:09:35.704Z" },
-    { url = "https://files.pythonhosted.org/packages/11/bd/3d13286033f89aef4e615f2699c4f711af1d07bf437adbbdce6cbace626c/ddtrace-4.0.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:49aacfdc485896b6c1424d762708f5638aa70c5db154086f9f2c4bd38af381cf", size = 7574010, upload-time = "2025-12-16T20:09:37.997Z" },
-    { url = "https://files.pythonhosted.org/packages/b9/96/0298a6caa2533e923239dbe0ef0de9073b92ce613e7bdb2ba4b6f648d01e/ddtrace-4.0.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:66001bad0ee687e3a0a33cd1e3e085759105572351d19bb57fd88ab488023581", size = 7871849, upload-time = "2025-12-16T20:09:40.185Z" },
-    { url = "https://files.pythonhosted.org/packages/7a/1a/46b8e36568c0103adf071564035fb8ece960e40145d172a09703a6a7e10c/ddtrace-4.0.1-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:4bd0d06f177442977480364dc1b2d00ad4d074af6c66dc7ce084fa3eb19f54ca", size = 8535939, upload-time = "2025-12-16T20:09:42.509Z" },
-    { url = "https://files.pythonhosted.org/packages/c8/b0/9600d30c9b4ad34eba79865d427f1ed9504786f0801607db9498457bedf4/ddtrace-4.0.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:5c497e5778e8bbb188fd759b2662c9167f3937f6f34cc2b0827ad3507df02315", size = 8935929, upload-time = "2025-12-16T20:09:45.04Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/1d/5129926b0147f2d6acfa5d607ca8c403672c1a374ba5563585773673eb5b/ddtrace-4.0.1-cp312-cp312-win32.whl", hash = "sha256:bd9d58088d145cf685a0cfa774f0920baee256d05451df495b9fe3276ae2a38e", size = 5113021, upload-time = "2025-12-16T20:09:47.527Z" },
-    { url = "https://files.pythonhosted.org/packages/63/05/5a69c835e4ced4653cbc1731fe5f77380684fe2d001a84b9d2005451ca41/ddtrace-4.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:104b640b2826b92b001a8b36e59568fdaace2bab2fd815906bc134771d006942", size = 5605021, upload-time = "2025-12-16T20:09:49.867Z" },
-    { url = "https://files.pythonhosted.org/packages/3b/10/7638c595b71f4947209423616a09a0f333400f30c82a8b9a2ad91e68eb2c/ddtrace-4.0.1-cp312-cp312-win_arm64.whl", hash = "sha256:ec9f626b9b5e0bcc9d0aaf7eb166bfc7400c9e2e870aa67b57977114b78782b3", size = 5314413, upload-time = "2025-12-16T20:09:52.858Z" },
-    { url = "https://files.pythonhosted.org/packages/09/84/55bc61e8cf57cc13783159e032dabb856baab85ea696f9b66566d968020b/ddtrace-4.0.1-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:141c49150dfdb0149d2c1e5bd046639b4f7afd9086b4670eb27556ace41d398e", size = 6490597, upload-time = "2025-12-16T20:09:55.444Z" },
-    { url = "https://files.pythonhosted.org/packages/7d/56/1265401768c3088d8242d405955201a005e25ec79edefdf6a067b534d19c/ddtrace-4.0.1-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:807578ac1a09b81781d3ba18a31a361a6fe73a070d5cd776e37a749f22829e72", size = 6897761, upload-time = "2025-12-16T20:09:58.468Z" },
-    { url = "https://files.pythonhosted.org/packages/71/f3/6590cd15d6572621f2e56c7eb2048f60b5eeee0847f92834983f132a0465/ddtrace-4.0.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:c6a946090a9e103c26f14c3772b0ffd3ea0a3b5fbb81496315e78fab59328949", size = 7564985, upload-time = "2025-12-16T20:10:01.07Z" },
-    { url = "https://files.pythonhosted.org/packages/2a/60/0ba2b5cef4f96bfa2230e3c597873b65ed3124e369a46069f068adcfafe5/ddtrace-4.0.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:2413d4649a02efb9f73f84338d3ae44908d3ecabfc6e2af40a3fc1c66e67bcba", size = 7859984, upload-time = "2025-12-16T20:10:03.44Z" },
-    { url = "https://files.pythonhosted.org/packages/a5/ef/934407db95b6d3e657482b310af3b88a4423d18cb8314058319f5d1be2af/ddtrace-4.0.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:b85abbde9559a94ded61574b45ad1cf6b528856000b115e76fe536b186a9cb4a", size = 8531203, upload-time = "2025-12-16T20:10:06.135Z" },
-    { url = "https://files.pythonhosted.org/packages/95/a6/d5551232bef69965d21c8157bd5f5dee3671f2a5a9707544b2c6e212885b/ddtrace-4.0.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:a5edb950dddcf9310c6d8990c7f38ca3376a1c455f135b0e98619e0f44a4c407", size = 8928902, upload-time = "2025-12-16T20:10:09.065Z" },
-    { url = "https://files.pythonhosted.org/packages/56/fd/c7a2df468dd536d98707119d9c3c580e69c1d7e99eefb969c697efa52deb/ddtrace-4.0.1-cp313-cp313-win32.whl", hash = "sha256:9ec00c8ddb8dc89ab89466a981b1ac813beaee6310a6cf62904ae625c3efc858", size = 5110305, upload-time = "2025-12-16T20:10:11.972Z" },
-    { url = "https://files.pythonhosted.org/packages/32/8e/bcc9b58fa4b0c7574e7576d0019b3819097b25743f768689c5d4f0257154/ddtrace-4.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:bede88c7777d8eebf9cc693264d0d78a86ffca9b3920e61cdc105a2bc67a7109", size = 5601559, upload-time = "2025-12-16T20:10:14.453Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/17/2d7e9e75f1ba0dd36f127886baae7addf789b01e1ab749215c84ad06c512/ddtrace-4.0.1-cp313-cp313-win_arm64.whl", hash = "sha256:d62b0d064607635f2f10b7f535f3780bf1585091aba20cb37d24ab214570f54a", size = 5311762, upload-time = "2025-12-16T20:10:16.83Z" },
+    { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl", hash = "sha256:be5e70f1ad5ac29a827e18ad4e6c8ea9822b48dc0eeb116c0f342ac61524affe" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "bytecode", marker = "python_full_version < '3.11'", specifier = ">=0.13.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.11.*'", specifier = ">=0.14.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.12.*'", specifier = ">=0.15.1,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.13'", specifier = ">=0.16.0,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.14'", specifier = ">=0.17.0,<1" },
+    { name = "envier", specifier = "~=0.6.1" },
+    { name = "opentelemetry-api", specifier = ">=1,<2" },
+    { name = "opentelemetry-exporter-otlp", marker = "extra == 'opentelemetry'", specifier = ">=1,<2" },
+    { name = "opentracing", marker = "extra == 'opentracing'", specifier = ">=2,<3" },
+    { name = "wrapt", specifier = ">=1,<3" },
+]
+provides-extras = ["opentracing", "opentelemetry"]
+
+[[package]]
+name = "ddtrace"
+version = "4.1.0.dev0"
+source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl" }
+resolution-markers = [
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "bytecode", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+    { name = "envier", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+    { name = "opentelemetry-api", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+    { name = "wrapt", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+]
+wheels = [
+    { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:a89627cf32bb6ce98a0a736c8c50029e8bde603f09feeab0dd16626d21ef1646" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bytecode", marker = "python_full_version < '3.11'", specifier = ">=0.13.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.11.*'", specifier = ">=0.14.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.12.*'", specifier = ">=0.15.1,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.13'", specifier = ">=0.16.0,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.14'", specifier = ">=0.17.0,<1" },
+    { name = "envier", specifier = "~=0.6.1" },
+    { name = "opentelemetry-api", specifier = ">=1,<2" },
+    { name = "opentelemetry-exporter-otlp", marker = "extra == 'opentelemetry'", specifier = ">=1,<2" },
+    { name = "opentracing", marker = "extra == 'opentracing'", specifier = ">=2,<3" },
+    { name = "wrapt", specifier = ">=1,<3" },
+]
+provides-extras = ["opentracing", "opentelemetry"]
+
+[[package]]
+name = "ddtrace"
+version = "4.1.0.dev0"
+source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl" }
+resolution-markers = [
+    "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'",
+]
+dependencies = [
+    { name = "bytecode", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "envier", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "opentelemetry-api", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "wrapt", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:35ca8067fd5cfb350e403794d47697bdaeb8c08044297ff365d41faa40e37aee" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bytecode", marker = "python_full_version < '3.11'", specifier = ">=0.13.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.11.*'", specifier = ">=0.14.0,<1" },
+    { name = "bytecode", marker = "python_full_version == '3.12.*'", specifier = ">=0.15.1,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.13'", specifier = ">=0.16.0,<1" },
+    { name = "bytecode", marker = "python_full_version >= '3.14'", specifier = ">=0.17.0,<1" },
+    { name = "envier", specifier = "~=0.6.1" },
+    { name = "opentelemetry-api", specifier = ">=1,<2" },
+    { name = "opentelemetry-exporter-otlp", marker = "extra == 'opentelemetry'", specifier = ">=1,<2" },
+    { name = "opentracing", marker = "extra == 'opentracing'", specifier = ">=2,<3" },
+    { name = "wrapt", specifier = ">=1,<3" },
+]
+provides-extras = ["opentracing", "opentelemetry"]
 
 [[package]]
 name = "debugpy"
@@ -2331,7 +2390,9 @@ dependencies = [
     { name = "colorama" },
     { name = "datadog" },
     { name = "datamodel-code-generator", extra = ["http"] },
-    { name = "ddtrace" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl" }, marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl" }, marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl" }, marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "demjson3" },
     { name = "docstring-parser" },
     { name = "exa-py" },
@@ -2449,7 +2510,9 @@ postgres = [
     { name = "psycopg2-binary" },
 ]
 profiling = [
-    { name = "ddtrace" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl" }, marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl" }, marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'" },
+    { name = "ddtrace", version = "4.1.0.dev0", source = { url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl" }, marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 redis = [
     { name = "redis" },
@@ -2482,8 +2545,12 @@ requires-dist = [
     { name = "colorama", specifier = ">=0.4.6" },
     { name = "datadog", specifier = ">=0.49.1" },
     { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.25.0" },
-    { name = "ddtrace", specifier = ">=4.0.1" },
-    { name = "ddtrace", marker = "extra == 'profiling'", specifier = ">=2.18.2" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin' and extra == 'profiling'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-macosx_12_0_arm64.whl" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'profiling'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-linux_aarch64.whl" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl" },
+    { name = "ddtrace", marker = "python_full_version == '3.12.*' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'profiling'", url = "https://github.com/kianjones9/dd-trace-py/releases/download/fix-beta-anthropic-span/ddtrace-4.1.0.dev0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl" },
     { name = "demjson3", specifier = ">=3.0.6" },
     { name = "docker", marker = "extra == 'desktop'", specifier = ">=7.1.0" },
     { name = "docker", marker = "extra == 'external-tools'", specifier = ">=7.1.0" },
