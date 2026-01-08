@@ -1136,6 +1136,16 @@ def safe_create_task(coro, label: str = "background task"):
             f"{label}: Expected a coroutine, got {type(coro).__name__}. Make sure you're calling the async function with () parentheses."
         )
 
+    # Extract coroutine location for diagnostics
+    coro_code = getattr(coro, "cr_code", None)
+    if coro_code:
+        filename = coro_code.co_filename
+        idx = filename.find("letta/")
+        filename = filename[idx + 6 :] if idx != -1 else filename.split("/")[-1]
+        coro_name = f"{filename}:{coro_code.co_firstlineno}:{coro_code.co_name}"
+    else:
+        coro_name = "unknown"
+
     async def wrapper():
         try:
             await coro
@@ -1146,7 +1156,7 @@ def safe_create_task(coro, label: str = "background task"):
                 return
             logger.exception(f"{label} failed with {type(e).__name__}: {e}")
 
-    task = asyncio.create_task(wrapper())
+    task = asyncio.create_task(wrapper(), name=f"safe[{coro_name}]")
 
     # Add task to the set to maintain strong reference
     _background_tasks.add(task)
@@ -1162,6 +1172,16 @@ def safe_create_task(coro, label: str = "background task"):
 
 @trace_method
 def safe_create_task_with_return(coro, label: str = "background task"):
+    # Extract coroutine location for diagnostics
+    coro_code = getattr(coro, "cr_code", None)
+    if coro_code:
+        filename = coro_code.co_filename
+        idx = filename.find("letta/")
+        filename = filename[idx + 6 :] if idx != -1 else filename.split("/")[-1]
+        coro_name = f"{filename}:{coro_code.co_firstlineno}:{coro_code.co_name}"
+    else:
+        coro_name = "unknown"
+
     async def wrapper():
         try:
             return await coro
@@ -1169,7 +1189,7 @@ def safe_create_task_with_return(coro, label: str = "background task"):
             logger.exception(f"{label} failed with {type(e).__name__}: {e}")
             raise
 
-    task = asyncio.create_task(wrapper())
+    task = asyncio.create_task(wrapper(), name=f"safe_ret[{coro_name}]")
 
     # Add task to the set to maintain strong reference
     _background_tasks.add(task)
@@ -1192,6 +1212,16 @@ def safe_create_shielded_task(coro, label: str = "shielded background task"):
     returned task can still have callbacks added to it.
     """
 
+    # Extract coroutine location for diagnostics
+    coro_code = getattr(coro, "cr_code", None)
+    if coro_code:
+        filename = coro_code.co_filename
+        idx = filename.find("letta/")
+        filename = filename[idx + 6 :] if idx != -1 else filename.split("/")[-1]
+        coro_name = f"{filename}:{coro_code.co_firstlineno}:{coro_code.co_name}"
+    else:
+        coro_name = "unknown"
+
     async def shielded_wrapper():
         try:
             # Shield the original coroutine to prevent cancellation
@@ -1202,7 +1232,7 @@ def safe_create_shielded_task(coro, label: str = "shielded background task"):
             raise
 
     # Create the task with the shielded wrapper
-    task = asyncio.create_task(shielded_wrapper())
+    task = asyncio.create_task(shielded_wrapper(), name=f"safe_shield[{coro_name}]")
 
     # Add task to the set to maintain strong reference
     _background_tasks.add(task)
