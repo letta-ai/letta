@@ -1731,29 +1731,42 @@ class Message(BaseMessage):
         elif self.role == "tool":
             # NOTE: Anthropic uses role "user" for "tool" responses
             content = []
-            for tool_return in self.tool_returns:
-                if not tool_return.tool_call_id:
-                    from letta.log import get_logger
+            # Handle the case where tool_returns is None or empty
+            if self.tool_returns:
+                # For single tool returns, we can use the message's tool_call_id as fallback
+                # since self.tool_call_id == tool_returns[0].tool_call_id for legacy compatibility.
+                # For multiple tool returns (parallel tool calls), each must have its own ID
+                # to correctly map results to their corresponding tool invocations.
+                use_message_fallback = len(self.tool_returns) == 1
+                for idx, tool_return in enumerate(self.tool_returns):
+                    # Get tool_call_id from tool_return; only use message fallback for single returns
+                    resolved_tool_call_id = tool_return.tool_call_id
+                    if not resolved_tool_call_id and use_message_fallback:
+                        resolved_tool_call_id = self.tool_call_id
+                    if not resolved_tool_call_id:
+                        from letta.log import get_logger
 
-                    logger = get_logger(__name__)
-                    logger.error(
-                        f"Missing tool_call_id in tool return. "
-                        f"Message ID: {self.id}, "
-                        f"Tool name: {getattr(tool_return, 'name', 'unknown')}, "
-                        f"Tool return: {tool_return}"
+                        logger = get_logger(__name__)
+                        logger.error(
+                            f"Missing tool_call_id in tool return and no fallback available. "
+                            f"Message ID: {self.id}, "
+                            f"Tool name: {self.name or 'unknown'}, "
+                            f"Tool return index: {idx}/{len(self.tool_returns)}, "
+                            f"Tool return status: {tool_return.status}"
+                        )
+                        raise TypeError(
+                            f"Anthropic API requires tool_use_id to be set. "
+                            f"Message ID: {self.id}, Tool: {self.name or 'unknown'}, "
+                            f"Tool return index: {idx}/{len(self.tool_returns)}"
+                        )
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    content.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": resolved_tool_call_id,
+                            "content": func_response,
+                        }
                     )
-                    raise TypeError(
-                        f"Anthropic API requires tool_use_id to be set. "
-                        f"Message ID: {self.id}, Tool: {getattr(tool_return, 'name', 'unknown')}"
-                    )
-                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
-                content.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": tool_return.tool_call_id,
-                        "content": func_response,
-                    }
-                )
             if content:
                 anthropic_message = {
                     "role": "user",
