@@ -872,6 +872,16 @@ class GoogleVertexClient(LLMClientBase):
                 details={"cause": str(e.__cause__) if e.__cause__ else None},
             )
 
+        # Handle httpx network errors which can occur during streaming
+        # when the connection is unexpectedly closed while reading/writing
+        if isinstance(e, (httpx.ReadError, httpx.WriteError, httpx.ConnectError)):
+            logger.warning(f"{self._provider_prefix()} Network error during streaming: {type(e).__name__}: {e}")
+            return LLMConnectionError(
+                message=f"Network error during {self._provider_name()} streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+            )
+
         # Handle connection-related errors
         if "connection" in str(e).lower() or "timeout" in str(e).lower():
             logger.warning(f"{self._provider_prefix()} Connection/timeout error: {e}")

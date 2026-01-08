@@ -3,7 +3,7 @@ import httpx
 import pytest
 
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
-from letta.errors import ContextWindowExceededError, LLMServerError
+from letta.errors import ContextWindowExceededError, LLMConnectionError, LLMServerError
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.schemas.llm_config import LLMConfig
 
@@ -87,6 +87,74 @@ async def test_letta_llm_stream_adapter_converts_anthropic_413_request_too_large
 
     gen = adapter.invoke_llm(request_data={}, messages=[], tools=[], use_assistant_message=True)
     with pytest.raises(ContextWindowExceededError):
+        async for _ in gen:
+            pass
+
+
+@pytest.mark.asyncio
+async def test_letta_llm_stream_adapter_converts_httpx_read_error(monkeypatch):
+    """Regression: httpx.ReadError raised during streaming should be converted to LLMConnectionError."""
+
+    class FakeAsyncStream:
+        """Mimics anthropic.AsyncStream enough for AnthropicStreamingInterface (async cm + async iterator)."""
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            raise httpx.ReadError("Connection closed unexpectedly")
+
+    async def fake_stream_async(self, request_data: dict, llm_config: LLMConfig):
+        return FakeAsyncStream()
+
+    monkeypatch.setattr(AnthropicClient, "stream_async", fake_stream_async, raising=True)
+
+    llm_client = AnthropicClient()
+    llm_config = LLMConfig(model="claude-sonnet-4-5-20250929", model_endpoint_type="anthropic", context_window=200000)
+    adapter = LettaLLMStreamAdapter(llm_client=llm_client, llm_config=llm_config)
+
+    gen = adapter.invoke_llm(request_data={}, messages=[], tools=[], use_assistant_message=True)
+    with pytest.raises(LLMConnectionError):
+        async for _ in gen:
+            pass
+
+
+@pytest.mark.asyncio
+async def test_letta_llm_stream_adapter_converts_httpx_write_error(monkeypatch):
+    """Regression: httpx.WriteError raised during streaming should be converted to LLMConnectionError."""
+
+    class FakeAsyncStream:
+        """Mimics anthropic.AsyncStream enough for AnthropicStreamingInterface (async cm + async iterator)."""
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            raise httpx.WriteError("Failed to write to connection")
+
+    async def fake_stream_async(self, request_data: dict, llm_config: LLMConfig):
+        return FakeAsyncStream()
+
+    monkeypatch.setattr(AnthropicClient, "stream_async", fake_stream_async, raising=True)
+
+    llm_client = AnthropicClient()
+    llm_config = LLMConfig(model="claude-sonnet-4-5-20250929", model_endpoint_type="anthropic", context_window=200000)
+    adapter = LettaLLMStreamAdapter(llm_client=llm_client, llm_config=llm_config)
+
+    gen = adapter.invoke_llm(request_data={}, messages=[], tools=[], use_assistant_message=True)
+    with pytest.raises(LLMConnectionError):
         async for _ in gen:
             pass
 
