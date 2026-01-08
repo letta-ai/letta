@@ -55,6 +55,7 @@ async def list_runs(
     statuses: Optional[List[str]] = Query(None, description="Filter runs by status. Can specify multiple statuses."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
+    conversation_id: Optional[str] = Query(None, description="Filter runs by conversation ID."),
     before: Optional[str] = Query(
         None, description="Run ID cursor for pagination. Returns runs that come before this run ID in the specified sort order"
     ),
@@ -109,6 +110,7 @@ async def list_runs(
         ascending=sort_ascending,
         stop_reason=stop_reason,
         background=background,
+        conversation_id=conversation_id,
     )
     return runs
 

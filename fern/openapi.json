@@ -14470,6 +14470,24 @@
             "description": "Filter runs by stop reason."
           },
           {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs by conversation ID.",
+              "title": "Conversation Id"
+            },
+            "description": "Filter runs by conversation ID."
+          },
+          {
             "name": "before",
             "in": "query",
             "required": false,
