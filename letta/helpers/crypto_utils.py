@@ -11,6 +11,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from letta.settings import settings
 
+# Eagerly load the cryptography backend at module import time.
+_CRYPTO_BACKEND = default_backend()
+
 # Dedicated thread pool for CPU-intensive crypto operations
 # Prevents crypto from blocking health checks and other operations
 _crypto_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="CryptoWorker")
@@ -131,7 +134,7 @@ class CryptoUtils:
         key = cls._derive_key(master_key, salt)
 
         # Create cipher
-        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
+        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=_CRYPTO_BACKEND)
         encryptor = cipher.encryptor()
 
         # Encrypt the plaintext
@@ -180,7 +183,7 @@ class CryptoUtils:
         key = await cls._derive_key_async(master_key, salt)
 
         # Create cipher
-        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
+        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=_CRYPTO_BACKEND)
         encryptor = cipher.encryptor()
 
         # Encrypt the plaintext
@@ -235,7 +238,7 @@ class CryptoUtils:
             key = cls._derive_key(master_key, salt)
 
             # Create cipher
-            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=_CRYPTO_BACKEND)
             decryptor = cipher.decryptor()
 
             # Decrypt the ciphertext
@@ -286,7 +289,7 @@ class CryptoUtils:
             key = await cls._derive_key_async(master_key, salt)
 
             # Create cipher
-            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=_CRYPTO_BACKEND)
             decryptor = cipher.decryptor()
 
             # Decrypt the ciphertext
