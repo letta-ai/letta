@@ -18,7 +18,7 @@ faulthandler.enable()
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.middleware.cors import CORSMiddleware
@@ -338,6 +338,7 @@ def create_application() -> "FastAPI":
         version=letta_version,
         debug=debug_mode,  # if True, the stack trace will be printed in the response
         lifespan=lifespan,
+        default_response_class=ORJSONResponse,  # Use orjson for 10x faster JSON serialization
     )
 
     # === Global Exception Handlers ===
