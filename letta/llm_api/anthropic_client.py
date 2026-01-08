@@ -728,6 +728,8 @@ class AnthropicClient(LLMClientBase):
             or "exceeds context" in error_str
             or "too many total text bytes" in error_str
             or "total text bytes" in error_str
+            or "request_too_large" in error_str
+            or "request exceeds the maximum size" in error_str
         ):
             logger.warning(f"[Anthropic] Context window exceeded: {str(e)}")
             return ContextWindowExceededError(
@@ -820,6 +822,12 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.APIStatusError):
             logger.warning(f"[Anthropic] API status error: {str(e)}")
+            # Handle 413 Request Entity Too Large - request payload exceeds size limits
+            if hasattr(e, "status_code") and e.status_code == 413:
+                logger.warning(f"[Anthropic] Request too large (413): {str(e)}")
+                return ContextWindowExceededError(
+                    message=f"Request too large for Anthropic (413): {str(e)}",
+                )
             if "overloaded" in str(e).lower():
                 return LLMProviderOverloaded(
                     message=f"Anthropic API is overloaded: {str(e)}",
