@@ -390,7 +390,7 @@ async def import_agent(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
-        serialized_data = file.file.read()
+        serialized_data = await file.read()
         file_size_mb = len(serialized_data) / (1024 * 1024)
         logger.info(f"Agent import: loaded {file_size_mb:.2f} MB into memory")
         agent_json = json.loads(serialized_data)
