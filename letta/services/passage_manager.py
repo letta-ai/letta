@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from openai import AsyncOpenAI, OpenAI
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import noload
 
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.errors import EmbeddingConfigRequiredError
@@ -955,7 +956,10 @@ class PassageManager:
         """
         async with db_registry.async_session() as session:
             result = await session.execute(
-                select(SourcePassage).where(SourcePassage.file_id == file_id).where(SourcePassage.organization_id == actor.organization_id)
+                select(SourcePassage)
+                .options(noload(SourcePassage.organization))
+                .where(SourcePassage.file_id == file_id)
+                .where(SourcePassage.organization_id == actor.organization_id)
             )
             passages = result.scalars().all()
             return [p.to_pydantic() for p in passages]
