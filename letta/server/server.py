@@ -98,7 +98,8 @@ from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.mcp.base_client import AsyncBaseMCPClient
-from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
+from letta.services.mcp.fastmcp_client import AsyncFastMCPSSEClient
+from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp_manager import MCPManager
 from letta.services.mcp_server_manager import MCPServerManager
@@ -452,7 +453,7 @@ class SyncServer(object):
 
         for server_name, server_config in mcp_server_configs.items():
             if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
+                self.mcp_clients[server_name] = AsyncFastMCPSSEClient(server_config)
             elif server_config.type == MCPServerType.STDIO:
                 self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
             else:
@@ -1573,7 +1574,7 @@ class SyncServer(object):
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
-            new_mcp_client = AsyncSSEMCPClient(server_config)
+            new_mcp_client = AsyncFastMCPSSEClient(server_config)
         elif server_config.type == MCPServerType.STDIO:
             new_mcp_client = AsyncStdioMCPClient(server_config)
         else:

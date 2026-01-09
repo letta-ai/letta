@@ -6,7 +6,7 @@ import secrets
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
 from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
@@ -18,7 +18,9 @@ from letta.schemas.mcp import MCPOAuthSessionUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.mcp.types import OauthStreamEvent
-from letta.services.mcp_manager import MCPManager
+
+if TYPE_CHECKING:
+    from letta.services.mcp_manager import MCPManager
 
 logger = get_logger(__name__)
 
@@ -26,7 +28,7 @@ logger = get_logger(__name__)
 class DatabaseTokenStorage(TokenStorage):
     """Database-backed token storage using MCPOAuth table via mcp_manager."""
 
-    def __init__(self, session_id: str, mcp_manager: MCPManager, actor: PydanticUser):
+    def __init__(self, session_id: str, mcp_manager: "MCPManager", actor: PydanticUser):
         self.session_id = session_id
         self.mcp_manager = mcp_manager
         self.actor = actor
@@ -187,12 +189,17 @@ async def create_oauth_provider(
     session_id: str,
     server_url: str,
     redirect_uri: str,
-    mcp_manager: MCPManager,
+    mcp_manager: "MCPManager",
     actor: PydanticUser,
     logo_uri: Optional[str] = None,
     url_callback: Optional[Callable[[str], None]] = None,
 ) -> OAuthClientProvider:
-    """Create an OAuth provider for MCP server authentication."""
+    """Create an OAuth provider for MCP server authentication.
+
+    DEPRECATED: Use ServerSideOAuth from letta.services.mcp.server_side_oauth instead.
+    This function is kept for backwards compatibility but will be removed in a future version.
+    """
+    logger.warning("create_oauth_provider is deprecated. Use ServerSideOAuth from letta.services.mcp.server_side_oauth instead.")
 
     client_metadata_dict = {
         "client_name": "Letta",

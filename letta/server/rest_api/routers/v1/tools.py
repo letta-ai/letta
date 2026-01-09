@@ -689,7 +689,6 @@ async def connect_mcp_server(
             yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=request.server_name)
 
             actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
             # Create MCP client with respective transport type
             try:
                 request.resolve_environment_variables()
@@ -704,8 +703,18 @@ async def connect_mcp_server(
                 tools = await client.list_tools(serialize=True)
                 yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
                 return
-            except ConnectionError:
-                # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
+            except ConnectionError as e:
+                # Only trigger OAuth flow on explicit unauthorized failures
+                unauthorized = False
+                if isinstance(e.__cause__, HTTPStatusError):
+                    unauthorized = e.__cause__.response.status_code == 401
+                elif "401" in str(e) or "Unauthorized" in str(e):
+                    unauthorized = True
+
+                if not unauthorized:
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
+                    return
+
                 if isinstance(client, AsyncStdioMCPClient):
                     logger.warning("OAuth not supported for stdio")
                     yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
