@@ -1008,7 +1008,7 @@ async def test_conversation_streaming_raw_http(
     [
         ("openai/gpt-4o", "openai"),
         ("openai/gpt-5", "openai"),
-        ("anthropic/claude-sonnet-4-5-20250929", "anthropic"),
+        # ("anthropic/claude-sonnet-4-5-20250929", "anthropic"),
     ],
 )
 @pytest.mark.asyncio(loop_scope="function")

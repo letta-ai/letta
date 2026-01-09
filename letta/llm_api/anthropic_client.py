@@ -85,13 +85,15 @@ class AnthropicClient(LLMClientBase):
 
         # Structured outputs beta - only for supported models
         # Supported: Claude Sonnet 4.5, Opus 4.1, Opus 4.5, Haiku 4.5
-        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-
-        if supports_structured_outputs:
-            # Always enable structured outputs beta on supported models.
-            # NOTE: We do NOT send `strict` on tool schemas because the current Anthropic SDK
-            # typed tool params reject unknown fields (e.g., `tools.0.custom.strict`).
-            betas.append("structured-outputs-2025-11-13")
+        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
+        # See PR #7495 for original implementation
+        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+        #
+        # if supports_structured_outputs:
+        #     # Always enable structured outputs beta on supported models.
+        #     # NOTE: We do NOT send `strict` on tool schemas because the current Anthropic SDK
+        #     # typed tool params reject unknown fields (e.g., `tools.0.custom.strict`).
+        #     betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = client.beta.messages.create(**request_data, betas=betas)
@@ -127,10 +129,12 @@ class AnthropicClient(LLMClientBase):
             betas.append("context-management-2025-06-27")
 
         # Structured outputs beta - only for supported models
-        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-
-        if supports_structured_outputs:
-            betas.append("structured-outputs-2025-11-13")
+        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
+        # See PR #7495 for original implementation
+        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+        #
+        # if supports_structured_outputs:
+        #     betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = await client.beta.messages.create(**request_data, betas=betas)
@@ -174,10 +178,12 @@ class AnthropicClient(LLMClientBase):
             betas.append("context-management-2025-06-27")
 
         # Structured outputs beta - only for supported models
-        supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-
-        if supports_structured_outputs:
-            betas.append("structured-outputs-2025-11-13")
+        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
+        # See PR #7495 for original implementation
+        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
+        #
+        # if supports_structured_outputs:
+        #     betas.append("structured-outputs-2025-11-13")
 
         # log failed requests
         try:
@@ -378,11 +384,13 @@ class AnthropicClient(LLMClientBase):
             }
 
         # Structured outputs via response_format
-        if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
-            data["output_format"] = {
-                "type": "json_schema",
-                "schema": llm_config.response_format.json_schema["schema"],
-            }
+        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
+        # See PR #7495 for original implementation
+        # if hasattr(llm_config, "response_format") and isinstance(llm_config.response_format, JsonSchemaResponseFormat):
+        #     data["output_format"] = {
+        #         "type": "json_schema",
+        #         "schema": llm_config.response_format.json_schema["schema"],
+        #     }
 
         # Tools
         # For an overview on tool choice:
@@ -432,9 +440,11 @@ class AnthropicClient(LLMClientBase):
 
         if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
+            # DISABLED: use_strict=False to disable structured outputs (TTFT latency impact)
+            # See PR #7495 for original implementation
             data["tools"] = convert_tools_to_anthropic_format(
                 tools_for_request,
-                use_strict=_supports_structured_outputs(llm_config.model),
+                use_strict=False,  # Was: _supports_structured_outputs(llm_config.model)
             )
             # Add cache control to the last tool for caching tool definitions
             if len(data["tools"]) > 0:
@@ -693,8 +703,10 @@ class AnthropicClient(LLMClientBase):
                     betas.append("context-management-2025-06-27")
 
             # Structured outputs beta - only for supported models
-            if model and _supports_structured_outputs(model):
-                betas.append("structured-outputs-2025-11-13")
+            # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
+            # See PR #7495 for original implementation
+            # if model and _supports_structured_outputs(model):
+            #     betas.append("structured-outputs-2025-11-13")
 
             if betas:
                 result = await client.beta.messages.count_tokens(**count_params, betas=betas)
