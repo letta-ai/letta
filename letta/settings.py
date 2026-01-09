@@ -188,6 +188,9 @@ class ModelSettings(BaseSettings):
     # lmstudio
     lmstudio_base_url: Optional[str] = None
 
+    # venice
+    venice_api_key: Optional[str] = None
+
     # openllm
     openllm_auth_type: Optional[str] = None
     openllm_api_key: Optional[str] = None
