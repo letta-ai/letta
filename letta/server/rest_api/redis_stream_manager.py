@@ -202,6 +202,7 @@ async def create_background_stream_processor(
     writer: Optional[RedisSSEStreamWriter] = None,
     run_manager: Optional[RunManager] = None,
     actor: Optional[User] = None,
+    conversation_id: Optional[str] = None,
 ) -> None:
     """
     Process a stream in the background and store chunks to Redis.
@@ -216,6 +217,7 @@ async def create_background_stream_processor(
         writer: Optional pre-configured writer (creates new if not provided)
         run_manager: Optional run manager for updating run status
         actor: Optional actor for run status updates
+        conversation_id: Optional conversation ID for releasing lock on terminal states
     """
     stop_reason = None
     saw_done = False
@@ -342,6 +344,7 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
+                conversation_id=conversation_id,
             )
     finally:
         if should_stop_writer:
@@ -384,7 +387,12 @@ async def create_background_stream_processor(
             if run_status == RunStatus.failed and error_metadata is not None:
                 update_kwargs["metadata"] = error_metadata
 
-            await run_manager.update_run_by_id_async(run_id=run_id, update=RunUpdate(**update_kwargs), actor=actor)
+            await run_manager.update_run_by_id_async(
+                run_id=run_id,
+                update=RunUpdate(**update_kwargs),
+                actor=actor,
+                conversation_id=conversation_id,
+            )
 
         # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate
         # Even if a previous chunk set `complete`, an extra [DONE] is harmless and ensures SDKs that

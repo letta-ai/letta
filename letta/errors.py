@@ -73,6 +73,22 @@ class ConcurrentUpdateError(LettaError):
         super().__init__(message=message, code=ErrorCode.CONFLICT, details=details)
 
 
+class ConversationBusyError(LettaError):
+    """Error raised when attempting to send a message while another request is already processing for the same conversation."""
+
+    def __init__(self, conversation_id: str, lock_holder_token: Optional[str] = None):
+        self.conversation_id = conversation_id
+        self.lock_holder_token = lock_holder_token
+        message = "Cannot send a new message: Another request is currently being processed for this conversation. Please wait for the current request to complete."
+        code = ErrorCode.CONFLICT
+        details = {
+            "error_code": "CONVERSATION_BUSY",
+            "conversation_id": conversation_id,
+            "lock_holder_token": lock_holder_token,
+        }
+        super().__init__(message=message, code=code, details=details)
+
+
 class LettaToolCreateError(LettaError):
     """Error raised when a tool cannot be created."""
 

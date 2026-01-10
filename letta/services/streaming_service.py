@@ -102,14 +102,24 @@ class StreamingService:
         model_compatible = self._is_model_compatible(agent)
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
 
+        # Attempt to acquire conversation lock if conversation_id is provided
+        # This prevents concurrent message processing for the same conversation
+        # Skip locking if Redis is not available (graceful degradation)
+        if conversation_id and not isinstance(redis_client, NoopAsyncRedisClient):
+            await redis_client.acquire_conversation_lock(
+                conversation_id=conversation_id,
+                token=str(uuid4()),
+            )
+
         # create run if tracking is enabled
         run = None
         run_update_metadata = None
-        if settings.track_agent_run:
-            run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
-            await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
         try:
+            if settings.track_agent_run:
+                run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
+                await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
+
             if agent_eligible and model_compatible:
                 # use agent loop for streaming
                 agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
@@ -156,6 +166,7 @@ class StreamingService:
                             run_id=run.id,
                             run_manager=self.server.run_manager,
                             actor=actor,
+                            conversation_id=conversation_id,
                         ),
                         label=f"background_stream_processor_{run.id}",
                     )
@@ -218,6 +229,7 @@ class StreamingService:
             if settings.track_agent_run and run:
                 await self.server.run_manager.update_run_by_id_async(
                     run_id=run.id,
+                    conversation_id=conversation_id,
                     update=RunUpdate(status=run_status, metadata=run_update_metadata),
                     actor=actor,
                 )
@@ -446,6 +458,7 @@ class StreamingService:
                     stop_reason_value = stop_reason.stop_reason if stop_reason else StopReasonType.error.value
                     await self.runs_manager.update_run_by_id_async(
                         run_id=run_id,
+                        conversation_id=conversation_id,
                         update=RunUpdate(status=run_status, stop_reason=stop_reason_value, metadata=error_data),
                         actor=actor,
                     )
@@ -507,6 +520,7 @@ class StreamingService:
         actor: User,
         error: Optional[str] = None,
         stop_reason: Optional[str] = None,
+        conversation_id: Optional[str] = None,
     ):
         """Update the status of a run."""
         if not self.runs_manager:
@@ -522,6 +536,7 @@ class StreamingService:
             run_id=run_id,
             update=update,
             actor=actor,
+            conversation_id=conversation_id,
         )
 
 

@@ -452,6 +452,10 @@ REDIS_SET_DEFAULT_VAL = "None"
 REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"
 REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 
+# Conversation lock constants
+CONVERSATION_LOCK_PREFIX = "conversation:lock:"
+CONVERSATION_LOCK_TTL_SECONDS = 300  # 5 minutes
+
 # TODO: This is temporary, eventually use token-based eviction
 # File based controls
 DEFAULT_MAX_FILES_OPEN = 5

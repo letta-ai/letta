@@ -5,6 +5,7 @@ from typing import List, Literal, Optional
 
 from httpx import AsyncClient
 
+from letta.data_sources.redis_client import get_redis_client
 from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
@@ -318,7 +319,12 @@ class RunManager:
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
     @trace_method
     async def update_run_by_id_async(
-        self, run_id: str, update: RunUpdate, actor: PydanticUser, refresh_result_messages: bool = True
+        self,
+        run_id: str,
+        update: RunUpdate,
+        actor: PydanticUser,
+        refresh_result_messages: bool = True,
+        conversation_id: Optional[str] = None,
     ) -> PydanticRun:
         """Update a run using a RunUpdate object."""
         async with db_registry.async_session() as session:
@@ -381,6 +387,14 @@ class RunManager:
 
             # context manager now handles commits
             # await session.commit()
+
+        # Release conversation lock if conversation_id was provided
+        if is_terminal_update and conversation_id:
+            try:
+                redis_client = await get_redis_client()
+                await redis_client.release_conversation_lock(conversation_id)
+            except Exception as lock_error:
+                logger.warning(f"Failed to release conversation lock for conversation {conversation_id}: {lock_error}")
 
         # Update agent's last_stop_reason when run completes
         # Do this after run update is committed to database
@@ -639,7 +653,10 @@ class RunManager:
         # cancel the run
         # NOTE: this should update the agent's last stop reason to cancelled
         run = await self.update_run_by_id_async(
-            run_id=run_id, update=RunUpdate(status=RunStatus.cancelled, stop_reason=StopReasonType.cancelled), actor=actor
+            run_id=run_id,
+            update=RunUpdate(status=RunStatus.cancelled, stop_reason=StopReasonType.cancelled),
+            actor=actor,
+            conversation_id=run.conversation_id,
         )
 
         # cleanup the agent's state
