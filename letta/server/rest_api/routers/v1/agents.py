@@ -1558,6 +1558,7 @@ async def send_message(
                 use_assistant_message=request.use_assistant_message,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
+                client_tools=request.client_tools,
             )
         else:
             result = await server.send_message_to_agent(

@@ -29,7 +29,7 @@ from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, MessageType
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_request import LettaStreamingRequest
+from letta.schemas.letta_request import ClientTool, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
@@ -123,6 +123,7 @@ class StreamingService:
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
                     actor=actor,
+                    client_tools=request.client_tools,
                 )
 
                 # handle background streaming if requested
@@ -287,6 +288,7 @@ class StreamingService:
         request_start_timestamp_ns: int,
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
+        client_tools: Optional[list[ClientTool]] = None,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -313,6 +315,7 @@ class StreamingService:
                     use_assistant_message=use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=include_return_message_types,
+                    client_tools=client_tools,
                 )
 
                 async for chunk in stream:

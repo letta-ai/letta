@@ -31,6 +31,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_request import ClientTool
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
@@ -79,6 +80,7 @@ class LettaAgentV3(LettaAgentV2):
         # affecting step-level telemetry.
         self.context_token_estimate: int | None = None
         self.in_context_messages: list[Message] = []  # in-memory tracker
+        self._client_tools: list[ClientTool] = []  # client-provided tools for this request
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -101,6 +103,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientTool] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -112,11 +115,13 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-provided tools to merge with agent tools
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
         """
         self._initialize_state()
+        self._client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
@@ -234,6 +239,7 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientTool] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -251,11 +257,13 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-provided tools to merge with agent tools
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
         """
         self._initialize_state()
+        self._client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
@@ -964,10 +972,17 @@ class LettaAgentV3(LettaAgentV2):
                 messages_to_persist = (initial_messages or []) + assistant_message
             return messages_to_persist, continue_stepping, stop_reason
 
-        # 2. Check whether tool call requires approval
+        # 2. Check whether tool call requires approval (includes client tools)
         if not is_approval_response:
-            requested_tool_calls = [t for t in tool_calls if tool_rules_solver.is_requires_approval_tool(t.function.name)]
-            allowed_tool_calls = [t for t in tool_calls if not tool_rules_solver.is_requires_approval_tool(t.function.name)]
+            # Client tools always require "approval" (client execution)
+            server_tool_names = {t.name for t in self.agent_state.tools}
+            client_tool_names = {ct.name for ct in self._client_tools if ct.name not in server_tool_names}
+
+            def requires_approval(tool_name: str) -> bool:
+                return tool_rules_solver.is_requires_approval_tool(tool_name) or tool_name in client_tool_names
+
+            requested_tool_calls = [t for t in tool_calls if requires_approval(t.function.name)]
+            allowed_tool_calls = [t for t in tool_calls if not requires_approval(t.function.name)]
             if requested_tool_calls:
                 approval_messages = create_approval_request_message_from_llm_response(
                     agent_id=self.agent_state.id,
@@ -1316,12 +1331,32 @@ class LettaAgentV3(LettaAgentV2):
     @trace_method
     async def _get_valid_tools(self):
         tools = self.agent_state.tools
+        server_tool_names = set(t.name for t in tools)
+
+        # Collect client tool names (exclude duplicates with server tools)
+        client_tool_names = {ct.name for ct in self._client_tools if ct.name not in server_tool_names}
+        all_tool_names = server_tool_names | client_tool_names
+
         valid_tool_names = self.tool_rules_solver.get_allowed_tool_names(
-            available_tools=set([t.name for t in tools]),
+            available_tools=all_tool_names,
             last_function_response=self.last_function_response,
             error_on_empty=False,  # Return empty list instead of raising error
-        ) or list(set(t.name for t in tools))
-        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        ) or list(all_tool_names)
+        valid_tool_names_set = set(valid_tool_names)
+
+        # Build allowed tools from server tools
+        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in valid_tool_names_set]
+
+        # Add client tools (server tools take precedence on name conflicts)
+        for ct in self._client_tools:
+            if ct.name in valid_tool_names_set and ct.name not in server_tool_names:
+                schema = {
+                    "name": ct.name,
+                    "description": ct.description or f"Client tool: {ct.name}",
+                    "parameters": ct.parameters or {"type": "object", "properties": {}, "required": []},
+                }
+                allowed_tools.append(enable_strict_mode(schema))
+
         terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
             tool_list=allowed_tools,
