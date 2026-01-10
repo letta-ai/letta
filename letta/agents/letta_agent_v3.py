@@ -667,7 +667,7 @@ class LettaAgentV3(LettaAgentV2):
                         # Add client tool names - they all require "approval" (client execution)
                         server_tool_names = {t.name for t in self.agent_state.tools}
                         client_tool_names = {ct.name for ct in self._client_tools if ct.name not in server_tool_names}
-                        all_requires_approval = server_requires_approval | client_tool_names
+                        all_requires_approval = set(server_requires_approval) | client_tool_names
 
                         invocation = llm_adapter.invoke_llm(
                             request_data=request_data,
