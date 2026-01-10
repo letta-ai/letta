@@ -659,14 +659,22 @@ class LettaAgentV3(LettaAgentV2):
                             return
 
                         step_progression, step_metrics = self._step_checkpoint_llm_request_start(step_metrics, agent_step_span)
+
+                        # Get server-side tools that require approval
+                        server_requires_approval = self.tool_rules_solver.get_requires_approval_tools(
+                            set([t["name"] for t in valid_tools])
+                        )
+                        # Add client tool names - they all require "approval" (client execution)
+                        server_tool_names = {t.name for t in self.agent_state.tools}
+                        client_tool_names = {ct.name for ct in self._client_tools if ct.name not in server_tool_names}
+                        all_requires_approval = server_requires_approval | client_tool_names
+
                         invocation = llm_adapter.invoke_llm(
                             request_data=request_data,
                             messages=messages,
                             tools=valid_tools,
                             use_assistant_message=False,  # NOTE: set to false
-                            requires_approval_tools=self.tool_rules_solver.get_requires_approval_tools(
-                                set([t["name"] for t in valid_tools])
-                            ),
+                            requires_approval_tools=all_requires_approval,
                             step_id=step_id,
                             actor=self.actor,
                         )
