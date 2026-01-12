@@ -11,10 +11,8 @@ by a web frontend rather than opening a local browser.
 import asyncio
 import time
 from typing import Callable, Optional, Tuple
-from urllib.parse import urlparse
 
-from mcp.client.auth import OAuthClientProvider
-from mcp.shared.auth import OAuthClientMetadata
+from fastmcp.client.auth.oauth import OAuth
 from pydantic import AnyHttpUrl
 
 from letta.log import get_logger
@@ -30,18 +28,18 @@ logger = get_logger(__name__)
 MCPManagerType = "MCPServerManager"
 
 
-class ServerSideOAuth(OAuthClientProvider):
+class ServerSideOAuth(OAuth):
     """
     OAuth client that forwards authorization URL via callback instead of opening browser,
     and receives auth code from external source instead of running local callback server.
 
-    This class subclasses MCP's OAuthClientProvider directly (bypassing FastMCP's OAuth class)
-    to use DatabaseTokenStorage for persistent token storage instead of file-based storage.
+    This class extends FastMCP's OAuth class to:
+    - Use DatabaseTokenStorage for persistent token storage instead of file-based storage
+    - Override redirect_handler to store URLs in the database instead of opening a browser
+    - Override callback_handler to poll database for auth codes instead of running a local server
 
-    This class works in a server-side context where:
-    - The authorization URL should be returned to a web client instead of opening a browser
-    - The authorization code is received via a webhook/callback endpoint instead of a local server
-    - Tokens are stored in the database for persistence across server restarts and instances
+    By extending FastMCP's OAuth, we inherit its _initialize() fix that properly sets
+    token_expiry_time, enabling automatic token refresh when tokens expire.
 
     Args:
         mcp_url: The MCP server URL to authenticate against
@@ -71,43 +69,28 @@ class ServerSideOAuth(OAuthClientProvider):
         self._redirect_uri = redirect_uri
         self._url_callback = url_callback
 
-        # Parse URL to get server base URL
-        parsed_url = urlparse(mcp_url)
-        server_base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        self.server_base_url = server_base_url
-
-        # Build scopes string
-        scopes_str: str
-        if isinstance(scopes, list):
-            scopes_str = " ".join(scopes)
-        elif scopes is not None:
-            scopes_str = str(scopes)
-        else:
-            scopes_str = ""
-
-        # Create client metadata with the web app's redirect URI
-        client_metadata = OAuthClientMetadata(
-            client_name="Letta",
-            redirect_uris=[AnyHttpUrl(redirect_uri)],
-            grant_types=["authorization_code", "refresh_token"],
-            response_types=["code"],
-            scope=scopes_str,
-        )
-        if logo_uri:
-            client_metadata.logo_uri = logo_uri
-
-        # Use DatabaseTokenStorage for persistent storage in the database
-        storage = DatabaseTokenStorage(session_id, mcp_manager, actor)
-
-        # Initialize parent OAuthClientProvider directly (bypassing FastMCP's OAuth class)
-        # This allows us to use DatabaseTokenStorage instead of FileTokenStorage
+        # Initialize parent OAuth class (this creates FileTokenStorage internally)
         super().__init__(
-            server_url=server_base_url,
-            client_metadata=client_metadata,
-            storage=storage,
-            redirect_handler=self.redirect_handler,
-            callback_handler=self.callback_handler,
+            mcp_url=mcp_url,
+            scopes=scopes,
+            client_name="Letta",
         )
+
+        # Replace the file-based storage with database storage
+        # This must be done after super().__init__ since it creates the context
+        self.context.storage = DatabaseTokenStorage(session_id, mcp_manager, actor)
+
+        # Override redirect URI in client metadata to use our web app's callback
+        self.context.client_metadata.redirect_uris = [AnyHttpUrl(redirect_uri)]
+
+        # Clear empty scope - some OAuth servers (like Supabase) reject empty scope strings
+        # Setting to None lets the server use its default scopes
+        if not scopes:
+            self.context.client_metadata.scope = None
+
+        # Set logo URI if provided
+        if logo_uri:
+            self.context.client_metadata.logo_uri = logo_uri
 
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store authorization URL in database and call optional callback.
