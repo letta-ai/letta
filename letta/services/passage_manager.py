@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime, timezone
-from functools import lru_cache
 from typing import Dict, List, Optional
 
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import noload
@@ -29,16 +28,6 @@ from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
-
-
-# TODO: Add redis-backed caching for backend
-@lru_cache(maxsize=8192)
-def get_openai_embedding(text: str, model: str, endpoint: str) -> List[float]:
-    from letta.settings import model_settings
-
-    client = OpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)
-    response = client.embeddings.create(input=text, model=model)
-    return response.data[0].embedding
 
 
 @async_redis_cache(key_func=lambda text, model, endpoint: f"{model}:{endpoint}:{text}")

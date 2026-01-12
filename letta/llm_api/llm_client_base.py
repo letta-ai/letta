@@ -67,7 +67,7 @@ class LLMClientBase:
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
-            response_data = self.request(request_data, llm_config)
+            response_data = await self.request_async(request_data, llm_config)
             if step_id and telemetry_manager:
                 telemetry_manager.create_provider_trace(
                     actor=self.actor,
