@@ -7,11 +7,12 @@ import time
 from functools import partial
 
 import pytest
+import requests
 from pydantic import BaseModel
 
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.schema_generator import validate_google_style_docstring
-from letta.llm_api.helpers import convert_to_structured_output, make_post_request
+from letta.llm_api.helpers import convert_to_structured_output
 from letta.schemas.tool import Tool, ToolCreate
 
 
@@ -185,7 +186,8 @@ def _openai_payload(test_config):
             "parallel_tool_calls": False,
         }
 
-        make_post_request(url, headers, data)
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         success = True
 
     except Exception as e:
@@ -306,7 +308,8 @@ def _run_pydantic_args_test(filename, openai_model, structured_output):
             "parallel_tool_calls": False,
         }
 
-        make_post_request(url, headers, data)
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         return (filename, True, None)  # Success
     except Exception as e:
         return (filename, False, str(e))  # Failure with error message
