@@ -82,7 +82,10 @@ class AsyncBaseMCPClient:
             result = await self.session.call_tool(tool_name, tool_args)
         except Exception as e:
             if e.__class__.__name__ == "McpError":
-                logger.warning(f"MCP tool '{tool_name}' execution failed: {str(e)}")
+                # MCP errors are typically user-facing issues from external MCP servers
+                # (e.g., resource not found, invalid arguments, permission errors)
+                # Log at debug level to avoid triggering production alerts for expected failures
+                logger.debug(f"MCP tool '{tool_name}' execution failed: {str(e)}")
             raise
 
         parsed_content = []

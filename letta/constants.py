@@ -8,6 +8,26 @@ LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 LETTA_MODEL_ENDPOINT = "https://inference.letta.com/v1/"
 DEFAULT_TIMEZONE = "UTC"
 
+# Provider ordering for model listing (matches original _enabled_providers list order)
+PROVIDER_ORDER = {
+    "letta": 0,
+    "openai": 1,
+    "anthropic": 2,
+    "ollama": 3,
+    "google_ai": 4,
+    "google_vertex": 5,
+    "azure": 6,
+    "groq": 7,
+    "together": 8,
+    "vllm": 9,
+    "bedrock": 10,
+    "deepseek": 11,
+    "xai": 12,
+    "lmstudio": 13,
+    "zai": 14,
+    "openrouter": 15,  # Note: OpenRouter uses OpenRouterProvider, not a ProviderType enum
+}
+
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
 OLLAMA_API_PREFIX = "/v1"
@@ -226,11 +246,14 @@ CORE_MEMORY_LINE_NUMBER_WARNING = "# NOTE: Line numbers shown below (with arrows
 
 # Constants to do with summarization / conversation length window
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
-LLM_MAX_TOKENS = {
+LLM_MAX_CONTEXT_WINDOW = {
     "DEFAULT": 30000,
     # deepseek
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
+    # glm (Z.AI)
+    "glm-4.6": 200000,
+    "glm-4.5": 128000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
     "gpt-5": 272000,
@@ -357,6 +380,9 @@ LLM_MAX_TOKENS = {
     "gemini-2.5-flash-preview-09-2025": 1048576,
     "gemini-2.5-flash-lite-preview-09-2025": 1048576,
     "gemini-2.5-computer-use-preview-10-2025": 1048576,
+    # gemini 3
+    "gemini-3-pro-preview": 1048576,
+    "gemini-3-flash-preview": 1048576,
     # gemini latest aliases
     "gemini-flash-latest": 1048576,
     "gemini-flash-lite-latest": 1048576,
@@ -425,6 +451,10 @@ REDIS_EXCLUDE = "exclude"
 REDIS_SET_DEFAULT_VAL = "None"
 REDIS_DEFAULT_CACHE_PREFIX = "letta_cache"
 REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
+
+# Conversation lock constants
+CONVERSATION_LOCK_PREFIX = "conversation:lock:"
+CONVERSATION_LOCK_TTL_SECONDS = 300  # 5 minutes
 
 # TODO: This is temporary, eventually use token-based eviction
 # File based controls

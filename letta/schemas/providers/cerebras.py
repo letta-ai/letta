@@ -41,7 +41,7 @@ class CerebrasProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         response = await openai_get_model_list_async(self.base_url, api_key=api_key)
 
         if "data" in response:
@@ -74,6 +74,7 @@ class CerebrasProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    max_tokens=self.get_default_max_output_tokens(model_name),
                     put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                     provider_name=self.name,
                     provider_category=self.provider_category,

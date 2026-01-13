@@ -134,6 +134,10 @@ class ModelSettings(BaseSettings):
     # xAI / Grok
     xai_api_key: Optional[str] = None
 
+    # Z.ai (ZhipuAI)
+    zai_api_key: Optional[str] = None
+    zai_base_url: str = "https://api.z.ai/api/paas/v4/"
+
     # groq
     groq_api_key: Optional[str] = None
 
@@ -326,7 +330,9 @@ class Settings(BaseSettings):
 
     # LLM request timeout settings (model + embedding model)
     llm_request_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM requests in seconds")
-    llm_stream_timeout_seconds: float = Field(default=60.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds")
+    llm_stream_timeout_seconds: float = Field(
+        default=600.0, ge=10.0, le=1800.0, description="Timeout for LLM streaming requests in seconds"
+    )
 
     # For embeddings
     enable_pinecone: bool = False

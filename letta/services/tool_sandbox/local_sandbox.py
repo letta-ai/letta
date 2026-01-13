@@ -77,24 +77,8 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         local_configs = sbx_config.get_local_config()
         use_venv = local_configs.use_venv
 
-        # Prepare environment variables
-        env = os.environ.copy()
-        if self.provided_sandbox_env_vars:
-            env.update(self.provided_sandbox_env_vars)
-        else:
-            env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
-                sandbox_config_id=sbx_config.id, actor=self.user, limit=100
-            )
-            env.update(env_vars)
-
-        if agent_state:
-            env.update(agent_state.get_agent_env_vars_as_dict())
-
-        if additional_env_vars:
-            env.update(additional_env_vars)
-
-        # Filter out None values to prevent subprocess errors
-        env = {k: v for k, v in env.items() if v is not None}
+        # Prepare environment variables using standardized gathering logic
+        env = await self._gather_env_vars(agent_state, additional_env_vars, sbx_config.id, is_local=True)
 
         # Make sure sandbox directory exists
         sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)

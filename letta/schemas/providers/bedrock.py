@@ -26,8 +26,8 @@ class BedrockProvider(Provider):
 
         try:
             # Decrypt credentials before using
-            access_key = self.access_key_enc.get_plaintext() if self.access_key_enc else None
-            secret_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+            access_key = await self.access_key_enc.get_plaintext_async() if self.access_key_enc else None
+            secret_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
 
             session = Session()
             async with session.client(
@@ -70,6 +70,7 @@ class BedrockProvider(Provider):
                     model_endpoint=None,
                     context_window=self.get_model_context_window(model_arn),
                     handle=self.get_handle(model_arn),
+                    max_tokens=self.get_default_max_output_tokens(model_arn),
                     provider_name=self.name,
                     provider_category=self.provider_category,
                 )

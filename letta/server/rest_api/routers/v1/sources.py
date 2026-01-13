@@ -184,8 +184,6 @@ async def delete_source(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
-    files = await server.file_manager.list_files(source_id, actor)
-    file_ids = [f.id for f in files]
 
     if should_use_tpuf():
         logger.info(f"Deleting source {source_id} from Turbopuffer")
@@ -198,7 +196,12 @@ async def delete_source(
         await delete_source_records_from_pinecone_index(source_id=source_id, actor=actor)
 
     for agent_state in agent_states:
-        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+        # Query files_agents directly to get exactly what was attached to this agent
+        file_ids = await server.file_agent_manager.get_file_ids_for_agent_by_source(
+            agent_id=agent_state.id, source_id=source_id, actor=actor
+        )
+        if file_ids:
+            await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
         if agent_state.enable_sleeptime:
             block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)

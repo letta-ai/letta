@@ -88,6 +88,7 @@ class SimpleAnthropicStreamingInterface:
         self.tool_call_name = None
         self.accumulated_tool_call_args = ""
         self.previous_parse = {}
+        self.thinking_signature = None
 
         # usage trackers
         self.input_tokens = 0
@@ -426,20 +427,23 @@ class SimpleAnthropicStreamingInterface:
                         f"Streaming integrity failed - received BetaThinkingBlock object while not in THINKING EventMode: {delta}"
                     )
 
-                if prev_message_type and prev_message_type != "reasoning_message":
-                    message_index += 1
-                reasoning_message = ReasoningMessage(
-                    id=self.letta_message_id,
-                    source="reasoner_model",
-                    reasoning=delta.thinking,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.reasoning_messages.append(reasoning_message)
-                prev_message_type = reasoning_message.message_type
-                yield reasoning_message
+                # Only emit reasoning message if we have actual content
+                if delta.thinking and delta.thinking.strip():
+                    if prev_message_type and prev_message_type != "reasoning_message":
+                        message_index += 1
+                    reasoning_message = ReasoningMessage(
+                        id=self.letta_message_id,
+                        source="reasoner_model",
+                        reasoning=delta.thinking,
+                        signature=self.thinking_signature,
+                        date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
+                        step_id=self.step_id,
+                    )
+                    self.reasoning_messages.append(reasoning_message)
+                    prev_message_type = reasoning_message.message_type
+                    yield reasoning_message
 
             elif isinstance(delta, BetaSignatureDelta):
                 # Safety check
@@ -448,21 +452,15 @@ class SimpleAnthropicStreamingInterface:
                         f"Streaming integrity failed - received BetaSignatureDelta object while not in THINKING EventMode: {delta}"
                     )
 
-                if prev_message_type and prev_message_type != "reasoning_message":
-                    message_index += 1
-                reasoning_message = ReasoningMessage(
-                    id=self.letta_message_id,
-                    source="reasoner_model",
-                    reasoning="",
-                    date=datetime.now(timezone.utc).isoformat(),
-                    signature=delta.signature,
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.reasoning_messages.append(reasoning_message)
-                prev_message_type = reasoning_message.message_type
-                yield reasoning_message
+                # Store signature but don't emit empty reasoning message
+                # Signature will be attached when actual thinking content arrives
+                self.thinking_signature = delta.signature
+
+                # Update the last reasoning message with the signature so it gets persisted
+                if self.reasoning_messages:
+                    last_msg = self.reasoning_messages[-1]
+                    if isinstance(last_msg, ReasoningMessage):
+                        last_msg.signature = delta.signature
 
         elif isinstance(event, BetaRawMessageStartEvent):
             self.message_id = event.message.id

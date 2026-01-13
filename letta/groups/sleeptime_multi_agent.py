@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from letta.agents.base_agent import BaseAgent
+from letta.agents.letta_agent import LettaAgent
 from letta.groups.helpers import stringify_message
 from letta.interface import AgentInterface
 from letta.orm import User
@@ -114,7 +115,7 @@ class SleeptimeMultiAgent(BaseAgent):
             self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.user)
 
             participant_agent_state = self.agent_manager.get_agent_by_id(participant_agent_id, actor=self.user)
-            participant_agent = Agent(
+            participant_agent = LettaAgent(
                 agent_state=participant_agent_state,
                 interface=StreamingServerInterface(),
                 user=self.user,
@@ -212,7 +213,7 @@ class SleeptimeMultiAgent(BaseAgent):
 
         try:
             # Load main agent
-            main_agent = Agent(
+            main_agent = LettaAgent(
                 agent_state=self.agent_state,
                 interface=self.interface,
                 user=self.user,

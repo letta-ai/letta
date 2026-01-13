@@ -943,12 +943,13 @@ async def test_mcp_server_token_encryption_on_create(server, default_user, encry
         assert created_server is not None
         assert created_server.server_name == "test-encrypted-server"
 
-        # Verify plaintext token is accessible (dual-write during migration)
-        assert created_server.token == "sk-test-secret-token-12345"
+        # Verify plaintext token field is NOT set (no dual-write)
+        assert created_server.token is None
 
-        # Verify token_enc is a Secret object
+        # Verify token_enc is a Secret object and decrypts correctly
         assert created_server.token_enc is not None
         assert isinstance(created_server.token_enc, Secret)
+        assert created_server.token_enc.get_plaintext() == "sk-test-secret-token-12345"
 
         # Read directly from database to verify encryption
         async with db_registry.async_session() as session:
@@ -957,9 +958,6 @@ async def test_mcp_server_token_encryption_on_create(server, default_user, encry
                 identifier=created_server.id,
                 actor=default_user,
             )
-
-            # Verify plaintext column has the value (dual-write)
-            assert server_orm.token == "sk-test-secret-token-12345"
 
             # Verify encrypted column is populated and different from plaintext
             assert server_orm.token_enc is not None
@@ -994,8 +992,12 @@ async def test_mcp_server_token_decryption_on_read(server, default_user, encrypt
         # Read the server back
         retrieved_server = await server.mcp_manager.get_mcp_server_by_id_async(server_id, actor=default_user)
 
-        # Verify the token is decrypted correctly
-        assert retrieved_server.token == "sk-test-decrypt-token-67890"
+        # Verify plaintext token field is NOT set (no dual-write)
+        assert retrieved_server.token is None
+
+        # Verify the token is decrypted correctly via token_enc
+        assert retrieved_server.token_enc is not None
+        assert retrieved_server.token_enc.get_plaintext() == "sk-test-decrypt-token-67890"
 
         # Verify we can get the decrypted token through the secret getter
         token_secret = retrieved_server.get_token_secret()
@@ -1028,8 +1030,11 @@ async def test_mcp_server_custom_headers_encryption(server, default_user, encryp
     created_server = await server.mcp_manager.create_mcp_server(mcp_server, actor=default_user)
 
     try:
-        # Verify custom_headers are accessible
-        assert created_server.custom_headers == custom_headers
+        # Verify plaintext custom_headers field is NOT set (no dual-write)
+        assert created_server.custom_headers is None
+
+        # Verify custom_headers are accessible via encrypted field
+        assert created_server.get_custom_headers_dict() == custom_headers
 
         # Verify custom_headers_enc is a Secret object (stores JSON string)
         assert created_server.custom_headers_enc is not None

@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import delete, or_, select
 
+from letta.errors import EmbeddingConfigRequiredError
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
@@ -17,7 +18,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, decrypt_agent_secrets, enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -55,8 +56,8 @@ class ArchiveManager:
             raise
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_archive_by_id_async(
         self,
         archive_id: str,
@@ -72,8 +73,8 @@ class ArchiveManager:
             return archive.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def update_archive_async(
         self,
         archive_id: str,
@@ -99,8 +100,8 @@ class ArchiveManager:
             return archive.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def list_archives_async(
         self,
         *,
@@ -150,9 +151,9 @@ class ArchiveManager:
             return [a.to_pydantic() for a in archives]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def attach_agent_to_archive_async(
         self,
         agent_id: str,
@@ -191,12 +192,13 @@ class ArchiveManager:
                 is_owner=is_owner,
             )
             session.add(archives_agents)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def detach_agent_from_archive_async(
         self,
         agent_id: str,
@@ -224,11 +226,12 @@ class ArchiveManager:
             else:
                 logger.info(f"Detached agent {agent_id} from archive {archive_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -260,8 +263,8 @@ class ArchiveManager:
         return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def delete_archive_async(
         self,
         archive_id: str,
@@ -278,8 +281,8 @@ class ArchiveManager:
             logger.info(f"Deleted archive {archive_id}")
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def create_passage_in_archive_async(
         self,
         archive_id: str,
@@ -360,9 +363,9 @@ class ArchiveManager:
         return created_passage
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
     @raise_on_invalid_id(param_name="passage_id", expected_prefix=PrimitiveType.PASSAGE)
+    @trace_method
     async def delete_passage_from_archive_async(
         self,
         archive_id: str,
@@ -431,6 +434,8 @@ class ArchiveManager:
             return archive
 
         # Create a default archive for this agent
+        if agent_state.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=agent_state.id, operation="create_default_archive")
         archive_name = f"{agent_state.name}'s Archive"
         archive = await self.create_archive_async(
             name=archive_name,
@@ -470,8 +475,8 @@ class ArchiveManager:
                 raise
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_agents_for_archive_async(
         self,
         archive_id: str,
@@ -549,8 +554,13 @@ class ArchiveManager:
             result = await session.execute(query)
             agents_orm = result.scalars().all()
 
-            agents = await asyncio.gather(*[agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents_orm])
-            return agents
+            # Convert without decrypting to release DB connection before PBKDF2
+            agents_encrypted = await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=[], include=include, decrypt=False) for agent in agents_orm]
+            )
+
+        # Decrypt secrets outside session
+        return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
     @trace_method
@@ -583,8 +593,8 @@ class ArchiveManager:
             return agent_ids[0]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="archive_id", expected_prefix=PrimitiveType.ARCHIVE)
+    @trace_method
     async def get_or_set_vector_db_namespace_async(
         self,
         archive_id: str,
@@ -609,6 +619,7 @@ class ArchiveManager:
 
             # update the archive with the namespace
             await session.execute(update(ArchiveModel).where(ArchiveModel.id == archive_id).values(_vector_db_namespace=namespace_name))
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return namespace_name

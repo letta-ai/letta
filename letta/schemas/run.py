@@ -27,6 +27,9 @@ class Run(RunBase):
     # Agent relationship
     agent_id: str = Field(..., description="The unique identifier of the agent associated with the run.")
 
+    # Conversation relationship
+    conversation_id: Optional[str] = Field(None, description="The unique identifier of the conversation associated with the run.")
+
     # Template fields
     base_template_id: Optional[str] = Field(None, description="The base template ID that the run belongs to.")
 

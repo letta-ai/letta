@@ -34,6 +34,7 @@ from letta.schemas.agent import AgentState, UpdateAgent
 from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
@@ -173,6 +174,7 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -184,6 +186,7 @@ class LettaAgentV2(BaseAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
@@ -251,6 +254,8 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -268,6 +273,7 @@ class LettaAgentV2(BaseAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
@@ -1168,15 +1174,14 @@ class LettaAgentV2(BaseAgentV2):
         """
         from letta.schemas.tool_execution_result import ToolExecutionResult
 
-        tool_name = target_tool.name
-
-        # Special memory case
+        # Check for None before accessing attributes
         if not target_tool:
-            # TODO: fix this error message
             return ToolExecutionResult(
-                func_return=f"Tool {tool_name} not found",
+                func_return="Tool not found",
                 status="error",
             )
+
+        tool_name = target_tool.name
 
         # TODO: This temp. Move this logic and code to executors
 
@@ -1184,8 +1189,8 @@ class LettaAgentV2(BaseAgentV2):
             start_time = get_utc_timestamp_ns()
             agent_step_span.add_event(name="tool_execution_started")
 
-        # Decrypt environment variable values
-        sandbox_env_vars = {var.key: var.value_enc.get_plaintext() if var.value_enc else None for var in agent_state.secrets}
+        # Use pre-decrypted environment variable values (populated in from_orm_async)
+        sandbox_env_vars = {var.key: var.value or "" for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

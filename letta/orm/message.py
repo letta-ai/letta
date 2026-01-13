@@ -55,6 +55,12 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         nullable=True,
         doc="The id of the LLMBatchItem that this message is associated with",
     )
+    conversation_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="The conversation this message belongs to (NULL = default conversation)",
+    )
     is_err: Mapped[Optional[bool]] = mapped_column(
         nullable=True, doc="Whether this message is part of an error step. Used only for debugging purposes."
     )

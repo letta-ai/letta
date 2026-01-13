@@ -24,7 +24,7 @@ from letta.schemas.identity import (
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, decrypt_agent_secrets, enforce_types
 from letta.validators import raise_on_invalid_id
 
 
@@ -83,8 +83,8 @@ class IdentityManager:
             return [identity.to_pydantic() for identity in identities], next_cursor, has_more
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def get_identity_async(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
@@ -165,8 +165,8 @@ class IdentityManager:
                 )
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def update_identity_async(
         self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
     ) -> PydanticIdentity:
@@ -229,8 +229,8 @@ class IdentityManager:
         return existing_identity.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def upsert_identity_properties_async(
         self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser
     ) -> PydanticIdentity:
@@ -247,8 +247,8 @@ class IdentityManager:
             )
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def delete_identity_async(self, identity_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
@@ -257,7 +257,8 @@ class IdentityManager:
             if identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
             await session.delete(identity)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -305,8 +306,8 @@ class IdentityManager:
             current_relationship.extend(new_items)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def list_agents_for_identity_async(
         self,
         identity_id: str,
@@ -335,11 +336,18 @@ class IdentityManager:
                 ascending=ascending,
                 identity_id=identity.id,
             )
-            return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=[], include=include) for agent in agents])
+
+            # Convert without decrypting to release DB connection before PBKDF2
+            agents_encrypted = await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=[], include=include, decrypt=False) for agent in agents]
+            )
+
+        # Decrypt secrets outside session
+        return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
+    @trace_method
     async def list_blocks_for_identity_async(
         self,
         identity_id: str,
@@ -370,9 +378,9 @@ class IdentityManager:
             return [block.to_pydantic() for block in blocks]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def attach_agent_async(self, identity_id: str, agent_id: str, actor: PydanticUser) -> None:
         """
         Attach an agent to an identity.
@@ -388,9 +396,9 @@ class IdentityManager:
                 await identity.update_async(db_session=session, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def detach_agent_async(self, identity_id: str, agent_id: str, actor: PydanticUser) -> None:
         """
         Detach an agent from an identity.
@@ -406,9 +414,9 @@ class IdentityManager:
                 await identity.update_async(db_session=session, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def attach_block_async(self, identity_id: str, block_id: str, actor: PydanticUser) -> None:
         """
         Attach a block to an identity.
@@ -424,9 +432,9 @@ class IdentityManager:
                 await identity.update_async(db_session=session, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="identity_id", expected_prefix=PrimitiveType.IDENTITY)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def detach_block_async(self, identity_id: str, block_id: str, actor: PydanticUser) -> None:
         """
         Detach a block from an identity.

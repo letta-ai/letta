@@ -6,8 +6,10 @@ from typing import Dict, List, Optional
 from openai import AsyncOpenAI, OpenAI
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import noload
 
 from letta.constants import MAX_EMBEDDING_DIM
+from letta.errors import EmbeddingConfigRequiredError
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -166,9 +168,15 @@ class PassageManager:
                 if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
                     embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
 
+        # Sanitize text to remove null bytes which PostgreSQL rejects
+        text = data["text"]
+        if text and "\x00" in text:
+            text = text.replace("\x00", "")
+            logger.warning(f"Removed null bytes from passage text (length: {len(data['text'])} -> {len(text)})")
+
         common_fields = {
             "id": data.get("id"),
-            "text": data["text"],
+            "text": text,
             "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
@@ -227,9 +235,15 @@ class PassageManager:
                 if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
                     embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
 
+        # Sanitize text to remove null bytes which PostgreSQL rejects
+        text = data["text"]
+        if text and "\x00" in text:
+            text = text.replace("\x00", "")
+            logger.warning(f"Removed null bytes from passage text (length: {len(data['text'])} -> {len(text)})")
+
         common_fields = {
             "id": data.get("id"),
-            "text": data["text"],
+            "text": text,
             "embedding": embedding,
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
@@ -471,6 +485,8 @@ class PassageManager:
         Returns:
             List of created passage objects
         """
+        if agent_state.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=agent_state.id, operation="insert_passage")
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
         embedding_client = LLMClient.create(
@@ -940,7 +956,10 @@ class PassageManager:
         """
         async with db_registry.async_session() as session:
             result = await session.execute(
-                select(SourcePassage).where(SourcePassage.file_id == file_id).where(SourcePassage.organization_id == actor.organization_id)
+                select(SourcePassage)
+                .options(noload(SourcePassage.organization))
+                .where(SourcePassage.file_id == file_id)
+                .where(SourcePassage.organization_id == actor.organization_id)
             )
             passages = result.scalars().all()
             return [p.to_pydantic() for p in passages]

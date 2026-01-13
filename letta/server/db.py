@@ -39,12 +39,17 @@ else:
 
 # Add asyncpg-specific settings for connection
 if not settings.disable_sqlalchemy_pooling:
-    engine_args["connect_args"] = {
+    connect_args = {
         "timeout": settings.pg_pool_timeout,
         "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
     }
+    # Only add SSL if not already specified in connection string
+    if "sslmode" not in async_pg_uri and "ssl" not in async_pg_uri:
+        connect_args["ssl"] = "require"
+
+    engine_args["connect_args"] = connect_args
 
 # Create the engine once at module level
 engine: AsyncEngine = create_async_engine(async_pg_uri, **engine_args)

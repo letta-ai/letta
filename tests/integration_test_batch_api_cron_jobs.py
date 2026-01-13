@@ -43,7 +43,8 @@ async def _clear_tables():
             if table.name == "block_history":
                 continue
             await session.execute(table.delete())  # Truncate table
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
 
 
 def _run_server():

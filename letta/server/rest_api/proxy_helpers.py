@@ -16,6 +16,33 @@ from letta.settings import model_settings
 logger = get_logger(__name__)
 
 
+def strip_policy_specs(text: str) -> str:
+    """
+    Remove Claude policy injection blocks from message text.
+
+    Claude injects policy instructions in two forms:
+    1. Appended with prefix: 'user: <policy_spec>...'
+    2. As entire message: '<policy_spec>...'
+
+    We truncate everything from the policy start marker onwards since it's all injected policy content.
+    """
+    # Check if entire message is a policy spec (starts with tag)
+    if text.startswith("<policy_spec>"):
+        logger.info("[Proxy Helpers] Stripped policy injection (entire message)")
+        return ""
+
+    # Check if policy spec is appended (with prefix)
+    policy_start = text.find("user: <policy_spec>")
+    if policy_start != -1:
+        logger.info(f"[Proxy Helpers] Stripped policy injection from position {policy_start}")
+        # Truncate everything from this point onwards
+        cleaned = text[:policy_start].strip()
+        return cleaned
+
+    # No policy injection found, return original text
+    return text
+
+
 def extract_user_messages(body: bytes) -> list[str]:
     """Extract user messages from request body."""
     messages = []
@@ -28,12 +55,19 @@ def extract_user_messages(body: bytes) -> list[str]:
             if msg.get("role") == "user":
                 content = msg.get("content", "")
                 if isinstance(content, str):
-                    user_messages.append(content)
+                    # Strip policy specs before adding
+                    cleaned = strip_policy_specs(content)
+                    if cleaned:  # Only add if not empty after stripping
+                        user_messages.append(cleaned)
                 elif isinstance(content, list):
                     for block in content:
                         if isinstance(block, dict):
                             if block.get("type") == "text":
-                                user_messages.append(block.get("text", ""))
+                                text = block.get("text", "")
+                                # Strip policy specs from text blocks
+                                cleaned = strip_policy_specs(text)
+                                if cleaned:  # Only add if not empty after stripping
+                                    user_messages.append(cleaned)
                             elif block.get("type") == "image":
                                 user_messages.append("[IMAGE]")
 
@@ -419,6 +453,7 @@ async def get_or_create_claude_code_agent(
     server,
     actor,
     project_id: str = None,
+    agent_id: str = None,
 ):
     """
     Get or create a special agent for Claude Code sessions.
@@ -427,11 +462,23 @@ async def get_or_create_claude_code_agent(
         server: SyncServer instance
         actor: Actor performing the operation (user ID)
         project_id: Optional project ID to associate the agent with
+        agent_id: Optional specific agent ID to use (from X-LETTA-AGENT-ID header)
 
     Returns:
-        Agent ID
+        Agent instance
     """
     from letta.schemas.agent import CreateAgent
+
+    # If a specific agent ID is provided, try to use it directly
+    if agent_id:
+        logger.debug(f"Attempting to fetch agent by ID: {agent_id}")
+        try:
+            agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+            logger.info(f"Found agent via X-LETTA-AGENT-ID header: {agent.id} (name: {agent.name})")
+            return agent
+        except Exception as e:
+            logger.warning(f"Could not find agent with ID {agent_id}: {e}. Falling back to default behavior.")
+            # Fall through to default behavior below
 
     # Create short user identifier from UUID (first 8 chars)
     if actor:

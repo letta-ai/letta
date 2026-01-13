@@ -56,7 +56,7 @@ def server_url() -> str:
         thread.start()
 
         # Poll until the server is up (or timeout)
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -79,7 +79,8 @@ def _clear_tables():
         async with db_registry.async_session() as session:
             for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
                 await session.execute(table.delete())  # Truncate table
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     asyncio.run(_clear())
 

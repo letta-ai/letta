@@ -61,6 +61,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                     model_endpoint=self.model_endpoint_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    max_tokens=self.get_default_max_output_tokens(model_name),
                     compatibility_type=compatibility_type,
                     provider_name=self.name,
                     provider_category=self.provider_category,

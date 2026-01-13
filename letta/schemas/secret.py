@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
@@ -6,6 +5,7 @@ from pydantic_core import core_schema
 
 from letta.helpers.crypto_utils import CryptoUtils
 from letta.log import get_logger
+from letta.utils import bounded_gather
 
 logger = get_logger(__name__)
 
@@ -17,22 +17,17 @@ class Secret(BaseModel):
     This class ensures that sensitive data remains encrypted as much as possible
     while passing through the codebase, only decrypting when absolutely necessary.
 
-    Migration status (Phase 1 - encrypted-first reads with plaintext fallback):
-    - Reads: Prefer _enc columns, fallback to plaintext columns with ERROR logging
-    - Writes: Still dual-write to both _enc and plaintext columns for backward compatibility
-    - Encryption: Optional - if LETTA_ENCRYPTION_KEY is not set, stores plaintext in _enc column
-
-    TODO (Phase 2): Remove plaintext fallback in from_db() after verifying no error logs
-    TODO (Phase 3): Remove dual-write logic in to_dict() and set_*_secret() methods
-    TODO (Phase 4): Remove from_db() plaintext_value parameter, was_encrypted flag, and plaintext columns
+    Usage:
+    - Create from plaintext: Secret.from_plaintext(value)
+    - Create from encrypted DB value: Secret.from_encrypted(encrypted_value)
+    - Get encrypted for storage: secret.get_encrypted()
+    - Get plaintext when needed: secret.get_plaintext()
     """
 
     # Store the encrypted value as a regular field
     encrypted_value: Optional[str] = None
     # Cache the decrypted value to avoid repeated decryption (not serialized for security)
     _plaintext_cache: Optional[str] = PrivateAttr(default=None)
-    # Flag to indicate if the value was originally encrypted
-    was_encrypted: bool = False
 
     model_config = ConfigDict(frozen=True)
 
@@ -51,7 +46,7 @@ class Secret(BaseModel):
             A Secret instance with the encrypted (or plaintext) value
         """
         if value is None:
-            return cls.model_construct(encrypted_value=None, was_encrypted=False)
+            return cls.model_construct(encrypted_value=None)
 
         # Guard against double encryption - check if value is already encrypted
         if CryptoUtils.is_encrypted(value):
@@ -60,7 +55,7 @@ class Secret(BaseModel):
         # Try to encrypt, but fall back to storing plaintext if no encryption key
         try:
             encrypted = CryptoUtils.encrypt(value)
-            return cls.model_construct(encrypted_value=encrypted, was_encrypted=False)
+            return cls.model_construct(encrypted_value=encrypted)
         except ValueError as e:
             # No encryption key available, store as plaintext in the _enc column
             if "No encryption key configured" in str(e):
@@ -68,55 +63,89 @@ class Secret(BaseModel):
                     "No encryption key configured. Storing Secret value as plaintext in _enc column. "
                     "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
                 )
-                instance = cls.model_construct(encrypted_value=value, was_encrypted=False)
+                instance = cls.model_construct(encrypted_value=value)
                 instance._plaintext_cache = value  # Cache it since we know the plaintext
                 return instance
             raise  # Re-raise if it's a different error
 
     @classmethod
-    def from_encrypted(cls, encrypted_value: Optional[str]) -> "Secret":
+    async def from_plaintext_async(cls, value: Optional[str]) -> "Secret":
         """
-        Create a Secret from an already encrypted value.
+        Create a Secret from a plaintext value, encrypting it asynchronously.
+
+        This async version runs encryption in a thread pool to avoid blocking
+        the event loop during the CPU-intensive PBKDF2 key derivation (100-500ms).
+
+        Use this method in all async contexts (FastAPI endpoints, async services, etc.)
+        to avoid blocking the event loop.
 
         Args:
-            encrypted_value: The encrypted value
+            value: The plaintext value to encrypt
+
+        Returns:
+            A Secret instance with the encrypted (or plaintext) value
+        """
+        if value is None:
+            return cls.model_construct(encrypted_value=None)
+
+        # Guard against double encryption - check if value is already encrypted
+        if CryptoUtils.is_encrypted(value):
+            logger.warning("Creating Secret from already-encrypted value. This can be dangerous.")
+
+        # Try to encrypt asynchronously, but fall back to storing plaintext if no encryption key
+        try:
+            encrypted = await CryptoUtils.encrypt_async(value)
+            return cls.model_construct(encrypted_value=encrypted)
+        except ValueError as e:
+            # No encryption key available, store as plaintext in the _enc column
+            if "No encryption key configured" in str(e):
+                logger.warning(
+                    "No encryption key configured. Storing Secret value as plaintext in _enc column. "
+                    "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+                )
+                instance = cls.model_construct(encrypted_value=value)
+                instance._plaintext_cache = value  # Cache it since we know the plaintext
+                return instance
+            raise  # Re-raise if it's a different error
+
+    @classmethod
+    async def from_plaintexts_async(cls, values: dict[str, str], max_concurrency: int = 10) -> dict[str, "Secret"]:
+        """
+        Create multiple Secrets from plaintexts concurrently with bounded concurrency.
+
+        Uses bounded_gather() to encrypt values in parallel while limiting
+        concurrent operations to prevent overwhelming the event loop.
+
+        Args:
+            values: Dict of key -> plaintext value
+            max_concurrency: Maximum number of concurrent encryption operations (default: 10)
+
+        Returns:
+            Dict of key -> Secret
+        """
+        if not values:
+            return {}
+
+        keys = list(values.keys())
+
+        async def encrypt_one(key: str) -> "Secret":
+            return await cls.from_plaintext_async(values[key])
+
+        secrets = await bounded_gather([encrypt_one(k) for k in keys], max_concurrency=max_concurrency)
+        return dict(zip(keys, secrets))
+
+    @classmethod
+    def from_encrypted(cls, encrypted_value: Optional[str]) -> "Secret":
+        """
+        Create a Secret from an already encrypted value (read from DB).
+
+        Args:
+            encrypted_value: The encrypted value from the _enc column
 
         Returns:
             A Secret instance
         """
-        return cls.model_construct(encrypted_value=encrypted_value, was_encrypted=True)
-
-    @classmethod
-    def from_db(cls, encrypted_value: Optional[str], plaintext_value: Optional[str] = None) -> "Secret":
-        """
-        Create a Secret from database values. Prefers encrypted column, falls back to plaintext with error logging.
-
-        During Phase 1 of migration, this method:
-        1. Uses encrypted_value if available (preferred)
-        2. Falls back to plaintext_value with ERROR logging if encrypted is unavailable
-        3. Returns empty Secret if neither is available
-
-        The error logging helps identify any records that haven't been migrated to encrypted columns.
-
-        Args:
-            encrypted_value: The encrypted value from the database (_enc column)
-            plaintext_value: The plaintext value from the database (legacy column, fallback only)
-
-        Returns:
-            A Secret instance with the value from encrypted or plaintext column
-        """
-        if encrypted_value is not None:
-            return cls.from_encrypted(encrypted_value)
-        # Fallback to plaintext with error logging - this helps identify unmigrated data
-        if plaintext_value is not None:
-            logger.error(
-                "MIGRATION_NEEDED: Reading from plaintext column instead of encrypted column. "
-                "This indicates data that hasn't been migrated to the _enc column yet. "
-                "Please run migrate data to _enc columns as plaintext columns will be deprecated.",
-                stack_info=True,
-            )
-            return cls.from_plaintext(plaintext_value)
-        return cls.from_plaintext(None)
+        return cls.model_construct(encrypted_value=encrypted_value)
 
     def get_encrypted(self) -> Optional[str]:
         """
@@ -146,14 +175,8 @@ class Secret(BaseModel):
         if self.encrypted_value is None:
             return None
 
-        # Use cached value if available, but only if it looks like plaintext
-        # or we're confident we can decrypt it
+        # Use cached value if available
         if self._plaintext_cache is not None:
-            # If this was explicitly created as plaintext, trust the cache
-            # This prevents false positives from is_encrypted() heuristic
-            if not self.was_encrypted:
-                return self._plaintext_cache
-            # For encrypted values, trust the cache (already decrypted previously)
             return self._plaintext_cache
 
         # Try to decrypt
@@ -213,8 +236,6 @@ class Secret(BaseModel):
 
         # Use cached value if available
         if self._plaintext_cache is not None:
-            if not self.was_encrypted:
-                return self._plaintext_cache
             return self._plaintext_cache
 
         # Try to decrypt (async)
@@ -264,14 +285,6 @@ class Secret(BaseModel):
     def __repr__(self) -> str:
         """Representation that doesn't expose the actual value."""
         return self.__str__()
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert to dictionary for database storage.
-
-        Returns both encrypted and plaintext values for dual-write during migration.
-        """
-        return {"encrypted": self.get_encrypted(), "plaintext": self.get_plaintext() if not self.was_encrypted else None}
 
     def __eq__(self, other: Any) -> bool:
         """

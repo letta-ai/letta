@@ -28,7 +28,6 @@ class TestSecret:
             # Should store encrypted value
             assert secret.encrypted_value is not None
             assert secret.encrypted_value != plaintext
-            assert secret.was_encrypted is False
 
             # Should decrypt to original value
             assert secret.get_plaintext() == plaintext
@@ -52,7 +51,6 @@ class TestSecret:
             # Should store the plaintext value directly in encrypted_value
             assert secret.encrypted_value == plaintext
             assert secret.get_plaintext() == plaintext
-            assert not secret.was_encrypted
         finally:
             settings.encryption_key = original_key
 
@@ -61,7 +59,6 @@ class TestSecret:
         secret = Secret.from_plaintext(None)
 
         assert secret.encrypted_value is None
-        assert secret.was_encrypted is False
         assert secret.get_plaintext() is None
         assert secret.is_empty() is True
 
@@ -79,75 +76,7 @@ class TestSecret:
             secret = Secret.from_encrypted(encrypted)
 
             assert secret.encrypted_value == encrypted
-            assert secret.was_encrypted is True
             assert secret.get_plaintext() == plaintext
-        finally:
-            settings.encryption_key = original_key
-
-    def test_from_db_with_encrypted_value(self):
-        """Test creating a Secret from database with encrypted value."""
-        from letta.settings import settings
-
-        original_key = settings.encryption_key
-        settings.encryption_key = self.MOCK_KEY
-
-        try:
-            plaintext = "database-secret"
-            encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY)
-
-            secret = Secret.from_db(encrypted_value=encrypted, plaintext_value=None)
-
-            assert secret.encrypted_value == encrypted
-            assert secret.was_encrypted is True
-            assert secret.get_plaintext() == plaintext
-        finally:
-            settings.encryption_key = original_key
-
-    def test_from_db_with_plaintext_value_fallback(self, caplog):
-        """Test creating a Secret from database with only plaintext value falls back with error logging.
-
-        Note: In Phase 1 of migration, from_db() prefers encrypted but falls back to plaintext
-        with error logging to help identify unmigrated data.
-        """
-        import logging
-
-        from letta.settings import settings
-
-        original_key = settings.encryption_key
-        settings.encryption_key = self.MOCK_KEY
-
-        try:
-            plaintext = "legacy-plaintext"
-
-            # When only plaintext is provided, should fall back to plaintext with error logging
-            with caplog.at_level(logging.ERROR):
-                secret = Secret.from_db(encrypted_value=None, plaintext_value=plaintext)
-
-            # Should use the plaintext value (fallback)
-            assert secret.get_plaintext() == plaintext
-
-            # Should have logged an error about reading from plaintext column
-            assert "MIGRATION_NEEDED" in caplog.text
-            assert "plaintext column" in caplog.text
-        finally:
-            settings.encryption_key = original_key
-
-    def test_from_db_dual_read(self):
-        """Test dual read functionality - prefer encrypted over plaintext."""
-        from letta.settings import settings
-
-        original_key = settings.encryption_key
-        settings.encryption_key = self.MOCK_KEY
-
-        try:
-            plaintext = "correct-value"
-            old_plaintext = "old-legacy-value"
-            encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY)
-
-            # When both values exist, should prefer encrypted
-            secret = Secret.from_db(encrypted_value=encrypted, plaintext_value=old_plaintext)
-
-            assert secret.get_plaintext() == plaintext  # Should use encrypted value, not plaintext
         finally:
             settings.encryption_key = original_key
 
@@ -287,3 +216,95 @@ class TestSecret:
                 assert mock_decrypt.call_count == 1
         finally:
             settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_with_key(self):
+        """Test creating a Secret from plaintext value asynchronously with encryption key."""
+        from letta.settings import settings
+
+        # Set encryption key
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext = "my-async-secret-value"
+
+            secret = await Secret.from_plaintext_async(plaintext)
+
+            # Should store encrypted value
+            assert secret.encrypted_value is not None
+            assert secret.encrypted_value != plaintext
+
+            # Should decrypt to original value
+            result = await secret.get_plaintext_async()
+            assert result == plaintext
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_without_key_stores_plaintext(self):
+        """Test creating a Secret asynchronously without encryption key stores as plaintext."""
+        from letta.settings import settings
+
+        # Clear encryption key
+        original_key = settings.encryption_key
+        settings.encryption_key = None
+
+        try:
+            plaintext = "my-async-plaintext-value"
+
+            # Should store as plaintext in _enc column when no encryption key
+            secret = await Secret.from_plaintext_async(plaintext)
+
+            # Should store the plaintext value directly in encrypted_value
+            assert secret.encrypted_value == plaintext
+            result = await secret.get_plaintext_async()
+            assert result == plaintext
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintext_async_with_none(self):
+        """Test creating a Secret asynchronously from None value."""
+        secret = await Secret.from_plaintext_async(None)
+
+        assert secret.encrypted_value is None
+        result = await secret.get_plaintext_async()
+        assert result is None
+        assert secret.is_empty() is True
+
+    @pytest.mark.asyncio
+    async def test_from_plaintexts_async(self):
+        """Test batch encrypting multiple secrets concurrently."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            values = {
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3",
+            }
+
+            secrets = await Secret.from_plaintexts_async(values)
+
+            # Should return dict with same keys
+            assert set(secrets.keys()) == {"key1", "key2", "key3"}
+
+            # Each secret should decrypt to original value
+            for key, secret in secrets.items():
+                assert isinstance(secret, Secret)
+                assert secret.encrypted_value is not None
+                assert secret.encrypted_value != values[key]
+                result = await secret.get_plaintext_async()
+                assert result == values[key]
+        finally:
+            settings.encryption_key = original_key
+
+    @pytest.mark.asyncio
+    async def test_from_plaintexts_async_empty_dict(self):
+        """Test batch encrypting with empty dict."""
+        secrets = await Secret.from_plaintexts_async({})
+        assert secrets == {}

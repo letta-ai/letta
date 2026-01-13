@@ -87,9 +87,13 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             raise self.llm_client.handle_llm_error(e)
 
         # Process the stream and yield chunks immediately for TTFT
-        async for chunk in self.interface.process(stream):  # TODO: add ttft span
-            # Yield each chunk immediately as it arrives
-            yield chunk
+        # Wrap in error handling to convert provider errors to common LLMError types
+        try:
+            async for chunk in self.interface.process(stream):  # TODO: add ttft span
+                # Yield each chunk immediately as it arrives
+                yield chunk
+        except Exception as e:
+            raise self.llm_client.handle_llm_error(e)
 
         # After streaming completes, extract the accumulated data
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()

@@ -24,8 +24,8 @@ from letta.errors import (
     AgentExportProcessingError,
     AgentFileImportError,
     AgentNotFoundForExportError,
+    NoActiveRunsToCancelError,
     PendingApprovalError,
-    RunCancelError,
 )
 from letta.groups.sleeptime_multi_agent_v4 import SleeptimeMultiAgentV4
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
@@ -66,6 +66,7 @@ from letta.server.server import SyncServer
 from letta.services.lettuce import LettuceClient
 from letta.services.run_manager import RunManager
 from letta.services.streaming_service import StreamingService
+from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.settings import settings
 from letta.utils import is_1_0_sdk_version, safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, ToolId
@@ -389,7 +390,7 @@ async def import_agent(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
-        serialized_data = file.file.read()
+        serialized_data = await file.read()
         file_size_mb = len(serialized_data) / (1024 * 1024)
         logger.info(f"Agent import: loaded {file_size_mb:.2f} MB into memory")
         agent_json = json.loads(serialized_data)
@@ -638,10 +639,11 @@ async def run_tool_for_agent(
         )
 
     # Build environment variables dict from agent secrets
+    # Use pre-decrypted value field (populated in from_orm_async)
     sandbox_env_vars = {}
     if agent.tool_exec_environment_variables:
         for env_var in agent.tool_exec_environment_variables:
-            sandbox_env_vars[env_var.key] = env_var.value_enc.get_plaintext() if env_var.value_enc else None
+            sandbox_env_vars[env_var.key] = env_var.value or ""
 
     # Create tool execution manager and execute the tool
     from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
@@ -743,9 +745,10 @@ async def detach_source(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.file_manager.list_files(source_id, actor)
-    file_ids = [f.id for f in files]
-    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+    # Query files_agents directly to get exactly what was attached, regardless of source changes
+    file_ids = await server.file_agent_manager.get_file_ids_for_agent_by_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if file_ids:
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         try:
@@ -774,9 +777,10 @@ async def detach_folder_from_agent(
     if not agent_state.sources:
         agent_state = await server.agent_manager.detach_all_files_tools_async(agent_state=agent_state, actor=actor)
 
-    files = await server.file_manager.list_files(folder_id, actor)
-    file_ids = [f.id for f in files]
-    await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
+    # Query files_agents directly to get exactly what was attached, regardless of source changes
+    file_ids = await server.file_agent_manager.get_file_ids_for_agent_by_source(agent_id=agent_id, source_id=folder_id, actor=actor)
+    if file_ids:
+        await server.remove_files_from_context_window(agent_state=agent_state, file_ids=file_ids, actor=actor)
 
     if agent_state.enable_sleeptime:
         try:
@@ -1381,6 +1385,7 @@ async def list_messages(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     group_id: str | None = Query(None, description="Group ID to filter messages by."),
+    conversation_id: str | None = Query(None, description="Conversation ID to filter messages by."),
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages", deprecated=True),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool.", deprecated=True),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument.", deprecated=True),
@@ -1400,6 +1405,7 @@ async def list_messages(
         before=before,
         limit=limit,
         group_id=group_id,
+        conversation_id=conversation_id,
         reverse=(order == "desc"),
         return_message_object=False,
         use_assistant_message=use_assistant_message,
@@ -1520,6 +1526,7 @@ async def send_message(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]
@@ -1557,6 +1564,7 @@ async def send_message(
                 use_assistant_message=request.use_assistant_message,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
+                client_tools=request.client_tools,
             )
         else:
             result = await server.send_message_to_agent(
@@ -1614,6 +1622,7 @@ async def send_message(
             },
         }
     },
+    deprecated=True,
 )
 async def send_message_streaming(
     request_obj: Request,  # FastAPI Request
@@ -1624,6 +1633,9 @@ async def send_message_streaming(
 ) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
+
+    Deprecated: Use the `POST /{agent_id}/messages` endpoint with `streaming=true` in the request body instead.
+
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
@@ -1667,40 +1679,50 @@ async def cancel_message(
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
     run_ids = request.run_ids if request else None
     if not run_ids:
-        redis_client = await get_redis_client()
-        run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
+        run_id = None
+        try:
+            redis_client = await get_redis_client()
+            run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
+        except Exception as e:
+            # Redis is optional; fall back to DB to avoid surfacing 5XXs for cancellation.
+            logger.warning(f"Failed to look up run to cancel in redis for agent {agent_id}, falling back to DB: {e}")
+
         if run_id is None:
             logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
-            run_ids = await server.run_manager.list_runs(
+            runs = await server.run_manager.list_runs(
                 actor=actor,
                 statuses=[RunStatus.created, RunStatus.running],
                 ascending=False,
                 agent_id=agent_id,  # NOTE: this will override agent_ids if provided
-                limit=100,  # Limit to 10 most recent active runs for cancellation
+                limit=100,  # Limit to 100 most recent active runs for cancellation
             )
-            run_ids = [run.id for run in run_ids]
+            run_ids = [run.id for run in runs]
         else:
             run_ids = [run_id]
 
+    if not run_ids:
+        raise NoActiveRunsToCancelError(agent_id=agent_id)
+
     results = {}
-    failed_to_cancel = []
     for run_id in run_ids:
-        run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
-        if run.metadata.get("lettuce"):
-            lettuce_client = await LettuceClient.create()
-            await lettuce_client.cancel(run_id)
         try:
-            run = await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
+            run = await server.run_manager.get_run_by_id(run_id=run_id, actor=actor)
+            if run.metadata and run.metadata.get("lettuce"):
+                try:
+                    lettuce_client = await LettuceClient.create()
+                    await lettuce_client.cancel(run_id)
+                except Exception as e:
+                    # Do not surface cancellation failures as 5XXs.
+                    logger.error(f"Failed to cancel Lettuce run {run_id}: {e}")
+
+            await server.run_manager.cancel_run(actor=actor, agent_id=agent_id, run_id=run_id)
         except Exception as e:
             results[run_id] = "failed"
+            # Cancellation failures should not raise errors back to the client.
             logger.error(f"Failed to cancel run {run_id}: {str(e)}")
-            failed_to_cancel.append(run_id)
             continue
         results[run_id] = "cancelled"
         logger.info(f"Cancelled run {run_id}")
-
-    if failed_to_cancel:
-        raise RunCancelError(f"Failed to cancel runs: {failed_to_cancel}")
     return results
 
 
@@ -1731,6 +1753,7 @@ async def search_messages(
         agent_id=request.agent_id,
         project_id=request.project_id,
         template_id=request.template_id,
+        conversation_id=request.conversation_id,
         limit=request.limit,
         start_date=request.start_date,
         end_date=request.end_date,
@@ -1770,6 +1793,7 @@ async def _process_message_background(
             "ollama",
             "azure",
             "xai",
+            "zai",
             "groq",
             "deepseek",
         ]
@@ -2074,6 +2098,7 @@ async def preview_model_request(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]
@@ -2090,9 +2115,23 @@ async def preview_model_request(
         )
 
 
-@router.post("/{agent_id}/summarize", status_code=204, operation_id="summarize_messages")
+class CompactionRequest(BaseModel):
+    compaction_settings: Optional[CompactionSettings] = Field(
+        default=None,
+        description="Optional compaction settings to use for this summarization request. If not provided, the agent's default settings will be used.",
+    )
+
+
+class CompactionResponse(BaseModel):
+    summary: str
+    num_messages_before: int
+    num_messages_after: int
+
+
+@router.post("/{agent_id}/summarize", response_model=CompactionResponse, operation_id="summarize_messages")
 async def summarize_messages(
     agent_id: AgentId,
+    request: Optional[CompactionRequest] = Body(default=None),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -2113,6 +2152,7 @@ async def summarize_messages(
         "ollama",
         "azure",
         "xai",
+        "zai",
         "groq",
         "deepseek",
     ]
@@ -2120,12 +2160,27 @@ async def summarize_messages(
     if agent_eligible and model_compatible:
         agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
         in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-        summary_message, messages = await agent_loop.compact(
+        compaction_settings = request.compaction_settings if request else None
+        num_messages_before = len(in_context_messages)
+        summary_message, messages, summary = await agent_loop.compact(
             messages=in_context_messages,
+            compaction_settings=compaction_settings,
         )
+        num_messages_after = len(messages)
 
         # update the agent state
+        logger.info(f"Summarized {num_messages_before} messages to {num_messages_after}")
+        if num_messages_before <= num_messages_after:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Summarization failed to reduce the number of messages. You may need to use a different CompactionSettings (e.g. using `all` mode).",
+            )
         await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
+        return CompactionResponse(
+            summary=summary,
+            num_messages_before=num_messages_before,
+            num_messages_after=num_messages_after,
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -2184,6 +2239,7 @@ async def capture_messages(
 
     response_messages = await server.message_manager.create_many_messages_async(messages_to_persist, actor=actor)
 
+    run_ids = []
     sleeptime_group = agent.multi_agent_group if agent.multi_agent_group and agent.multi_agent_group.manager_type == "sleeptime" else None
     if sleeptime_group:
         sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)

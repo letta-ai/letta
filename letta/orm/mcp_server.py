@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import JSON, String, Text, UniqueConstraint
@@ -11,6 +12,7 @@ from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import MCPServerType
 from letta.schemas.mcp import MCPServer
+from letta.schemas.secret import Secret
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization
@@ -59,6 +61,23 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="mcp_servers")
+
+    def to_pydantic(self):
+        """Convert ORM model to Pydantic model, handling encrypted fields."""
+        # Parse custom_headers from JSON if stored as string
+        return self.__pydantic_model__(
+            id=self.id,
+            server_type=self.server_type,
+            server_name=self.server_name,
+            server_url=self.server_url,
+            token_enc=Secret.from_encrypted(self.token_enc) if self.token_enc else None,
+            custom_headers_enc=Secret.from_encrypted(self.custom_headers_enc) if self.custom_headers_enc else None,
+            stdio_config=self.stdio_config,
+            organization_id=self.organization_id,
+            created_by_id=self.created_by_id,
+            last_updated_by_id=self.last_updated_by_id,
+            metadata_=self.metadata_,
+        )
 
 
 class MCPTools(SqlalchemyBase, OrganizationMixin):

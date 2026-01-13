@@ -19,7 +19,7 @@ from letta.schemas.enums import ActorType, PrimitiveType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, decrypt_agent_secrets, enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -100,7 +100,8 @@ class BlockManager:
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
                 pydantic_block = block.to_pydantic()
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
                 return pydantic_block
 
     @enforce_types
@@ -119,23 +120,24 @@ class BlockManager:
 
         async with db_registry.async_session() as session:
             # Validate all blocks before creating any
+            validated_data = []
             for block in blocks:
                 block_data = block.model_dump(to_orm=True, exclude_none=True)
                 validate_block_creation(block_data)
+                validated_data.append(block_data)
 
-            block_models = [
-                BlockModel(**block.model_dump(to_orm=True, exclude_none=True), organization_id=actor.organization_id) for block in blocks
-            ]
+            block_models = [BlockModel(**data, organization_id=actor.organization_id) for data in validated_data]
             created_models = await BlockModel.batch_create_async(
                 items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
             )
             result = [m.to_pydantic() for m in created_models]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def update_block_async(self, block_id: str, block_update: BlockUpdate, actor: PydanticUser) -> PydanticBlock:
         """Update a block by its ID with the given BlockUpdate object."""
         async with db_registry.async_session() as session:
@@ -150,12 +152,13 @@ class BlockManager:
 
             await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_block = block.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_block
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def delete_block_async(self, block_id: str, actor: PydanticUser) -> None:
         """Delete a block by its ID."""
         async with db_registry.async_session() as session:
@@ -353,8 +356,8 @@ class BlockManager:
             return [block.to_pydantic() for block in blocks]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
         """Retrieve a block by its name."""
         async with db_registry.async_session() as session:
@@ -413,8 +416,8 @@ class BlockManager:
             return pydantic_blocks
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def get_agents_for_block_async(
         self,
         block_id: str,
@@ -502,10 +505,13 @@ class BlockManager:
             result = await session.execute(query)
             agents_orm = result.scalars().all()
 
-            agents = await asyncio.gather(
-                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents_orm]
+            # Convert without decrypting to release DB connection before PBKDF2
+            agents_encrypted = await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=[], include=include, decrypt=False) for agent in agents_orm]
             )
-            return agents
+
+        # Decrypt secrets outside session
+        return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
     @trace_method
@@ -591,7 +597,8 @@ class BlockManager:
                     new_val = new_val[: block.limit]
                 block.value = new_val
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             if return_hydrated:
                 # TODO: implement for async
@@ -600,9 +607,9 @@ class BlockManager:
             return None
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def checkpoint_block_async(
         self,
         block_id: str,
@@ -669,7 +676,8 @@ class BlockManager:
 
             # 7) Flush changes, then commit once
             block = await block.update_async(db_session=session, actor=actor, no_commit=True)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return block.to_pydantic()
 
@@ -710,8 +718,8 @@ class BlockManager:
         return updated_block
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def undo_checkpoint_block(
         self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
     ) -> PydanticBlock:
@@ -757,12 +765,13 @@ class BlockManager:
             block = await self._move_block_to_sequence(session, block, previous_entry.sequence_number, actor)
 
             # 4) Commit
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return block.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def redo_checkpoint_block(
         self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None
     ) -> PydanticBlock:
@@ -805,5 +814,6 @@ class BlockManager:
 
             block = await self._move_block_to_sequence(session, block, next_entry.sequence_number, actor)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return block.to_pydantic()

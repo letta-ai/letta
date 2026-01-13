@@ -58,7 +58,8 @@ class JobManager:
             job.organization_id = actor.organization_id
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             # Convert to pydantic first, then add agent_id if needed
             result = super(JobModel, job).to_pydantic()
@@ -70,8 +71,8 @@ class JobManager:
             return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
+    @trace_method
     async def update_job_by_id_async(
         self, job_id: str, job_update: JobUpdate, actor: PydanticUser, safe_update: bool = False
     ) -> PydanticJob:
@@ -122,7 +123,8 @@ class JobManager:
             # Get the updated metadata for callback
             final_metadata = job.metadata_
             result = job.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # Dispatch callback outside of database session if needed
         if needs_callback:
@@ -143,13 +145,14 @@ class JobManager:
                 job.callback_error = callback_result.get("callback_error")
                 await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
                 result = job.to_pydantic()
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
         return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
+    @trace_method
     async def safe_update_job_status_async(
         self,
         job_id: str,
@@ -189,8 +192,8 @@ class JobManager:
             return False
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
+    @trace_method
     async def get_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Fetch a job by its ID asynchronously."""
         async with db_registry.async_session() as session:
@@ -304,8 +307,8 @@ class JobManager:
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
+    @trace_method
     async def delete_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         async with db_registry.async_session() as session:
@@ -314,8 +317,8 @@ class JobManager:
             return job.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @trace_method
     async def get_run_messages(
         self,
         run_id: str,
@@ -372,8 +375,8 @@ class JobManager:
         return messages
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="run_id", expected_prefix=PrimitiveType.RUN)
+    @trace_method
     async def get_step_messages(
         self,
         run_id: str,
@@ -462,7 +465,8 @@ class JobManager:
                 job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
                 job.ttft_ns = ttft_ns
                 await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
         except Exception as e:
             logger.warning(f"Failed to record TTFT for job {job_id}: {e}")
 
@@ -475,7 +479,8 @@ class JobManager:
                 job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
                 job.total_duration_ns = total_duration_ns
                 await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
         except Exception as e:
             logger.warning(f"Failed to record response duration for job {job_id}: {e}")
 
@@ -537,8 +542,8 @@ class JobManager:
             return result
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="job_id", expected_prefix=PrimitiveType.JOB)
+    @trace_method
     async def get_job_steps(
         self,
         job_id: str,

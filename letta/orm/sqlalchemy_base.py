@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.orm.interfaces import ORMOption
 
+from letta.errors import ConcurrentUpdateError
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
@@ -259,28 +260,40 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if before_obj and after_obj:
                 # Window-based query - get records between before and after
-                conditions.append(
-                    or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
-                )
-                conditions.append(
-                    or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
-                )
+                # Skip pagination if either object has null created_at
+                if before_obj.created_at is not None and after_obj.created_at is not None:
+                    conditions.append(
+                        or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id))
+                    )
+                    conditions.append(
+                        or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id))
+                    )
+                else:
+                    logger.warning(
+                        f"Skipping pagination: before_obj.created_at={before_obj.created_at}, after_obj.created_at={after_obj.created_at}"
+                    )
             else:
                 # Pure pagination query
                 if before_obj:
-                    conditions.append(
-                        or_(
-                            cls.created_at < before_obj.created_at if ascending else cls.created_at > before_obj.created_at,
-                            and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                    if before_obj.created_at is not None:
+                        conditions.append(
+                            or_(
+                                cls.created_at < before_obj.created_at if ascending else cls.created_at > before_obj.created_at,
+                                and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                            )
                         )
-                    )
+                    else:
+                        logger.warning(f"Skipping 'before' pagination: before_obj.created_at is None (id={before_obj.id})")
                 if after_obj:
-                    conditions.append(
-                        or_(
-                            cls.created_at > after_obj.created_at if ascending else cls.created_at < after_obj.created_at,
-                            and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                    if after_obj.created_at is not None:
+                        conditions.append(
+                            or_(
+                                cls.created_at > after_obj.created_at if ascending else cls.created_at < after_obj.created_at,
+                                and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                            )
                         )
-                    )
+                    else:
+                        logger.warning(f"Skipping 'after' pagination: after_obj.created_at is None (id={after_obj.id})")
 
             if conditions:
                 query = query.where(and_(*conditions))
@@ -619,6 +632,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
         self.set_updated_at()
+
+        # Capture id before try block to avoid accessing expired attributes after rollback
+        object_id = self.id
+        class_name = self.__class__.__name__
+
         try:
             db_session.add(self)
             if no_commit:
@@ -633,8 +651,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             # This can occur when using optimistic locking (version_id_col) and:
             # 1. The row doesn't exist (0 rows matched)
             # 2. The version has changed (concurrent update)
-            # We convert this to NoResultFound to return a proper 404 error
-            raise NoResultFound(f"{self.__class__.__name__} with id '{self.id}' not found or was updated by another transaction") from e
+            # In practice, case 1 is rare (blocks aren't frequently deleted), so we always
+            # return 409 ConcurrentUpdateError. If it was actually deleted, the retry will get 404.
+            # Not worth performing another db query to check if the row exists.
+            raise ConcurrentUpdateError(resource_type=class_name, resource_id=object_id) from e
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 

@@ -108,18 +108,29 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
-        if api_key:
-            anthropic_client = anthropic.Anthropic(api_key=api_key)
-            try:
-                # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
-                anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
-            except anthropic.AuthenticationError as e:
-                raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
-            except Exception as e:
-                raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
-        else:
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
+        if not api_key:
             raise ValueError("No API key provided")
+
+        try:
+            # Use async Anthropic client
+            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+            # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
+            await anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
+        except anthropic.AuthenticationError as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
+
+    def get_default_max_output_tokens(self, model_name: str) -> int:
+        """Get the default max output tokens for Anthropic models."""
+        if "opus" in model_name:
+            return 16384
+        elif "sonnet" in model_name:
+            return 16384
+        elif "haiku" in model_name:
+            return 8192
+        return 8192  # default for anthropic
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         """
@@ -127,9 +138,22 @@ class AnthropicProvider(Provider):
 
         NOTE: currently there is no GET /models, so we need to hardcode
         """
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
+
+        # For claude-pro-max provider, use OAuth Bearer token instead of api_key
+        is_oauth_provider = self.name == "claude-pro-max"
+
         if api_key:
-            anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+            if is_oauth_provider:
+                anthropic_client = anthropic.AsyncAnthropic(
+                    default_headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "anthropic-version": "2023-06-01",
+                        "anthropic-beta": "oauth-2025-04-20",
+                    },
+                )
+            else:
+                anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
         elif model_settings.anthropic_api_key:
             anthropic_client = anthropic.AsyncAnthropic()
         else:
@@ -171,11 +195,7 @@ class AnthropicProvider(Provider):
             except Exception:
                 pass
 
-            max_tokens = 8192
-            if "claude-3-opus" in model["id"]:
-                max_tokens = 4096
-            if "claude-3-haiku" in model["id"]:
-                max_tokens = 4096
+            max_tokens = self.get_default_max_output_tokens(model["id"])
             # TODO: set for 3-7 extended thinking mode
 
             # NOTE: from 2025-02

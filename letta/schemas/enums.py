@@ -26,6 +26,7 @@ class PrimitiveType(str, Enum):
     SANDBOX_CONFIG = "sandbox"  # Note: sandbox_config IDs use "sandbox" prefix
     STEP = "step"
     IDENTITY = "identity"
+    CONVERSATION = "conv"
 
     # Infrastructure types
     MCP_SERVER = "mcp_server"
@@ -68,6 +69,7 @@ class ProviderType(str, Enum):
     vllm = "vllm"
     voyageai = "voyageai"
     xai = "xai"
+    zai = "zai"
 
 
 class AgentType(str, Enum):

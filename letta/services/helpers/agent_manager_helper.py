@@ -1099,8 +1099,8 @@ async def build_source_passage_query(
         embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-    # Base query for source passages
-    query = select(SourcePassage).where(SourcePassage.organization_id == actor.organization_id)
+    # Base query for source passages - use noload to prevent lazy loading which can block the event loop
+    query = select(SourcePassage).options(noload(SourcePassage.organization)).where(SourcePassage.organization_id == actor.organization_id)
 
     # If agent_id is specified, join with SourcesAgents to get only passages linked to that agent
     if agent_id is not None:
@@ -1208,23 +1208,26 @@ async def build_agent_passage_query(
         embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-    # Base query for passages
+    # Base query for passages - use noload to prevent lazy loading which can block the event loop
     if agent_id:
-        # Query for agent passages - join through archives_agents
-        # Agent_id takes precedence if both agent_id and archive_id are provided
         query = (
             select(ArchivalPassage)
+            .options(noload(ArchivalPassage.organization), noload(ArchivalPassage.passage_tags))
             .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
             .where(ArchivesAgents.agent_id == agent_id, ArchivalPassage.organization_id == actor.organization_id)
         )
     elif archive_id:
-        # Query for archive passages directly
-        query = select(ArchivalPassage).where(
-            ArchivalPassage.archive_id == archive_id, ArchivalPassage.organization_id == actor.organization_id
+        query = (
+            select(ArchivalPassage)
+            .options(noload(ArchivalPassage.organization), noload(ArchivalPassage.passage_tags))
+            .where(ArchivalPassage.archive_id == archive_id, ArchivalPassage.organization_id == actor.organization_id)
         )
     else:
-        # Org-wide search - all passages in organization
-        query = select(ArchivalPassage).where(ArchivalPassage.organization_id == actor.organization_id)
+        query = (
+            select(ArchivalPassage)
+            .options(noload(ArchivalPassage.organization), noload(ArchivalPassage.passage_tags))
+            .where(ArchivalPassage.organization_id == actor.organization_id)
+        )
 
     # Apply filters
     if start_date:

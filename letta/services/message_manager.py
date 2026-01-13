@@ -7,6 +7,7 @@ from sqlalchemy import delete, exists, func, select, text
 
 from letta.constants import CONVERSATION_SEARCH_TOOL_NAME, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
+from letta.orm.conversation_messages import ConversationMessage
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
@@ -345,8 +346,8 @@ class MessageManager:
         return combined_messages
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
+    @trace_method
     async def get_message_by_id_async(self, message_id: str, actor: PydanticUser) -> Optional[PydanticMessage]:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
@@ -393,6 +394,28 @@ class MessageManager:
             msg_data["organization_id"] = actor.organization_id
             orm_messages.append(MessageModel(**msg_data))
         return orm_messages
+
+    @enforce_types
+    @trace_method
+    async def check_run_exists_async(self, run_id: str, actor: PydanticUser) -> bool:
+        """Check if a run exists in the database.
+
+        Args:
+            run_id: The run ID to check
+            actor: User performing the action
+
+        Returns:
+            True if the run exists, False otherwise
+        """
+        if not run_id:
+            return False
+
+        from letta.orm.run import Run as RunModel
+
+        async with db_registry.async_session() as session:
+            query = select(RunModel.id).where(RunModel.id == run_id, RunModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            return result.scalar_one_or_none() is not None
 
     @enforce_types
     @trace_method
@@ -511,11 +534,36 @@ class MessageManager:
                             media_type=content.source.media_type,
                             detail=content.source.detail,
                         )
+
+        # Validate run_ids exist before inserting to prevent ForeignKeyViolationError
+        # This handles the case where a run is deleted while messages are being created
+        unique_run_ids = {msg.run_id for msg in messages_to_create if msg.run_id}
+        if unique_run_ids:
+            from letta.orm.run import Run as RunModel
+
+            async with db_registry.async_session() as session:
+                # Check which run_ids actually exist
+                query = select(RunModel.id).where(RunModel.id.in_(unique_run_ids), RunModel.organization_id == actor.organization_id)
+                result = await session.execute(query)
+                existing_run_ids = set(result.scalars().all())
+
+            # For any non-existent run_ids, set to None and log a warning
+            missing_run_ids = unique_run_ids - existing_run_ids
+            if missing_run_ids:
+                logger.warning(
+                    f"Messages reference run_id(s) that don't exist: {missing_run_ids}. "
+                    f"Setting run_id to None for affected messages to prevent ForeignKeyViolationError."
+                )
+                for msg in messages_to_create:
+                    if msg.run_id in missing_run_ids:
+                        msg.run_id = None
+
         orm_messages = self._create_many_preprocess(messages_to_create, actor)
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
@@ -569,6 +617,7 @@ class MessageManager:
             message_ids = []
             roles = []
             created_ats = []
+            conversation_ids = []
 
             # combine assistant+tool messages before embedding
             combined_messages = self._combine_assistant_tool_messages(messages)
@@ -580,6 +629,7 @@ class MessageManager:
                     message_ids.append(msg.id)
                     roles.append(msg.role)
                     created_ats.append(msg.created_at)
+                    conversation_ids.append(msg.conversation_id)
 
             if message_texts:
                 # insert to turbopuffer - TurbopufferClient will generate embeddings internally
@@ -594,6 +644,7 @@ class MessageManager:
                     created_ats=created_ats,
                     project_id=project_id,
                     template_id=template_id,
+                    conversation_ids=conversation_ids,
                 )
                 logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
         except Exception as e:
@@ -673,7 +724,8 @@ class MessageManager:
             message = self._update_message_by_id_impl(message_id, message_update, actor, message)
             await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_message = message.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
@@ -722,6 +774,7 @@ class MessageManager:
                 created_ats=[message.created_at],
                 project_id=project_id,
                 template_id=template_id,
+                conversation_ids=[message.conversation_id],
             )
             logger.info(f"Successfully updated message {message.id} in Turbopuffer")
         except Exception as e:
@@ -754,8 +807,8 @@ class MessageManager:
         return message
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="message_id", expected_prefix=PrimitiveType.MESSAGE)
+    @trace_method
     async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
         """Delete a message (async version with turbopuffer support)."""
         # capture agent_id before deletion
@@ -842,6 +895,7 @@ class MessageManager:
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
         run_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Most performant query to list messages by directly querying the Message table.
@@ -863,6 +917,7 @@ class MessageManager:
             group_id: Optional group ID to filter messages by group_id.
             include_err: Optional boolean to include errors and error statuses. Used for debugging only.
             run_id: Optional run ID to filter messages by run_id.
+            conversation_id: Optional conversation ID to filter messages by conversation_id.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -887,6 +942,23 @@ class MessageManager:
 
             if run_id:
                 query = query.where(MessageModel.run_id == run_id)
+
+            # Handle conversation_id filter
+            # Three cases:
+            # 1. conversation_id=None (omitted) -> return all messages (no filter)
+            # 2. conversation_id="default" -> return only default messages (not in any conversation)
+            # 3. conversation_id="xyz" -> return only messages in that conversation
+            if conversation_id == "default":
+                query = query.where(MessageModel.conversation_id.is_(None))
+
+                # Exclude messages that are in conversation_messages table
+                conversation_messages_subquery = select(ConversationMessage.message_id)
+                if agent_id:
+                    conversation_messages_subquery = conversation_messages_subquery.where(ConversationMessage.agent_id == agent_id)
+                query = query.where(~MessageModel.id.in_(conversation_messages_subquery))
+            elif conversation_id is not None:
+                # Specific conversation
+                query = query.where(MessageModel.conversation_id == conversation_id)
 
             # if not include_err:
             #    query = query.where((MessageModel.is_err == False) | (MessageModel.is_err.is_(None)))
@@ -979,7 +1051,8 @@ class MessageManager:
             rowcount = result.rowcount
 
             # 4) commit once
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # 5) delete from turbopuffer if enabled (outside of DB session)
         from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
@@ -1031,7 +1104,8 @@ class MessageManager:
             rowcount = result.rowcount
 
             # commit once
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         if should_use_tpuf_for_messages() and agent_ids:
             try:
@@ -1177,6 +1251,7 @@ class MessageManager:
         agent_id: Optional[str] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -1192,6 +1267,7 @@ class MessageManager:
             agent_id: Optional agent ID to filter messages by
             project_id: Optional project ID to filter messages by
             template_id: Optional template ID to filter messages by
+            conversation_id: Optional conversation ID to filter messages by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
             end_date: Optional filter for messages created on or before this date (inclusive)
@@ -1221,6 +1297,7 @@ class MessageManager:
             agent_id=agent_id,
             project_id=project_id,
             template_id=template_id,
+            conversation_id=conversation_id,
             start_date=start_date,
             end_date=end_date,
         )

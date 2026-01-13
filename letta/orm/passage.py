@@ -40,8 +40,8 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        """Relationship to organization"""
-        return relationship("Organization", back_populates="passages", lazy="selectin")
+        """Relationship to organization - use lazy='raise' to prevent accidental blocking in async contexts"""
+        return relationship("Organization", back_populates="passages", lazy="raise")
 
 
 class SourcePassage(BasePassage, FileMixin, SourceMixin):
@@ -53,7 +53,7 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", back_populates="source_passages", lazy="selectin")
+        return relationship("Organization", back_populates="source_passages", lazy="raise")
 
     @declared_attr
     def __table_args__(cls):
@@ -84,7 +84,7 @@ class ArchivalPassage(BasePassage, ArchiveMixin):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", back_populates="archival_passages", lazy="selectin")
+        return relationship("Organization", back_populates="archival_passages", lazy="raise")
 
     @declared_attr
     def __table_args__(cls):

@@ -30,7 +30,7 @@ class TogetherProvider(OpenAIProvider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         models = await openai_get_model_list_async(self.base_url, api_key=api_key)
         return self._list_llm_models(models)
 
@@ -93,7 +93,7 @@ class TogetherProvider(OpenAIProvider):
         return configs
 
     async def check_api_key(self):
-        api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if not api_key:
             raise ValueError("No API key provided")
 

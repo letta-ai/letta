@@ -53,7 +53,8 @@ async def _clear_tables():
     async with db_registry.async_session() as session:
         for table in reversed(Base.metadata.sorted_tables):
             await session.execute(table.delete())
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
 
 
 @pytest.fixture(autouse=True)

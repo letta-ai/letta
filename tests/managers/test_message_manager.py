@@ -413,6 +413,59 @@ async def test_message_delete(server: SyncServer, hello_world_message_fixture, d
 
 
 @pytest.mark.asyncio
+async def test_message_conversation_id_persistence(server: SyncServer, sarah_agent, default_user):
+    """Test that conversation_id is properly persisted and retrieved from DB to Pydantic object"""
+    from letta.schemas.conversation import CreateConversation
+    from letta.services.conversation_manager import ConversationManager
+
+    conversation_manager = ConversationManager()
+
+    # Test 1: Create a message without conversation_id (should be None - the default/backward-compat case)
+    message_no_conv = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Test message without conversation")],
+    )
+
+    created_no_conv = await server.message_manager.create_many_messages_async([message_no_conv], actor=default_user)
+    assert len(created_no_conv) == 1
+    assert created_no_conv[0].conversation_id is None
+
+    # Verify retrieval also has None - this confirms ORM-to-Pydantic conversion works for None
+    retrieved_no_conv = await server.message_manager.get_message_by_id_async(created_no_conv[0].id, actor=default_user)
+    assert retrieved_no_conv is not None
+    assert retrieved_no_conv.conversation_id is None
+    assert retrieved_no_conv.id == created_no_conv[0].id
+
+    # Test 2: Create a conversation and a message with that conversation_id
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test conversation"),
+        actor=default_user,
+    )
+
+    message_with_conv = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Test message with conversation")],
+        conversation_id=conversation.id,
+    )
+
+    created_with_conv = await server.message_manager.create_many_messages_async([message_with_conv], actor=default_user)
+    assert len(created_with_conv) == 1
+    assert created_with_conv[0].conversation_id == conversation.id
+
+    # Verify retrieval has the correct conversation_id - this confirms ORM-to-Pydantic conversion works for non-None
+    retrieved_with_conv = await server.message_manager.get_message_by_id_async(created_with_conv[0].id, actor=default_user)
+    assert retrieved_with_conv is not None
+    assert retrieved_with_conv.conversation_id == conversation.id
+    assert retrieved_with_conv.id == created_with_conv[0].id
+
+    # Test 3: Verify the field exists on the Pydantic model
+    assert hasattr(retrieved_with_conv, "conversation_id")
+
+
+@pytest.mark.asyncio
 async def test_message_size(server: SyncServer, hello_world_message_fixture, default_user):
     """Test counting messages with filters"""
     base_message = hello_world_message_fixture

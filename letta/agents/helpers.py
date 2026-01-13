@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -109,6 +110,8 @@ def validate_approval_tool_call_ids(approval_request_message: Message, approval_
         )
 
     approval_responses = approval_response_message.approvals
+    if not approval_responses:
+        raise ValueError("Invalid approval response. Approval response message does not contain any approvals.")
     approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
 
     request_response_diff = set(approval_request_tool_call_ids).symmetric_difference(set(approval_response_tool_call_ids))
@@ -129,9 +132,13 @@ async def _prepare_in_context_messages_no_persist_async(
     message_manager: MessageManager,
     actor: User,
     run_id: Optional[str] = None,
+    conversation_id: Optional[str] = None,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.
+
+    When conversation_id is provided, messages are loaded from the conversation_messages
+    table instead of agent_state.message_ids.
 
     Args:
         input_messages (List[MessageCreate]): The new user input messages to process.
@@ -139,6 +146,7 @@ async def _prepare_in_context_messages_no_persist_async(
         message_manager (MessageManager): The manager used to retrieve and create messages.
         actor (User): The user performing the action, used for access control and attribution.
         run_id (str): The run ID associated with this message processing.
+        conversation_id (str): Optional conversation ID to load messages from.
 
     Returns:
         Tuple[List[Message], List[Message]]: A tuple containing:
@@ -146,12 +154,74 @@ async def _prepare_in_context_messages_no_persist_async(
             - The new in-context messages (messages created from the new input).
     """
 
-    if agent_state.message_buffer_autoclear:
-        # If autoclear is enabled, only include the most recent system message (usually at index 0)
-        current_in_context_messages = [await message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)]
+    if conversation_id:
+        # Conversation mode: load messages from conversation_messages table
+        from letta.services.conversation_manager import ConversationManager
+
+        conversation_manager = ConversationManager()
+        message_ids = await conversation_manager.get_message_ids_for_conversation(
+            conversation_id=conversation_id,
+            actor=actor,
+        )
+
+        if agent_state.message_buffer_autoclear and message_ids:
+            # If autoclear is enabled, only include the system message
+            current_in_context_messages = [await message_manager.get_message_by_id_async(message_id=message_ids[0], actor=actor)]
+        elif message_ids:
+            # Otherwise, include the full list of messages from the conversation
+            current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=message_ids, actor=actor)
+        else:
+            # No messages in conversation yet - compile a new system message for this conversation
+            # Each conversation gets its own system message (captures memory state at conversation start)
+            from letta.prompts.prompt_generator import PromptGenerator
+            from letta.services.passage_manager import PassageManager
+
+            num_messages = await message_manager.size_async(actor=actor, agent_id=agent_state.id)
+            passage_manager = PassageManager()
+            num_archival_memories = await passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_state.id)
+
+            system_message_str = await PromptGenerator.compile_system_message_async(
+                system_prompt=agent_state.system,
+                in_context_memory=agent_state.memory,
+                in_context_memory_last_edit=get_utc_time(),
+                timezone=agent_state.timezone,
+                user_defined_variables=None,
+                append_icm_if_missing=True,
+                previous_message_count=num_messages,
+                archival_memory_size=num_archival_memories,
+                sources=agent_state.sources,
+                max_files_open=agent_state.max_files_open,
+            )
+            system_message = Message.dict_to_message(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                openai_message_dict={"role": "system", "content": system_message_str},
+            )
+
+            # Persist the new system message
+            persisted_messages = await message_manager.create_many_messages_async([system_message], actor=actor)
+            system_message = persisted_messages[0]
+
+            # Add it to the conversation tracking
+            await conversation_manager.add_messages_to_conversation(
+                conversation_id=conversation_id,
+                agent_id=agent_state.id,
+                message_ids=[system_message.id],
+                actor=actor,
+                starting_position=0,
+            )
+
+            current_in_context_messages = [system_message]
     else:
-        # Otherwise, include the full list of messages by ID for context
-        current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
+        # Default mode: load messages from agent_state.message_ids
+        if agent_state.message_buffer_autoclear:
+            # If autoclear is enabled, only include the most recent system message (usually at index 0)
+            current_in_context_messages = [
+                await message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
+            ]
+        else:
+            # Otherwise, include the full list of messages by ID for context
+            current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
     # Check for approval-related message validation
     if input_messages[0].type == "approval":

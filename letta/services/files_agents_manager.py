@@ -200,7 +200,8 @@ class FileAgentManager:
             stmt = delete(FileAgentModel).where(and_(or_(*conditions), FileAgentModel.organization_id == actor.organization_id))
 
             result = await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
             return result.rowcount
 
@@ -290,6 +291,32 @@ class FileAgentManager:
                 return [r.to_pydantic_block(per_file_view_window_char_limit=per_file_view_window_char_limit) for r in rows]
             else:
                 return [r.to_pydantic() for r in rows]
+
+    @enforce_types
+    @trace_method
+    async def get_file_ids_for_agent_by_source(
+        self,
+        agent_id: str,
+        source_id: str,
+        actor: PydanticUser,
+    ) -> List[str]:
+        """
+        Get all file IDs attached to an agent from a specific source.
+
+        This queries the files_agents junction table directly, ensuring we get
+        exactly the files that were attached, regardless of any changes to the
+        source's file list.
+        """
+        async with db_registry.async_session() as session:
+            stmt = select(FileAgentModel.file_id).where(
+                and_(
+                    FileAgentModel.agent_id == agent_id,
+                    FileAgentModel.source_id == source_id,
+                    FileAgentModel.organization_id == actor.organization_id,
+                )
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
 
     @enforce_types
     @trace_method
@@ -405,7 +432,8 @@ class FileAgentManager:
                 .values(last_accessed_at=func.now())
             )
             await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -425,7 +453,8 @@ class FileAgentManager:
                 .values(last_accessed_at=func.now())
             )
             await session.execute(stmt)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -458,7 +487,8 @@ class FileAgentManager:
             )
 
             closed_file_names = [row.file_name for row in (await session.execute(stmt))]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return closed_file_names
 
     @enforce_types
@@ -702,7 +732,8 @@ class FileAgentManager:
                     .values(is_open=False, visible_content=None)
                 )
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return closed_file_names
 
     async def _get_association_by_file_id(self, session, agent_id: str, file_id: str, actor: PydanticUser) -> FileAgentModel:

@@ -15,6 +15,7 @@ from letta.errors import (
     LettaMCPTimeoutError,
     LettaToolCreateError,
     LettaToolNameConflictError,
+    LLMError,
 )
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
@@ -426,7 +427,10 @@ async def list_mcp_servers(
     else:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return {server.server_name: server.to_config(resolve_variables=False) for server in mcp_servers}
+        result = {}
+        for mcp_server in mcp_servers:
+            result[mcp_server.server_name] = await mcp_server.to_config_async(resolve_variables=False)
+        return result
 
 
 # NOTE: async because the MCP client/session calls are async
@@ -555,7 +559,10 @@ async def add_mcp_server_to_config(
 
         # TODO: don't do this in the future (just return MCPServer)
         all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return [server.to_config() for server in all_servers]
+        result = []
+        for mcp_server in all_servers:
+            result.append(await mcp_server.to_config_async())
+        return result
 
 
 @router.patch(
@@ -580,7 +587,7 @@ async def update_mcp_server(
         updated_server = await server.mcp_manager.update_mcp_server_by_name(
             mcp_server_name=mcp_server_name, mcp_server_update=request, actor=actor
         )
-        return updated_server.to_config()
+        return await updated_server.to_config_async()
 
 
 @router.delete(
@@ -607,7 +614,10 @@ async def delete_mcp_server_from_config(
 
         # TODO: don't do this in the future (just return MCPServer)
         all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
-        return [server.to_config() for server in all_servers]
+        result = []
+        for mcp_server in all_servers:
+            result.append(await mcp_server.to_config_async())
+        return result
 
 
 @deprecated("Deprecated in favor of /mcp/servers/connect which handles OAuth flow via SSE stream")
@@ -679,7 +689,6 @@ async def connect_mcp_server(
             yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=request.server_name)
 
             actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
             # Create MCP client with respective transport type
             try:
                 request.resolve_environment_variables()
@@ -694,8 +703,18 @@ async def connect_mcp_server(
                 tools = await client.list_tools(serialize=True)
                 yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
                 return
-            except ConnectionError:
-                # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
+            except ConnectionError as e:
+                # Only trigger OAuth flow on explicit unauthorized failures
+                unauthorized = False
+                if isinstance(e.__cause__, HTTPStatusError):
+                    unauthorized = e.__cause__.response.status_code == 401
+                elif "401" in str(e) or "Unauthorized" in str(e):
+                    unauthorized = True
+
+                if not unauthorized:
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Connection failed: {str(e)}")
+                    return
+
                 if isinstance(client, AsyncStdioMCPClient):
                     logger.warning("OAuth not supported for stdio")
                     yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
@@ -794,7 +813,7 @@ async def execute_mcp_tool(
             raise NoResultFound(f"MCP server '{mcp_server_name}' not found")
 
         # Create client and connect
-        server_config = mcp_server.to_config()
+        server_config = await mcp_server.to_config_async()
         server_config.resolve_environment_variables()
         client = await server.mcp_manager.get_mcp_client(server_config, actor)
         await client.connect_to_server()
@@ -924,6 +943,14 @@ async def generate_tool_from_prompt(
     )
     response_data = await llm_client.request_async(request_data, llm_config)
     response = await llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
+
+    # Validate that we got a tool call response
+    if not response.choices or not response.choices[0].message.tool_calls:
+        error_msg = (
+            response.choices[0].message.content if response.choices and response.choices[0].message.content else "No response from LLM"
+        )
+        raise LLMError(f"Failed to generate tool '{request.tool_name}': LLM did not return a tool call. Response: {error_msg}")
+
     output = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
     pip_requirements = [PipRequirement(name=k, version=v or None) for k, v in json.loads(output["pip_requirements_json"]).items()]
 

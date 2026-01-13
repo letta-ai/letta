@@ -27,6 +27,8 @@ from letta.schemas.message import Message as PydanticMessage, MessageCreate
 from letta.schemas.run import Run as PydanticRun
 from letta.server.server import SyncServer
 from letta.services.run_manager import RunManager
+from letta.services.summarizer.summarizer import simple_summary
+from letta.settings import model_settings
 
 # Constants
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig.default_config(provider="openai")
@@ -182,9 +184,9 @@ async def run_summarization(server: SyncServer, agent_state, in_context_messages
     agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
 
     # Run summarization with force parameter
-    summary_message, messages = await agent_loop.compact(messages=in_context_messages)
+    summary_message, messages, summary = await agent_loop.compact(messages=in_context_messages)
 
-    return summary_message, messages
+    return summary_message, messages, summary
 
 
 # ======================================================================================================================
@@ -217,7 +219,7 @@ async def test_summarize_empty_message_buffer(server: SyncServer, actor, llm_con
 
     # Run summarization - this may fail with empty buffer, which is acceptable behavior
     try:
-        summary, result = await run_summarization(server, agent_state, in_context_messages, actor)
+        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
         # If it succeeds, verify result
         assert isinstance(result, list)
 
@@ -238,6 +240,49 @@ async def test_summarize_empty_message_buffer(server: SyncServer, actor, llm_con
     except ValueError as e:
         # It's acceptable for summarization to fail on empty buffer
         assert "No assistant message found" in str(e) or "empty" in str(e).lower()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not model_settings.anthropic_api_key,
+    reason="Missing LETTA_ANTHROPIC_API_KEY (or equivalent settings) for Anthropic integration test",
+)
+async def test_simple_summary_anthropic_uses_streaming_and_returns_summary(actor, monkeypatch):
+    """Regression test: Anthropic summarization must use streaming and return real text."""
+
+    # If the summarizer ever falls back to a non-streaming Anthropic call, make it fail fast.
+    from letta.llm_api.anthropic_client import AnthropicClient
+
+    async def _nope_request_async(self, *args, **kwargs):
+        raise AssertionError("Anthropic summarizer should not call request_async (must use streaming)")
+
+    monkeypatch.setattr(AnthropicClient, "request_async", _nope_request_async)
+
+    # Keep the prompt tiny so this is fast and cheap.
+    messages = [
+        PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(type="text", text="I'm planning a trip to Paris in April.")],
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            content=[
+                TextContent(
+                    type="text",
+                    text="Great—your priorities are museums and cafes, and you want to stay under $200/day.",
+                )
+            ],
+        ),
+    ]
+
+    anthropic_config = get_llm_config("claude-4-5-haiku.json")
+
+    summary = await simple_summary(messages=messages, llm_config=anthropic_config, actor=actor)
+
+    assert isinstance(summary, str)
+    assert len(summary) > 10
+    # Sanity-check that the model is summarizing the right conversation.
+    assert any(token in summary.lower() for token in ["paris", "april", "museum", "cafe", "$200", "200"])
 
 
 @pytest.mark.asyncio
@@ -267,7 +312,7 @@ async def test_summarize_initialization_messages_only(server: SyncServer, actor,
 
     # Run summarization - force=True with system messages only may fail
     try:
-        summary, result = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
+        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
 
         # Verify result
         assert isinstance(result, list)
@@ -323,7 +368,7 @@ async def test_summarize_small_conversation(server: SyncServer, actor, llm_confi
     # Run summarization with force=True
     # Note: force=True with clear=True can be very aggressive and may fail on small message sets
     try:
-        summary, result = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
+        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
 
         # Verify result
         assert isinstance(result, list)
@@ -416,7 +461,7 @@ async def test_summarize_large_tool_calls(server: SyncServer, actor, llm_config:
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
-    summary, result = await run_summarization(server, agent_state, in_context_messages, actor)
+    summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
 
     # Verify result
     assert isinstance(result, list)
@@ -520,7 +565,7 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
-    summary, result = await run_summarization(server, agent_state, in_context_messages, actor)
+    summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
 
     # Verify result
     assert isinstance(result, list)
@@ -680,7 +725,7 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
 
     agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
 
-    summary, result = await agent_loop.compact(messages=in_context_messages)
+    summary, result, _ = await agent_loop.compact(messages=in_context_messages)
 
     assert isinstance(result, list)
 
@@ -778,7 +823,7 @@ async def test_v3_compact_uses_compaction_settings_model_and_model_settings(serv
     # Patch simple_summary so we don't hit the real LLM and can inspect llm_config
     with patch.object(summarizer_all, "simple_summary", new=fake_simple_summary):
         agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
-        summary_msg, compacted = await agent_loop.compact(messages=in_context_messages)
+        summary_msg, compacted, _ = await agent_loop.compact(messages=in_context_messages)
 
     assert summary_msg is not None
     assert "value" in captured_llm_config
@@ -866,7 +911,7 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
 
         caplog.set_level("ERROR")
 
-        summary, result = await agent_loop.compact(
+        summary, result, _ = await agent_loop.compact(
             messages=in_context_messages,
             trigger_threshold=context_limit,
         )

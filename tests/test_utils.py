@@ -678,3 +678,102 @@ def test_sdk_version_check():
     assert is_1_0_sdk_version(HeaderParams(sdk_version="v1.0.0-alpha.7"))
     assert is_1_0_sdk_version(HeaderParams(sdk_version="v1.0.0a7"))
     assert is_1_0_sdk_version(HeaderParams(sdk_version="v2.0.0"))
+
+
+# ---------------------- sanitize_null_bytes TESTS ---------------------- #
+
+
+def test_sanitize_null_bytes_string():
+    """Test that null bytes are removed from strings"""
+    from letta.helpers.json_helpers import sanitize_null_bytes
+
+    # Test basic null byte removal
+    assert sanitize_null_bytes("hello\x00world") == "helloworld"
+
+    # Test multiple null bytes
+    assert sanitize_null_bytes("a\x00b\x00c") == "abc"
+
+    # Test null byte at beginning
+    assert sanitize_null_bytes("\x00hello") == "hello"
+
+    # Test null byte at end
+    assert sanitize_null_bytes("hello\x00") == "hello"
+
+    # Test string without null bytes
+    assert sanitize_null_bytes("hello world") == "hello world"
+
+    # Test empty string
+    assert sanitize_null_bytes("") == ""
+
+
+def test_sanitize_null_bytes_dict():
+    """Test that null bytes are removed from dictionary values"""
+    from letta.helpers.json_helpers import sanitize_null_bytes
+
+    # Test nested dict with null bytes
+    result = sanitize_null_bytes({
+        "key1": "value\x00with\x00nulls",
+        "key2": {"nested": "also\x00null"},
+        "key3": 123,  # non-string should be unchanged
+    })
+    assert result == {
+        "key1": "valuewithnulls",
+        "key2": {"nested": "alsonull"},
+        "key3": 123,
+    }
+
+
+def test_sanitize_null_bytes_list():
+    """Test that null bytes are removed from list elements"""
+    from letta.helpers.json_helpers import sanitize_null_bytes
+
+    result = sanitize_null_bytes(["hello\x00world", "no nulls", {"nested\x00key": "value\x00"}])
+    assert result == ["helloworld", "no nulls", {"nestedkey": "value"}]
+
+
+def test_sanitize_null_bytes_tuple():
+    """Test that null bytes are removed from tuple elements"""
+    from letta.helpers.json_helpers import sanitize_null_bytes
+
+    result = sanitize_null_bytes(("hello\x00world", "no nulls"))
+    assert result == ("helloworld", "no nulls")
+
+
+def test_sanitize_null_bytes_preserves_other_types():
+    """Test that non-string types are preserved unchanged"""
+    from letta.helpers.json_helpers import sanitize_null_bytes
+
+    assert sanitize_null_bytes(123) == 123
+    assert sanitize_null_bytes(3.14) == 3.14
+    assert sanitize_null_bytes(True) is True
+    assert sanitize_null_bytes(False) is False
+    assert sanitize_null_bytes(None) is None
+
+
+def test_json_dumps_sanitizes_null_bytes():
+    """Test that json_dumps sanitizes null bytes before serialization"""
+    from letta.helpers.json_helpers import json_dumps
+
+    # Test that null bytes are removed from the output
+    result = json_dumps({"message": "hello\x00world"})
+    assert "\x00" not in result
+    assert "helloworld" in result
+
+
+def test_json_dumps_with_complex_nested_null_bytes():
+    """Test that json_dumps handles complex nested structures with null bytes"""
+    from letta.helpers.json_helpers import json_dumps
+
+    data = {
+        "tool_return": {
+            "status": "success",
+            "func_response": "Binary\x00data\x00here",
+        },
+        "content": [
+            {"type": "text", "text": "Message\x00with\x00nulls"},
+        ],
+    }
+    result = json_dumps(data)
+    assert "\x00" not in result
+    assert "Binarydatahere" in result
+    assert "Messagewithnulls" in result

@@ -4,6 +4,7 @@ import os
 import time
 from typing import Any, List, Optional
 
+import httpx
 import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types import Reasoning
@@ -26,6 +27,7 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
+from letta.llm_api.error_utils import is_context_window_overflow_message
 from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
@@ -959,6 +961,27 @@ class OpenAIClient(LLMClientBase):
                 details={"cause": str(e.__cause__) if e.__cause__ else None},
             )
 
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            logger.warning(f"[OpenAI] Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during OpenAI streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
+        # Handle httpx network errors which can occur during streaming
+        # when the connection is unexpectedly closed while reading/writing
+        if isinstance(e, (httpx.ReadError, httpx.WriteError, httpx.ConnectError)):
+            logger.warning(f"[OpenAI] Network error during streaming: {type(e).__name__}: {e}")
+            return LLMConnectionError(
+                message=f"Network error during OpenAI streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+            )
+
         if isinstance(e, openai.RateLimitError):
             logger.warning(f"[OpenAI] Rate limited (429). Consider backoff. Error: {e}")
             return LLMRateLimitError(
@@ -978,11 +1001,7 @@ class OpenAIClient(LLMClientBase):
                     error_code = error_details.get("code")
 
             # Check both the error code and message content for context length issues
-            if (
-                error_code == "context_length_exceeded"
-                or "This model's maximum context length is" in str(e)
-                or "Input tokens exceed the configured limit" in str(e)
-            ):
+            if error_code == "context_length_exceeded" or is_context_window_overflow_message(str(e)):
                 return ContextWindowExceededError(
                     message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )
@@ -991,6 +1010,25 @@ class OpenAIClient(LLMClientBase):
                     message=f"Bad request to OpenAI: {str(e)}",
                     code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
                     details=e.body,
+                )
+
+        # NOTE: The OpenAI Python SDK may raise a generic `openai.APIError` while *iterating*
+        # over a stream (e.g. Responses API streaming). In this case we don't necessarily
+        # get a `BadRequestError` with a structured error body, but we still want to
+        # trigger Letta's context window compaction / retry logic.
+        #
+        # Example message:
+        #   "Your input exceeds the context window of this model. Please adjust your input and try again."
+        if isinstance(e, openai.APIError):
+            msg = str(e)
+            if is_context_window_overflow_message(msg):
+                return ContextWindowExceededError(
+                    message=f"OpenAI request exceeded the context window: {msg}",
+                    details={
+                        "provider_exception_type": type(e).__name__,
+                        # Best-effort extraction (may not exist on APIError)
+                        "body": getattr(e, "body", None),
+                    },
                 )
 
         if isinstance(e, openai.AuthenticationError):

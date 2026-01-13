@@ -145,6 +145,19 @@ class Provider(ProviderBase):
     async def get_model_context_window_async(self, model_name: str) -> int | None:
         raise NotImplementedError
 
+    def get_default_max_output_tokens(self, model_name: str) -> int:
+        """
+        Get the default max output tokens for a model.
+        Override in subclasses for model-specific logic.
+
+        Args:
+            model_name (str): The name of the model.
+
+        Returns:
+            int: The default max output tokens for the model.
+        """
+        return 4096  # sensible fallback
+
     def get_handle(self, model_name: str, is_embedding: bool = False, base_name: str | None = None) -> str:
         """
         Get the handle for a model, with support for custom overrides.
@@ -184,6 +197,7 @@ class Provider(ProviderBase):
             VLLMProvider,
             VoyageAIProvider,
             XAIProvider,
+            ZAIProvider,
         )
 
         if self.base_url == "":
@@ -218,6 +232,8 @@ class Provider(ProviderBase):
                 return CerebrasProvider(**self.model_dump(exclude_none=True))
             case ProviderType.xai:
                 return XAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.zai:
+                return ZAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.lmstudio_openai:
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:

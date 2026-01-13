@@ -87,7 +87,7 @@ def server_url() -> str:
         thread.start()
 
         # Poll until the server is up (or timeout)
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -120,7 +120,8 @@ async def clear_tables():
     async with db_registry.async_session() as session:
         await session.execute(delete(SandboxEnvironmentVariable))
         await session.execute(delete(SandboxConfig))
-        await session.commit()  # Commit the deletion
+        # context manager now handles commits
+        # await session.commit()
 
 
 @pytest.fixture

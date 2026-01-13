@@ -64,6 +64,7 @@ async def list_runs(
         deprecated=True,
     ),
     project_id: Optional[str] = Query(None, description="Filter runs by project ID."),
+    conversation_id: Optional[str] = Query(None, description="Filter runs by conversation ID."),
     duration_percentile: Optional[int] = Query(
         None, description="Filter runs by duration percentile (1-100). Returns runs slower than this percentile."
     ),
@@ -122,6 +123,7 @@ async def list_runs(
         step_count_operator=step_count_operator,
         tools_used=tools_used,
         project_id=project_id,
+        conversation_id=conversation_id,
         order_by=order_by,
         duration_percentile=duration_percentile,
         duration_filter=duration_filter,

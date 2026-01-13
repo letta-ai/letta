@@ -217,7 +217,7 @@ async def archival_memory_search(
         top_k: Maximum number of results to return (default: 10)
 
     Returns:
-        A list of relevant memories with timestamps and content, ranked by similarity.
+        A list of relevant memories with IDs, timestamps, and content, ranked by similarity.
 
     Examples:
         # Search for project discussions

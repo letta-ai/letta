@@ -25,7 +25,7 @@ from letta.constants import (
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
-from letta.errors import LettaAgentNotFoundError
+from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
@@ -60,6 +60,7 @@ from letta.schemas.agent import (
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.letta_stop_reason import StopReasonType
@@ -111,7 +112,13 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import DatabaseChoice, model_settings, settings
-from letta.utils import calculate_file_defaults_based_on_context_window, enforce_types, united_diff
+from letta.utils import (
+    bounded_gather,
+    calculate_file_defaults_based_on_context_window,
+    decrypt_agent_secrets,
+    enforce_types,
+    united_diff,
+)
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -336,8 +343,8 @@ class AgentManager:
         ignore_invalid_tools: bool = False,
     ) -> PydanticAgentState:
         # validate required configs
-        if not agent_create.llm_config or not agent_create.embedding_config:
-            raise ValueError("llm_config and embedding_config are required")
+        if not agent_create.llm_config:
+            raise ValueError("llm_config is required")
 
         # For v1 agents, enforce sane defaults even when reasoning is omitted
         if agent_create.agent_type == AgentType.letta_v1_agent:
@@ -556,19 +563,18 @@ class AgentManager:
                 agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
 
                 if agent_secrets:
-                    # Encrypt environment variable values
-                    env_rows = []
-                    for key, val in agent_secrets.items():
-                        # Encrypt value (Secret.from_plaintext handles missing encryption key internally)
-                        value_secret = Secret.from_plaintext(val)
-                        row = {
+                    # Encrypt environment variable values concurrently (async to avoid blocking event loop)
+                    secrets_dict = await Secret.from_plaintexts_async(agent_secrets)
+                    env_rows = [
+                        {
                             "agent_id": aid,
                             "key": key,
                             "value": "",  # Empty string for NOT NULL constraint (deprecated, use value_enc)
-                            "value_enc": value_secret.get_encrypted(),
+                            "value_enc": secret.get_encrypted(),
                             "organization_id": actor.organization_id,
                         }
-                        env_rows.append(row)
+                        for key, secret in secrets_dict.items()
+                    ]
 
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
                     env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
@@ -588,8 +594,10 @@ class AgentManager:
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
                 if agent_secrets and env_rows:
-                    result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
-                    result.secrets = [AgentEnvironmentVariable(**row) for row in env_rows]
+                    # Use Pydantic schema (not ORM model) with plaintext to avoid sync decryption in model validator
+                    env_vars = [PydanticAgentEnvVar(**{**row, "value": agent_secrets[row["key"]]}) for row in env_rows]
+                    result.tool_exec_environment_variables = env_vars
+                    result.secrets = env_vars
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
@@ -717,8 +725,8 @@ class AgentManager:
         return await self.append_to_in_context_messages_async(init_messages, agent_id=agent_state.id, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def update_agent_async(
         self,
         agent_id: str,
@@ -824,7 +832,7 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            agent_secrets = agent_update.secrets if agent_update.secrets is not None else agent_update.tool_exec_environment_variables
             if agent_secrets is not None:
                 # Fetch existing environment variables to check if values changed
                 result = await session.execute(select(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
@@ -832,25 +840,35 @@ class AgentManager:
 
                 # TODO: do we need to delete each time or can we just upsert?
                 await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
-                # Encrypt environment variable values
-                # Only re-encrypt if the value has actually changed
+
+                # Decrypt existing values to check for changes (async to avoid blocking)
+                existing_values: dict[str, str | None] = {}
+                for k, existing_env in existing_env_vars.items():
+                    if existing_env.value_enc:
+                        existing_secret = Secret.from_encrypted(existing_env.value_enc)
+                        existing_values[k] = await existing_secret.get_plaintext_async()
+                    else:
+                        existing_values[k] = None
+
+                # Identify values that need encryption (new or changed)
+                to_encrypt = {
+                    k: v
+                    for k, v in agent_secrets.items()
+                    if k not in existing_env_vars or existing_values.get(k) != v or not existing_env_vars[k].value_enc
+                }
+
+                # Batch encrypt new/changed values concurrently (async to avoid blocking event loop)
+                new_secrets = await Secret.from_plaintexts_async(to_encrypt) if to_encrypt else {}
+
+                # Build rows, reusing existing encrypted values where unchanged
                 env_rows = []
                 for k, v in agent_secrets.items():
-                    # Check if value changed to avoid unnecessary re-encryption
-                    existing_env = existing_env_vars.get(k)
-                    existing_value = None
-                    if existing_env and existing_env.value_enc:
-                        existing_secret = Secret.from_encrypted(existing_env.value_enc)
-                        existing_value = existing_secret.get_plaintext()
-
-                    # Encrypt value (reuse existing encrypted value if unchanged)
-                    if existing_value == v and existing_env and existing_env.value_enc:
-                        # Value unchanged, reuse existing encrypted value
-                        value_enc = existing_env.value_enc
+                    if k in new_secrets:
+                        # New or changed value - use newly encrypted value
+                        value_enc = new_secrets[k].get_encrypted()
                     else:
-                        # Value changed or new, encrypt
-                        value_secret = Secret.from_plaintext(v)
-                        value_enc = value_secret.get_encrypted()
+                        # Value unchanged - reuse existing encrypted value
+                        value_enc = existing_env_vars[k].value_enc
 
                     row = {
                         "agent_id": aid,
@@ -875,7 +893,11 @@ class AgentManager:
             await session.flush()
             await session.refresh(agent)
 
-            return await agent.to_pydantic_async()
+            # Convert without decrypting to release DB connection before PBKDF2
+            agent_encrypted = await agent.to_pydantic_async(decrypt=False)
+
+        # Decrypt secrets outside session
+        return (await decrypt_agent_secrets([agent_encrypted]))[0]
 
     @enforce_types
     @trace_method
@@ -899,7 +921,8 @@ class AgentManager:
             agent.message_ids = message_ids
 
             await agent.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @trace_method
     async def list_agents_async(
@@ -969,9 +992,15 @@ class AgentManager:
                 query = query.limit(limit)
             result = await session.execute(query)
             agents = result.scalars().all()
-            return await asyncio.gather(
-                *[agent.to_pydantic_async(include_relationships=include_relationships, include=include) for agent in agents]
+
+            # Convert to pydantic without decrypting (keeps encrypted values)
+            # This allows us to release the DB connection before expensive PBKDF2 operations
+            agents_encrypted = await bounded_gather(
+                [agent.to_pydantic_async(include_relationships=include_relationships, include=include, decrypt=False) for agent in agents]
             )
+
+        # DB session released - now decrypt secrets outside session to prevent connection holding
+        return await decrypt_agent_secrets(agents_encrypted)
 
     @trace_method
     async def count_agents_async(
@@ -1067,7 +1096,12 @@ class AgentManager:
 
             query = query.distinct(AgentModel.id).order_by(AgentModel.id).limit(limit)
             result = await session.execute(query)
-            return await asyncio.gather(*[agent.to_pydantic_async() for agent in result.scalars()])
+
+            # Convert without decrypting to release DB connection before PBKDF2
+            agents_encrypted = await bounded_gather([agent.to_pydantic_async(decrypt=False) for agent in result.scalars()])
+
+        # Decrypt secrets outside session
+        return await decrypt_agent_secrets(agents_encrypted)
 
     @trace_method
     async def size_async(
@@ -1081,8 +1115,8 @@ class AgentManager:
             return await AgentModel.size_async(db_session=session, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_agent_by_id_async(
         self,
         agent_id: str,
@@ -1092,8 +1126,8 @@ class AgentManager:
     ) -> PydanticAgentState:
         """Fetch an agent by its ID."""
 
-        async with db_registry.async_session() as session:
-            try:
+        try:
+            async with db_registry.async_session() as session:
                 query = select(AgentModel)
                 query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
                 query = query.where(AgentModel.id == agent_id)
@@ -1105,13 +1139,17 @@ class AgentManager:
                 if agent is None:
                     raise NoResultFound(f"Agent with ID {agent_id} not found")
 
-                return await agent.to_pydantic_async(include_relationships=include_relationships, include=include)
-            except NoResultFound:
-                # Re-raise NoResultFound without logging to preserve 404 handling
-                raise
-            except Exception as e:
-                logger.error(f"Error fetching agent {agent_id}: {str(e)}")
-                raise
+                # Convert without decrypting to release DB connection before PBKDF2
+                agent_encrypted = await agent.to_pydantic_async(include_relationships=include_relationships, include=include, decrypt=False)
+
+            # Decrypt secrets outside session
+            return (await decrypt_agent_secrets([agent_encrypted]))[0]
+        except NoResultFound:
+            # Re-raise NoResultFound without logging to preserve 404 handling
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching agent {agent_id}: {str(e)}")
+            raise
 
     @enforce_types
     @trace_method
@@ -1122,8 +1160,8 @@ class AgentManager:
         include_relationships: Optional[List[str]] = None,
     ) -> list[PydanticAgentState]:
         """Fetch a list of agents by their IDs."""
-        async with db_registry.async_session() as session:
-            try:
+        try:
+            async with db_registry.async_session() as session:
                 query = select(AgentModel)
                 query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
                 query = query.where(AgentModel.id.in_(agent_ids))
@@ -1136,14 +1174,20 @@ class AgentManager:
                     logger.warning(f"No agents found with IDs: {agent_ids}")
                     return []
 
-                return await asyncio.gather(*[agent.to_pydantic_async(include_relationships=include_relationships) for agent in agents])
-            except Exception as e:
-                logger.error(f"Error fetching agents with IDs {agent_ids}: {str(e)}")
-                raise
+                # Convert without decrypting to release DB connection before PBKDF2
+                agents_encrypted = await bounded_gather(
+                    [agent.to_pydantic_async(include_relationships=include_relationships, decrypt=False) for agent in agents]
+                )
+
+            # Decrypt secrets outside session
+            return await decrypt_agent_secrets(agents_encrypted)
+        except Exception as e:
+            logger.error(f"Error fetching agents with IDs {agent_ids}: {str(e)}")
+            raise
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_agent_archive_ids_async(self, agent_id: str, actor: PydanticUser) -> List[str]:
         """Get all archive IDs associated with an agent."""
         from letta.orm import ArchivesAgents
@@ -1156,8 +1200,8 @@ class AgentManager:
             return archive_ids
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def validate_agent_exists_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Validate that an agent exists and user has access to it.
@@ -1174,8 +1218,8 @@ class AgentManager:
             await validate_agent_exists_async(session, agent_id, actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def delete_agent_async(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -1216,7 +1260,8 @@ class AgentManager:
                     await session.commit()
                 for agent in agents_to_delete:
                     await session.delete(agent)
-                    await session.commit()
+                    # context manager now handles commits
+                    # await session.commit()
             except Exception as e:
                 await session.rollback()
                 logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
@@ -1237,8 +1282,8 @@ class AgentManager:
     # TODO: This can be fixed by having an actual relationship in the ORM for message_ids
     # TODO: This can also be made more efficient, instead of getting, setting, we can do it all in one db session for one query.
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_in_context_messages(self, agent_id: str, actor: PydanticUser) -> List[PydanticMessage]:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
         return await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
@@ -1250,8 +1295,8 @@ class AgentManager:
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
         return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
@@ -1357,7 +1402,7 @@ class AgentManager:
 
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
-        if agent_state.message_ids == []:
+        if not agent_state.message_ids:  # Handles both None and empty list
             curr_system_message = None
         else:
             curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
@@ -1432,8 +1477,8 @@ class AgentManager:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def set_in_context_messages_async(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return await self.update_agent_async(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
@@ -1543,8 +1588,8 @@ class AgentManager:
             return agent_state
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def update_memory_if_changed_async(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
         """
         Update internal memory object and system prompt if there have been modifications.
@@ -1656,9 +1701,9 @@ class AgentManager:
     # Source Management
     # ======================================================================================================================
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def attach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a source to an agent.
@@ -1694,7 +1739,12 @@ class AgentManager:
             agent = await agent.update_async(session, actor=actor)
             # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
             # or even better, not refresh at all.
-            return await agent.to_pydantic_async()
+
+            # Convert without decrypting to release DB connection before PBKDF2
+            agent_encrypted = await agent.to_pydantic_async(decrypt=False)
+
+        # Decrypt secrets outside session
+        return (await decrypt_agent_secrets([agent_encrypted]))[0]
 
     @enforce_types
     @trace_method
@@ -1732,8 +1782,8 @@ class AgentManager:
         self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
         """
         Async version of append_system_message.
@@ -1820,9 +1870,9 @@ class AgentManager:
             return [source.to_pydantic() for source in sources]
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
+    @trace_method
     async def detach_source_async(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
@@ -1856,7 +1906,12 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             # TODO: This refresh is expensive. If we can find out which fields are needed, we can save cost by only refreshing those fields.
             # or even better, not refresh at all.
-            return await agent.to_pydantic_async()
+
+            # Convert without decrypting to release DB connection before PBKDF2
+            agent_encrypted = await agent.to_pydantic_async(decrypt=False)
+
+        # Decrypt secrets outside session
+        return (await decrypt_agent_secrets([agent_encrypted]))[0]
 
     # ======================================================================================================================
     # Block management
@@ -1888,30 +1943,30 @@ class AgentManager:
     ) -> PydanticBlock:
         """Gets a block attached to an agent by its label."""
         async with db_registry.async_session() as session:
-            block = None
+            matched_block = None
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             for block in agent.core_memory:
                 if block.label == block_label:
-                    block = block
+                    matched_block = block
                     break
-            if not block:
+            if not matched_block:
                 raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, block)
+            validate_block_limit_constraint(update_data, matched_block)
 
             for key, value in update_data.items():
-                setattr(block, key, value)
+                setattr(matched_block, key, value)
 
-            await block.update_async(session, actor=actor)
-            return block.to_pydantic()
+            await matched_block.update_async(session, actor=actor)
+            return matched_block.to_pydantic()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
     async def attach_block_async(self, agent_id: str, block_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Attaches a block to an agent. For sleeptime agents, also attaches to paired agents in the same group."""
         async with db_registry.async_session() as session:
@@ -1944,7 +1999,11 @@ class AgentManager:
             # TODO: I have too many things rn so lets look at this later
             # await session.commit()
 
-            return await agent.to_pydantic_async()
+            # Convert without decrypting to release DB connection before PBKDF2
+            agent_encrypted = await agent.to_pydantic_async(decrypt=False)
+
+        # Decrypt secrets outside session
+        return (await decrypt_agent_secrets([agent_encrypted]))[0]
 
     @enforce_types
     @trace_method
@@ -1965,7 +2024,12 @@ class AgentManager:
                 raise NoResultFound(f"No block with id '{block_id}' found for agent '{agent_id}' with actor id: '{actor.id}'")
 
             await agent.update_async(session, actor=actor)
-            return await agent.to_pydantic_async()
+
+            # Convert without decrypting to release DB connection before PBKDF2
+            agent_encrypted = await agent.to_pydantic_async(decrypt=False)
+
+        # Decrypt secrets outside session
+        return (await decrypt_agent_secrets([agent_encrypted]))[0]
 
     # ======================================================================================================================
     # Passage Management
@@ -2400,7 +2464,7 @@ class AgentManager:
                 # Use ISO format if no timezone is set
                 formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-            result_dict = {"timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
+            result_dict = {"id": passage.id, "timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
 
             # Add relevance metadata if available
             if metadata:
@@ -2503,9 +2567,9 @@ class AgentManager:
     # Tool Management
     # ======================================================================================================================
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
+    @trace_method
     async def attach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Attaches a tool to an agent.
@@ -2570,11 +2634,12 @@ class AgentManager:
                     agent.tool_rules = tool_rules
                     session.add(agent)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def bulk_attach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
         """
         Efficiently attaches multiple tools to an agent in a single operation.
@@ -2643,7 +2708,8 @@ class AgentManager:
                 else:
                     logger.info(f"All {len(tool_ids)} tools already attached to agent {agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -2739,9 +2805,9 @@ class AgentManager:
         return PydanticAgentState(**agent_state_dict)
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @raise_on_invalid_id(param_name="tool_id", expected_prefix=PrimitiveType.TOOL)
+    @trace_method
     async def detach_tool_async(self, agent_id: str, tool_id: str, actor: PydanticUser) -> None:
         """
         Detaches a tool from an agent.
@@ -2767,11 +2833,12 @@ class AgentManager:
             else:
                 logger.debug(f"Detached tool id={tool_id} from agent id={agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def bulk_detach_tools_async(self, agent_id: str, tool_ids: List[str], actor: PydanticUser) -> None:
         """
         Efficiently detaches multiple tools from an agent in a single operation.
@@ -2804,11 +2871,12 @@ class AgentManager:
             else:
                 logger.info(f"Detached all {detached_count} tools from agent {agent_id}")
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def modify_approvals_async(self, agent_id: str, tool_name: str, requires_approval: bool, actor: PydanticUser) -> None:
         def is_target_rule(rule):
             return rule.tool_name == tool_name and rule.type == "requires_approval"
@@ -2832,7 +2900,8 @@ class AgentManager:
 
             agent.tool_rules = tool_rules
             session.add(agent)
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -3067,9 +3136,13 @@ class AgentManager:
         # Generate visible content for each file
         line_chunker = LineChunker()
         visible_content_map = {}
-        for file_metadata in file_metadata_with_content:
+        for i, file_metadata in enumerate(file_metadata_with_content):
             content_lines = line_chunker.chunk_text(file_metadata=file_metadata)
             visible_content_map[file_metadata.file_name] = "\n".join(content_lines)
+
+            # Yield to event loop every 100 files to prevent saturation
+            if i > 0 and i % 100 == 0:
+                await asyncio.sleep(0)
 
         # Use bulk attach to avoid race conditions and duplicate LRU eviction decisions
         closed_files = await self.file_agent_manager.attach_files_bulk(
@@ -3157,8 +3230,8 @@ class AgentManager:
             return results
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_agent_files_config_async(self, agent_id: str, actor: PydanticUser) -> Tuple[int, int]:
         """Get per_file_view_window_char_limit and max_files_open for an agent.
 
@@ -3214,8 +3287,8 @@ class AgentManager:
             return per_file_limit, max_files
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_agent_max_files_open_async(self, agent_id: str, actor: PydanticUser) -> int:
         """Get max_files_open for an agent.
 
@@ -3243,8 +3316,8 @@ class AgentManager:
             return row
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_agent_per_file_view_window_char_limit_async(self, agent_id: str, actor: PydanticUser) -> int:
         """Get per_file_view_window_char_limit for an agent.
 
@@ -3272,8 +3345,8 @@ class AgentManager:
             return row
 
     @enforce_types
-    @trace_method
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
+    @trace_method
     async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
         agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
             agent_id=agent_id, actor=actor, force=True, dry_run=True

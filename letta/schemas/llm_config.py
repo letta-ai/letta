@@ -48,6 +48,7 @@ class LLMConfig(BaseModel):
         "bedrock",
         "deepseek",
         "xai",
+        "zai",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
     provider_name: Optional[str] = Field(None, description="The provider name for the model.")
@@ -317,6 +318,7 @@ class LLMConfig(BaseModel):
             OpenAIReasoning,
             TogetherModelSettings,
             XAIModelSettings,
+            ZAIModelSettings,
         )
 
         if self.model_endpoint_type == "openai":
@@ -356,6 +358,11 @@ class LLMConfig(BaseModel):
             )
         elif self.model_endpoint_type == "xai":
             return XAIModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "zai":
+            return ZAIModelSettings(
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )

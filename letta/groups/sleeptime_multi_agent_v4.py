@@ -12,7 +12,9 @@ from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.run import Run, RunUpdate
 from letta.schemas.user import User
@@ -44,6 +46,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         self.run_ids = []
 
@@ -57,6 +61,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             use_assistant_message=use_assistant_message,
             include_return_message_types=include_return_message_types,
             request_start_timestamp_ns=request_start_timestamp_ns,
+            conversation_id=conversation_id,
+            client_tools=client_tools,
         )
 
         run_ids = await self.run_sleeptime_agents()
@@ -73,6 +79,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        conversation_id: str | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
 
@@ -89,6 +97,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                conversation_id=conversation_id,
+                client_tools=client_tools,
             ):
                 yield chunk
         finally:
@@ -231,6 +241,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             run_update = RunUpdate(
                 status=RunStatus.completed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                stop_reason=result.stop_reason.stop_reason if result.stop_reason else StopReasonType.end_turn,
                 metadata={
                     "result": result.model_dump(mode="json"),
                     "agent_id": sleeptime_agent_state.id,
@@ -242,6 +253,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             run_update = RunUpdate(
                 status=RunStatus.failed,
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                stop_reason=StopReasonType.error,
                 metadata={"error": str(e)},
             )
             await self.run_manager.update_run_by_id_async(run_id=run_id, update=run_update, actor=self.actor)

@@ -1,8 +1,9 @@
 import json
 from datetime import datetime
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from letta.functions.mcp_client.types import (
     MCP_AUTH_HEADER_AUTHORIZATION,
@@ -41,6 +42,19 @@ class CreateSSEMCPServer(LettaBase):
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: str) -> str:
+        """Validate that server_url is a valid HTTP(S) URL."""
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
+
 
 class CreateStreamableHTTPMCPServer(LettaBase):
     """Create a new Streamable HTTP MCP server"""
@@ -50,6 +64,19 @@ class CreateStreamableHTTPMCPServer(LettaBase):
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: str) -> str:
+        """Validate that server_url is a valid HTTP(S) URL."""
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
 
 CreateMCPServerUnion = Union[CreateStdioMCPServer, CreateSSEMCPServer, CreateStreamableHTTPMCPServer]
@@ -99,6 +126,21 @@ class UpdateSSEMCPServer(LettaBase):
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
 
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
+
 
 class UpdateStreamableHTTPMCPServer(LettaBase):
     """Update schema for Streamable HTTP MCP server - all fields optional"""
@@ -108,6 +150,21 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
     auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
     auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with requests")
+
+    @field_validator("server_url")
+    @classmethod
+    def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        if v is None:
+            return v
+        if not v:
+            raise ValueError("server_url cannot be empty")
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
+        if not parsed.netloc:
+            raise ValueError(f"server_url must have a valid host, got: '{v}'")
+        return v
 
 
 UpdateMCPServerUnion = Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer]
@@ -165,68 +222,36 @@ class MCPOAuthSession(BaseMCPOAuth):
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
 
     def get_access_token_secret(self) -> Secret:
-        """Get the access token as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
-        if self.access_token_enc is not None:
-            return self.access_token_enc
-        # Fallback to plaintext with error logging via Secret.from_db()
-        return Secret.from_db(encrypted_value=None, plaintext_value=self.access_token)
+        """Get the access token as a Secret object."""
+        return self.access_token_enc if self.access_token_enc is not None else Secret.from_plaintext(None)
 
     def get_refresh_token_secret(self) -> Secret:
-        """Get the refresh token as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
-        if self.refresh_token_enc is not None:
-            return self.refresh_token_enc
-        # Fallback to plaintext with error logging via Secret.from_db()
-        return Secret.from_db(encrypted_value=None, plaintext_value=self.refresh_token)
+        """Get the refresh token as a Secret object."""
+        return self.refresh_token_enc if self.refresh_token_enc is not None else Secret.from_plaintext(None)
 
     def get_client_secret_secret(self) -> Secret:
-        """Get the client secret as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
-        if self.client_secret_enc is not None:
-            return self.client_secret_enc
-        # Fallback to plaintext with error logging via Secret.from_db()
-        return Secret.from_db(encrypted_value=None, plaintext_value=self.client_secret)
+        """Get the client secret as a Secret object."""
+        return self.client_secret_enc if self.client_secret_enc is not None else Secret.from_plaintext(None)
 
     def get_authorization_code_secret(self) -> Secret:
-        """Get the authorization code as a Secret object. Prefers encrypted, falls back to plaintext with error logging."""
-        if self.authorization_code_enc is not None:
-            return self.authorization_code_enc
-        # Fallback to plaintext with error logging via Secret.from_db()
-        return Secret.from_db(encrypted_value=None, plaintext_value=self.authorization_code)
+        """Get the authorization code as a Secret object."""
+        return self.authorization_code_enc if self.authorization_code_enc is not None else Secret.from_plaintext(None)
 
     def set_access_token_secret(self, secret: Secret) -> None:
         """Set access token from a Secret object."""
         self.access_token_enc = secret
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.access_token = secret_dict["plaintext"]
-        else:
-            self.access_token = None
 
     def set_refresh_token_secret(self, secret: Secret) -> None:
         """Set refresh token from a Secret object."""
         self.refresh_token_enc = secret
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.refresh_token = secret_dict["plaintext"]
-        else:
-            self.refresh_token = None
 
     def set_client_secret_secret(self, secret: Secret) -> None:
         """Set client secret from a Secret object."""
         self.client_secret_enc = secret
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.client_secret = secret_dict["plaintext"]
-        else:
-            self.client_secret = None
 
     def set_authorization_code_secret(self, secret: Secret) -> None:
         """Set authorization code from a Secret object."""
         self.authorization_code_enc = secret
-        secret_dict = secret.to_dict()
-        if not secret.was_encrypted:
-            self.authorization_code = secret_dict["plaintext"]
-        else:
-            self.authorization_code = None
 
 
 class MCPOAuthSessionCreate(BaseMCPOAuth):
@@ -290,7 +315,7 @@ class UpdateMCPServerRequest(LettaBase):
     ]
 
 
-def convert_generic_to_union(server) -> MCPServerUnion:
+async def convert_generic_to_union(server) -> MCPServerUnion:
     """
     Convert a generic MCPServer (from letta.schemas.mcp) to the appropriate MCPServerUnion type
     based on the server_type field.
@@ -319,24 +344,30 @@ def convert_generic_to_union(server) -> MCPServerUnion:
             env=server.stdio_config.env if server.stdio_config else None,
         )
     elif server.server_type == MCPServerType.SSE:
+        # Get decrypted values from encrypted columns (async)
+        token = await server.token_enc.get_plaintext_async() if server.token_enc else None
+        headers = await server.get_custom_headers_dict_async()
         return SSEMCPServer(
             id=server.id,
             server_name=server.server_name,
             mcp_server_type=MCPServerType.SSE,
             server_url=server.server_url,
-            auth_header="Authorization" if server.token else None,
-            auth_token=f"Bearer {server.token}" if server.token else None,
-            custom_headers=server.custom_headers,
+            auth_header="Authorization" if token else None,
+            auth_token=f"Bearer {token}" if token else None,
+            custom_headers=headers,
         )
     elif server.server_type == MCPServerType.STREAMABLE_HTTP:
+        # Get decrypted values from encrypted columns (async)
+        token = await server.token_enc.get_plaintext_async() if server.token_enc else None
+        headers = await server.get_custom_headers_dict_async()
         return StreamableHTTPMCPServer(
             id=server.id,
             server_name=server.server_name,
             mcp_server_type=MCPServerType.STREAMABLE_HTTP,
             server_url=server.server_url,
-            auth_header="Authorization" if server.token else None,
-            auth_token=f"Bearer {server.token}" if server.token else None,
-            custom_headers=server.custom_headers,
+            auth_header="Authorization" if token else None,
+            auth_token=f"Bearer {token}" if token else None,
+            custom_headers=headers,
         )
     else:
         raise ValueError(f"Unknown server type: {server.server_type}")

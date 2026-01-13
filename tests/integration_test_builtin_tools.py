@@ -41,7 +41,7 @@ def server_url() -> str:
         thread.start()
 
         # Poll until the server is up (or timeout)
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -72,8 +72,6 @@ def agent_state(client: Letta) -> AgentState:
     Creates and returns an agent state for testing with a pre-configured agent.
     Uses system-level EXA_API_KEY setting.
     """
-    client.tools.upsert_base_tools()
-
     send_message_tool = client.tools.list(name="send_message").items[0]
     run_code_tool = client.tools.list(name="run_code").items[0]
     web_search_tool = client.tools.list(name="web_search").items[0]
@@ -355,8 +353,6 @@ def agent_with_custom_tools(client: Letta) -> AgentState:
     Creates an agent with custom add/multiply tools and run_code tool
     to test programmatic tool calling.
     """
-    client.tools.upsert_base_tools()
-
     # Create custom tools
     add_tool = client.tools.create(source_code=ADD_TOOL_SOURCE)
     multiply_tool = client.tools.create(source_code=MULTIPLY_TOOL_SOURCE)

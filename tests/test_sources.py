@@ -71,7 +71,6 @@ def client() -> LettaSDKClient:
         wait_for_server(server_url)
     print("Running client tests with server:", server_url)
     client = LettaSDKClient(base_url=server_url)
-    client.tools.upsert_base_tools()
     yield client
 
 

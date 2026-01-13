@@ -21,6 +21,40 @@ git clone https://github.com/your-username/letta.git
 
 ### 🧩 Install dependencies & configure environment
 
+This project requires **PostgreSQL** to be installed and running on your system. Assuming you have a running PostgreSQL instance, first you need to create the user, database and ensure the pgvector
+extension is ready. Here are sample steps for a case where user and database name is letta and assumes no password is set:
+
+#### 1. Enter the PostgreSQL Shell
+Open your terminal (or Command Prompt on Windows) and run:
+```bash
+# On Mac/Linux:
+sudo -u postgres psql
+
+# On Windows:
+psql -U postgres
+
+```
+#### 2. Run Setup Commands
+Once inside the PostgreSQL prompt (you will see `postgres=#`), run the following SQL block:
+
+```sql
+-- 1. Create a dedicated role with login and superuser permissions
+CREATE ROLE letta WITH LOGIN SUPERUSER PASSWORD 'letta';
+
+-- 2. Create the database and assign 'letta' as the owner
+CREATE DATABASE letta OWNER letta;
+
+-- 3. Switch connection to the new 'letta' database
+\c letta
+
+-- 4. Enable the pgvector extension for vector embeddings
+CREATE EXTENSION IF NOT EXISTS vector;
+
+Setup the environment variable to tell letta code to contact PostgreSQL database:
+```shell
+export LETTA_PG_URI="postgresql://${POSTGRES_USER:-letta}:${POSTGRES_PASSWORD:-letta}@localhost:5432/${POSTGRES_DB:-letta}"
+```
+
 #### Install uv and dependencies
 
 First, install uv using [the official instructions here](https://docs.astral.sh/uv/getting-started/installation/).
@@ -31,24 +65,7 @@ cd letta
 eval $(uv env activate)
 uv sync --all-extras
 ```
-#### Setup PostgreSQL environment (optional)
-
-If you are planning to develop letta connected to PostgreSQL database, you need to take the following actions.
-If you are not planning to use PostgreSQL database, you can skip to the step which talks about [running letta](#running-letta-with-uv).
-
-Assuming you have a running PostgreSQL instance, first you need to create the user, database and ensure the pgvector
-extension is ready. Here are sample steps for a case where user and database name is letta and assumes no password is set:
-
-```shell
-createuser letta
-createdb letta --owner=letta
-psql -d letta -c 'CREATE EXTENSION IF NOT EXISTS vector'
-```
-Setup the environment variable to tell letta code to contact PostgreSQL database:
-```shell
-export LETTA_PG_URI="postgresql://${POSTGRES_USER:-letta}:${POSTGRES_PASSWORD:-letta}@localhost:5432/${POSTGRES_DB:-letta}"
-```
-
+``` 
 After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
 contents from template test data.
 ```shell
@@ -59,7 +76,7 @@ uv run alembic upgrade head
 
 Now when you want to use `letta`, you can use `uv run` to run any letta command:
 ```shell
-uv run letta run
+uv run letta server
 ```
 
 #### Installing pre-commit

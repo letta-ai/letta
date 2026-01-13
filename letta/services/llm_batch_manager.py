@@ -45,7 +45,8 @@ class LLMBatchManager:
             )
             await batch.create_async(session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_batch = batch.to_pydantic()
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_batch
 
     @enforce_types
@@ -98,7 +99,8 @@ class LLMBatchManager:
                 )
 
             await session.run_sync(lambda ses: ses.bulk_update_mappings(LLMBatchJob, mappings))
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -285,7 +287,8 @@ class LLMBatchManager:
             created_items = await LLMBatchItem.batch_create_async(orm_items, session, actor=actor, no_commit=True, no_refresh=True)
 
             pydantic_items = [item.to_pydantic() for item in created_items]
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
             return pydantic_items
 
     @enforce_types
@@ -421,7 +424,8 @@ class LLMBatchManager:
 
             if mappings:
                 await session.run_sync(lambda ses: ses.bulk_update_mappings(LLMBatchItem, mappings))
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
     @enforce_types
     @trace_method

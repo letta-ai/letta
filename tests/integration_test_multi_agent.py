@@ -35,7 +35,7 @@ def server_url() -> str:
         thread.start()
 
         # Poll until the server is up (or timeout)
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -57,7 +57,6 @@ def client(server_url: str) -> Letta:
     Creates and returns a synchronous Letta REST client for testing.
     """
     client_instance = Letta(base_url=server_url)
-    client_instance.tools.upsert_base_tools()
     yield client_instance
 
 

@@ -2423,7 +2423,8 @@ async def test_list_tools_with_corrupted_tool(server: SyncServer, default_user, 
         )
 
         session.add(corrupted_tool)
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
         corrupted_tool_id = corrupted_tool.id
 
     # Now try to list tools - it should still work and not include the corrupted tool

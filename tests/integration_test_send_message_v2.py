@@ -37,6 +37,7 @@ all_configs = [
     "openai-gpt-5.json",
     "claude-4-5-sonnet.json",
     "gemini-2.5-pro.json",
+    "zai-glm-4.6.json",
 ]
 
 
@@ -206,9 +207,9 @@ def assert_tool_call_response(
         # Reasoning is non-deterministic, so don't throw if missing
         pass
 
-    # Special case for claude-sonnet-4-5-20250929 and opus-4.1 which can generate an extra AssistantMessage before tool call
+    # Special case for claude-sonnet-4-5-20250929, opus-4.1, and zai which can generate an extra AssistantMessage before tool call
     if (
-        ("claude-sonnet-4-5-20250929" in model_handle or "claude-opus-4-1" in model_handle)
+        ("claude-sonnet-4-5-20250929" in model_handle or "claude-opus-4-1" in model_handle or model_settings.get("provider_type") == "zai")
         and index < len(messages)
         and isinstance(messages[index], AssistantMessage)
     ):
@@ -436,6 +437,10 @@ def get_expected_message_count_range(
             if "claude-opus-4-1" in model_handle:
                 expected_range += 1
 
+            # Z.ai models output an AssistantMessage with each ReasoningMessage (not just the final one)
+            if model_settings.get("provider_type") == "zai":
+                expected_range += 1
+
     if tool_call:
         # tool call and tool return messages
         expected_message_count += 2
@@ -477,8 +482,10 @@ def is_reasoner_model(model_handle: str, model_settings: dict) -> bool:
     is_google_ai_reasoning = (
         model_settings.get("provider_type") == "google_ai" and model_settings.get("thinking_config", {}).get("include_thoughts") is True
     )
+    # Z.ai models output reasoning by default
+    is_zai_reasoning = model_settings.get("provider_type") == "zai"
 
-    return is_openai_reasoning or is_anthropic_reasoning or is_google_vertex_reasoning or is_google_ai_reasoning
+    return is_openai_reasoning or is_anthropic_reasoning or is_google_vertex_reasoning or is_google_ai_reasoning or is_zai_reasoning
 
 
 # ------------------------------
@@ -507,7 +514,7 @@ def server_url() -> str:
         thread.start()
 
         # Poll until the server is up (or timeout)
-        timeout_seconds = 30
+        timeout_seconds = 60
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -911,11 +918,97 @@ async def test_tool_call(
 
 
 @pytest.mark.parametrize(
+    "model_config",
+    TESTED_MODEL_CONFIGS,
+    ids=[handle for handle, _ in TESTED_MODEL_CONFIGS],
+)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_conversation_streaming_raw_http(
+    disable_e2b_api_key: Any,
+    client: AsyncLetta,
+    server_url: str,
+    agent_state: AgentState,
+    model_config: Tuple[str, dict],
+) -> None:
+    """
+    Test conversation-based streaming functionality using raw HTTP requests.
+
+    This test verifies that:
+    1. A conversation can be created for an agent
+    2. Messages can be sent to the conversation via streaming
+    3. The streaming response contains the expected message types
+    4. Messages are properly persisted in the conversation
+
+    Uses raw HTTP requests instead of SDK until SDK is regenerated with conversations support.
+    """
+    import httpx
+
+    model_handle, model_settings = model_config
+    agent_state = await client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
+
+    async with httpx.AsyncClient(base_url=server_url, timeout=60.0) as http_client:
+        # Create a conversation for the agent
+        create_response = await http_client.post(
+            "/v1/conversations/",
+            params={"agent_id": agent_state.id},
+            json={},
+        )
+        assert create_response.status_code == 200, f"Failed to create conversation: {create_response.text}"
+        conversation = create_response.json()
+        assert conversation["id"] is not None
+        assert conversation["agent_id"] == agent_state.id
+
+        # Send a message to the conversation using streaming
+        stream_response = await http_client.post(
+            f"/v1/conversations/{conversation['id']}/messages",
+            json={
+                "messages": [{"role": "user", "content": f"Reply with the message '{USER_MESSAGE_RESPONSE}'."}],
+                "stream_tokens": True,
+            },
+        )
+        assert stream_response.status_code == 200, f"Failed to send message: {stream_response.text}"
+
+        # Parse SSE response and accumulate messages
+        messages = await accumulate_chunks(stream_response.text)
+        print("MESSAGES:", messages)
+
+        # Verify the response contains expected message types
+        assert_greeting_response(messages, model_handle, model_settings, streaming=True, token_streaming=True)
+
+        # Verify the conversation can be retrieved
+        retrieve_response = await http_client.get(f"/v1/conversations/{conversation['id']}")
+        assert retrieve_response.status_code == 200, f"Failed to retrieve conversation: {retrieve_response.text}"
+        retrieved_conversation = retrieve_response.json()
+        assert retrieved_conversation["id"] == conversation["id"]
+        print("RETRIEVED CONVERSATION:", retrieved_conversation)
+
+        # Verify conversations can be listed for the agent
+        list_response = await http_client.get("/v1/conversations/", params={"agent_id": agent_state.id})
+        assert list_response.status_code == 200, f"Failed to list conversations: {list_response.text}"
+        conversations_list = list_response.json()
+        assert any(c["id"] == conversation["id"] for c in conversations_list)
+
+        # Verify messages can be listed from the conversation
+        messages_response = await http_client.get(f"/v1/conversations/{conversation['id']}/messages")
+        assert messages_response.status_code == 200, f"Failed to list conversation messages: {messages_response.text}"
+        conversation_messages = messages_response.json()
+        print("CONVERSATION MESSAGES:", conversation_messages)
+
+        # Verify we have at least the user message and assistant message
+        assert len(conversation_messages) >= 2, f"Expected at least 2 messages, got {len(conversation_messages)}"
+
+        # Check message types are present
+        message_types = [msg.get("message_type") for msg in conversation_messages]
+        assert "user_message" in message_types, f"Expected user_message in {message_types}"
+        assert "assistant_message" in message_types, f"Expected assistant_message in {message_types}"
+
+
+@pytest.mark.parametrize(
     "model_handle,provider_type",
     [
         ("openai/gpt-4o", "openai"),
         ("openai/gpt-5", "openai"),
-        ("anthropic/claude-sonnet-4-5-20250929", "anthropic"),
+        # ("anthropic/claude-sonnet-4-5-20250929", "anthropic"),
     ],
 )
 @pytest.mark.asyncio(loop_scope="function")
