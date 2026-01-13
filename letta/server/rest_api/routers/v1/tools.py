@@ -833,36 +833,48 @@ async def execute_mcp_tool(
                 logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
 
 
-# TODO: @jnjpng need to route this through cloud API for production
-@router.get("/mcp/oauth/callback/{session_id}", operation_id="mcp_oauth_callback")
+# Static OAuth callback endpoint - session is identified via state parameter
+@router.get("/mcp/oauth/callback", operation_id="mcp_oauth_callback")
 async def mcp_oauth_callback(
-    session_id: str,
     code: Optional[str] = Query(None, description="OAuth authorization code"),
     state: Optional[str] = Query(None, description="OAuth state parameter"),
     error: Optional[str] = Query(None, description="OAuth error"),
     error_description: Optional[str] = Query(None, description="OAuth error description"),
+    server: SyncServer = Depends(get_letta_server),
 ):
     """
     Handle OAuth callback for MCP server authentication.
+    Session is identified via the state parameter instead of URL path.
     """
     try:
-        oauth_session = MCPOAuthSession(session_id)
+        if not state:
+            return {"status": "error", "message": "Missing state parameter"}
+
+        # Look up OAuth session by state parameter
+        oauth_session = await server.mcp_server_manager.get_oauth_session_by_state(state)
+        if not oauth_session:
+            return {"status": "error", "message": "Invalid or expired state parameter"}
+
         if error:
             error_msg = f"OAuth error: {error}"
             if error_description:
                 error_msg += f" - {error_description}"
-            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
+            # Use the legacy MCPOAuthSession class to update status
+            legacy_session = MCPOAuthSession(oauth_session.id)
+            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
             return {"status": "error", "message": error_msg}
 
-        if not code or not state:
-            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
-            return {"status": "error", "message": "Missing authorization code or state"}
+        if not code:
+            legacy_session = MCPOAuthSession(oauth_session.id)
+            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
+            return {"status": "error", "message": "Missing authorization code"}
 
-        # Store authorization code
-        success = await oauth_session.store_authorization_code(code, state)
+        # Store authorization code using the legacy session class
+        legacy_session = MCPOAuthSession(oauth_session.id)
+        success = await legacy_session.store_authorization_code(code, state)
         if not success:
-            await oauth_session.update_session_status(OAuthSessionStatus.ERROR)
-            return {"status": "error", "message": "Invalid state parameter"}
+            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
+            return {"status": "error", "message": "Failed to store authorization code"}
 
         return {"status": "success", "message": "Authorization successful", "server_url": success.server_url}
 

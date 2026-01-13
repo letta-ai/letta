@@ -1943,22 +1943,13 @@
         }
       }
     },
-    "/v1/tools/mcp/oauth/callback/{session_id}": {
+    "/v1/tools/mcp/oauth/callback": {
       "get": {
         "tags": ["tools"],
         "summary": "Mcp Oauth Callback",
-        "description": "Handle OAuth callback for MCP server authentication.",
+        "description": "Handle OAuth callback for MCP server authentication.\nSession is identified via the state parameter instead of URL path.",
         "operationId": "mcp_oauth_callback",
         "parameters": [
-          {
-            "name": "session_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Session Id"
-            }
-          },
           {
             "name": "code",
             "in": "query",

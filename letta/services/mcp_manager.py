@@ -927,12 +927,26 @@ class MCPManager:
             return await self._oauth_orm_to_pydantic_async(oauth_session)
 
     @enforce_types
+    async def get_oauth_session_by_state(self, state: str) -> Optional[MCPOAuthSession]:
+        """Get an OAuth session by its state parameter (used in static callback URI flow)."""
+        async with db_registry.async_session() as session:
+            result = await session.execute(select(MCPOAuth).where(MCPOAuth.state == state).limit(1))
+            oauth_session = result.scalar_one_or_none()
+
+            if not oauth_session:
+                return None
+
+            return await self._oauth_orm_to_pydantic_async(oauth_session)
+
+    @enforce_types
     async def update_oauth_session(self, session_id: str, session_update: MCPOAuthSessionUpdate, actor: PydanticUser) -> MCPOAuthSession:
         """Update an existing OAuth session."""
         async with db_registry.async_session() as session:
             oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
 
             # Update fields that are provided
+            if session_update.state is not None:
+                oauth_session.state = session_update.state
             if session_update.authorization_url is not None:
                 oauth_session.authorization_url = session_update.authorization_url
 
@@ -1087,11 +1101,13 @@ class MCPManager:
         LETTA_AGENTS_ENDPOINT = os.getenv("LETTA_AGENTS_ENDPOINT")
 
         if is_web_request and NEXT_PUBLIC_CURRENT_HOST:
-            redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/{session_id}"
+            # Use static callback URI - session is identified via state parameter
+            redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/mcp"
             logo_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/seo/favicon.svg"
         elif LETTA_AGENTS_ENDPOINT:
             # API and SDK usage should call core server directly
-            redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback/{session_id}"
+            # Use static callback URI - session is identified via state parameter
+            redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback"
         else:
             logger.error(
                 f"No redirect URI found for request and base urls: {http_request.headers if http_request else 'No headers'} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"

@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
-
 from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
@@ -334,6 +333,7 @@ class MCPOAuthSessionCreate(BaseMCPOAuth):
 class MCPOAuthSessionUpdate(BaseMCPOAuth):
     """Update an existing OAuth session."""
 
+    state: Optional[str] = Field(None, description="OAuth state parameter (for session lookup on callback)")
     authorization_url: Optional[str] = Field(None, description="OAuth authorization URL")
     authorization_code: Optional[str] = Field(None, description="OAuth authorization code")
     access_token: Optional[str] = Field(None, description="OAuth access token")
