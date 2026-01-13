@@ -21890,11 +21890,11 @@
                           "feed_id": {
                             "type": "string"
                           },
-                          "sequence": {
-                            "type": "number"
-                          },
-                          "content": {
+                          "content_preview": {
                             "type": "string"
+                          },
+                          "is_truncated": {
+                            "type": "boolean"
                           },
                           "content_size_bytes": {
                             "type": "number"
@@ -21909,8 +21909,8 @@
                         "required": [
                           "id",
                           "feed_id",
-                          "sequence",
-                          "content",
+                          "content_preview",
+                          "is_truncated",
                           "content_size_bytes",
                           "expires_at",
                           "created_at"
@@ -21926,6 +21926,98 @@
                     }
                   },
                   "required": ["messages", "has_next_page", "next_cursor"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/messages/{message_id}": {
+      "get": {
+        "description": "Get full content of a feed message",
+        "summary": "Get Feed Message",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.getMessage",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "feed_id": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "content_size_bytes": {
+                          "type": "number"
+                        },
+                        "expires_at": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "feed_id",
+                        "sequence",
+                        "content",
+                        "content_size_bytes",
+                        "expires_at",
+                        "created_at"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
@@ -23367,6 +23459,206 @@
                     }
                   },
                   "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pipelines/{pipeline_id}/sync": {
+      "post": {
+        "description": "Manually trigger a pipeline sync to fetch new messages immediately",
+        "summary": "Sync Pipeline",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "pipeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.syncPipeline",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "messages_ingested": {
+                      "type": "number"
+                    },
+                    "workflow_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "messages_ingested", "workflow_id"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineDisabled", "syncFailed"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineNotFound"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pipelines/{pipeline_id}/sync/history": {
+      "get": {
+        "description": "List the sync run history for a pipeline from Temporal with error details",
+        "summary": "List Pipeline Sync History",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "pipeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.listPipelineSyncHistory",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "workflow_id": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "running",
+                              "completed",
+                              "failed",
+                              "canceled",
+                              "timed_out"
+                            ]
+                          },
+                          "started_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "completed_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "error": {
+                            "type": "object",
+                            "properties": {
+                              "error_type": {
+                                "type": "string"
+                              },
+                              "error_message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["error_type", "error_message"],
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "workflow_id",
+                          "status",
+                          "started_at",
+                          "completed_at",
+                          "error"
+                        ]
+                      }
+                    },
+                    "next_page_token": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["runs", "next_page_token"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["pipelineNotFound"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
                 }
               }
             }
