@@ -12770,6 +12770,39 @@
             "description": "Search blocks by project id"
           },
           {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter blocks by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter blocks by"
+          },
+          {
+            "name": "match_all_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, only returns blocks that match ALL given tags. Otherwise, return blocks that have ANY of the passed-in tags.",
+              "default": false,
+              "title": "Match All Tags"
+            },
+            "description": "If True, only returns blocks that match ALL given tags. Otherwise, return blocks that have ANY of the passed-in tags."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -13045,9 +13078,122 @@
       "get": {
         "tags": ["blocks"],
         "summary": "Count Blocks",
-        "description": "Count all blocks created by a user.",
+        "description": "Count all blocks with optional filtering.\nSupports the same filters as list_blocks for consistent querying.",
         "operationId": "count_blocks",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "pattern": "^[a-zA-Z0-9_/-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)",
+              "examples": [
+                "human",
+                "persona",
+                "the_label_of-a-block",
+                "the_label_of-a-block/with-forward-slash"
+              ],
+              "title": "Label"
+            },
+            "description": "Label to include (alphanumeric, hyphens, underscores, forward slashes)"
+          },
+          {
+            "name": "templates_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include only templates",
+              "default": false,
+              "title": "Templates Only"
+            },
+            "description": "Whether to include only templates"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[a-zA-Z0-9 _-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name filter (alphanumeric, spaces, hyphens, underscores)",
+              "examples": ["My Agent", "test_tool", "default-config"],
+              "title": "Name"
+            },
+            "description": "Name filter (alphanumeric, spaces, hyphens, underscores)"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter blocks by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter blocks by"
+          },
+          {
+            "name": "match_all_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, only counts blocks that match ALL given tags. Otherwise, counts blocks that have ANY of the passed-in tags.",
+              "default": false,
+              "title": "Match All Tags"
+            },
+            "description": "If True, only counts blocks that match ALL given tags. Otherwise, counts blocks that have ANY of the passed-in tags."
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search blocks by project id",
+              "title": "Project Id"
+            },
+            "description": "Search blocks by project id"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -15907,7 +16053,7 @@
       "get": {
         "tags": ["tag", "admin", "admin"],
         "summary": "List Tags",
-        "description": "Get the list of all agent tags that have been created.",
+        "description": "Get the list of all tags (from agents and blocks) that have been created.",
         "operationId": "list_tags",
         "parameters": [
           {
@@ -25738,6 +25884,22 @@
             ],
             "title": "Last Updated By Id",
             "description": "The id of the user that last updated this Block."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the block.",
+            "default": []
           }
         },
         "type": "object",
@@ -25941,6 +26103,22 @@
             ],
             "title": "Last Updated By Id",
             "description": "The id of the user that last updated this Block."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the block.",
+            "default": []
           }
         },
         "type": "object",
@@ -26098,6 +26276,21 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the block will be hidden."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags to associate with the block."
           },
           "id": {
             "type": "string",
@@ -26282,6 +26475,21 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the block will be hidden."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags to associate with the block."
           }
         },
         "type": "object",
@@ -29204,6 +29412,21 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the block will be hidden."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags to associate with the block."
           }
         },
         "type": "object",
@@ -30459,6 +30682,22 @@
             ],
             "title": "Last Updated By Id",
             "description": "The id of the user that last updated this Block."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the block.",
+            "default": []
           },
           "file_id": {
             "type": "string",
@@ -33362,6 +33601,21 @@
             ],
             "title": "Hidden",
             "description": "If set to True, the block will be hidden."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags to associate with the block."
           }
         },
         "type": "object",

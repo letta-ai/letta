@@ -33,6 +33,11 @@ async def list_blocks(
     identity_id: IdentityIdQuery = None,
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
     project_id: Optional[str] = Query(None, description="Search blocks by project id"),
+    tags: Optional[List[str]] = Query(None, description="List of tags to filter blocks by"),
+    match_all_tags: bool = Query(
+        False,
+        description="If True, only returns blocks that match ALL given tags. Otherwise, return blocks that have ANY of the passed-in tags.",
+    ),
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
     before: Optional[str] = Query(
         None,
@@ -98,19 +103,44 @@ async def list_blocks(
         after=after,
         ascending=(order == "asc"),
         show_hidden_blocks=show_hidden_blocks,
+        tags=tags,
+        match_all_tags=match_all_tags,
     )
 
 
 @router.get("/count", response_model=int, operation_id="count_blocks")
 async def count_blocks(
+    label: BlockLabelQuery = None,
+    templates_only: bool = Query(False, description="Whether to include only templates"),
+    name: BlockNameQuery = None,
+    tags: Optional[List[str]] = Query(None, description="List of tags to filter blocks by"),
+    match_all_tags: bool = Query(
+        False,
+        description="If True, only counts blocks that match ALL given tags. Otherwise, counts blocks that have ANY of the passed-in tags.",
+    ),
+    project_id: Optional[str] = Query(None, description="Search blocks by project id"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Count all blocks created by a user.
+    Count all blocks with optional filtering.
+    Supports the same filters as list_blocks for consistent querying.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.block_manager.size_async(actor=actor)
+
+    # If no filters are provided, use the simpler size_async method
+    if all(param is None or param is False for param in [label, templates_only, name, tags, project_id]):
+        return await server.block_manager.size_async(actor=actor)
+
+    return await server.block_manager.count_blocks_async(
+        actor=actor,
+        label=label,
+        is_template=templates_only,
+        template_name=name,
+        tags=tags,
+        match_all_tags=match_all_tags,
+        project_id=project_id,
+    )
 
 
 @router.post("/", response_model=BlockResponse, operation_id="create_block")

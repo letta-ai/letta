@@ -36,6 +36,7 @@ from letta.orm import (
     ArchivalPassage,
     Block as BlockModel,
     BlocksAgents,
+    BlocksTags,
     Group as GroupModel,
     GroupsAgents,
     IdentitiesAgents,
@@ -1929,7 +1930,10 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             for block in agent.core_memory:
                 if block.label == block_label:
-                    return block.to_pydantic()
+                    pydantic_block = block.to_pydantic()
+                    tags_result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block.id))
+                    pydantic_block.tags = [row[0] for row in tags_result.fetchall()]
+                    return pydantic_block
             raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
     @enforce_types
@@ -1941,7 +1945,7 @@ class AgentManager:
         block_update: BlockUpdate,
         actor: PydanticUser,
     ) -> PydanticBlock:
-        """Gets a block attached to an agent by its label."""
+        """Modifies a block attached to an agent by its label."""
         async with db_registry.async_session() as session:
             matched_block = None
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1954,6 +1958,9 @@ class AgentManager:
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
+            # Extract tags from update data (it's not a column on the block table)
+            new_tags = update_data.pop("tags", None)
+
             # Validate limit constraints before updating
             validate_block_limit_constraint(update_data, matched_block)
 
@@ -1961,7 +1968,23 @@ class AgentManager:
                 setattr(matched_block, key, value)
 
             await matched_block.update_async(session, actor=actor)
-            return matched_block.to_pydantic()
+
+            if new_tags is not None:
+                await BlockManager._replace_block_pivot_rows_async(
+                    session,
+                    BlocksTags.__table__,
+                    matched_block.id,
+                    [{"block_id": matched_block.id, "tag": tag} for tag in new_tags],
+                )
+
+            pydantic_block = matched_block.to_pydantic()
+            if new_tags is not None:
+                pydantic_block.tags = new_tags
+            else:
+                tags_result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == matched_block.id))
+                pydantic_block.tags = [row[0] for row in tags_result.fetchall()]
+
+            return pydantic_block
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -3015,7 +3038,25 @@ class AgentManager:
             result = await session.execute(query)
             blocks = result.scalars().all()
 
-            return [block.to_pydantic() for block in blocks]
+            if not blocks:
+                return []
+
+            block_ids = [block.id for block in blocks]
+            tags_result = await session.execute(select(BlocksTags.block_id, BlocksTags.tag).where(BlocksTags.block_id.in_(block_ids)))
+            tags_by_block: Dict[str, List[str]] = {}
+            for row in tags_result.fetchall():
+                block_id, tag = row
+                if block_id not in tags_by_block:
+                    tags_by_block[block_id] = []
+                tags_by_block[block_id].append(tag)
+
+            pydantic_blocks = []
+            for block in blocks:
+                pydantic_block = block.to_pydantic()
+                pydantic_block.tags = tags_by_block.get(block.id, [])
+                pydantic_blocks.append(pydantic_block)
+
+            return pydantic_blocks
 
     @enforce_types
     @trace_method

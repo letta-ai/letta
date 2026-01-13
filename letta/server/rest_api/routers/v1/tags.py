@@ -32,11 +32,34 @@ async def list_tags(
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the list of all agent tags that have been created.
+    Get the list of all tags (from agents and blocks) that have been created.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     text_filter = name or query_text
-    tags = await server.agent_manager.list_tags_async(
+
+    # Get tags from both agents and blocks
+    agent_tags = await server.agent_manager.list_tags_async(
         actor=actor, before=before, after=after, limit=limit, query_text=text_filter, ascending=(order == "asc")
     )
-    return tags
+    block_tags = await server.block_manager.list_tags_async(actor=actor, query_text=text_filter)
+
+    # Merge and deduplicate, then sort and apply pagination
+    all_tags = sorted(set(agent_tags) | set(block_tags), reverse=(order == "desc"))
+
+    # Apply cursor-based pagination on merged results
+    if after:
+        if order == "asc":
+            all_tags = [t for t in all_tags if t > after]
+        else:
+            all_tags = [t for t in all_tags if t < after]
+    if before:
+        if order == "asc":
+            all_tags = [t for t in all_tags if t < before]
+        else:
+            all_tags = [t for t in all_tags if t > before]
+
+    # Apply limit
+    if limit:
+        all_tags = all_tags[:limit]
+
+    return all_tags

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -88,6 +88,17 @@ class Block(BaseBlock):
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Block.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")
 
+    # tags - using Optional with default [] to allow None input to become empty list
+    tags: Optional[List[str]] = Field(default=[], description="The tags associated with the block.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_tags(cls, data: dict) -> dict:
+        """Convert None tags to empty list."""
+        if isinstance(data, dict) and data.get("tags") is None:
+            data["tags"] = []
+        return data
+
 
 class BlockResponse(Block):
     id: str = Field(
@@ -142,6 +153,9 @@ class BlockUpdate(BaseBlock):
     value: Optional[str] = Field(None, description="Value of the block.")
     project_id: Optional[str] = Field(None, description="The associated project id.")
 
+    # tags
+    tags: Optional[List[str]] = Field(None, description="The tags to associate with the block.")
+
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
 
@@ -156,6 +170,9 @@ class CreateBlock(BaseBlock):
     # block templates
     is_template: bool = False
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
+
+    # tags
+    tags: Optional[List[str]] = Field(None, description="The tags to associate with the block.")
 
     @model_validator(mode="before")
     @classmethod

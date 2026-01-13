@@ -1282,3 +1282,141 @@ async def test_redo_concurrency_stale(server: SyncServer, default_user):
     #    an out-of-date version of the block
     with pytest.raises(StaleDataError):
         await block_manager.redo_checkpoint_block(block_id=block.id, actor=default_user, use_preloaded_block=block_s2)
+
+
+# ======================================================================================================================
+# Block Tags Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_block_tags_create_and_update(server: SyncServer, default_user):
+    """Test creating a block with tags and updating tags"""
+    block_manager = BlockManager()
+
+    # Create a block with tags
+    block = PydanticBlock(
+        label="test_tags",
+        value="Block with tags",
+        tags=["tag1", "tag2", "important"],
+    )
+    created_block = await block_manager.create_or_update_block_async(block, actor=default_user)
+
+    # Verify tags were saved
+    assert set(created_block.tags) == {"tag1", "tag2", "important"}
+
+    # Update the block with new tags
+    from letta.schemas.block import BlockUpdate
+
+    updated_block = await block_manager.update_block_async(
+        block_id=created_block.id,
+        block_update=BlockUpdate(tags=["tag1", "new_tag"]),
+        actor=default_user,
+    )
+
+    # Verify tags were updated
+    assert set(updated_block.tags) == {"tag1", "new_tag"}
+
+    # Clear all tags
+    cleared_block = await block_manager.update_block_async(
+        block_id=created_block.id,
+        block_update=BlockUpdate(tags=[]),
+        actor=default_user,
+    )
+    assert cleared_block.tags == []
+
+
+@pytest.mark.asyncio
+async def test_block_tags_filter_any(server: SyncServer, default_user):
+    """Test filtering blocks by tags (match ANY)"""
+    block_manager = BlockManager()
+
+    # Create blocks with different tags
+    block1 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b1", value="v1", tags=["alpha", "beta"]),
+        actor=default_user,
+    )
+    block2 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b2", value="v2", tags=["beta", "gamma"]),
+        actor=default_user,
+    )
+    block3 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b3", value="v3", tags=["delta"]),
+        actor=default_user,
+    )
+
+    # Filter by tag "beta" (match ANY)
+    results = await block_manager.get_blocks_async(actor=default_user, tags=["beta"], match_all_tags=False)
+    result_ids = {b.id for b in results}
+    assert block1.id in result_ids
+    assert block2.id in result_ids
+    assert block3.id not in result_ids
+
+    # Filter by tag "alpha" or "delta" (match ANY)
+    results = await block_manager.get_blocks_async(actor=default_user, tags=["alpha", "delta"], match_all_tags=False)
+    result_ids = {b.id for b in results}
+    assert block1.id in result_ids
+    assert block2.id not in result_ids
+    assert block3.id in result_ids
+
+
+@pytest.mark.asyncio
+async def test_block_tags_filter_all(server: SyncServer, default_user):
+    """Test filtering blocks by tags (match ALL)"""
+    block_manager = BlockManager()
+
+    # Create blocks with different tags
+    block1 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b1", value="v1", tags=["x", "y", "z"]),
+        actor=default_user,
+    )
+    block2 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b2", value="v2", tags=["x", "y"]),
+        actor=default_user,
+    )
+    block3 = await block_manager.create_or_update_block_async(
+        PydanticBlock(label="b3", value="v3", tags=["x"]),
+        actor=default_user,
+    )
+
+    # Filter by tags "x" AND "y" (match ALL)
+    results = await block_manager.get_blocks_async(actor=default_user, tags=["x", "y"], match_all_tags=True)
+    result_ids = {b.id for b in results}
+    assert block1.id in result_ids
+    assert block2.id in result_ids
+    assert block3.id not in result_ids
+
+    # Filter by tags "x", "y", AND "z" (match ALL)
+    results = await block_manager.get_blocks_async(actor=default_user, tags=["x", "y", "z"], match_all_tags=True)
+    result_ids = {b.id for b in results}
+    assert block1.id in result_ids
+    assert block2.id not in result_ids
+    assert block3.id not in result_ids
+
+
+@pytest.mark.asyncio
+async def test_block_tags_count(server: SyncServer, default_user):
+    """Test counting blocks with tag filters"""
+    block_manager = BlockManager()
+
+    # Create blocks with different tags
+    await block_manager.create_or_update_block_async(
+        PydanticBlock(label="c1", value="v1", tags=["count_test", "a"]),
+        actor=default_user,
+    )
+    await block_manager.create_or_update_block_async(
+        PydanticBlock(label="c2", value="v2", tags=["count_test", "b"]),
+        actor=default_user,
+    )
+    await block_manager.create_or_update_block_async(
+        PydanticBlock(label="c3", value="v3", tags=["other"]),
+        actor=default_user,
+    )
+
+    # Count blocks with tag "count_test"
+    count = await block_manager.count_blocks_async(actor=default_user, tags=["count_test"], match_all_tags=False)
+    assert count == 2
+
+    # Count blocks with tags "count_test" AND "a"
+    count = await block_manager.count_blocks_async(actor=default_user, tags=["count_test", "a"], match_all_tags=True)
+    assert count == 1
