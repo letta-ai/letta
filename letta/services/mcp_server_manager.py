@@ -482,7 +482,7 @@ class MCPServerManager:
                     )
                     oauth_sessions = result.scalars().all()
 
-                    # TODO: @jnjpng we should upate sessions in bulk
+                    # TODO: @jnjpng we should update sessions in bulk
                     for oauth_session in oauth_sessions:
                         oauth_session.server_id = mcp_server.id
                         await oauth_session.update_async(db_session=session, actor=actor, no_commit=True)

@@ -859,21 +859,20 @@ async def mcp_oauth_callback(
             error_msg = f"OAuth error: {error}"
             if error_description:
                 error_msg += f" - {error_description}"
-            # Use the legacy MCPOAuthSession class to update status
-            legacy_session = MCPOAuthSession(oauth_session.id)
-            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
+            # Note: Using MCPOAuthSession directly because this callback is unauthenticated
+            # (called by OAuth provider) and the manager's update_oauth_session requires an actor
+            await MCPOAuthSession(oauth_session.id).update_session_status(OAuthSessionStatus.ERROR)
             return {"status": "error", "message": error_msg}
 
         if not code:
-            legacy_session = MCPOAuthSession(oauth_session.id)
-            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
+            await MCPOAuthSession(oauth_session.id).update_session_status(OAuthSessionStatus.ERROR)
             return {"status": "error", "message": "Missing authorization code"}
 
-        # Store authorization code using the legacy session class
-        legacy_session = MCPOAuthSession(oauth_session.id)
-        success = await legacy_session.store_authorization_code(code, state)
+        # Store authorization code (using MCPOAuthSession since callback is unauthenticated)
+        session_handler = MCPOAuthSession(oauth_session.id)
+        success = await session_handler.store_authorization_code(code, state)
         if not success:
-            await legacy_session.update_session_status(OAuthSessionStatus.ERROR)
+            await session_handler.update_session_status(OAuthSessionStatus.ERROR)
             return {"status": "error", "message": "Failed to store authorization code"}
 
         return {"status": "success", "message": "Authorization successful", "server_url": success.server_url}
