@@ -426,6 +426,193 @@ async def test_get_blocks_comprehensive(server, default_user, other_user_differe
         assert (await block_manager.get_blocks_async(actor=default_user, label=label)) == []
 
 
+# ======================================================================================================================
+# BlockManager Pagination Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_get_blocks_pagination_with_after_cursor(server, default_user):
+    """Test cursor-based pagination using the 'after' parameter."""
+    block_manager = BlockManager()
+
+    # Use a unique label prefix to isolate this test's blocks
+    test_label = f"pagination_after_{uuid.uuid4().hex[:8]}"
+
+    # Create 5 blocks with delays to ensure distinct timestamps
+    created_blocks = []
+    for i in range(5):
+        if USING_SQLITE and i > 0:
+            time.sleep(CREATE_DELAY_SQLITE)
+        block = await block_manager.create_or_update_block_async(PydanticBlock(label=test_label, value=f"Block {i}"), actor=default_user)
+        created_blocks.append(block)
+
+    # Get first page (ascending order - oldest first), filtered by label
+    page1 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, ascending=True)
+    assert len(page1) == 2
+    # Should be the first 2 blocks created (oldest)
+    assert page1[0].id == created_blocks[0].id
+    assert page1[1].id == created_blocks[1].id
+
+    # Get second page using 'after' cursor
+    page2 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, after=page1[1].id, ascending=True)
+    assert len(page2) == 2
+    assert page2[0].id == created_blocks[2].id
+    assert page2[1].id == created_blocks[3].id
+
+    # Get third page (should have 1 block left)
+    page3 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, after=page2[1].id, ascending=True)
+    assert len(page3) == 1
+    assert page3[0].id == created_blocks[4].id
+
+    # All blocks should appear exactly once across all pages
+    all_paginated_ids = {b.id for b in page1 + page2 + page3}
+    all_created_ids = {b.id for b in created_blocks}
+    assert all_paginated_ids == all_created_ids
+
+
+@pytest.mark.asyncio
+async def test_get_blocks_pagination_with_before_cursor(server, default_user):
+    """Test cursor-based pagination using the 'before' parameter.
+
+    The 'before' cursor returns items that would appear before the cursor in the sorted order,
+    starting from the beginning of that subset. This is useful for filtering, not for
+    "previous page" navigation (which would require reversing the sort order).
+    """
+    block_manager = BlockManager()
+
+    # Use a unique label prefix to isolate this test's blocks
+    test_label = f"pagination_before_{uuid.uuid4().hex[:8]}"
+
+    # Create 5 blocks with delays to ensure distinct timestamps
+    created_blocks = []
+    for i in range(5):
+        if USING_SQLITE and i > 0:
+            time.sleep(CREATE_DELAY_SQLITE)
+        block = await block_manager.create_or_update_block_async(PydanticBlock(label=test_label, value=f"Block {i}"), actor=default_user)
+        created_blocks.append(block)
+
+    # Using the last block as cursor with ascending order
+    # Returns items that come before block 4 in ascending order: [0, 1, 2, 3]
+    # With limit=2, we get the first 2: [0, 1]
+    page1 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, before=created_blocks[4].id, ascending=True)
+    assert len(page1) == 2
+    assert page1[0].id == created_blocks[0].id
+    assert page1[1].id == created_blocks[1].id
+
+    # Get next page using 'after' cursor on last item
+    page2 = await block_manager.get_blocks_async(
+        actor=default_user, label=test_label, limit=2, after=page1[1].id, before=created_blocks[4].id, ascending=True
+    )
+    assert len(page2) == 2
+    assert page2[0].id == created_blocks[2].id
+    assert page2[1].id == created_blocks[3].id
+
+
+@pytest.mark.asyncio
+async def test_get_blocks_pagination_descending_order(server, default_user):
+    """Test pagination with descending order (newest first)."""
+    block_manager = BlockManager()
+
+    # Use a unique label prefix to isolate this test's blocks
+    test_label = f"pagination_desc_{uuid.uuid4().hex[:8]}"
+
+    # Create 4 blocks with delays
+    created_blocks = []
+    for i in range(4):
+        if USING_SQLITE and i > 0:
+            time.sleep(CREATE_DELAY_SQLITE)
+        block = await block_manager.create_or_update_block_async(PydanticBlock(label=test_label, value=f"Block {i}"), actor=default_user)
+        created_blocks.append(block)
+
+    # Get first page in descending order (newest first)
+    page1 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, ascending=False)
+    assert len(page1) == 2
+    # Should be the last 2 blocks created (newest)
+    assert page1[0].id == created_blocks[3].id
+    assert page1[1].id == created_blocks[2].id
+
+    # Get second page using 'after' cursor
+    page2 = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=2, after=page1[1].id, ascending=False)
+    assert len(page2) == 2
+    assert page2[0].id == created_blocks[1].id
+    assert page2[1].id == created_blocks[0].id
+
+
+@pytest.mark.asyncio
+async def test_get_blocks_pagination_all_blocks_found(server, default_user):
+    """Test that pagination finds all blocks across multiple pages without skipping any."""
+    block_manager = BlockManager()
+
+    # Use a unique label prefix to isolate this test's blocks
+    test_label = f"pagination_allfound_{uuid.uuid4().hex[:8]}"
+
+    # Create 10 blocks
+    created_blocks = []
+    for i in range(10):
+        if USING_SQLITE and i > 0:
+            time.sleep(CREATE_DELAY_SQLITE)
+        block = await block_manager.create_or_update_block_async(PydanticBlock(label=test_label, value=f"Block {i}"), actor=default_user)
+        created_blocks.append(block)
+
+    # Paginate through all blocks with page size of 3
+    all_paginated = []
+    cursor = None
+    page_count = 0
+    while True:
+        page = await block_manager.get_blocks_async(actor=default_user, label=test_label, limit=3, after=cursor, ascending=True)
+        if not page:
+            break
+        all_paginated.extend(page)
+        cursor = page[-1].id
+        page_count += 1
+
+    # Should have 4 pages: 3 + 3 + 3 + 1
+    assert page_count == 4, f"Expected 4 pages but got {page_count}"
+
+    # All 10 blocks should be found
+    assert len(all_paginated) == 10, f"Expected 10 blocks but found {len(all_paginated)}"
+
+    # All created block IDs should be present
+    paginated_ids = {b.id for b in all_paginated}
+    created_ids = {b.id for b in created_blocks}
+    assert paginated_ids == created_ids, "Not all blocks were found through pagination"
+
+
+@pytest.mark.asyncio
+async def test_get_agents_for_block_pagination(server: SyncServer, sarah_agent, charles_agent, default_user):
+    """Test pagination for get_agents_for_block_async."""
+    block_manager = BlockManager()
+
+    # Use a unique label to isolate this test's block
+    test_label = f"pagination_agents_{uuid.uuid4().hex[:8]}"
+
+    # Create a shared block
+    shared_block = await block_manager.create_or_update_block_async(
+        PydanticBlock(label=test_label, value="Shared block content"), actor=default_user
+    )
+
+    # Attach the block to both agents
+    await server.agent_manager.attach_block_async(agent_id=sarah_agent.id, block_id=shared_block.id, actor=default_user)
+    await server.agent_manager.attach_block_async(agent_id=charles_agent.id, block_id=shared_block.id, actor=default_user)
+
+    # Get first page of agents
+    page1 = await block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=default_user, limit=1, ascending=True)
+    assert len(page1) == 1
+
+    # Get second page using 'after' cursor
+    page2 = await block_manager.get_agents_for_block_async(
+        block_id=shared_block.id, actor=default_user, limit=1, after=page1[0].id, ascending=True
+    )
+    assert len(page2) == 1
+
+    # Verify both agents were found and they're different
+    assert page1[0].id != page2[0].id
+    agent_ids = {page1[0].id, page2[0].id}
+    expected_ids = {sarah_agent.id, charles_agent.id}
+    assert agent_ids == expected_ids
+
+
 @pytest.mark.asyncio
 async def test_update_block(server: SyncServer, default_user):
     block_manager = BlockManager()

@@ -87,6 +87,24 @@ def validate_block_creation(block_data: dict) -> None:
         )
 
 
+def _cursor_filter(sort_col, id_col, ref_sort_val, ref_id, forward: bool):
+    """
+    Returns a SQLAlchemy filter expression for cursor-based pagination.
+    If `forward` is True, returns records after the reference.
+    If `forward` is False, returns records before the reference.
+    """
+    if forward:
+        return or_(
+            sort_col > ref_sort_val,
+            and_(sort_col == ref_sort_val, id_col > ref_id),
+        )
+    else:
+        return or_(
+            sort_col < ref_sort_val,
+            and_(sort_col == ref_sort_val, id_col < ref_id),
+        )
+
+
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
@@ -432,16 +450,7 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
                         after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            BlockModel.created_at > after_sort_value,
-                            or_(BlockModel.created_at == after_sort_value, BlockModel.id > after_id),
-                        )
-                    else:
-                        query = query.where(
-                            BlockModel.created_at < after_sort_value,
-                            or_(BlockModel.created_at == after_sort_value, BlockModel.id < after_id),
-                        )
+                    query = query.where(_cursor_filter(BlockModel.created_at, BlockModel.id, after_sort_value, after_id, forward=ascending))
 
             if before:
                 result = (await session.execute(select(BlockModel.created_at, BlockModel.id).where(BlockModel.id == before))).first()
@@ -451,18 +460,12 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
                         before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            BlockModel.created_at < before_sort_value,
-                            or_(BlockModel.created_at == before_sort_value, BlockModel.id < before_id),
-                        )
-                    else:
-                        query = query.where(
-                            BlockModel.created_at > before_sort_value,
-                            or_(BlockModel.created_at == before_sort_value, BlockModel.id > before_id),
-                        )
+                    query = query.where(
+                        _cursor_filter(BlockModel.created_at, BlockModel.id, before_sort_value, before_id, forward=not ascending)
+                    )
 
             # Apply ordering and handle distinct if needed
+            # Note: PostgreSQL's DISTINCT ON requires ORDER BY to start with the DISTINCT ON column
             if needs_distinct:
                 if ascending:
                     query = query.distinct(BlockModel.id).order_by(BlockModel.id.asc(), BlockModel.created_at.asc())
@@ -609,16 +612,7 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
                         after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            AgentModel.created_at > after_sort_value,
-                            or_(AgentModel.created_at == after_sort_value, AgentModel.id > after_id),
-                        )
-                    else:
-                        query = query.where(
-                            AgentModel.created_at < after_sort_value,
-                            or_(AgentModel.created_at == after_sort_value, AgentModel.id < after_id),
-                        )
+                    query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_sort_value, after_id, forward=ascending))
 
             if before:
                 result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
@@ -628,16 +622,9 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
                         before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            AgentModel.created_at < before_sort_value,
-                            or_(AgentModel.created_at == before_sort_value, AgentModel.id < before_id),
-                        )
-                    else:
-                        query = query.where(
-                            AgentModel.created_at > before_sort_value,
-                            or_(AgentModel.created_at == before_sort_value, AgentModel.id > before_id),
-                        )
+                    query = query.where(
+                        _cursor_filter(AgentModel.created_at, AgentModel.id, before_sort_value, before_id, forward=not ascending)
+                    )
 
             # Apply sorting
             if ascending:
