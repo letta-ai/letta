@@ -105,6 +105,10 @@ class LLMConfig(BaseModel):
         None,
         description="The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings.",
     )
+    strict: bool = Field(
+        False,
+        description="Enable strict mode for tool calling. When true, tool schemas include strict: true and additionalProperties: false, guaranteeing tool outputs match JSON schemas.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -326,6 +330,7 @@ class LLMConfig(BaseModel):
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
                 reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
+                strict=self.strict,
             )
         elif self.model_endpoint_type == "anthropic":
             thinking_type = "enabled" if self.enable_reasoner else "disabled"
@@ -334,6 +339,7 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
                 thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
                 verbosity=self.verbosity,
+                strict=self.strict,
             )
         elif self.model_endpoint_type == "google_ai":
             return GoogleAIModelSettings(
