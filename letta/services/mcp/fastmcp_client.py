@@ -128,7 +128,10 @@ class AsyncFastMCPSSEClient:
         try:
             result = await self.client.call_tool(tool_name, tool_args)
         except Exception as e:
-            if e.__class__.__name__ == "McpError":
+            # ToolError is raised by fastmcp for input validation errors (e.g., missing required properties)
+            # McpError is raised for other MCP-related errors
+            # Both are expected user-facing errors from MCP tools, log at warning level
+            if e.__class__.__name__ in ("McpError", "ToolError"):
                 logger.warning(f"MCP tool '{tool_name}' execution failed: {str(e)}")
             raise
 
@@ -270,7 +273,10 @@ class AsyncFastMCPStreamableHTTPClient:
         try:
             result = await self.client.call_tool(tool_name, tool_args)
         except Exception as e:
-            if e.__class__.__name__ == "McpError":
+            # ToolError is raised by fastmcp for input validation errors (e.g., missing required properties)
+            # McpError is raised for other MCP-related errors
+            # Both are expected user-facing errors from MCP tools, log at warning level
+            if e.__class__.__name__ in ("McpError", "ToolError"):
                 logger.warning(f"MCP tool '{tool_name}' execution failed: {str(e)}")
             raise
 

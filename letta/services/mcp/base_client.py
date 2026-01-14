@@ -81,10 +81,11 @@ class AsyncBaseMCPClient:
         try:
             result = await self.session.call_tool(tool_name, tool_args)
         except Exception as e:
-            if e.__class__.__name__ == "McpError":
-                # MCP errors are typically user-facing issues from external MCP servers
-                # (e.g., resource not found, invalid arguments, permission errors)
-                # Log at debug level to avoid triggering production alerts for expected failures
+            # ToolError is raised by fastmcp for input validation errors (e.g., missing required properties)
+            # McpError is raised for other MCP-related errors
+            # Both are expected user-facing issues from external MCP servers
+            # Log at debug level to avoid triggering production alerts for expected failures
+            if e.__class__.__name__ in ("McpError", "ToolError"):
                 logger.debug(f"MCP tool '{tool_name}' execution failed: {str(e)}")
             raise
 
