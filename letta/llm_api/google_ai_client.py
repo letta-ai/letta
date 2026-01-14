@@ -82,7 +82,8 @@ async def google_ai_get_model_list_async(
     # Determine if we need to close the client at the end
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:
@@ -129,7 +130,8 @@ async def google_ai_get_model_details_async(
     # Determine if we need to close the client at the end
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:

@@ -72,7 +72,8 @@ async def openai_get_model_list_async(
     # Use provided client or create a new one
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:

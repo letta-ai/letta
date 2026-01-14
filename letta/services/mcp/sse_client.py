@@ -7,6 +7,7 @@ from mcp.client.sse import sse_client
 from letta.functions.mcp_client.types import SSEServerConfig
 from letta.log import get_logger
 from letta.services.mcp.base_client import AsyncBaseMCPClient
+from letta.settings import tool_settings
 
 # see: https://modelcontextprotocol.io/quickstart/user
 MCP_CONFIG_TOPLEVEL_KEY = "mcpServers"
@@ -33,10 +34,12 @@ class AsyncSSEMCPClient(AsyncBaseMCPClient):
             headers[self.AGENT_ID_HEADER] = self.agent_id
 
         # Use OAuth provider if available, otherwise use regular headers
+        # Pass timeout to prevent httpx.ReadTimeout errors on slow connections
+        timeout = tool_settings.mcp_connect_to_server_timeout
         if self.oauth_provider:
-            sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider)
+            sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider, timeout=timeout)
         else:
-            sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None)
+            sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None, timeout=timeout)
 
         sse_transport = await self.exit_stack.enter_async_context(sse_cm)
         self.stdio, self.write = sse_transport
