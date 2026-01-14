@@ -22802,6 +22802,10 @@
                         "integration_id": {
                           "type": "string"
                         },
+                        "integration_type": {
+                          "type": "string",
+                          "enum": ["slack"]
+                        },
                         "feed_id": {
                           "type": "string"
                         },
@@ -22894,6 +22898,7 @@
                         "organization_id",
                         "project_id",
                         "integration_id",
+                        "integration_type",
                         "feed_id",
                         "config",
                         "next_scheduled_at",
@@ -23005,6 +23010,10 @@
                           "integration_id": {
                             "type": "string"
                           },
+                          "integration_type": {
+                            "type": "string",
+                            "enum": ["slack"]
+                          },
                           "feed_id": {
                             "type": "string"
                           },
@@ -23097,6 +23106,7 @@
                           "organization_id",
                           "project_id",
                           "integration_id",
+                          "integration_type",
                           "feed_id",
                           "config",
                           "next_scheduled_at",
@@ -23112,6 +23122,48 @@
                     }
                   },
                   "required": ["pipelines", "hasNextPage"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pipelines/count": {
+      "get": {
+        "description": "Get the total count of pipelines, optionally filtered by project and search",
+        "summary": "Count Pipelines",
+        "tags": ["pipelines"],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "integration_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "pipelines.countPipelines",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["count"]
                 }
               }
             }
@@ -23160,6 +23212,10 @@
                         },
                         "integration_id": {
                           "type": "string"
+                        },
+                        "integration_type": {
+                          "type": "string",
+                          "enum": ["slack"]
                         },
                         "feed_id": {
                           "type": "string"
@@ -23253,6 +23309,7 @@
                         "organization_id",
                         "project_id",
                         "integration_id",
+                        "integration_type",
                         "feed_id",
                         "config",
                         "next_scheduled_at",
@@ -23349,6 +23406,10 @@
                         "integration_id": {
                           "type": "string"
                         },
+                        "integration_type": {
+                          "type": "string",
+                          "enum": ["slack"]
+                        },
                         "feed_id": {
                           "type": "string"
                         },
@@ -23441,6 +23502,7 @@
                         "organization_id",
                         "project_id",
                         "integration_id",
+                        "integration_type",
                         "feed_id",
                         "config",
                         "next_scheduled_at",
