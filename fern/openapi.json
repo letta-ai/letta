@@ -22080,6 +22080,10 @@
                     "agent_id": {
                       "type": "string"
                     },
+                    "agent_name": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "cron_schedule": {
                       "type": "string"
                     },
@@ -22113,6 +22117,7 @@
                     "id",
                     "feed_id",
                     "agent_id",
+                    "agent_name",
                     "cron_schedule",
                     "merge_strategy",
                     "prompt_template",
@@ -22122,6 +22127,30 @@
                     "disabled_at",
                     "created_at"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "agentAlreadySubscribed",
+                        "agentNotInProject",
+                        "invalidCronExpression"
+                      ]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
                 }
               }
             }
@@ -22191,6 +22220,10 @@
                     "agent_id": {
                       "type": "string"
                     },
+                    "agent_name": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "cron_schedule": {
                       "type": "string"
                     },
@@ -22227,6 +22260,7 @@
                     "id",
                     "feed_id",
                     "agent_id",
+                    "agent_name",
                     "cron_schedule",
                     "merge_strategy",
                     "prompt_template",
@@ -22350,6 +22384,148 @@
         }
       }
     },
+    "/v1/feeds/{feed_id}/subscriptions/{subscription_id}/trigger": {
+      "post": {
+        "description": "Immediately trigger a subscription to process pending messages",
+        "summary": "Trigger Subscription",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.triggerSubscription",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "messages_sent": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["success", "messages_sent"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/subscriptions/cron": {
+      "patch": {
+        "description": "Update the cron schedule for all subscriptions of a feed",
+        "summary": "Update All Subscriptions Cron Schedule",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.updateAllSubscriptionsCron",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cron_schedule": {
+                    "type": "string"
+                  }
+                },
+                "required": ["cron_schedule"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "updated_count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["updated_count"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/feeds/{feed_id}/subscriptions": {
       "get": {
         "description": "List all agent subscriptions for a feed",
@@ -22416,6 +22592,10 @@
                           "agent_id": {
                             "type": "string"
                           },
+                          "agent_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "cron_schedule": {
                             "type": "string"
                           },
@@ -22455,6 +22635,7 @@
                           "id",
                           "feed_id",
                           "agent_id",
+                          "agent_name",
                           "cron_schedule",
                           "merge_strategy",
                           "prompt_template",
@@ -22555,6 +22736,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "subscriber_cron_schedule": {
+                    "type": "string"
                   },
                   "prompt_template": {
                     "type": "string"
