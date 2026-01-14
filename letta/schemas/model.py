@@ -227,11 +227,6 @@ class OpenAIModelSettings(ModelSettings):
     temperature: float = Field(0.7, description="The temperature of the model.")
     reasoning: OpenAIReasoning = Field(OpenAIReasoning(reasoning_effort="high"), description="The reasoning configuration for the model.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
-    # OpenAI supports strict mode for tool calling - defaults to True
-    strict: bool = Field(
-        True,
-        description="Enable strict mode for tool calling. When true, tool outputs are guaranteed to match JSON schemas.",
-    )
 
     # TODO: implement support for these
     # reasoning_summary: Optional[Literal["none", "short", "detailed"]] = Field(
@@ -249,7 +244,6 @@ class OpenAIModelSettings(ModelSettings):
             "reasoning_effort": self.reasoning.reasoning_effort,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": self.strict,
         }
 
 
@@ -284,12 +278,6 @@ class AnthropicModelSettings(ModelSettings):
         description="Effort level for Opus 4.5 model (controls token conservation). Not setting this gives similar performance to 'high'.",
     )
 
-    # Anthropic supports strict mode for tool calling - defaults to False
-    strict: bool = Field(
-        False,
-        description="Enable strict mode for tool calling. When true, tool outputs are guaranteed to match JSON schemas.",
-    )
-
     # TODO: implement support for these
     # top_k: Optional[int] = Field(None, description="The number of top tokens to return.")
     # top_p: Optional[float] = Field(None, description="The top-p value to use when generating text.")
@@ -304,7 +292,6 @@ class AnthropicModelSettings(ModelSettings):
             "parallel_tool_calls": self.parallel_tool_calls,
             "effort": self.effort,
             "response_format": self.response_format,
-            "strict": self.strict,
         }
 
 
@@ -328,7 +315,6 @@ class GoogleAIModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "max_reasoning_tokens": self.thinking_config.thinking_budget if self.thinking_config.include_thoughts else 0,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Google AI does not support strict mode
         }
 
 
@@ -349,7 +335,6 @@ class AzureModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Azure does not support strict mode
         }
 
 
@@ -366,7 +351,6 @@ class XAIModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # xAI does not support strict mode
         }
 
 
@@ -383,7 +367,6 @@ class ZAIModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # ZAI does not support strict mode
         }
 
 
@@ -400,7 +383,6 @@ class GroqModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Groq does not support strict mode
         }
 
 
@@ -417,7 +399,6 @@ class DeepseekModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Deepseek does not support strict mode
         }
 
 
@@ -434,7 +415,6 @@ class TogetherModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Together does not support strict mode
         }
 
 
@@ -451,7 +431,6 @@ class BedrockModelSettings(ModelSettings):
             "max_tokens": self.max_output_tokens,
             "response_format": self.response_format,
             "parallel_tool_calls": self.parallel_tool_calls,
-            "strict": False,  # Bedrock does not support strict mode
         }
 
 

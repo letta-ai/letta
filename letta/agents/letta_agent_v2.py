@@ -779,9 +779,7 @@ class LettaAgentV2(BaseAgentV2):
             last_function_response=self.last_function_response,
             error_on_empty=False,  # Return empty list instead of raising error
         ) or list(set(t.name for t in tools))
-        allowed_tools = [
-            enable_strict_mode(t.json_schema, strict=self.agent_state.llm_config.strict) for t in tools if t.name in set(valid_tool_names)
-        ]
+        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
         terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
             tool_list=allowed_tools,

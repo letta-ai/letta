@@ -297,8 +297,8 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 typed_tools = new_tools
 
-            # Convert to strict mode when strict is enabled
-            if llm_config.strict and supports_structured_output(llm_config):
+            # Convert to strict mode
+            if supports_structured_output(llm_config):
                 for tool in typed_tools:
                     try:
                         structured_output_version = convert_to_structured_output(tool.function.model_dump())
@@ -320,14 +320,13 @@ class OpenAIClient(LLMClientBase):
 
             else:
                 # Finally convert to a Responses-friendly dict
-                # Note: strict field is required by OpenAI SDK's FunctionToolParam type
                 responses_tools = [
                     {
                         "type": "function",
                         "name": t.function.name,
                         "description": t.function.description,
                         "parameters": t.function.parameters,
-                        "strict": False,
+                        # "strict": True,
                     }
                     for t in typed_tools
                 ]
@@ -561,9 +560,9 @@ class OpenAIClient(LLMClientBase):
                 data.tools = new_tools
 
         if data.tools is not None and len(data.tools) > 0:
-            # Convert to structured output style when strict is enabled
+            # Convert to structured output style (which has 'strict' and no optionals)
             for tool in data.tools:
-                if llm_config.strict and supports_structured_output(llm_config):
+                if supports_structured_output(llm_config):
                     try:
                         structured_output_version = convert_to_structured_output(tool.function.model_dump())
                         tool.function = FunctionSchema(**structured_output_version)

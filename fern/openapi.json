@@ -24917,12 +24917,6 @@
             ],
             "title": "Effort",
             "description": "Effort level for Opus 4.5 model (controls token conservation). Not setting this gives similar performance to 'high'."
-          },
-          "strict": {
-            "type": "boolean",
-            "title": "Strict",
-            "description": "Enable strict mode for tool calling. When true, tool outputs are guaranteed to match JSON schemas.",
-            "default": false
           }
         },
         "type": "object",
@@ -34797,12 +34791,6 @@
             ],
             "title": "Response Format",
             "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
-          },
-          "strict": {
-            "type": "boolean",
-            "title": "Strict",
-            "description": "Enable strict mode for tool calling. When true, tool schemas include strict: true and additionalProperties: false, guaranteeing tool outputs match JSON schemas.",
-            "default": false
           }
         },
         "type": "object",
@@ -37136,12 +37124,6 @@
             "title": "Response Format",
             "description": "The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings."
           },
-          "strict": {
-            "type": "boolean",
-            "title": "Strict",
-            "description": "Enable strict mode for tool calling. When true, tool schemas include strict: true and additionalProperties: false, guaranteeing tool outputs match JSON schemas.",
-            "default": false
-          },
           "max_context_window": {
             "type": "integer",
             "title": "Max Context Window",
@@ -37319,12 +37301,6 @@
             ],
             "title": "Response Format",
             "description": "The response format for the model."
-          },
-          "strict": {
-            "type": "boolean",
-            "title": "Strict",
-            "description": "Enable strict mode for tool calling. When true, tool outputs are guaranteed to match JSON schemas.",
-            "default": true
           }
         },
         "type": "object",
