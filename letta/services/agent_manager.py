@@ -1241,9 +1241,34 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agents_to_delete = [agent]
             sleeptime_group_to_delete = None
+            manager_agent_to_update = None
 
-            # Delete sleeptime agent and group (TODO this is flimsy pls fix)
-            if agent.multi_agent_group:
+            # Handle case where we're deleting a sleeptime agent (not the main agent)
+            # In this case, we need to clean up the group and the main agent's enable_sleeptime flag
+            if agent.agent_type in {AgentType.sleeptime_agent, AgentType.voice_sleeptime_agent}:
+                # Find the group that this sleeptime agent belongs to
+                group_query = (
+                    select(GroupModel)
+                    .join(GroupsAgents, GroupsAgents.group_id == GroupModel.id)
+                    .where(GroupsAgents.agent_id == agent_id)
+                    .where(GroupModel.manager_type.in_([ManagerType.sleeptime, ManagerType.voice_sleeptime]))
+                )
+                result = await session.execute(group_query)
+                sleeptime_group = result.scalars().first()
+
+                if sleeptime_group:
+                    sleeptime_group_to_delete = sleeptime_group
+                    # Get the manager (main) agent and mark it for update
+                    if sleeptime_group.manager_agent_id:
+                        try:
+                            manager_agent_to_update = await AgentModel.read_async(
+                                db_session=session, identifier=sleeptime_group.manager_agent_id, actor=actor
+                            )
+                        except NoResultFound:
+                            pass  # Manager agent already deleted
+
+            # Delete sleeptime agent and group when deleting the main agent
+            elif agent.multi_agent_group:
                 participant_agent_ids = agent.multi_agent_group.agent_ids
                 if agent.multi_agent_group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and participant_agent_ids:
                     for participant_agent_id in participant_agent_ids:
@@ -1265,6 +1290,10 @@ class AgentManager:
                     await session.delete(agent)
                     # context manager now handles commits
                     # await session.commit()
+                # Update the manager agent's enable_sleeptime flag if we deleted a sleeptime agent
+                if manager_agent_to_update is not None:
+                    manager_agent_to_update.enable_sleeptime = None
+                    await session.commit()
             except Exception as e:
                 await session.rollback()
                 logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
