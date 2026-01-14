@@ -109,9 +109,21 @@ class AsyncBaseMCPClient:
             logger.error("MCPClient has not been initialized")
             raise RuntimeError("MCPClient has not been initialized")
 
-    # TODO: still hitting some async errors for voice agents, need to fix
     async def cleanup(self):
-        await self.exit_stack.aclose()
+        """Clean up resources used by the MCP client.
+
+        This method handles ExceptionGroup errors that can occur when closing async context managers
+        (e.g., from the MCP library's internal TaskGroup usage). Cleanup is a best-effort operation
+        and errors are logged but not re-raised to prevent masking the original exception.
+        """
+        try:
+            await self.exit_stack.aclose()
+        except* Exception as eg:
+            # ExceptionGroup can be raised when closing async context managers that use TaskGroup
+            # Log each sub-exception at debug level since cleanup errors are expected in some cases
+            # (e.g., connection already closed, server unavailable)
+            for exc in eg.exceptions:
+                logger.debug(f"MCP client cleanup error (suppressed): {type(exc).__name__}: {exc}")
 
     def to_sync_client(self):
         raise NotImplementedError("Subclasses must implement to_sync_client")

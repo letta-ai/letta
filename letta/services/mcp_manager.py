@@ -93,12 +93,7 @@ class MCPManager:
             raise e
         finally:
             if mcp_client:
-                try:
-                    await mcp_client.cleanup()
-                except* Exception as eg:
-                    for e in eg.exceptions:
-                        logger.warning(f"Error listing tools for MCP server {mcp_server_name}: {e}")
-                        raise e
+                await mcp_client.cleanup()
 
     @enforce_types
     async def execute_mcp_server_tool(

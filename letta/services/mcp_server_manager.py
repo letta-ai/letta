@@ -186,11 +186,7 @@ class MCPServerManager:
             raise e
         finally:
             if mcp_client:
-                try:
-                    await mcp_client.cleanup()
-                except Exception as e:
-                    logger.warning(f"Error listing tools for MCP server {mcp_server_id}: {e}")
-                    raise e
+                await mcp_client.cleanup()
 
     @enforce_types
     async def execute_mcp_server_tool(
