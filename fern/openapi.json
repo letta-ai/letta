@@ -21908,6 +21908,9 @@
                           "feed_id": {
                             "type": "string"
                           },
+                          "sequence": {
+                            "type": "number"
+                          },
                           "content_preview": {
                             "type": "string"
                           },
@@ -21927,6 +21930,7 @@
                         "required": [
                           "id",
                           "feed_id",
+                          "sequence",
                           "content_preview",
                           "is_truncated",
                           "content_size_bytes",
