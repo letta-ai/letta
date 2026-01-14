@@ -1622,7 +1622,9 @@ class AgentManager:
                     updated_value = new_memory.get_block(label).value
                     if updated_value != agent_state.memory.get_block(label).value:
                         # update the block if it's changed
-                        block_id = agent_state.memory.get_block(label).id
+                        # Use block ID from new_memory, not agent_state.memory, because new_memory
+                        # may contain conversation-isolated blocks with different IDs
+                        block_id = new_memory.get_block(label).id
                         await self.block_manager.update_block_async(
                             block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor
                         )

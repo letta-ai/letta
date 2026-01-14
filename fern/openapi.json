@@ -28902,6 +28902,14 @@
             "type": "array",
             "title": "In Context Message Ids",
             "description": "The IDs of in-context messages for the conversation."
+          },
+          "isolated_block_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Isolated Block Ids",
+            "description": "IDs of blocks that are isolated (specific to this conversation, overriding agent defaults)."
           }
         },
         "additionalProperties": false,
@@ -29947,6 +29955,21 @@
             ],
             "title": "Summary",
             "description": "A summary of the conversation."
+          },
+          "isolated_block_labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isolated Block Labels",
+            "description": "List of block labels that should be isolated (conversation-specific) rather than shared across conversations. New blocks will be created as copies of the agent's blocks with these labels."
           }
         },
         "type": "object",

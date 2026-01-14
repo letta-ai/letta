@@ -130,6 +130,15 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+
+        # Apply conversation-specific block overrides if conversation_id is provided
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
+
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
@@ -285,6 +294,14 @@ class LettaAgentV3(LettaAgentV2):
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
+
+        # Apply conversation-specific block overrides if conversation_id is provided
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
 
         if stream_tokens:
             llm_adapter = SimpleLLMStreamAdapter(
