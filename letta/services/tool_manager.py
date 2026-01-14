@@ -1189,12 +1189,19 @@ class ToolManager:
         from sqlalchemy import func, select
         from sqlalchemy.dialects.postgresql import insert
 
+        # Sort tools by name to prevent deadlocks.
+        # When multiple concurrent transactions try to upsert the same tools,
+        # they must acquire row locks in a consistent order to avoid deadlocks.
+        # Without sorting, Transaction A might lock (a, b, c) while Transaction B
+        # locks (b, c, a), causing each to wait for the other (deadlock).
+        sorted_tool_data_list = sorted(tool_data_list, key=lambda t: t.name)
+
         # prepare data for bulk insert
         table = ToolModel.__table__
         valid_columns = {col.name for col in table.columns}
 
         insert_data = []
-        for tool in tool_data_list:
+        for tool in sorted_tool_data_list:
             tool_dict = tool.model_dump(to_orm=True)
             # set created/updated by fields
             if actor:
