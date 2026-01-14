@@ -405,6 +405,9 @@ class MCPServerManager:
             mcp_servers = await MCPServerModel.list_async(
                 db_session=session,
                 organization_id=actor.organization_id,
+                # SqlalchemyBase.list_async defaults to limit=50; MCP servers should not be capped.
+                # Use a higher limit until we implement proper pagination in the API/SDK.
+                limit=200,
             )
 
             return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
