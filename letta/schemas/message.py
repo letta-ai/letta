@@ -1904,15 +1904,25 @@ class Message(BaseMessage):
 
             if self.tool_calls is not None:
                 # Check if there's a signature in the content that should be included with function calls
-                # Google Vertex requires thought_signature to be echoed back in function calls
+                # Google Vertex/Gemini 3 requires thought_signature to be echoed back in function calls
+                # Per Google docs: https://ai.google.dev/gemini-api/docs/thought-signatures
+                # - For parallel function calls, only the FIRST functionCall should have the signature
+                # - For sequential function calls (multi-step), each function call has its own signature
                 thought_signature = None
-                if self.content and current_model == self.model:
+                # Allow signatures when models match OR when self.model is None (backwards compatibility
+                # for older messages that may not have had their model field set)
+                models_compatible = self.model is None or current_model == self.model
+                if self.content and models_compatible:
                     for content in self.content:
                         # Check for signature in ReasoningContent, TextContent, or ToolCallContent
+                        # Take the first non-None signature found (don't keep overwriting)
                         if isinstance(content, (ReasoningContent, TextContent, ToolCallContent)):
-                            thought_signature = getattr(content, "signature", None)
+                            sig = getattr(content, "signature", None)
+                            if sig is not None and thought_signature is None:
+                                thought_signature = sig
 
                 # NOTE: implied support for multiple calls
+                is_first_function_call = True
                 for tool_call in self.tool_calls:
                     function_name = tool_call.function.name
                     function_args = tool_call.function.arguments
@@ -1939,9 +1949,11 @@ class Message(BaseMessage):
                         }
                     }
 
-                    # Include thought_signature if we found one
-                    if thought_signature is not None:
+                    # Include thought_signature only on the FIRST function call
+                    # Per Google docs, for parallel function calls, only the first gets the signature
+                    if thought_signature is not None and is_first_function_call:
                         function_call_part["thought_signature"] = thought_signature
+                        is_first_function_call = False
 
                     parts.append(function_call_part)
             else:
@@ -1952,15 +1964,20 @@ class Message(BaseMessage):
                     parts.append({"text": text_content})
 
             if self.content and len(self.content) > 1:
+                # Use the same models_compatible check defined above for consistency
+                # Allow signatures when models match OR when self.model is None (backwards compatibility)
+                models_compatible = self.model is None or current_model == self.model
                 native_google_content_parts = []
+                # Track if we've seen the first function call (for parallel tool calls)
+                seen_first_function_call = False
                 for content in self.content:
                     if isinstance(content, TextContent):
                         native_part = {"text": content.text}
-                        if content.signature and current_model == self.model:
+                        if content.signature and models_compatible:
                             native_part["thought_signature"] = content.signature
                         native_google_content_parts.append(native_part)
                     elif isinstance(content, ReasoningContent):
-                        if current_model == self.model:
+                        if models_compatible:
                             native_google_content_parts.append({"text": content.reasoning, "thought": True})
                     elif isinstance(content, ToolCallContent):
                         native_part = {
@@ -1969,8 +1986,11 @@ class Message(BaseMessage):
                                 "args": content.input,
                             },
                         }
-                        if content.signature and current_model == self.model:
+                        # Only include signature on the FIRST function call (for parallel tool calls)
+                        # Per Google docs: https://ai.google.dev/gemini-api/docs/thought-signatures
+                        if content.signature and models_compatible and not seen_first_function_call:
                             native_part["thought_signature"] = content.signature
+                            seen_first_function_call = True
                         native_google_content_parts.append(native_part)
                     else:
                         # silently drop other content types
