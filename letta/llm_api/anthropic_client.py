@@ -124,12 +124,126 @@ class AnthropicClient(LLMClientBase):
         if llm_config.strict and _supports_structured_outputs(llm_config.model):
             betas.append("structured-outputs-2025-11-13")
 
-        if betas:
-            response = await client.beta.messages.create(**request_data, betas=betas)
-        else:
-            response = await client.beta.messages.create(**request_data)
+        try:
+            if betas:
+                response = await client.beta.messages.create(**request_data, betas=betas)
+            else:
+                response = await client.beta.messages.create(**request_data)
+            return response.model_dump()
+        except ValueError as e:
+            # Anthropic SDK raises ValueError when streaming is required for long-running operations
+            # See: https://github.com/anthropics/anthropic-sdk-python#long-requests
+            if "streaming is required" in str(e).lower():
+                logger.warning(
+                    "[Anthropic] Non-streaming request rejected due to potential long duration. "
+                    "Falling back to streaming mode. Error: %s",
+                    str(e),
+                )
+                return await self._request_via_streaming(request_data, llm_config, betas)
+            raise
 
-        return response.model_dump()
+    @trace_method
+    async def _request_via_streaming(self, request_data: dict, llm_config: LLMConfig, betas: list[str]) -> dict:
+        """
+        Fallback method that uses streaming to handle long-running requests.
+
+        When Anthropic SDK detects a request may exceed 10 minutes, it requires streaming.
+        This method streams the response and accumulates it into the same dict format
+        as the non-streaming response.
+
+        See: https://github.com/anthropics/anthropic-sdk-python#long-requests
+        """
+        from letta.interfaces.anthropic_parallel_tool_call_streaming_interface import (
+            SimpleAnthropicStreamingInterface,
+        )
+
+        interface = SimpleAnthropicStreamingInterface(
+            requires_approval_tools=[],
+            run_id=None,
+            step_id=None,
+        )
+
+        # Get the streaming response
+        stream = await self.stream_async(request_data, llm_config)
+
+        # Process the stream to accumulate the response
+        async for _chunk in interface.process(stream):
+            # We don't emit anything; we just want the fully-accumulated content
+            pass
+
+        # Reconstruct the response dict in the same format as non-streaming
+        # Build content array from accumulated data
+        content = []
+
+        # Add reasoning content (thinking blocks)
+        reasoning_parts = interface.get_reasoning_content()
+        for part in reasoning_parts:
+            if hasattr(part, "reasoning") and part.reasoning:
+                # Native thinking block
+                content.append({
+                    "type": "thinking",
+                    "thinking": part.reasoning,
+                    "signature": getattr(part, "signature", None),
+                })
+            elif hasattr(part, "data") and part.data:
+                # Redacted thinking block
+                content.append({
+                    "type": "redacted_thinking",
+                    "data": part.data,
+                })
+            elif hasattr(part, "text") and part.text:
+                # Text content (non-native reasoning)
+                content.append({
+                    "type": "text",
+                    "text": part.text,
+                })
+
+        # Add tool use if present
+        tool_call = interface.get_tool_call_object()
+        if tool_call:
+            try:
+                tool_input = json.loads(tool_call.function.arguments)
+            except json.JSONDecodeError:
+                tool_input = {}
+            content.append({
+                "type": "tool_use",
+                "id": tool_call.id,
+                "name": tool_call.function.name,
+                "input": tool_input,
+            })
+
+        # Calculate total input tokens (Anthropic reports input_tokens as non-cached only)
+        # We need to add cache tokens if they're available
+        input_tokens = interface.input_tokens or 0
+        cache_read_tokens = getattr(interface, "cache_read_tokens", 0) or 0
+        cache_creation_tokens = getattr(interface, "cache_creation_tokens", 0) or 0
+
+        # Build the response dict
+        response_dict = {
+            "id": interface.message_id or "msg_streaming_fallback",
+            "type": "message",
+            "role": "assistant",
+            "content": content,
+            "model": interface.model or llm_config.model,
+            "stop_reason": "tool_use" if tool_call else "end_turn",
+            "stop_sequence": None,
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": interface.output_tokens or 0,
+                "cache_read_input_tokens": cache_read_tokens,
+                "cache_creation_input_tokens": cache_creation_tokens,
+            },
+        }
+
+        logger.info(
+            "[Anthropic] Streaming fallback completed successfully. "
+            "Message ID: %s, Input tokens: %d, Output tokens: %d",
+            response_dict["id"],
+            response_dict["usage"]["input_tokens"],
+            response_dict["usage"]["output_tokens"],
+        )
+
+        return response_dict
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
