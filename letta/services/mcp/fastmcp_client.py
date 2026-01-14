@@ -78,10 +78,21 @@ class AsyncFastMCPSSEClient:
         except httpx.HTTPStatusError as e:
             # Re-raise HTTP status errors for OAuth flow handling
             if e.response.status_code == 401:
-                raise ConnectionError("401 Unauthorized")
-            raise e
+                raise ConnectionError("401 Unauthorized") from e
+            raise ConnectionError(f"HTTP error connecting to MCP server at {self.server_config.server_url}: {e}") from e
+        except ConnectionError:
+            # Re-raise ConnectionError as-is
+            raise
         except Exception as e:
-            raise e
+            # MCP connection failures are often due to user misconfiguration, not system errors
+            # Log as warning for visibility in monitoring
+            logger.warning(
+                f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
+            )
+            raise ConnectionError(
+                f"Failed to connect to MCP server at '{self.server_config.server_url}'. "
+                f"Please check your configuration and ensure the server is accessible. Error: {str(e)}"
+            ) from e
 
     async def list_tools(self, serialize: bool = False) -> List[MCPTool]:
         """List available tools from the MCP server.
@@ -223,10 +234,21 @@ class AsyncFastMCPStreamableHTTPClient:
         except httpx.HTTPStatusError as e:
             # Re-raise HTTP status errors for OAuth flow handling
             if e.response.status_code == 401:
-                raise ConnectionError("401 Unauthorized")
-            raise e
+                raise ConnectionError("401 Unauthorized") from e
+            raise ConnectionError(f"HTTP error connecting to MCP server at {self.server_config.server_url}: {e}") from e
+        except ConnectionError:
+            # Re-raise ConnectionError as-is
+            raise
         except Exception as e:
-            raise e
+            # MCP connection failures are often due to user misconfiguration, not system errors
+            # Log as warning for visibility in monitoring
+            logger.warning(
+                f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
+            )
+            raise ConnectionError(
+                f"Failed to connect to MCP server at '{self.server_config.server_url}'. "
+                f"Please check your configuration and ensure the server is accessible. Error: {str(e)}"
+            ) from e
 
     async def list_tools(self, serialize: bool = False) -> List[MCPTool]:
         """List available tools from the MCP server.
