@@ -4730,6 +4730,24 @@
               "title": "Agent Id"
             },
             "description": "The ID of the agent in the format 'agent-<uuid4>'"
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Conversation ID to get context window for. If provided, uses messages from this conversation.",
+              "title": "Conversation Id"
+            },
+            "description": "Conversation ID to get context window for. If provided, uses messages from this conversation."
           }
         ],
         "responses": {

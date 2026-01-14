@@ -105,9 +105,17 @@ class ContextWindowCalculator:
         system_message_compiled: Message,
         num_archival_memories: int,
         num_messages: int,
+        message_ids: Optional[List[str]] = None,
     ) -> ContextWindowOverview:
-        """Calculate context window information using the provided token counter"""
-        messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids[1:], actor=actor)
+        """Calculate context window information using the provided token counter
+
+        Args:
+            message_ids: Optional list of message IDs to use instead of agent_state.message_ids.
+                         If provided, should NOT include the system message ID (index 0).
+        """
+        # Use provided message_ids or fall back to agent_state.message_ids[1:]
+        effective_message_ids = message_ids if message_ids is not None else agent_state.message_ids[1:]
+        messages = await message_manager.get_messages_by_ids_async(message_ids=effective_message_ids, actor=actor)
         in_context_messages = [system_message_compiled] + messages
 
         # Filter out None messages (can occur when system message is missing)

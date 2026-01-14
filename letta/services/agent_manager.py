@@ -83,6 +83,7 @@ from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager, validate_block_limit_constraint
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import create_token_counter
+from letta.services.conversation_manager import ConversationManager
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
@@ -137,6 +138,7 @@ class AgentManager:
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
         self.archive_manager = ArchiveManager()
+        self.conversation_manager = ConversationManager()
 
     @staticmethod
     def _should_exclude_model_from_base_tool_rules(model: str) -> bool:
@@ -3388,7 +3390,7 @@ class AgentManager:
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
     @trace_method
-    async def get_context_window(self, agent_id: str, actor: PydanticUser) -> ContextWindowOverview:
+    async def get_context_window(self, agent_id: str, actor: PydanticUser, conversation_id: Optional[str] = None) -> ContextWindowOverview:
         agent_state, system_message, num_messages, num_archival_memories = await self.rebuild_system_prompt_async(
             agent_id=agent_id, actor=actor, force=True, dry_run=True
         )
@@ -3402,6 +3404,16 @@ class AgentManager:
             agent_id=agent_id,
         )
 
+        # If conversation_id is provided, get message_ids from the conversation
+        # Skip the first message ID (system message) since it's passed separately
+        message_ids = None
+        if conversation_id is not None:
+            conversation_message_ids = await self.conversation_manager.get_message_ids_for_conversation(
+                conversation_id=conversation_id, actor=actor
+            )
+            # Skip the system message (first message) as it's handled separately
+            message_ids = conversation_message_ids[1:] if conversation_message_ids else []
+
         try:
             result = await calculator.calculate_context_window(
                 agent_state=agent_state,
@@ -3411,6 +3423,7 @@ class AgentManager:
                 system_message_compiled=system_message,
                 num_archival_memories=num_archival_memories,
                 num_messages=num_messages,
+                message_ids=message_ids,
             )
         except Exception as e:
             raise e

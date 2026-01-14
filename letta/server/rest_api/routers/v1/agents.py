@@ -452,12 +452,15 @@ async def retrieve_agent_context_window(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    conversation_id: Optional[str] = Query(
+        None, description="Conversation ID to get context window for. If provided, uses messages from this conversation."
+    ),
 ):
     """
     Retrieve the context window of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor, conversation_id=conversation_id)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -2216,7 +2219,7 @@ async def capture_messages(
             messages_to_persist.append(
                 Message(
                     role=MessageRole.user,
-                    content=[(TextContent(text=message["content"]))],
+                    content=[TextContent(text=message["content"])],
                     agent_id=agent_id,
                     tool_calls=None,
                     tool_call_id=None,
@@ -2228,7 +2231,7 @@ async def capture_messages(
     messages_to_persist.append(
         Message(
             role=MessageRole.assistant,
-            content=[(TextContent(text=request.response_dict["content"]))],
+            content=[TextContent(text=request.response_dict["content"])],
             agent_id=agent_id,
             model=request.model,
             tool_calls=None,
