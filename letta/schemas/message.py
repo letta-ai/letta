@@ -2139,6 +2139,69 @@ class Message(BaseMessage):
         for idx in reversed(messages_to_filter):  # reverse to avoid index shift
             messages.remove(idx)
 
+        # Filter orphaned approval_request messages that have tool_calls but no corresponding tool_return.
+        # This can happen due to race conditions in checkpoint, client disconnect, or other edge cases.
+        # We scan for ALL such messages (not just the last one) to handle sporadic state corruption.
+        #
+        # Performance: O(n) pre-build lookup + O(n) scan = O(n) total
+        # This scales well to large context windows (10K-100K+ messages).
+
+        # Pre-build map of tool_call_id -> minimum position where a tool_return appears.
+        # We need position-awareness because tool_returns must come AFTER the tool_use (approval_request).
+        # This converts O(n × a) inner loop to O(1) lookups per approval_request.
+        tool_return_positions: dict = {}  # tool_call_id -> min position with tool_return
+        for idx, msg in enumerate(messages):
+            if msg.role == MessageRole.tool:
+                # Check tool_returns array
+                if msg.tool_returns:
+                    for tr in msg.tool_returns:
+                        if tr.tool_call_id:
+                            # Keep the minimum (earliest) position for each tool_call_id
+                            if tr.tool_call_id not in tool_return_positions:
+                                tool_return_positions[tr.tool_call_id] = idx
+                # Check single tool_call_id (legacy)
+                elif msg.tool_call_id:
+                    if msg.tool_call_id not in tool_return_positions:
+                        tool_return_positions[msg.tool_call_id] = idx
+            # Check approval messages with approvals array containing ToolReturn entries.
+            # NOTE: Only ToolReturn entries count (they have tool results), not ApprovalReturn
+            # (which only has approve/deny status without tool_result content).
+            elif msg.role == MessageRole.approval and msg.approvals:
+                for approval in msg.approvals:
+                    # Only count ToolReturn entries, not ApprovalReturn:
+                    # - ApprovalReturn has 'approve' attr (bool) but no tool result content
+                    # - ToolReturn has 'func_response' attr with actual tool results
+                    is_tool_return = hasattr(approval, "func_response") and not hasattr(approval, "approve")
+                    if is_tool_return:
+                        tcid = getattr(approval, "tool_call_id", None)
+                        if tcid and tcid not in tool_return_positions:
+                            tool_return_positions[tcid] = idx
+
+        # Now scan for orphaned approval_requests using O(1) lookups
+        i = 0
+        while i < len(messages):
+            msg = messages[i]
+            # Check if this is an approval_request (has tool_calls)
+            if msg.is_approval_request():
+                tool_call_ids = {tc.id for tc in msg.tool_calls if tc.id}
+                # Check if any tool_calls have returns AFTER this position
+                has_tool_returns = any(tcid in tool_return_positions and tool_return_positions[tcid] > i for tcid in tool_call_ids)
+
+                if not has_tool_returns:
+                    # Remove orphaned approval_request
+                    logger.warning(f"Filtering orphaned approval_request message {msg.id} with tool_calls but no tool_return")
+                    messages.pop(i)
+                    # Also remove preceding assistant message with tool_calls if present (they share tool_use blocks)
+                    if i > 0 and messages[i - 1].role == MessageRole.assistant and messages[i - 1].tool_calls:
+                        # Check if the assistant's tool_calls overlap with the orphaned approval's tool_calls
+                        assistant_tc_ids = {tc.id for tc in messages[i - 1].tool_calls if tc.id}
+                        if tool_call_ids & assistant_tc_ids:
+                            logger.warning(f"Filtering related assistant message {messages[i - 1].id} with orphaned tool_calls")
+                            messages.pop(i - 1)
+                            i -= 1
+                    continue  # Don't increment i, check new message at this index
+            i += 1
+
         # Filter last message if it is a lone approval request without a response - this only occurs for token counting
         if messages[-1].role == "approval" and messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
             messages.remove(messages[-1])
