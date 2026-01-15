@@ -30,6 +30,7 @@ def convert_statuses_to_enum(statuses: Optional[List[str]]) -> Optional[List[Run
 @router.get("/", response_model=List[Run], operation_id="list_internal_runs")
 async def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
+    run_id: Optional[str] = Query(None, description="Filter by a specific run ID."),
     agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     agent_ids: Optional[List[str]] = Query(
         None,
@@ -110,6 +111,7 @@ async def list_runs(
 
     runs = await runs_manager.list_runs(
         actor=actor,
+        run_id=run_id,
         agent_ids=agent_ids,
         statuses=parsed_statuses,
         limit=limit,

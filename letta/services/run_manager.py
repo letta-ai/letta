@@ -138,6 +138,7 @@ class RunManager:
     async def list_runs(
         self,
         actor: PydanticUser,
+        run_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         agent_ids: Optional[List[str]] = None,
         statuses: Optional[List[RunStatus]] = None,
@@ -173,6 +174,9 @@ class RunManager:
             # Filter by project_id if provided
             if project_id:
                 query = query.filter(RunModel.project_id == project_id)
+
+            if run_id:
+                query = query.filter(RunModel.id == run_id)
 
             # Handle agent filtering
             if agent_id:

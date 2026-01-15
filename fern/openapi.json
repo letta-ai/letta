@@ -11528,6 +11528,24 @@
         "operationId": "list_internal_runs",
         "parameters": [
           {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by a specific run ID.",
+              "title": "Run Id"
+            },
+            "description": "Filter by a specific run ID."
+          },
+          {
             "name": "agent_id",
             "in": "query",
             "required": false,
