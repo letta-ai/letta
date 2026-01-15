@@ -35780,18 +35780,104 @@
       },
       "LettaPing": {
         "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "const": "ping",
             "title": "Message Type",
-            "description": "The type of the message.",
+            "description": "The type of the message. Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
             "default": "ping"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "is_err": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
           }
         },
         "type": "object",
-        "required": ["message_type"],
+        "required": ["id", "date"],
         "title": "LettaPing",
-        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests."
+        "description": "A ping message used as a keepalive to prevent SSE streams from timing out during long running requests.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "LettaRequest": {
         "properties": {

@@ -458,24 +458,6 @@ def create_letta_message_union_schema():
     }
 
 
-def create_letta_ping_schema():
-    return {
-        "properties": {
-            "message_type": {
-                "type": "string",
-                "const": "ping",
-                "title": "Message Type",
-                "description": "The type of the message.",
-                "default": "ping",
-            }
-        },
-        "type": "object",
-        "required": ["message_type"],
-        "title": "LettaPing",
-        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
-    }
-
-
 def create_letta_error_message_schema():
     return {
         "properties": {
