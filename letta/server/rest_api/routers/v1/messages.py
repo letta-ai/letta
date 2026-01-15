@@ -15,6 +15,7 @@ from letta.schemas.message import Message, MessageSearchRequest, MessageSearchRe
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
+from letta.validators import MessageId
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -55,6 +56,22 @@ async def list_all_messages(
         conversation_id=conversation_id,
         actor=actor,
     )
+
+
+@router.get("/{message_id}", response_model=MessagesResponse, operation_id="retrieve_message")
+async def retrieve_message(
+    message_id: MessageId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Retrieve a message by ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    message = await server.message_manager.get_message_by_id_async(message_id=message_id, actor=actor)
+    if message is None:
+        raise HTTPException(status_code=404, detail=f"Message with id {message_id} not found.")
+    return message.to_letta_messages()
 
 
 @router.post("/search", response_model=List[LettaMessageSearchResult], operation_id="search_all_messages")
