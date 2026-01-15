@@ -263,6 +263,17 @@ class Summarizer:
         while target_trim_index < len(all_in_context_messages) and all_in_context_messages[target_trim_index].role != MessageRole.user:
             target_trim_index += 1
 
+        # If the first retained message is an approval request, also keep the assistant message before it
+        # (they're part of the same LLM response - assistant has reasoning/tool_calls, approval has approval-required subset)
+        if target_trim_index < len(all_in_context_messages):
+            first_retained = all_in_context_messages[target_trim_index]
+            if first_retained.role == MessageRole.approval and target_trim_index > 1:
+                # Check if the message before it is an assistant from the same step
+                prev_message = all_in_context_messages[target_trim_index - 1]
+                if prev_message.role == MessageRole.assistant and prev_message.step_id == first_retained.step_id:
+                    # Back up to include the assistant message with reasoning
+                    target_trim_index -= 1
+
         evicted_messages = all_in_context_messages[1:target_trim_index]  # everything except sys msg
         updated_in_context_messages = all_in_context_messages[target_trim_index:]  # may be empty
 
