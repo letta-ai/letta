@@ -8820,6 +8820,55 @@
         }
       }
     },
+    "/v1/conversations/{conversation_id}/messages/cancel": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Cancel Conversation Message",
+        "description": "Cancel runs associated with a conversation.\n\nNote: To cancel active runs, Redis is required.",
+        "operationId": "cancel_conversation_message",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Conversation Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/chat/completions": {
       "post": {
         "tags": ["chat"],
