@@ -302,10 +302,15 @@ class ConversationManager:
         Update which messages are in context for a conversation.
 
         Sets in_context=True for messages in the list, False for others.
+        Also updates positions to preserve the order specified in in_context_message_ids.
+
+        This is critical for correctness: when summarization inserts a summary message
+        that needs to appear before an approval request, the positions must reflect
+        the intended order, not the insertion order.
 
         Args:
             conversation_id: The conversation to update
-            in_context_message_ids: List of message IDs that should be in context
+            in_context_message_ids: List of message IDs in the desired order
             actor: The user performing the action
         """
         async with db_registry.async_session() as session:
@@ -318,10 +323,19 @@ class ConversationManager:
             result = await session.execute(query)
             conv_messages = result.scalars().all()
 
-            # Update in_context status
+            # Build lookup dict
+            conv_msg_dict = {cm.message_id: cm for cm in conv_messages}
+
+            # Update in_context status AND positions
             in_context_set = set(in_context_message_ids)
             for conv_msg in conv_messages:
                 conv_msg.in_context = conv_msg.message_id in in_context_set
+
+            # Update positions to match the order in in_context_message_ids
+            # This ensures ORDER BY position returns messages in the correct order
+            for position, message_id in enumerate(in_context_message_ids):
+                if message_id in conv_msg_dict:
+                    conv_msg_dict[message_id].position = position
 
             await session.commit()
 

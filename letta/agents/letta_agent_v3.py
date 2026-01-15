@@ -508,6 +508,7 @@ class LettaAgentV3(LettaAgentV2):
                 )
 
             # Update which messages are in context
+            # Note: update_in_context_messages also updates positions to preserve order
             await ConversationManager().update_in_context_messages(
                 conversation_id=self.conversation_id,
                 in_context_message_ids=[m.id for m in in_context_messages],
