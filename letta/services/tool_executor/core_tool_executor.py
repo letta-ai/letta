@@ -865,8 +865,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         file_text: Optional[str] = None,
         description: Optional[str] = None,
         path: Optional[str] = None,
-        old_str: Optional[str] = None,
-        new_str: Optional[str] = None,
+        old_string: Optional[str] = None,
+        new_string: Optional[str] = None,
         insert_line: Optional[int] = None,
         insert_text: Optional[str] = None,
         old_path: Optional[str] = None,
@@ -882,11 +882,11 @@ class LettaCoreToolExecutor(ToolExecutor):
         elif command == "str_replace":
             if path is None:
                 raise ValueError("Error: path is required for str_replace command")
-            if old_str is None:
-                raise ValueError("Error: old_str is required for str_replace command")
-            if new_str is None:
-                raise ValueError("Error: new_str is required for str_replace command")
-            return await self.memory_str_replace(agent_state, actor, path, old_str, new_str)
+            if old_string is None:
+                raise ValueError("Error: old_string is required for str_replace command")
+            if new_string is None:
+                raise ValueError("Error: new_string is required for str_replace command")
+            return await self.memory_str_replace(agent_state, actor, path, old_string, new_string)
 
         elif command == "insert":
             if path is None:

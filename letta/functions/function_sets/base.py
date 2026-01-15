@@ -12,8 +12,8 @@ def memory(
     path: Optional[str] = None,
     file_text: Optional[str] = None,
     description: Optional[str] = None,
-    old_str: Optional[str] = None,
-    new_str: Optional[str] = None,
+    old_string: Optional[str] = None,
+    new_string: Optional[str] = None,
     insert_line: Optional[int] = None,
     insert_text: Optional[str] = None,
     old_path: Optional[str] = None,
@@ -32,8 +32,8 @@ def memory(
         path (Optional[str]): Path to the memory block (for str_replace, insert, delete)
         file_text (Optional[str]): The value to set in the memory block (for create)
         description (Optional[str]): The description to set in the memory block (for create, rename)
-        old_str (Optional[str]): Old text to replace (for str_replace)
-        new_str (Optional[str]): New text to replace with (for str_replace)
+        old_string (Optional[str]): Old text to replace (for str_replace)
+        new_string (Optional[str]): New text to replace with (for str_replace)
         insert_line (Optional[int]): Line number to insert at (for insert)
         insert_text (Optional[str]): Text to insert (for insert)
         old_path (Optional[str]): Old path for rename operation
@@ -44,7 +44,7 @@ def memory(
 
     Examples:
         # Replace text in a memory block
-        memory(agent_state, "str_replace", path="/memories/user_preferences", old_str="theme: dark", new_str="theme: light")
+        memory(agent_state, "str_replace", path="/memories/user_preferences", old_string="theme: dark", new_string="theme: light")
 
         # Insert text at line 5
         memory(agent_state, "insert", path="/memories/notes", insert_line=5, insert_text="New note here")
