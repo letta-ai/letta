@@ -8820,12 +8820,12 @@
         }
       }
     },
-    "/v1/conversations/{conversation_id}/messages/cancel": {
+    "/v1/conversations/{conversation_id}/cancel": {
       "post": {
         "tags": ["conversations"],
-        "summary": "Cancel Conversation Message",
+        "summary": "Cancel Conversation",
         "description": "Cancel runs associated with a conversation.\n\nNote: To cancel active runs, Redis is required.",
-        "operationId": "cancel_conversation_message",
+        "operationId": "cancel_conversation",
         "parameters": [
           {
             "name": "conversation_id",
@@ -8851,7 +8851,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Cancel Conversation Message"
+                  "title": "Response Cancel Conversation"
                 }
               }
             }
