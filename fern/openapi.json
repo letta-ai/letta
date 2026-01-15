@@ -15283,6 +15283,66 @@
         }
       }
     },
+    "/v1/runs/{run_id}/trace": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Retrieve Trace For Run",
+        "description": "Retrieve OTEL trace spans for a run.\n\nReturns a filtered set of spans relevant for observability:\n- agent_step: Individual agent reasoning steps\n- tool executions: Tool call spans\n- Root span: The top-level request span\n- time_to_first_token: TTFT measurement span\n\nRequires ClickHouse to be configured for trace storage.",
+        "operationId": "retrieve_trace_for_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum number of spans to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of spans to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Retrieve Trace For Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/runs/{run_id}/stream": {
       "post": {
         "tags": ["runs"],

@@ -6,6 +6,8 @@ from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace,
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.clickhouse_provider_traces import ClickhouseProviderTraceReader
+from letta.settings import settings
 from letta.utils import enforce_types
 
 
@@ -16,7 +18,15 @@ class TelemetryManager:
         self,
         step_id: str,
         actor: PydanticUser,
-    ) -> PydanticProviderTrace:
+    ) -> PydanticProviderTrace | None:
+        # When ClickHouse is enabled, read only from ClickHouse (no Postgres fallback)
+        if settings.use_clickhouse_for_provider_traces:
+            return await ClickhouseProviderTraceReader().get_provider_trace_by_step_id_async(
+                step_id=step_id,
+                organization_id=actor.organization_id,
+            )
+
+        # Postgres storage backend
         async with db_registry.async_session() as session:
             provider_trace = await ProviderTraceModel.read_async(db_session=session, step_id=step_id, actor=actor)
             return provider_trace.to_pydantic()
@@ -24,6 +34,15 @@ class TelemetryManager:
     @enforce_types
     @trace_method
     async def create_provider_trace_async(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
+        # When ClickHouse is enabled, skip Postgres writes - data flows via OTEL instrumentation
+        if settings.use_clickhouse_for_provider_traces:
+            return PydanticProviderTrace(
+                id=f"provider_trace-{provider_trace_create.step_id}",
+                step_id=provider_trace_create.step_id,
+                request_json=provider_trace_create.request_json or {},
+                response_json=provider_trace_create.response_json or {},
+            )
+
         async with db_registry.async_session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
             provider_trace.organization_id = actor.organization_id
@@ -36,8 +55,6 @@ class TelemetryManager:
                 provider_trace.response_json = json_loads(response_json_str)
             await provider_trace.create_async(session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_provider_trace = provider_trace.to_pydantic()
-            # context manager now handles commits
-            # await session.commit()
             return pydantic_provider_trace
 
 
