@@ -8492,6 +8492,61 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": ["conversations"],
+        "summary": "Update Conversation",
+        "description": "Update a conversation.",
+        "operationId": "update_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConversation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/conversations/{conversation_id}/messages": {
@@ -43890,6 +43945,25 @@
         "type": "object",
         "required": ["content"],
         "title": "UpdateAssistantMessage"
+      },
+      "UpdateConversation": {
+        "properties": {
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary",
+            "description": "A summary of the conversation."
+          }
+        },
+        "type": "object",
+        "title": "UpdateConversation",
+        "description": "Request model for updating a conversation."
       },
       "UpdateMCPServerRequest": {
         "properties": {

@@ -9,7 +9,7 @@ from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_clie
 from letta.errors import LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
-from letta.schemas.conversation import Conversation, CreateConversation
+from letta.schemas.conversation import Conversation, CreateConversation, UpdateConversation
 from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import LettaStreamingRequest, RetrieveStreamRequest
@@ -81,6 +81,22 @@ async def retrieve_conversation(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await conversation_manager.get_conversation_by_id(
         conversation_id=conversation_id,
+        actor=actor,
+    )
+
+
+@router.patch("/{conversation_id}", response_model=Conversation, operation_id="update_conversation")
+async def update_conversation(
+    conversation_id: ConversationId,
+    conversation_update: UpdateConversation = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """Update a conversation."""
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await conversation_manager.update_conversation(
+        conversation_id=conversation_id,
+        conversation_update=conversation_update,
         actor=actor,
     )
 
