@@ -328,7 +328,7 @@ def simple_formatter(
         [message for message in messages if message.role != MessageRole.system or include_system],
         tool_return_truncation_chars=tool_return_truncation_chars,
     )
-    return "\n".join(json.dumps(msg) for msg in parsed_messages)
+    return "<start_transcript>\n" + "\n".join(json.dumps(msg) for msg in parsed_messages) + "\n<end_transcript>\n. Generate the summary."
 
 
 def middle_truncate_text(
@@ -607,6 +607,7 @@ async def simple_summary(
                     raise llm_client.handle_llm_error(fallback_error_b)
 
     logger.info(f"Summarized {len(messages)}: {summary}")
+
     return summary
 
 

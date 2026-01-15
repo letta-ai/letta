@@ -28868,7 +28868,7 @@
             "type": "string",
             "title": "Prompt",
             "description": "The prompt to use for summarization.",
-            "default": "The following messages are being evicted from your context window. Write a detailed summary that captures what happened in these messages.\n\nThis summary will appear BEFORE the remaining recent messages in context, providing background for what comes after. Include:\n\n1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?\n\n2. **Key outcomes**: Decisions made, tasks completed, files created (with paths), information gathered, problems solved, and any commitments made.\n\n3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.\n\n4. **Lookup hints**: For any detailed content (long lists, extensive data, specific conversations) that couldn't fit in the summary, note the topic and key terms that could be used to find it in message history later.\n\nWrite in first person as a factual record of what occurred. Be thorough and detailed - the goal is to preserve enough context that the recent messages make sense and important information isn't lost.\n\nKeep your summary under 250 words. Only output the summary."
+            "default": "The following messages are being evicted from your context window. Write a detailed summary that captures what happened in these messages.\n\nThis summary will appear BEFORE the remaining recent messages in context, providing background for what comes after. Include:\n\n1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?\n\n2. **High level goals**: If there is an existing summary in the transcript, make sure to take it into consideration to continue tracking the higher level goals and long-term progress. Make sure to not lose track of higher level goals or the ongoing task.\n\n3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.\n\n4. **Lookup hints**: For any detailed content (long lists, extensive data, specific conversations) that couldn't fit in the summary, note the topic and key terms that could be used to find it in message history later.\n\nWrite in first person as a factual record of what occurred. Be thorough and detailed - the goal is to preserve enough context that the recent messages make sense and important information isn't lost.\n\nKeep your summary under 250 words. Only output the summary."
           },
           "prompt_acknowledgement": {
             "type": "boolean",
@@ -28887,7 +28887,7 @@
             ],
             "title": "Clip Chars",
             "description": "The maximum length of the summary in characters. If none, no clipping is performed.",
-            "default": 2000
+            "default": 50000
           },
           "mode": {
             "type": "string",
@@ -28980,7 +28980,7 @@
             "type": "string",
             "title": "Prompt",
             "description": "The prompt to use for summarization.",
-            "default": "The following messages are being evicted from your context window. Write a detailed summary that captures what happened in these messages.\n\nThis summary will appear BEFORE the remaining recent messages in context, providing background for what comes after. Include:\n\n1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?\n\n2. **Key outcomes**: Decisions made, tasks completed, files created (with paths), information gathered, problems solved, and any commitments made.\n\n3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.\n\n4. **Lookup hints**: For any detailed content (long lists, extensive data, specific conversations) that couldn't fit in the summary, note the topic and key terms that could be used to find it in message history later.\n\nWrite in first person as a factual record of what occurred. Be thorough and detailed - the goal is to preserve enough context that the recent messages make sense and important information isn't lost.\n\nKeep your summary under 250 words. Only output the summary."
+            "default": "The following messages are being evicted from your context window. Write a detailed summary that captures what happened in these messages.\n\nThis summary will appear BEFORE the remaining recent messages in context, providing background for what comes after. Include:\n\n1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?\n\n2. **High level goals**: If there is an existing summary in the transcript, make sure to take it into consideration to continue tracking the higher level goals and long-term progress. Make sure to not lose track of higher level goals or the ongoing task.\n\n3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.\n\n4. **Lookup hints**: For any detailed content (long lists, extensive data, specific conversations) that couldn't fit in the summary, note the topic and key terms that could be used to find it in message history later.\n\nWrite in first person as a factual record of what occurred. Be thorough and detailed - the goal is to preserve enough context that the recent messages make sense and important information isn't lost.\n\nKeep your summary under 250 words. Only output the summary."
           },
           "prompt_acknowledgement": {
             "type": "boolean",
@@ -28999,7 +28999,7 @@
             ],
             "title": "Clip Chars",
             "description": "The maximum length of the summary in characters. If none, no clipping is performed.",
-            "default": 2000
+            "default": 50000
           },
           "mode": {
             "type": "string",

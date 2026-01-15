@@ -37,7 +37,7 @@ This summary will appear BEFORE the remaining recent messages in context, provid
 
 1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?
 
-2. **Key outcomes**: Decisions made, tasks completed, files created (with paths), information gathered, problems solved, and any commitments made.
+2. **High level goals**: If there is an existing summary in the transcript, make sure to take it into consideration to continue tracking the higher level goals and long-term progress. Make sure to not lose track of higher level goals or the ongoing task.
 
 3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
 
