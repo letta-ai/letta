@@ -58,22 +58,6 @@ async def list_all_messages(
     )
 
 
-@router.get("/{message_id}", response_model=MessagesResponse, operation_id="retrieve_message")
-async def retrieve_message(
-    message_id: MessageId,
-    server: SyncServer = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Retrieve a message by ID.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    message = await server.message_manager.get_message_by_id_async(message_id=message_id, actor=actor)
-    if message is None:
-        raise HTTPException(status_code=404, detail=f"Message with id {message_id} not found.")
-    return message.to_letta_messages()
-
-
 @router.post("/search", response_model=List[LettaMessageSearchResult], operation_id="search_all_messages")
 async def search_all_messages(
     request: SearchAllMessagesRequest = Body(...),
@@ -281,3 +265,19 @@ async def cancel_batch(
 
             # Update all the batch_job statuses
             await server.batch_manager.update_llm_batch_status_async(llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor)
+
+
+@router.get("/{message_id}", response_model=MessagesResponse, operation_id="retrieve_message")
+async def retrieve_message(
+    message_id: MessageId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Retrieve a message by ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    message = await server.message_manager.get_message_by_id_async(message_id=message_id, actor=actor)
+    if message is None:
+        raise HTTPException(status_code=404, detail=f"Message with id {message_id} not found.")
+    return message.to_letta_messages()
