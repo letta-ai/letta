@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/identities", tags=["identities"])
 
 
-@router.get("/", tags=["identities"], response_model=List[Identity], operation_id="list_identities")
+@router.get("/", tags=["identities"], response_model=List[Identity], operation_id="list_identities", deprecated=True)
 async def list_identities(
     name: Optional[str] = Query(None),
     project_id: Optional[str] = Query(
@@ -68,7 +68,7 @@ async def list_identities(
     return identities
 
 
-@router.get("/count", tags=["identities"], response_model=int, operation_id="count_identities")
+@router.get("/count", tags=["identities"], response_model=int, operation_id="count_identities", deprecated=True)
 async def count_identities(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -83,7 +83,7 @@ async def count_identities(
         return 0
 
 
-@router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
+@router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity", deprecated=True)
 async def retrieve_identity(
     identity_id: IdentityId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -93,7 +93,7 @@ async def retrieve_identity(
     return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
 
 
-@router.post("/", tags=["identities"], response_model=Identity, operation_id="create_identity")
+@router.post("/", tags=["identities"], response_model=Identity, operation_id="create_identity", deprecated=True)
 async def create_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -106,7 +106,7 @@ async def create_identity(
     return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
 
 
-@router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
+@router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity", deprecated=True)
 async def upsert_identity(
     identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -119,7 +119,7 @@ async def upsert_identity(
     return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
 
 
-@router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity")
+@router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity", deprecated=True)
 async def modify_identity(
     identity_id: IdentityId,
     identity: IdentityUpdate = Body(...),
@@ -130,7 +130,7 @@ async def modify_identity(
     return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
 
 
-@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_properties_for_identity")
+@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_properties_for_identity", deprecated=True)
 async def upsert_properties_for_identity(
     identity_id: IdentityId,
     properties: List[IdentityProperty] = Body(...),
@@ -141,7 +141,7 @@ async def upsert_properties_for_identity(
     return await server.identity_manager.upsert_identity_properties_async(identity_id=identity_id, properties=properties, actor=actor)
 
 
-@router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity")
+@router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity", deprecated=True)
 async def delete_identity(
     identity_id: IdentityId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -154,7 +154,7 @@ async def delete_identity(
     await server.identity_manager.delete_identity_async(identity_id=identity_id, actor=actor)
 
 
-@router.get("/{identity_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_identity")
+@router.get("/{identity_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_identity", deprecated=True)
 async def list_agents_for_identity(
     identity_id: IdentityId,
     before: Optional[str] = Query(
@@ -192,7 +192,7 @@ async def list_agents_for_identity(
     )
 
 
-@router.get("/{identity_id}/blocks", response_model=List[BlockResponse], operation_id="list_blocks_for_identity")
+@router.get("/{identity_id}/blocks", response_model=List[BlockResponse], operation_id="list_blocks_for_identity", deprecated=True)
 async def list_blocks_for_identity(
     identity_id: IdentityId,
     before: Optional[str] = Query(

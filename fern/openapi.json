@@ -8808,6 +8808,7 @@
         "summary": "List Groups",
         "description": "Fetch all multi-agent groups matching query.",
         "operationId": "list_groups",
+        "deprecated": true,
         "parameters": [
           {
             "name": "manager_type",
@@ -8959,6 +8960,7 @@
         "summary": "Create Group",
         "description": "Create a new multi-agent group with the specified configuration.",
         "operationId": "create_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "X-Project",
@@ -9019,6 +9021,7 @@
         "summary": "Count Groups",
         "description": "Get the count of all groups associated with a given user.",
         "operationId": "count_groups",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "200": {
@@ -9051,6 +9054,7 @@
         "summary": "Retrieve Group",
         "description": "Retrieve the group by id.",
         "operationId": "retrieve_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9096,6 +9100,7 @@
         "summary": "Modify Group",
         "description": "Create a new multi-agent group with the specified configuration.",
         "operationId": "modify_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9169,6 +9174,7 @@
         "summary": "Delete Group",
         "description": "Delete a multi-agent group.",
         "operationId": "delete_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9214,6 +9220,7 @@
         "summary": "Send Group Message",
         "description": "Process a user message and return the group's response.\nThis endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern",
         "operationId": "send_group_message",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9269,6 +9276,7 @@
         "summary": "List Group Messages",
         "description": "Retrieve message history for an agent.",
         "operationId": "list_group_messages",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9443,6 +9451,7 @@
         "summary": "Send Group Message Streaming",
         "description": "Process a user message and return the group's responses.\nThis endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.\nIt will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.",
         "operationId": "send_group_message_streaming",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9501,6 +9510,7 @@
         "summary": "Modify Group Message",
         "description": "Update the details of a message associated with an agent.",
         "operationId": "modify_group_message",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9638,6 +9648,7 @@
         "summary": "Reset Group Messages",
         "description": "Delete the group messages for all agents that are part of the multi-agent group.",
         "operationId": "reset_group_messages",
+        "deprecated": true,
         "parameters": [
           {
             "name": "group_id",
@@ -9683,6 +9694,7 @@
         "summary": "Attach Block To Group",
         "description": "Attach a block to a group.\nThis will add the block to the group and all agents within the group.",
         "operationId": "attach_block_to_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "block_id",
@@ -9737,6 +9749,7 @@
         "summary": "Detach Block From Group",
         "description": "Detach a block from a group.\nThis will remove the block from the group and all agents within the group.",
         "operationId": "detach_block_from_group",
+        "deprecated": true,
         "parameters": [
           {
             "name": "block_id",
@@ -9791,6 +9804,7 @@
         "summary": "List Identities",
         "description": "Get a list of all identities in the database",
         "operationId": "list_identities",
+        "deprecated": true,
         "parameters": [
           {
             "name": "name",
@@ -9973,6 +9987,7 @@
         "tags": ["identities", "identities"],
         "summary": "Create Identity",
         "operationId": "create_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "X-Project",
@@ -10030,6 +10045,7 @@
         "tags": ["identities", "identities"],
         "summary": "Upsert Identity",
         "operationId": "upsert_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "X-Project",
@@ -10090,6 +10106,7 @@
         "summary": "Count Identities",
         "description": "Get count of all identities for a user",
         "operationId": "count_identities",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "200": {
@@ -10121,6 +10138,7 @@
         "tags": ["identities", "identities"],
         "summary": "Retrieve Identity",
         "operationId": "retrieve_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
@@ -10165,6 +10183,7 @@
         "tags": ["identities", "identities"],
         "summary": "Modify Identity",
         "operationId": "update_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
@@ -10220,6 +10239,7 @@
         "summary": "Delete Identity",
         "description": "Delete an identity by its identifier key",
         "operationId": "delete_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
@@ -10264,6 +10284,7 @@
         "tags": ["identities", "identities"],
         "summary": "Upsert Properties For Identity",
         "operationId": "upsert_properties_for_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
@@ -10323,6 +10344,7 @@
         "summary": "List Agents For Identity",
         "description": "Get all agents associated with the specified identity.",
         "operationId": "list_agents_for_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
@@ -10480,6 +10502,7 @@
         "summary": "List Blocks For Identity",
         "description": "Get all blocks associated with the specified identity.",
         "operationId": "list_blocks_for_identity",
+        "deprecated": true,
         "parameters": [
           {
             "name": "identity_id",
