@@ -22725,6 +22725,206 @@
         }
       }
     },
+    "/v1/feeds/{feed_id}/subscriptions/{subscription_id}/backfill": {
+      "post": {
+        "description": "Start a background job to send historical messages to an agent subscription. Returns immediately with workflow ID. Does not update last_consumed_sequence.",
+        "summary": "Backfill Subscription",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.backfillSubscription",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from_sequence": {
+                    "type": "number"
+                  },
+                  "to_sequence": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workflow_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["workflow_id"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["feedNotFound", "subscriptionNotFound"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/feeds/{feed_id}/subscriptions/{subscription_id}/history": {
+      "get": {
+        "description": "List the run history for a subscription including scheduled runs, manual triggers, and backfills.",
+        "summary": "List Subscription History",
+        "tags": ["feeds"],
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "feeds.listSubscriptionHistory",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "workflow_id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": ["scheduled", "manual", "backfill"]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "running",
+                              "completed",
+                              "failed",
+                              "canceled",
+                              "timed_out"
+                            ]
+                          },
+                          "started_at": {
+                            "type": "string"
+                          },
+                          "completed_at": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "workflow_id",
+                          "type",
+                          "status",
+                          "started_at",
+                          "completed_at"
+                        ]
+                      }
+                    },
+                    "next_page_token": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["runs", "next_page_token"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": ["feedNotFound", "subscriptionNotFound"]
+                    }
+                  },
+                  "required": ["message", "errorCode"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/feeds/{feed_id}/subscriptions/cron": {
       "patch": {
         "description": "Update the cron schedule for all subscriptions of a feed",
