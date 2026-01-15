@@ -749,3 +749,291 @@ async def test_delete_conversation_cleans_up_isolated_blocks(conversation_manage
     # Verify the isolated block was hard-deleted
     deleted_block = await server.block_manager.get_block_by_id_async(isolated_block_id, default_user)
     assert deleted_block is None
+
+
+# ======================================================================================================================
+# list_conversation_messages with order/reverse Tests
+# ======================================================================================================================
+
+
+@pytest.mark.asyncio
+async def test_list_conversation_messages_ascending_order(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test listing messages in ascending order (oldest first)."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test"),
+        actor=default_user,
+    )
+
+    # Create messages in a known order
+    pydantic_messages = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text=f"Message {i}")],
+        )
+        for i in range(3)
+    ]
+    messages = await server.message_manager.create_many_messages_async(
+        pydantic_messages,
+        actor=default_user,
+    )
+
+    # Add messages to conversation
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=[m.id for m in messages],
+        actor=default_user,
+    )
+
+    # List messages in ascending order (reverse=False)
+    letta_messages = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        reverse=False,
+    )
+
+    # First message should be "Message 0" (oldest)
+    assert len(letta_messages) == 3
+    assert "Message 0" in letta_messages[0].content
+
+
+@pytest.mark.asyncio
+async def test_list_conversation_messages_descending_order(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test listing messages in descending order (newest first)."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test"),
+        actor=default_user,
+    )
+
+    # Create messages in a known order
+    pydantic_messages = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text=f"Message {i}")],
+        )
+        for i in range(3)
+    ]
+    messages = await server.message_manager.create_many_messages_async(
+        pydantic_messages,
+        actor=default_user,
+    )
+
+    # Add messages to conversation
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=[m.id for m in messages],
+        actor=default_user,
+    )
+
+    # List messages in descending order (reverse=True)
+    letta_messages = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        reverse=True,
+    )
+
+    # First message should be "Message 2" (newest)
+    assert len(letta_messages) == 3
+    assert "Message 2" in letta_messages[0].content
+
+
+@pytest.mark.asyncio
+async def test_list_conversation_messages_with_group_id_filter(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test filtering messages by group_id."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test"),
+        actor=default_user,
+    )
+
+    # Create messages with different group_ids
+    group_a_id = "group-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    group_b_id = "group-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+    messages_group_a = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="Group A message 1")],
+            group_id=group_a_id,
+        ),
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="Group A message 2")],
+            group_id=group_a_id,
+        ),
+    ]
+    messages_group_b = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="Group B message 1")],
+            group_id=group_b_id,
+        ),
+    ]
+
+    created_a = await server.message_manager.create_many_messages_async(messages_group_a, actor=default_user)
+    created_b = await server.message_manager.create_many_messages_async(messages_group_b, actor=default_user)
+
+    # Add all messages to conversation
+    all_message_ids = [m.id for m in created_a] + [m.id for m in created_b]
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=all_message_ids,
+        actor=default_user,
+    )
+
+    # List messages filtered by group A
+    messages_a = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        group_id=group_a_id,
+    )
+
+    assert len(messages_a) == 2
+    for msg in messages_a:
+        assert "Group A" in msg.content
+
+    # List messages filtered by group B
+    messages_b = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        group_id=group_b_id,
+    )
+
+    assert len(messages_b) == 1
+    assert "Group B" in messages_b[0].content
+
+
+@pytest.mark.asyncio
+async def test_list_conversation_messages_no_group_id_returns_all(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test that not providing group_id returns all messages."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test"),
+        actor=default_user,
+    )
+
+    # Create messages with different group_ids
+    group_a_id = "group-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    group_b_id = "group-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+    pydantic_messages = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="Group A message")],
+            group_id=group_a_id,
+        ),
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="Group B message")],
+            group_id=group_b_id,
+        ),
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text="No group message")],
+            group_id=None,
+        ),
+    ]
+    messages = await server.message_manager.create_many_messages_async(pydantic_messages, actor=default_user)
+
+    # Add all messages to conversation
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=[m.id for m in messages],
+        actor=default_user,
+    )
+
+    # List all messages without group_id filter
+    all_messages = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+    )
+
+    assert len(all_messages) == 3
+
+
+@pytest.mark.asyncio
+async def test_list_conversation_messages_order_with_pagination(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test that order affects pagination correctly."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create a conversation
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Test"),
+        actor=default_user,
+    )
+
+    # Create messages
+    pydantic_messages = [
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            role="user",
+            content=[TextContent(text=f"Message {i}")],
+        )
+        for i in range(5)
+    ]
+    messages = await server.message_manager.create_many_messages_async(
+        pydantic_messages,
+        actor=default_user,
+    )
+
+    # Add messages to conversation
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=[m.id for m in messages],
+        actor=default_user,
+    )
+
+    # Get first page in ascending order with limit
+    page_asc = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        reverse=False,
+        limit=2,
+    )
+
+    # Get first page in descending order with limit
+    page_desc = await conversation_manager.list_conversation_messages(
+        conversation_id=conversation.id,
+        actor=default_user,
+        reverse=True,
+        limit=2,
+    )
+
+    # The first messages should be different
+    assert page_asc[0].content != page_desc[0].content
+    # In ascending, first should be "Message 0"
+    assert "Message 0" in page_asc[0].content
+    # In descending, first should be "Message 4"
+    assert "Message 4" in page_desc[0].content

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
@@ -96,19 +96,26 @@ async def list_conversation_messages(
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
-        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the conversation"
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
     ),
     after: Optional[str] = Query(
-        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the conversation"
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
     ),
     limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    group_id: Optional[str] = Query(None, description="Group ID to filter messages by."),
+    include_err: Optional[bool] = Query(
+        None, description="Whether to include error messages and error statuses. For debugging purposes only."
+    ),
 ):
     """
     List all messages in a conversation.
 
     Returns LettaMessage objects (UserMessage, AssistantMessage, etc.) for all
-    messages in the conversation, ordered by position (oldest first),
-    with support for cursor-based pagination.
+    messages in the conversation, with support for cursor-based pagination.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await conversation_manager.list_conversation_messages(
@@ -117,6 +124,9 @@ async def list_conversation_messages(
         limit=limit,
         before=before,
         after=after,
+        reverse=(order == "desc"),
+        group_id=group_id,
+        include_err=include_err,
     )
 
 

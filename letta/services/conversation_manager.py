@@ -334,13 +334,15 @@ class ConversationManager:
         limit: Optional[int] = 100,
         before: Optional[str] = None,
         after: Optional[str] = None,
+        reverse: bool = False,
+        group_id: Optional[str] = None,
+        include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """
         List all messages in a conversation with pagination support.
 
         Unlike get_messages_for_conversation, this returns ALL messages
         (not just in_context) and supports cursor-based pagination.
-        Messages are always ordered by position (oldest first).
 
         Args:
             conversation_id: The conversation to list messages for
@@ -348,6 +350,9 @@ class ConversationManager:
             limit: Maximum number of messages to return
             before: Return messages before this message ID
             after: Return messages after this message ID
+            reverse: If True, return messages in descending order (newest first)
+            group_id: Optional group ID to filter messages by
+            include_err: Optional boolean to include error messages and error statuses
 
         Returns:
             List of LettaMessage objects
@@ -366,6 +371,10 @@ class ConversationManager:
                     ConversationMessageModel.is_deleted == False,
                 )
             )
+
+            # Filter by group_id if provided
+            if group_id:
+                query = query.where(MessageModel.group_id == group_id)
 
             # Handle cursor-based pagination
             if before:
@@ -390,8 +399,11 @@ class ConversationManager:
                 if cursor_position is not None:
                     query = query.where(ConversationMessageModel.position > cursor_position)
 
-            # Order by position (oldest first)
-            query = query.order_by(ConversationMessageModel.position.asc())
+            # Order by position
+            if reverse:
+                query = query.order_by(ConversationMessageModel.position.desc())
+            else:
+                query = query.order_by(ConversationMessageModel.position.asc())
 
             # Apply limit
             if limit is not None:
@@ -401,7 +413,9 @@ class ConversationManager:
             messages = [msg.to_pydantic() for msg in result.scalars().all()]
 
             # Convert to LettaMessages
-            return PydanticMessage.to_letta_messages_from_list(messages, reverse=False, text_is_assistant_message=True)
+            return PydanticMessage.to_letta_messages_from_list(
+                messages, reverse=reverse, include_err=include_err, text_is_assistant_message=True
+            )
 
     # ==================== Isolated Blocks Methods ====================
 

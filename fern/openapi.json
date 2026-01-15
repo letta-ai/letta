@@ -8498,7 +8498,7 @@
       "get": {
         "tags": ["conversations"],
         "summary": "List Conversation Messages",
-        "description": "List all messages in a conversation.\n\nReturns LettaMessage objects (UserMessage, AssistantMessage, etc.) for all\nmessages in the conversation, ordered by position (oldest first),\nwith support for cursor-based pagination.",
+        "description": "List all messages in a conversation.\n\nReturns LettaMessage objects (UserMessage, AssistantMessage, etc.) for all\nmessages in the conversation, with support for cursor-based pagination.",
         "operationId": "list_conversation_messages",
         "parameters": [
           {
@@ -8529,10 +8529,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the conversation",
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the conversation"
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
           },
           {
             "name": "after",
@@ -8547,10 +8547,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the conversation",
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
               "title": "After"
             },
-            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the conversation"
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -8570,6 +8570,68 @@
               "title": "Limit"
             },
             "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Group ID to filter messages by.",
+              "title": "Group Id"
+            },
+            "description": "Group ID to filter messages by."
+          },
+          {
+            "name": "include_err",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whether to include error messages and error statuses. For debugging purposes only.",
+              "title": "Include Err"
+            },
+            "description": "Whether to include error messages and error statuses. For debugging purposes only."
           }
         ],
         "responses": {
