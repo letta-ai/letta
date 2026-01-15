@@ -1518,6 +1518,16 @@ async def send_message(
     agent = await server.agent_manager.get_agent_by_id_async(
         agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
     )
+
+    # Handle model override if specified in the request
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        # Create a copy of agent state with the overridden llm_config
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",
@@ -1775,6 +1785,7 @@ async def _process_message_background(
     assistant_message_tool_kwarg: str,
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
+    override_model: str | None = None,
 ) -> None:
     """Background task to process the message and update run status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
@@ -1785,6 +1796,16 @@ async def _process_message_background(
         agent = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
+
+        # Handle model override if specified
+        if override_model:
+            override_llm_config = await server.get_llm_config_from_handle_async(
+                actor=actor,
+                handle=override_model,
+            )
+            # Create a copy of agent state with the overridden llm_config
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
         agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
         model_compatible = agent.llm_config.model_endpoint_type in [
             "anthropic",
@@ -1973,6 +1994,7 @@ async def send_message_async(
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
+            override_model=request.override_model,
         ),
         label=f"process_message_background_{run.id}",
     )

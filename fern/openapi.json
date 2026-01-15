@@ -35522,6 +35522,18 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "override_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Model",
+            "description": "Model handle to use for this request instead of the agent's default model. This allows sending a message to a different model without changing the agent's configuration."
+          },
           "callback_url": {
             "anyOf": [
               {
@@ -35695,6 +35707,18 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "override_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Model",
+            "description": "Model handle to use for this request instead of the agent's default model. This allows sending a message to a different model without changing the agent's configuration."
           },
           "agent_id": {
             "type": "string",
@@ -36040,6 +36064,18 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "override_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Model",
+            "description": "Model handle to use for this request instead of the agent's default model. This allows sending a message to a different model without changing the agent's configuration."
           }
         },
         "type": "object",
@@ -36269,6 +36305,18 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "override_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Model",
+            "description": "Model handle to use for this request instead of the agent's default model. This allows sending a message to a different model without changing the agent's configuration."
           },
           "streaming": {
             "type": "boolean",

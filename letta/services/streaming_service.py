@@ -98,6 +98,15 @@ class StreamingService:
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
 
+        # Handle model override if specified in the request
+        if request.override_model:
+            override_llm_config = await self.server.get_llm_config_from_handle_async(
+                actor=actor,
+                handle=request.override_model,
+            )
+            # Create a copy of agent state with the overridden llm_config
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
         agent_eligible = self._is_agent_eligible(agent)
         model_compatible = self._is_model_compatible(agent)
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
