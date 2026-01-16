@@ -1,7 +1,7 @@
 """ChatGPT OAuth Provider - uses chatgpt.com/backend-api/codex with OAuth authentication."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Literal, Optional
 
 import httpx
@@ -79,7 +79,7 @@ class ChatGPTOAuthCredentials(BaseModel):
         if expires_at > 10**12:
             expires_at = expires_at // 1000  # Convert ms to seconds
 
-        current_time = datetime.now(datetime.timezone.utc).timestamp()
+        current_time = datetime.now(timezone.utc).timestamp()
         is_expired = current_time >= (expires_at - buffer_seconds)
         logger.debug(f"Token expiry check: current={current_time}, expires_at={expires_at}, buffer={buffer_seconds}, expired={is_expired}")
         return is_expired
@@ -217,7 +217,7 @@ class ChatGPTOAuthProvider(Provider):
 
                 # Calculate new expiry time
                 expires_in = data.get("expires_in", 3600)
-                new_expires_at = int(datetime.now(datetime.timezone.utc).timestamp()) + expires_in
+                new_expires_at = int(datetime.now(timezone.utc).timestamp()) + expires_in
 
                 new_access_token = data["access_token"]
                 new_refresh_token = data.get("refresh_token", creds.refresh_token)
