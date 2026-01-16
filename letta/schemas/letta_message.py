@@ -377,6 +377,7 @@ class LettaErrorMessage(BaseModel):
         error_type (str): The type of error
         message (str): The error message
         detail (Optional[str]): An optional error detail
+        seq_id (Optional[int]): The sequence ID for cursor-based pagination
     """
 
     message_type: Literal["error_message"] = "error_message"
@@ -384,6 +385,7 @@ class LettaErrorMessage(BaseModel):
     error_type: str
     message: str
     detail: Optional[str] = None
+    seq_id: Optional[int] = None
 
 
 class SummaryMessage(LettaMessage):
@@ -487,6 +489,11 @@ def create_letta_error_message_schema():
                 "type": "string",
                 "title": "Detail",
                 "description": "An optional error detail.",
+            },
+            "seq_id": {
+                "type": "integer",
+                "title": "Seq ID",
+                "description": "The sequence ID for cursor-based pagination.",
             },
         },
         "type": "object",

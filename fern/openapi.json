@@ -35844,6 +35844,11 @@
             "type": "string",
             "title": "Detail",
             "description": "An optional error detail."
+          },
+          "seq_id": {
+            "type": "integer",
+            "title": "Seq ID",
+            "description": "The sequence ID for cursor-based pagination."
           }
         },
         "type": "object",
