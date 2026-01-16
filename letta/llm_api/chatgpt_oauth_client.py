@@ -4,7 +4,6 @@ import json
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
 
 import httpx
-from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from openai.types.responses import (
     Response,
@@ -518,7 +517,7 @@ class ChatGPTOAuthClient(LLMClientBase):
         self,
         request_data: dict,
         llm_config: LLMConfig,
-    ) -> AsyncStream[ResponseStreamEvent]:
+    ) -> AsyncStreamWrapper:
         """Stream response from ChatGPT backend.
 
         Note: ChatGPT backend uses SSE by default. This returns a custom
@@ -926,7 +925,8 @@ class ChatGPTOAuthClient(LLMClientBase):
                 part=part,
             )
 
-        # Unhandled event types
+        # Unhandled event types - log for debugging
+        logger.debug(f"Unhandled SSE event type: {event_type}")
         return None
 
     def _handle_http_error_from_status(self, status_code: int, error_body: str) -> Exception:
@@ -947,7 +947,7 @@ class ChatGPTOAuthClient(LLMClientBase):
         elif status_code == 429:
             return LLMRateLimitError(
                 message=f"ChatGPT rate limit exceeded: {error_body}",
-                code=ErrorCode.RATE_LIMITED,
+                code=ErrorCode.RATE_LIMIT_EXCEEDED,
             )
         elif status_code >= 500:
             return LLMServerError(
