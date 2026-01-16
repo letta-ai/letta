@@ -569,6 +569,10 @@ class OpenAIClient(LLMClientBase):
                         tool.function = FunctionSchema(**structured_output_version)
                     except ValueError as e:
                         logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+                else:
+                    # Ensure strict is False when not using structured output
+                    # This overrides any strict: True that may have been set by enable_strict_mode()
+                    tool.function.strict = False if not supports_structured_output(llm_config) else tool.function.strict
         request_data = data.model_dump(exclude_unset=True)
 
         # If Ollama
