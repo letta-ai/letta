@@ -292,6 +292,7 @@ class Settings(BaseSettings):
     track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
     track_agent_run: bool = Field(default=True, description="Enable tracking agent run with cancellation support")
     track_provider_trace: bool = Field(default=True, description="Enable tracking raw llm request and response at each step")
+    use_clickhouse_for_provider_traces: bool = Field(default=False, description="Use ClickHouse backend for provider traces instead of Postgres")
 
     # FastAPI Application Settings
     uvicorn_workers: int = 1
