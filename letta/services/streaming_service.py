@@ -220,7 +220,13 @@ class StreamingService:
 
             # update run status to running before returning
             if settings.track_agent_run and run:
-                run_status = RunStatus.running
+                # refetch run since it may have been updated by another service
+                run = await self.server.run_manager.get_run_by_id(run_id=run.id, actor=actor)
+                if run.status == RunStatus.created:
+                    run_status = RunStatus.running
+                else:
+                    # don't override run status if it has already been updated
+                    run_status = None
 
             return run, result
 
@@ -235,7 +241,7 @@ class StreamingService:
                 run_status = RunStatus.failed
             raise
         finally:
-            if settings.track_agent_run and run:
+            if settings.track_agent_run and run and run_status:
                 await self.server.run_manager.update_run_by_id_async(
                     run_id=run.id,
                     conversation_id=conversation_id,
