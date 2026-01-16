@@ -31,7 +31,6 @@ from letta.llm_api.error_utils import is_context_window_overflow_message
 from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
-    convert_to_structured_output,
     unpack_all_inner_thoughts_from_kwargs,
 )
 from letta.llm_api.llm_client_base import LLMClientBase
@@ -297,40 +296,20 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 typed_tools = new_tools
 
-            # Convert to strict mode when strict is enabled
-            if llm_config.strict and supports_structured_output(llm_config):
-                for tool in typed_tools:
-                    try:
-                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                        tool.function = FunctionSchema(**structured_output_version)
-                    except ValueError as e:
-                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
-                # Finally convert to a Responses-friendly dict
-                responses_tools = [
-                    {
-                        "type": "function",
-                        "name": t.function.name,
-                        "description": t.function.description,
-                        "parameters": t.function.parameters,
-                        "strict": True,
-                    }
-                    for t in typed_tools
-                ]
-
-            else:
-                # Finally convert to a Responses-friendly dict
-                # Note: strict field is required by OpenAI SDK's FunctionToolParam type
-                responses_tools = [
-                    {
-                        "type": "function",
-                        "name": t.function.name,
-                        "description": t.function.description,
-                        "parameters": t.function.parameters,
-                        "strict": False,
-                    }
-                    for t in typed_tools
-                ]
+            # Note: Tools are already processed by enable_strict_mode() in the workflow/agent code
+            # (temporal_letta_v1_agent_workflow.py or letta_agent_v3.py) before reaching here.
+            # enable_strict_mode() handles: strict flag, additionalProperties, required array, nullable fields
+            # Convert to a Responses-friendly dict, preserving the strict setting from the tool schema
+            responses_tools = [
+                {
+                    "type": "function",
+                    "name": t.function.name,
+                    "description": t.function.description,
+                    "parameters": t.function.parameters,
+                    "strict": t.function.strict,
+                }
+                for t in typed_tools
+            ]
         else:
             responses_tools = None
 
@@ -560,19 +539,15 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 data.tools = new_tools
 
+        # Note: Tools are already processed by enable_strict_mode() in the workflow/agent code
+        # (temporal_letta_v1_agent_workflow.py or letta_agent_v3.py) before reaching here.
+        # enable_strict_mode() handles: strict flag, additionalProperties, required array, nullable fields
+        # We only need to ensure strict is False for providers that don't support structured output
         if data.tools is not None and len(data.tools) > 0:
-            # Convert to structured output style when strict is enabled
             for tool in data.tools:
-                if llm_config.strict and supports_structured_output(llm_config):
-                    try:
-                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                        tool.function = FunctionSchema(**structured_output_version)
-                    except ValueError as e:
-                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-                else:
-                    # Ensure strict is False when not using structured output
-                    # This overrides any strict: True that may have been set by enable_strict_mode()
-                    tool.function.strict = False if not supports_structured_output(llm_config) else tool.function.strict
+                if not supports_structured_output(llm_config):
+                    # Provider doesn't support structured output - ensure strict is False
+                    tool.function.strict = False
         request_data = data.model_dump(exclude_unset=True)
 
         # If Ollama
