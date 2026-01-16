@@ -14,7 +14,7 @@ AGENTS_CREATE_PARAMS = [
                 "parallel_tool_calls": False,
                 "strict": False,
                 "provider_type": "openai",
-                "temperature": 0.7,
+                "temperature": 1.0,
                 "reasoning": {"reasoning_effort": "minimal"},
                 "response_format": None,
             }
@@ -34,7 +34,7 @@ AGENTS_UPDATE_PARAMS = [
                 "parallel_tool_calls": False,
                 "strict": False,
                 "provider_type": "openai",
-                "temperature": 0.7,
+                "temperature": 1.0,
                 "reasoning": {"reasoning_effort": "minimal"},
                 "response_format": None,
             }

@@ -62,7 +62,7 @@ class LLMConfig(BaseModel):
     )
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
     temperature: float = Field(
-        0.7,
+        1.0,
         description="The temperature to use when generating text with the model. A higher temperature will result in more random text.",
     )
     max_tokens: Optional[int] = Field(

@@ -115,7 +115,7 @@
         "context_window": 180000,
         "put_inner_thoughts_in_kwargs": false,
         "handle": "anthropic/claude-sonnet-4-5-20250929",
-        "temperature": 0.7,
+        "temperature": 1.0,
         "max_tokens": 8192,
         "enable_reasoner": true,
         "reasoning_effort": null,

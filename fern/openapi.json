@@ -35306,7 +35306,7 @@
             "type": "number",
             "title": "Temperature",
             "description": "The temperature to use when generating text with the model. A higher temperature will result in more random text.",
-            "default": 0.7
+            "default": 1
           },
           "max_tokens": {
             "anyOf": [
