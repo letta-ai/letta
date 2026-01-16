@@ -493,11 +493,12 @@ class StreamingService:
             "zai",
             "groq",
             "deepseek",
+            "chatgpt_oauth",
         ]
 
     def _is_token_streaming_compatible(self, agent: AgentState) -> bool:
         """Check if agent's model supports token-level streaming."""
-        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek", "zai"]
+        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek", "zai", "chatgpt_oauth"]
         google_letta_v1 = agent.agent_type == AgentType.letta_v1_agent and agent.llm_config.model_endpoint_type in [
             "google_ai",
             "google_vertex",

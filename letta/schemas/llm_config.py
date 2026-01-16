@@ -49,6 +49,7 @@ class LLMConfig(BaseModel):
         "deepseek",
         "xai",
         "zai",
+        "chatgpt_oauth",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
     provider_name: Optional[str] = Field(None, description="The provider name for the model.")
@@ -308,6 +309,8 @@ class LLMConfig(BaseModel):
             AnthropicThinking,
             AzureModelSettings,
             BedrockModelSettings,
+            ChatGPTOAuthModelSettings,
+            ChatGPTOAuthReasoning,
             DeepseekModelSettings,
             GeminiThinkingConfig,
             GoogleAIModelSettings,
@@ -382,7 +385,16 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "bedrock":
-            return Model(max_output_tokens=self.max_tokens or 4096)
+            return BedrockModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "chatgpt_oauth":
+            return ChatGPTOAuthModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+                reasoning=ChatGPTOAuthReasoning(reasoning_effort=self.reasoning_effort or "medium"),
+            )
         else:
             # If we don't know the model type, use the default Model schema
             return Model(max_output_tokens=self.max_tokens or 4096)

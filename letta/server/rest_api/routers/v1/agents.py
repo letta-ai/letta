@@ -1542,6 +1542,7 @@ async def send_message(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     # Create a new run for execution tracking
@@ -2126,6 +2127,7 @@ async def preview_model_request(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     if agent_eligible and model_compatible:
@@ -2180,6 +2182,7 @@ async def summarize_messages(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     if agent_eligible and model_compatible:

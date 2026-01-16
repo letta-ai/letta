@@ -24969,6 +24969,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -24977,6 +24980,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -28565,6 +28569,59 @@
         "title": "ChatCompletionUserMessageParam",
         "description": "Messages sent by an end user, containing prompts or additional context\ninformation."
       },
+      "ChatGPTOAuthModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": false
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "chatgpt_oauth",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "chatgpt_oauth"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ChatGPTOAuthReasoning",
+            "description": "The reasoning configuration for the model.",
+            "default": {
+              "reasoning_effort": "medium"
+            }
+          }
+        },
+        "type": "object",
+        "title": "ChatGPTOAuthModelSettings",
+        "description": "ChatGPT OAuth model configuration (uses ChatGPT backend API)."
+      },
+      "ChatGPTOAuthReasoning": {
+        "properties": {
+          "reasoning_effort": {
+            "type": "string",
+            "enum": ["none", "low", "medium", "high", "xhigh"],
+            "title": "Reasoning Effort",
+            "description": "The reasoning effort level for GPT-5.x and o-series models.",
+            "default": "medium"
+          }
+        },
+        "type": "object",
+        "title": "ChatGPTOAuthReasoning",
+        "description": "Reasoning configuration for ChatGPT OAuth models (GPT-5.x, o-series)."
+      },
       "ChildToolRule": {
         "properties": {
           "tool_name": {
@@ -28856,6 +28913,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -28864,6 +28924,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -28968,6 +29029,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -28976,6 +29040,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -29911,6 +29976,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -29919,6 +29987,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -34213,6 +34282,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -34221,6 +34293,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -35140,7 +35213,8 @@
               "bedrock",
               "deepseek",
               "xai",
-              "zai"
+              "zai",
+              "chatgpt_oauth"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
@@ -37615,7 +37689,8 @@
               "bedrock",
               "deepseek",
               "xai",
-              "zai"
+              "zai",
+              "chatgpt_oauth"
             ],
             "title": "Model Endpoint Type",
             "description": "Deprecated: Use 'provider_type' field instead. The endpoint type for the model.",
@@ -39050,6 +39125,7 @@
           "azure",
           "bedrock",
           "cerebras",
+          "chatgpt_oauth",
           "deepseek",
           "google_ai",
           "google_vertex",
@@ -43828,6 +43904,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -43836,6 +43915,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",
@@ -45191,6 +45271,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BedrockModelSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatGPTOAuthModelSettings"
                   }
                 ],
                 "discriminator": {
@@ -45199,6 +45282,7 @@
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
+                    "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
                     "google_ai": "#/components/schemas/GoogleAIModelSettings",
                     "google_vertex": "#/components/schemas/GoogleVertexModelSettings",

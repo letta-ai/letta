@@ -48,6 +48,7 @@ class Model(LLMConfig, ModelBase):
         "deepseek",
         "xai",
         "zai",
+        "chatgpt_oauth",
     ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
     context_window: int = Field(
         ..., description="Deprecated: Use 'max_context_window' field instead. The context window size for the model.", deprecated=True
@@ -434,6 +435,32 @@ class BedrockModelSettings(ModelSettings):
         }
 
 
+class ChatGPTOAuthReasoning(BaseModel):
+    """Reasoning configuration for ChatGPT OAuth models (GPT-5.x, o-series)."""
+
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] = Field(
+        "medium", description="The reasoning effort level for GPT-5.x and o-series models."
+    )
+
+
+class ChatGPTOAuthModelSettings(ModelSettings):
+    """ChatGPT OAuth model configuration (uses ChatGPT backend API)."""
+
+    provider_type: Literal[ProviderType.chatgpt_oauth] = Field(ProviderType.chatgpt_oauth, description="The type of the provider.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
+    reasoning: ChatGPTOAuthReasoning = Field(
+        ChatGPTOAuthReasoning(reasoning_effort="medium"), description="The reasoning configuration for the model."
+    )
+
+    def _to_legacy_config_params(self) -> dict:
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+            "reasoning_effort": self.reasoning.reasoning_effort,
+            "parallel_tool_calls": self.parallel_tool_calls,
+        }
+
+
 ModelSettingsUnion = Annotated[
     Union[
         OpenAIModelSettings,
@@ -447,6 +474,7 @@ ModelSettingsUnion = Annotated[
         DeepseekModelSettings,
         TogetherModelSettings,
         BedrockModelSettings,
+        ChatGPTOAuthModelSettings,
     ],
     Field(discriminator="provider_type"),
 ]
