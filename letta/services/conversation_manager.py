@@ -426,9 +426,9 @@ class ConversationManager:
             result = await session.execute(query)
             messages = [msg.to_pydantic() for msg in result.scalars().all()]
 
-            # Convert to LettaMessages
+            # Convert to LettaMessages (reverse=False keeps sub-messages in natural order)
             return PydanticMessage.to_letta_messages_from_list(
-                messages, reverse=reverse, include_err=include_err, text_is_assistant_message=True
+                messages, reverse=False, include_err=include_err, text_is_assistant_message=True
             )
 
     # ==================== Isolated Blocks Methods ====================
