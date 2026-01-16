@@ -1851,6 +1851,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "verbosity",
         "tier",
         "parallel_tool_calls",
+        "strict",
     }
     actual_llm_config_fields = set(llm_config_fields.keys())
     if actual_llm_config_fields != expected_llm_config_fields:

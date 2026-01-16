@@ -83,17 +83,9 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta - only for supported models
-        # Supported: Claude Sonnet 4.5, Opus 4.1, Opus 4.5, Haiku 4.5
-        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
-        # See PR #7495 for original implementation
-        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-        #
-        # if supports_structured_outputs:
-        #     # Always enable structured outputs beta on supported models.
-        #     # NOTE: We do NOT send `strict` on tool schemas because the current Anthropic SDK
-        #     # typed tool params reject unknown fields (e.g., `tools.0.custom.strict`).
-        #     betas.append("structured-outputs-2025-11-13")
+        # Structured outputs beta - only when strict is enabled and model supports it
+        if llm_config.strict and _supports_structured_outputs(llm_config.model):
+            betas.append("structured-outputs-2025-11-13")
 
         if betas:
             response = client.beta.messages.create(**request_data, betas=betas)
@@ -128,13 +120,9 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta - only for supported models
-        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
-        # See PR #7495 for original implementation
-        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-        #
-        # if supports_structured_outputs:
-        #     betas.append("structured-outputs-2025-11-13")
+        # Structured outputs beta - only when strict is enabled and model supports it
+        if llm_config.strict and _supports_structured_outputs(llm_config.model):
+            betas.append("structured-outputs-2025-11-13")
 
         try:
             if betas:
@@ -147,8 +135,7 @@ class AnthropicClient(LLMClientBase):
             # See: https://github.com/anthropics/anthropic-sdk-python#long-requests
             if "streaming is required" in str(e).lower():
                 logger.warning(
-                    "[Anthropic] Non-streaming request rejected due to potential long duration. "
-                    "Falling back to streaming mode. Error: %s",
+                    "[Anthropic] Non-streaming request rejected due to potential long duration. Falling back to streaming mode. Error: %s",
                     str(e),
                 )
                 return await self._request_via_streaming(request_data, llm_config, betas)
@@ -192,23 +179,29 @@ class AnthropicClient(LLMClientBase):
         for part in reasoning_parts:
             if hasattr(part, "reasoning") and part.reasoning:
                 # Native thinking block
-                content.append({
-                    "type": "thinking",
-                    "thinking": part.reasoning,
-                    "signature": getattr(part, "signature", None),
-                })
+                content.append(
+                    {
+                        "type": "thinking",
+                        "thinking": part.reasoning,
+                        "signature": getattr(part, "signature", None),
+                    }
+                )
             elif hasattr(part, "data") and part.data:
                 # Redacted thinking block
-                content.append({
-                    "type": "redacted_thinking",
-                    "data": part.data,
-                })
+                content.append(
+                    {
+                        "type": "redacted_thinking",
+                        "data": part.data,
+                    }
+                )
             elif hasattr(part, "text") and part.text:
                 # Text content (non-native reasoning)
-                content.append({
-                    "type": "text",
-                    "text": part.text,
-                })
+                content.append(
+                    {
+                        "type": "text",
+                        "text": part.text,
+                    }
+                )
 
         # Add tool use if present
         tool_call = interface.get_tool_call_object()
@@ -217,12 +210,14 @@ class AnthropicClient(LLMClientBase):
                 tool_input = json.loads(tool_call.function.arguments)
             except json.JSONDecodeError:
                 tool_input = {}
-            content.append({
-                "type": "tool_use",
-                "id": tool_call.id,
-                "name": tool_call.function.name,
-                "input": tool_input,
-            })
+            content.append(
+                {
+                    "type": "tool_use",
+                    "id": tool_call.id,
+                    "name": tool_call.function.name,
+                    "input": tool_input,
+                }
+            )
 
         # Calculate total input tokens (Anthropic reports input_tokens as non-cached only)
         # We need to add cache tokens if they're available
@@ -248,8 +243,7 @@ class AnthropicClient(LLMClientBase):
         }
 
         logger.info(
-            "[Anthropic] Streaming fallback completed successfully. "
-            "Message ID: %s, Input tokens: %d, Output tokens: %d",
+            "[Anthropic] Streaming fallback completed successfully. Message ID: %s, Input tokens: %d, Output tokens: %d",
             response_dict["id"],
             response_dict["usage"]["input_tokens"],
             response_dict["usage"]["output_tokens"],
@@ -291,13 +285,9 @@ class AnthropicClient(LLMClientBase):
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
             betas.append("context-management-2025-06-27")
 
-        # Structured outputs beta - only for supported models
-        # DISABLED: Commenting out structured outputs to investigate TTFT latency impact
-        # See PR #7495 for original implementation
-        # supports_structured_outputs = _supports_structured_outputs(llm_config.model)
-        #
-        # if supports_structured_outputs:
-        #     betas.append("structured-outputs-2025-11-13")
+        # Structured outputs beta - only when strict is enabled and model supports it
+        if llm_config.strict and _supports_structured_outputs(llm_config.model):
+            betas.append("structured-outputs-2025-11-13")
 
         # log failed requests
         try:
@@ -554,11 +544,11 @@ class AnthropicClient(LLMClientBase):
 
         if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
-            # DISABLED: use_strict=False to disable structured outputs (TTFT latency impact)
-            # See PR #7495 for original implementation
+            # Enable strict mode when strict is enabled and model supports it
+            use_strict = llm_config.strict and _supports_structured_outputs(llm_config.model)
             data["tools"] = convert_tools_to_anthropic_format(
                 tools_for_request,
-                use_strict=False,  # Was: _supports_structured_outputs(llm_config.model)
+                use_strict=use_strict,
             )
             # Add cache control to the last tool for caching tool definitions
             if len(data["tools"]) > 0:
@@ -1279,14 +1269,14 @@ def convert_tools_to_anthropic_format(
         # when we are using structured outputs models. Limit the number of strict tools
         # to avoid exceeding Anthropic constraints.
         # NOTE: The token counting endpoint does NOT support `strict` - only the messages endpoint does.
-        if (
-            use_strict
-            and add_strict_field
-            and tool.function.name in ANTHROPIC_STRICT_MODE_ALLOWLIST
-            and strict_count < ANTHROPIC_MAX_STRICT_TOOLS
-        ):
-            formatted_tool["strict"] = True
-            strict_count += 1
+        if use_strict and add_strict_field and tool.function.name in ANTHROPIC_STRICT_MODE_ALLOWLIST:
+            if strict_count < ANTHROPIC_MAX_STRICT_TOOLS:
+                formatted_tool["strict"] = True
+                strict_count += 1
+            else:
+                logger.warning(
+                    f"Exceeded max strict tools limit ({ANTHROPIC_MAX_STRICT_TOOLS}), tool '{tool.function.name}' will not use strict mode"
+                )
 
         formatted_tools.append(formatted_tool)
 

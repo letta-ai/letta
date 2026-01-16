@@ -1414,7 +1414,9 @@ class LettaAgentV3(LettaAgentV2):
 
         # Build allowed tools from server tools, excluding those overridden by client tools
         allowed_tools = [
-            enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names) and t.name not in client_tool_names
+            enable_strict_mode(t.json_schema, strict=self.agent_state.llm_config.strict)
+            for t in tools
+            if t.name in set(valid_tool_names) and t.name not in client_tool_names
         ]
 
         # Merge client-side tools (use flat format matching enable_strict_mode output)

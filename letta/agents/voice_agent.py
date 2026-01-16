@@ -353,9 +353,10 @@ class VoiceAgent(BaseAgent):
             "For example: 'Let me double-check my notes—one moment, please.'"
         )
 
+        strict = agent_state.llm_config.strict
         search_memory_json = Tool(
             type="function",
-            function=enable_strict_mode(  # strict=True   ✓
+            function=enable_strict_mode(  # strict mode based on config
                 add_pre_execution_message(  # injects pre_exec_msg   ✓
                     {
                         "name": "search_memory",
@@ -399,13 +400,17 @@ class VoiceAgent(BaseAgent):
                         },
                     },
                     description=search_memory_utterance_description,
-                )
+                ),
+                strict=strict,
             ),
         )
 
         # TODO: Customize whether or not to have heartbeats, pre_exec_message, etc.
         return [search_memory_json] + [
-            Tool(type="function", function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema))))
+            Tool(
+                type="function",
+                function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema)), strict=strict),
+            )
             for t in tools
         ]
 

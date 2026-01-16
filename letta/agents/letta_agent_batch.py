@@ -604,7 +604,7 @@ class LettaAgentBatch(BaseAgent):
     def _prepare_tools_per_agent(agent_state: AgentState, tool_rules_solver: ToolRulesSolver) -> List[dict]:
         tools = [t for t in agent_state.tools if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}]
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
-        return [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        return [enable_strict_mode(t.json_schema, strict=agent_state.llm_config.strict) for t in tools if t.name in set(valid_tool_names)]
 
     async def _prepare_in_context_messages_per_agent_async(
         self, agent_state: AgentState, input_messages: List[MessageCreate]

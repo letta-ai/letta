@@ -8,14 +8,16 @@ from letta.utils import get_logger
 logger = get_logger(__name__)
 
 
-def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
+def enable_strict_mode(tool_schema: Dict[str, Any], strict: bool = True) -> Dict[str, Any]:
     """Enables strict mode for a tool schema by setting 'strict' to True and
     disallowing additional properties in the parameters.
 
     If the tool schema is NON_STRICT_ONLY, strict mode will not be applied.
+    If strict=False, the function will only clean metadata without applying strict mode.
 
     Args:
         tool_schema (Dict[str, Any]): The original tool schema.
+        strict (bool): Whether to enable strict mode. Defaults to True.
 
     Returns:
         Dict[str, Any]: A new tool schema with strict mode conditionally enabled.
@@ -33,6 +35,12 @@ def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
     elif schema_status == "INVALID":
         # We should not be hitting this and allowing invalid schemas to be used
         logger.error(f"Tool schema {schema} is invalid: {schema.get(MCP_TOOL_METADATA_SCHEMA_WARNINGS)}")
+
+    # If strict mode is disabled, just clean metadata and return
+    if not strict:
+        schema.pop(MCP_TOOL_METADATA_SCHEMA_STATUS, None)
+        schema.pop(MCP_TOOL_METADATA_SCHEMA_WARNINGS, None)
+        return schema
 
     # Enable strict mode for STRICT_COMPLIANT or unspecified health status
     schema["strict"] = True
