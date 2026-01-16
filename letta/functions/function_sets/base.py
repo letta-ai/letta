@@ -464,51 +464,35 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
 
 def memory_apply_patch(agent_state: "AgentState", label: str, patch: str) -> str:  # type: ignore
     """
-    Apply a unified-diff style patch to a memory block by anchoring on content and context (not line numbers).
+    Apply a simplified unified-diff style patch to one or more memory blocks.
 
-    The patch format is a simplified unified diff that supports one or more hunks. Each hunk may optionally
-    start with a line beginning with `@@` and then contains lines that begin with one of:
-    - " " (space): context lines that must match the current memory content
-    - "-": lines to remove (must match exactly in the current content)
-    - "+": lines to add
+    Backwards compatible behavior:
+    - If `patch` contains no "***" headers, it applies the patch to the single memory block
+      identified by `label`.
 
-    Notes:
-    - Do not include line number prefixes like "Line 12:" anywhere in the patch. Line numbers are for display only.
+    Extended, codex-style behavior (multi-block):
+    - `*** Add Block: <label>`
+        - Optional next line: `Description: <text>`
+        - File contents are given by subsequent lines starting with `+`
+    - `*** Delete Block: <label>`
+    - `*** Update Block: <label>`
+        - Patch body is the same simplified unified diff format (lines start with " ", "-", "+")
+        - Optional "@@" lines can be used to delimit hunks
+    - `*** Move to: <new_label>`
+        - Renames the most recent block referenced by an Add/Update/Delete header
+
+    - Do not include line number prefixes like "12→" anywhere in the patch. Line numbers are for display only.
     - Do not include the line-number warning banner. Provide only the text to edit.
     - Tabs are normalized to spaces for matching consistency.
 
     Args:
-        label (str): The memory block to edit, identified by its label.
-        patch (str): The simplified unified-diff patch text composed of context (" "), deletion ("-"), and addition ("+") lines. Optional
-            lines beginning with "@@" can be used to delimit hunks. Do not include visual line numbers or warning banners.
-
-    Examples:
-        Simple replacement:
-            label="human",
-            patch:
-                @@
-                -Their name is Alice
-                +Their name is Bob
-
-        Replacement with surrounding context for disambiguation:
-            label="persona",
-            patch:
-                @@
-                 Persona:
-                -Friendly and curious
-                +Friendly, curious, and precise
-                 Likes: Hiking
-
-        Insertion (no deletions) between two context lines:
-            label="todos",
-            patch:
-                @@
-                 - [ ] Step 1: Gather requirements
-                 + [ ] Step 1.5: Clarify stakeholders
-                 - [ ] Step 2: Draft design
+        label (str): The label of the memory block to patch. Required for single-block mode (when patch contains no "***" headers). Set to empty string "" when using multi-block mode with "*** Add Block:", "*** Delete Block:", or "*** Update Block:" headers.
+        patch (str): The unified diff-style patch to apply. Can be either: (1) a simple unified diff for single-block mode, or (2) a multi-block patch with "***" headers for creating, deleting, updating, or renaming multiple blocks.
 
     Returns:
         str: A success message if the patch applied cleanly; raises ValueError otherwise.
+
+
     """
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
